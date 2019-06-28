@@ -9,7 +9,7 @@ save_dir: output
 snapshot_iter: 2000
 metric: COCO
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
-weights: https://paddlemodels.bj.bcebos.com/yolo/yolo_mobilenet1.0.tar.gz
+weights: output/yolov3_mobilenet_v1/model_final
 
 YOLOv3:
   backbone: MobileNet

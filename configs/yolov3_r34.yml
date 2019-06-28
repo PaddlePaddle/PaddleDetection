@@ -9,7 +9,7 @@ save_dir: output
 snapshot_iter: 2000
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
-weights: https://paddlemodels.bj.bcebos.com/yolo/yolo_resnet34.tar.gz
+weights: output/yolov3_r34/model_final
 
 YOLOv3:
   backbone: ResNet
