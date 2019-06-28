@@ -1,0 +1,3 @@
+tqdm
+docstring_parser @ http://github.com/willthefrog/docstring_parser/tarball/master
+typeguard ; python_version >= '3.4'

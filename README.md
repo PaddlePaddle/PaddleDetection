@@ -1,0 +1,112 @@
+# PaddleDetection
+
+The goal of PaddleDetection is to provide easy access to a wide range of object
+detection models in both industry and research settings. We design
+PaddleDetection to be not only performant, production-ready but also highly
+flexible, catering to research needs.
+
+
+<div align="center">
+  <img src="demo/output/000000570688.jpg" />
+</div>
+
+
+## Introduction
+
+Design Principles:
+
+- Production Ready:
+Key operations are implemented in C++ and CUDA, together with PaddlePaddle's
+highly efficient inference engine, enables easy deployment in server environments.
+
+- Highly Flexible:
+Components are designed to be modular. Model architectures, as well as data
+preprocess pipelines, can be easily customized with simple configuration
+changes.
+
+- Performance Optimized:
+With the help of the underlying PaddlePaddle framework, faster training and
+reduced GPU memory footprint is achieved. Notably, Yolo V3 training is
+much faster compared to other frameworks. Another example is Mask-RCNN
+(ResNet50), we managed to fit up to 5 images per GPU (V100 16GB) during
+training.
+
+Supported Architectures:
+
+|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt | SENet | MobileNet | DarkNet |
+|--------------------|:------:|------------------------------:|:-------:|:-----:|:---------:|:-------:|
+| Faster R-CNN       | ✓      |                             ✓ | ✓       | ✓     | ✗         | ✗       |
+| Faster R-CNN + FPN | ✓      |                             ✓ | ✓       | ✓     | ✗         | ✗       |
+| Mask R-CNN         | ✓      |                             ✓ | ✓       | ✓     | ✗         | ✗       |
+| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓       | ✓     | ✗         | ✗       |
+| Cascade R-CNN      | ✓      |                             ✗ | ✗       | ✗     | ✗         | ✗       |
+| RetinaNet          | ✓      |                             ✗ | ✗       | ✗     | ✗         | ✗       |
+| Yolov3             | ✓      |                             ✗ | ✗       | ✗     | ✓         | ✓       |
+| SSD                | ✗      |                             ✗ | ✗       | ✗     | ✓         | ✗       |
+
+<a name="vd">[1]</a> ResNet-vd models offer much improved accuracy with negligible performance cost.
+
+Advanced Features:
+
+- [x] **Synchronized Batch Norm**: currently used by Yolo V3.
+- [x] **Group Norm**: pretrained models to be released.
+- [x] **Modulated Deformable Convolution**: pretrained models to be released.
+- [x] **Deformable PSRoI Pooling**: pretrained models to be released.
+
+
+## Model zoo
+
+Pretrained models are available in the PaddlePaddle [detection model zoo](docs/MODEL_ZOO.md).
+
+
+## Installation
+
+Please follow the [installation guide](docs/INSTALL.md).
+
+
+## Get Started
+
+For inference, simply run the following command and the visualized result will
+be saved in `output/`.
+
+```bash
+export PYTHONPATH=`pwd`:$PYTHONPATH
+python tools/infer.py -c configs/mask_rcnn_r50_1x.yml \
+    -o weights=https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_1x.tar
+    -infer_img=demo/000000570688.jpg
+```
+
+For detailed training and evaluation workflow, please refer to [GETTING_STARTED.md](docs/GETTING_STARTED.md).
+
+We also recommend users to take a look at the [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
+
+Further information can be found in these documentations:
+
+- [Introduction to the configuration workflow.](docs/CONFIG.md)
+- [Guide to custom dataset and preprocess pipeline.](docs/DATA.md)
+
+
+##  Todo List
+
+Please note this is a work in progress, substantial changes may come in the
+near future.
+Some of the planned features include:
+
+- [ ] Mixed precision training.
+- [ ] Distributed training.
+- [ ] Inference in 8-bit mode.
+- [ ] User defined operations.
+- [ ] Larger model zoo.
+
+
+## Updates
+
+#### Initial release (7/3/2019)
+- Initial release of PaddleDetection and detection model zoo
+- Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
+  R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, Yolo v3, and SSD.
+
+
+## Contributing
+
+Contributions are highly welcomed and we would really appreciate your feedback!!
