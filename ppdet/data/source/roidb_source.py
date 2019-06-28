@@ -99,7 +99,7 @@ class RoiDbSource(Dataset):
             mix_idx = random.randint(1, self._samples - 1)
             mix_pos = (mix_idx + self._pos) % self._samples
             sample['mixup'] = copy.deepcopy(self._roidb[mix_pos])
-            if self._load_image:
+            if self._load_img:
                 sample['mixup']['image'] = \
                         self._load_image(sample['mixup']['im_file'])
             else:
