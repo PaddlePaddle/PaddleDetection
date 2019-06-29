@@ -137,8 +137,10 @@ def main():
     exe.run(startup_prog)
 
     freeze_bn = getattr(model.backbone, 'freeze_norm', False)
+    start_iter = 0
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
+        start_iter = checkpoint.global_step()
     elif cfg.pretrain_weights and freeze_bn:
         checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
     elif cfg.pretrain_weights:
@@ -151,7 +153,7 @@ def main():
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    for it in range(cfg.max_iters):
+    for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
         outs = exe.run(train_compile_program, fetch_list=train_values)

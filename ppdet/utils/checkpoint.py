@@ -83,6 +83,23 @@ def load_checkpoint(exe, prog, path):
     fluid.io.load_persistables(exe, path, prog)
 
 
+def global_step(scope=None):
+    """
+    Load global step in scope.
+    Args:
+        scope (fluid.Scope): load global step from which scope. If None,
+            from default global_scope().
+
+    Returns:
+        global step: int.
+    """
+    if scope is None:
+        scope = fluid.global_scope()
+    v = scope.find_var('@LR_DECAY_COUNTER@')
+    step = np.array(v.get_tensor())[0] if v else 0
+    return step
+
+
 def save(exe, prog, path):
     """
     Load model from the given path.
