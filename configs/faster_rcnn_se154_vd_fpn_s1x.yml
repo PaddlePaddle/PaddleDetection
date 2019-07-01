@@ -8,7 +8,7 @@ use_gpu: true
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/SE154_vd_pretrained.tar
-weights: output/faster_rcnn_se154_fpn_s1x/model_final
+weights: output/faster_rcnn_se154_vd_fpn_s1x/model_final
 metric: COCO
 
 FasterRCNN:
