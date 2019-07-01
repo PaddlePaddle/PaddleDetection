@@ -13,23 +13,26 @@ flexible, catering to research needs.
 
 ## Introduction
 
-Design Principles:
+Features:
 
 - Production Ready:
-Key operations are implemented in C++ and CUDA, together with PaddlePaddle's
+
+  Key operations are implemented in C++ and CUDA, together with PaddlePaddle's
 highly efficient inference engine, enables easy deployment in server environments.
 
 - Highly Flexible:
-Components are designed to be modular. Model architectures, as well as data
+
+  Components are designed to be modular. Model architectures, as well as data
 preprocess pipelines, can be easily customized with simple configuration
 changes.
 
 - Performance Optimized:
-With the help of the underlying PaddlePaddle framework, faster training and
+
+  With the help of the underlying PaddlePaddle framework, faster training and
 reduced GPU memory footprint is achieved. Notably, Yolo V3 training is
 much faster compared to other frameworks. Another example is Mask-RCNN
-(ResNet50), we managed to fit up to 5 images per GPU (V100 16GB) during
-training.
+(ResNet50), we managed to fit up to 4 images per GPU (Tesla V100 16GB) during
+multi-GPU training.
 
 Supported Architectures:
 
@@ -44,7 +47,7 @@ Supported Architectures:
 | Yolov3             | ✓      |                             ✗ | ✗       | ✗     | ✓         | ✓       |
 | SSD                | ✗      |                             ✗ | ✗       | ✗     | ✓         | ✗       |
 
-<a name="vd">[1]</a> ResNet-vd models offer much improved accuracy with negligible performance cost.
+<a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
 
 Advanced Features:
 
@@ -67,7 +70,7 @@ Please follow the [installation guide](docs/INSTALL.md).
 ## Get Started
 
 For inference, simply run the following command and the visualized result will
-be saved in `output/`.
+be saved in `output`.
 
 ```bash
 export PYTHONPATH=`pwd`:$PYTHONPATH
@@ -102,6 +105,7 @@ Some of the planned features include:
 ## Updates
 
 #### Initial release (7/3/2019)
+
 - Initial release of PaddleDetection and detection model zoo
 - Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
   R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, Yolo v3, and SSD.
