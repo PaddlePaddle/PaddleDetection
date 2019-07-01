@@ -78,7 +78,7 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [24000, 32000]
+    milestones: [240000, 320000]
   - !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 500
