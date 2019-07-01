@@ -20,7 +20,7 @@ For general information about PaddleDetection, please see [README.md](../README.
 
 ## PaddlePaddle
 
-Running PaddleDetection requires PaddlePaddle Fluid v.1.5 and later. please follow the instructions in [installation document](http://www.paddlepaddle.org/documentation/docs/en/1.4/beginners_guide/install/index_en.html).
+Running PaddleDetection requires PaddlePaddle Fluid v.1.5 and later. please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
 Please make sure your PaddlePaddle installation was successful and the version
 of your PaddlePaddle is not lower than required. Verify with the following commands.

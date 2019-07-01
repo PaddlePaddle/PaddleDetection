@@ -171,7 +171,7 @@ def main():
                                       mask_results, is_bbox_normalized)
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
-            image.save(save_name)
+            image.save(save_name, quality=95)
 
 
 if __name__ == '__main__':
