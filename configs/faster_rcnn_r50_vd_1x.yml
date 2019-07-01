@@ -26,6 +26,7 @@ ResNet:
   variant: d
 
 ResNetC5:
+  depth: 50
   norm_type: affine_channel
   variant: d
 

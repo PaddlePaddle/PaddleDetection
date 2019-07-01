@@ -25,6 +25,7 @@ ResNet:
   freeze_at: 2
 
 ResNetC5:
+  depth: 101
   norm_type: affine_channel
 
 RPNHead:
