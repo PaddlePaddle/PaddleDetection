@@ -166,7 +166,8 @@ def main():
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
             image = visualize_results(image,
-                                      int(im_id), catid2name, 0.5, bbox_results,
+                                      int(im_id), catid2name,
+                                      FLAGS.draw_threshold, bbox_results,
                                       mask_results, is_bbox_normalized)
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
@@ -190,5 +191,10 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output visualization files.")
+    parser.add_argument(
+        "--draw_threshold",
+        type=float,
+        default=0.5,
+        help="Threshold to reserve the result for visualization.")
     FLAGS = parser.parse_args()
     main()
