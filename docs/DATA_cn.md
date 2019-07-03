@@ -4,12 +4,12 @@
 ### 实现
 该模块内部可分为4个子功能：数据解析、图片预处理、数据转换和数据获取接口。
 
-我们采用`dataset.Dataset`表示一份数据，比如`COCO`数据包含3份数据，分别用于训练、验证和测试。原始数据存储与文件中，通过`dataset.source`加载到内存，然后使用`dataset.transform`对数据进行处理转换，最终通过`dataset.Reader`的接口可以获得用于训练、验证和测试的batch数据。
+我们采用`data.Dataset`表示一份数据，比如`COCO`数据包含3份数据，分别用于训练、验证和测试。原始数据存储与文件中，通过`data.source`加载到内存，然后使用`data.transform`对数据进行处理转换，最终通过`data.Reader`的接口可以获得用于训练、验证和测试的batch数据。
 
 子功能介绍：
 
 1. 数据解析  
-     数据解析得到的是`dataset.Dataset`,实现逻辑位于`dataset.source`中。通过它可以实现解析不同格式的数据集，已支持的数据源包括：
+     数据解析得到的是`data.Dataset`,实现逻辑位于`data.source`中。通过它可以实现解析不同格式的数据集，已支持的数据源包括：
 - COCO数据源
      该数据集目前分为COCO2012和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
 
@@ -83,7 +83,7 @@
 
 ```
 我们在`./tools/`中提供了一个生成roidb数据集的代码，可以通过下面命令实现该功能。
-```python
+```
 # --type: 原始数据集的类别（只能是xml或者json）
 # --annotation: 一个包含所需标注文件名的文件的路径
 # --save-dir: 保存路径
@@ -95,13 +95,13 @@ python ./tools/generate_data_for_training.py
             --samples=-1
 ```
  2. 图片预处理  
-    图片预处理通过包括图片解码、缩放、裁剪等操作，我们采用`dataset.transform.operator`算子的方式来统一实现，这样能方便扩展。此外，多个算子还可以组合形成复杂的处理流程, 并被`dataset.transformer`中的转换器使用，比如多线程完成一个复杂的预处理流程。
+    图片预处理通过包括图片解码、缩放、裁剪等操作，我们采用`data.transform.operator`算子的方式来统一实现，这样能方便扩展。此外，多个算子还可以组合形成复杂的处理流程, 并被`data.transformer`中的转换器使用，比如多线程完成一个复杂的预处理流程。
 
  3. 数据转换器  
-    数据转换器的功能是完成对某个`dataset.Dataset`进行转换处理，从而得到一个新的`dataset.Dataset`。我们采用装饰器模式实现各种不同的`dataset.transform.transformer`。比如用于多进程预处理的`dataset.transform.paralle_map`转换器。
+    数据转换器的功能是完成对某个`data.Dataset`进行转换处理，从而得到一个新的`data.Dataset`。我们采用装饰器模式实现各种不同的`data.transform.transformer`。比如用于多进程预处理的`dataset.transform.paralle_map`转换器。
 
  4. 数据获取接口  
-     为方便训练时的数据获取，我们将多个`dataset.Dataset`组合在一起构成一个`dataset.Reader`为用户提供数据，用户只需要调用`Reader.[train|eval|infer]`即可获得对应的数据流。`Reader`支持yaml文件配置数据地址、预处理过程、加速方式等。
+     为方便训练时的数据获取，我们将多个`data.Dataset`组合在一起构成一个`data.Reader`为用户提供数据，用户只需要调用`Reader.[train|eval|infer]`即可获得对应的数据流。`Reader`支持yaml文件配置数据地址、预处理过程、加速方式等。
 
 主要的APIs如下：
 
@@ -110,10 +110,10 @@ python ./tools/generate_data_for_training.py
 
 1. 数据解析  
 
- - `source/coco_loader.py`：用于解析COCO数据集。[详见代码](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/coco_loader.py)
- - `source/voc_loader.py`：用于解析Pascal VOC数据集。[详见代码](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/voc_loader.py)  
+ - `source/coco_loader.py`：用于解析COCO数据集。[详见代码](../ppdet/data/source/coco_loader.py)
+ - `source/voc_loader.py`：用于解析Pascal VOC数据集。[详见代码](../ppdet/data/source/voc_loader.py)  
  [注意]在使用VOC数据集时，若不使用默认的label列表，则需要先使用`tools/generate_data_for_training.py`生成`label_list.txt`（使用方式与数据解析中的roidb数据集获取过程一致），或提供`label_list.txt`放置于`data/pascalvoc/ImageSets/Main`中；同时在配置文件中设置参数`use_default_label`为`true`。
- - `source/loader.py`：用于解析Roidb数据集。[详见代码](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/loader.py)
+ - `source/loader.py`：用于解析Roidb数据集。[详见代码](../ppdet/data/source/loader.py)
 
 2. 算子  
  `transform/operators.py`：包含多种数据增强方式，主要包括：  
@@ -164,7 +164,7 @@ coco = Reader(ccfg.DATA, ccfg.TRANSFORM, maxiter=-1)
 #### 如何使用自定义数据集？
 
 - 选择1：将数据集转换为VOC格式或者COCO格式。
-```python
+```
  # 在./tools/中提供了labelme2coco.py用于将labelme标注的数据集转换为COCO数据集
  python ./tools/labelme2coco.py --json_input_dir ./labelme_annos/
                                 --image_input_dir ./labelme_imgs/
