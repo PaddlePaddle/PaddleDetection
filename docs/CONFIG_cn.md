@@ -103,13 +103,13 @@ class RPNHead(object):
 
 ```yaml
 RPNHead:
-  test_prop:
+  test_proposal:
     eta: 1.0
     min_size: 0.1
     nms_thresh: 0.5
     post_nms_top_n: 1000
     pre_nms_top_n: 6000
-  train_prop:
+  train_proposal:
     eta: 1.0
     min_size: 0.1
     nms_thresh: 0.5

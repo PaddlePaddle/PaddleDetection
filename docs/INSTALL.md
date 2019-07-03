@@ -13,7 +13,7 @@
 ## Introduction
 
 This document covers how to install PaddleDetection, its dependencies
-(including PaddlePaddle), together with COCO and PASCAL VOC dataset.
+(including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
 For general information about PaddleDetection, please see [README.md](../README.md).
 
@@ -68,12 +68,12 @@ with the following commands:
 ```
 cd <path/to/clone/models>
 git clone https://github.com/PaddlePaddle/models
-cd models/PaddleCV/object_detection
+cd models/PaddleCV/PaddleDetection
 ```
 
 **Install Python dependencies:**
 
-Required python packages are specified in [requirements.txt](./requirements.txt), and can be installed with:
+Required python packages are specified in [requirements.txt](../requirements.txt), and can be installed with:
 
 ```
 pip install -r requirements.txt
@@ -89,31 +89,31 @@ python ppdet/modeling/tests/test_architectures.py
 
 ## Datasets
 
-PaddleDetection includes support for [MSCOCO](http://cocodataset.org) and [PASCAL VOC](http://host.robots.ox.ac.uk/pascal/VOC/) by default, please follow these instructions to set up the dataset.
+PaddleDetection includes support for [COCO](http://cocodataset.org) and [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) by default, please follow these instructions to set up the dataset.
 
 **Create symlinks for local datasets:**
 
-Default dataset path in config files is `data/coco` and `data/voc`, if the
+Default dataset path in config files is `dataset/coco` and `dataset/voc`, if the
 datasets are already available on disk, you can simply create symlinks to
 their directories:
 
 ```
-ln -sf <path/to/coco> <path/to/paddle_detection>/data/coco
-ln -sf <path/to/voc> <path/to/paddle_detection>/data/voc
+ln -sf <path/to/coco> <path/to/paddle_detection>/dataset/coco
+ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 ```
 
 **Download datasets manually:**
 
 On the other hand, to download the datasets, run the following commands:
 
-- MS-COCO
+- COCO
 
 ```
 cd dataset/coco
 ./download.sh
 ```
 
-- PASCAL VOC
+- Pascal VOC
 
 ```
 cd dataset/voc
@@ -123,8 +123,8 @@ cd dataset/voc
 **Download datasets automatically:**
 
 If a training session is started but the dataset is not setup properly (e.g,
-not found in `data/coc` or `data/voc`), PaddleDetection can automatically
-download them from [MSCOCO-2017](http://images.cocodataset.org) and
+not found in `dataset/coco` or `dataset/voc`), PaddleDetection can automatically
+download them from [COCO-2017](http://images.cocodataset.org) and
 [VOC2012](http://host.robots.ox.ac.uk/pascal/VOC), the decompressed datasets
 will be cached in `~/.cache/paddle/dataset/` and can be discovered automatically
 subsequently.

@@ -14,7 +14,7 @@
      该数据集目前分为COCO2012和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
 
   ```
-  data/coco/
+  dataset/coco/
   ├── annotations
   │   ├── instances_train2014.json
   │   ├── instances_train2017.json

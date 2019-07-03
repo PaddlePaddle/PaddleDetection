@@ -26,7 +26,7 @@ following data sources are supported:
 Loads `COCO` type datasets with directory structures like this:
 
   ```
-  data/coco/
+  dataset/coco/
   ├── annotations
   │   ├── instances_train2017.json
   │   ├── instances_val2017.json
@@ -167,7 +167,7 @@ The main APIs are as follows:
 
 #### Canned Datasets
 
-Preset for common datasets, e.g., `MS-COCO` and `Pascal Voc` are included. In
+Preset for common datasets, e.g., `COCO` and `Pascal Voc` are included. In
 most cases, user can simply use these canned dataset as is. Moreover, the
 whole data pipeline is fully customizable through the yaml configuration files.
 
