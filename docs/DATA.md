@@ -10,16 +10,16 @@ im_info, im_id, gt_bbox, gt_class, is_crowd), (...)]`.
 The data pipeline consists of four sub-systems: data parsing, image
 pre-processing, data conversion and data feeding APIs.
 
-Data samples are collected to form `dataset.Dataset`s, usually 3 sets are
+Data samples are collected to form `data.Dataset`s, usually 3 sets are
 needed for training, validation, and testing respectively.
 
-First, `dataset.source` loads the data files into memory, then
-`dataset.transform` processes them, and lastly, the batched samples
-are fetched by `dataset.Reader`.
+First, `data.source` loads the data files into memory, then
+`data.transform` processes them, and lastly, the batched samples
+are fetched by `data.Reader`.
 
 Sub-systems details:
 1. Data parsing
-Parses various data sources and creates `dataset.Dataset` instances. Currently,
+Parses various data sources and creates `data.Dataset` instances. Currently,
 following data sources are supported:
 
 - COCO data source
@@ -104,19 +104,19 @@ python ./tools/generate_data_for_training.py
 ```
 
  2. Image preprocessing
-the `dataset.transform.operator` module provides operations such as image
+the `data.transform.operator` module provides operations such as image
 decoding, expanding, cropping, etc. Multiple operators are combined to form
 larger processing pipelines.
 
  3. Data transformer
-Transform a `dataset.Dataset` to achieve various desired effects, Notably: the
-`dataset.transform.paralle_map` transformer accelerates image processing with
+Transform a `data.Dataset` to achieve various desired effects, Notably: the
+`data.transform.paralle_map` transformer accelerates image processing with
 multi-threads or multi-processes. More transformers can be found in
-`dataset.transform.transformer`.
+`data.transform.transformer`.
 
  4. Data feeding apis
-To facilitate data pipeline building, we combine multiple `dataset.Dataset` to
-form a `dataset.Reader` which can provide data for training, validation and
+To facilitate data pipeline building, we combine multiple `data.Dataset` to
+form a `data.Reader` which can provide data for training, validation and
 testing respectively. Users can simply call `Reader.[train|eval|infer]` to get
 the corresponding data stream. Many aspect of the `Reader`, such as storage
 location, preprocessing pipeline, acceleration mode can be configured with yaml
@@ -126,13 +126,13 @@ The main APIs are as follows:
 
 1. Data parsing
 
- - `source/coco_loader.py`: COCO dataset parser. [source](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/coco_loader.py)
- - `source/voc_loader.py`: Pascal VOC dataset parser. [source](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/voc_loader.py)
+ - `source/coco_loader.py`: COCO dataset parser. [source](../ppdet/data/source/coco_loader.py)
+ - `source/voc_loader.py`: Pascal VOC dataset parser. [source](../ppdet/data/source/voc_loader.py)
  [Note] To use a non-default label list for VOC datasets, a `label_list.txt`
  file is needed, one can use the provided label list
  (`data/pascalvoc/ImageSets/Main/label_list.txt`) or generate a custom one (with `tools/generate_data_for_training.py`). Also, `use_default_label` option should
  be set to `false` in the configuration file
- - `source/loader.py`: Roidb dataset parser. [source](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/object_detection/ppdet/data/source/loader.py)
+ - `source/loader.py`: Roidb dataset parser. [source](../ppdet/data/source/loader.py)
 
 2. Operator
  `transform/operators.py`: Contains a variety of data enhancement methods, including:
