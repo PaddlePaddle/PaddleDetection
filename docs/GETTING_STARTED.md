@@ -72,6 +72,18 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 The visualization files are saved in `output` by default, to specify a different
 path, simply add a `--save_file=` flag.
 
+- Save inference model
+
+```bash
+export CUDA_VISIBLE_DEVICES=0
+# or run on CPU with:
+# export CPU_NUM=1
+python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg \
+                      --save_inference_model
+```
+
+Save inference model by set `--save_inference_model`.
+
 
 ## FAQ
 
