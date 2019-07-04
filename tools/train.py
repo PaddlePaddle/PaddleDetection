@@ -126,8 +126,9 @@ def main():
     build_strategy.memory_optimize = False
     build_strategy.enable_inplace = True
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
-    # only enable sync_bn in multi-devices
-    build_strategy.sync_batch_norm = sync_bn and devices_num > 1
+    # only enable sync_bn in multi GPU devices
+    build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
+				     and cfg.use_gpu
     train_compile_program = fluid.compiler.CompiledProgram(
         train_prog).with_data_parallel(
             loss_name=loss.name, build_strategy=build_strategy)
