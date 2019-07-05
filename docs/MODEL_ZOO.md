@@ -67,8 +67,10 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet34     | 416  |    8    |   270e  |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34     | 320  |    8    |   270e  |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 
-**NOTE**: Yolo v3 trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
-randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling.
+**NOTE**: Yolo v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
+randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. Yolo v3 used randomly
+reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
+results of image size 608/416/320 above.
 
 ### RetinaNet
 
@@ -85,5 +87,5 @@ randomly color distortion, randomly cropping, randomly expansion, randomly inter
 | :----------- | :--: | :-----: | :-----: | :----: | :-------: |
 | MobileNet v1 | 300  |    32   |   120e  |  73.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
 
-**NOTE**: SSD trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
+**NOTE**: SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
 randomly cropping, randomly expansion, randomly flipping.

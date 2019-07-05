@@ -30,6 +30,7 @@ from ppdet.data.data_feed import create_reader
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
+from ppdet.utils.check import check_gpu
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -108,6 +109,9 @@ def main():
         raise ValueError("'architecture' not specified in config file.")
 
     merge_config(FLAGS.opt)
+
+    # check if set use_gpu=True in paddlepaddle cpu version
+    check_gpu(cfg.use_gpu)
 
     if 'test_feed' not in cfg:
         test_feed = create(main_arch + 'TestFeed')

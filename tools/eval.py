@@ -24,6 +24,7 @@ import paddle.fluid as fluid
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
+from ppdet.utils.check import check_gpu
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
 from ppdet.core.workspace import load_config, merge_config, create
@@ -45,6 +46,9 @@ def main():
         raise ValueError("'architecture' not specified in config file.")
 
     merge_config(FLAGS.opt)
+
+    # check if set use_gpu=True in paddlepaddle cpu version
+    check_gpu(cfg.use_gpu)
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()

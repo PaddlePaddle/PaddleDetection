@@ -56,6 +56,8 @@ Advanced Features:
 - [x] **Modulated Deformable Convolution**: pretrained models to be released.
 - [x] **Deformable PSRoI Pooling**: pretrained models to be released.
 
+**NOTE:** Synchronized batch normalization can only be used on multiple GPU devices, can not be used on CPU devices or single GPU device.
+
 
 ## Model zoo
 
