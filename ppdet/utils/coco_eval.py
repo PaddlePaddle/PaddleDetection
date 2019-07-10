@@ -144,13 +144,13 @@ def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
             continue
 
         masks = t['mask'][0]
-        im_shape = t['im_shape'][0][0]
 
         s = 0
         # for each sample
         for i in range(len(lengths)):
             num = lengths[i]
             im_id = int(im_ids[i][0])
+            im_shape = t['im_shape'][0][i]
 
             bbox = bboxes[s:s + num][:, 2:]
             clsid_scores = bboxes[s:s + num][:, 0:2]
