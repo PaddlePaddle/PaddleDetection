@@ -97,7 +97,7 @@ def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
                                   target_vars=target_vars,
                                   executor=exe,
                                   main_program=infer_prog,
-                                  params_filename="__parmas__")
+                                  params_filename="__params__")
 
 
 def main():
