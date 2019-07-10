@@ -64,7 +64,7 @@ class FasterRCNN(object):
             gt_box = feed_vars['gt_box']
             is_crowd = feed_vars['is_crowd']
         else:
-            im_shape = feed_vars['im_info']
+            im_shape = feed_vars['im_shape']
         body_feats = self.backbone(im)
         body_feat_names = list(body_feats.keys())
 
