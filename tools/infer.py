@@ -164,6 +164,12 @@ def main():
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
+    # whether output bbox is normalized in model output layer
+    is_bbox_normalized = False
+    if hasattr(model, 'is_bbox_normalized') and \
+            callable(model.is_bbox_normalized):
+        is_bbox_normalized = model.is_bbox_normalized()
+
     imid2path = reader.imid2path
     for iter_id, data in enumerate(reader()):
         outs = exe.run(infer_prog,
@@ -178,7 +184,6 @@ def main():
 
         bbox_results = None
         mask_results = None
-        is_bbox_normalized = True if cfg.metric == 'VOC' else False
         if 'bbox' in res:
             bbox_results = bbox2out([res], clsid2catid, is_bbox_normalized)
         if 'mask' in res:
