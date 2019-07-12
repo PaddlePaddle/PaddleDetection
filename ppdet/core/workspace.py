@@ -21,6 +21,7 @@ import os
 import sys
 
 import yaml
+import copy
 
 from .config.schema import SchemaDict, extract_schema
 from .config.yaml_helpers import serializable
@@ -163,4 +164,7 @@ def create(cls_or_name, **kwargs):
                     kwargs[k] = target
             else:
                 raise ValueError("Unsupported injection type:", target_key)
+    # prevent modification of global config values of reference types
+    # (e.g., list, dict) from within the created module instances
+    kwargs = copy.deepcopy(kwargs)
     return cls(**kwargs)
