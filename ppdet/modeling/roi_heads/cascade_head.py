@@ -197,7 +197,7 @@ class CascadeBBoxHead(object):
             # only use fg box delta to decode box
             bbox_pred_new = fluid.layers.slice(
                 bbox_pred_new, axes=[1], starts=[1], ends=[2])
-            bbox_pred_new = fluid.layers.expand(bbox_pred_new, [1, 81, 1])
+            bbox_pred_new = fluid.layers.expand(bbox_pred_new, [1, self.num_classes, 1])
         decoded_box = fluid.layers.box_coder(
             prior_box=proposals_boxes,
             prior_box_var=bbox_reg_w,
