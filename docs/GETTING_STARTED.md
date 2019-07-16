@@ -1,6 +1,6 @@
 # Getting Started
 
-For setting up the test environment, please refer to [installation
+For setting up the running environment, please refer to [installation
 instructions](INSTALL.md).
 
 
@@ -24,12 +24,13 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 ```
 
 - Datasets is stored in `dataset/coco` by default (configurable).
+- Datasets will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
 - Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
 - Model checkpoints is saved in `output` by default (configurable).
 - To check out hyper parameters used, please refer to the config file.
 
 Alternating between training epoch and evaluation run is possible, simply pass
-in `--eval=True` to do so (tested with `SSD` detector on Pascal-VOC, not
+in `--eval` to do so (tested with `SSD` detector on Pascal-VOC, not
 recommended for two stage models or training sessions on COCO dataset)
 
 
@@ -82,7 +83,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
                       --save_inference_model
 ```
 
-Save inference model by set `--save_inference_model`.
+Save inference model by set `--save_inference_model`, which can be loaded by PaddlePaddle predict library.
 
 
 ## FAQ

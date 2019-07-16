@@ -26,8 +26,9 @@ Please make sure your PaddlePaddle installation was successful and the version
 of your PaddlePaddle is not lower than required. Verify with the following commands.
 
 ```
-# To check if PaddlePaddle installation was sucessful
-python -c "from paddle.fluid import fluid; fluid.install_check.run_check()"
+# To check PaddlePaddle installation in your Python interpreter
+>>> import paddle.fluid as fluid 
+>>> fluid.install_check.run_check()
 
 # To check PaddlePaddle version
 python -c "import paddle; print(paddle.__version__)"
@@ -45,7 +46,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 [COCO-API](https://github.com/cocodataset/cocoapi):
 
-COCO-API is needed for training. Installation is as follows:
+COCO-API is needed for running. Installation is as follows:
 
     git clone https://github.com/cocodataset/cocoapi.git
     cd cocoapi/PythonAPI
