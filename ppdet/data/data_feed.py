@@ -181,7 +181,6 @@ class DataSet(object):
     Args:
         annotation (str): annotation file path
         image_dir (str): directory where image files are stored
-        num_classes (int): number of classes
         shuffle (bool): shuffle samples
     """
     __source__ = 'RoiDbSource'

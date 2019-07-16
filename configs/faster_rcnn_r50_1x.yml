@@ -10,6 +10,7 @@ snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
 weights: output/faster_rcnn_r50_1x/model_final
+num_classes: 81
 
 FasterRCNN:
   backbone: ResNet
@@ -64,7 +65,6 @@ BBoxAssigner:
   bg_thresh_lo: 0.0
   fg_fraction: 0.25
   fg_thresh: 0.5
-  num_classes: 81
 
 BBoxHead:
   head: ResNetC5
@@ -72,7 +72,6 @@ BBoxHead:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
-  num_classes: 81
 
 LearningRate:
   base_lr: 0.01

@@ -10,6 +10,7 @@ save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
 weights: output/faster_rcnn_r101_vd_fpn_1x/model_final
 metric: COCO
+num_classes: 81
 
 FasterRCNN:
   backbone: ResNet
@@ -74,7 +75,6 @@ BBoxAssigner:
   bg_thresh_lo: 0.0
   fg_fraction: 0.25
   fg_thresh: 0.5
-  num_classes: 81
 
 BBoxHead:
   head: TwoFCHead
@@ -82,7 +82,6 @@ BBoxHead:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
-  num_classes: 81
 
 TwoFCHead:
   num_chan: 1024

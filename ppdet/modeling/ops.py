@@ -88,6 +88,7 @@ class GenerateProposals(object):
 class MaskAssigner(object):
     __op__ = fluid.layers.generate_mask_labels
     __append_doc__ = True
+    __shared__ = ['num_classes']
 
     def __init__(self, num_classes=81, resolution=14):
         super(MaskAssigner, self).__init__()
@@ -123,6 +124,7 @@ class MultiClassNMS(object):
 class BBoxAssigner(object):
     __op__ = fluid.layers.generate_proposal_labels
     __append_doc__ = True
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  batch_size_per_im=512,

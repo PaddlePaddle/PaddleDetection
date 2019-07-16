@@ -26,6 +26,8 @@ __all__ = ['BBoxAssigner', 'MaskAssigner', 'CascadeBBoxAssigner']
 
 @register
 class CascadeBBoxAssigner(object):
+    __shared__ = ['num_classes']
+
     def __init__(self,
                  batch_size_per_im=512,
                  fg_fraction=.25,

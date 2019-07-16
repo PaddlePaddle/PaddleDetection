@@ -25,7 +25,7 @@ from paddle.fluid.regularizer import L2Decay
 from ppdet.modeling.ops import (AnchorGenerator, RetinaTargetAssign,
                                 RetinaOutputDecoder)
 
-from ppdet.core.workspace import register, serializable
+from ppdet.core.workspace import register
 
 __all__ = ['RetinaHead']
 
@@ -52,6 +52,7 @@ class RetinaHead(object):
         sigma (float): The parameter in smooth l1 loss
     """
     __inject__ = ['anchor_generator', 'target_assign', 'output_decoder']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  anchor_generator=AnchorGenerator().__dict__,
@@ -333,7 +334,6 @@ class RetinaHead(object):
         cls_pred_reshape_list = output['cls_pred']
         bbox_pred_reshape_list = output['bbox_pred']
         anchor_reshape_list = output['anchor']
-        anchor_var_reshape_list = output['anchor_var']
         for i in range(self.max_level - self.min_level + 1):
             cls_pred_reshape_list[i] = fluid.layers.sigmoid(
                 cls_pred_reshape_list[i])

@@ -10,6 +10,7 @@ save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 weights: output/mask_rcnn_r50_fpn_2x/model_final/
 metric: COCO
+num_classes: 81
 
 MaskRCNN:
   backbone: ResNet
@@ -68,7 +69,6 @@ FPNRoIAlign:
 MaskHead:
   dilation: 1
   num_chan_reduced: 256
-  num_classes: 81
   num_convs: 4
   resolution: 28
 
@@ -79,7 +79,6 @@ BBoxAssigner:
   bg_thresh_lo: 0.0
   fg_fraction: 0.25
   fg_thresh: 0.5
-  num_classes: 81
 
 MaskAssigner:
   resolution: 28
@@ -90,7 +89,6 @@ BBoxHead:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
-  num_classes: 81
 
 TwoFCHead:
   num_chan: 1024
@@ -116,7 +114,7 @@ OptimizerBuilder:
 MaskRCNNTrainFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/coco 
+    dataset_dir: dataset/coco
     annotation: annotations/instances_train2017.json
     image_dir: train2017
   batch_transforms:
@@ -127,7 +125,7 @@ MaskRCNNTrainFeed:
 MaskRCNNEvalFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/coco 
+    dataset_dir: dataset/coco
     annotation: annotations/instances_val2017.json
     image_dir: val2017
   batch_transforms:

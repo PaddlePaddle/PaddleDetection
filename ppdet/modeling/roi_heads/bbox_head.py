@@ -92,12 +92,13 @@ class BBoxHead(object):
     RCNN bbox head
 
     Args:
-        head (object): the head module instance, e.g., `ResNetC5` or `TwoFCHead`
+        head (object): the head module instance, e.g., `ResNetC5`, `TwoFCHead`
         box_coder (object): `BoxCoder` instance
         nms (object): `MultiClassNMS` instance
         num_classes: number of output classes
     """
     __inject__ = ['head', 'box_coder', 'nms']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  head,

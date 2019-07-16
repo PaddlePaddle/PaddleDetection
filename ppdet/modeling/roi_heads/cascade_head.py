@@ -37,6 +37,7 @@ class CascadeBBoxHead(object):
         num_classes: number of output classes
     """
     __inject__ = ['head', 'nms']
+    __shared__ = ['num_classes']
 
     def __init__(self, head, nms=MultiClassNMS().__dict__, num_classes=81):
         super(CascadeBBoxHead, self).__init__()

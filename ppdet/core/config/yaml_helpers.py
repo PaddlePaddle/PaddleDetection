@@ -16,6 +16,7 @@ import importlib
 import inspect
 
 import yaml
+from .schema import SharedConfig
 
 __all__ = ['serializable', 'Callable']
 
@@ -59,7 +60,8 @@ def _make_python_representer(cls):
 
 def serializable(cls):
     """
-    Add loader and dumper for given class, which must be "trivially serializable"
+    Add loader and dumper for given class, which must be
+    "trivially serializable"
 
     Args:
         cls: class to be serialized
@@ -70,6 +72,10 @@ def serializable(cls):
                          _make_python_constructor(cls))
     yaml.add_representer(cls, _make_python_representer(cls))
     return cls
+
+
+yaml.add_representer(SharedConfig,
+                     lambda d, o: d.represent_data(o.default_value))
 
 
 @serializable

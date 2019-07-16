@@ -43,13 +43,14 @@ except Exception:
         if not check_type.__warning_sent__:
             from ppdet.utils.cli import ColorTTY
             color_tty = ColorTTY()
-            message = "typeguard is not installed, type checking is not available"
+            message = "typeguard is not installed," \
+                + "type checking is not available"
             print(color_tty.yellow(message))
             check_type.__warning_sent__ = True
 
     check_type.__warning_sent__ = False
 
-__all__ = ['SchemaValue', 'SchemaDict', 'extract_schema']
+__all__ = ['SchemaValue', 'SchemaDict', 'SharedConfig', 'extract_schema']
 
 
 class SchemaValue(object):
@@ -160,6 +161,27 @@ class SchemaDict(dict):
                 self.name, ", ".join(mismatch_keys)))
 
 
+class SharedConfig(object):
+    """
+    Representation class for `__shared__` annotations, which work as follows:
+
+    - if `key` is set for the module in config file, its value will take
+      precedence
+    - if `key` is not set for the module but present in the config file, its
+      value will be used
+    - otherwise, use the provided `default_value` as fallback
+
+    Args:
+        key: config[key] will be injected
+        default_value: fallback value
+    """
+
+    def __init__(self, key, default_value=None):
+        super(SharedConfig, self).__init__()
+        self.key = key
+        self.default_value = default_value
+
+
 def extract_schema(cls):
     """
     Extract schema from a given class
@@ -216,6 +238,7 @@ def extract_schema(cls):
     schema.strict = not has_kwargs
     schema.pymodule = importlib.import_module(cls.__module__)
     schema.inject = getattr(cls, '__inject__', [])
+    schema.shared = getattr(cls, '__shared__', [])
     for idx, name in enumerate(names):
         comment = name in comments and comments[name] or name
         if name in schema.inject:
@@ -223,8 +246,13 @@ def extract_schema(cls):
         else:
             type_ = name in annotations and annotations[name] or None
         value_schema = SchemaValue(name, comment, type_)
-        if idx >= num_required:
-            value_schema.set_default(defaults[idx - num_required])
+        if name in schema.shared:
+            assert idx >= num_required, "shared config must have default value"
+            default = defaults[idx - num_required]
+            value_schema.set_default(SharedConfig(name, default))
+        elif idx >= num_required:
+            default = defaults[idx - num_required]
+            value_schema.set_default(default)
         schema.set_schema(name, value_schema)
 
     return schema

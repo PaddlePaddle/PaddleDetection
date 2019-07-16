@@ -38,6 +38,8 @@ class MaskHead(object):
         num_classes (int): number of output classes
     """
 
+    __shared__ = ['num_classes']
+
     def __init__(self,
                  num_convs=0,
                  num_chan_reduced=256,

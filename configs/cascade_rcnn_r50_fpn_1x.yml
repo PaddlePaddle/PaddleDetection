@@ -10,6 +10,7 @@ save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 weights: output/cascade_rcnn_r50_fpn_1x/model_final
 metric: COCO
+num_classes: 81
 
 CascadeRCNN:
   backbone: ResNet
@@ -74,7 +75,6 @@ CascadeBBoxAssigner:
   bg_thresh_hi: [0.5, 0.6, 0.7]
   fg_thresh: [0.5, 0.6, 0.7]
   fg_fraction: 0.25
-  num_classes: 81
 
 CascadeBBoxHead:
   head: FC6FC7Head
@@ -82,7 +82,6 @@ CascadeBBoxHead:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
-  num_classes: 81
 
 FC6FC7Head:
   num_chan: 1024
