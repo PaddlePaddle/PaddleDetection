@@ -2,7 +2,7 @@ architecture: FasterRCNN
 train_feed: FasterRCNNTrainFeed
 eval_feed: FasterRCNNEvalFeed
 test_feed: FasterRCNNTestFeed
-max_iters: 180000
+max_iters: 360000
 snapshot_iter: 10000
 use_gpu: true
 log_smooth_window: 20
@@ -10,7 +10,6 @@ save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNeXt101_vd_64x4d_pretrained.tar
 weights: output/faster_rcnn_x101_vd_64x4d_fpn_1x/model_final
 metric: COCO
-num_classes: 81
 
 FasterRCNN:
   backbone: ResNeXt
@@ -77,6 +76,7 @@ BBoxAssigner:
   bg_thresh_lo: 0.0
   fg_fraction: 0.25
   fg_thresh: 0.5
+  num_classes: 81
 
 BBoxHead:
   head: TwoFCHead
@@ -84,6 +84,7 @@ BBoxHead:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
+  num_classes: 81
 
 TwoFCHead:
   num_chan: 1024
@@ -93,8 +94,7 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
-    values: null
+    milestones: [240000, 320000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000

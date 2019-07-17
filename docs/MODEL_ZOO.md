@@ -49,8 +49,9 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet101-FPN        | Faster         |    1    |   2x    |  39.1  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_fpn_2x.tar) |
 | ResNet101-FPN        | Mask           |    1    |   1x    |  39.5  |  35.2   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r101_fpn_1x.tar) |
 | ResNet101-vd-FPN     | Faster         |    1    |   1x    |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_1x.tar) |
-| ResNet101-vd-FPN     | Faster         |    1    |   2x    |  40.6  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_fpn_2x.tar) |
+| ResNet101-vd-FPN     | Faster         |    1    |   2x    |  40.8  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_2x.tar) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   1x    |  42.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_1x.tar) |
+| ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |  41.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_2x.tar) |
 | SENet154-vd-FPN      | Faster         |    1    |  1.44x  |  42.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_se154_vd_fpn_s1x.tar) |
 | SENet154-vd-FPN      | Mask           |    1    |  1.44x  |  44.0  |  38.7   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_se154_vd_fpn_s1x.tar) |
 

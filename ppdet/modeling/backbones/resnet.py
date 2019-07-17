@@ -119,6 +119,7 @@ class ResNet(object):
             regularizer=L2Decay(norm_decay))
 
         if self.norm_type in ['bn', 'sync_bn']:
+            global_stats = True if self.freeze_norm else False
             out = fluid.layers.batch_norm(
                 input=conv,
                 act=act,
@@ -126,7 +127,8 @@ class ResNet(object):
                 param_attr=pattr,
                 bias_attr=battr,
                 moving_mean_name=bn_name + '_mean',
-                moving_variance_name=bn_name + '_variance', )
+                moving_variance_name=bn_name + '_variance',
+                use_global_stats=global_stats)
             scale = fluid.framework._get_var(pattr.name)
             bias = fluid.framework._get_var(battr.name)
         elif self.norm_type == 'affine_channel':
