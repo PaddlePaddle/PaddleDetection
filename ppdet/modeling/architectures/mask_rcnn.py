@@ -149,7 +149,11 @@ class MaskRCNN(object):
             cond = fluid.layers.less_than(x=bbox_size, y=size)
 
             mask_pred = fluid.layers.create_global_var(
-                shape=[1], value=0.0, dtype='float32', persistable=False)
+                shape=[1],
+                value=0.0,
+                dtype='float32',
+                persistable=False,
+                name='mask_pred')
 
             with fluid.layers.control_flow.Switch() as switch:
                 with switch.case(cond):
