@@ -82,7 +82,7 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
 
     segm_results = mask2out(results, clsid2catid, resolution, thresh_binarize)
     assert len(
-        segms_results) > 0, "The number of valid mask detected is zero.\n \
+        segm_results) > 0, "The number of valid mask detected is zero.\n \
         Please use reasonable model and check input data."
 
     with open(outfile, 'w') as f:
