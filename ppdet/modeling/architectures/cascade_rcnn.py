@@ -49,6 +49,7 @@ class CascadeRCNN(object):
                  roi_extractor='FPNRoIAlign',
                  bbox_head='CascadeBBoxHead',
                  bbox_assigner='CascadeBBoxAssigner',
+                 rpn_only=False,
                  fpn='FPN'):
         super(CascadeRCNN, self).__init__()
         assert fpn is not None, "cascade RCNN requires FPN"
@@ -58,6 +59,7 @@ class CascadeRCNN(object):
         self.bbox_assigner = bbox_assigner
         self.roi_extractor = roi_extractor
         self.bbox_head = bbox_head
+        self.rpn_only = rpn_only
         # Cascade local cfg
         self.cls_agnostic_bbox_reg = 2
         (brw0, brw1, brw2) = self.bbox_assigner.bbox_reg_weights
@@ -88,6 +90,12 @@ class CascadeRCNN(object):
 
         if mode == 'train':
             rpn_loss = self.rpn_head.get_loss(im_info, gt_box, is_crowd)
+        else:
+            if self.rpn_only:
+                im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+                im_scale = fluid.layers.sequence_expand(im_scale, rois)
+                rois = rois / im_scale
+                return {'proposal': rois}
 
         proposal_list = []
         roi_feat_list = []

@@ -30,7 +30,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'bbox_eval', 'mask_eval', 'bbox2out', 'mask2out', 'get_category_info'
+    'bbox_eval',
+    'mask_eval',
+    'bbox2out',
+    'mask2out',
+    'get_category_info',
+    'proposal_eval',
 ]
 
 
@@ -40,6 +45,34 @@ def clip_bbox(bbox):
     xmax = max(min(bbox[2], 1.), 0.)
     ymax = max(min(bbox[3], 1.), 0.)
     return xmin, ymin, xmax, ymax
+
+
+def proposal_eval(results, anno_file, outfile, max_dets=(100, 300, 1000)):
+    assert 'proposal' in results[0]
+    assert outfile.endswith('.json')
+
+    xywh_results = proposal2out(results)
+    assert len(
+        xywh_results) > 0, "The number of valid proposal detected is zero.\n \
+        Please use reasonable model and check input data."
+
+    with open(outfile, 'w') as f:
+        json.dump(xywh_results, f)
+
+    coco_gt = COCO(anno_file)
+
+    logger.info("Start evaluate...")
+    coco_dt = coco_gt.loadRes(outfile)
+    coco_ev = COCOeval(coco_gt, coco_dt, 'bbox')
+
+    coco_ev.params.useCats = 0
+    coco_ev.params.maxDets = list(max_dets)
+
+    coco_ev.evaluate()
+    coco_ev.accumulate()
+    coco_ev.summarize()
+    # flush coco evaluation result
+    sys.stdout.flush()
 
 
 def bbox_eval(results, anno_file, outfile, with_background=True):
@@ -94,6 +127,44 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     coco_ev.evaluate()
     coco_ev.accumulate()
     coco_ev.summarize()
+
+
+def proposal2out(results, is_bbox_normalized=False):
+    xywh_res = []
+    for t in results:
+        bboxes = t['proposal'][0]
+        lengths = t['proposal'][1][0]
+        im_ids = np.array(t['im_id'][0])
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+
+        k = 0
+        for i in range(len(lengths)):
+            num = lengths[i]
+            im_id = int(im_ids[i][0])
+            for j in range(num):
+                dt = bboxes[k]
+                xmin, ymin, xmax, ymax = dt.tolist()
+
+                if is_bbox_normalized:
+                    xmin, ymin, xmax, ymax = \
+                            clip_bbox([xmin, ymin, xmax, ymax])
+                    w = xmax - xmin
+                    h = ymax - ymin
+                else:
+                    w = xmax - xmin + 1
+                    h = ymax - ymin + 1
+
+                bbox = [xmin, ymin, w, h]
+                coco_res = {
+                    'image_id': im_id,
+                    'category_id': 1,
+                    'bbox': bbox,
+                    'score': 1.0
+                }
+                xywh_res.append(coco_res)
+                k += 1
+    return xywh_res
 
 
 def bbox2out(results, clsid2catid, is_bbox_normalized=False):
