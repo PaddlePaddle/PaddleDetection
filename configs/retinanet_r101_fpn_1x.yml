@@ -101,5 +101,5 @@ FasterRCNNTestFeed:
   - !PadBatch
     pad_to_stride: 128
   dataset:
-    annotation: annotations/instances_val2017.json
+    annotation: dataset/coco/annotations/instances_val2017.json
   num_workers: 2

@@ -129,7 +129,7 @@ FasterRCNNEvalFeed:
 FasterRCNNTestFeed:
   batch_size: 1
   dataset:
-    annotation: coco/annotations/instances_val2017.json
+    annotation: dataset/coco/coco/annotations/instances_val2017.json
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32

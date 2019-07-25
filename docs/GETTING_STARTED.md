@@ -71,7 +71,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 ```
 
 The visualization files are saved in `output` by default, to specify a different
-path, simply add a `--save_file=` flag.
+path, simply add a `--output_dir=` flag.
 
 - Save inference model
 

@@ -114,4 +114,4 @@ FasterRCNNEvalFeed:
 FasterRCNNTestFeed:
   batch_size: 1
   dataset:
-    annotation: annotations/instances_val2017.json
+    annotation: dataset/coco/annotations/instances_val2017.json

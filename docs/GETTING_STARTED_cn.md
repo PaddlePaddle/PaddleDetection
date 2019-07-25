@@ -68,7 +68,7 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 ```
 
-可视化文件默认保存在`output`中，可通过`--save_file=`指定不同的输出路径。
+可视化文件默认保存在`output`中，可通过`--output_dir=`指定不同的输出路径。
 
 - 保存推断模型
 
