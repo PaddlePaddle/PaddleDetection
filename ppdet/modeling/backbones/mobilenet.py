@@ -57,7 +57,6 @@ class MobileNet(object):
                    num_filters,
                    stride,
                    padding,
-                   channels=None,
                    num_groups=1,
                    act='relu',
                    use_cudnn=True,
@@ -125,22 +124,21 @@ class MobileNet(object):
                      num_filters2,
                      num_groups,
                      stride,
-                     scale,
                      name=None):
         pointwise_conv = self._conv_norm(
             input=input,
             filter_size=1,
-            num_filters=int(num_filters1 * scale),
+            num_filters=int(num_filters1),
             stride=1,
-            num_groups=int(num_groups * scale),
+            num_groups=int(num_groups),
             padding=0,
             name=name + "_extra1")
         normal_conv = self._conv_norm(
             input=pointwise_conv,
             filter_size=3,
-            num_filters=int(num_filters2 * scale),
+            num_filters=int(num_filters2),
             stride=2,
-            num_groups=int(num_groups * scale),
+            num_groups=int(num_groups),
             padding=1,
             name=name + "_extra2")
         return normal_conv
@@ -150,7 +148,7 @@ class MobileNet(object):
 
         blocks = []
         # input 1/1
-        out = self._conv_norm(input, 3, int(32 * scale), 2, 1, 3, name="conv1")
+        out = self._conv_norm(input, 3, int(32 * scale), 2, 1, name="conv1")
         # 1/2
         out = self.depthwise_separable(
             out, 32, 64, 32, 1, scale, name="conv2_1")
@@ -186,11 +184,11 @@ class MobileNet(object):
 
         num_filters = self.extra_block_filters
         module14 = self._extra_block(module13, num_filters[0][0],
-                                     num_filters[0][1], 1, 2, scale, "conv7_1")
+                                     num_filters[0][1], 1, 2, "conv7_1")
         module15 = self._extra_block(module14, num_filters[1][0],
-                                     num_filters[1][1], 1, 2, scale, "conv7_2")
+                                     num_filters[1][1], 1, 2, "conv7_2")
         module16 = self._extra_block(module15, num_filters[2][0],
-                                     num_filters[2][1], 1, 2, scale, "conv7_3")
+                                     num_filters[2][1], 1, 2, "conv7_3")
         module17 = self._extra_block(module16, num_filters[3][0],
-                                     num_filters[3][1], 1, 2, scale, "conv7_4")
+                                     num_filters[3][1], 1, 2, "conv7_4")
         return module11, module13, module14, module15, module16, module17
