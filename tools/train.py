@@ -171,8 +171,9 @@ def main():
             it, np.mean(outs[-1]), logs, end_time - start_time)
         logger.info(strs)
 
-        if it > 0 and it % cfg.snapshot_iter == 0:
-            checkpoint.save(exe, train_prog, os.path.join(save_dir, str(it)))
+        if it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1:
+            save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
+            checkpoint.save(exe, train_prog, os.path.join(save_dir, save_name))
 
             if FLAGS.eval:
                 # evaluation
@@ -184,7 +185,6 @@ def main():
                 eval_results(results, eval_feed, cfg.metric, resolution,
                              FLAGS.output_file)
 
-    checkpoint.save(exe, train_prog, os.path.join(save_dir, "model_final"))
     train_pyreader.reset()
 
 
