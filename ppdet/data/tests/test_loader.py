@@ -51,7 +51,7 @@ class TestLoader(unittest.TestCase):
     def test_load_coco_in_json(self):
         """ test loading COCO data in json file
         """
-        from data.source.coco_loader import load
+        from ppdet.data.source.coco_loader import load
         if not os.path.exists(self.anno_path):
             logging.warn('not found %s, so skip this test' % (self.anno_path))
             return
@@ -71,7 +71,7 @@ class TestLoader(unittest.TestCase):
             return
 
         samples = 10
-        from data.source.loader import load_roidb
+        from ppdet.data.source.loader import load_roidb
         records, cname2cid = load_roidb(anno_path, samples)
         self.assertEqual(len(records), samples)
         self.assertGreater(len(cname2cid), 0)
@@ -79,7 +79,7 @@ class TestLoader(unittest.TestCase):
     def test_load_voc_in_xml(self):
         """ test loading VOC data in xml files
         """
-        from data.source.voc_loader import load
+        from ppdet.data.source.voc_loader import load
         if not os.path.exists(self.anno_path1):
             logging.warn('not found %s, so skip this test' % (self.anno_path1))
             return
@@ -98,7 +98,7 @@ class TestLoader(unittest.TestCase):
             return
 
         samples = 3
-        from loader import load_roidb
+        from ppdet.data.source.loader import load_roidb
         records, cname2cid = load_roidb(anno_path, samples)
         self.assertEqual(len(records), samples)
         self.assertGreater(len(cname2cid), 0)

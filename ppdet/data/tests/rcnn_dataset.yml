@@ -19,7 +19,7 @@ TRANSFORM:
             - OP: ResizeImage
               TARGET_SIZE: 800
               MAX_SIZE: 1333
-            - OP: Rgb2Bgr
+            - OP: Permute
               TO_BGR: False
             - OP: ArrangeRCNN
         BATCH_SIZE: 1

@@ -6,8 +6,8 @@ import logging
 import numpy as np
 
 import set_env
-from data import build_source
-from data import transform as tf
+import ppdet.data.transform as tf
+from ppdet.data.source import build_source
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class TestTransformer(unittest.TestCase):
     def test_map(self):
         """ test transformer.map
         """
-        mapper = tf.build(self.ops)
+        mapper = tf.build_mapper(self.ops)
         ds = build_source(self.sc_config)
         mapped_ds = tf.map(ds, mapper)
         ct = 0
@@ -66,7 +66,7 @@ class TestTransformer(unittest.TestCase):
     def test_parallel_map(self):
         """ test transformer.map with concurrent workers
         """
-        mapper = tf.build(self.ops)
+        mapper = tf.build_mapper(self.ops)
         ds = build_source(self.sc_config)
         worker_conf = {'WORKER_NUM': 2, 'use_process': True}
         mapped_ds = tf.map(ds, mapper, worker_conf)
@@ -91,7 +91,7 @@ class TestTransformer(unittest.TestCase):
         """ test batched dataset
         """
         batchsize = 2
-        mapper = tf.build(self.ops)
+        mapper = tf.build_mapper(self.ops)
         ds = build_source(self.sc_config)
         mapped_ds = tf.map(ds, mapper)
         batched_ds = tf.batch(mapped_ds, batchsize, True)

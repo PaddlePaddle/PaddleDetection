@@ -7,7 +7,7 @@ import numpy as np
 import yaml
 
 import set_env
-from data import Reader
+from ppdet.data.reader import Reader
 
 
 class TestReader(unittest.TestCase):

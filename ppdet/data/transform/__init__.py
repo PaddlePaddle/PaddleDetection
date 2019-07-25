@@ -17,6 +17,7 @@ from __future__ import print_function
 
 import copy
 import logging
+import traceback
 
 from .transformer import MappedDataset, BatchedDataset
 from .post_map import build_post_map
@@ -76,7 +77,10 @@ def build_mapper(ops, context=None):
                 out = f(sample, ctx)
                 sample = out
             except Exception as e:
-                logger.warn("fail to map op [{}] with error: {}".format(f, e))
+                stack_info = traceback.format_exc()
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".format(f, e, str(stack_info)))
+                raise e
+
         return out
 
     _mapper.ops = op_repr

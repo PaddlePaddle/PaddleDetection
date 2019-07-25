@@ -540,7 +540,9 @@ class CropImage(BaseOperator):
         gt_class = sample['gt_class']
         im_width = sample['w']
         im_height = sample['h']
-        gt_score = sample['gt_score']
+        gt_score = None
+        if 'gt_score' in sample:
+            gt_score = sample['gt_score']
         sampled_bbox = []
         gt_bbox = gt_bbox.tolist()
         for sampler in self.batch_sampler:
