@@ -105,7 +105,8 @@ def main():
             optimizer = optim_builder(lr)
             optimizer.minimize(loss)
 
-    train_reader = create_reader(train_feed, cfg.max_iters * devices_num)
+    train_reader = create_reader(train_feed, cfg.max_iters * devices_num,
+                                 FLAGS.dataset_dir)
     train_pyreader.decorate_sample_list_generator(train_reader, place)
 
     # parse train fetches
@@ -121,7 +122,7 @@ def main():
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(eval_feed)
+        eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
         eval_pyreader.decorate_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -197,7 +198,7 @@ def main():
                 resolution = None
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
-                eval_results(results, eval_feed, cfg.metric, cfg.num_classes, 
+                eval_results(results, eval_feed, cfg.metric, cfg.num_classes,
                              resolution, is_bbox_normalized, FLAGS.output_file)
 
     train_pyreader.reset()
@@ -222,5 +223,11 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation file name, default to bbox.json and mask.json.")
+    parser.add_argument(
+        "-d",
+        "--dataset_dir",
+        default=None,
+        type=str,
+        help="Dataset path, same as DataFeed.dataset.dataset_dir")
     FLAGS = parser.parse_args()
     main()

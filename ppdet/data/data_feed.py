@@ -42,7 +42,7 @@ __all__ = [
 ]
 
 
-def create_reader(feed, max_iter=0):
+def create_reader(feed, max_iter=0, args_path=None):
     """
     Return iterable data reader.
 
@@ -52,11 +52,11 @@ def create_reader(feed, max_iter=0):
 
     # if `DATASET_DIR` does not exists, search ~/.paddle/dataset for a directory
     # named `DATASET_DIR` (e.g., coco, pascal), if not present either, download
-    if feed.dataset.dataset_dir:
+    dataset_home = args_path if args_path else feed.dataset.dataset_dir
+    if dataset_home:
         annotation = getattr(feed.dataset, 'annotation', None)
         image_dir = getattr(feed.dataset, 'image_dir', None)
-        dataset_dir = get_dataset_path(feed.dataset.dataset_dir,
-                                       annotation, image_dir)
+        dataset_dir = get_dataset_path(dataset_home, annotation, image_dir)
         if annotation:
             feed.dataset.annotation = os.path.join(dataset_dir, annotation)
         if image_dir:
