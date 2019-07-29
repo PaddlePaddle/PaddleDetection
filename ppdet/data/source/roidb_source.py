@@ -76,6 +76,7 @@ class RoiDbSource(Dataset):
         self._mixup_epoch = mixup_epoch
         self._with_background = with_background
         self.cname2cid = cname2cid
+        self._imid2path = None
 
     def __str__(self):
         return 'RoiDbSource(fname:%s,epoch:%d,size:%d,pos:%d)' \
@@ -156,3 +157,14 @@ class RoiDbSource(Dataset):
         """ return epoch id for latest sample
         """
         return self._epoch
+
+    def get_imid2path(self):
+        """return image id to image path map"""
+        if self._imid2path is None:
+            self._imid2path = {}
+            for record in self._roidb:
+                im_id = record['im_id']
+                im_id = im_id if isinstance(im_id, int) else im_id[0]
+                im_path = os.path.join(self._image_dir, record['im_file'])
+                self._imid2path[im_id] = im_path
+        return self._imid2path

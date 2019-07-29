@@ -10,11 +10,11 @@ log_smooth_window: 1
 metric: VOC
 save_dir: output
 weights: output/ssd_mobilenet_v1_voc/model_final/
+num_classes: 21
 
 SSD:
   backbone: MobileNet
   multi_box_head: MultiBoxHead
-  num_classes: 21
   metric:
     ap_version: 11point
     evaluate_difficult: false

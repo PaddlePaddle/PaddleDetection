@@ -87,7 +87,7 @@ results of image size 608/416/320 above.
 
 | Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |
 | :----------- | :--: | :-----: | :-----: | :----: | :-------: |
-| MobileNet v1 | 300  |    32   |   120e  |  73.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
+| MobileNet v1 | 300  |    32   |   120e  |  73.13  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
 
 **NOTE**: SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
 randomly cropping, randomly expansion, randomly flipping.

@@ -39,6 +39,7 @@ class SSD(object):
 
     __category__ = 'architecture'
     __inject__ = ['backbone', 'multi_box_head', 'output_decoder', 'metric']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  backbone,
@@ -56,7 +57,7 @@ class SSD(object):
             self.output_decoder = SSDOutputDecoder(**output_decoder)
         if isinstance(metric, dict):
             self.metric = SSDMetric(**metric)
-        
+
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
         if mode == 'train' or mode == 'eval':
@@ -100,4 +101,3 @@ class SSD(object):
         # SSD use output_decoder in output layers, bbox is normalized
         # to range [0, 1], is_bbox_normalized is used in infer.py
         return True
-

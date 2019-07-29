@@ -744,7 +744,6 @@ class SSDEvalFeed(DataFeed):
                 DecodeImage(to_rgb=True, with_mixup=False),
                 NormalizeBox(),
                 ResizeImage(target_size=300, use_cv2=False, interp=1),
-                RandomFlipImage(is_normalized=True),
                 Permute(),
                 NormalizeImage(
                     mean=[127.5, 127.5, 127.5],

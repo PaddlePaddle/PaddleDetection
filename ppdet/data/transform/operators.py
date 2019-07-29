@@ -126,6 +126,11 @@ class ResizeImage(BaseOperator):
                  interp=cv2.INTER_LINEAR,
                  use_cv2=True):
         """
+        Rescale image to the specified target size, and capped at max_size
+        if max_size != 0.
+        If target_size is list, selected a scale randomly as the specified
+        target size.
+
         Args:
             target_size (int|list): the target size of image's short side, 
                 multi-scale training is adopted when type is list.
@@ -172,15 +177,19 @@ class ResizeImage(BaseOperator):
                 im_scale = float(self.max_size) / float(im_size_max)
             im_scale_x = im_scale
             im_scale_y = im_scale
+
+            resize_w = np.round(im_scale_x * float(im_shape[1]))
+            resize_h = np.round(im_scale_y * float(im_shape[0]))
+
             sample['im_info'] = np.array(
-                [
-                    np.round(im_shape[0] * im_scale),
-                    np.round(im_shape[1] * im_scale), im_scale
-                ],
-                dtype=np.float32)
+                [resize_h, resize_w, im_scale], dtype=np.float32)
         else:
             im_scale_x = float(selected_size) / float(im_shape[1])
             im_scale_y = float(selected_size) / float(im_shape[0])
+
+            resize_w = selected_size
+            resize_h = selected_size
+
         if self.use_cv2:
             im = cv2.resize(
                 im,
@@ -191,8 +200,6 @@ class ResizeImage(BaseOperator):
                 interpolation=self.interp)
         else:
             im = Image.fromarray(im)
-            resize_w = selected_size * im_scale_x
-            resize_h = selected_size * im_scale_y
             im = im.resize((resize_w, resize_h), self.interp)
             im = np.array(im)
 
