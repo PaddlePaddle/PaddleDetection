@@ -20,8 +20,6 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-# or run on CPU with:
-# export CPU_NUM=8
 python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 ```
 
@@ -32,10 +30,10 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 - To check out hyper parameters used, please refer to the config file.
 - RCNN models training on CPU is not supported on PaddlePaddle<=1.5.1 and will be fixed on later version.
 
-Alternating between training epoch and evaluation run is possible, simply pass
-in `--eval` to do so (tested with `SSD` detector on Pascal-VOC, not
-recommended for two stage models or training sessions on COCO dataset)
 
+Alternating between training epoch and evaluation run is possible, simply pass
+in `--eval` to do so and evaluate at each snapshot_iter. If evaluation dataset is large and
+causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training.
 
 ## Evaluation
 

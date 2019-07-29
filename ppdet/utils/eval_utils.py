@@ -90,12 +90,12 @@ def eval_run(exe, compile_program, pyreader, keys, values, cls):
     return results
 
 
-def eval_results(results, 
-                 feed, 
-                 metric, 
+def eval_results(results,
+                 feed,
+                 metric,
                  num_classes,
-                 resolution=None, 
-                 is_bbox_normalized=False, 
+                 resolution=None,
+                 is_bbox_normalized=False,
                  output_file=None):
     """Evaluation for evaluation program results"""
     if metric == 'COCO':
@@ -122,5 +122,5 @@ def eval_results(results,
             res = np.mean(results[-1]['accum_map'][0])
             logger.info('mAP: {:.2f}'.format(res * 100.))
         elif 'bbox' in results[0]:
-            voc_bbox_eval(results, num_classes,
-                          is_bbox_normalized=is_bbox_normalized)
+            voc_bbox_eval(
+                results, num_classes, is_bbox_normalized=is_bbox_normalized)

@@ -132,7 +132,7 @@ RPNHead:
 Example snippet that make use of the `RPNHead` module.
 
 ```python
-from ppdet.core.worskspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config, create
 
 load_config('some_config_file.yml')
 merge_config(more_config_options_from_command_line)

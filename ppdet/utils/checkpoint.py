@@ -28,7 +28,11 @@ from .download import get_weights_path
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['load_checkpoint', 'load_and_fusebn', 'save']
+__all__ = [
+    'load_checkpoint',
+    'load_and_fusebn',
+    'save',
+]
 
 
 def is_url(path):

@@ -19,7 +19,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-# 若使用CPU，则执行
+# or run on CPU with:
 # export CPU_NUM=8
 python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 ```
@@ -31,9 +31,9 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 - 更多参数配置，请参考配置文件。
 - RCNN系列模型CPU训练在PaddlePaddle 1.5.1及以下版本暂不支持，将在下个版本修复。
 
-可通过设置`--eval`在训练epoch中交替执行评估（已在在Pascal-VOC数据集上
-用`SSD`检测器验证，不推荐在COCO数据集上的两阶段模型上执行交替评估）
 
+可通过设置`--eval`在训练epoch中交替执行评估, 评估在每个snapshot_iter时开始。
+如果验证集很大，测试将会比较耗时，影响训练速度，建议减少评估次数，或训练完再进行评估。
 
 ## 评估
 

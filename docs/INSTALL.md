@@ -27,7 +27,7 @@ of your PaddlePaddle is not lower than required. Verify with the following comma
 
 ```
 # To check PaddlePaddle installation in your Python interpreter
->>> import paddle.fluid as fluid 
+>>> import paddle.fluid as fluid
 >>> fluid.install_check.run_check()
 
 # To check PaddlePaddle version

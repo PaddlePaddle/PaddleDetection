@@ -1,7 +1,7 @@
-# Installation
+# 安装文档
 
 ---
-## Table of Contents
+## 目录
 
 - [简介](#introduction)
 - [PaddlePaddle](#paddlepaddle)
@@ -26,7 +26,7 @@ PaddleDetection的相关信息，请参考[README.md](../README.md).
 
 ```
 # 在您的Python解释器中确认PaddlePaddle安装成功
->>> import paddle.fluid as fluid 
+>>> import paddle.fluid as fluid
 >>> fluid.install_check.run_check()
 
 # 确认PaddlePaddle版本
