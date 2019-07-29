@@ -169,6 +169,8 @@ def main():
         save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
     # parse infer fetches
+    assert cfg.metric in ['COCO', 'VOC'], \
+            "unknown metric type {}".format(cfg.metric)
     extra_keys = []
     if cfg['metric'] == 'COCO':
         extra_keys = ['im_info', 'im_id', 'im_shape']

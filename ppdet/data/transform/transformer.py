@@ -66,12 +66,14 @@ class BatchedDataset(ProxiedDataset):
         ds (instance of Dataset): dataset to be batched
         batchsize (int): sample number for each batch
         drop_last (bool): drop last samples when not enough for one batch
+        drop_empty (bool): drop samples which have empty field
     """
 
-    def __init__(self, ds, batchsize, drop_last=False):
+    def __init__(self, ds, batchsize, drop_last=False, drop_empty=True):
         super(BatchedDataset, self).__init__(ds)
         self._batchsz = batchsize
         self._drop_last = drop_last
+        self._drop_empty = drop_empty
 
     def next(self):
         """proxy to self._ds.next"""
@@ -95,7 +97,7 @@ class BatchedDataset(ProxiedDataset):
         for _ in range(self._batchsz):
             try:
                 out = self._ds.next()
-                while has_empty(out):
+                while self._drop_empty and has_empty(out):
                     out = self._ds.next()
                 batch.append(out)
             except StopIteration:

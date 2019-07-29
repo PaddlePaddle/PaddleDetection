@@ -41,6 +41,7 @@ class YOLOv3Head(object):
         nms (object): an instance of `MultiClassNMS`
     """
     __inject__ = ['nms']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  norm_decay=0.,
@@ -277,13 +278,13 @@ class YOLOv3Head(object):
 
         return sum(losses)
 
-    def get_prediction(self, input, im_shape):
+    def get_prediction(self, input, im_size):
         """
         Get prediction result of YOLOv3 network
 
         Args:
             input (list): List of Variables, output of backbone stages
-            im_shape (Variable): Variable of shape([h, w]) of each image
+            im_size (Variable): Variable of size([h, w]) of each image
 
         Returns:
             pred (Variable): The prediction result after non-max suppress.
@@ -298,7 +299,7 @@ class YOLOv3Head(object):
         for i, output in enumerate(outputs):
             box, score = fluid.layers.yolo_box(
                 x=output,
-                img_size=im_shape,
+                img_size=im_size,
                 anchors=self.mask_anchors[i],
                 class_num=self.num_classes,
                 conf_thresh=self.nms.score_threshold,

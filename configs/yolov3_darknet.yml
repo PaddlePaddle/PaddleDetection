@@ -10,6 +10,7 @@ snapshot_iter: 2000
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet/model_final
+num_classes: 80
 
 YOLOv3:
   backbone: DarkNet
@@ -35,7 +36,6 @@ YOLOv3Head:
     nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
-  num_classes: 80
 
 LearningRate:
   base_lr: 0.001

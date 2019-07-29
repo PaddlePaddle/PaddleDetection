@@ -30,6 +30,7 @@ SSD:
 MobileNet:
   norm_decay: 0.
   conv_group_scale: 1
+  conv_learning_rate: 0.1
   extra_block_filters: [[256, 512], [128, 256], [128, 256], [64, 128]]
   with_extra_blocks: true
 

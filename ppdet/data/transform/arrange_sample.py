@@ -229,9 +229,43 @@ class ArrangeYOLO(BaseOperator):
 
 
 @register_op
+class ArrangeEvalYOLO(BaseOperator):
+    """
+    Transform dict to the tuple format needed for evaluation.
+    """
+
+    def __init__(self):
+        super(ArrangeEvalYOLO, self).__init__()
+
+    def __call__(self, sample, context=None):
+        """
+        Args:
+            sample: a dict which contains image
+                    info and annotation info.
+            context: a dict which contains additional info.
+        Returns:
+            sample: a tuple containing the following items:
+                (image, gt_bbox, gt_class, gt_score,
+                 is_crowd, im_info, gt_masks)
+        """
+        im = sample['image']
+        if len(sample['gt_bbox']) != len(sample['gt_class']):
+            raise ValueError("gt num mismatch: bbox and class.")
+        im_id = sample['im_id']
+        h = sample['h']
+        w = sample['w']
+        im_shape = np.array((h, w))
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        difficult = sample['difficult']
+        outs = (im, im_shape, im_id, gt_bbox, gt_class, difficult)
+        return outs
+
+
+@register_op
 class ArrangeTestYOLO(BaseOperator):
     """
-    Transform dict to the tuple format needed for training.
+    Transform dict to the tuple format needed for inference.
     """
 
     def __init__(self):

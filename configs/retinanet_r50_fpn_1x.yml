@@ -10,6 +10,7 @@ log_smooth_window: 20
 snapshot_iter: 10000
 metric: COCO
 save_dir: output
+num_classes: 81
 
 RetinaNet:
   backbone: ResNet
@@ -38,7 +39,6 @@ RetinaHead:
   prior_prob: 0.01
   base_scale: 4
   num_scales_per_octave: 3
-  num_classes: 81
   anchor_generator:
     aspect_ratios: [1.0, 2.0, 0.5]
     variance: [1.0, 1.0, 1.0, 1.0]

@@ -59,8 +59,8 @@ class YOLOv3(object):
                                                 gt_score)
             }
         else:
-            im_shape = feed_vars['im_shape']
-            return self.yolo_head.get_prediction(body_feats, im_shape)
+            im_size = feed_vars['im_size']
+            return self.yolo_head.get_prediction(body_feats, im_size)
 
     def train(self, feed_vars):
         return self.build(feed_vars, mode='train')

@@ -156,6 +156,12 @@ def main():
     elif cfg.pretrain_weights:
         checkpoint.load_pretrain(exe, train_prog, cfg.pretrain_weights)
 
+    # whether output bbox is normalized in model output layer
+    is_bbox_normalized = False
+    if hasattr(model, 'is_bbox_normalized') and \
+            callable(model.is_bbox_normalized):
+        is_bbox_normalized = model.is_bbox_normalized()
+
     train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
     train_pyreader.start()
     start_time = time.time()
@@ -191,8 +197,8 @@ def main():
                 resolution = None
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
-                eval_results(results, eval_feed, cfg.metric, resolution,
-                             FLAGS.output_file)
+                eval_results(results, eval_feed, cfg.metric, cfg.num_classes, 
+                             resolution, is_bbox_normalized, FLAGS.output_file)
 
     train_pyreader.reset()
 

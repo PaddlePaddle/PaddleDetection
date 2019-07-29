@@ -22,14 +22,81 @@ import sys
 import numpy as np
 
 from ..data.source.voc_loader import pascalvoc_label
+from .map_utils import DetectionMAP
 from .coco_eval import bbox2out
 
 import logging
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'bbox2out', 'get_category_info'
+    'bbox_eval', 'bbox2out', 'get_category_info'
 ]
+
+
+def bbox_eval(results, 
+              class_num, 
+              overlap_thresh=0.5,
+              map_type='11point',
+              is_bbox_normalized=False,
+              evaluate_difficult=False):
+    """
+    Bounding box evaluation for VOC dataset
+
+    Args:
+        results (list): prediction bounding box results.
+        class_num (int): evaluation class number.
+        overlap_thresh (float): the postive threshold of 
+                        bbox overlap
+        map_type (string): method for mAP calcualtion,
+                        can only be '11point' or 'integral'
+        is_bbox_normalized (bool): whether bbox is normalized
+                        to range [0, 1].
+        evaluate_difficult (bool): whether to evaluate 
+                        difficult gt bbox.
+    """
+    assert 'bbox' in results[0]
+    logger.info("Start evaluate...")
+
+    detection_map = DetectionMAP(class_num=class_num,
+                        overlap_thresh=overlap_thresh,
+                        map_type=map_type,
+                        is_bbox_normalized=is_bbox_normalized,
+                        evaluate_difficult=evaluate_difficult)
+
+    for t in results:
+        bboxes = t['bbox'][0]
+        bbox_lengths = t['bbox'][1][0]
+
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+
+        gt_boxes = t['gt_box'][0]
+        gt_box_lengths = t['gt_box'][1][0]
+        gt_labels = t['gt_label'][0]
+        assert len(gt_boxes) == len(gt_labels)
+        difficults = t['is_difficult'][0] if not evaluate_difficult \
+                            else None
+        if not evaluate_difficult:
+            assert len(gt_labels) == len(difficults)
+
+        bbox_idx = 0
+        gt_box_idx = 0
+        for i in range(len(bbox_lengths)):
+            bbox_num = bbox_lengths[i]
+            gt_box_num = gt_box_lengths[i]
+            bbox = bboxes[bbox_idx: bbox_idx + bbox_num]
+            gt_box = gt_boxes[gt_box_idx: gt_box_idx + gt_box_num]
+            gt_label = gt_labels[gt_box_idx: gt_box_idx + gt_box_num]
+            difficult = None if difficults is None else \
+                        difficults[gt_box_idx: gt_box_idx + gt_box_num]
+            detection_map.update(bbox, gt_box, gt_label, difficult)
+            bbox_idx += bbox_num
+            gt_box_idx += gt_box_num
+
+    logger.info("Accumulating evaluatation results...")
+    detection_map.accumulate()
+    logger.info("mAP({:.2f}, {}) = {:.2f}".format(overlap_thresh,
+                            map_type, 100. * detection_map.get_map()))
 
 
 def get_category_info(anno_file=None,

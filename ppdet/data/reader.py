@@ -63,7 +63,10 @@ class Reader(object):
             worker_args = {k.lower(): v for k, v in worker_args.items()}
 
         mapped_ds = map(sc, mapper, worker_args)
-        batched_ds = batch(mapped_ds, batchsize, drop_last)
+        # In VAL mode, gt_bbox, gt_label can be empty, and should
+        # not be dropped
+        batched_ds = batch(mapped_ds, batchsize, drop_last, 
+                           drop_empty=(mode!="VAL"))
 
         trans_conf = {k.lower(): v for k, v in self._trans_conf[mode].items()}
         need_keys = {

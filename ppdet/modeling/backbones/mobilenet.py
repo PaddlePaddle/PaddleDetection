@@ -42,12 +42,14 @@ class MobileNet(object):
                  norm_type='bn',
                  norm_decay=0.,
                  conv_group_scale=1,
+                 conv_learning_rate=1.0,
                  with_extra_blocks=False,
                  extra_block_filters=[[256, 512], [128, 256], [128, 256],
                                       [64, 128]]):
         self.norm_type = norm_type
         self.norm_decay = norm_decay
         self.conv_group_scale = conv_group_scale
+        self.conv_learning_rate = conv_learning_rate
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
 
@@ -62,7 +64,7 @@ class MobileNet(object):
                    use_cudnn=True,
                    name=None):
         parameter_attr = ParamAttr(
-            learning_rate=0.1,
+            learning_rate=self.conv_learning_rate,
             initializer=fluid.initializer.MSRA(),
             name=name + "_weights")
         conv = fluid.layers.conv2d(

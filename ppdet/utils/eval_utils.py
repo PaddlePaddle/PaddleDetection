@@ -21,6 +21,8 @@ import numpy as np
 
 import paddle.fluid as fluid
 
+from ppdet.utils.voc_eval import bbox_eval as voc_bbox_eval
+
 __all__ = ['parse_fetches', 'eval_run', 'eval_results']
 
 logger = logging.getLogger(__name__)
@@ -88,7 +90,13 @@ def eval_run(exe, compile_program, pyreader, keys, values, cls):
     return results
 
 
-def eval_results(results, feed, metric, resolution=None, output_file=None):
+def eval_results(results, 
+                 feed, 
+                 metric, 
+                 num_classes,
+                 resolution=None, 
+                 is_bbox_normalized=False, 
+                 output_file=None):
     """Evaluation for evaluation program results"""
     if metric == 'COCO':
         from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
@@ -110,5 +118,9 @@ def eval_results(results, feed, metric, resolution=None, output_file=None):
                 output = '{}_mask.json'.format(output_file)
             mask_eval(results, anno_file, output, resolution)
     else:
-        res = np.mean(results[-1]['accum_map'][0])
-        logger.info('Test mAP: {}'.format(res))
+        if 'accum_map' in results[-1]:
+            res = np.mean(results[-1]['accum_map'][0])
+            logger.info('mAP: {:.2f}'.format(res * 100.))
+        elif 'bbox' in results[0]:
+            voc_bbox_eval(results, num_classes,
+                          is_bbox_normalized=is_bbox_normalized)

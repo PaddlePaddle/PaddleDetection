@@ -32,7 +32,8 @@ feed_var_def = [
     {'name': 'gt_mask',       'shape': [2],  'dtype': 'float32', 'lod_level': 3},
     {'name': 'is_difficult',  'shape': [1],  'dtype': 'int32',   'lod_level': 1},
     {'name': 'gt_score',      'shape': [1],  'dtype': 'float32', 'lod_level': 0},
-    {'name': 'im_shape',      'shape': [3],  'dtype': 'float32',   'lod_level': 0},
+    {'name': 'im_shape',      'shape': [3],  'dtype': 'float32', 'lod_level': 0},
+    {'name': 'im_size',       'shape': [2],  'dtype': 'int32',   'lod_level': 0},
 ]
 # yapf: enable
 
@@ -47,7 +48,8 @@ def create_feed(feed, use_pyreader=True):
         'lod_level': 0
     }
 
-    # YOLO var dim is fixed
+    # tensor padding with 0 is used instead of LoD tensor when 
+    # num_max_boxes is set
     if getattr(feed, 'num_max_boxes', None) is not None:
         feed_var_map['gt_label']['shape'] = [feed.num_max_boxes]
         feed_var_map['gt_score']['shape'] = [feed.num_max_boxes]
@@ -55,8 +57,6 @@ def create_feed(feed, use_pyreader=True):
         feed_var_map['gt_label']['lod_level'] = 0
         feed_var_map['gt_score']['lod_level'] = 0
         feed_var_map['gt_box']['lod_level'] = 0
-        feed_var_map['im_shape']['shape'] = [2]
-        feed_var_map['im_shape']['dtype'] = 'int32'
 
     feed_vars = OrderedDict([(key, fluid.layers.data(
         name=feed_var_map[key]['name'],
