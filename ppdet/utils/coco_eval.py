@@ -22,6 +22,8 @@ import sys
 import json
 import cv2
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 import pycocotools.mask as mask_util

@@ -13,9 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-
 from pycocotools.coco import COCO
 
 import logging

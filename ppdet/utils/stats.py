@@ -61,8 +61,5 @@ class TrainingStats(object):
 
     def log(self, extras=None):
         d = self.get(extras)
-        strs = ', '.join(
-            str(dict({
-                x.encode('utf-8'): y
-            })).strip('{}') for x, y in d.items())
+        strs = ', '.join(str(dict({x: y})).strip('{}') for x, y in d.items())
         return strs
