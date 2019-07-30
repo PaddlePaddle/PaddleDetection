@@ -51,7 +51,7 @@ class CascadeBBoxAssigner(object):
 
         curr_bbox_reg_w = [
             1. / self.bbox_reg_weights[curr_stage],
-            2. / self.bbox_reg_weights[curr_stage],
+            1. / self.bbox_reg_weights[curr_stage],
             2. / self.bbox_reg_weights[curr_stage],
             2. / self.bbox_reg_weights[curr_stage],
         ]
