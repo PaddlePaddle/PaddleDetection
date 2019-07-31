@@ -42,14 +42,7 @@ __all__ = [
 ]
 
 
-def create_reader(feed, max_iter=0, args_path=None):
-    """
-    Return iterable data reader.
-
-    Args:
-        max_iter (int): number of iterations.
-    """
-
+def _prepare_data_config(feed, args_path):
     # if `DATASET_DIR` does not exists, search ~/.paddle/dataset for a directory
     # named `DATASET_DIR` (e.g., coco, pascal), if not present either, download
     dataset_home = args_path if args_path else feed.dataset.dataset_dir
@@ -72,22 +65,36 @@ def create_reader(feed, max_iter=0, args_path=None):
     if getattr(feed, 'use_process', None) is not None:
         use_process = feed.use_process
 
-    mode = feed.mode
     data_config = {
-        mode: {
-            'ANNO_FILE': feed.dataset.annotation,
-            'IMAGE_DIR': feed.dataset.image_dir,
-            'USE_DEFAULT_LABEL': feed.dataset.use_default_label,
-            'IS_SHUFFLE': feed.shuffle,
-            'SAMPLES': feed.samples,
-            'WITH_BACKGROUND': feed.with_background,
-            'MIXUP_EPOCH': mixup_epoch,
-            'TYPE': type(feed.dataset).__source__
-        }
+        'ANNO_FILE': feed.dataset.annotation,
+        'IMAGE_DIR': feed.dataset.image_dir,
+        'USE_DEFAULT_LABEL': feed.dataset.use_default_label,
+        'IS_SHUFFLE': feed.shuffle,
+        'SAMPLES': feed.samples,
+        'WITH_BACKGROUND': feed.with_background,
+        'MIXUP_EPOCH': mixup_epoch,
+        'TYPE': type(feed.dataset).__source__
     }
 
     if len(getattr(feed.dataset, 'images', [])) > 0:
-        data_config[mode]['IMAGES'] = feed.dataset.images
+        data_config['IMAGES'] = feed.dataset.images
+
+    return data_config
+
+
+def create_reader(feed, max_iter=0, args_path=None, my_source=None):
+    """
+    Return iterable data reader.
+
+    Args:
+        max_iter (int): number of iterations.
+        my_source (callable): callable function to create a source iterator
+            which is used to provide source data in 'ppdet.data.reader'
+    """
+
+    # if `DATASET_DIR` does not exists, search ~/.paddle/dataset for a directory
+    # named `DATASET_DIR` (e.g., coco, pascal), if not present either, download
+    data_config = _prepare_data_config(feed, args_path)
 
     transform_config = {
         'WORKER_CONF': {
@@ -130,8 +137,8 @@ def create_reader(feed, max_iter=0, args_path=None):
         ops.append(op_dict)
     transform_config['OPS'] = ops
 
-    reader = Reader(data_config, {mode: transform_config}, max_iter)
-    return reader._make_reader(mode)
+    return Reader.create(feed.mode, data_config,
+        transform_config, max_iter, my_source)
 
 
 # XXX batch transforms are only stubs for now, actually handled by `post_map`

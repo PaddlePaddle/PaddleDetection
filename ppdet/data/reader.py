@@ -40,14 +40,17 @@ class Reader(object):
         self._cname2cid = None
         assert isinstance(self._maxiter, Integral), "maxiter should be int"
 
-    def _make_reader(self, mode):
+    def _make_reader(self, mode, my_source=None):
         """Build reader for training or validation"""
-        file_conf = self._data_cf[mode]
+        if my_source is None:
+            file_conf = self._data_cf[mode]
 
-        # 1, Build data source
+            # 1, Build data source
 
-        sc_conf = {'data_cf': file_conf, 'cname2cid': self._cname2cid}
-        sc = build_source(sc_conf)
+            sc_conf = {'data_cf': file_conf, 'cname2cid': self._cname2cid}
+            sc = build_source(sc_conf)
+        else:
+            sc = my_source
 
         # 2, Buid a transformed dataset
         ops = self._trans_conf[mode]['OPS']
@@ -87,7 +90,7 @@ class Reader(object):
         if mode.lower() == 'train':
             if self._cname2cid is not None:
                 logger.warn('cname2cid already set, it will be overridden')
-            self._cname2cid = sc.cname2cid
+            self._cname2cid = getattr(sc, 'cname2cid', None)
 
         # 3, Build a reader
         maxit = -1 if self._maxiter <= 0 else self._maxiter
@@ -120,3 +123,15 @@ class Reader(object):
     def test(self):
         """Build reader for inference"""
         return self._make_reader('TEST')
+
+    @classmethod
+    def create(cls, mode, data_config,
+            transform_config, max_iter=-1,
+            my_source=None, ret_iter=True):
+        """ create a specific reader """
+        reader = Reader({mode: data_config},
+            {mode: transform_config}, max_iter)
+        if ret_iter:
+            return reader._make_reader(mode, my_source)
+        else:
+            return reader

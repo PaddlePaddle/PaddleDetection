@@ -20,6 +20,7 @@ import copy
 
 from .roidb_source import RoiDbSource
 from .simple_source import SimpleSource
+from .iterator_source import IteratorSource
 
 
 def build_source(config):
@@ -40,10 +41,12 @@ def build_source(config):
         }
     """
     if 'data_cf' in config:
-        data_cf = {k.lower(): v for k, v in config['data_cf'].items()}
+        data_cf = config['data_cf']
         data_cf['cname2cid'] = config['cname2cid']
     else:
         data_cf = config
+
+    data_cf = {k.lower(): v for k, v in data_cf.items()}
 
     args = copy.deepcopy(data_cf)
     # defaut type is 'RoiDbSource'

@@ -8,6 +8,8 @@ import yaml
 
 import set_env
 from ppdet.data.reader import Reader
+from ppdet.data.source import build_source
+from ppdet.data.source import IteratorSource
 
 
 class TestReader(unittest.TestCase):
@@ -113,6 +115,31 @@ class TestReader(unittest.TestCase):
         self.assertEqual(out[0][4].shape[1], 1)
         self.assertEqual(out[0][5].shape[1], 1)
         self.assertGreaterEqual(ct, rcnn._maxiter)
+
+    def test_create(self):
+        """ Test create a reader using my source
+        """
+        def _my_data_reader():
+            mydata = build_source(self.rcnn_conf['DATA']['TRAIN'])
+            for i, sample in enumerate(mydata):
+                yield sample
+
+        my_source = IteratorSource(_my_data_reader)
+        mode = 'TRAIN'
+        train_rd = Reader.create(mode,
+            self.rcnn_conf['DATA'][mode],
+            self.rcnn_conf['TRANSFORM'][mode],
+            max_iter=10, my_source=my_source)
+
+        out = None
+        for sample in train_rd():
+            out = sample
+            self.assertTrue(sample is not None)
+        self.assertEqual(out[0][0].shape[0], 3)
+        self.assertEqual(out[0][1].shape[0], 3)
+        self.assertEqual(out[0][3].shape[1], 4)
+        self.assertEqual(out[0][4].shape[1], 1)
+        self.assertEqual(out[0][5].shape[1], 1)
 
 
 if __name__ == '__main__':

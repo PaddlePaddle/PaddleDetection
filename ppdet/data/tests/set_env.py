@@ -3,6 +3,9 @@ import os
 import six
 import logging
 
+import matplotlib
+matplotlib.use('Agg', force=False)
+
 prefix = os.path.dirname(os.path.abspath(__file__))
 
 #coco data for testing
