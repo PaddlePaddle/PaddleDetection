@@ -55,7 +55,7 @@ class TrainingStats(object):
             for k, v in extras.items():
                 stats[k] = v
         for k, v in self.smoothed_losses_and_metrics.items():
-            stats[k] = round(v.get_median_value(), 6)
+            stats[k] = format(v.get_median_value(), '.6f')
 
         return stats
 

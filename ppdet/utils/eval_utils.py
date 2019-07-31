@@ -18,12 +18,13 @@ from __future__ import print_function
 
 import logging
 import numpy as np
+import os
 
 import paddle.fluid as fluid
 
 from ppdet.utils.voc_eval import bbox_eval as voc_bbox_eval
 
-__all__ = ['parse_fetches', 'eval_run', 'eval_results']
+__all__ = ['parse_fetches', 'eval_run', 'eval_results', 'json_eval_results']
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ def eval_results(results,
                  num_classes,
                  resolution=None,
                  is_bbox_normalized=False,
-                 output_file=None):
+                 output_directory=None):
     """Evaluation for evaluation program results"""
     if metric == 'COCO':
         from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
@@ -104,18 +105,18 @@ def eval_results(results,
         with_background = getattr(feed, 'with_background', True)
         if 'proposal' in results[0]:
             output = 'proposal.json'
-            if output_file:
-                output = '{}_proposal.json'.format(output_file)
+            if output_directory:
+                output = os.path.join(output_directory, 'proposal.json')
             proposal_eval(results, anno_file, output)
         if 'bbox' in results[0]:
             output = 'bbox.json'
-            if output_file:
-                output = '{}_bbox.json'.format(output_file)
+            if output_directory:
+                output = os.path.join(output_directory, 'bbox.json')
             bbox_eval(results, anno_file, output, with_background)
         if 'mask' in results[0]:
             output = 'mask.json'
-            if output_file:
-                output = '{}_mask.json'.format(output_file)
+            if output_directory:
+                output = os.path.join(output_directory, 'mask.json')
             mask_eval(results, anno_file, output, resolution)
     else:
         if 'accum_map' in results[-1]:
@@ -124,3 +125,22 @@ def eval_results(results,
         elif 'bbox' in results[0]:
             voc_bbox_eval(
                 results, num_classes, is_bbox_normalized=is_bbox_normalized)
+
+def json_eval_results(feed, metric, json_directory=None):
+    """
+    cocoapi eval with already exists proposal.json, bbox.json or mask.json
+    """
+    assert metric == 'COCO'
+    from ppdet.utils.coco_eval import cocoapi_eval
+    anno_file = getattr(feed.dataset, 'annotation', None)
+    json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
+    if json_directory:
+        for k, v in enumerate(json_file_list):
+            json_file_list[k] = os.path.join(str(json_directory), v)
+
+    coco_eval_style = ['proposal', 'bbox', 'segm']
+    for i, v_json in enumerate(json_file_list):
+        if os.path.exists(v_json):
+            cocoapi_eval(v_json, coco_eval_style[i], anno_file=anno_file)
+        else:
+            logger.info("{} not exists!".format(v_json))

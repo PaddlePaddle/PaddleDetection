@@ -19,9 +19,20 @@ from __future__ import print_function
 import os
 import multiprocessing
 
+def set_paddle_flags(**kwargs):
+    for key, value in kwargs.items():
+        if os.environ.get(key, None) is None:
+            os.environ[key] = str(value)
+
+# NOTE(paddle-dev): All of these flags should be set before
+# `import paddle`. Otherwise, it would not take any effect.
+set_paddle_flags(
+    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
+)
+
 import paddle.fluid as fluid
 
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
+from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu
@@ -78,6 +89,11 @@ def main():
     reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
     pyreader.decorate_sample_list_generator(reader, place)
 
+    # eval already exists json file
+    if FLAGS.json_eval:
+        json_eval_results(eval_feed, cfg.metric,
+                json_directory=FLAGS.output_eval)
+        return
     # compile program for multi-devices
     if devices_num <= 1:
         compile_program = fluid.compiler.CompiledProgram(eval_prog)
@@ -115,22 +131,25 @@ def main():
     if 'mask' in results[0]:
         resolution = model.mask_head.resolution
     eval_results(results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-                 is_bbox_normalized, FLAGS.output_file)
-
+                 is_bbox_normalized, FLAGS.output_eval)
 
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
-        "-f",
-        "--output_file",
-        default=None,
-        type=str,
-        help="Evaluation file name, default to bbox.json and mask.json.")
+        "--json_eval",
+        action='store_true',
+        default=False,
+        help="Whether to re eval with already exists bbox.json or mask.json")
     parser.add_argument(
         "-d",
         "--dataset_dir",
         default=None,
         type=str,
         help="Dataset path, same as DataFeed.dataset.dataset_dir")
+    parser.add_argument(
+        "--output_eval",
+        default=None,
+        type=str,
+        help="Evaluation file directory, default is current directory.")
     FLAGS = parser.parse_args()
     main()

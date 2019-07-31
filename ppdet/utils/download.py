@@ -76,7 +76,7 @@ def get_dataset_path(path, annotation, image_dir):
     if _dataset_exists(path, annotation, image_dir):
         return path
 
-    logger.info("Dataset {} not exitst, try searching {} or "
+    logger.info("Dataset {} not exists, try searching {} or "
                 "downloading dataset...".format(
                     osp.realpath(path), DATASET_HOME))
 

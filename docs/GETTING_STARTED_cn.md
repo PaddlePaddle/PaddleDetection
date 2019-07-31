@@ -36,7 +36,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 
 - `-r` or `--resume_checkpoint`: 从某一检查点恢复训练，例如: `-r output/faster_rcnn_r50_1x/10000`
 - `--eval`: 是否边训练边测试，默认是 `False`
-- `-p` or `--output_eval`: 如果边训练边测试, 这个参数可以编辑评测保存json路径, 默认是当前目录。
+- `--output_eval`: 如果边训练边测试, 这个参数可以编辑评测保存json路径, 默认是当前目录。
 - `-d` or `--dataset_dir`: 数据集路径, 同配置文件里的`dataset_dir`. 例如: `-d dataset/coco`
 - `-o`: 设置配置文件里的参数内容。 例如: `-o weights=output/faster_rcnn_r50_1x/model_final`
 
@@ -84,7 +84,7 @@ python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
 #### 可选参数
 
 - `-d` or `--dataset_dir`: 数据集路径, 同配置文件里的`dataset_dir`。例如: `-d dataset/coco`
-- `-p` or `--output_eval`: 这个参数可以编辑评测保存json路径, 默认是当前目录。
+- `--output_eval`: 这个参数可以编辑评测保存json路径, 默认是当前目录。
 - `-o`: 设置配置文件里的参数内容。 例如: `-o weights=output/faster_rcnn_r50_1x/model_final`
 - `--json_eval`: 是否通过已存在的bbox.json或者mask.json进行评估。默认是`False`。json文件路径通过`-f`指令来设置。
 
