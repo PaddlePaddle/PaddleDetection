@@ -58,12 +58,6 @@ def _prepare_data_config(feed, args_path):
     mixup_epoch = -1
     if getattr(feed, 'mixup_epoch', None) is not None:
         mixup_epoch = feed.mixup_epoch
-    bufsize = 10
-    use_process = False
-    if getattr(feed, 'bufsize', None) is not None:
-        bufsize = feed.bufsize
-    if getattr(feed, 'use_process', None) is not None:
-        use_process = feed.use_process
 
     data_config = {
         'ANNO_FILE': feed.dataset.annotation,
@@ -95,6 +89,13 @@ def create_reader(feed, max_iter=0, args_path=None, my_source=None):
     # if `DATASET_DIR` does not exists, search ~/.paddle/dataset for a directory
     # named `DATASET_DIR` (e.g., coco, pascal), if not present either, download
     data_config = _prepare_data_config(feed, args_path)
+
+    bufsize = 10
+    use_process = False
+    if getattr(feed, 'bufsize', None) is not None:
+        bufsize = feed.bufsize
+    if getattr(feed, 'use_process', None) is not None:
+        use_process = feed.use_process
 
     transform_config = {
         'WORKER_CONF': {
