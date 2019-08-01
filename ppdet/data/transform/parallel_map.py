@@ -63,6 +63,10 @@ class ParallelMappedDataset(ProxiedDataset):
         use_process = False
         if 'use_process' in self._worker_args:
             use_process = self._worker_args['use_process']
+        if use_process and sys.platform == "win32":
+            logger.info("Use multi-thread reader instead of "
+                        "multi-process reader on Windows.")
+            use_process = False
 
         bufsize = self._worker_args['bufsize']
         if use_process:
