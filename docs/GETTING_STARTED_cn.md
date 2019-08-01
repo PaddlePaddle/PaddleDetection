@@ -76,6 +76,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=$PYTHONPATH:.
 # 若使用CPU，则执行
 # export CPU_NUM=1
 python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
@@ -127,6 +128,7 @@ json文件必须命名为bbox.json或者mask.json，放在`evaluation/`目录下
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=$PYTHONPATH:.
 # 若使用CPU，则执行
 # export CPU_NUM=1
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
@@ -136,6 +138,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=$PYTHONPATH:.
 # 若使用CPU，则执行
 # export CPU_NUM=1
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
@@ -145,7 +148,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 
 - `--output_dir`: 输出推断后可视化文件。
 - `--draw_threshold`: 设置推断的阈值。默认是0.5.
-- `--save_inference_model`: Save inference model in output_dir if True.
+- `--save_inference_model`: 设为`True`时，将预测模型保存到output_dir中.
 
 #### 例子
 
@@ -169,6 +172,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
+export PYTHONPATH=$PYTHONPATH:.
 # or run on CPU with:
 # export CPU_NUM=1
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg \

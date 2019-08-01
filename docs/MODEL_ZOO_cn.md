@@ -95,10 +95,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 **注意事项:** RetinaNet系列模型中，在总batch size为16下情况下，初始学习率改为0.01。
 
-### SSD on Pascal VOC
+### SSD 基于Pascal VOC数据集
 
 |  骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略 | Box AP | 下载  |
 | :----------- | :--: | :-----: | :-----: | :----: | :-------: |
-| MobileNet v1 | 300  |    32   |   120e  |  73.13  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
+| MobileNet v1 | 300  |    32   |   120e  |  73.13  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
 
 **注意事项:** SSD在2卡，总batch size为64下训练120轮。数据增强包括：随机颜色失真，随机剪裁，随机扩张，随机翻转。
