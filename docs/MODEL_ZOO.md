@@ -24,7 +24,7 @@
 
 The backbone models pretrained on ImageNet are available. All backbone models are pretrained on standard ImageNet-1k dataset and can be downloaded [here](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/image_classification#supported-models-and-performances).
 
-- Notes:  The ResNet50 model was trained with cosine LR decay schedule and can be downloaded [here](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar).
+- **Notes:**  The ResNet50 model was trained with cosine LR decay schedule and can be downloaded [here](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar).
 
 ## Baselines
 
@@ -58,6 +58,24 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | SENet154-vd-FPN      | Faster         |    1    |  1.44x  |  42.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_se154_vd_fpn_s1x.tar) |
 | SENet154-vd-FPN      | Mask           |    1    |  1.44x  |  44.0  |  38.7   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_se154_vd_fpn_s1x.tar) |
 
+### Deformable ConvNets v2
+
+| Backbone             | Type           | Conv    | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
+| :------------------- | :------------- | :-----: |:--------: | :-----: | :----: | :-----: | :----------------------------------------------------------: |
+| ResNet50-FPN         | Faster         | c3-c5   |    2      |   1x    |  41.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_fpn_1x.tar) |
+| ResNet50-vd-FPN      | Faster         | c3-c5   |    2      |   2x    |  42.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar) |
+| ResNet101-vd-FPN     | Faster         | c3-c5   |    2      |   1x    |  44.1  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r101_vd_fpn_1x.tar) |
+| ResNeXt101-vd-FPN    | Faster         | c3-c5   |    1      |   1x    |  45.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
+| ResNet50-FPN         | Mask           | c3-c5   |    1      |   1x    |  41.9  |  37.3   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_r50_fpn_1x.tar) |
+| ResNet50-vd-FPN      | Mask           | c3-c5   |    1      |   2x    |  42.9  |  38.0   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_r50_vd_fpn_2x.tar) |
+| ResNet101-vd-FPN     | Mask           | c3-c5   |    1      |   1x    |  44.6  |  39.2   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_r101_vd_fpn_1x.tar) |
+| ResNeXt101-vd-FPN    | Mask           | c3-c5   |    1      |   1x    |  46.2  |  40.4   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
+
+#### Notes:
+- Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
+- `c3-c5` means adding `dcn` in resnet stage 3 to 5.
+- Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/dcn)
+
 ### Yolo v3
 
 | Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |
@@ -86,7 +104,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet34     | 416  |    8    |   270e  |  81.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 | ResNet34     | 320  |    8    |   270e  |  80.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 
-**NOTE**: Yolo v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
+**Notes:** Yolo v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
 randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. Yolo v3 used randomly
 reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
 results of image size 608/416/320 above.
@@ -106,5 +124,5 @@ results of image size 608/416/320 above.
 | :----------- | :--: | :-----: | :-----: | :----: | :-------: |
 | MobileNet v1 | 300  |    32   |   120e  |  73.13  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
 
-**NOTE**: SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
+**Notes:** SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
 randomly cropping, randomly expansion, randomly flipping.

@@ -22,6 +22,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.framework import Variable
 from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import Constant
 
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
@@ -44,6 +45,7 @@ class ResNet(object):
         norm_decay (float): weight decay for normalization layer weights
         variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
         feature_maps (list): index of stages whose feature maps are returned
+        dcn_v2_stages (list): index of stages who select deformable conv v2
     """
 
     def __init__(self,
@@ -53,7 +55,8 @@ class ResNet(object):
                  freeze_norm=True,
                  norm_decay=0.,
                  variant='b',
-                 feature_maps=[2, 3, 4, 5]):
+                 feature_maps=[2, 3, 4, 5],
+                 dcn_v2_stages=[]):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -74,6 +77,7 @@ class ResNet(object):
         self.variant = variant
         self._model_type = 'ResNet'
         self.feature_maps = feature_maps
+        self.dcn_v2_stages = dcn_v2_stages
         self.depth_cfg = {
             18: ([2, 2, 2, 2], self.basicblock),
             34: ([3, 4, 6, 3], self.basicblock),
@@ -85,6 +89,19 @@ class ResNet(object):
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
 
+    def _conv_offset(self, input, filter_size, stride, padding, act=None, name=None):
+        out_channel = filter_size * filter_size * 3
+        out = fluid.layers.conv2d(input,
+            num_filters=out_channel,
+            filter_size=filter_size,
+            stride=stride,
+            padding=padding,
+            param_attr=ParamAttr(initializer=Constant(0.0)),
+            bias_attr=ParamAttr(initializer=Constant(0.0)),
+            act=act,
+            name=name)
+        return out
+
     def _conv_norm(self,
                    input,
                    num_filters,
@@ -92,18 +109,50 @@ class ResNet(object):
                    stride=1,
                    groups=1,
                    act=None,
-                   name=None):
-        conv = fluid.layers.conv2d(
-            input=input,
-            num_filters=num_filters,
-            filter_size=filter_size,
-            stride=stride,
-            padding=(filter_size - 1) // 2,
-            groups=groups,
-            act=None,
-            param_attr=ParamAttr(name=name + "_weights"),
-            bias_attr=False,
-            name=name + '.conv2d.output.1')
+                   name=None,
+                   dcn_v2=False):
+        if not dcn_v2:
+            conv = fluid.layers.conv2d(
+                input=input,
+                num_filters=num_filters,
+                filter_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=groups,
+                act=None,
+                param_attr=ParamAttr(name=name + "_weights"),
+                bias_attr=False,
+                name=name + '.conv2d.output.1')
+        else:
+            # select deformable conv"
+            offset_mask = self._conv_offset(
+                input=input,
+                filter_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                act=None,
+                name=name + "_conv_offset")
+            offset_channel = filter_size ** 2 * 2
+            mask_channel = filter_size ** 2
+            offset, mask = fluid.layers.split(
+                input=offset_mask,
+                num_or_sections=[offset_channel, mask_channel],
+                dim=1)
+            mask = fluid.layers.sigmoid(mask)
+            conv = fluid.layers.deformable_conv(
+                input=input,
+                offset=offset,
+                mask=mask,
+                num_filters=num_filters,
+                filter_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=groups,
+                deformable_groups=1,
+                im2col_step=1,
+                param_attr=ParamAttr(name=name + "_weights"),
+                bias_attr=False,
+                name=name + ".conv2d.output.1")
 
         bn_name = self.na.fix_conv_norm_name(name)
 
@@ -168,7 +217,7 @@ class ResNet(object):
         else:
             return input
 
-    def bottleneck(self, input, num_filters, stride, is_first, name):
+    def bottleneck(self, input, num_filters, stride, is_first, name, dcn_v2=False):
         if self.variant == 'a':
             stride1, stride2 = stride, 1
         else:
@@ -192,7 +241,7 @@ class ResNet(object):
                     [num_filters * expand, 1, 1, None, 1, conv_name3]]
 
         residual = input
-        for (c, k, s, act, g, _name) in conv_def:
+        for i, (c, k, s, act, g, _name) in enumerate(conv_def):
             residual = self._conv_norm(
                 input=residual,
                 num_filters=c,
@@ -200,7 +249,8 @@ class ResNet(object):
                 stride=s,
                 act=act,
                 groups=g,
-                name=_name)
+                name=_name,
+                dcn_v2=(i==1 and dcn_v2))
         short = self._shortcut(
             input,
             num_filters * expand,
@@ -214,7 +264,8 @@ class ResNet(object):
         return fluid.layers.elementwise_add(
             x=short, y=residual, act='relu', name=name + ".add.output.5")
 
-    def basicblock(self, input, num_filters, stride, is_first, name):
+    def basicblock(self, input, num_filters, stride, is_first, name, dcn_v2=False):
+        assert dcn_v2 is False, "Not implemented yet."
         conv0 = self._conv_norm(
             input=input,
             num_filters=num_filters,
@@ -248,6 +299,7 @@ class ResNet(object):
 
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
+        dcn_v2 = True if stage_num in self.dcn_v2_stages else False
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
         conv = input
@@ -260,7 +312,8 @@ class ResNet(object):
                 num_filters=ch_out,
                 stride=2 if i == 0 and stage_num != 2 else 1,
                 is_first=is_first,
-                name=conv_name)
+                name=conv_name,
+                dcn_v2=dcn_v2)
         return conv
 
     def c1_stage(self, input):
