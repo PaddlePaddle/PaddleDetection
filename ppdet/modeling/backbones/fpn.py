@@ -24,6 +24,7 @@ from paddle.fluid.initializer import Xavier
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.core.workspace import register
+from ppdet.modeling.ops import ConvNorm
 
 __all__ = ['FPN']
 
@@ -39,6 +40,7 @@ class FPN(object):
         max_level (int): highest level of the backbone feature map to use
         spatial_scale (list): feature map scaling factor
         has_extra_convs (bool): whether has extral convolutions in higher levels
+        norm_type (str|None): normalization type, 'bn'/'sync_bn'/'affine_channel'
     """
 
     def __init__(self,
@@ -46,28 +48,41 @@ class FPN(object):
                  min_level=2,
                  max_level=6,
                  spatial_scale=[1. / 32., 1. / 16., 1. / 8., 1. / 4.],
-                 has_extra_convs=False):
+                 has_extra_convs=False,
+                 norm_type=None):
         self.num_chan = num_chan
         self.min_level = min_level
         self.max_level = max_level
         self.spatial_scale = spatial_scale
         self.has_extra_convs = has_extra_convs
+        self.norm_type = norm_type
 
     def _add_topdown_lateral(self, body_name, body_input, upper_output):
         lateral_name = 'fpn_inner_' + body_name + '_lateral'
         topdown_name = 'fpn_topdown_' + body_name
         fan = body_input.shape[1]
-        lateral = fluid.layers.conv2d(
-            body_input,
-            self.num_chan,
-            1,
-            param_attr=ParamAttr(
-                name=lateral_name + "_w", initializer=Xavier(fan_out=fan)),
-            bias_attr=ParamAttr(
-                name=lateral_name + "_b",
-                learning_rate=2.,
-                regularizer=L2Decay(0.)),
-            name=lateral_name)
+        if self.norm_type:
+            initializer = Xavier(fan_out=fan)
+            lateral = ConvNorm(
+                body_input,
+                self.num_chan,
+                1,
+                initializer=initializer,
+                norm_type=self.norm_type,
+                name=lateral_name,
+                bn_name=lateral_name)
+        else:
+            lateral = fluid.layers.conv2d(
+                body_input,
+                self.num_chan,
+                1,
+                param_attr=ParamAttr(
+                    name=lateral_name + "_w", initializer=Xavier(fan_out=fan)),
+                bias_attr=ParamAttr(
+                    name=lateral_name + "_b",
+                    learning_rate=2.,
+                    regularizer=L2Decay(0.)),
+                name=lateral_name)
         shape = fluid.layers.shape(upper_output)
         shape_hw = fluid.layers.slice(shape, axes=[0], starts=[2], ends=[4])
         out_shape_ = shape_hw * 2
@@ -97,17 +112,29 @@ class FPN(object):
         fpn_inner_name = 'fpn_inner_' + body_name_list[0]
         body_input = body_dict[body_name_list[0]]
         fan = body_input.shape[1]
-        self.fpn_inner_output[0] = fluid.layers.conv2d(
-            body_input,
-            self.num_chan,
-            1,
-            param_attr=ParamAttr(
-                name=fpn_inner_name + "_w", initializer=Xavier(fan_out=fan)),
-            bias_attr=ParamAttr(
-                name=fpn_inner_name + "_b",
-                learning_rate=2.,
-                regularizer=L2Decay(0.)),
-            name=fpn_inner_name)
+        if self.norm_type:
+            initializer = Xavier(fan_out=fan)
+            self.fpn_inner_output[0] = ConvNorm(
+                body_input,
+                self.num_chan,
+                1,
+                initializer=initializer,
+                norm_type=self.norm_type,
+                name=fpn_inner_name,
+                bn_name=fpn_inner_name)
+        else:
+            self.fpn_inner_output[0] = fluid.layers.conv2d(
+                body_input,
+                self.num_chan,
+                1,
+                param_attr=ParamAttr(
+                    name=fpn_inner_name + "_w",
+                    initializer=Xavier(fan_out=fan)),
+                bias_attr=ParamAttr(
+                    name=fpn_inner_name + "_b",
+                    learning_rate=2.,
+                    regularizer=L2Decay(0.)),
+                name=fpn_inner_name)
         for i in range(1, num_backbone_stages):
             body_name = body_name_list[i]
             body_input = body_dict[body_name]
@@ -120,18 +147,29 @@ class FPN(object):
         for i in range(num_backbone_stages):
             fpn_name = 'fpn_' + body_name_list[i]
             fan = self.fpn_inner_output[i].shape[1] * 3 * 3
-            fpn_output = fluid.layers.conv2d(
-                self.fpn_inner_output[i],
-                self.num_chan,
-                filter_size=3,
-                padding=1,
-                param_attr=ParamAttr(
-                    name=fpn_name + "_w", initializer=Xavier(fan_out=fan)),
-                bias_attr=ParamAttr(
-                    name=fpn_name + "_b",
-                    learning_rate=2.,
-                    regularizer=L2Decay(0.)),
-                name=fpn_name)
+            if self.norm_type:
+                initializer = Xavier(fan_out=fan)
+                fpn_output = ConvNorm(
+                    self.fpn_inner_output[i],
+                    self.num_chan,
+                    3,
+                    initializer=initializer,
+                    norm_type=self.norm_type,
+                    name=fpn_name,
+                    bn_name=fpn_name)
+            else:
+                fpn_output = fluid.layers.conv2d(
+                    self.fpn_inner_output[i],
+                    self.num_chan,
+                    filter_size=3,
+                    padding=1,
+                    param_attr=ParamAttr(
+                        name=fpn_name + "_w", initializer=Xavier(fan_out=fan)),
+                    bias_attr=ParamAttr(
+                        name=fpn_name + "_b",
+                        learning_rate=2.,
+                        regularizer=L2Decay(0.)),
+                    name=fpn_name)
             fpn_dict[fpn_name] = fpn_output
             fpn_name_list.append(fpn_name)
         if not self.has_extra_convs and self.max_level - self.min_level == len(

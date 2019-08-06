@@ -15,13 +15,85 @@
 from numbers import Integral
 
 from paddle import fluid
+from paddle.fluid.param_attr import ParamAttr
+from paddle.fluid.initializer import MSRA
+from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 
 __all__ = [
     'AnchorGenerator', 'RPNTargetAssign', 'GenerateProposals', 'MultiClassNMS',
     'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool', 'MultiBoxHead',
-    'SSDOutputDecoder', 'SSDMetric', 'RetinaTargetAssign', 'RetinaOutputDecoder'
+    'SSDOutputDecoder', 'SSDMetric', 'RetinaTargetAssign',
+    'RetinaOutputDecoder', 'ConvNorm'
 ]
+
+
+def ConvNorm(input,
+             num_filters,
+             filter_size,
+             stride=1,
+             groups=1,
+             norm_decay=0.,
+             norm_type='affine_channel',
+             freeze_norm=False,
+             act=None,
+             bn_name=None,
+             initializer=None,
+             name=None):
+    fan = num_filters
+    conv = fluid.layers.conv2d(
+        input=input,
+        num_filters=num_filters,
+        filter_size=filter_size,
+        stride=stride,
+        padding=(filter_size - 1) // 2,
+        groups=groups,
+        act=None,
+        param_attr=ParamAttr(
+            name=name + "_weights", initializer=initializer),
+        bias_attr=False,
+        name=name + '.conv2d.output.1')
+
+    norm_lr = 0. if freeze_norm else 1.
+    pattr = ParamAttr(
+        name=bn_name + '_scale',
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay))
+    battr = ParamAttr(
+        name=bn_name + '_offset',
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay))
+
+    if norm_type in ['bn', 'sync_bn']:
+        global_stats = True if freeze_norm else False
+        out = fluid.layers.batch_norm(
+            input=conv,
+            act=act,
+            name=bn_name + '.output.1',
+            param_attr=pattr,
+            bias_attr=battr,
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance',
+            use_global_stats=global_stats)
+        scale = fluid.framework._get_var(pattr.name)
+        bias = fluid.framework._get_var(battr.name)
+    elif norm_type == 'affine_channel':
+        scale = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=pattr,
+            default_initializer=fluid.initializer.Constant(1.))
+        bias = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=battr,
+            default_initializer=fluid.initializer.Constant(0.))
+        out = fluid.layers.affine_channel(
+            x=conv, scale=scale, bias=bias, act=act)
+    if freeze_norm:
+        scale.stop_gradient = True
+        bias.stop_gradient = True
+    return out
 
 
 @register
