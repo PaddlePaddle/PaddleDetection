@@ -28,7 +28,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 ```bash
 export CPU_NUM=8
 export PYTHONPATH=$PYTHONPATH:.
-python tools/train.py -c configs/faster_rcnn_r50_1x.yml
+python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
 ```
 
 ##### Optional arguments
@@ -80,10 +80,9 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
 ```
 
@@ -98,10 +97,9 @@ python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
 
 - configuration options && assign Dataset path
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
                         -o weights=output/faster_rcnn_r50_1x/model_final \
                         -d dataset/coco
@@ -109,13 +107,12 @@ python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
 
 - Evaluation with json
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
-		     --json_eval \
-		     -f evaluation/
+             --json_eval \
+             -f evaluation/
 ```
 
 The json file must be named bbox.json or mask.json, placed in the `evaluation/` directory. Or without the `-f` parameter, default is the current directory.
@@ -133,20 +130,18 @@ moment, but it is a planned feature
 - Run inference on a single image:
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
 ```
 
 - Multi-image inference:
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 ```
 
@@ -160,26 +155,24 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 
 - Output specified directory && Set up threshold
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
+export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5
 ```
 The visualization files are saved in `output` by default, to specify a different
-path, simply add a `--output_dir=` flag.         
+path, simply add a `--output_dir=` flag.  
 `--draw_threshold` is an optional argument. Default is 0.5. Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659)
 
 - Save inference model
 
 ```bash
+# run on GPU with:
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONPATH=$PYTHONPATH:.
-# or run on CPU with:
-# export CPU_NUM=1
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --save_inference_model
@@ -192,12 +185,12 @@ Save inference model by set `--save_inference_model`, which can be loaded by Pad
 
 **Q:**  Why do I get `NaN` loss values during single GPU training? </br>
 **A:**  The default learning rate is tuned to multi-GPU training (8x GPUs), it must
-be adapted for single GPU training accordingly (e.g., divide by 8).       
-The calculation rules are as follows，they are equivalent: </br>     
+be adapted for single GPU training accordingly (e.g., divide by 8).  
+The calculation rules are as follows，they are equivalent: </br>  
 
 
-| GPU number  | Learning rate  | Max_iters | Milestones       |       
-| :---------: | :------------: | :-------: | :--------------: |     
+| GPU number  | Learning rate  | Max_iters | Milestones       |  
+| :---------: | :------------: | :-------: | :--------------: |  
 | 2           | 0.0025         | 720000    | [480000, 640000] |
 | 4           | 0.005          | 360000    | [240000, 320000] |
 | 8           | 0.01           | 180000    | [120000, 160000] |
