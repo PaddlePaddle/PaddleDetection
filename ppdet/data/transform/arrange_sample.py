@@ -245,8 +245,8 @@ class ArrangeEvalYOLO(BaseOperator):
             context: a dict which contains additional info.
         Returns:
             sample: a tuple containing the following items:
-                (image, gt_bbox, gt_class, gt_score,
-                 is_crowd, im_info, gt_masks)
+                (image, im_shape, im_id, gt_bbox, gt_class,
+                 difficult)
         """
         im = sample['image']
         if len(sample['gt_bbox']) != len(sample['gt_class']):
@@ -255,9 +255,14 @@ class ArrangeEvalYOLO(BaseOperator):
         h = sample['h']
         w = sample['w']
         im_shape = np.array((h, w))
-        gt_bbox = sample['gt_bbox']
-        gt_class = sample['gt_class']
-        difficult = sample['difficult']
+        gt_bbox = np.zeros((50, 4), dtype=im.dtype)
+        gt_class = np.zeros((50, ), dtype=np.int32)
+        difficult = np.zeros((50, ), dtype=np.int32)
+        gt_num = min(50, len(sample['gt_bbox']))
+        if gt_num > 0:
+            gt_bbox[:gt_num, :] = sample['gt_bbox'][:gt_num, :]
+            gt_class[:gt_num] = sample['gt_class'][:gt_num, 0]
+            difficult[:gt_num] = sample['difficult'][:gt_num, 0]
         outs = (im, im_shape, im_id, gt_bbox, gt_class, difficult)
         return outs
 

@@ -54,9 +54,11 @@ def create_feed(feed, use_pyreader=True):
         feed_var_map['gt_label']['shape'] = [feed.num_max_boxes]
         feed_var_map['gt_score']['shape'] = [feed.num_max_boxes]
         feed_var_map['gt_box']['shape'] = [feed.num_max_boxes, 4]
+        feed_var_map['is_difficult']['shape'] = [feed.num_max_boxes]
         feed_var_map['gt_label']['lod_level'] = 0
         feed_var_map['gt_score']['lod_level'] = 0
         feed_var_map['gt_box']['lod_level'] = 0
+        feed_var_map['is_difficult']['lod_level'] = 0
 
     feed_vars = OrderedDict([(key, fluid.layers.data(
         name=feed_var_map[key]['name'],

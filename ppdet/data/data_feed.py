@@ -936,6 +936,7 @@ class YoloEvalFeed(DataFeed):
             with_background=with_background,
             num_workers=num_workers,
             use_process=use_process)
+        self.num_max_boxes = num_max_boxes
         self.mode = 'VAL'
         self.bufsize = 128
 

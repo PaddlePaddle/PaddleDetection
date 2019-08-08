@@ -105,7 +105,7 @@ class DetectionMAP(object):
         # record class gt count
         for gtl, diff in zip(gt_label, difficult):
             if self.evaluate_difficult or int(diff) == 0:
-                self.class_gt_counts[int(gtl[0])] += 1
+                self.class_gt_counts[int(np.array(gtl))] += 1
 
         # record class score positive
         visited = [False] * len(gt_label)
@@ -124,7 +124,7 @@ class DetectionMAP(object):
 
             if max_overlap > self.overlap_thresh:
                 if self.evaluate_difficult or \
-                        int(difficult[max_idx]) == 0:
+                        int(np.array(difficult[max_idx])) == 0:
                     if not visited[max_idx]:
                         self.class_score_poss[
                                 int(label)].append([score, 1.0])

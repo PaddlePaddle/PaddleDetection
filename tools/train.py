@@ -123,8 +123,11 @@ def main():
         eval_pyreader.decorate_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
-        extra_keys = ['im_info', 'im_id',
-                      'im_shape'] if cfg.metric == 'COCO' else []
+        extra_keys = []
+        if cfg.metric == 'COCO':
+            extra_keys = ['im_info', 'im_id', 'im_shape']
+        if cfg.metric == 'VOC':
+            extra_keys = ['gt_box', 'gt_label', 'is_difficult']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
