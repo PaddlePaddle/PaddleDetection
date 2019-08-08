@@ -49,7 +49,8 @@ export PYTHONPATH=$PYTHONPATH:.
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
 ```
 可通过设置`--eval`在训练epoch中交替执行评估, 评估在每个snapshot_iter时开始。可在配置文件的`snapshot_iter`处修改。
-如果验证集很大，测试将会比较耗时，影响训练速度，建议减少评估次数，或训练完再进行评估。
+如果验证集很大，测试将会比较耗时，影响训练速度，建议减少评估次数，或训练完再进行评估。当边训练边测试时，在每次snapshot_iter会评测出最佳mAP模型保存到
+`best_model`文件夹下，`best_model`的路径和`model_final`的路径相同。
 
 - 设置配置文件参数 && 指定数据集路径
 ```bash

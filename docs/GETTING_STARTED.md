@@ -51,7 +51,8 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
 
 Alternating between training epoch and evaluation run is possible, simply pass
 in `--eval` to do so and evaluate at each snapshot_iter. It can be modified at `snapshot_iter` of the configuration file. If evaluation dataset is large and
-causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training.
+causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training. When perform evaluation in training, 
+the best model with highest MAP is saved at each `snapshot_iter`. `best_model` has the same path as `model_final`.
 
 
 - configuration options and assign Dataset path

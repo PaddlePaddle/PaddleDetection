@@ -99,6 +99,7 @@ def eval_results(results,
                  is_bbox_normalized=False,
                  output_directory=None):
     """Evaluation for evaluation program results"""
+    box_ap_stats = []
     if metric == 'COCO':
         from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
         anno_file = getattr(feed.dataset, 'annotation', None)
@@ -112,7 +113,7 @@ def eval_results(results,
             output = 'bbox.json'
             if output_directory:
                 output = os.path.join(output_directory, 'bbox.json')
-            bbox_eval(results, anno_file, output, with_background)
+            box_ap_stats = bbox_eval(results, anno_file, output, with_background)
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:
@@ -122,9 +123,12 @@ def eval_results(results,
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])
             logger.info('mAP: {:.2f}'.format(res * 100.))
+            box_ap_stats.append(res * 100.)
         elif 'bbox' in results[0]:
-            voc_bbox_eval(
+            box_ap = voc_bbox_eval(
                 results, num_classes, is_bbox_normalized=is_bbox_normalized)
+            box_ap_stats.append(box_ap)
+    return box_ap_stats
 
 def json_eval_results(feed, metric, json_directory=None):
     """

@@ -33,8 +33,8 @@ __all__ = [
 ]
 
 
-def bbox_eval(results, 
-              class_num, 
+def bbox_eval(results,
+              class_num,
               overlap_thresh=0.5,
               map_type='11point',
               is_bbox_normalized=False,
@@ -45,13 +45,13 @@ def bbox_eval(results,
     Args:
         results (list): prediction bounding box results.
         class_num (int): evaluation class number.
-        overlap_thresh (float): the postive threshold of 
+        overlap_thresh (float): the postive threshold of
                         bbox overlap
         map_type (string): method for mAP calcualtion,
                         can only be '11point' or 'integral'
         is_bbox_normalized (bool): whether bbox is normalized
                         to range [0, 1].
-        evaluate_difficult (bool): whether to evaluate 
+        evaluate_difficult (bool): whether to evaluate
                         difficult gt bbox.
     """
     assert 'bbox' in results[0]
@@ -107,8 +107,10 @@ def bbox_eval(results,
 
     logger.info("Accumulating evaluatation results...")
     detection_map.accumulate()
+    map_stat = 100. * detection_map.get_map()
     logger.info("mAP({:.2f}, {}) = {:.2f}".format(overlap_thresh,
-                            map_type, 100. * detection_map.get_map()))
+                            map_type, map_stat))
+    return map_stat
 
 
 def prune_zero_padding(gt_box, gt_label, difficult=None):
