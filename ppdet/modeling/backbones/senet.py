@@ -55,7 +55,8 @@ class SENet(ResNeXt):
                  norm_decay=0.,
                  variant='d',
                  feature_maps=[2, 3, 4, 5],
-                 dcn_v2_stages=[]):
+                 dcn_v2_stages=[],
+                 std_senet=False):
         super(SENet, self).__init__(depth, groups, group_width, freeze_at,
                                     norm_type, freeze_norm, norm_decay, variant,
                                     feature_maps)
@@ -64,6 +65,7 @@ class SENet(ResNeXt):
         else:
             self.stage_filters = [256, 512, 1024, 2048]
         self.reduction_ratio = 16
+        self.std_senet = std_senet
         self._c1_out_chan_num = 128
         self._model_type = 'SEResNeXt'
         self.dcn_v2_stages = dcn_v2_stages

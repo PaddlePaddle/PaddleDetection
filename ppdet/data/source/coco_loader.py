@@ -83,6 +83,10 @@ def load(anno_path, sample_num=-1, with_background=True):
             if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
                 inst['clean_bbox'] = [x1, y1, x2, y2]
                 bboxes.append(inst)
+            else:
+                logger.warn(
+                    'Found an invalid bbox in annotations: im_id: {}, area: {} x: {}, y: {}, h: {}, w: {}.'.
+                    format(img_id, float(inst['area']), x, y, box_w, box_h))
         num_bbox = len(bboxes)
 
         gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)

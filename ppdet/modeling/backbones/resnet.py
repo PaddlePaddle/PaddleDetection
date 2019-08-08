@@ -89,9 +89,16 @@ class ResNet(object):
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
 
-    def _conv_offset(self, input, filter_size, stride, padding, act=None, name=None):
+    def _conv_offset(self,
+                     input,
+                     filter_size,
+                     stride,
+                     padding,
+                     act=None,
+                     name=None):
         out_channel = filter_size * filter_size * 3
-        out = fluid.layers.conv2d(input,
+        out = fluid.layers.conv2d(
+            input,
             num_filters=out_channel,
             filter_size=filter_size,
             stride=stride,
@@ -132,8 +139,8 @@ class ResNet(object):
                 padding=(filter_size - 1) // 2,
                 act=None,
                 name=name + "_conv_offset")
-            offset_channel = filter_size ** 2 * 2
-            mask_channel = filter_size ** 2
+            offset_channel = filter_size**2 * 2
+            mask_channel = filter_size**2
             offset, mask = fluid.layers.split(
                 input=offset_mask,
                 num_or_sections=[offset_channel, mask_channel],
@@ -203,7 +210,13 @@ class ResNet(object):
         ch_in = input.shape[1]
         # the naming rule is same as pretrained weight
         name = self.na.fix_shortcut_name(name)
+        std_senet = getattr(self, 'std_senet', False)
         if ch_in != ch_out or stride != 1 or (self.depth < 50 and is_first):
+            if std_senet:
+                if is_first:
+                    return self._conv_norm(input, ch_out, 1, stride, name=name)
+                else:
+                    return self._conv_norm(input, ch_out, 3, stride, name=name)
             if max_pooling_in_short_cut and not is_first:
                 input = fluid.layers.pool2d(
                     input=input,
@@ -217,7 +230,13 @@ class ResNet(object):
         else:
             return input
 
-    def bottleneck(self, input, num_filters, stride, is_first, name, dcn_v2=False):
+    def bottleneck(self,
+                   input,
+                   num_filters,
+                   stride,
+                   is_first,
+                   name,
+                   dcn_v2=False):
         if self.variant == 'a':
             stride1, stride2 = stride, 1
         else:
@@ -236,9 +255,17 @@ class ResNet(object):
 
         conv_name1, conv_name2, conv_name3, \
             shortcut_name = self.na.fix_bottleneck_name(name)
-        conv_def = [[num_filters, 1, stride1, 'relu', 1, conv_name1],
-                    [num_filters, 3, stride2, 'relu', groups, conv_name2],
-                    [num_filters * expand, 1, 1, None, 1, conv_name3]]
+        std_senet = getattr(self, 'std_senet', False)
+        if std_senet:
+            conv_def = [
+                [int(num_filters / 2), 1, stride1, 'relu', 1, conv_name1],
+                [num_filters, 3, stride2, 'relu', groups, conv_name2],
+                [num_filters * expand, 1, 1, None, 1, conv_name3]
+            ]
+        else:
+            conv_def = [[num_filters, 1, stride1, 'relu', 1, conv_name1],
+                        [num_filters, 3, stride2, 'relu', groups, conv_name2],
+                        [num_filters * expand, 1, 1, None, 1, conv_name3]]
 
         residual = input
         for i, (c, k, s, act, g, _name) in enumerate(conv_def):
@@ -250,7 +277,7 @@ class ResNet(object):
                 act=act,
                 groups=g,
                 name=_name,
-                dcn_v2=(i==1 and dcn_v2))
+                dcn_v2=(i == 1 and dcn_v2))
         short = self._shortcut(
             input,
             num_filters * expand,
@@ -264,7 +291,13 @@ class ResNet(object):
         return fluid.layers.elementwise_add(
             x=short, y=residual, act='relu', name=name + ".add.output.5")
 
-    def basicblock(self, input, num_filters, stride, is_first, name, dcn_v2=False):
+    def basicblock(self,
+                   input,
+                   num_filters,
+                   stride,
+                   is_first,
+                   name,
+                   dcn_v2=False):
         assert dcn_v2 is False, "Not implemented yet."
         conv0 = self._conv_norm(
             input=input,
@@ -385,7 +418,6 @@ class ResNetC5(ResNet):
                  norm_decay=0.,
                  variant='b',
                  feature_maps=[5]):
-        super(ResNetC5, self).__init__(
-            depth, freeze_at, norm_type, freeze_norm, norm_decay,
-            variant, feature_maps)
+        super(ResNetC5, self).__init__(depth, freeze_at, norm_type, freeze_norm,
+                                       norm_decay, variant, feature_maps)
         self.severed_head = True
