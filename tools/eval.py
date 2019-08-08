@@ -19,10 +19,12 @@ from __future__ import print_function
 import os
 import multiprocessing
 
+
 def set_paddle_flags(**kwargs):
     for key, value in kwargs.items():
         if os.environ.get(key, None) is None:
             os.environ[key] = str(value)
+
 
 # NOTE(paddle-dev): All of these flags should be set before
 # `import paddle`. Otherwise, it would not take any effect.
@@ -91,8 +93,8 @@ def main():
 
     # eval already exists json file
     if FLAGS.json_eval:
-        json_eval_results(eval_feed, cfg.metric,
-                json_directory=FLAGS.output_eval)
+        json_eval_results(
+            eval_feed, cfg.metric, json_directory=FLAGS.output_eval)
         return
     # compile program for multi-devices
     if devices_num <= 1:
@@ -133,6 +135,7 @@ def main():
     eval_results(results, eval_feed, cfg.metric, cfg.num_classes, resolution,
                  is_bbox_normalized, FLAGS.output_eval)
 
+
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
@@ -147,6 +150,7 @@ if __name__ == '__main__':
         type=str,
         help="Dataset path, same as DataFeed.dataset.dataset_dir")
     parser.add_argument(
+        "-f",
         "--output_eval",
         default=None,
         type=str,
