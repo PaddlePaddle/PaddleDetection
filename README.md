@@ -1,3 +1,5 @@
+English | [简体中文](README_cn.md)
+
 # PaddleDetection
 
 The goal of PaddleDetection is to provide easy access to a wide range of object

@@ -72,7 +72,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 - Dataset will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
 - Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
 - Model checkpoints are saved in `output` by default (configurable).
-- To check out hyper parameters used, please refer to the config file.
+- To check out hyper parameters used, please refer to the [configs](../configs).
 - RCNN models training on CPU is not supported on PaddlePaddle<=1.5.1 and will be fixed on later version.
 
 

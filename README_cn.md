@@ -1,3 +1,5 @@
+[English](README.md) | 简体中文
+
 # PaddleDetection
 
 PaddleDetection的目的是为工业界和学术界提供大量易使用的目标检测模型。PaddleDetection不仅性能完善，易于部署，同时能够灵活的满足算法研发需求。
