@@ -213,8 +213,12 @@ def _download(url, path, md5sum=None):
             raise RuntimeError("Downloading from {} failed with code "
                                "{}!".format(url, req.status_code))
 
+        # For protecting download interupted, download to
+        # tmp_fullname firstly, move tmp_fullname to fullname
+        # after download finished
+        tmp_fullname = fullname + "_tmp"
         total_size = req.headers.get('content-length')
-        with open(fullname, 'wb') as f:
+        with open(tmp_fullname, 'wb') as f:
             if total_size:
                 for chunk in tqdm.tqdm(
                         req.iter_content(chunk_size=1024),
@@ -225,6 +229,7 @@ def _download(url, path, md5sum=None):
                 for chunk in req.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
+        shutil.move(tmp_fullname, fullname)
 
     return fullname
 
