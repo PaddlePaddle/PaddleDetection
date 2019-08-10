@@ -51,7 +51,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
 
 Alternating between training epoch and evaluation run is possible, simply pass
 in `--eval` to do so and evaluate at each snapshot_iter. It can be modified at `snapshot_iter` of the configuration file. If evaluation dataset is large and
-causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training. When perform evaluation in training, 
+causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training. When perform evaluation in training,
 the best model with highest MAP is saved at each `snapshot_iter`. `best_model` has the same path as `model_final`.
 
 
@@ -162,11 +162,12 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --output_dir=infer_output/ \
-                      --draw_threshold=0.5
+                      --draw_threshold=0.5 \
+                      -o weights=output/faster_rcnn_r50_1x/model_final
 ```
 The visualization files are saved in `output` by default, to specify a different
 path, simply add a `--output_dir=` flag.  
-`--draw_threshold` is an optional argument. Default is 0.5. Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659)
+`--draw_threshold` is an optional argument. Default is 0.5. Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659). If users want to infer according to customized model path, `-o weights` can be set for specified path.
 
 - Save inference model
 

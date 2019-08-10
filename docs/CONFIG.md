@@ -1,9 +1,11 @@
-# Introduction
+# Config Pipline
+
+## Introduction
 
 PaddleDetection takes a rather principled approach to configuration management. We aim to automate the configuration workflow and to reduce configuration errors.
 
 
-# Rationale
+## Rationale
 
 Presently, configuration in mainstream frameworks are usually dictionary based: the global config is simply a giant, loosely defined Python dictionary.
 
@@ -12,7 +14,7 @@ This approach is error prone, e.g., misspelled or displaced keys may lead to ser
 To avoid the common pitfalls, with automation and static analysis in mind, we propose a configuration design that is user friendly, easy to maintain and extensible.
 
 
-# Design
+## Design
 
 The design utilizes some of Python's reflection mechanism to extract configuration schematics from Python class definitions.
 
@@ -21,7 +23,7 @@ To be specific, it extracts information from class constructor arguments, includ
 This approach advocates modular and testable design, leading to a unified and extensible code base.
 
 
-## API
+### API
 
 Most of the functionality is exposed in `ppdet.core.workspace` module.
 
@@ -34,7 +36,7 @@ Most of the functionality is exposed in `ppdet.core.workspace` module.
 -   `load_config` and `merge_config`: Loading yaml file and merge config settings from command line.
 
 
-## Example
+### Example
 
 Take the `RPNHead` module for example, it is composed of several PaddlePaddle operators. We first wrap those operators into classes, then pass in instances of these classes when instantiating the `RPNHead` module.
 
@@ -156,7 +158,7 @@ LearningRate:
 ```
 
 
-# Requirements
+## Requirements
 
 Two Python packages are used, both are optional.
 
@@ -170,7 +172,7 @@ pip install typeguard http://github.com/willthefrog/docstring_parser/tarball/mas
 ```
 
 
-# Tooling
+## Tooling
 
 A small utility (`tools/configure.py`) is included to simplify the configuration process, it provides 4 commands to walk users through the configuration process:
 
@@ -190,7 +192,7 @@ A small utility (`tools/configure.py`) is included to simplify the configuration
     ```
 
 
-# FAQ
+## FAQ
 
 **Q:** There are some configuration options that are used by multiple modules (e.g., `num_classes`), how do I avoid duplication in config files?
 

@@ -1,19 +1,21 @@
-# 简介
+# 配置模块
+
+## 简介
 
 为了使配置过程更加自动化并减少配置错误，PaddleDetection的配置管理采取了较为严谨的设计。
 
 
-# 设计思想
+## 设计思想
 
 目前主流框架全局配置基本是一个Python dict，这种设计对配置的检查并不严格，拼写错误或者遗漏的配置项往往会造成训练过程中的严重错误，进而造成时间及资源的浪费。为了避免这些陷阱，从自动化和静态分析的原则出发，PaddleDetection采用了一种用户友好、 易于维护和扩展的配置设计。
 
 
-# 基本设计
+## 基本设计
 
 利用Python的反射机制，PaddleDection的配置系统从Python类的构造函数抽取多种信息 - 如参数名、初始值、参数注释、数据类型（如果给出type hint）- 来作为配置规则。 这种设计便于设计的模块化，提升可测试性及扩展性。
 
 
-## API
+### API
 
 配置系统的大多数功能由 `ppdet.core.workspace` 模块提供
 
@@ -26,7 +28,7 @@
 -   `load_config` and `merge_config`: 加载yaml文件，合并命令行提供的配置项。
 
 
-## 示例
+### 示例
 
 以 `RPNHead` 模块为例，该模块包含多个PaddlePaddle OP，先将这些OP封装成类，并将其实例在构造 `RPNHead` 时注入。
 
@@ -148,7 +150,7 @@ LearningRate:
 ```
 
 
-# 安装依赖
+## 安装依赖
 
 配置系统用到两个Python包，均为可选安装。
 
@@ -162,7 +164,7 @@ pip install typeguard http://github.com/willthefrog/docstring_parser/tarball/mas
 ```
 
 
-# 相关工具
+## 相关工具
 
 为了方便用户配置，PaddleDection提供了一个工具 (`tools/configure.py`)， 共支持四个子命令：
 
@@ -182,7 +184,7 @@ pip install typeguard http://github.com/willthefrog/docstring_parser/tarball/mas
     ```
 
 
-# FAQ
+## FAQ
 
 **Q:** 某些配置项会在多个模块中用到(如 `num_classes`)，如何避免在配置文件中多次重复设置？
 

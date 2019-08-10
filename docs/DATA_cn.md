@@ -1,3 +1,5 @@
+# 数据模块
+
 ## 介绍
 本模块是一个Python模块，用于加载数据并将其转换成适用于检测模型的训练、验证、测试所需要的格式——由多个np.ndarray组成的tuple数组，例如用于Faster R-CNN模型的训练数据格式为：`[(im, im_info, im_id, gt_bbox, gt_class, is_crowd), (...)]`。
 
