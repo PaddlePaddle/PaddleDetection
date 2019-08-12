@@ -93,6 +93,10 @@ def main():
 
     # eval already exists json file
     if FLAGS.json_eval:
+        logger.info(
+            "In json_eval mode, PaddleDetection will evaluate json files in "
+            "output_eval directly. And proposal.json, bbox.json and mask.json "
+            "will be detected by default.")
         json_eval_results(
             eval_feed, cfg.metric, json_directory=FLAGS.output_eval)
         return

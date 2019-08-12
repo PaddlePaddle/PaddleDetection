@@ -113,7 +113,8 @@ def eval_results(results,
             output = 'bbox.json'
             if output_directory:
                 output = os.path.join(output_directory, 'bbox.json')
-            box_ap_stats = bbox_eval(results, anno_file, output, with_background)
+            box_ap_stats = bbox_eval(results, anno_file, output,
+                                     with_background)
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:
@@ -130,6 +131,7 @@ def eval_results(results,
             box_ap_stats.append(box_ap)
     return box_ap_stats
 
+
 def json_eval_results(feed, metric, json_directory=None):
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
@@ -139,6 +141,9 @@ def json_eval_results(feed, metric, json_directory=None):
     anno_file = getattr(feed.dataset, 'annotation', None)
     json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
     if json_directory:
+        assert os.path.exists(
+            json_directory), "The json directory:{} does not exist".format(
+                json_directory)
         for k, v in enumerate(json_file_list):
             json_file_list[k] = os.path.join(str(json_directory), v)
 
