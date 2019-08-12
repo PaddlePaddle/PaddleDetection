@@ -255,22 +255,30 @@ class MultiBoxHead(object):
     def __init__(self,
                  min_ratio=20,
                  max_ratio=90,
+                 base_size=300,
                  min_sizes=[60.0, 105.0, 150.0, 195.0, 240.0, 285.0],
                  max_sizes=[[], 150.0, 195.0, 240.0, 285.0, 300.0],
                  aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.],
                                 [2., 3.]],
-                 base_size=300,
+                 steps=None,
                  offset=0.5,
-                 flip=True):
+                 flip=True,
+                 min_max_aspect_ratios_order=False,
+                 kernel_size=1,
+                 pad=0):
         super(MultiBoxHead, self).__init__()
         self.min_ratio = min_ratio
         self.max_ratio = max_ratio
+        self.base_size = base_size
         self.min_sizes = min_sizes
         self.max_sizes = max_sizes
         self.aspect_ratios = aspect_ratios
-        self.base_size = base_size
+        self.steps = steps
         self.offset = offset
         self.flip = flip
+        self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
+        self.kernel_size = kernel_size
+        self.pad = pad
 
 
 @register

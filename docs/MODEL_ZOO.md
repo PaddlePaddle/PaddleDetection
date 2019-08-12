@@ -118,11 +118,21 @@ results of image size 608/416/320 above.
 
 **Notes:** In RetinaNet, the base LR is changed to 0.01 for minibatch size 16.
 
+### SSD
+
+| Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |
+| VGG16        | 300  |     8   |   40w  |  25.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_300.tar) |
+| VGG16        | 512  |     8   |   40w  |  29.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_512.tar) |
+
+**Notes:** VGG-SSD is trained in 4 GPU with total batch size as 32 and trained 400000 iters.
+
 ### SSD on Pascal VOC
 
 | Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |
 | :----------- | :--: | :-----: | :-----: | :----: | :-------: |
-| MobileNet v1 | 300  |    32   |   120e  |  73.13  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
+| MobileNet v1 | 300  |    32   |   120e  |  73.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) |
+| VGG16        | 300  |     8   |   240e  |  77.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_300_voc.tar) |
+| VGG16        | 512  |     8   |   240e  |  80.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_512_voc.tar) |
 
-**Notes:** SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. SSD training data augmentations: randomly color distortion,
+**NOTE**: MobileNet-SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. VGG-SSD is trained in 4 GPU with total batch size as 32 and trained 240 epoches. SSD training data augmentations: randomly color distortion,
 randomly cropping, randomly expansion, randomly flipping.

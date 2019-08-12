@@ -113,8 +113,11 @@ def eval_results(results,
             output = 'bbox.json'
             if output_directory:
                 output = os.path.join(output_directory, 'bbox.json')
+
             box_ap_stats = bbox_eval(results, anno_file, output,
-                                     with_background)
+                                     with_background,
+                                     is_bbox_normalized=is_bbox_normalized)
+
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:

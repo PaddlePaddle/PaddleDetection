@@ -63,7 +63,6 @@ class SSD(object):
         if mode == 'train' or mode == 'eval':
             gt_box = feed_vars['gt_box']
             gt_label = feed_vars['gt_label']
-            difficult = feed_vars['is_difficult']
 
         body_feats = self.backbone(im)
         locs, confs, box, box_var = self.multi_box_head(
@@ -76,17 +75,7 @@ class SSD(object):
             return {'loss': loss}
         else:
             pred = self.output_decoder(locs, confs, box, box_var)
-            if mode == 'eval':
-                map_eval = self.metric(
-                    pred,
-                    gt_label,
-                    gt_box,
-                    difficult,
-                    class_num=self.num_classes)
-                _, accum_map = map_eval.get_map_var()
-                return {'map': map_eval, 'accum_map': accum_map}
-            else:
-                return {'bbox': pred}
+            return {'bbox': pred}
 
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
@@ -99,5 +88,5 @@ class SSD(object):
 
     def is_bbox_normalized(self):
         # SSD use output_decoder in output layers, bbox is normalized
-        # to range [0, 1], is_bbox_normalized is used in infer.py
+        # to range [0, 1], is_bbox_normalized is used in eval.py and infer.py
         return True

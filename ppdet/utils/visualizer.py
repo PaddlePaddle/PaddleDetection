@@ -31,8 +31,7 @@ def visualize_results(image,
                       catid2name,
                       threshold=0.5,
                       bbox_results=None,
-                      mask_results=None,
-                      is_bbox_normalized=False):
+                      mask_results=None):
     """
     Visualize bbox and mask results
     """
@@ -40,7 +39,7 @@ def visualize_results(image,
         image = draw_mask(image, im_id, mask_results, threshold)
     if bbox_results:
         image = draw_bbox(image, im_id, catid2name, bbox_results,
-                          threshold, is_bbox_normalized)
+                          threshold)
     return image
 
 
@@ -69,8 +68,7 @@ def draw_mask(image, im_id, segms, threshold, alpha=0.7):
     return Image.fromarray(img_array.astype('uint8'))
 
 
-def draw_bbox(image, im_id, catid2name, bboxes, threshold,
-              is_bbox_normalized=False):
+def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     """
     Draw bbox on image
     """
@@ -86,12 +84,6 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold,
             continue
 
         xmin, ymin, w, h = bbox
-        if is_bbox_normalized:
-            im_width, im_height = image.size
-            xmin *= im_width
-            ymin *= im_height
-            w *= im_width
-            h *= im_height
         xmax = xmin + w
         ymax = ymin + h
 

@@ -66,7 +66,12 @@ def proposal_eval(results, anno_file, outfile, max_dets=(100, 300, 1000)):
     # flush coco evaluation result
     sys.stdout.flush()
 
-def bbox_eval(results, anno_file, outfile, with_background=True):
+
+def bbox_eval(results,
+              anno_file,
+              outfile,
+              with_background=True,
+              is_bbox_normalized=False):
     assert 'bbox' in results[0]
     assert outfile.endswith('.json')
 
@@ -79,7 +84,9 @@ def bbox_eval(results, anno_file, outfile, with_background=True):
         {i + int(with_background): catid
          for i, catid in enumerate(cat_ids)})
 
-    xywh_results = bbox2out(results, clsid2catid)
+    xywh_results = bbox2out(
+        results, clsid2catid, is_bbox_normalized=is_bbox_normalized)
+
     if len(xywh_results) == 0:
         logger.warning("The number of valid bbox detected is zero.\n \
             Please use reasonable model and check input data.\n \
@@ -111,6 +118,7 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
 
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
 
+
 def cocoapi_eval(jsonfile,
                  style,
                  coco_gt=None,
@@ -140,6 +148,7 @@ def cocoapi_eval(jsonfile,
     coco_eval.accumulate()
     coco_eval.summarize()
     return coco_eval.stats
+
 
 def proposal2out(results, is_bbox_normalized=False):
     xywh_res = []
@@ -180,6 +189,13 @@ def proposal2out(results, is_bbox_normalized=False):
 
 
 def bbox2out(results, clsid2catid, is_bbox_normalized=False):
+    """
+    Args:
+        results: request a dict, should include: `bbox`, `im_id`,
+                 if is_bbox_normalized=True, also need `im_shape`.
+        clsid2catid: class id to category id map of COCO2017 dataset.
+        is_bbox_normalized: whether or not bbox is normalized.
+    """
     xywh_res = []
     for t in results:
         bboxes = t['bbox'][0]
@@ -202,6 +218,11 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                             clip_bbox([xmin, ymin, xmax, ymax])
                     w = xmax - xmin
                     h = ymax - ymin
+                    im_height, im_width = t['im_shape'][0][i].tolist()
+                    xmin *= im_width
+                    ymin *= im_height
+                    w *= im_width
+                    h *= im_height
                 else:
                     w = xmax - xmin + 1
                     h = ymax - ymin + 1

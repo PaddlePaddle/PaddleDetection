@@ -38,16 +38,16 @@ multi-GPU training.
 
 Supported Architectures:
 
-|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet |
-|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:-------:|
-| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       |
-| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       |
-| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       |
-| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       |
-| Cascade R-CNN      | ✓      |                             ✗ | ✗          | ✗     | ✗         | ✗       |
-| RetinaNet          | ✓      |                             ✗ | ✗          | ✗     | ✗         | ✗       |
-| Yolov3             | ✓      |                             ✗ | ✗          | ✗     | ✓         | ✓       |
-| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         | ✗       |
+|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG |
+|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:-------:|:---:|
+| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   |
+| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   |
+| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   |
+| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   |
+| Cascade R-CNN      | ✓      |                             ✗ | ✗          | ✗     | ✗         | ✗       | ✗   |
+| RetinaNet          | ✓      |                             ✗ | ✗          | ✗     | ✗         | ✗       | ✗   |
+| Yolov3             | ✓      |                             ✗ | ✗          | ✗     | ✓         | ✓       | ✗   |
+| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         | ✗       | ✓   |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
 
