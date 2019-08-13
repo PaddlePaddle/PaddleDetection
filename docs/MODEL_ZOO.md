@@ -9,7 +9,7 @@
 
 ## Common settings
 
-- All models below except SSD were trained on `coco_2017_train`, and tested on `coco_2017_val`.
+- All models below were trained on `coco_2017_train`, and tested on `coco_2017_val`.
 - Batch Normalization layers in backbones are replaced by Affine Channel layers.
 - Unless otherwise noted, all ResNet backbones adopt the [ResNet-B](https://arxiv.org/pdf/1812.01187) variant..
 - For RCNN and RetinaNet models, only horizontal flipping data augmentation was used in the training phase and no augmentations were used in the testing phase.
@@ -70,6 +70,9 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet50-vd-FPN      | Mask           | c3-c5   |    1      |   2x    |  42.9  |  38.0   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_r50_vd_fpn_2x.tar) |
 | ResNet101-vd-FPN     | Mask           | c3-c5   |    1      |   1x    |  44.6  |  39.2   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_r101_vd_fpn_1x.tar) |
 | ResNeXt101-vd-FPN    | Mask           | c3-c5   |    1      |   1x    |  46.2  |  40.4   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
+| ResNet50-FPN         | Cascade Faster | c3-c5   |    2      |   1x    |  44.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r50_fpn_1x.tar) |
+| ResNet101-vd-FPN     | Cascade Faster | c3-c5   |    2      |   1x    |  46.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_1x.tar) |
+| ResNeXt101-vd-FPN    | Cascade Faster | c3-c5   |    2      |   1x    |  47.3  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
 
 #### Notes:
 - Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
@@ -111,16 +114,18 @@ results of image size 608/416/320 above.
 
 ### RetinaNet
 
-| Backbone      | Image/gpu | Lr schd | Box AP | Download  |
-| :-----------  | :-----: | :-----: | :----: | :-------: |
-| ResNet50-FPN  |    2    |   1x    |  36.0  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  |
-| ResNet101-FPN |    2    |   1x    |  37.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) |
+| Backbone          | Image/gpu | Lr schd | Box AP | Download  |
+| :---------------: | :-----: | :-----: | :----: | :-------: |
+| ResNet50-FPN      |    2    |   1x    |  36.0  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  |
+| ResNet101-FPN     |    2    |   1x    |  37.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) |
+| ResNeXt101-vd-FPN |    1    |   1x    |  40.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) |
 
 **Notes:** In RetinaNet, the base LR is changed to 0.01 for minibatch size 16.
 
 ### SSD
 
 | Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |
+| :----------: | :--: | :-------: | :-----: | :----: | :-------: |
 | VGG16        | 300  |     8   |   40w  |  25.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_300.tar) |
 | VGG16        | 512  |     8   |   40w  |  29.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_512.tar) |
 
