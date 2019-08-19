@@ -57,7 +57,7 @@ def get_save_image_name(output_dir, image_path):
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    image_name = image_path.split('/')[-1]
+    image_name = os.path.split(image_path)[-1]
     name, ext = os.path.splitext(image_name)
     return os.path.join(output_dir, "{}".format(name)) + ext
 
