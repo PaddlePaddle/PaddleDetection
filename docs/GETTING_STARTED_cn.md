@@ -38,7 +38,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
 - `--eval`: 是否边训练边测试，默认是 `False`
 - `--output_eval`: 如果边训练边测试, 这个参数可以编辑评测保存json路径, 默认是当前目录。
 - `-d` or `--dataset_dir`: 数据集路径, 同配置文件里的`dataset_dir`. 例如: `-d dataset/coco`
-- `-o`: 设置配置文件里的参数内容。 例如: `-o weights=output/faster_rcnn_r50_1x/model_final`
+- `-o`: 设置配置文件里的参数内容。 例如: `-o max_iters=180000`
 
 ##### 例子
 
@@ -57,7 +57,6 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o weights=output/faster_rcnn_r50_1x/model_final \
                          -d dataset/coco
 ```
 

@@ -37,7 +37,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
 - `--eval`: Whether to perform evaluation in training, default is `False`
 - `--output_eval`: If perform evaluation in training, this edits evaluation directory, default is current directory.
 - `-d` or `--dataset_dir`: Dataset path, same as `dataset_dir` of configs. Such as: `-d dataset/coco`
-- `-o`: Set configuration options in config file. Such as: `-o weights=output/faster_rcnn_r50_1x/model_final`
+- `-o`: Set configuration options in config file. Such as: `-o max_iters=180000`
 
 
 ##### Examples
@@ -60,7 +60,6 @@ the best model with highest MAP is saved at each `snapshot_iter`. `best_model` h
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o weights=output/faster_rcnn_r50_1x/model_final \
                          -d dataset/coco
 ```
 
