@@ -69,6 +69,7 @@ YoloTrainFeed:
 
 YoloEvalFeed:
   batch_size: 8
+  image_shape: [3, 608, 608]
   dataset:
     dataset_dir: dataset/coco
     annotation: annotations/instances_val2017.json
@@ -76,5 +77,6 @@ YoloEvalFeed:
 
 YoloTestFeed:
   batch_size: 1
+  image_shape: [3, 608, 608]
   dataset:
     annotation: dataset/coco/annotations/instances_val2017.json

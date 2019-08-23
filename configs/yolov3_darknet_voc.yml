@@ -71,6 +71,7 @@ YoloTrainFeed:
 
 YoloEvalFeed:
   batch_size: 8
+  image_shape: [3, 608, 608]
   dataset:
     dataset_dir: dataset/voc
     annotation: VOCdevkit/VOC_all/ImageSets/Main/val.txt
@@ -79,5 +80,6 @@ YoloEvalFeed:
 
 YoloTestFeed:
   batch_size: 1
+  image_shape: [3, 608, 608]
   dataset:
     use_default_label: true

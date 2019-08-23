@@ -942,6 +942,13 @@ class YoloEvalFeed(DataFeed):
         self.mode = 'VAL'
         self.bufsize = 128
 
+        # support image shape config, resize image with image_shape
+        for i, trans in enumerate(sample_transforms):
+            if isinstance(trans, ResizeImage):
+                sample_transforms[i] = ResizeImage(
+                        target_size=self.image_shape[-1],
+                        interp=trans.interp)
+
 
 @register
 class YoloTestFeed(DataFeed):
@@ -988,4 +995,11 @@ class YoloTestFeed(DataFeed):
             use_process=use_process)
         self.mode = 'TEST'
         self.bufsize = 128
+
+        # support image shape config, resize image with image_shape
+        for i, trans in enumerate(sample_transforms):
+            if isinstance(trans, ResizeImage):
+                sample_transforms[i] = ResizeImage(
+                        target_size=self.image_shape[-1],
+                        interp=trans.interp)
 # yapf: enable
