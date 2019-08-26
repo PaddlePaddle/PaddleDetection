@@ -82,6 +82,7 @@ class DecodeImage(BaseOperator):
 
         Args:
             to_rgb (bool): whether to convert BGR to RGB
+            with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
         """
 
         super(DecodeImage, self).__init__()
@@ -459,7 +460,7 @@ class ExpandImage(BaseOperator):
     def __init__(self, max_ratio, prob, mean=[127.5, 127.5, 127.5]):
         """
         Args:
-            ratio (float): the ratio of expanding
+            max_ratio (float): the ratio of expanding
             prob (float): the probability of expanding image
             mean (list): the pixel mean
         """

@@ -23,8 +23,7 @@ from ppdet.core.workspace import register, serializable
 __all__ = [
     'AnchorGenerator', 'RPNTargetAssign', 'GenerateProposals', 'MultiClassNMS',
     'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool', 'MultiBoxHead',
-    'SSDOutputDecoder', 'SSDMetric', 'RetinaTargetAssign',
-    'RetinaOutputDecoder', 'ConvNorm'
+    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm'
 ]
 
 
@@ -301,22 +300,6 @@ class SSDOutputDecoder(object):
         self.keep_top_k = keep_top_k
         self.score_threshold = score_threshold
         self.nms_eta = nms_eta
-
-
-@register
-@serializable
-class SSDMetric(object):
-    __op__ = fluid.metrics.DetectionMAP
-    __append_doc__ = True
-
-    def __init__(self,
-                 overlap_threshold=0.5,
-                 evaluate_difficult=False,
-                 ap_version='integral'):
-        super(SSDMetric, self).__init__()
-        self.overlap_threshold = overlap_threshold
-        self.evaluate_difficult = evaluate_difficult
-        self.ap_version = ap_version
 
 
 @register
