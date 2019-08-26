@@ -72,7 +72,7 @@ class TestRetinaNet(TestFasterRCNN):
 
 class TestSSD(TestFasterRCNN):
     def set_config(self):
-        self.cfg_file = 'configs/ssd_mobilenet_v1_voc.yml'
+        self.cfg_file = 'configs/ssd/ssd_mobilenet_v1_voc.yml'
 
 
 if __name__ == '__main__':
