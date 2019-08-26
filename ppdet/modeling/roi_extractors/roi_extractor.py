@@ -29,13 +29,13 @@ class FPNRoIAlign(object):
     """
     RoI align pooling for FPN feature maps
     Args:
-        pooled_height (int): output height
-        pooled_height (int): output width
         sampling_ratio (int): number of sampling points
         min_level (int): lowest level of FPN layer
         max_level (int): highest level of FPN layer
         canconical_level (int): the canconical FPN feature map level
         canonical_size (int): the canconical FPN feature map size
+        box_resolution (int): box resolution
+        mask_resolution (int): mask roi resolution
     """
 
     def __init__(self,

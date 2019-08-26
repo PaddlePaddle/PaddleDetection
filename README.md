@@ -85,6 +85,8 @@ python tools/infer.py -c configs/mask_rcnn_r50_1x.yml \
 
 For detailed training and evaluation workflow, please refer to [GETTING_STARTED.md](docs/GETTING_STARTED.md).
 
+For detailed configuration and parameter description, please refer to [Complete config files](docs/config_example/)
+
 We also recommend users to take a look at the [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 
 Further information can be found in these documentations:

@@ -72,6 +72,8 @@ python tools/infer.py -c configs/mask_rcnn_r50_1x.yml \
 
 更多训练及评估流程，请参考[GETTING_STARTED_cn.md](docs/GETTING_STARTED_cn.md).
 
+详细的配置信息和参数说明，请参考[示例配置文件](docs/config_example/).
+
 同时推荐用户参考[IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 
 其他更多信息可参考以下文档内容：

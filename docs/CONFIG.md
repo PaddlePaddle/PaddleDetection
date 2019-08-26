@@ -157,6 +157,7 @@ LearningRate:
     steps: 500
 ```
 
+[Complete config files](config_example/) of multiple detection architectures are given and brief description of each parameter.
 
 ## Requirements
 

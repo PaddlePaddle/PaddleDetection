@@ -40,7 +40,7 @@ class PiecewiseDecay(object):
         milestones (list): steps at which to decay learning rate
     """
 
-    def __init__(self, gamma=0.1, milestones=[6000, 8000], values=None):
+    def __init__(self, gamma=0.1, milestones=[60000, 80000], values=None):
         super(PiecewiseDecay, self).__init__()
         self.gamma = gamma
         self.milestones = milestones

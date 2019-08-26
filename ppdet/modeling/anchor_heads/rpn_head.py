@@ -38,6 +38,7 @@ class RPNHead(object):
         rpn_target_assign (object): `RPNTargetAssign` instance
         train_proposal (object): `GenerateProposals` instance for training
         test_proposal (object): `GenerateProposals` instance for testing
+        num_classes (int): number of classes in rpn output
     """
     __inject__ = [
         'anchor_generator', 'rpn_target_assign', 'train_proposal',
@@ -281,6 +282,7 @@ class FPNRPNHead(RPNHead):
         num_chan (int): number of FPN output channels
         min_level (int): lowest level of FPN output
         max_level (int): highest level of FPN output
+        num_classes (int): number of classes in rpn output
     """
 
     __inject__ = [

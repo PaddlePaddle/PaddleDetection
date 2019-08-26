@@ -154,7 +154,7 @@ class ResizeImage(BaseOperator):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
-        """ Resise the image numpy.
+        """ Resize the image numpy.
         """
         im = sample['image']
         if not isinstance(im, np.ndarray):

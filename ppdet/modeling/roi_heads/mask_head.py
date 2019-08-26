@@ -31,7 +31,7 @@ class MaskHead(object):
     """
     RCNN mask head
     Args:
-        num_convs (int): num of convolutions, 4 for FPN, 1 otherwise
+        num_convs (int): num of convolutions, 4 for FPN, 0 otherwise
         num_chan_reduced (int): num of channels after first convolution
         resolution (int): size of the output mask
         dilation (int): dilation rate
