@@ -103,8 +103,10 @@ class ResNet(object):
             filter_size=filter_size,
             stride=stride,
             padding=padding,
-            param_attr=ParamAttr(initializer=Constant(0.0)),
-            bias_attr=ParamAttr(initializer=Constant(0.0)),
+            param_attr=ParamAttr(
+                initializer=Constant(0.0), name=name + ".w_0"),
+            bias_attr=ParamAttr(
+                initializer=Constant(0.0), name=name + ".b_0"),
             act=act,
             name=name)
         return out
