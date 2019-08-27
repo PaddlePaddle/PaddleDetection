@@ -29,7 +29,7 @@ ResNeXt:
   group_width: 4                                                                                                                                          
   groups: 64
   variant: d
-  dcn_stages: [3, 4, 5]
+  dcn_v2_stages: [3, 4, 5]
 
 FPN:
   min_level: 2

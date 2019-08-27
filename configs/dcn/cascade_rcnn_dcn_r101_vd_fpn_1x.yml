@@ -27,7 +27,7 @@ ResNet:
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
   variant: d
-  dcn_stages: [3, 4, 5]
+  dcn_v2_stages: [3, 4, 5]
 
 FPN:
   min_level: 2
