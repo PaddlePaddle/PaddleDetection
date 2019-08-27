@@ -83,7 +83,7 @@ BBoxHead:
     score_threshold: 0.05
 
 TwoFCHead:
-  num_chan: 1024
+  mlp_dim: 1024
 
 LearningRate:
   base_lr: 0.01

@@ -42,6 +42,7 @@ class FPN(object):
         has_extra_convs (bool): whether has extral convolutions in higher levels
         norm_type (str|None): normalization type, 'bn'/'sync_bn'/'affine_channel'
     """
+    __shared__ = ['norm_type', 'freeze_norm']
 
     def __init__(self,
                  num_chan=256,
@@ -49,7 +50,9 @@ class FPN(object):
                  max_level=6,
                  spatial_scale=[1. / 32., 1. / 16., 1. / 8., 1. / 4.],
                  has_extra_convs=False,
-                 norm_type=None):
+                 norm_type=None,
+                 freeze_norm=False):
+        self.freeze_norm = freeze_norm
         self.num_chan = num_chan
         self.min_level = min_level
         self.max_level = max_level
@@ -69,8 +72,9 @@ class FPN(object):
                 1,
                 initializer=initializer,
                 norm_type=self.norm_type,
+                freeze_norm=self.freeze_norm,
                 name=lateral_name,
-                bn_name=lateral_name)
+                norm_name=lateral_name)
         else:
             lateral = fluid.layers.conv2d(
                 body_input,
@@ -120,8 +124,9 @@ class FPN(object):
                 1,
                 initializer=initializer,
                 norm_type=self.norm_type,
+                freeze_norm=self.freeze_norm,
                 name=fpn_inner_name,
-                bn_name=fpn_inner_name)
+                norm_name=fpn_inner_name)
         else:
             self.fpn_inner_output[0] = fluid.layers.conv2d(
                 body_input,
@@ -155,8 +160,9 @@ class FPN(object):
                     3,
                     initializer=initializer,
                     norm_type=self.norm_type,
+                    freeze_norm=self.freeze_norm,
                     name=fpn_name,
-                    bn_name=fpn_name)
+                    norm_name=fpn_name)
             else:
                 fpn_output = fluid.layers.conv2d(
                     self.fpn_inner_output[i],

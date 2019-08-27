@@ -22,6 +22,7 @@ from paddle.fluid.initializer import MSRA
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.core.workspace import register
+from ppdet.modeling.ops import ConvNorm
 
 __all__ = ['MaskHead']
 
@@ -31,8 +32,8 @@ class MaskHead(object):
     """
     RCNN mask head
     Args:
-        num_convs (int): num of convolutions, 4 for FPN, 0 otherwise
-        num_chan_reduced (int): num of channels after first convolution
+        num_convs (int): num of convolutions, 4 for FPN, 1 otherwise
+        conv_dim (int): num of channels after first convolution
         resolution (int): size of the output mask
         dilation (int): dilation rate
         num_classes (int): number of output classes
@@ -42,42 +43,59 @@ class MaskHead(object):
 
     def __init__(self,
                  num_convs=0,
-                 num_chan_reduced=256,
+                 conv_dim=256,
                  resolution=14,
                  dilation=1,
-                 num_classes=81):
+                 num_classes=81,
+                 norm_type=None):
         super(MaskHead, self).__init__()
         self.num_convs = num_convs
-        self.num_chan_reduced = num_chan_reduced
+        self.conv_dim = conv_dim
         self.resolution = resolution
         self.dilation = dilation
         self.num_classes = num_classes
+        self.norm_type = norm_type
 
-    def _mask_conv_head(self, roi_feat, num_convs):
-        for i in range(num_convs):
-            layer_name = "mask_inter_feat_" + str(i + 1)
-            fan = self.num_chan_reduced * 3 * 3
-            roi_feat = fluid.layers.conv2d(
-                input=roi_feat,
-                num_filters=self.num_chan_reduced,
-                filter_size=3,
-                padding=1 * self.dilation,
-                act='relu',
-                stride=1,
-                dilation=self.dilation,
-                name=layer_name,
-                param_attr=ParamAttr(
-                    name=layer_name + '_w',
-                    initializer=MSRA(
-                        uniform=False, fan_in=fan)),
-                bias_attr=ParamAttr(
-                    name=layer_name + '_b',
-                    learning_rate=2.,
-                    regularizer=L2Decay(0.)))
+    def _mask_conv_head(self, roi_feat, num_convs, norm_type):
+        if norm_type == 'gn':
+            for i in range(num_convs):
+                layer_name = "mask_inter_feat_" + str(i + 1)
+                fan = self.conv_dim * 3 * 3
+                initializer = MSRA(uniform=False, fan_in=fan)
+                roi_feat = ConvNorm(
+                    roi_feat,
+                    self.conv_dim,
+                    3,
+                    act='relu',
+                    dilation=self.dilation,
+                    initializer=initializer,
+                    norm_type=self.norm_type,
+                    name=layer_name,
+                    norm_name=layer_name)
+        else:
+            for i in range(num_convs):
+                layer_name = "mask_inter_feat_" + str(i + 1)
+                fan = self.conv_dim * 3 * 3
+                initializer = MSRA(uniform=False, fan_in=fan)
+                roi_feat = fluid.layers.conv2d(
+                    input=roi_feat,
+                    num_filters=self.conv_dim,
+                    filter_size=3,
+                    padding=1 * self.dilation,
+                    act='relu',
+                    stride=1,
+                    dilation=self.dilation,
+                    name=layer_name,
+                    param_attr=ParamAttr(
+                        name=layer_name + '_w', initializer=initializer),
+                    bias_attr=ParamAttr(
+                        name=layer_name + '_b',
+                        learning_rate=2.,
+                        regularizer=L2Decay(0.)))
         fan = roi_feat.shape[1] * 2 * 2
         feat = fluid.layers.conv2d_transpose(
             input=roi_feat,
-            num_filters=self.num_chan_reduced,
+            num_filters=self.conv_dim,
             filter_size=2,
             stride=2,
             act='relu',
@@ -92,7 +110,8 @@ class MaskHead(object):
     def _get_output(self, roi_feat):
         class_num = self.num_classes
         # configure the conv number for FPN if necessary
-        head_feat = self._mask_conv_head(roi_feat, self.num_convs)
+        head_feat = self._mask_conv_head(roi_feat, self.num_convs,
+                                         self.norm_type)
         fan = class_num
         mask_logits = fluid.layers.conv2d(
             input=head_feat,

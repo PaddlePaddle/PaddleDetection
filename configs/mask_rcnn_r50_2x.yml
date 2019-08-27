@@ -71,7 +71,7 @@ BBoxHead:
 
 MaskHead:
   dilation: 1
-  num_chan_reduced: 256
+  conv_dim: 256
   resolution: 14
 
 BBoxAssigner:

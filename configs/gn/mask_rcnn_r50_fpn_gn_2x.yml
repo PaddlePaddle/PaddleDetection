@@ -2,15 +2,14 @@ architecture: MaskRCNN
 train_feed: MaskRCNNTrainFeed
 eval_feed: MaskRCNNEvalFeed
 test_feed: MaskRCNNTestFeed
-use_gpu: true
-max_iters: 180000
+max_iters: 360000
 snapshot_iter: 10000
+use_gpu: true
 log_smooth_window: 20
-log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+weights: output/mask_rcnn_r50_fpn_gn_2x/model_final/
 metric: COCO
-weights: output/mask_rcnn_dcn_r50_fpn_1x/model_final/
 num_classes: 81
 
 MaskRCNN:
@@ -25,14 +24,14 @@ ResNet:
   depth: 50
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
-  norm_type: bn
-  dcn_v2_stages: [3, 4, 5]
+  norm_type: affine_channel
 
 FPN:
   max_level: 6
   min_level: 2
   num_chan: 256
   spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+  norm_type: gn
 
 FPNRPNHead:
   anchor_generator:
@@ -73,6 +72,7 @@ MaskHead:
   conv_dim: 256
   num_convs: 4
   resolution: 28
+  norm_type: gn
 
 BBoxAssigner:
   batch_size_per_im: 512
@@ -86,24 +86,24 @@ MaskAssigner:
   resolution: 28
 
 BBoxHead:
-  head: TwoFCHead
+  head: XConvNormHead
   nms:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
 
-TwoFCHead:
-  mlp_dim: 1024
+XConvNormHead:
+  norm_type: gn
 
 LearningRate:
   base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
+    milestones: [240000, 320000]
   - !LinearWarmup
-    start_factor: 0.1
-    steps: 1000
+    start_factor: 0.3333333333333333
+    steps: 500
 
 OptimizerBuilder:
   optimizer:

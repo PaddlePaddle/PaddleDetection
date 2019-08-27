@@ -36,6 +36,7 @@ class DarkNet(object):
         norm_type (str): normalization type, 'bn' and 'sync_bn' are supported
         norm_decay (float): weight decay for normalization layer weights
     """
+    __shared__ = ['norm_type']
 
     def __init__(self, depth=53, norm_type='bn', norm_decay=0.):
         assert depth in [53], "unsupported depth value"

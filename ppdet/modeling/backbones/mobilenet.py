@@ -37,6 +37,7 @@ class MobileNet(object):
         with_extra_blocks (bool): if extra blocks should be added
         extra_block_filters (list): number of filter for each extra block
     """
+    __shared__ = ['norm_type']
 
     def __init__(self,
                  norm_type='bn',

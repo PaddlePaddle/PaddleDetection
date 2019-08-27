@@ -22,11 +22,13 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Xavier
 from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import MSRA
 
 from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.ops import ConvNorm
 from ppdet.core.workspace import register, serializable
 
-__all__ = ['BBoxHead', 'TwoFCHead']
+__all__ = ['BBoxHead', 'TwoFCHead', 'XConvNormHead']
 
 
 @register
@@ -48,22 +50,78 @@ class BoxCoder(object):
 
 
 @register
+class XConvNormHead(object):
+    """
+    RCNN head with serveral convolution layers
+
+    Args:
+        conv_num (int): num of convolution layers for the rcnn head
+        conv_dim (int): num of filters for the conv layers
+        mlp_dim (int): num of filters for the fc layers
+    """
+    __shared__ = ['norm_type', 'freeze_norm']
+
+    def __init__(self,
+                 num_conv=4,
+                 conv_dim=256,
+                 mlp_dim=1024,
+                 norm_type=None,
+                 freeze_norm=False):
+        super(XConvNormHead, self).__init__()
+        self.conv_dim = conv_dim
+        self.mlp_dim = mlp_dim
+        self.num_conv = num_conv
+        self.norm_type = norm_type
+        self.freeze_norm = freeze_norm
+
+    def __call__(self, roi_feat):
+        conv = roi_feat
+        fan = self.conv_dim * 3 * 3
+        initializer = MSRA(uniform=False, fan_in=fan)
+        for i in range(self.num_conv):
+            name = 'bbox_head_conv' + str(i)
+            conv = ConvNorm(
+                conv,
+                self.conv_dim,
+                3,
+                act='relu',
+                initializer=initializer,
+                norm_type=self.norm_type,
+                freeze_norm=self.freeze_norm,
+                name=name,
+                norm_name=name)
+        fan = conv.shape[1] * conv.shape[2] * conv.shape[3]
+        head_heat = fluid.layers.fc(input=conv,
+                                    size=self.mlp_dim,
+                                    act='relu',
+                                    name='fc6' + name,
+                                    param_attr=ParamAttr(
+                                        name='fc6%s_w' % name,
+                                        initializer=Xavier(fan_out=fan)),
+                                    bias_attr=ParamAttr(
+                                        name='fc6%s_b' % name,
+                                        learning_rate=2,
+                                        regularizer=L2Decay(0.)))
+        return head_heat
+
+
+@register
 class TwoFCHead(object):
     """
     RCNN head with two Fully Connected layers
 
     Args:
-        num_chan (int): num of filters for the fc layers
+        mlp_dim (int): num of filters for the fc layers
     """
 
-    def __init__(self, num_chan=1024):
+    def __init__(self, mlp_dim=1024):
         super(TwoFCHead, self).__init__()
-        self.num_chan = num_chan
+        self.mlp_dim = mlp_dim
 
     def __call__(self, roi_feat):
         fan = roi_feat.shape[1] * roi_feat.shape[2] * roi_feat.shape[3]
         fc6 = fluid.layers.fc(input=roi_feat,
-                              size=self.num_chan,
+                              size=self.mlp_dim,
                               act='relu',
                               name='fc6',
                               param_attr=ParamAttr(
@@ -74,7 +132,7 @@ class TwoFCHead(object):
                                   learning_rate=2.,
                                   regularizer=L2Decay(0.)))
         head_feat = fluid.layers.fc(input=fc6,
-                                    size=self.num_chan,
+                                    size=self.mlp_dim,
                                     act='relu',
                                     name='fc7',
                                     param_attr=ParamAttr(
@@ -143,7 +201,8 @@ class BBoxHead(object):
         """
         head_feat = self.get_head_feat(roi_feat)
         # when ResNetC5 output a single feature map
-        if not isinstance(self.head, TwoFCHead):
+        if not isinstance(self.head, TwoFCHead) and not isinstance(
+                self.head, XConvNormHead):
             head_feat = fluid.layers.pool2d(
                 head_feat, pool_type='avg', global_pooling=True)
         cls_score = fluid.layers.fc(input=head_feat,
