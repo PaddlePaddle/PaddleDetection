@@ -15,10 +15,6 @@ num_classes: 21
 SSD:
   backbone: MobileNet
   multi_box_head: MultiBoxHead
-  metric:
-    ap_version: 11point
-    evaluate_difficult: false
-    overlap_threshold: 0.5
   output_decoder:
     background_label: 0
     keep_top_k: 200
