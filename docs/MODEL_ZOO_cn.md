@@ -42,6 +42,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet50-FPN         | Mask           |    1    |   1x    |  37.9  |  34.2   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_1x.tar) |
 | ResNet50-FPN         | Mask           |    1    |   2x    |  38.7  |  34.7   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_2x.tar) |
 | ResNet50-FPN         | Cascade Faster |    2    |   1x    |  40.9  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_r50_fpn_1x.tar) |
+| ResNet50-FPN         | Cascade Mask   |    1    |   1x    |  41.3  |  35.5   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_r50_fpn_1x.tar) |
 | ResNet50-vd-FPN      | Faster         |    2    |   2x    |  38.9  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar) |
 | ResNet50-vd-FPN      | Mask           |    1    |   2x    |  39.8  |  35.4   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_2x.tar) |
 | ResNet101            | Faster         |    1    |   1x    |  38.3  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_1x.tar) |

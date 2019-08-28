@@ -42,6 +42,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet50-FPN         | Mask           |    1    |   1x    |  37.9  |  34.2   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_1x.tar) |
 | ResNet50-FPN         | Mask           |    1    |   2x    |  38.7  |  34.7   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_2x.tar) |
 | ResNet50-FPN         | Cascade Faster |    2    |   1x    |  40.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_r50_fpn_1x.tar) |
+| ResNet50-FPN         | Cascade Mask   |    1    |   1x    |  41.3  |  35.5   | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_r50_fpn_1x.tar) |
 | ResNet50-vd-FPN      | Faster         |    2    |   2x    |  38.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar) |
 | ResNet50-vd-FPN      | Mask           |    1    |   2x    |  39.8  |  35.4   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_2x.tar) |
 | ResNet101            | Faster         |    1    |   1x    |  38.3  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_1x.tar) |
