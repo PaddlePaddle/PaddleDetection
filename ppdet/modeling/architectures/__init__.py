@@ -17,6 +17,7 @@ from __future__ import absolute_import
 from . import faster_rcnn
 from . import mask_rcnn
 from . import cascade_rcnn
+from . import cascade_mask_rcnn
 from . import yolov3
 from . import ssd
 from . import retinanet
@@ -24,6 +25,7 @@ from . import retinanet
 from .faster_rcnn import *
 from .mask_rcnn import *
 from .cascade_rcnn import *
+from .cascade_mask_rcnn import *
 from .yolov3 import *
 from .ssd import *
 from .retinanet import *
