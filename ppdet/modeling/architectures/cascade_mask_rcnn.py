@@ -53,6 +53,7 @@ class CascadeMaskRCNN(object):
                  bbox_assigner='CascadeBBoxAssigner',
                  mask_assigner='MaskAssigner',
                  mask_head='MaskHead',
+                 rpn_only=False,
                  fpn='FPN'):
         super(CascadeMaskRCNN, self).__init__()
         assert fpn is not None, "cascade RCNN requires FPN"
@@ -64,6 +65,7 @@ class CascadeMaskRCNN(object):
         self.bbox_head = bbox_head
         self.mask_assigner = mask_assigner
         self.mask_head = mask_head
+        self.rpn_only = rpn_only
         # Cascade local cfg
         self.cls_agnostic_bbox_reg = 2
         (brw0, brw1, brw2) = self.bbox_assigner.bbox_reg_weights
@@ -191,8 +193,9 @@ class CascadeMaskRCNN(object):
                 roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)
 
             bbox_pred = self.bbox_head.get_prediction(
-                im_info, roi_feat_list, rcnn_pred_list, proposal_list,
-                self.cascade_bbox_reg_weights, self.cls_agnostic_bbox_reg)
+                im_info, feed_vars['im_shape'], roi_feat_list, rcnn_pred_list,
+                proposal_list, self.cascade_bbox_reg_weights,
+                self.cls_agnostic_bbox_reg)
 
             bbox_pred = bbox_pred['bbox']
 
@@ -204,7 +207,11 @@ class CascadeMaskRCNN(object):
             cond = fluid.layers.less_than(x=bbox_size, y=size)
 
             mask_pred = fluid.layers.create_global_var(
-                shape=[1], value=0.0, dtype='float32', persistable=False)
+                shape=[1],
+                value=0.0,
+                dtype='float32',
+                persistable=False,
+                name='mask_pred')
 
             with fluid.layers.control_flow.Switch() as switch:
                 with switch.case(cond):

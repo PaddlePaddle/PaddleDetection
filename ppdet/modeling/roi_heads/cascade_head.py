@@ -139,6 +139,7 @@ class CascadeBBoxHead(object):
 
     def get_prediction(self,
                        im_info,
+                       im_shape,
                        roi_feat_list,
                        rcnn_pred_list,
                        proposal_list,
@@ -151,6 +152,9 @@ class CascadeBBoxHead(object):
             im_info (Variable): A 2-D LoDTensor with shape [B, 3]. B is the
                 number of input images, each element consists
                 of im_height, im_width, im_scale.
+            im_shape (Variable): Actual shape of original image with shape
+                [B, 3]. B is the number of images, each element consists of
+                original_height, original_width, 1
             rois_feat_list (List): RoI feature from RoIExtractor.
             rcnn_pred_list (Variable): Cascade rcnn's head's output
                 including bbox_pred and cls_score
@@ -197,7 +201,8 @@ class CascadeBBoxHead(object):
             # only use fg box delta to decode box
             bbox_pred_new = fluid.layers.slice(
                 bbox_pred_new, axes=[1], starts=[1], ends=[2])
-            bbox_pred_new = fluid.layers.expand(bbox_pred_new, [1, self.num_classes, 1])
+            bbox_pred_new = fluid.layers.expand(bbox_pred_new,
+                                                [1, self.num_classes, 1])
         decoded_box = fluid.layers.box_coder(
             prior_box=proposals_boxes,
             prior_box_var=bbox_reg_w,
@@ -206,8 +211,7 @@ class CascadeBBoxHead(object):
             box_normalized=False,
             axis=1)
 
-        # TODO: notice detectron use img.shape
-        box_out = fluid.layers.box_clip(input=decoded_box, im_info=im_info)
+        box_out = fluid.layers.box_clip(input=decoded_box, im_info=im_shape)
 
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
