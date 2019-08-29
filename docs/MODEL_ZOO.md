@@ -80,6 +80,16 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 - `c3-c5` means adding `dcn` in resnet stage 3 to 5.
 - Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/dcn)
 
+### Group Normalization
+| Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
+| :------------------- | :------------- | :-----: | :-----: | :----: | :-----: | :----------------------------------------------------------: |
+| ResNet50-FPN         | Faster         |    2    |   2x    |  39.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_fpn_gn_2x.tar) |
+| ResNet50-FPN         | Mask           |    1    |   2x    |  40.1  |   35.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_gn_2x.tar) |
+
+#### Notes:
+- Group Normalization reference from [Group Normalization](https://arxiv.org/abs/1803.08494).
+- Detailed configuration file in [configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
+
 ### Yolo v3
 
 | Backbone     | Size | Image/gpu | Lr schd | Box AP | Download  |

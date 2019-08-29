@@ -100,7 +100,7 @@ like dataset, run this command:
 # --annotation: the path of file, which contains the name of annotation files
 # --save-dir: the save path
 # --samples: the number of samples (default is -1, which mean all datas in dataset)
-python ./tools/generate_data_for_training.py
+python ./ppdet/data/tools/generate_data_for_training.py
             --type=json \
             --annotation=./annotations/instances_val2017.json \
             --save-dir=./roidb \
@@ -181,7 +181,7 @@ whole data pipeline is fully customizable through the yaml configuration files.
 ```sh
  # a small utility (`tools/labelme2coco.py`) is provided to convert
  # Labelme-annotated dataset to COCO format.
- python ./tools/labelme2coco.py --json_input_dir ./labelme_annos/
+ python ./ppdet/data/tools/labelme2coco.py --json_input_dir ./labelme_annos/
                                 --image_input_dir ./labelme_imgs/
                                 --output_dir ./cocome/
                                 --train_proportion 0.8

@@ -80,6 +80,16 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 - `c3-c5`意思是在resnet模块的3到5阶段增加`dcn`.
 - 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/dcn)
 
+### Group Normalization
+| 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |
+| :------------------- | :------------- |:--------: | :-----: | :----: | :-----: | :----------------------------------------------------------: |
+| ResNet50-FPN         | Faster         |    2      |   2x    |  39.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_fpn_gn_2x.tar) |
+| ResNet50-FPN         | Mask           |    1      |   2x    |  40.1  |   35.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_gn_2x.tar) |
+
+#### 注意事项:
+- Group Normalization参考论文[Group Normalization](https://arxiv.org/abs/1803.08494).
+- 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
+
 ### Yolo v3
 
 | 骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略 | Box AP | 下载 |

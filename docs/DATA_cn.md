@@ -90,7 +90,7 @@
 # --annotation: 一个包含所需标注文件名的文件的路径
 # --save-dir: 保存路径
 # --samples: sample的个数（默认是-1，代表使用所有sample）
-python ./tools/generate_data_for_training.py
+python ./ppdet/data/tools/generate_data_for_training.py
             --type=json \
             --annotation=./annotations/instances_val2017.json \
             --save-dir=./roidb \
@@ -168,7 +168,7 @@ coco = Reader(ccfg.DATA, ccfg.TRANSFORM, maxiter=-1)
 - 选择1：将数据集转换为VOC格式或者COCO格式。
 ```
  # 在./tools/中提供了labelme2coco.py用于将labelme标注的数据集转换为COCO数据集
- python ./tools/labelme2coco.py --json_input_dir ./labelme_annos/
+ python ./ppdet/data/tools/labelme2coco.py --json_input_dir ./labelme_annos/
                                 --image_input_dir ./labelme_imgs/
                                 --output_dir ./cocome/
                                 --train_proportion 0.8
