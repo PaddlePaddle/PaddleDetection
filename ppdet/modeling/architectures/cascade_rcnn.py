@@ -106,8 +106,8 @@ class CascadeRCNN(object):
             if self.rpn_only:
                 im_scale = fluid.layers.slice(
                     im_info, [1], starts=[2], ends=[3])
-                im_scale = fluid.layers.sequence_expand(im_scale, rois)
-                rois = rois / im_scale
+                im_scale = fluid.layers.sequence_expand(im_scale, rpn_rois)
+                rois = rpn_rois / im_scale
                 return {'proposal': rois}
 
         proposal_list = []
