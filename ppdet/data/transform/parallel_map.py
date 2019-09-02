@@ -49,8 +49,15 @@ class ParallelMappedDataset(ProxiedDataset):
         super(ParallelMappedDataset, self).__init__(source)
         worker_args = {k.lower(): v for k, v in worker_args.items()}
 
-        args = {'bufsize': 100, 'worker_num': 8}
+        args = {'bufsize': 100, 'worker_num': 8,
+            'use_process': False, 'memsize': '3G'}
         args.update(worker_args)
+        if args['use_process'] and type(args['memsize']) is str:
+            assert args['memsize'][-1].lower() == 'g', \
+                "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (args['memsize'])
+            gb = args['memsize'][:-1]
+            args['memsize'] = int(gb) * 1024 ** 3
+
         self._worker_args = args
         self._started = False
         self._source = source
@@ -60,9 +67,7 @@ class ParallelMappedDataset(ProxiedDataset):
 
     def _setup(self):
         """setup input/output queues and workers """
-        use_process = False
-        if 'use_process' in self._worker_args:
-            use_process = self._worker_args['use_process']
+        use_process = self._worker_args.get('use_process', False)
         if use_process and sys.platform == "win32":
             logger.info("Use multi-thread reader instead of "
                         "multi-process reader on Windows.")
@@ -73,6 +78,9 @@ class ParallelMappedDataset(ProxiedDataset):
             from .shared_queue import SharedQueue as Queue
             from multiprocessing import Process as Worker
             from multiprocessing import Event
+            memsize = self._worker_args['memsize']
+            self._inq = Queue(bufsize, memsize=memsize)
+            self._outq = Queue(bufsize, memsize=memsize)
         else:
             if six.PY3:
                 from queue import Queue
@@ -80,11 +88,10 @@ class ParallelMappedDataset(ProxiedDataset):
                 from Queue import Queue
             from threading import Thread as Worker
             from threading import Event
+            self._inq = Queue(bufsize)
+            self._outq = Queue(bufsize)
 
-        self._inq = Queue(bufsize)
-        self._outq = Queue(bufsize)
         consumer_num = self._worker_args['worker_num']
-
         id = str(uuid.uuid4())[-3:]
         self._producer = threading.Thread(
             target=self._produce,

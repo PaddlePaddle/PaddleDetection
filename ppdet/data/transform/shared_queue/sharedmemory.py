@@ -318,16 +318,14 @@ class PageAllocator(object):
         while True:
             # maybe flags already has some '0' pages,
             # so just check 'page_num - len(flags)' pages
-            flags += self.get_page_status(
-                pos, page_num - len(flags), ret_flag=True)
+            flags = self.get_page_status(
+                pos, page_num, ret_flag=True)
 
             if flags.count('0') == page_num:
                 break
 
             # not found enough pages, so shift to next few pages
             free_pos = flags.rfind('1') + 1
-            flags = flags[free_pos:]
-
             pos += free_pos
             end = pos + page_num
             if end > pages:
@@ -355,9 +353,6 @@ class PageAllocator(object):
         self.set_page_status(pos, page_num, '1')
         used += page_num
         self.set_alloc_info(end, used)
-
-        assert self.get_page_status(pos, page_num) == (page_num, 1), \
-            'faild to validate the page status'
         return pos
 
     def free_page(self, start, page_num):
@@ -530,7 +525,7 @@ class SharedMemoryMgr(object):
             logger.info('destroy [%s]' % (self))
 
         if not self._released and not self._allocator.empty():
-            logger.warn('not empty when delete this SharedMemoryMgr[%s]' %
+            logger.debug('not empty when delete this SharedMemoryMgr[%s]' %
                         (self))
         else:
             self._released = True

@@ -25,6 +25,8 @@ TRANSFORM:
         BATCH_SIZE: 1
         IS_PADDING: True
         DROP_LAST: False
-    WORKER_CONF:
-        BUFSIZE: 10
-        WORKER_NUM: 2
+        WORKER_CONF:
+            BUFSIZE: 100
+            WORKER_NUM: 4
+            MEMSIZE: 2G
+            USE_PROCESS: True
