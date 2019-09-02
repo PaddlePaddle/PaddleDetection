@@ -35,6 +35,7 @@ def ConvNorm(input,
              norm_type='affine_channel',
              norm_groups=32,
              dilation=1,
+             lr_scale=1,
              freeze_norm=False,
              act=None,
              norm_name=None,
@@ -51,18 +52,20 @@ def ConvNorm(input,
         groups=groups,
         act=None,
         param_attr=ParamAttr(
-            name=name + "_weights", initializer=initializer),
+            name=name + "_weights",
+            initializer=initializer,
+            learning_rate=lr_scale),
         bias_attr=False,
         name=name + '.conv2d.output.1')
 
     norm_lr = 0. if freeze_norm else 1.
     pattr = ParamAttr(
         name=norm_name + '_scale',
-        learning_rate=norm_lr,
+        learning_rate=norm_lr * lr_scale,
         regularizer=L2Decay(norm_decay))
     battr = ParamAttr(
         name=norm_name + '_offset',
-        learning_rate=norm_lr,
+        learning_rate=norm_lr * lr_scale,
         regularizer=L2Decay(norm_decay))
 
     if norm_type in ['bn', 'sync_bn']:

@@ -19,8 +19,10 @@ import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Xavier
 from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import MSRA
 
 from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.ops import ConvNorm
 from ppdet.core.workspace import register
 
 __all__ = ['CascadeBBoxHead']
@@ -50,7 +52,7 @@ class CascadeBBoxHead(object):
     def get_output(self,
                    roi_feat,
                    cls_agnostic_bbox_reg=2,
-                   wb_scalar=2.0,
+                   wb_scalar=1.0,
                    name=''):
         """
         Get bbox head output.
@@ -77,7 +79,7 @@ class CascadeBBoxHead(object):
                                         learning_rate=wb_scalar),
                                     bias_attr=ParamAttr(
                                         name='cls_score%s_b' % name,
-                                        learning_rate=wb_scalar,
+                                        learning_rate=wb_scalar * 2,
                                         regularizer=L2Decay(0.)))
         bbox_pred = fluid.layers.fc(input=head_feat,
                                     size=4 * cls_agnostic_bbox_reg,
@@ -90,7 +92,7 @@ class CascadeBBoxHead(object):
                                         learning_rate=wb_scalar),
                                     bias_attr=ParamAttr(
                                         name='bbox_pred%s_b' % name,
-                                        learning_rate=wb_scalar,
+                                        learning_rate=wb_scalar * 2,
                                         regularizer=L2Decay(0.)))
         return cls_score, bbox_pred
 
@@ -177,7 +179,7 @@ class CascadeBBoxHead(object):
         for i in range(repreat_num):
             # cls score
             if i < 2:
-                cls_score = self._head_share(
+                cls_score, _ = self.get_output(
                     roi_feat_list[-1],  # roi_feat_3
                     name='_' + str(i + 1) if i > 0 else '')
             else:
@@ -216,66 +218,82 @@ class CascadeBBoxHead(object):
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
 
-    def _head_share(self, roi_feat, wb_scalar=2.0, name=''):
-        # FC6 FC7
-        fan = roi_feat.shape[1] * roi_feat.shape[2] * roi_feat.shape[3]
-        fc6 = fluid.layers.fc(input=roi_feat,
-                              size=self.head.num_chan,
-                              act='relu',
-                              name='fc6' + name,
-                              param_attr=ParamAttr(
-                                  name='fc6%s_w' % name,
-                                  initializer=Xavier(fan_out=fan),
-                                  learning_rate=wb_scalar, ),
-                              bias_attr=ParamAttr(
-                                  name='fc6%s_b' % name,
-                                  learning_rate=2.0,
-                                  regularizer=L2Decay(0.)))
-        fc7 = fluid.layers.fc(input=fc6,
-                              size=self.head.num_chan,
-                              act='relu',
-                              name='fc7' + name,
-                              param_attr=ParamAttr(
-                                  name='fc7%s_w' % name,
-                                  initializer=Xavier(),
-                                  learning_rate=wb_scalar, ),
-                              bias_attr=ParamAttr(
-                                  name='fc7%s_b' % name,
-                                  learning_rate=2.0,
-                                  regularizer=L2Decay(0.)))
-        cls_score = fluid.layers.fc(input=fc7,
-                                    size=self.num_classes,
-                                    act=None,
-                                    name='cls_score' + name,
+
+@register
+class CascadeXConvNormHead(object):
+    """
+    RCNN head with serveral convolution layers
+
+    Args:
+        conv_num (int): num of convolution layers for the rcnn head
+        conv_dim (int): num of filters for the conv layers
+        mlp_dim (int): num of filters for the fc layers
+    """
+    __shared__ = ['norm_type', 'freeze_norm']
+
+    def __init__(self,
+                 num_conv=4,
+                 conv_dim=256,
+                 mlp_dim=1024,
+                 norm_type=None,
+                 freeze_norm=False):
+        super(CascadeXConvNormHead, self).__init__()
+        self.conv_dim = conv_dim
+        self.mlp_dim = mlp_dim
+        self.num_conv = num_conv
+        self.norm_type = norm_type
+        self.freeze_norm = freeze_norm
+
+    def __call__(self, roi_feat, wb_scalar=1.0, name=''):
+        conv = roi_feat
+        fan = self.conv_dim * 3 * 3
+        initializer = MSRA(uniform=False, fan_in=fan)
+        for i in range(self.num_conv):
+            name = 'bbox_head_conv' + str(i)
+            conv = ConvNorm(
+                conv,
+                self.conv_dim,
+                3,
+                act='relu',
+                initializer=initializer,
+                norm_type=self.norm_type,
+                freeze_norm=self.freeze_norm,
+                lr_scale=wb_scalar,
+                name=name,
+                norm_name=name)
+        fan = conv.shape[1] * conv.shape[2] * conv.shape[3]
+        head_heat = fluid.layers.fc(input=conv,
+                                    size=self.mlp_dim,
+                                    act='relu',
+                                    name='fc6' + name,
                                     param_attr=ParamAttr(
-                                        name='cls_score%s_w' % name,
-                                        initializer=Normal(
-                                            loc=0.0, scale=0.01),
-                                        learning_rate=wb_scalar, ),
+                                        name='fc6%s_w' % name,
+                                        initializer=Xavier(fan_out=fan),
+                                        learning_rate=wb_scalar),
                                     bias_attr=ParamAttr(
-                                        name='cls_score%s_b' % name,
-                                        learning_rate=2.0,
-                                        regularizer=L2Decay(0.)))
-        return cls_score
+                                        name='fc6%s_b' % name,
+                                        regularizer=L2Decay(0.),
+                                        learning_rate=wb_scalar * 2))
+        return head_heat
 
 
 @register
-class FC6FC7Head(object):
+class CascadeTwoFCHead(object):
     """
-    Cascade RCNN head with two Fully Connected layers
+    RCNN head with serveral convolution layers
 
     Args:
-        num_chan (int): num of filters for the fc layers
+        mlp_dim (int): num of filters for the fc layers
     """
 
-    def __init__(self, num_chan):
-        super(FC6FC7Head, self).__init__()
-        self.num_chan = num_chan
+    def __init__(self, mlp_dim):
+        super(CascadeTwoFCHead, self).__init__()
+        self.mlp_dim = mlp_dim
 
     def __call__(self, roi_feat, wb_scalar=1.0, name=''):
         fan = roi_feat.shape[1] * roi_feat.shape[2] * roi_feat.shape[3]
         fc6 = fluid.layers.fc(input=roi_feat,
-                              size=self.num_chan,
+                              size=self.mlp_dim,
                               act='relu',
                               name='fc6' + name,
                               param_attr=ParamAttr(
@@ -284,10 +302,10 @@ class FC6FC7Head(object):
                                   learning_rate=wb_scalar),
                               bias_attr=ParamAttr(
                                   name='fc6%s_b' % name,
-                                  learning_rate=wb_scalar,
+                                  learning_rate=wb_scalar * 2,
                                   regularizer=L2Decay(0.)))
         head_feat = fluid.layers.fc(input=fc6,
-                                    size=self.num_chan,
+                                    size=self.mlp_dim,
                                     act='relu',
                                     name='fc7' + name,
                                     param_attr=ParamAttr(
@@ -296,6 +314,6 @@ class FC6FC7Head(object):
                                         learning_rate=wb_scalar),
                                     bias_attr=ParamAttr(
                                         name='fc7%s_b' % name,
-                                        learning_rate=wb_scalar,
+                                        learning_rate=wb_scalar * 2,
                                         regularizer=L2Decay(0.)))
         return head_feat

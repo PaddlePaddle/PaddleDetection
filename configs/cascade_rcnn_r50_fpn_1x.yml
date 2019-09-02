@@ -77,14 +77,14 @@ CascadeBBoxAssigner:
   fg_fraction: 0.25
 
 CascadeBBoxHead:
-  head: FC6FC7Head
+  head: CascadeTwoFCHead
   nms:
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
 
-FC6FC7Head:
-  num_chan: 1024
+CascadeTwoFCHead:
+  mlp_dim: 1024
 
 LearningRate:
   base_lr: 0.02
