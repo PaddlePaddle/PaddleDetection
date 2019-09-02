@@ -48,7 +48,6 @@ def parse_fetches(fetches, prog=None, extra_keys=None):
         for k in extra_keys:
             try:
                 v = fluid.framework._get_var(k, prog)
-                v.persistable = True
                 keys.append(k)
                 values.append(v.name)
             except Exception:
