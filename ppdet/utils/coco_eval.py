@@ -24,9 +24,6 @@ import cv2
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
-from pycocotools.coco import COCO
-from pycocotools.cocoeval import COCOeval
-import pycocotools.mask as mask_util
 
 import logging
 logger = logging.getLogger(__name__)
@@ -74,6 +71,7 @@ def bbox_eval(results,
               is_bbox_normalized=False):
     assert 'bbox' in results[0]
     assert outfile.endswith('.json')
+    from pycocotools.coco import COCO
 
     coco_gt = COCO(anno_file)
     cat_ids = coco_gt.getCatIds()
@@ -104,6 +102,7 @@ def bbox_eval(results,
 def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
+    from pycocotools.coco import COCO
 
     coco_gt = COCO(anno_file)
     clsid2catid = {i + 1: v for i, v in enumerate(coco_gt.getCatIds())}
@@ -134,6 +133,9 @@ def cocoapi_eval(jsonfile,
         max_dets: COCO evaluation maxDets.
     """
     assert coco_gt != None or anno_file != None
+    from pycocotools.coco import COCO
+    from pycocotools.cocoeval import COCOeval
+
     if coco_gt == None:
         coco_gt = COCO(anno_file)
     logger.info("Start evaluate...")
@@ -240,6 +242,7 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
 
 
 def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
+    import pycocotools.mask as mask_util
     scale = (resolution + 2.0) / resolution
 
     segm_res = []
@@ -362,6 +365,7 @@ def get_category_info_from_anno(anno_file, with_background=True):
         with_background (bool, default True):
             whether load background as class 0.
     """
+    from pycocotools.coco import COCO
     coco = COCO(anno_file)
     cats = coco.loadCats(coco.getCatIds())
     clsid2catid = {
