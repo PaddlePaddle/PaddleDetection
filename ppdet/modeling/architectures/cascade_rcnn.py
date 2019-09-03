@@ -75,9 +75,7 @@ class CascadeRCNN(object):
         assert mode in ['train', 'test'], \
             "only 'train' and 'test' mode is supported"
         if mode == 'train':
-            required_fields = [
-                'gt_label', 'gt_box', 'gt_mask', 'is_crowd', 'im_info'
-            ]
+            required_fields = ['gt_label', 'gt_box', 'is_crowd', 'im_info']
         else:
             required_fields = ['im_shape', 'im_info']
         for var in required_fields:
