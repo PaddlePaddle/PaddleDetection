@@ -81,7 +81,8 @@ def bbox_eval(results,
             for i in range(len(gt_boxes)):
                 gt_box = gt_boxes[i]
                 gt_label = gt_labels[i]
-                difficult = difficults[i]
+                difficult = None if difficults is None \
+                                else difficults[i]
                 bbox_num = bbox_lengths[i]
                 bbox = bboxes[bbox_idx: bbox_idx + bbox_num]
                 gt_box, gt_label, difficult = prune_zero_padding(
