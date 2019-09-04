@@ -137,7 +137,7 @@ def main():
     if 'mask' in results[0]:
         resolution = model.mask_head.resolution
     eval_results(results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-                 is_bbox_normalized, FLAGS.output_eval)
+                 is_bbox_normalized, FLAGS.output_eval, cfg.map_type)
 
 
 if __name__ == '__main__':

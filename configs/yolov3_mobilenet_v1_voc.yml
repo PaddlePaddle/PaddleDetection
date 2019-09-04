@@ -8,6 +8,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 2000
 metric: VOC
+map_type: 11point
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
 weights: output/yolov3_mobilenet_v1_voc/model_final
 num_classes: 20

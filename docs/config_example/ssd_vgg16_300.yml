@@ -17,8 +17,10 @@ snapshot_iter: 10000
 log_smooth_window: 20
 # The log in training is displayed once every period.
 log_iter: 20
-# Evalution method, COCO and VOC are available.
+# Evaluation method, COCO and VOC are available.
 metric: COCO
+# Evaluation mAP calculation method in VOC metric, 11point and integral are available.
+map_type: 11point
 # The path of final model for evaluation and test.
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
 # The directory to save models.

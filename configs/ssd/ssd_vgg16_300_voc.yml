@@ -8,6 +8,7 @@ snapshot_iter: 10000
 log_smooth_window: 20
 log_iter: 20
 metric: VOC
+map_type: 11point
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
 save_dir: output
 weights: output/ssd_vgg16_300_voc/model_final/
