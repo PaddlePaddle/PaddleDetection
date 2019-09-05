@@ -19,6 +19,7 @@ from __future__ import print_function
 import logging
 import numpy as np
 import os
+import time
 
 import paddle.fluid as fluid
 
@@ -69,6 +70,10 @@ def eval_run(exe, compile_program, pyreader, keys, values, cls):
             cls[i].reset(exe)
             values.append(accum_map)
 
+    images_num = 0
+    start_time = time.time()
+    has_bbox = 'bbox' in keys
+
     try:
         pyreader.start()
         while True:
@@ -83,9 +88,19 @@ def eval_run(exe, compile_program, pyreader, keys, values, cls):
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
+            images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
         pyreader.reset()
     logger.info('Test finish iter {}'.format(iter_id))
+
+    end_time = time.time()
+    fps = images_num / (end_time - start_time)
+    if has_bbox:
+        logger.info('Total number of images: {}, inference time: {} fps.'.
+                    format(images_num, fps))
+    else:
+        logger.info('Total iteration: {}, inference time: {} batch/s.'.format(
+            images_num, fps))
 
     return results
 
@@ -114,9 +129,12 @@ def eval_results(results,
             if output_directory:
                 output = os.path.join(output_directory, 'bbox.json')
 
-            box_ap_stats = bbox_eval(results, anno_file, output,
-                                     with_background,
-                                     is_bbox_normalized=is_bbox_normalized)
+            box_ap_stats = bbox_eval(
+                results,
+                anno_file,
+                output,
+                with_background,
+                is_bbox_normalized=is_bbox_normalized)
 
         if 'mask' in results[0]:
             output = 'mask.json'
@@ -130,7 +148,8 @@ def eval_results(results,
             box_ap_stats.append(res * 100.)
         elif 'bbox' in results[0]:
             box_ap = voc_bbox_eval(
-                results, num_classes, 
+                results,
+                num_classes,
                 is_bbox_normalized=is_bbox_normalized,
                 map_type=map_type)
             box_ap_stats.append(box_ap)
