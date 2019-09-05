@@ -136,8 +136,10 @@ def main():
     resolution = None
     if 'mask' in results[0]:
         resolution = model.mask_head.resolution
+    # if map_type not set, use default 11point, only use in VOC eval
+    map_type = cfg.map_type if 'map_type' in cfg else '11point'
     eval_results(results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-                 is_bbox_normalized, FLAGS.output_eval, cfg.map_type)
+                 is_bbox_normalized, FLAGS.output_eval, map_type)
 
 
 if __name__ == '__main__':

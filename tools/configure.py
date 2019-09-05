@@ -35,6 +35,7 @@ MISC_CONFIG = {
     "save_dir": "<value>",
     "weights": "<value>",
     "metric": "<value>",
+    "map_type": "11point",
     "log_smooth_window": 20,
     "snapshot_iter": 10000,
     "use_gpu": True,

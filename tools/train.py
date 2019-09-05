@@ -163,6 +163,9 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
+    # if map_type not set, use default 11point, only use in VOC eval
+    map_type = cfg.map_type if 'map_type' in cfg else '11point'
+
     train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
     train_pyreader.start()
     start_time = time.time()
@@ -200,7 +203,7 @@ def main():
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
                 box_ap_stats = eval_results(results, eval_feed, cfg.metric, cfg.num_classes,
-                             resolution, is_bbox_normalized, FLAGS.output_eval)
+                             resolution, is_bbox_normalized, FLAGS.output_eval, map_type)
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
                     best_box_ap_list[1] = it
