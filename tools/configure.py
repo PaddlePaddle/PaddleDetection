@@ -151,9 +151,7 @@ def generate_config(**kwargs):
         print(dump_config(s, minimal))
 
 
-# FIXME this is pretty hackish, maybe implement a custom YAML printer?
-def analyze_config(**kwargs):
-    config = load_config(kwargs['file'])
+def print_total_cfg(config):
     modules = get_registered_modules()
     green = '___{}___'.format(color_tty.colors.index('green') + 31)
 
@@ -220,6 +218,12 @@ def analyze_config(**kwargs):
                      r"[31m<module config missing>[0m", buffer))
     buffer = re.sub(r"___(\d+)___(.*?):", r"[\1m\2[0m:", buffer)
     print(buffer)
+
+
+# FIXME this is pretty hackish, maybe implement a custom YAML printer?
+def analyze_config(**kwargs):
+    config = load_config(kwargs['file'])
+    print_total_cfg(config)
 
 
 if __name__ == '__main__':

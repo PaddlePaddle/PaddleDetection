@@ -22,10 +22,12 @@ import glob
 import numpy as np
 from PIL import Image
 
+
 def set_paddle_flags(**kwargs):
     for key, value in kwargs.items():
         if os.environ.get(key, None) is None:
             os.environ[key] = str(value)
+
 
 # NOTE(paddle-dev): All of these flags should be set before
 # `import paddle`. Otherwise, it would not take any effect.
@@ -35,6 +37,7 @@ set_paddle_flags(
 
 from paddle import fluid
 
+from tools.configure import print_total_cfg
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
@@ -147,6 +150,7 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    print_total_cfg(cfg)
 
     if 'test_feed' not in cfg:
         test_feed = create(main_arch + 'TestFeed')

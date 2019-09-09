@@ -21,6 +21,7 @@ import time
 import numpy as np
 import datetime
 from collections import deque
+from tools.configure import print_total_cfg
 
 
 def set_paddle_flags(**kwargs):
@@ -36,7 +37,6 @@ set_paddle_flags(
 )
 
 from paddle import fluid
-
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.data_feed import create_reader
 
@@ -66,6 +66,7 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    print_total_cfg(cfg)
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
