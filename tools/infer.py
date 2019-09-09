@@ -211,6 +211,13 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
+    # use tb-paddle to log image
+    if FLAGS.use_tb:
+        from tb_paddle import SummaryWriter
+        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
+        tb_image_step = 0
+        tb_image_frame = 0 # each frame can display ten pictures at most. 
+
     imid2path = reader.imid2path
     for iter_id, data in enumerate(reader()):
         outs = exe.run(infer_prog,
@@ -236,10 +243,34 @@ def main():
         for im_id in im_ids:
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
+
+            # use tb-paddle to log original image           
+            if FLAGS.use_tb:
+                original_image_np = np.array(image)
+                tb_writer.add_image(
+                    "original/frame_{}".format(tb_image_frame),
+                    original_image_np,
+                    tb_image_step,
+                    dataformats='HWC')
+
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
                                       mask_results)
+            
+            # use tb-paddle to log image with bbox
+            if FLAGS.use_tb:
+                infer_image_np = np.array(image)
+                tb_writer.add_image(
+                    "bbox/frame_{}".format(tb_image_frame),
+                    infer_image_np,
+                    tb_image_step,
+                    dataformats='HWC')
+                tb_image_step += 1
+                if tb_image_step % 10 == 0:
+                    tb_image_step = 0
+                    tb_image_frame += 1
+
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
             image.save(save_name, quality=95)
@@ -272,5 +303,15 @@ if __name__ == '__main__':
         action='store_true',
         default=False,
         help="Save inference model in output_dir if True.")
+    parser.add_argument(
+        "--use_tb",
+        type=bool,
+        default=False,
+        help="whether to record the data to Tensorboard.")
+    parser.add_argument(
+        '--tb_log_dir',
+        type=str,
+        default="tb_log_dir/image",
+        help='Tensorboard logging directory for image.')
     FLAGS = parser.parse_args()
     main()

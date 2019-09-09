@@ -39,20 +39,26 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
 - `--output_eval`: 如果边训练边测试, 这个参数可以编辑评测保存json路径, 默认是当前目录。
 - `-d` or `--dataset_dir`: 数据集路径, 同配置文件里的`dataset_dir`. 例如: `-d dataset/coco`
 - `-o`: 设置配置文件里的参数内容。 例如: `-o max_iters=180000`
+- `--use_tb`: 是否使用[tb-paddle](https://github.com/linshuliang/tb-paddle)记录数据，进而在TensorBoard中显示，默认是False。
+- `--tb_log_dir`: 指定 tb-paddle 记录数据的存储路径，默认是`tb_log_dir/scalar`。
 
 ##### 例子
 
 - 边训练边测试
+
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
 ```
-可通过设置`--eval`在训练epoch中交替执行评估, 评估在每个snapshot_iter时开始。可在配置文件的`snapshot_iter`处修改。
-如果验证集很大，测试将会比较耗时，影响训练速度，建议减少评估次数，或训练完再进行评估。当边训练边测试时，在每次snapshot_iter会评测出最佳mAP模型保存到
+
+可通过设置`--eval`在训练epoch中交替执行评估, 评估在每个snapshot\_iter时开始。可在配置文件的`snapshot_iter`处修改。
+如果验证集很大，测试将会比较耗时，影响训练速度，建议减少评估次数，或训练完再进行评估。
+当边训练边测试时，在每次snapshot\_iter会评测出最佳mAP模型保存到
 `best_model`文件夹下，`best_model`的路径和`model_final`的路径相同。
 
 - 设置配置文件参数 && 指定数据集路径
+
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export PYTHONPATH=$PYTHONPATH:.
@@ -143,11 +149,14 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
 
 - `--output_dir`: 输出推断后可视化文件。
 - `--draw_threshold`: 设置推断的阈值。默认是0.5.
-- `--save_inference_model`: 设为`True`时，将预测模型保存到output_dir中.
+- `--save_inference_model`: 设为`True`时，将预测模型保存到output\_dir中.
+- `--use_tb`: 是否使用[tb-paddle](https://github.com/linshuliang/tb-paddle)记录数据，进而在TensorBoard中显示，默认是False。
+- `--tb_log_dir`: 指定 tb-paddle 记录数据的存储路径，默认是`tb_log_dir/image`。
 
 #### 例子
 
 - 设置输出路径 && 设置推断阈值
+
 ```bash
 # GPU推断
 export CUDA_VISIBLE_DEVICES=0
@@ -156,12 +165,15 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
-                      -o weights=output/faster_rcnn_r50_1x/model_final
+                      -o weights=output/faster_rcnn_r50_1x/model_final \
+                      --use_tb=True
 ```
 
 
 可视化文件默认保存在`output`中，可通过`--output_dir=`指定不同的输出路径。  
-`--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行推断，可以设置`-o weights`指定模型路径。
+`--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
+不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行推断，可以设置`-o weights`指定模型路径。
+`--use_tb`是个可选参数，当为`True`时，可使用 TensorBoard 来可视化参数的变化趋势和图片。
 
 - 保存推断模型
 

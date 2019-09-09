@@ -174,6 +174,14 @@ def main():
     save_dir = os.path.join(cfg.save_dir, cfg_name)
     time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
+
+    # use tb-paddle to log data
+    if FLAGS.use_tb:
+        from tb_paddle import SummaryWriter
+        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
+        tb_loss_step = 0
+        tb_mAP_step = 0
+
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
@@ -183,6 +191,14 @@ def main():
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
         outs = exe.run(train_compile_program, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
+
+        # use tb-paddle to log loss
+        if FLAGS.use_tb:
+            if it % cfg.log_iter == 0:
+                for loss_name, loss_value in stats.items():
+                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
+                tb_loss_step += 1
+
         train_stats.update(stats)
         logs = train_stats.log()
         if it % cfg.log_iter == 0:
@@ -204,6 +220,12 @@ def main():
                 box_ap_stats = eval_results(
                     results, eval_feed, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type)
+                
+                # use tb_paddle to log mAP
+                if FLAGS.use_tb:
+                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
+                    tb_mAP_step += 1
+                
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
                     best_box_ap_list[1] = it
@@ -239,5 +261,15 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Dataset path, same as DataFeed.dataset.dataset_dir")
+    parser.add_argument(
+        "--use_tb",
+        type=bool,
+        default=False,
+        help="whether to record the data to Tensorboard.")
+    parser.add_argument(
+        '--tb_log_dir',
+        type=str,
+        default="tb_log_dir/scalar",
+        help='Tensorboard logging directory for scalar.')
     FLAGS = parser.parse_args()
     main()
