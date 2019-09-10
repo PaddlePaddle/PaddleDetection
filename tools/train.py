@@ -134,7 +134,6 @@ def main():
 
     # compile program for multi-devices
     build_strategy = fluid.BuildStrategy()
-    build_strategy.enable_inplace = False
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     # only enable sync_bn in multi GPU devices
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 and cfg.use_gpu
