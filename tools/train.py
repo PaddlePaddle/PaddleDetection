@@ -137,9 +137,17 @@ def main():
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     # only enable sync_bn in multi GPU devices
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 and cfg.use_gpu
+
+    exec_strategy = fluid.ExecutionStrategy()
+    # iteration number when CompiledProgram tries to drop local execution scopes.
+    # Set it to be 1 to save memory usages, so that unused variables in
+    # local execution scopes can be deleted after each iteration.
+    exec_strategy.num_iteration_per_drop_scope = 1
+
     train_compile_program = fluid.compiler.CompiledProgram(
         train_prog).with_data_parallel(
-            loss_name=loss.name, build_strategy=build_strategy)
+            loss_name=loss.name, build_strategy=build_strategy,
+            exec_strategy=exec_strategy)
     if FLAGS.eval:
         eval_compile_program = fluid.compiler.CompiledProgram(eval_prog)
 
