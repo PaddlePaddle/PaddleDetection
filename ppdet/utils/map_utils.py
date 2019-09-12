@@ -22,9 +22,7 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    'bbox_area', 'jaccard_overlap', 'DetectionMAP'
-]
+__all__ = ['bbox_area', 'jaccard_overlap', 'DetectionMAP']
 
 
 def bbox_area(bbox, is_bbox_normalized):
@@ -48,13 +46,11 @@ def jaccard_overlap(pred, gt, is_bbox_normalized=False):
     inter_ymin = max(pred[1], gt[1])
     inter_xmax = min(pred[2], gt[2])
     inter_ymax = min(pred[3], gt[3])
-    inter_size = bbox_area([inter_xmin, inter_ymin,
-                            inter_xmax, inter_ymax],
-                            is_bbox_normalized)
+    inter_size = bbox_area([inter_xmin, inter_ymin, inter_xmax, inter_ymax],
+                           is_bbox_normalized)
     pred_size = bbox_area(pred, is_bbox_normalized)
     gt_size = bbox_area(gt, is_bbox_normalized)
-    overlap = float(inter_size) / (
-        pred_size + gt_size - inter_size)
+    overlap = float(inter_size) / (pred_size + gt_size - inter_size)
     return overlap
 
 
@@ -117,7 +113,7 @@ class DetectionMAP(object):
             for i, gl in enumerate(gt_label):
                 if int(gl) == int(label):
                     overlap = jaccard_overlap(pred, gt_box[i],
-                                    self.is_bbox_normalized)
+                                              self.is_bbox_normalized)
                     if overlap > max_overlap:
                         max_overlap = overlap
                         max_idx = i
@@ -126,16 +122,13 @@ class DetectionMAP(object):
                 if self.evaluate_difficult or \
                         int(np.array(difficult[max_idx])) == 0:
                     if not visited[max_idx]:
-                        self.class_score_poss[
-                                int(label)].append([score, 1.0])
+                        self.class_score_poss[int(label)].append([score, 1.0])
                         visited[max_idx] = True
                     else:
-                        self.class_score_poss[
-                                int(label)].append([score, 0.0])
+                        self.class_score_poss[int(label)].append([score, 0.0])
             else:
-                self.class_score_poss[
-                        int(label)].append([score, 0.0])
-    
+                self.class_score_poss[int(label)].append([score, 0.0])
+
     def reset(self):
         """
         Reset metric statics
@@ -150,7 +143,7 @@ class DetectionMAP(object):
         """
         mAP = 0.
         valid_cnt = 0
-        for score_pos, count in zip(self.class_score_poss, 
+        for score_pos, count in zip(self.class_score_poss,
                                     self.class_gt_counts):
             if count == 0 or len(score_pos) == 0:
                 continue
@@ -176,7 +169,7 @@ class DetectionMAP(object):
                         else:
                             if max_precisions[j] < precision[i]:
                                 max_precisions[j] = precision[i]
-                mAP += sum(max_precisions) / 11. 
+                mAP += sum(max_precisions) / 11.
                 valid_cnt += 1
             elif self.map_type == 'integral':
                 import math
@@ -190,7 +183,7 @@ class DetectionMAP(object):
                 mAP += ap
                 valid_cnt += 1
             else:
-                logger.error("Unspported mAP type {}".format(map_type))
+                logger.error("Unspported mAP type {}".format(self.map_type))
                 sys.exit(1)
 
         self.mAP = mAP / float(valid_cnt) if valid_cnt > 0 else mAP
@@ -208,9 +201,7 @@ class DetectionMAP(object):
         Calculate accumulating true/false positive results from
         [score, pos] records
         """
-        sorted_list = sorted(score_pos_list, 
-                             key=lambda s: s[0], 
-                             reverse=True)
+        sorted_list = sorted(score_pos_list, key=lambda s: s[0], reverse=True)
         accum_tp = 0
         accum_fp = 0
         accum_tp_list = []
@@ -221,4 +212,3 @@ class DetectionMAP(object):
             accum_fp += 1 - int(pos)
             accum_fp_list.append(accum_fp)
         return accum_tp_list, accum_fp_list
-
