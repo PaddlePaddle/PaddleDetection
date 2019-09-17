@@ -111,7 +111,7 @@ def prune_feed_vars(feeded_var_names, target_vars, prog):
     for name in feeded_var_names:
         try:
             v = global_block.var(name)
-            exist_var_names.append(v.name.encode('utf-8'))
+            exist_var_names.append(str(v.name))
         except Exception:
             logger.info('save_inference_model pruned unused feed '
                         'variables {}'.format(name))
@@ -127,9 +127,8 @@ def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
     feeded_var_names = prune_feed_vars(feeded_var_names, target_vars,
                                        infer_prog)
     logger.info("Save inference model to {}, input: {}, output: "
-                "{}...".format(save_dir, feeded_var_names, [
-                    var.name.encode('utf-8') for var in target_vars
-                ]))
+                "{}...".format(save_dir, feeded_var_names,
+                               [str(var.name) for var in target_vars]))
     fluid.io.save_inference_model(
         save_dir,
         feeded_var_names=feeded_var_names,
