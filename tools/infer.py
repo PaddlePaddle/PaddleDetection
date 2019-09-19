@@ -37,7 +37,7 @@ set_paddle_flags(
 
 from paddle import fluid
 
-from tools.configure import print_total_cfg
+from ppdet.utils.cli import print_total_cfg
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader

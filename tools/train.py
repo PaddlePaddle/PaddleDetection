@@ -21,7 +21,6 @@ import time
 import numpy as np
 import datetime
 from collections import deque
-from tools.configure import print_total_cfg
 
 
 def set_paddle_flags(**kwargs):
@@ -40,6 +39,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.data_feed import create_reader
 
+from ppdet.utils.cli import print_total_cfg
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
@@ -142,7 +142,8 @@ def main():
 
     train_compile_program = fluid.compiler.CompiledProgram(
         train_prog).with_data_parallel(
-            loss_name=loss.name, build_strategy=build_strategy,
+            loss_name=loss.name,
+            build_strategy=build_strategy,
             exec_strategy=exec_strategy)
     if FLAGS.eval:
         eval_compile_program = fluid.compiler.CompiledProgram(eval_prog)
@@ -159,12 +160,9 @@ def main():
     elif cfg.pretrain_weights:
         checkpoint.load_pretrain(exe, train_prog, cfg.pretrain_weights)
 
-    train_reader = create_reader(
-                    train_feed, 
-                    (cfg.max_iters - start_iter) * devices_num,
-                    FLAGS.dataset_dir)
+    train_reader = create_reader(train_feed, (cfg.max_iters - start_iter) *
+                                 devices_num, FLAGS.dataset_dir)
     train_pyreader.decorate_sample_list_generator(train_reader, place)
-
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
@@ -230,12 +228,12 @@ def main():
                 box_ap_stats = eval_results(
                     results, eval_feed, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type)
-                
+
                 # use tb_paddle to log mAP
                 if FLAGS.use_tb:
                     tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
                     tb_mAP_step += 1
-                
+
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
                     best_box_ap_list[1] = it

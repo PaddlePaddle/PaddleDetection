@@ -33,7 +33,7 @@ set_paddle_flags(
 
 import paddle.fluid as fluid
 
-from tools.configure import print_total_cfg
+from ppdet.utils.cli import print_total_cfg
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
