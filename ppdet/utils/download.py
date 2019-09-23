@@ -130,6 +130,16 @@ def get_dataset_path(path, annotation, image_dir):
                      "'voc' and 'coco' currently".format(path, osp.split(path)[-1]))
 
 
+def map_path(url, root_dir):
+    # parse path after download to decompress under root_dir
+    fname = url.split('/')[-1]
+    zip_formats = ['.zip', '.tar', '.gz']
+    fpath = fname
+    for zip_format in zip_formats:
+        fpath = fpath.replace(zip_format, '')
+    return osp.join(root_dir, fpath)
+
+
 def get_path(url, root_dir, md5sum=None):
     """ Download from given url to root_dir.
     if file or directory specified by url is exists under
@@ -142,12 +152,7 @@ def get_path(url, root_dir, md5sum=None):
     md5sum (str): md5 sum of download package
     """
     # parse path after download to decompress under root_dir
-    fname = url.split('/')[-1]
-    zip_formats = ['.zip', '.tar', '.gz']
-    fpath = fname
-    for zip_format in zip_formats:
-        fpath = fpath.replace(zip_format, '')
-    fullpath = osp.join(root_dir, fpath)
+    fullpath = map_path(url, root_dir)
 
     # For same zip file, decompressed directory name different
     # from zip file name, rename by following map

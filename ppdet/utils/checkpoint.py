@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 
 import os
 import shutil
+import time
 import numpy as np
 
 import paddle.fluid as fluid
@@ -44,6 +45,33 @@ def is_url(path):
     return path.startswith('http://') or path.startswith('https://')
 
 
+def _get_weight_path(path):
+    env = os.environ
+    if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
+        trainer_id = int(env['PADDLE_TRAINER_ID'])
+        num_trainers = int(env['PADDLE_TRAINERS_NUM'])
+        if num_trainers <= 1:
+            path = get_weights_path(path)
+        else:
+            from ppdet.utils.download import map_path, WEIGHTS_HOME
+            weight_path = map_path(path, WEIGHTS_HOME)
+            lock_path = weight_path + '.lock'
+            if not os.path.exists(weight_path):
+                os.makedirs(os.path.dirname(weight_path), exist_ok=True)
+                with open(lock_path, 'w'):  # touch
+                    os.utime(lock_path)
+                if trainer_id == 0:
+                    get_weights_path(path)
+                    os.remove(lock_path)
+                else:
+                    while os.path.exists(lock_path):
+                        time.sleep(1)
+            path = weight_path
+    else:
+        path = get_weights_path(path)
+    return path
+
+
 def load_pretrain(exe, prog, path):
     """
     Load model from the given path.
@@ -52,8 +80,9 @@ def load_pretrain(exe, prog, path):
         prog (fluid.Program): load weight to which Program object.
         path (string): URL string or loca model path.
     """
+
     if is_url(path):
-        path = get_weights_path(path)
+        path = _get_weight_path(path)
 
     if not os.path.exists(path):
         raise ValueError("Model pretrain path {} does not "
@@ -131,7 +160,7 @@ def load_and_fusebn(exe, prog, path):
     """
     logger.info('Load model and fuse batch norm from {}...'.format(path))
     if is_url(path):
-        path = get_weights_path(path)
+        path = _get_weight_path(path)
 
     if not os.path.exists(path):
         raise ValueError("Model path {} does not exists.".format(path))
