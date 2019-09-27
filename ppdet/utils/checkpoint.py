@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import errno
 import os
 import shutil
 import time
@@ -57,9 +58,13 @@ def _get_weight_path(path):
             weight_path = map_path(path, WEIGHTS_HOME)
             lock_path = weight_path + '.lock'
             if not os.path.exists(weight_path):
-                os.makedirs(os.path.dirname(weight_path), exist_ok=True)
+                try:
+                    os.makedirs(os.path.dirname(weight_path))
+                except OSError as e:
+                    if e.errno != errno.EEXIST:
+                        raise
                 with open(lock_path, 'w'):  # touch
-                    os.utime(lock_path)
+                    os.utime(lock_path, None)
                 if trainer_id == 0:
                     get_weights_path(path)
                     os.remove(lock_path)
