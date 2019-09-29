@@ -75,6 +75,9 @@ def main():
     if 'log_iter' not in cfg:
         cfg.log_iter = 20
 
+    ignore_params = cfg.finetune_exclude_pretrained_params \
+                 if 'finetune_exclude_pretrained_params' in cfg else []
+
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     print_total_cfg(cfg)
@@ -179,13 +182,15 @@ def main():
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
     start_iter = 0
+
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights and fuse_bn:
+    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
         checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
     elif cfg.pretrain_weights:
-        checkpoint.load_pretrain(exe, train_prog, cfg.pretrain_weights)
+        checkpoint.load_params(
+            exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
     train_reader = create_reader(train_feed, (cfg.max_iters - start_iter) *
                                  devices_num, FLAGS.dataset_dir)

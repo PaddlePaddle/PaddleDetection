@@ -178,7 +178,7 @@ def main():
 
     exe.run(startup_prog)
     if cfg.weights:
-        checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
+        checkpoint.load_params(exe, infer_prog, cfg.weights)
 
     if FLAGS.save_inference_model:
         save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)

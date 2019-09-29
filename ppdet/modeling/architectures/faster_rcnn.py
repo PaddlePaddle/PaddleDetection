@@ -94,7 +94,8 @@ class FasterRCNN(object):
             bbox_outside_weights = outs[4]
         else:
             if self.rpn_only:
-                im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+                im_scale = fluid.layers.slice(
+                    im_info, [1], starts=[2], ends=[3])
                 im_scale = fluid.layers.sequence_expand(im_scale, rois)
                 rois = rois / im_scale
                 return {'proposal': rois}

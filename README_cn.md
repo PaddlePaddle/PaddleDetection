@@ -61,14 +61,9 @@ PaddleDetection的目的是为工业界和学术界提供大量易使用的目�
 
 ## 开始
 
-在预测阶段，可以通过运行以下指令得到可视化结果并保存在`output`目录下。
+## 快速入门
 
-```bash
-export PYTHONPATH=`pwd`:$PYTHONPATH
-python tools/infer.py -c configs/mask_rcnn_r50_1x.yml \
-    -o weights=https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_1x.tar \
-    --infer_img=demo/000000570688.jpg
-```
+PaddleDetection提供了快速开始的demo利于用户能够快速上手，示例请参考[QUICK_STARTED_cn.md](docs/QUICK_STARTED_cn.md)
 
 更多训练及评估流程，请参考[GETTING_STARTED_cn.md](docs/GETTING_STARTED_cn.md).
 
