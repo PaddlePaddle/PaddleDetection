@@ -81,7 +81,8 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
-    print_total_cfg(cfg)
+    if not FLAGS.dist or trainer_id == 0:
+        print_total_cfg(cfg)
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
