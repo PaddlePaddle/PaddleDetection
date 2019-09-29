@@ -120,6 +120,10 @@ def load(fname,
     elif fname.endswith('.json'):
         from . import coco_loader
         records, cname2cid = coco_loader.load(fname, samples, with_background)
+    elif "wider_face" in fname:
+        from . import widerface_loader
+        records = widerface_loader.load(fname, samples)
+        return records
     elif os.path.isfile(fname):
         from . import voc_loader
         if use_default_label is None or cname2cid is not None:
