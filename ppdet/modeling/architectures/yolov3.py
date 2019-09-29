@@ -18,6 +18,9 @@ from __future__ import print_function
 
 from collections import OrderedDict
 
+from paddle import fluid
+
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
 __all__ = ['YOLOv3']
@@ -43,11 +46,22 @@ class YOLOv3(object):
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
+
+        mixed_precision_enabled = mixed_precision_global_state() is not None
+
+        # cast inputs to FP16
+        if mixed_precision_enabled:
+            im = fluid.layers.cast(im, 'float16')
+
         body_feats = self.backbone(im)
 
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(body_feats.keys())
             body_feats = [body_feats[name] for name in body_feat_names]
+
+        # cast features back to FP32
+        if mixed_precision_enabled:
+            body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
 
         if mode == 'train':
             gt_box = feed_vars['gt_box']

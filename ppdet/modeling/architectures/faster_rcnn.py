@@ -16,8 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from collections import OrderedDict
+
 from paddle import fluid
 
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
 __all__ = ['FasterRCNN']
@@ -67,8 +70,20 @@ class FasterRCNN(object):
             is_crowd = feed_vars['is_crowd']
         else:
             im_shape = feed_vars['im_shape']
+
+        mixed_precision_enabled = mixed_precision_global_state() is not None
+
+        # cast inputs to FP16
+        if mixed_precision_enabled:
+            im = fluid.layers.cast(im, 'float16')
+
         body_feats = self.backbone(im)
         body_feat_names = list(body_feats.keys())
+
+        # cast features back to FP32
+        if mixed_precision_enabled:
+            body_feats = OrderedDict((k, fluid.layers.cast(v, 'float32'))
+                                     for k, v in body_feats.items())
 
         if self.fpn is not None:
             body_feats, spatial_scale = self.fpn.get_output(body_feats)

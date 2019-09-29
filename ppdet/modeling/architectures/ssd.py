@@ -16,8 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from paddle import fluid
+from collections import OrderedDict
 
+import paddle.fluid as fluid
+
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import SSDOutputDecoder
 
@@ -59,7 +62,22 @@ class SSD(object):
             gt_box = feed_vars['gt_box']
             gt_label = feed_vars['gt_label']
 
+        mixed_precision_enabled = mixed_precision_global_state() is not None
+        # cast inputs to FP16
+        if mixed_precision_enabled:
+            im = fluid.layers.cast(im, 'float16')
+
+        # backbone
         body_feats = self.backbone(im)
+
+        if isinstance(body_feats, OrderedDict):
+            body_feat_names = list(body_feats.keys())
+            body_feats = [body_feats[name] for name in body_feat_names]
+
+        # cast features back to FP32
+        if mixed_precision_enabled:
+            body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
+
         locs, confs, box, box_var = self.multi_box_head(
             inputs=body_feats, image=im, num_classes=self.num_classes)
 

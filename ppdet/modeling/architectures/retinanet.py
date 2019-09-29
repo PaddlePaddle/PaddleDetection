@@ -16,8 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from collections import OrderedDict
+
 import paddle.fluid as fluid
 
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
 __all__ = ['RetinaNet']
@@ -50,8 +53,19 @@ class RetinaNet(object):
             gt_box = feed_vars['gt_box']
             gt_label = feed_vars['gt_label']
             is_crowd = feed_vars['is_crowd']
+
+        mixed_precision_enabled = mixed_precision_global_state() is not None
+        # cast inputs to FP16
+        if mixed_precision_enabled:
+            im = fluid.layers.cast(im, 'float16')
+
         # backbone
         body_feats = self.backbone(im)
+
+        # cast features back to FP32
+        if mixed_precision_enabled:
+            body_feats = OrderedDict((k, fluid.layers.cast(v, 'float32'))
+                                     for k, v in body_feats.items())
 
         # FPN
         body_feats, spatial_scale = self.fpn.get_output(body_feats)

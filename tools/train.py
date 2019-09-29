@@ -36,7 +36,8 @@ set_paddle_flags(
 )
 
 from paddle import fluid
-from paddle.fluid.contrib import mixed_precision
+
+from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.data_feed import create_reader
 
@@ -115,16 +116,18 @@ def main():
         with fluid.unique_name.guard():
             model = create(main_arch)
             train_pyreader, feed_vars = create_feed(train_feed)
-            train_fetches = model.train(feed_vars)
-            loss = train_fetches['loss']
-            lr = lr_builder()
-            optimizer = optim_builder(lr)
-            if FLAGS.fp16:
-                optimizer = mixed_precision.decorate(
-                    optimizer=optimizer,
-                    init_loss_scaling=FLAGS.loss_scale,
-                    use_dynamic_loss_scaling=False)
-            optimizer.minimize(loss)
+
+            with mixed_precision_context(FLAGS.loss_scale, FLAGS.fp16) as ctx:
+                train_fetches = model.train(feed_vars)
+
+                loss = train_fetches['loss']
+                if FLAGS.fp16:
+                    loss *= ctx.get_loss_scale_var()
+                lr = lr_builder()
+                optimizer = optim_builder(lr)
+                optimizer.minimize(loss)
+                if FLAGS.fp16:
+                    loss /= ctx.get_loss_scale_var()
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -154,8 +157,6 @@ def main():
     # compile program for multi-devices
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_optimizer_ops = False
-    if FLAGS.fp16:
-        build_strategy.fuse_all_reduce_ops = False
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
@@ -281,6 +282,12 @@ def main():
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
+        "-r",
+        "--resume_checkpoint",
+        default=None,
+        type=str,
+        help="Checkpoint path for resuming training.")
+    parser.add_argument(
         "--fp16",
         action='store_true',
         default=False,
@@ -290,12 +297,6 @@ if __name__ == '__main__':
         default=8.,
         type=float,
         help="Mixed precision training loss scale.")
-    parser.add_argument(
-        "-r",
-        "--resume_checkpoint",
-        default=None,
-        type=str,
-        help="Checkpoint path for resuming training.")
     parser.add_argument(
         "--eval",
         action='store_true',
