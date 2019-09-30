@@ -31,7 +31,9 @@ from PIL import Image, ImageEnhance
 from ppdet.core.workspace import serializable
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
-                        generate_sample_bbox, clip_bbox)
+                        generate_sample_bbox, clip_bbox, data_anchor_sampling,
+                        satisfy_sample_constraint_coverage, crop_image_sampling,
+                        generate_sample_bbox_square, bbox_area_sampling)
 
 logger = logging.getLogger(__name__)
 
@@ -526,8 +528,6 @@ class CropImage(BaseOperator):
             batch_sampler (list): Multiple sets of different
                                   parameters for cropping.
             satisfy_all (bool): whether all boxes must satisfy.
-            avoid_no_bbox (bool): whether to to avoid the 
-                                  situation where the box does not appear.
             e.g.[[1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0],
                  [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 1.0],
                  [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 1.0],
@@ -538,6 +538,8 @@ class CropImage(BaseOperator):
            [max sample, max trial, min scale, max scale,
             min aspect ratio, max aspect ratio,
             min overlap, max overlap]
+            avoid_no_bbox (bool): whether to to avoid the 
+                                  situation where the box does not appear.
         """
         super(CropImage, self).__init__()
         self.batch_sampler = batch_sampler
@@ -597,6 +599,151 @@ class CropImage(BaseOperator):
             sample['gt_score'] = crop_score
             return sample
         return sample
+
+
+@register_op
+class CropImageWithDataAchorSampling(BaseOperator):
+    def __init__(self,
+                 batch_sampler,
+                 anchor_sampler=None,
+                 target_size=None,
+                 das_anchor_scales=[16, 32, 64, 128],
+                 sampling_prob=0.5,
+                 min_size=8.,
+                 avoid_no_bbox=True):
+        """
+        Args:
+            anchor_sampler (list): anchor_sampling sets of different
+                                  parameters for cropping.
+            batch_sampler (list): Multiple sets of different
+                                  parameters for cropping.
+              e.g.[[1, 10, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.2, 0.0]]
+                  [[1, 50, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+                   [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+                   [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+                   [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+                   [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]]
+              [max sample, max trial, min scale, max scale,
+               min aspect ratio, max aspect ratio,
+               min overlap, max overlap, min coverage, max coverage]
+            target_size (bool): target image size.
+            das_anchor_scales (list[float]): a list of anchor scales in data
+                anchor smapling.
+            min_size (float): minimum size of sampled bbox.
+            avoid_no_bbox (bool): whether to to avoid the
+                                  situation where the box does not appear.
+        """
+        super(CropImageWithDataAchorSampling, self).__init__()
+        self.anchor_sampler = anchor_sampler
+        self.batch_sampler = batch_sampler
+        self.target_size = target_size
+        self.sampling_prob = sampling_prob
+        self.min_size = min_size
+        self.avoid_no_bbox = avoid_no_bbox
+        self.scale_array = np.array(das_anchor_scales)
+
+    def __call__(self, sample, context):
+        """
+        Crop the image and modify bounding box.
+        Operators:
+            1. Scale the image weight and height.
+            2. Crop the image according to a radom sample.
+            3. Rescale the bounding box.
+            4. Determine if the new bbox is satisfied in the new image.
+        Returns:
+            sample: the image, bounding box are replaced.
+        """
+        assert 'image' in sample, "image data not found"
+        im = sample['image']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        image_width = sample['w']
+        image_height = sample['h']
+        gt_score = None
+        if 'gt_score' in sample:
+            gt_score = sample['gt_score']
+        sampled_bbox = []
+        gt_bbox = gt_bbox.tolist()
+
+        prob = np.random.uniform(0., 1.)
+        if prob > self.sampling_prob:  # anchor sampling
+            assert self.anchor_sampler
+            for sampler in self.anchor_sampler:
+                found = 0
+                for i in range(sampler[1]):
+                    if found >= sampler[0]:
+                        break
+                    sample_bbox = data_anchor_sampling(
+                        gt_bbox, image_width, image_height, self.scale_array,
+                        self.target_size)
+                    if sample_bbox == 0:
+                        break
+                    if satisfy_sample_constraint_coverage(sampler, sample_bbox,
+                                                          gt_bbox):
+                        sampled_bbox.append(sample_bbox)
+                        found = found + 1
+            im = np.array(im)
+            while sampled_bbox:
+                idx = int(np.random.uniform(0, len(sampled_bbox)))
+                sample_bbox = sampled_bbox.pop(idx)
+
+                crop_bbox, crop_class, crop_score = filter_and_process(
+                    sample_bbox, gt_bbox, gt_class, gt_score)
+                crop_bbox, crop_class, crop_score = bbox_area_sampling(
+                    crop_bbox, crop_class, crop_score, self.target_size,
+                    self.min_size)
+
+                if self.avoid_no_bbox:
+                    if len(crop_bbox) < 1:
+                        continue
+                im = crop_image_sampling(im, sample_bbox, image_width,
+                                         image_height, self.target_size)
+                sample['image'] = im
+                sample['gt_bbox'] = crop_bbox
+                sample['gt_class'] = crop_class
+                sample['gt_score'] = crop_score
+                return sample
+            return sample
+
+        else:
+            for sampler in self.batch_sampler:
+                found = 0
+                for i in range(sampler[1]):
+                    if found >= sampler[0]:
+                        break
+                    sample_bbox = generate_sample_bbox_square(
+                        sampler, image_width, image_height)
+                    if satisfy_sample_constraint_coverage(sampler, sample_bbox,
+                                                          gt_bbox):
+                        sampled_bbox.append(sample_bbox)
+                        found = found + 1
+            im = np.array(im)
+            while sampled_bbox:
+                idx = int(np.random.uniform(0, len(sampled_bbox)))
+                sample_bbox = sampled_bbox.pop(idx)
+                sample_bbox = clip_bbox(sample_bbox)
+
+                crop_bbox, crop_class, crop_score = filter_and_process(
+                    sample_bbox, gt_bbox, gt_class, gt_score)
+                # sampling bbox according the bbox area
+                crop_bbox, crop_class, crop_score = bbox_area_sampling(
+                    crop_bbox, crop_class, crop_score, self.target_size,
+                    self.min_size)
+
+                if self.avoid_no_bbox:
+                    if len(crop_bbox) < 1:
+                        continue
+                xmin = int(sample_bbox[0] * image_width)
+                xmax = int(sample_bbox[2] * image_width)
+                ymin = int(sample_bbox[1] * image_height)
+                ymax = int(sample_bbox[3] * image_height)
+                im = im[ymin:ymax, xmin:xmax]
+                sample['image'] = im
+                sample['gt_bbox'] = crop_bbox
+                sample['gt_class'] = crop_class
+                sample['gt_score'] = crop_score
+                return sample
+            return sample
 
 
 @register_op
