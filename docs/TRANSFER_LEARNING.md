@@ -18,7 +18,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 * Note:
 
-1. The path in pretrain\_weights is the open-source model link of faster RCNN from COCO dataset
+1. The path in pretrain\_weights is the open-source model link of faster RCNN from COCO dataset. For full models link, please refer to [MODEL_ZOO](MODEL_ZOO.md)
 2. The parameter fields are set in finetune\_exclude\_pretrained\_params. If the name of parameter matches field (wildcard matching), the parameter will be ignored in loading.
 
 If users want to fine-tune by own dataet, and remain the model construction, need to ignore the parameters related to the number of classes. PaddleDetection lists ignored parameter fields corresponding to different model type. The table is shown below: </br>
