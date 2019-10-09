@@ -1,0 +1,20 @@
+version: 1.0
+strategies:
+    quantization_strategy:
+        class: 'QuantizationStrategy'
+        start_epoch: 0
+        end_epoch: 0 
+        float_model_save_path: './output/yolov3/float'
+        mobile_model_save_path: './output/yolov3/mobile'
+        int8_model_save_path: './output/yolov3/int8'
+        weight_bits: 8
+        activation_bits: 8
+        weight_quantize_type: 'abs_max'
+        activation_quantize_type: 'moving_average_abs_max'
+        save_in_nodes: ['image', 'im_size']
+        save_out_nodes: ['multiclass_nms_0.tmp_0']
+compressor:
+    epoch: 1
+    checkpoint_path: './checkpoints/yolov3/'
+    strategies:
+        - quantization_strategy
