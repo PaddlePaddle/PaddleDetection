@@ -41,6 +41,8 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
 - `-o`: Set configuration options in config file. Such as: `-o max_iters=180000`. `-o` has higher priority to file configured by `-c`
 - `--use_tb`: Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard, default is `False`
 - `--tb_log_dir`: tb-paddle logging directory for scalar, default is `tb_log_dir/scalar`
+- `--fp16`: Whether to enable mixed precision training (requires GPU), default is `False`
+- `--loss_scale`: Loss scaling factor for mixed precision training, default is `8.0`
 
 
 ##### Examples
@@ -109,7 +111,7 @@ python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
 
 #### Examples
 
-- Evaluate by specified weights path and dataset path 
+- Evaluate by specified weights path and dataset path
 ```bash
 # run on GPU with:
 export PYTHONPATH=$PYTHONPATH:.
@@ -183,7 +185,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --use_tb=Ture
 ```
 
-The visualization files are saved in `output` by default, to specify a different path, simply add a `--output_dir=` flag.  
+The visualization files are saved in `output` by default, to specify a different path, simply add a `--output_dir=` flag.
 `--draw_threshold` is an optional argument. Default is 0.5.
 Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659).
 If users want to infer according to customized model path, `-o weights` can be set for specified path.
@@ -208,12 +210,12 @@ Save inference model by set `--save_inference_model`, which can be loaded by Pad
 
 **Q:**  Why do I get `NaN` loss values during single GPU training? </br>
 **A:**  The default learning rate is tuned to multi-GPU training (8x GPUs), it must
-be adapted for single GPU training accordingly (e.g., divide by 8).  
-The calculation rules are as follows，they are equivalent: </br>  
+be adapted for single GPU training accordingly (e.g., divide by 8).
+The calculation rules are as follows，they are equivalent: </br>
 
 
-| GPU number  | Learning rate  | Max_iters | Milestones       |  
-| :---------: | :------------: | :-------: | :--------------: |  
+| GPU number  | Learning rate  | Max_iters | Milestones       |
+| :---------: | :------------: | :-------: | :--------------: |
 | 2           | 0.0025         | 720000    | [480000, 640000] |
 | 4           | 0.005          | 360000    | [240000, 320000] |
 | 8           | 0.01           | 180000    | [120000, 160000] |
