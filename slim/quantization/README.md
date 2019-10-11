@@ -121,17 +121,17 @@ QuantizationFreezePass主要用于改变IrGraph中量化op和反量化op的顺�
 python eval.py --model_path ${checkpoint_path}/${epoch_id}/eval_model/ --model_name __model__ --params_name __params__ -c yolov3_mobilenet_v1_voc.yml
 ```
 
-在评估之后，选取效果最好的epoch的模型，可使用脚本 <a href='./freeze.py'>slim/quantization/freeze.py</a>将该模型转化为以上介绍的三种模型：float模型，int8模型，mobile模型，需要配置的参数为：
+在评估之后，选取效果最好的epoch的模型，可使用脚本 <a href='./freeze.py'>slim/quantization/freeze.py</a>将该模型转化为以上介绍的三种模型：FP32模型，int8模型，mobile模型，需要配置的参数为：
 
 - model_path, 加载的模型路径，`为${checkpoint_path}/${epoch_id}/eval_model/`
 - weight_quant_type 模型参数的量化方式，和配置文件中的类型保持一致
 - save_path `FP32`, `8-bit`, `mobile`模型的保存路径，分别为 `${save_path}/float/`, `${save_path}/int8/`, `${save_path}/mobile/`
 
 ### 最终评估模型
-最终使用的评估模型是float模型，使用脚本<a href="./eval.py">slim/quantization/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
+最终使用的评估模型是FP32模型，使用脚本<a href="./eval.py">slim/quantization/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
 运行命令为：
 ```
-python eval.py --model_path ${float_model_path}  --model_name model --params_name params -c yolov3_mobilenet_v1_voc.yml
+python eval.py --model_path ${float_model_path}  --model_name model --params_name weights -c yolov3_mobilenet_v1_voc.yml
 ```
 
 ## 预测

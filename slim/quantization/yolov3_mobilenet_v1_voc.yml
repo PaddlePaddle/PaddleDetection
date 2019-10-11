@@ -9,7 +9,7 @@ save_dir: output
 snapshot_iter: 2000
 metric: VOC
 map_type: 11point
-pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
 weights: output/yolov3_mobilenet_v1_voc/model_final
 num_classes: 20
 
