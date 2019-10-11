@@ -2,7 +2,7 @@ English | [简体中文](QUICK_STARTED_cn.md)
 
 # Quick Start
 
-This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 15min with good performance. 
+This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 15min with good performance.
 
 ## Data Preparation
 
@@ -13,11 +13,16 @@ cd dataset/fruit
 sh download.sh
 ```
 
-Training command is as follows:
+- **Note: before started, run the following command and specifiy the GPU**
 
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0
+```
+
+Training:
+
+```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
                         --use_tb=True \
                         --tb_log_dir=tb_fruit_dir/scalar \
@@ -41,17 +46,15 @@ Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detecti
 Evaluation:
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
 python -u tools/eval.py -c configs/yolov3_mobilenet_v1_fruit.yml
 ```
 
 Inference:
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml
+python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
+                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar \
+                         --infer_img=demo/000000570688.jpg
 ```
 
 Inference images are shown below:

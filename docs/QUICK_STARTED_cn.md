@@ -13,12 +13,16 @@ cd dataset/fruit
 sh download.sh
 ```
 
-
-训练命令如下：
+- **注：在开始前，运行如下命令并指定GPU**
 
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0
+```
+
+训练命令如下：
+
+```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
                         --use_tb=True \
                         --tb_log_dir=tb_fruit_dir/scalar \
@@ -42,17 +46,15 @@ tensorboard结果显示如下：
 评估命令如下：
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
 python -u tools/eval.py -c configs/yolov3_mobilenet_v1_fruit.yml
 ```
 
 预测命令如下
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml
+python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
+                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar \
+                         --infer_img=demo/000000570688.jpg
 ```
 
 预测图片如下：
