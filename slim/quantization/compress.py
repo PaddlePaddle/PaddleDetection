@@ -198,7 +198,8 @@ def main():
     exe.run(startup_prog)
 
     start_iter = 0
-    checkpoint.load_pretrain(exe, train_prog, cfg.pretrain_weights)
+
+    checkpoint.load_params(exe, train_prog, cfg.pretrain_weights)
 
 
     def eval_func(program, scope):

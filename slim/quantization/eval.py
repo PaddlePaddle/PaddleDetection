@@ -142,8 +142,8 @@ def main():
     assert os.path.exists(FLAGS.model_path)
     infer_prog, feed_names, fetch_targets = fluid.io.load_inference_model(
             dirname=FLAGS.model_path, executor=exe,
-            model_filename='model',
-            params_filename='params')
+            model_filename=FLAGS.model_name,
+            params_filename=FLAGS.params_name)
 
     eval_keys = ['bbox', 'gt_box', 'gt_label', 'is_difficult']
     eval_values = ['multiclass_nms_0.tmp_0', 'gt_box', 'gt_label', 'is_difficult']
@@ -179,6 +179,16 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Dataset path, same as DataFeed.dataset.dataset_dir")
+    parser.add_argument(
+        "--model_name",
+        default='model',
+        type=str,
+        help="model file name to load_inference_model")
+    parser.add_argument(
+        "--params_name",
+        default='params',
+        type=str,
+        help="params file name to load_inference_model")
 
     FLAGS = parser.parse_args()
     main()
