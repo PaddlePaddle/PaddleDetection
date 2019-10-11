@@ -54,7 +54,7 @@ python -u tools/eval.py -c configs/yolov3_mobilenet_v1_fruit.yml
 ```bash
 python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar \
-                         --infer_img=demo/000000570688.jpg
+                         --infer_img=demo/orange_71.jpg
 ```
 
 预测图片如下：
