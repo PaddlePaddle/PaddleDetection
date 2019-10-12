@@ -475,7 +475,7 @@ class ExpandImage(BaseOperator):
         """
         Expand the image and modify bounding box.
         Operators:
-            1. Scale the image weight and height.
+            1. Scale the image width and height.
             2. Construct new images with new height and width.
             3. Fill the new image with the mean.
             4. Put original imge into new image.
@@ -550,7 +550,7 @@ class CropImage(BaseOperator):
         """
         Crop the image and modify bounding box.
         Operators:
-            1. Scale the image weight and height.
+            1. Scale the image width and height.
             2. Crop the image according to a radom sample.
             3. Rescale the bounding box.
             4. Determine if the new bbox is satisfied in the new image.
@@ -646,7 +646,7 @@ class CropImageWithDataAchorSampling(BaseOperator):
         """
         Crop the image and modify bounding box.
         Operators:
-            1. Scale the image weight and height.
+            1. Scale the image width and height.
             2. Crop the image according to a radom sample.
             3. Rescale the bounding box.
             4. Determine if the new bbox is satisfied in the new image.
