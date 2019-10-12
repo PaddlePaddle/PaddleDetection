@@ -132,7 +132,7 @@ def main():
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
 
-    eval_pyreader, test_feed_vars = create_feed(eval_feed, use_pyreader=False)
+    _, test_feed_vars = create_feed(eval_feed, iterable=True)
 
     eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
     #eval_pyreader.decorate_sample_list_generator(eval_reader, place)
