@@ -640,7 +640,7 @@ class CropImageWithDataAchorSampling(BaseOperator):
         self.sampling_prob = sampling_prob
         self.min_size = min_size
         self.avoid_no_bbox = avoid_no_bbox
-        self.scale_array = np.array(das_anchor_scales)
+        self.das_anchor_scales = np.array(das_anchor_scales)
 
     def __call__(self, sample, context):
         """
@@ -674,8 +674,8 @@ class CropImageWithDataAchorSampling(BaseOperator):
                     if found >= sampler[0]:
                         break
                     sample_bbox = data_anchor_sampling(
-                        gt_bbox, image_width, image_height, self.scale_array,
-                        self.target_size)
+                        gt_bbox, image_width, image_height,
+                        self.das_anchor_scales, self.target_size)
                     if sample_bbox == 0:
                         break
                     if satisfy_sample_constraint_coverage(sampler, sample_bbox,

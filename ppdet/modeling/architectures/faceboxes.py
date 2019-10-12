@@ -93,9 +93,7 @@ class FaceBoxes(object):
     def _multi_box_head(self, inputs, image, num_classes=2):
         def permute_and_reshape(input, last_dim):
             trans = fluid.layers.transpose(input, perm=[0, 2, 3, 1])
-            compile_shape = [
-                trans.shape[0], np.prod(trans.shape[1:]) // last_dim, last_dim
-            ]
+            compile_shape = [0, -1, last_dim]
             return fluid.layers.reshape(trans, shape=compile_shape)
 
         def _is_list_or_tuple_(data):

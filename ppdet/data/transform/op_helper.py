@@ -102,7 +102,8 @@ def bbox_area_sampling(bboxes, labels, scores, target_size, min_size):
         else:
             new_bboxes.append(bbox)
             new_labels.append(labels[i])
-            new_scores.append(scores[i])
+            if scores is not None and scores.size != 0:
+                new_scores.append(scores[i])
     bboxes = np.array(new_bboxes)
     labels = np.array(new_labels)
     scores = np.array(new_scores)

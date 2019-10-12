@@ -238,7 +238,6 @@ class FaceBoxNet(object):
             use_cudnn=use_cudnn,
             param_attr=parameter_attr,
             bias_attr=False)
-        print("{}:{}".format(name, conv.shape))
         return fluid.layers.batch_norm(input=conv, act=act)
 
     def _conv_norm_crelu(

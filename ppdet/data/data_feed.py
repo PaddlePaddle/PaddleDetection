@@ -781,7 +781,7 @@ class SSDEvalFeed(DataFeed):
             bufsize=10,
             use_process=False,
             memsize=None):
-        sample_transforms.append(ArrangeEvalSSD())
+        sample_transforms.append(ArrangeEvalSSD(fields))
         super(SSDEvalFeed, self).__init__(
             dataset,
             fields,

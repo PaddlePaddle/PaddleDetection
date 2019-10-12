@@ -200,8 +200,9 @@ class ArrangeEvalSSD(BaseOperator):
     Transform dict to tuple format needed for training.
     """
 
-    def __init__(self):
+    def __init__(self, fields):
         super(ArrangeEvalSSD, self).__init__()
+        self.fields = fields
 
     def __call__(self, sample, context=None):
         """
@@ -212,17 +213,25 @@ class ArrangeEvalSSD(BaseOperator):
         Returns:
             sample: a tuple containing the following items: (image)
         """
-        im = sample['image']
+        outs = []
         if len(sample['gt_bbox']) != len(sample['gt_class']):
             raise ValueError("gt num mismatch: bbox and class.")
-        im_id = sample['im_id']
-        h = sample['h']
-        w = sample['w']
-        im_shape = np.array((h, w))
-        gt_bbox = sample['gt_bbox']
-        gt_class = sample['gt_class']
-        difficult = sample['difficult']
-        outs = (im, im_shape, im_id, gt_bbox, gt_class, difficult)
+        for field in self.fields:
+            if field == 'im_shape':
+                h = sample['h']
+                w = sample['w']
+                im_shape = np.array((h, w))
+                outs.append(im_shape)
+            elif field == 'is_difficult':
+                outs.append(sample['difficult'])
+            elif field == 'gt_box':
+                outs.append(sample['gt_bbox'])
+            elif field == 'gt_label':
+                outs.append(sample['gt_class'])
+            else:
+                outs.append(sample[field])
+
+        outs = tuple(outs)
 
         return outs
 

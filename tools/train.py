@@ -154,6 +154,8 @@ def main():
             extra_keys = ['im_info', 'im_id', 'im_shape']
         if cfg.metric == 'VOC':
             extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+        if cfg.metric == 'WIDERFACE':
+            extra_keys = ['im_id', 'im_shape', 'gt_box']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
