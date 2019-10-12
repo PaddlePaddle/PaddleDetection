@@ -38,7 +38,7 @@ feed_var_def = [
 # yapf: enable
 
 
-def create_feed(feed, use_pyreader=True):
+def create_feed(feed, iterable=False):
     image_shape = feed.image_shape
     feed_var_map = {var['name']: var for var in feed_var_def}
     feed_var_map['image'] = {
@@ -66,11 +66,9 @@ def create_feed(feed, use_pyreader=True):
         dtype=feed_var_map[key]['dtype'],
         lod_level=feed_var_map[key]['lod_level'])) for key in feed.fields])
 
-    pyreader = None
-    if use_pyreader:
-        pyreader = fluid.io.PyReader(
-            feed_list=list(feed_vars.values()),
-            capacity=64,
-            use_double_buffer=True,
-            iterable=False)
-    return pyreader, feed_vars
+    loader = fluid.io.DataLoader.from_generator(
+        feed_list=list(feed_vars.values()),
+        capacity=64,
+        use_double_buffer=True,
+        iterable=iterable)
+    return loader, feed_vars

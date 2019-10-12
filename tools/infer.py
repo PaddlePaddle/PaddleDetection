@@ -44,7 +44,7 @@ from ppdet.data.data_feed import create_reader
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_version
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -150,6 +150,8 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    # check if paddlepaddle version is satisfied
+    check_version()
     print_total_cfg(cfg)
 
     if 'test_feed' not in cfg:
@@ -169,12 +171,12 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(test_feed, use_pyreader=False)
+            loader, feed_vars = create_feed(test_feed, iterable=True)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
     reader = create_reader(test_feed)
-    feeder = fluid.DataFeeder(place=place, feed_list=feed_vars.values())
+    loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
     if cfg.weights:
@@ -219,9 +221,9 @@ def main():
         tb_image_frame = 0  # each frame can display ten pictures at most. 
 
     imid2path = reader.imid2path
-    for iter_id, data in enumerate(reader()):
+    for iter_id, data in enumerate(loader()):
         outs = exe.run(infer_prog,
-                       feed=feeder.feed(data),
+                       feed=data,
                        fetch_list=values,
                        return_numpy=False)
         res = {
