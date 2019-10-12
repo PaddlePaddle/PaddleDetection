@@ -44,9 +44,9 @@ step1: 开启显存优化策略
 export FLAGS_fast_eager_deletion_mode=1
 export FLAGS_eager_delete_tensor_gb=0.0
 ```
-step2: 设置gpu卡
+step2: 设置gpu卡,目前的超参设置适合2卡训练
 ```
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1
 ```
 step3: 开始训练
 ```
@@ -104,6 +104,12 @@ QuantizationFreezePass主要用于改变IrGraph中量化op和反量化op的顺�
 <img src="./images/TransformForMobilePass.png" height=400 width=400 hspace='10'/> <br />
 <strong>图4：应用TransformForMobilePass后的结果</strong>
 </p>
+> 综上，可得在量化过程中有以下几种模型结构：
+1. 原始模型
+2. 经QuantizationTransformPass之后得到的适用于训练的量化模型结构，在${checkpoint_path}下保存的`eval_model`是这种结构，在训练过程中每个epoch结束时也使用这个网络结构进行评估，虽然这个模型结构不是最终想要的模型结构，但是每个epoch的评估结果可用来挑选模型。
+3. 经QuantizationFreezePass之后得到的FP32模型结构，具体结构已在上面进行介绍。本文档中列出的数据集的评估结果是对FP32模型结构进行评估得到的结果。这种模型结构在训练过程中只会保存一次，也就是在量化配置文件中设置的`end_epoch`结束时进行保存，如果想将其他epoch的训练结果转化成FP32模型，可使用脚本 <a href='./freeze.py'>PaddleSlim/classification/quantization/freeze.py</a>进行转化，具体使用方法在[评估](#评估)中介绍。
+4. 经ConvertToInt8Pass之后得到的8-bit模型结构，具体结构已在上面进行介绍。这种模型结构在训练过程中只会保存一次，也就是在量化配置文件中设置的`end_epoch`结束时进行保存，如果想将其他epoch的训练结果转化成8-bit模型，可使用脚本 <a href='./freeze.py'>slim/quantization/freeze.py</a>进行转化，具体使用方法在[评估](#评估)中介绍。
+5. 经TransformForMobilePass之后得到的mobile模型结构，具体结构已在上面进行介绍。这种模型结构在训练过程中只会保存一次，也就是在量化配置文件中设置的`end_epoch`结束时进行保存，如果想将其他epoch的训练结果转化成mobile模型，可使用脚本 <a href='./freeze.py'>slim/quantization/freeze.py</a>进行转化，具体使用方法在[评估](#评估)中介绍。
 
 ## 评估
 
@@ -115,10 +121,14 @@ QuantizationFreezePass主要用于改变IrGraph中量化op和反量化op的顺�
 
 如果不需要保存评估模型，可以在定义Compressor对象时，将`save_eval_model`选项设置为False（默认为True）。
 
-脚本<a href="./eval.py">slim/quantization/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
+脚本<a href="../eval.py">slim/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
 运行命令为：
 ```
-python eval.py --model_path ${checkpoint_path}/${epoch_id}/eval_model/ --model_name __model__ --params_name __params__ -c yolov3_mobilenet_v1_voc.yml
+python ../eval.py \
+    --model_path ${checkpoint_path}/${epoch_id}/eval_model/ \
+    --model_name __model__ \
+    --params_name __params__ \
+    -c yolov3_mobilenet_v1_voc.yml
 ```
 
 在评估之后，选取效果最好的epoch的模型，可使用脚本 <a href='./freeze.py'>slim/quantization/freeze.py</a>将该模型转化为以上介绍的三种模型：FP32模型，int8模型，mobile模型，需要配置的参数为：
@@ -127,16 +137,41 @@ python eval.py --model_path ${checkpoint_path}/${epoch_id}/eval_model/ --model_n
 - weight_quant_type 模型参数的量化方式，和配置文件中的类型保持一致
 - save_path `FP32`, `8-bit`, `mobile`模型的保存路径，分别为 `${save_path}/float/`, `${save_path}/int8/`, `${save_path}/mobile/`
 
+运行命令示例：
+```
+python freeze.py \
+    --model_path ${checkpoint_path}/${epoch_id}/eval_model/ \
+    --weight_quant_type ${weight_quant_type} \
+    --save_path ${any path you want}
+```
+
 ### 最终评估模型
-最终使用的评估模型是FP32模型，使用脚本<a href="./eval.py">slim/quantization/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
+最终使用的评估模型是FP32模型，使用脚本<a href="../eval.py">slim/eval.py</a>中为使用该模型在评估数据集上做评估的示例。
 运行命令为：
 ```
-python eval.py --model_path ${float_model_path}  --model_name model --params_name weights -c yolov3_mobilenet_v1_voc.yml
+python ../eval.py \
+    --model_path ${float_model_path} 
+    --model_name model \
+    --params_name weights \
+    -c yolov3_mobilenet_v1_voc.yml
 ```
 
 ## 预测
 
 ### python预测
+FP32模型可直接使用原生PaddlePaddle Fluid预测方法进行预测。
+
+在脚本<a href="../infer.py">slim/infer.py</a>中展示了如何使用fluid python API加载使用预测模型进行预测。
+
+运行命令示例:
+```
+python ../infer.py \
+    --model_path ${save_path}/float \
+    --model_name model \
+    --params_name weights \
+    -c yolov3_mobilenet_v1_voc.yml \
+    --infer_dir ../../demo
+```
 
 
 ### PaddleLite预测
