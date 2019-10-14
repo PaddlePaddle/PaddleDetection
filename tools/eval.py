@@ -35,7 +35,7 @@ import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
 from ppdet.core.workspace import load_config, merge_config, create
@@ -62,8 +62,6 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
-    # check if paddlepaddle version is satisfied
-    check_version()
     print_total_cfg(cfg)
 
     if 'eval_feed' not in cfg:
@@ -81,12 +79,12 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            loader, feed_vars = create_feed(eval_feed)
+            pyreader, feed_vars = create_feed(eval_feed)
             fetches = model.eval(feed_vars)
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
-    loader.set_sample_list_generator(reader, place)
+    pyreader.decorate_sample_list_generator(reader, place)
 
     # eval already exists json file
     if FLAGS.json_eval:
@@ -122,7 +120,7 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    results = eval_run(exe, compile_program, loader, keys, values, cls)
+    results = eval_run(exe, compile_program, pyreader, keys, values, cls)
 
     # evaluation
     resolution = None

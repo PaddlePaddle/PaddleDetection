@@ -57,7 +57,7 @@ def parse_fetches(fetches, prog=None, extra_keys=None):
     return keys, values, cls
 
 
-def eval_run(exe, compile_program, loader, keys, values, cls):
+def eval_run(exe, compile_program, pyreader, keys, values, cls):
     """
     Run evaluation program, return program outputs.
     """
@@ -75,7 +75,7 @@ def eval_run(exe, compile_program, loader, keys, values, cls):
     has_bbox = 'bbox' in keys
 
     try:
-        loader.start()
+        pyreader.start()
         while True:
             outs = exe.run(compile_program,
                            fetch_list=values,
@@ -90,7 +90,7 @@ def eval_run(exe, compile_program, loader, keys, values, cls):
             iter_id += 1
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
-        loader.reset()
+        pyreader.reset()
     logger.info('Test finish iter {}'.format(iter_id))
 
     end_time = time.time()
