@@ -41,7 +41,7 @@ class YOLOv3Head(object):
         nms (object): an instance of `MultiClassNMS`
     """
     __inject__ = ['nms']
-    __shared__ = ['num_classes', 'weight_prefix_name']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  norm_decay=0.,
@@ -56,8 +56,7 @@ class YOLOv3Head(object):
                      nms_top_k=1000,
                      keep_top_k=100,
                      nms_threshold=0.45,
-                     background_label=-1).__dict__,
-                 weight_prefix_name=''):
+                     background_label=-1).__dict__):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.ignore_thresh = ignore_thresh
@@ -65,7 +64,6 @@ class YOLOv3Head(object):
         self.anchor_masks = anchor_masks
         self._parse_anchors(anchors)
         self.nms = nms
-        self.prefix_name = weight_prefix_name
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -210,7 +208,7 @@ class YOLOv3Head(object):
                 block,
                 channel=512 // (2**i),
                 is_test=(not is_train),
-                name=self.prefix_name + "yolo_block.{}".format(i))
+                name="yolo_block.{}".format(i))
 
             # out channel number = mask_num * (5 + class_num)
             num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
@@ -221,12 +219,11 @@ class YOLOv3Head(object):
                 stride=1,
                 padding=0,
                 act=None,
-                param_attr=ParamAttr(name=self.prefix_name +
-                                     "yolo_output.{}.conv.weights".format(i)),
+                param_attr=ParamAttr(
+                    name="yolo_output.{}.conv.weights".format(i)),
                 bias_attr=ParamAttr(
                     regularizer=L2Decay(0.),
-                    name=self.prefix_name +
-                    "yolo_output.{}.conv.bias".format(i)))
+                    name="yolo_output.{}.conv.bias".format(i)))
             outputs.append(block_out)
 
             if i < len(blocks) - 1:
@@ -238,7 +235,7 @@ class YOLOv3Head(object):
                     stride=1,
                     padding=0,
                     is_test=(not is_train),
-                    name=self.prefix_name + "yolo_transition.{}".format(i))
+                    name="yolo_transition.{}".format(i))
                 # upsample
                 route = self._upsample(route)
 
@@ -275,7 +272,7 @@ class YOLOv3Head(object):
                 ignore_thresh=self.ignore_thresh,
                 downsample_ratio=downsample,
                 use_label_smooth=self.label_smooth,
-                name=self.prefix_name + "yolo_loss" + str(i))
+                name="yolo_loss" + str(i))
             losses.append(fluid.layers.reduce_mean(loss))
             downsample //= 2
 
@@ -307,7 +304,7 @@ class YOLOv3Head(object):
                 class_num=self.num_classes,
                 conf_thresh=self.nms.score_threshold,
                 downsample_ratio=downsample,
-                name=self.prefix_name + "yolo_box" + str(i))
+                name="yolo_box" + str(i))
             boxes.append(box)
             scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
 

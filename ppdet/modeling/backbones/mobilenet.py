@@ -37,7 +37,7 @@ class MobileNet(object):
         with_extra_blocks (bool): if extra blocks should be added
         extra_block_filters (list): number of filter for each extra block
     """
-    __shared__ = ['norm_type', 'weight_prefix_name']
+    __shared__ = ['norm_type']
 
     def __init__(self,
                  norm_type='bn',
@@ -46,15 +46,13 @@ class MobileNet(object):
                  conv_learning_rate=1.0,
                  with_extra_blocks=False,
                  extra_block_filters=[[256, 512], [128, 256], [128, 256],
-                                      [64, 128]],
-                 weight_prefix_name=''):
+                                      [64, 128]]):
         self.norm_type = norm_type
         self.norm_decay = norm_decay
         self.conv_group_scale = conv_group_scale
         self.conv_learning_rate = conv_learning_rate
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
-        self.prefix_name = weight_prefix_name
 
     def _conv_norm(self,
                    input,
@@ -153,42 +151,35 @@ class MobileNet(object):
 
         blocks = []
         # input 1/1
-        out = self._conv_norm(
-            input, 3, int(32 * scale), 2, 1, name=self.prefix_name + "conv1")
+        out = self._conv_norm(input, 3, int(32 * scale), 2, 1, name="conv1")
         # 1/2
         out = self.depthwise_separable(
-            out, 32, 64, 32, 1, scale, name=self.prefix_name + "conv2_1")
+            out, 32, 64, 32, 1, scale, name="conv2_1")
         out = self.depthwise_separable(
-            out, 64, 128, 64, 2, scale, name=self.prefix_name + "conv2_2")
+            out, 64, 128, 64, 2, scale, name="conv2_2")
         # 1/4
         out = self.depthwise_separable(
-            out, 128, 128, 128, 1, scale, name=self.prefix_name + "conv3_1")
+            out, 128, 128, 128, 1, scale, name="conv3_1")
         out = self.depthwise_separable(
-            out, 128, 256, 128, 2, scale, name=self.prefix_name + "conv3_2")
+            out, 128, 256, 128, 2, scale, name="conv3_2")
         # 1/8
         blocks.append(out)
         out = self.depthwise_separable(
-            out, 256, 256, 256, 1, scale, name=self.prefix_name + "conv4_1")
+            out, 256, 256, 256, 1, scale, name="conv4_1")
         out = self.depthwise_separable(
-            out, 256, 512, 256, 2, scale, name=self.prefix_name + "conv4_2")
+            out, 256, 512, 256, 2, scale, name="conv4_2")
         # 1/16
         blocks.append(out)
         for i in range(5):
             out = self.depthwise_separable(
-                out,
-                512,
-                512,
-                512,
-                1,
-                scale,
-                name=self.prefix_name + "conv5_" + str(i + 1))
+                out, 512, 512, 512, 1, scale, name="conv5_" + str(i + 1))
         module11 = out
 
         out = self.depthwise_separable(
-            out, 512, 1024, 512, 2, scale, name=self.prefix_name + "conv5_6")
+            out, 512, 1024, 512, 2, scale, name="conv5_6")
         # 1/32
         out = self.depthwise_separable(
-            out, 1024, 1024, 1024, 1, scale, name=self.prefix_name + "conv6")
+            out, 1024, 1024, 1024, 1, scale, name="conv6")
         module13 = out
         blocks.append(out)
         if not self.with_extra_blocks:
@@ -196,15 +187,11 @@ class MobileNet(object):
 
         num_filters = self.extra_block_filters
         module14 = self._extra_block(module13, num_filters[0][0],
-                                     num_filters[0][1], 1, 2,
-                                     self.prefix_name + "conv7_1")
+                                     num_filters[0][1], 1, 2, "conv7_1")
         module15 = self._extra_block(module14, num_filters[1][0],
-                                     num_filters[1][1], 1, 2,
-                                     self.prefix_name + "conv7_2")
+                                     num_filters[1][1], 1, 2, "conv7_2")
         module16 = self._extra_block(module15, num_filters[2][0],
-                                     num_filters[2][1], 1, 2,
-                                     self.prefix_name + "conv7_3")
+                                     num_filters[2][1], 1, 2, "conv7_3")
         module17 = self._extra_block(module16, num_filters[3][0],
-                                     num_filters[3][1], 1, 2,
-                                     self.prefix_name + "conv7_4")
+                                     num_filters[3][1], 1, 2, "conv7_4")
         return module11, module13, module14, module15, module16, module17
