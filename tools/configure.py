@@ -19,7 +19,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import yaml
 
-from ppdet.core.workspace import get_registered_modules, load_config
+from ppdet.core.workspace import get_registered_modules, load_config, dump_value
 from ppdet.utils.cli import ColorTTY, print_total_cfg
 
 color_tty = ColorTTY()
@@ -41,18 +41,6 @@ MISC_CONFIG = {
     "use_gpu": True,
     "finetune_exclude_pretrained_params": "<value>",
 }
-
-
-def dump_value(value):
-    # XXX this is hackish, but collections.abc is not available in python 2
-    if hasattr(value, '__dict__') or isinstance(value, (dict, tuple, list)):
-        value = yaml.dump(value, default_flow_style=True)
-        value = value.replace('\n', '')
-        value = value.replace('...', '')
-        return "'{}'".format(value)
-    else:
-        # primitive types
-        return str(value)
 
 
 def dump_config(module, minimal=False):

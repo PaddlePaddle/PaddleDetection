@@ -27,9 +27,27 @@ from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
 
 __all__ = [
-    'global_config', 'load_config', 'merge_config', 'get_registered_modules',
-    'create', 'register', 'serializable'
+    'global_config',
+    'load_config',
+    'merge_config',
+    'get_registered_modules',
+    'create',
+    'register',
+    'serializable',
+    'dump_value',
 ]
+
+
+def dump_value(value):
+    # XXX this is hackish, but collections.abc is not available in python 2
+    if hasattr(value, '__dict__') or isinstance(value, (dict, tuple, list)):
+        value = yaml.dump(value, default_flow_style=True)
+        value = value.replace('\n', '')
+        value = value.replace('...', '')
+        return "'{}'".format(value)
+    else:
+        # primitive types
+        return str(value)
 
 
 class AttrDict(dict):
@@ -154,9 +172,9 @@ def create(cls_or_name, **kwargs):
             target_key = config[k]
             shared_conf = config.schema[k].default
             assert isinstance(shared_conf, SharedConfig)
-            if target_key is not None and not isinstance(
-                    target_key, SharedConfig):
-                continue   # value is given for the module
+            if target_key is not None and not isinstance(target_key,
+                                                         SharedConfig):
+                continue  # value is given for the module
             elif shared_conf.key in global_config:
                 # `key` is present in config
                 kwargs[k] = global_config[shared_conf.key]

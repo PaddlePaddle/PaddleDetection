@@ -280,7 +280,12 @@ class BBoxHead(object):
         loss_bbox = fluid.layers.reduce_mean(loss_bbox)
         return {'loss_cls': loss_cls, 'loss_bbox': loss_bbox}
 
-    def get_prediction(self, roi_feat, rois, im_info, im_shape):
+    def get_prediction(self,
+                       roi_feat,
+                       rois,
+                       im_info,
+                       im_shape,
+                       return_box_score=False):
         """
         Get prediction bounding box in test stage.
 
@@ -308,5 +313,7 @@ class BBoxHead(object):
         bbox_pred = fluid.layers.reshape(bbox_pred, (-1, self.num_classes, 4))
         decoded_box = self.box_coder(prior_box=boxes, target_box=bbox_pred)
         cliped_box = fluid.layers.box_clip(input=decoded_box, im_info=im_shape)
+        if return_box_score:
+            return {'bbox': cliped_box, 'score': cls_prob}
         pred_result = self.nms(bboxes=cliped_box, scores=cls_prob)
         return {'bbox': pred_result}

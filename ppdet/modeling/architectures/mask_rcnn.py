@@ -69,18 +69,14 @@ class MaskRCNN(object):
         self.fpn = fpn
 
     def build(self, feed_vars, mode='train'):
-        im = feed_vars['image']
-        assert mode in ['train', 'test'], \
-            "only 'train' and 'test' mode is supported"
         if mode == 'train':
             required_fields = [
                 'gt_label', 'gt_box', 'gt_mask', 'is_crowd', 'im_info'
             ]
         else:
             required_fields = ['im_shape', 'im_info']
-        for var in required_fields:
-            assert var in feed_vars, \
-                "{} has no {} field".format(feed_vars, var)
+        self._input_check(required_fields, feed_vars)
+        im = feed_vars['image']
         im_info = feed_vars['im_info']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -153,57 +149,135 @@ class MaskRCNN(object):
                 im_scale = fluid.layers.sequence_expand(im_scale, rois)
                 rois = rois / im_scale
                 return {'proposal': rois}
-            if self.fpn is None:
-                last_feat = body_feats[list(body_feats.keys())[-1]]
-                roi_feat = self.roi_extractor(last_feat, rois)
-            else:
-                roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)
+            mask_name = 'mask_pred'
+            mask_pred, bbox_pred = self.single_scale_eval(
+                body_feats, mask_name, rois, im_info, feed_vars['im_shape'],
+                spatial_scale)
+            return {'bbox': bbox_pred, 'mask': mask_pred}
 
+    def build_multi_scale(self, feed_vars, mask_branch=False):
+        required_fields = ['image', 'im_info']
+        self._input_check(required_fields, feed_vars)
+
+        ims = []
+        for k in feed_vars.keys():
+            if 'image' in k:
+                ims.append(feed_vars[k])
+        result = {}
+
+        if not mask_branch:
+            assert 'im_shape' in feed_vars, \
+                "{} has no im_shape field".format(feed_vars)
+            result.update(feed_vars)
+
+        for i, im in enumerate(ims):
+            im_info = fluid.layers.slice(
+                input=feed_vars['im_info'],
+                axes=[1],
+                starts=[3 * i],
+                ends=[3 * i + 3])
+            body_feats = self.backbone(im)
+            result.update(body_feats)
+
+            # FPN
+            if self.fpn is not None:
+                body_feats, spatial_scale = self.fpn.get_output(body_feats)
+            rois = self.rpn_head.get_proposals(body_feats, im_info, mode='test')
+            if not mask_branch:
+                im_shape = feed_vars['im_shape']
+                body_feat_names = list(body_feats.keys())
+                if self.fpn is None:
+                    body_feat = body_feats[body_feat_names[-1]]
+                    roi_feat = self.roi_extractor(body_feat, rois)
+                else:
+                    roi_feat = self.roi_extractor(body_feats, rois,
+                                                  spatial_scale)
+                pred = self.bbox_head.get_prediction(
+                    roi_feat, rois, im_info, im_shape, return_box_score=True)
+                bbox_name = 'bbox_' + str(i)
+                score_name = 'score_' + str(i)
+                if 'flip' in im.name:
+                    bbox_name += '_flip'
+                    score_name += '_flip'
+                result[bbox_name] = pred['bbox']
+                result[score_name] = pred['score']
+            else:
+                mask_name = 'mask_pred_' + str(i)
+                bbox_pred = feed_vars['bbox']
+                result.update({im.name: im})
+                if 'flip' in im.name:
+                    mask_name += '_flip'
+                    bbox_pred = feed_vars['bbox_flip']
+                mask_pred, bbox_pred = self.single_scale_eval(
+                    body_feats, mask_name, rois, im_info, feed_vars['im_shape'],
+                    spatial_scale, bbox_pred)
+                result[mask_name] = mask_pred
+        return result
+
+    def single_scale_eval(self,
+                          body_feats,
+                          mask_name,
+                          rois,
+                          im_info,
+                          im_shape,
+                          spatial_scale,
+                          bbox_pred=None):
+        if self.fpn is None:
+            last_feat = body_feats[list(body_feats.keys())[-1]]
+            roi_feat = self.roi_extractor(last_feat, rois)
+        else:
+            roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)
+        if not bbox_pred:
             bbox_pred = self.bbox_head.get_prediction(roi_feat, rois, im_info,
-                                                      feed_vars['im_shape'])
+                                                      im_shape)
             bbox_pred = bbox_pred['bbox']
 
-            # share weight
-            bbox_shape = fluid.layers.shape(bbox_pred)
-            bbox_size = fluid.layers.reduce_prod(bbox_shape)
-            bbox_size = fluid.layers.reshape(bbox_size, [1, 1])
-            size = fluid.layers.fill_constant([1, 1], value=6, dtype='int32')
-            cond = fluid.layers.less_than(x=bbox_size, y=size)
+        # share weight
+        bbox_shape = fluid.layers.shape(bbox_pred)
+        bbox_size = fluid.layers.reduce_prod(bbox_shape)
+        bbox_size = fluid.layers.reshape(bbox_size, [1, 1])
+        size = fluid.layers.fill_constant([1, 1], value=6, dtype='int32')
+        cond = fluid.layers.less_than(x=bbox_size, y=size)
 
-            mask_pred = fluid.layers.create_global_var(
-                shape=[1],
-                value=0.0,
-                dtype='float32',
-                persistable=False,
-                name='mask_pred')
+        mask_pred = fluid.layers.create_global_var(
+            shape=[1],
+            value=0.0,
+            dtype='float32',
+            persistable=False,
+            name=mask_name)
+        with fluid.layers.control_flow.Switch() as switch:
+            with switch.case(cond):
+                fluid.layers.assign(input=bbox_pred, output=mask_pred)
+            with switch.default():
+                bbox = fluid.layers.slice(bbox_pred, [1], starts=[2], ends=[6])
 
-            with fluid.layers.control_flow.Switch() as switch:
-                with switch.case(cond):
-                    fluid.layers.assign(input=bbox_pred, output=mask_pred)
-                with switch.default():
-                    bbox = fluid.layers.slice(
-                        bbox_pred, [1], starts=[2], ends=[6])
+                im_scale = fluid.layers.slice(
+                    im_info, [1], starts=[2], ends=[3])
+                im_scale = fluid.layers.sequence_expand(im_scale, bbox)
 
-                    im_scale = fluid.layers.slice(
-                        im_info, [1], starts=[2], ends=[3])
-                    im_scale = fluid.layers.sequence_expand(im_scale, bbox)
+                mask_rois = bbox * im_scale
+                if self.fpn is None:
+                    mask_feat = self.roi_extractor(last_feat, mask_rois)
+                    mask_feat = self.bbox_head.get_head_feat(mask_feat)
+                else:
+                    mask_feat = self.roi_extractor(
+                        body_feats, mask_rois, spatial_scale, is_mask=True)
 
-                    mask_rois = bbox * im_scale
-                    if self.fpn is None:
-                        mask_feat = self.roi_extractor(last_feat, mask_rois)
-                        mask_feat = self.bbox_head.get_head_feat(mask_feat)
-                    else:
-                        mask_feat = self.roi_extractor(
-                            body_feats, mask_rois, spatial_scale, is_mask=True)
+                mask_out = self.mask_head.get_prediction(mask_feat, bbox)
+                fluid.layers.assign(input=mask_out, output=mask_pred)
+        return mask_pred, bbox_pred
 
-                    mask_out = self.mask_head.get_prediction(mask_feat, bbox)
-                    fluid.layers.assign(input=mask_out, output=mask_pred)
-            return {'bbox': bbox_pred, 'mask': mask_pred}
+    def _input_check(self, require_fields, feed_vars):
+        for var in require_fields:
+            assert var in feed_vars, \
+                "{} has no {} field".format(feed_vars, var)
 
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
-    def eval(self, feed_vars):
+    def eval(self, feed_vars, multi_scale=None, mask_branch=False):
+        if multi_scale:
+            return self.build_multi_scale(feed_vars, mask_branch)
         return self.build(feed_vars, 'test')
 
     def test(self, feed_vars):

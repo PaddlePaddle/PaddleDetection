@@ -74,16 +74,13 @@ class CascadeRCNN(object):
         self.cascade_rcnn_loss_weight = [1.0, 0.5, 0.25]
 
     def build(self, feed_vars, mode='train'):
-        im = feed_vars['image']
-        assert mode in ['train', 'test'], \
-            "only 'train' and 'test' mode is supported"
         if mode == 'train':
             required_fields = ['gt_label', 'gt_box', 'is_crowd', 'im_info']
         else:
             required_fields = ['im_shape', 'im_info']
-        for var in required_fields:
-            assert var in feed_vars, \
-                "{} has no {} field".format(feed_vars, var)
+        self._input_check(required_fields, feed_vars)
+
+        im = feed_vars['image']
         im_info = feed_vars['im_info']
 
         if mode == 'train':
@@ -171,6 +168,98 @@ class CascadeRCNN(object):
                 self.cls_agnostic_bbox_reg)
             return pred
 
+    def build_multi_scale(self, feed_vars):
+        required_fields = ['image', 'im_shape', 'im_info']
+        self._input_check(required_fields, feed_vars)
+        ims = []
+        for k in feed_vars.keys():
+            if 'image' in k:
+                ims.append(feed_vars[k])
+        result = {}
+        result.update(feed_vars)
+        for i, im in enumerate(ims):
+            im_info = fluid.layers.slice(
+                input=feed_vars['im_info'],
+                axes=[1],
+                starts=[3 * i],
+                ends=[3 * i + 3])
+            im_shape = feed_vars['im_shape']
+
+            # backbone
+            body_feats = self.backbone(im)
+            result.update(body_feats)
+            body_feat_names = list(body_feats.keys())
+
+            # FPN
+            if self.fpn is not None:
+                body_feats, spatial_scale = self.fpn.get_output(body_feats)
+
+            # rpn proposals
+            rpn_rois = self.rpn_head.get_proposals(
+                body_feats, im_info, mode='test')
+
+            proposal_list = []
+            roi_feat_list = []
+            rcnn_pred_list = []
+
+            proposals = None
+            bbox_pred = None
+            for i in range(3):
+                if i > 0:
+                    refined_bbox = self._decode_box(
+                        proposals,
+                        bbox_pred,
+                        curr_stage=i - 1, )
+                else:
+                    refined_bbox = rpn_rois
+
+                proposals = refined_bbox
+                proposal_list.append(proposals)
+
+                # extract roi features
+                roi_feat = self.roi_extractor(body_feats, proposals,
+                                              spatial_scale)
+                roi_feat_list.append(roi_feat)
+
+                # bbox head
+                cls_score, bbox_pred = self.bbox_head.get_output(
+                    roi_feat,
+                    wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
+                    name='_' + str(i + 1) if i > 0 else '')
+                rcnn_pred_list.append((cls_score, bbox_pred))
+
+            # get mask rois
+            rois = proposal_list[2]
+
+            if self.fpn is None:
+                last_feat = body_feats[list(body_feats.keys())[-1]]
+                roi_feat = self.roi_extractor(last_feat, rois)
+            else:
+                roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)
+
+            pred = self.bbox_head.get_prediction(
+                im_info,
+                im_shape,
+                roi_feat_list,
+                rcnn_pred_list,
+                proposal_list,
+                self.cascade_bbox_reg_weights,
+                self.cls_agnostic_bbox_reg,
+                return_box_score=True)
+            bbox_name = 'bbox_' + str(i)
+            score_name = 'score_' + str(i)
+            if 'flip' in im.name:
+                bbox_name += '_flip'
+                score_name += '_flip'
+            result[bbox_name] = pred['bbox']
+            result[score_name] = pred['score']
+        return result
+
+    def _input_check(self, require_fields, feed_vars):
+        for var in require_fields:
+            assert var in feed_vars, \
+                "{} has no {} field".format(feed_vars, var)
+
     def _decode_box(self, proposals, bbox_pred, curr_stage):
         rcnn_loc_delta_r = fluid.layers.reshape(
             bbox_pred, (-1, self.cls_agnostic_bbox_reg, 4))
@@ -191,7 +280,9 @@ class CascadeRCNN(object):
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
-    def eval(self, feed_vars):
+    def eval(self, feed_vars, multi_scale=None):
+        if multi_scale:
+            return self.build_multi_scale(feed_vars)
         return self.build(feed_vars, 'test')
 
     def test(self, feed_vars):

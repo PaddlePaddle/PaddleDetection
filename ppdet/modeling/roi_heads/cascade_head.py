@@ -146,7 +146,8 @@ class CascadeBBoxHead(object):
                        rcnn_pred_list,
                        proposal_list,
                        cascade_bbox_reg_weights,
-                       cls_agnostic_bbox_reg=2):
+                       cls_agnostic_bbox_reg=2,
+                       return_box_score=False):
         """
         Get prediction bounding box in test stage.
         :
@@ -214,7 +215,8 @@ class CascadeBBoxHead(object):
             axis=1)
 
         box_out = fluid.layers.box_clip(input=decoded_box, im_info=im_shape)
-
+        if return_box_score:
+            return {'bbox': box_out, 'score': boxes_cls_prob_mean}
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
 

@@ -24,6 +24,7 @@ import time
 import paddle.fluid as fluid
 
 from ppdet.utils.voc_eval import bbox_eval as voc_bbox_eval
+from ppdet.utils.post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
 
 __all__ = ['parse_fetches', 'eval_run', 'eval_results', 'json_eval_results']
 
@@ -57,7 +58,52 @@ def parse_fetches(fetches, prog=None, extra_keys=None):
     return keys, values, cls
 
 
-def eval_run(exe, compile_program, pyreader, keys, values, cls):
+def length2lod(length_lod):
+    offset_lod = [0]
+    for i in length_lod:
+        offset_lod.append(offset_lod[-1] + i)
+    return [offset_lod]
+
+
+def get_sub_feed(input, place):
+    new_dict = {}
+    res_feed = {}
+    key_name = ['bbox', 'im_info', 'im_id', 'im_shape', 'bbox_flip']
+    for k in key_name:
+        if k in input.keys():
+            new_dict[k] = input[k]
+    for k in input.keys():
+        if 'image' in k:
+            new_dict[k] = input[k]
+    for k, v in new_dict.items():
+        data_t = fluid.LoDTensor()
+        data_t.set(v[0], place)
+        if 'bbox' in k:
+            lod = length2lod(v[1][0])
+            data_t.set_lod(lod)
+        res_feed[k] = data_t
+    return res_feed
+
+
+def clean_res(result, keep_name_list):
+    clean_result = {}
+    for k in result.keys():
+        if k in keep_name_list:
+            clean_result[k] = result[k]
+    result.clear()
+    return clean_result
+
+
+def eval_run(exe,
+             compile_program,
+             pyreader,
+             keys,
+             values,
+             cls,
+             cfg=None,
+             sub_prog=None,
+             sub_keys=None,
+             sub_values=None):
     """
     Run evaluation program, return program outputs.
     """
@@ -84,6 +130,28 @@ def eval_run(exe, compile_program, pyreader, keys, values, cls):
                 k: (np.array(v), v.recursive_sequence_lengths())
                 for k, v in zip(keys, outs)
             }
+            multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
+            mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
+
+            if multi_scale_test:
+                post_res = mstest_box_post_process(res, cfg)
+                res.update(post_res)
+            if mask_multi_scale_test:
+                place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
+                sub_feed = get_sub_feed(res, place)
+                sub_prog_outs = exe.run(sub_prog,
+                                        feed=sub_feed,
+                                        fetch_list=sub_values,
+                                        return_numpy=False)
+                sub_prog_res = {
+                    k: (np.array(v), v.recursive_sequence_lengths())
+                    for k, v in zip(sub_keys, sub_prog_outs)
+                }
+                post_res = mstest_mask_post_process(sub_prog_res, cfg)
+                res.update(post_res)
+            if multi_scale_test:
+                res = clean_res(
+                    res, ['im_info', 'bbox', 'im_id', 'im_shape', 'mask'])
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))

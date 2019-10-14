@@ -16,7 +16,7 @@ from argparse import ArgumentParser, RawDescriptionHelpFormatter
 
 import yaml
 import re
-from ppdet.core.workspace import get_registered_modules
+from ppdet.core.workspace import get_registered_modules, dump_value
 
 __all__ = ['ColorTTY', 'ArgsParser']
 

@@ -68,8 +68,8 @@ class Reader(object):
         mapped_ds = map(sc, mapper, worker_args)
         # In VAL mode, gt_bbox, gt_label can be empty, and should
         # not be dropped
-        batched_ds = batch(mapped_ds, batchsize, drop_last, 
-                           drop_empty=(mode!="VAL"))
+        batched_ds = batch(
+            mapped_ds, batchsize, drop_last, drop_empty=(mode != "VAL"))
 
         trans_conf = {k.lower(): v for k, v in self._trans_conf[mode].items()}
         need_keys = {
@@ -78,6 +78,8 @@ class Reader(object):
             'random_shapes',
             'multi_scales',
             'use_padded_im_info',
+            'enable_multiscale_test',
+            'num_scale',
         }
         bm_config = {
             key: value
@@ -125,12 +127,15 @@ class Reader(object):
         return self._make_reader('TEST')
 
     @classmethod
-    def create(cls, mode, data_config,
-            transform_config, max_iter=-1,
-            my_source=None, ret_iter=True):
+    def create(cls,
+               mode,
+               data_config,
+               transform_config,
+               max_iter=-1,
+               my_source=None,
+               ret_iter=True):
         """ create a specific reader """
-        reader = Reader({mode: data_config},
-            {mode: transform_config}, max_iter)
+        reader = Reader({mode: data_config}, {mode: transform_config}, max_iter)
         if ret_iter:
             return reader._make_reader(mode, my_source)
         else:

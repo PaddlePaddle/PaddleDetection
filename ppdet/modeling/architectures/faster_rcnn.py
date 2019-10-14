@@ -63,6 +63,12 @@ class FasterRCNN(object):
         self.rpn_only = rpn_only
 
     def build(self, feed_vars, mode='train'):
+        if mode == 'train':
+            required_fields = ['gt_label', 'gt_box', 'is_crowd', 'im_info']
+        else:
+            required_fields = ['im_shape', 'im_info']
+        self._input_check(required_fields, feed_vars)
+
         im = feed_vars['image']
         im_info = feed_vars['im_info']
         if mode == 'train':
@@ -136,10 +142,62 @@ class FasterRCNN(object):
                                                  im_shape)
             return pred
 
+    def build_multi_scale(self, feed_vars):
+        required_fields = ['image', 'im_info', 'im_shape']
+        self._input_check(required_fields, feed_vars)
+        ims = []
+        for k in feed_vars.keys():
+            if 'image' in k:
+                ims.append(feed_vars[k])
+        result = {}
+        result.update(feed_vars)
+        for i, im in enumerate(ims):
+            im_info = fluid.layers.slice(
+                input=feed_vars['im_info'],
+                axes=[1],
+                starts=[3 * i],
+                ends=[3 * i + 3])
+            im_shape = feed_vars['im_shape']
+            body_feats = self.backbone(im)
+            result.update(body_feats)
+            body_feat_names = list(body_feats.keys())
+
+            if self.fpn is not None:
+                body_feats, spatial_scale = self.fpn.get_output(body_feats)
+
+            rois = self.rpn_head.get_proposals(body_feats, im_info, mode='test')
+
+            if self.fpn is None:
+                # in models without FPN, roi extractor only uses the last level of
+                # feature maps. And body_feat_names[-1] represents the name of
+                # last feature map.
+                body_feat = body_feats[body_feat_names[-1]]
+                roi_feat = self.roi_extractor(body_feat, rois)
+            else:
+                roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)
+
+            pred = self.bbox_head.get_prediction(
+                roi_feat, rois, im_info, im_shape, return_box_score=True)
+            bbox_name = 'bbox_' + str(i)
+            score_name = 'score_' + str(i)
+            if 'flip' in im.name:
+                bbox_name += '_flip'
+                score_name += '_flip'
+            result[bbox_name] = pred['bbox']
+            result[score_name] = pred['score']
+        return result
+
+    def _input_check(self, require_fields, feed_vars):
+        for var in require_fields:
+            assert var in feed_vars, \
+                "{} has no {} field".format(feed_vars, var)
+
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
-    def eval(self, feed_vars):
+    def eval(self, feed_vars, multi_scale=None):
+        if multi_scale:
+            return self.build_multi_scale(feed_vars)
         return self.build(feed_vars, 'test')
 
     def test(self, feed_vars):

@@ -122,6 +122,105 @@ class DecodeImage(BaseOperator):
 
 
 @register_op
+class MultiscaleTestResize(BaseOperator):
+    def __init__(self,
+                 origin_target_size=800,
+                 origin_max_size=1333,
+                 target_size=[],
+                 max_size=2000,
+                 interp=cv2.INTER_LINEAR,
+                 use_flip=True):
+        """
+        Rescale image to the each size in target size, and capped at max_size.
+
+        Args:
+            origin_target_size(int): original target size of image's short side.
+            origin_max_size(int): original max size of image.
+            target_size (list): A list of target sizes of image's short side.
+            max_size (int): the max size of image.
+            interp (int): the interpolation method.
+            use_flip (bool): whether use flip augmentation.
+        """
+        super(MultiscaleTestResize, self).__init__()
+        self.origin_target_size = int(origin_target_size)
+        self.origin_max_size = int(origin_max_size)
+        self.max_size = int(max_size)
+        self.interp = int(interp)
+        self.use_flip = use_flip
+
+        if not isinstance(target_size, list):
+            raise TypeError(
+                "Type of target_size is invalid. Must be List, now is {}".
+                format(type(target_size)))
+        self.target_size = target_size
+        if not (isinstance(self.origin_target_size, int) and isinstance(
+                self.origin_max_size, int) and isinstance(self.max_size, int)
+                and isinstance(self.interp, int)):
+            raise TypeError("{}: input type is invalid.".format(self))
+
+    def __call__(self, sample, context=None):
+        """ Resize the image numpy for multi-scale test.
+        """
+        origin_ims = {}
+        im = sample['image']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+        im_shape = im.shape
+        im_size_min = np.min(im_shape[0:2])
+        im_size_max = np.max(im_shape[0:2])
+        if float(im_size_min) == 0:
+            raise ZeroDivisionError('{}: min size of image is 0'.format(self))
+        base_name_list = ['image']
+        origin_ims['image'] = im
+        if self.use_flip:
+            sample['flip_image'] = im[:, ::-1, :]
+            base_name_list.append('flip_image')
+            origin_ims['flip_image'] = sample['flip_image']
+        im_info = []
+        for base_name in base_name_list:
+            im_scale = float(self.origin_target_size) / float(im_size_min)
+            # Prevent the biggest axis from being more than max_size
+            if np.round(im_scale * im_size_max) > self.origin_max_size:
+                im_scale = float(self.origin_max_size) / float(im_size_max)
+            im_scale_x = im_scale
+            im_scale_y = im_scale
+
+            resize_w = np.round(im_scale_x * float(im_shape[1]))
+            resize_h = np.round(im_scale_y * float(im_shape[0]))
+            im_resize = cv2.resize(
+                origin_ims[base_name],
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            im_info.extend([resize_h, resize_w, im_scale])
+            sample[base_name] = im_resize
+            for i, size in enumerate(self.target_size):
+                im_scale = float(size) / float(im_size_min)
+                if np.round(im_scale * im_size_max) > self.max_size:
+                    im_scale = float(self.max_size) / float(im_size_max)
+                im_scale_x = im_scale
+                im_scale_y = im_scale
+                resize_w = np.round(im_scale_x * float(im_shape[1]))
+                resize_h = np.round(im_scale_y * float(im_shape[0]))
+                im_resize = cv2.resize(
+                    origin_ims[base_name],
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=self.interp)
+                im_info.extend([resize_h, resize_w, im_scale])
+                name = base_name + '_scale_' + str(i)
+                sample[name] = im_resize
+        sample['im_info'] = np.array(im_info, dtype=np.float32)
+        return sample
+
+
+@register_op
 class ResizeImage(BaseOperator):
     def __init__(self,
                  target_size=0,
@@ -183,9 +282,12 @@ class ResizeImage(BaseOperator):
 
             resize_w = np.round(im_scale_x * float(im_shape[1]))
             resize_h = np.round(im_scale_y * float(im_shape[0]))
-
-            sample['im_info'] = np.array(
-                [resize_h, resize_w, im_scale], dtype=np.float32)
+            im_info = [resize_h, resize_w, im_scale]
+            if 'im_info' in sample and sample['im_info'][2] != 1.:
+                sample['im_info'] = np.append(
+                    list(sample['im_info']), im_info).astype(np.float32)
+            else:
+                sample['im_info'] = np.array(im_info).astype(np.float32)
         else:
             im_scale_x = float(selected_size) / float(im_shape[1])
             im_scale_y = float(selected_size) / float(im_shape[0])
@@ -331,19 +433,21 @@ class NormalizeImage(BaseOperator):
             1.(optional) Scale the image to [0,1]
             2. Each pixel minus mean and is divided by std
         """
-        im = sample['image']
-        im = im.astype(np.float32, copy=False)
-        if self.is_channel_first:
-            mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
-            std = np.array(self.std)[:, np.newaxis, np.newaxis]
-        else:
-            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-            std = np.array(self.std)[np.newaxis, np.newaxis, :]
-        if self.is_scale:
-            im = im / 255.0
-        im -= mean
-        im /= std
-        sample['image'] = im
+        for k in sample.keys():
+            if 'image' in k:
+                im = sample[k]
+                im = im.astype(np.float32, copy=False)
+                if self.is_channel_first:
+                    mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
+                    std = np.array(self.std)[:, np.newaxis, np.newaxis]
+                else:
+                    mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+                    std = np.array(self.std)[np.newaxis, np.newaxis, :]
+                if self.is_scale:
+                    im = im / 255.0
+                im -= mean
+                im /= std
+                sample[k] = im
         return sample
 
 
@@ -785,13 +889,15 @@ class Permute(BaseOperator):
 
     def __call__(self, sample, context=None):
         assert 'image' in sample, "image data not found"
-        im = sample['image']
-        if self.channel_first:
-            im = np.swapaxes(im, 1, 2)
-            im = np.swapaxes(im, 1, 0)
-        if self.to_bgr:
-            im = im[[2, 1, 0], :, :]
-        sample['image'] = im
+        for k in sample.keys():
+            if 'image' in k:
+                im = sample[k]
+                if self.channel_first:
+                    im = np.swapaxes(im, 1, 2)
+                    im = np.swapaxes(im, 1, 0)
+                if self.to_bgr:
+                    im = im[[2, 1, 0], :, :]
+                sample[k] = im
         return sample
 
 
