@@ -101,7 +101,8 @@ def load(anno_path, sample_num=-1, with_background=True):
             gt_class[i][0] = catid2clsid[catid]
             gt_bbox[i, :] = box['clean_bbox']
             is_crowd[i][0] = box['iscrowd']
-            gt_poly[i] = box['segmentation']
+            if 'segmentation' in box:
+                gt_poly[i] = box['segmentation']
 
         coco_rec = {
             'im_file': im_fname,

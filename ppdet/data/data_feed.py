@@ -70,6 +70,10 @@ def _prepare_data_config(feed, args_path):
         'TYPE': type(feed.dataset).__source__
     }
 
+    if feed.mode == 'TRAIN':
+        data_config['CLASS_AWARE_SAMPLING'] = getattr(
+            feed, 'class_aware_sampling', False)
+
     if len(getattr(feed.dataset, 'images', [])) > 0:
         data_config['IMAGES'] = feed.dataset.images
 
@@ -301,7 +305,8 @@ class DataFeed(object):
                  bufsize=10,
                  use_process=False,
                  memsize=None,
-                 use_padded_im_info=False):
+                 use_padded_im_info=False,
+                 class_aware_sampling=False):
         super(DataFeed, self).__init__()
         self.fields = fields
         self.image_shape = image_shape
@@ -318,6 +323,7 @@ class DataFeed(object):
         self.memsize = memsize
         self.dataset = dataset
         self.use_padded_im_info = use_padded_im_info
+        self.class_aware_sampling = class_aware_sampling
         if isinstance(dataset, dict):
             self.dataset = DataSet(**dataset)
 
@@ -447,7 +453,8 @@ class FasterRCNNTrainFeed(DataFeed):
                  bufsize=10,
                  num_workers=2,
                  use_process=False,
-                 memsize=None):
+                 memsize=None,
+                 class_aware_sampling=False):
         # XXX this should be handled by the data loader, since `fields` is
         # given, just collect them
         sample_transforms.append(ArrangeRCNN())
@@ -464,7 +471,8 @@ class FasterRCNNTrainFeed(DataFeed):
             bufsize=bufsize,
             num_workers=num_workers,
             use_process=use_process,
-            memsize=memsize)
+            memsize=memsize,
+            class_aware_sampling=class_aware_sampling)
         # XXX these modes should be unified
         self.mode = 'TRAIN'
 
@@ -891,7 +899,8 @@ class YoloTrainFeed(DataFeed):
                  use_process=True,
                  memsize=None,
                  num_max_boxes=50,
-                 mixup_epoch=250):
+                 mixup_epoch=250,
+                 class_aware_sampling=False):
         sample_transforms.append(ArrangeYOLO())
         super(YoloTrainFeed, self).__init__(
             dataset,
@@ -907,7 +916,8 @@ class YoloTrainFeed(DataFeed):
             num_workers=num_workers,
             bufsize=bufsize,
             use_process=use_process,
-            memsize=memsize)
+            memsize=memsize,
+            class_aware_sampling=class_aware_sampling)
         self.num_max_boxes = num_max_boxes
         self.mixup_epoch = mixup_epoch
         self.mode = 'TRAIN'

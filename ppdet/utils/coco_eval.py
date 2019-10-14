@@ -213,7 +213,7 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
             for j in range(num):
                 dt = bboxes[k]
                 clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
-                catid = clsid2catid[clsid]
+                catid = (clsid2catid[int(clsid)])
 
                 if is_bbox_normalized:
                     xmin, ymin, xmax, ymax = \
