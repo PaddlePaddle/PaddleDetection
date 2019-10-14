@@ -56,7 +56,8 @@ class SENet(ResNeXt):
                  variant='d',
                  feature_maps=[2, 3, 4, 5],
                  dcn_v2_stages=[],
-                 std_senet=False):
+                 std_senet=False,
+                 weight_prefix_name=''):
         super(SENet, self).__init__(depth, groups, group_width, freeze_at,
                                     norm_type, freeze_norm, norm_decay, variant,
                                     feature_maps)
@@ -113,7 +114,8 @@ class SENetC5(SENet):
                  freeze_norm=True,
                  norm_decay=0.,
                  variant='d',
-                 feature_maps=[5]):
+                 feature_maps=[5],
+                 weight_prefix_name=''):
         super(SENetC5, self).__init__(depth, groups, group_width, freeze_at,
                                       norm_type, freeze_norm, norm_decay,
                                       variant, feature_maps)

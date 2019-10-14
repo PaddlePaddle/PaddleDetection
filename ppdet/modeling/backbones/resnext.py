@@ -50,7 +50,8 @@ class ResNeXt(ResNet):
                  norm_decay=True,
                  variant='a',
                  feature_maps=[2, 3, 4, 5],
-                 dcn_v2_stages=[]):
+                 dcn_v2_stages=[],
+                 weight_prefix_name=''):
         assert depth in [50, 101, 152], "depth {} should be 50, 101 or 152"
         super(ResNeXt, self).__init__(depth, freeze_at, norm_type, freeze_norm,
                                       norm_decay, variant, feature_maps)
@@ -80,7 +81,8 @@ class ResNeXtC5(ResNeXt):
                  freeze_norm=True,
                  norm_decay=True,
                  variant='a',
-                 feature_maps=[5]):
+                 feature_maps=[5],
+                 weight_prefix_name=''):
         super(ResNeXtC5, self).__init__(depth, groups, group_width, freeze_at,
                                         norm_type, freeze_norm, norm_decay,
                                         variant, feature_maps)

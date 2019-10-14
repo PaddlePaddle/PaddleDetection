@@ -47,7 +47,7 @@ class ResNet(object):
         feature_maps (list): index of stages whose feature maps are returned
         dcn_v2_stages (list): index of stages who select deformable conv v2
     """
-    __shared__ = ['norm_type', 'freeze_norm']
+    __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
     def __init__(self,
                  depth=50,
@@ -57,7 +57,8 @@ class ResNet(object):
                  norm_decay=0.,
                  variant='b',
                  feature_maps=[2, 3, 4, 5],
-                 dcn_v2_stages=[]):
+                 dcn_v2_stages=[],
+                 weight_prefix_name=''):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -89,6 +90,7 @@ class ResNet(object):
         self.stage_filters = [64, 128, 256, 512]
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
+        self.prefix_name = weight_prefix_name
 
     def _conv_offset(self,
                      input,
@@ -121,6 +123,7 @@ class ResNet(object):
                    act=None,
                    name=None,
                    dcn_v2=False):
+        _name = self.prefix_name + name if self.prefix_name != '' else name
         if not dcn_v2:
             conv = fluid.layers.conv2d(
                 input=input,
@@ -130,9 +133,9 @@ class ResNet(object):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 act=None,
-                param_attr=ParamAttr(name=name + "_weights"),
+                param_attr=ParamAttr(name=_name + "_weights"),
                 bias_attr=False,
-                name=name + '.conv2d.output.1')
+                name=_name + '.conv2d.output.1')
         else:
             # select deformable conv"
             offset_mask = self._conv_offset(
@@ -141,7 +144,7 @@ class ResNet(object):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 act=None,
-                name=name + "_conv_offset")
+                name=_name + "_conv_offset")
             offset_channel = filter_size**2 * 2
             mask_channel = filter_size**2
             offset, mask = fluid.layers.split(
@@ -160,11 +163,12 @@ class ResNet(object):
                 groups=groups,
                 deformable_groups=1,
                 im2col_step=1,
-                param_attr=ParamAttr(name=name + "_weights"),
+                param_attr=ParamAttr(name=_name + "_weights"),
                 bias_attr=False,
-                name=name + ".conv2d.output.1")
+                name=_name + ".conv2d.output.1")
 
         bn_name = self.na.fix_conv_norm_name(name)
+        bn_name = self.prefix_name + bn_name if self.prefix_name != '' else bn_name
 
         norm_lr = 0. if self.freeze_norm else 1.
         norm_decay = self.norm_decay
@@ -420,7 +424,8 @@ class ResNetC5(ResNet):
                  freeze_norm=True,
                  norm_decay=0.,
                  variant='b',
-                 feature_maps=[5]):
+                 feature_maps=[5],
+                 weight_prefix_name=''):
         super(ResNetC5, self).__init__(depth, freeze_at, norm_type, freeze_norm,
                                        norm_decay, variant, feature_maps)
         self.severed_head = True
