@@ -221,7 +221,7 @@ def main():
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    time_stat = deque(maxlen=cfg.log_iter)
+    time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use tb-paddle to log data
