@@ -21,7 +21,7 @@ FasterRCNN:
   bbox_assigner: BBoxAssigner
 
 ResNet:
-  norm_type: affine_channel
+  norm_type: bn
   norm_decay: 0.
   depth: 50
   feature_maps: [2, 3, 4, 5]

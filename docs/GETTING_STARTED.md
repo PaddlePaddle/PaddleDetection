@@ -80,6 +80,22 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                             finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
 ```
 
+- Mixed Precision Training
+
+Mixed precision training can be enabled with `--fp16` flag. Currently Faster-FPN, Mask-FPN and Yolov3 have been verified to be working with little to no loss of precision (less than 0.2 mAP)
+
+To speed up mixed precision training, it is recommended to train in multi-process mode, for example
+
+```bash
+export PYTHONPATH=$PYTHONPATH:.
+python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.py --fp16 -c configs/faster_rcnn_r50_fpn_1x.yml
+```
+
+If loss becomes `NaN` during training, try tweak the `--loss_scale` value. Please refer to the Nvidia [documentation](https://docs.nvidia.com/deeplearning/sdk/mixed-precision-training/index.html#mptrain) on mixed precision training for details.
+
+Also, please note mixed precision training currently requires changing `norm_type` from `affine_channel` to `bn`.
+
+
 ##### NOTES
 
 - `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](#faq)

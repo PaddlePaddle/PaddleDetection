@@ -24,7 +24,7 @@ ResNet:
   depth: 50
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
-  norm_type: affine_channel
+  norm_type: bn
 
 FPN:
   max_level: 6

@@ -81,6 +81,21 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                             finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
 ```
 
+- 混合精度训练
+
+通过设置 `--fp16` 命令行选项可以启用混合精度训练。目前混合精度训练已经在Faster-FPN, Mask-FPN 及 Yolov3 上进行验证，几乎没有精度损失（小于0.2 mAP)。
+
+建议使用多进程方式来进一步加速混合精度训练。示例如下。
+
+```bash
+export PYTHONPATH=$PYTHONPATH:.
+python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.py --fp16 -c configs/faster_rcnn_r50_fpn_1x.yml
+```
+
+如果训练过程中loss出现`NaN`，请尝试调节`--loss_scale`选项数值，细节请参看混合精度训练相关的[Nvidia文档](https://docs.nvidia.com/deeplearning/sdk/mixed-precision-training/index.html#mptrain)。
+
+另外，请注意将配置文件中的 `norm_type` 由 `affine_channel` 改为 `bn`。
+
 ##### 提示
 
 - `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](#faq)

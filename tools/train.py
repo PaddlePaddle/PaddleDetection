@@ -122,6 +122,12 @@ def main():
             model = create(main_arch)
             train_pyreader, feed_vars = create_feed(train_feed)
 
+            if FLAGS.fp16:
+                assert (getattr(model.backbone, 'norm_type', None)
+                        != 'affine_channel'), \
+                    '--fp16 currently does not support affine channel, ' \
+                    ' please modify backbone settings to use batch norm'
+
             with mixed_precision_context(FLAGS.loss_scale, FLAGS.fp16) as ctx:
                 train_fetches = model.train(feed_vars)
 
