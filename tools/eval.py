@@ -81,7 +81,10 @@ def main():
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
             pyreader, feed_vars = create_feed(eval_feed)
-            fetches = model.eval(feed_vars, multi_scale_test)
+            if multi_scale_test is None:
+                fetches = model.eval(feed_vars)
+            else:
+                fetches = model.eval(feed_vars, multi_scale_test)
     eval_prog = eval_prog.clone(True)
     reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
     pyreader.decorate_sample_list_generator(reader, place)

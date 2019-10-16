@@ -93,6 +93,7 @@ class MaskRCNN(object):
                                      for k, v in body_feats.items())
 
         # FPN
+        spatial_scale = None
         if self.fpn is not None:
             body_feats, spatial_scale = self.fpn.get_output(body_feats)
 
