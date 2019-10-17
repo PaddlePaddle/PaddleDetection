@@ -105,9 +105,9 @@ python ./ppdet/data/tools/generate_data_for_training.py
  4. 数据获取接口  
      为方便训练时的数据获取，我们将多个`data.Dataset`组合在一起构成一个`data.Reader`为用户提供数据，用户只需要调用`Reader.[train|eval|infer]`即可获得对应的数据流。`Reader`支持yaml文件配置数据地址、预处理过程、加速方式等。
 
+### APIs
+
 主要的APIs如下：
-
-
 
 
 1. 数据解析  

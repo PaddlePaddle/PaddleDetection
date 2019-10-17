@@ -89,7 +89,7 @@ SSDEvalFeed:
   fields: ['image', 'im_id', 'gt_box']
   dataset:
     dataset_dir: dataset/wider_face
-    annotation: annotFile.txt #wider_face_split/wider_face_val_bbx_gt.txt   
+    annotation: wider_face_split/wider_face_val_bbx_gt.txt   
     image_dir: WIDER_val/images
   drop_last: false
   image_shape: [3, 640, 640]

@@ -60,6 +60,17 @@ DATASETS = {
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
             'b6e924de25625d8de591ea690078ad9f', ),
     ], ["VOCdevkit/VOC_all"]),
+    'wider_face': ([
+        (
+            'https://dataset.bj.bcebos.com/wider_face/WIDER_train.zip',
+            '3fedf70df600953d25982bcd13d91ba2', ),
+        (
+            'https://dataset.bj.bcebos.com/wider_face/WIDER_val.zip',
+            'dfa7d7e790efa35df3788964cf0bbaea', ),
+        (
+            'https://dataset.bj.bcebos.com/wider_face/wider_face_split.zip',
+            'a4a898d6193db4b9ef3260a68bad0dc7', ),
+    ], ["WIDER_train", "WIDER_val", "wider_face_split"]),
     'fruit': ([
         (
             'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
@@ -114,7 +125,8 @@ def get_dataset_path(path, annotation, image_dir):
     # not match any dataset in DATASETS
     raise ValueError("Dataset {} is not valid and cannot parse dataset type "
                      "'{}' for automaticly downloading, which only supports "
-                     "'voc' and 'coco' currently".format(path, osp.split(path)[-1]))
+                     "'voc' and 'coco' currently".format(path,
+                                                         osp.split(path)[-1]))
 
 
 def _merge_voc_dir(data_dir, output_subdir):
@@ -201,7 +213,7 @@ def _dataset_exists(path, annotation, image_dir):
     """
     if not osp.exists(path):
         logger.info("Config dataset_dir {} is not exits, "
-                "dataset config is not valid".format(path))
+                    "dataset config is not valid".format(path))
         return False
 
     if annotation:
@@ -324,7 +336,7 @@ def _decompress(fname):
 
 def _move_and_merge_tree(src, dst):
     """
-    Move src directory to dst, if dst is already exists, 
+    Move src directory to dst, if dst is already exists,
     merge src to dst
     """
     if not osp.exists(dst):

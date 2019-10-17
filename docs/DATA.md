@@ -126,6 +126,8 @@ the corresponding data stream. Many aspect of the `Reader`, such as storage
 location, preprocessing pipeline, acceleration mode can be configured with yaml
 files.
 
+### APIs
+
 The main APIs are as follows:
 
 1. Data parsing
@@ -139,7 +141,7 @@ The main APIs are as follows:
  - `source/loader.py`: Roidb dataset parser. [source](../ppdet/data/source/loader.py)
 
 2. Operator
- `transform/operators.py`: Contains a variety of data enhancement methods, including:
+ `transform/operators.py`: Contains a variety of data augmentation methods, including:
 - `DecodeImage`: Read images in RGB format.
 - `RandomFlipImage`: Horizontal flip.
 - `RandomDistort`: Distort brightness, contrast, saturation, and hue.
@@ -150,7 +152,7 @@ The main APIs are as follows:
 - `NormalizeImage`: Normalize image pixel values.
 - `NormalizeBox`: Normalize the bounding box.
 - `Permute`: Arrange the channels of the image and optionally convert image to BGR format.
-- `MixupImage`: Mixup two images with given fraction<sup>[1](#vd)</sup>.
+- `MixupImage`: Mixup two images with given fraction<sup>[1](#mix)</sup>.
 
 <a name="mix">[1]</a> Please refer to [this paper](https://arxiv.org/pdf/1710.09412.pdf)。
 
