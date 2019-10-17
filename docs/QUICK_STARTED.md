@@ -2,7 +2,7 @@ English | [简体中文](QUICK_STARTED_cn.md)
 
 # Quick Start
 
-This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 15min with good performance.
+This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 20min with good performance.
 
 ## Data Preparation
 
