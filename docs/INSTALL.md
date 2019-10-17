@@ -110,15 +110,15 @@ On the other hand, to download the datasets, run the following commands:
 - COCO
 
 ```
-cd dataset/coco
-./download.sh
+export PYTHONPATH=$PYTHONPATH:.
+python dataset/coco/download_coco.py
 ```
 
 - Pascal VOC
 
 ```
-cd dataset/voc
-./download.sh
+export PYTHONPATH=$PYTHONPATH:.
+python dataset/voc/download_voc.py
 ```
 
 **Download datasets automatically:**

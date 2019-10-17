@@ -35,7 +35,7 @@ __all__ = ['get_weights_path', 'get_dataset_path']
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
 
-# dict of {dataset_name: (downalod_info, sub_dirs)}
+# dict of {dataset_name: (download_info, sub_dirs)}
 # download info: (url, md5sum)
 DATASETS = {
     'coco': ([
@@ -60,6 +60,11 @@ DATASETS = {
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
             'b6e924de25625d8de591ea690078ad9f', ),
     ], ["VOCdevkit/VOC_all"]),
+    'fruit': ([
+        (
+            'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
+            '374554a7633b1b68d6a5fbb7c061b8ba', ),
+    ], ["fruit-detection"]),
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
@@ -103,31 +108,35 @@ def get_dataset_path(path, annotation, image_dir):
 
             # voc should merge dir and create list after download
             if name == 'voc':
-                logger.info("Download voc dataset successed, merge "
-                            "VOC2007 and VOC2012 to VOC_all...")
-                output_dir = osp.join(data_dir, dataset[1][0])
-                devkit_dir = "/".join(output_dir.split('/')[:-1])
-                years = ['2007', '2012']
-                # merge dir in output_tmp_dir at first, move to 
-                # output_dir after merge sucessed.
-                output_tmp_dir = osp.join(data_dir, 'tmp')
-                if osp.isdir(output_tmp_dir):
-                    shutil.rmtree(output_tmp_dir)
-                # NOTE(dengkaipeng): since using auto download VOC
-                # dataset, VOC default label list should be used, 
-                # do not generate label_list.txt here. For default
-                # label, see ../data/source/voc_loader.py
-                merge_and_create_list(devkit_dir, years, output_tmp_dir)
-                shutil.move(output_tmp_dir, output_dir)
-                # remove source directory VOC2007 and VOC2012
-                shutil.rmtree(osp.join(devkit_dir, "VOC2007"))
-                shutil.rmtree(osp.join(devkit_dir, "VOC2012"))
+                _merge_voc_dir(data_dir, dataset[1][0])
             return data_dir
 
     # not match any dataset in DATASETS
     raise ValueError("Dataset {} is not valid and cannot parse dataset type "
                      "'{}' for automaticly downloading, which only supports "
                      "'voc' and 'coco' currently".format(path, osp.split(path)[-1]))
+
+
+def _merge_voc_dir(data_dir, output_subdir):
+    logger.info("Download voc dataset successed, merge "
+                "VOC2007 and VOC2012 to VOC_all...")
+    output_dir = osp.join(data_dir, output_subdir)
+    devkit_dir = "/".join(output_dir.split('/')[:-1])
+    years = ['2007', '2012']
+    # merge dir in output_tmp_dir at first, move to 
+    # output_dir after merge sucessed.
+    output_tmp_dir = osp.join(data_dir, 'tmp')
+    if osp.isdir(output_tmp_dir):
+        shutil.rmtree(output_tmp_dir)
+    # NOTE: since using auto download VOC
+    # dataset, VOC default label list should be used, 
+    # do not generate label_list.txt here. For default
+    # label, see ../data/source/voc_loader.py
+    merge_and_create_list(devkit_dir, years, output_tmp_dir)
+    shutil.move(output_tmp_dir, output_dir)
+    # remove source directory VOC2007 and VOC2012
+    shutil.rmtree(osp.join(devkit_dir, "VOC2007"))
+    shutil.rmtree(osp.join(devkit_dir, "VOC2012"))
 
 
 def map_path(url, root_dir):
@@ -171,6 +180,19 @@ def get_path(url, root_dir, md5sum=None):
         _decompress(fullname)
 
     return fullpath
+
+
+def download_dataset(path, dataset=None):
+    if dataset not in DATASETS.keys():
+        logger.error("Unknown dataset {}, it should be "
+                     "{}".format(dataset, DATASETS.keys()))
+        return
+    dataset_info = DATASETS[dataset][0]
+    for info in dataset_info:
+        get_path(info[0], path, info[1])
+    if dataset == 'voc':
+        _merge_voc_dir(path, DATASETS[dataset][1][0])
+    logger.info("Download dataset {} finished.".format(dataset))
 
 
 def _dataset_exists(path, annotation, image_dir):

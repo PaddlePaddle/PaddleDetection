@@ -109,15 +109,15 @@ ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 - COCO
 
 ```
-cd dataset/coco
-./download.sh
+export PYTHONPATH=$PYTHONPATH:.
+python dataset/coco/download_coco.py
 ```
 
 - Pascal VOC
 
 ```
-cd dataset/voc
-./download.sh
+export PYTHONPATH=$PYTHONPATH:.
+python dataset/voc/download_voc.py
 ```
 
 **自动下载数据集：**
