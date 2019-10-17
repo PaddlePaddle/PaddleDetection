@@ -71,7 +71,10 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 - Fine-tune其他任务
 
-使用预训练模型fine-tune其他任务时，在YAML配置文件中设置`finetune_exclude_pretrained_params`或在命令行中添加`-o finetune_exclude_pretrained_params`对预训练模型进行选择性加载。
+使用预训练模型fine-tune其他任务时，可采用如下两种方式：
+
+1. 在YAML配置文件中设置`finetune_exclude_pretrained_params`
+2. 在命令行中添加-o finetune_exclude_pretrained_params对预训练模型进行选择性加载。
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7

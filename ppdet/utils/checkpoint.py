@@ -86,6 +86,8 @@ def load_params(exe, prog, path, ignore_params=[]):
         prog (fluid.Program): load weight to which Program object.
         path (string): URL string or loca model path.
         ignore_params (bool): ignore variable to load when finetuning.
+            It can be specified by finetune_exclude_pretrained_params 
+            and the usage can refer to docs/TRANSFER_LEARNING.md
     """
 
     if is_url(path):

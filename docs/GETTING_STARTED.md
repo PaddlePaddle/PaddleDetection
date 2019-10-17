@@ -70,7 +70,10 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 - Fine-tune other task
 
-When using pre-trained model to fine-tune other task, the excluded pre-trained parameters can be set by finetune_exclude_pretrained_params in YAML config or -o finetune_exclude_pretrained_params in the arguments.
+When using pre-trained model to fine-tune other task, two methods can be used:
+
+1. The excluded pre-trained parameters can be set by `finetune_exclude_pretrained_params` in YAML config
+2. Set -o finetune_exclude_pretrained_params in the arguments.
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
