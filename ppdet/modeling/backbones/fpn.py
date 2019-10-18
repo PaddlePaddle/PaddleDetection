@@ -87,13 +87,8 @@ class FPN(object):
                     learning_rate=2.,
                     regularizer=L2Decay(0.)),
                 name=lateral_name)
-        shape = fluid.layers.shape(upper_output)
-        shape_hw = fluid.layers.slice(shape, axes=[0], starts=[2], ends=[4])
-        out_shape_ = shape_hw * 2
-        out_shape = fluid.layers.cast(out_shape_, dtype='int32')
-        out_shape.stop_gradient = True
         topdown = fluid.layers.resize_nearest(
-            upper_output, scale=2., actual_shape=out_shape, name=topdown_name)
+            upper_output, scale=2., name=topdown_name)
 
         return lateral + topdown
 

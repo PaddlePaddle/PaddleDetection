@@ -148,18 +148,8 @@ class YOLOv3Head(object):
         return route, tip
 
     def _upsample(self, input, scale=2, name=None):
-        # get dynamic upsample output shape
-        shape_nchw = fluid.layers.shape(input)
-        shape_hw = fluid.layers.slice(
-            shape_nchw, axes=[0], starts=[2], ends=[4])
-        shape_hw.stop_gradient = True
-        in_shape = fluid.layers.cast(shape_hw, dtype='int32')
-        out_shape = in_shape * scale
-        out_shape.stop_gradient = True
-
-        # reisze by actual_shape
         out = fluid.layers.resize_nearest(
-            input=input, scale=scale, actual_shape=out_shape, name=name)
+            input=input, scale=float(scale), name=name)
         return out
 
     def _parse_anchors(self, anchors):
