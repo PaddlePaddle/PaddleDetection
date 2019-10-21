@@ -4,93 +4,92 @@ For setting up the running environment, please refer to [installation
 instructions](INSTALL.md).
 
 
-## Training
+## Training/Evaluation/Inference
 
-#### Single-GPU Training
-
+PaddleDetection provides scripots for training, evalution and inference with various features according to different configure.
 
 ```bash
-export CUDA_VISIBLE_DEVICES=0
+# set PYTHONPATH
 export PYTHONPATH=$PYTHONPATH:.
-python tools/train.py -c configs/faster_rcnn_r50_1x.yml
-```
-
-#### Multi-GPU Training
-
-```bash
+# training in single-GPU and multi-GPU. specify different GPU numbers by CUDA_VISIBLE_DEVICES
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export PYTHONPATH=$PYTHONPATH:.
 python tools/train.py -c configs/faster_rcnn_r50_1x.yml
+# GPU evalution
+export CUDA_VISIBLE_DEVICES=0
+python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
+# Inference
+python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
 ```
 
-#### CPU Training
+### Optional argument list
 
-```bash
-export CPU_NUM=8
-export PYTHONPATH=$PYTHONPATH:.
-python tools/train.py -c configs/faster_rcnn_r50_1x.yml -o use_gpu=false
-```
+list below can be viewed by `--help`
 
-##### Optional arguments
+|         FLAG             |  script supported  |    description    |     default     |      remark      |
+| :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
+|          -c              |      ALL       |  Select config file  |  None  |  **The whole description of configure can refer to [config_example](config_example)** |
+|          -o              |      ALL       |  Set parameters in configure file  |  None  |  `-o` has higher priority to file configured by `-c`. Such as `-o use_gpu=False max_iter=10000`  |  
+|   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
+|        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |
+|      --output_eval       |     train/eval |  json path in evalution  |  current path  |  `--output_eval ./json_result`  |
+|   -d/--dataset_dir       |   train/eval   |  path for dataset, same as dataset_dir in configs  |  None  |  `-d dataset/coco`  |
+|       --fp16             |     train      |  Whether to enable mixed precision training  |  False  |  GPU training is required  |
+|       --loss_scale       |     train      |  Loss scaling factor for mixed precision training  |  8.0  |  enable when `--fp16` is True  |  
+|       --json_eval        |       eval     |  Whether to evaluate with already existed bbox.json or mask.json  |  False  |  json path is set in `--output_eval`  |
+|       --output_dir       |      infer     |  Directory for storing the output visualization files  |  `./output`  |  `--output_dir output`  |
+|    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
+|  --save\_inference_model |      infer      |  Whether to save inference model in output_dir  |  False  |  save_inference_model is saved in `--output_dir`  |
+|      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
+|      --infer_img         |       infer     |  Image path  |  None  |  higher priority over --infer_dir  |
+|        --use_tb          |   train/infer   |  Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard  |  False  |      |
+|        --tb\_log_dir     |   train/infer   |  tb-paddle logging directory for image  |  train:`tb_log_dir/scalar` infer: `tb_log_dir/image`  |     |
 
-- `-r` or `--resume_checkpoint`: Checkpoint path for resuming training. Such as: `-r output/faster_rcnn_r50_1x/10000`
-- `--eval`: Whether to perform evaluation in training, default is `False`
-- `--output_eval`: If perform evaluation in training, this edits evaluation directory, default is current directory.
-- `-d` or `--dataset_dir`: Dataset path, same as `dataset_dir` of configs. Such as: `-d dataset/coco`
-- `-c`: Select config file and all files are saved in `configs/`
-- `-o`: Set configuration options in config file. Such as: `-o max_iters=180000`. `-o` has higher priority to file configured by `-c`
-- `--use_tb`: Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard, default is `False`
-- `--tb_log_dir`: tb-paddle logging directory for scalar, default is `tb_log_dir/scalar`
-- `--fp16`: Whether to enable mixed precision training (requires GPU), default is `False`
-- `--loss_scale`: Loss scaling factor for mixed precision training, default is `8.0`
 
+## Examples
 
-##### Examples
+### Training
 
 - Perform evaluation in training
-```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export PYTHONPATH=$PYTHONPATH:.
-python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
-```
 
-Alternating between training epoch and evaluation run is possible, simply pass
-in `--eval` to do so and evaluate at each snapshot_iter. It can be modified at `snapshot_iter` of the configuration file. If evaluation dataset is large and
-causes time-consuming in training, we suggest decreasing evaluation times or evaluating after training. When perform evaluation in training,
-the best model with highest MAP is saved at each `snapshot_iter`. `best_model` has the same path as `model_final`.
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
+  ```
 
+  Perform training and evalution alternatively and evaluate at each snapshot_iter. Meanwhile, the best model with highest MAP is saved at each `snapshot_iter` which has the same path as `model_final`.
 
-- Configure dataset path
-```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export PYTHONPATH=$PYTHONPATH:.
-python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -d dataset/coco
-```
+  If evaluation dataset is large, we suggest decreasing evaluation times or evaluating after training.
 
 - Fine-tune other task
 
-When using pre-trained model to fine-tune other task, two methods can be used:
+  When using pre-trained model to fine-tune other task, two methods can be used:
 
-1. The excluded pre-trained parameters can be set by `finetune_exclude_pretrained_params` in YAML config
-2. Set -o finetune_exclude_pretrained_params in the arguments.
+  1. The excluded pre-trained parameters can be set by `finetune_exclude_pretrained_params` in YAML config
+  2. Set -o finetune\_exclude\_pretrained_params in the arguments.
 
-```bash
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-export PYTHONPATH=$PYTHONPATH:.
-python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final/ \
-                            finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
-```
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
+                           -o pretrain_weights=output/faster_rcnn_r50_1x/model_final/ \
+                              finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
+  ```
 
-- Mixed Precision Training
+##### NOTES
+
+- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](#faq)
+- Dataset will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
+- Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
+- Checkpoints are saved in `output` by default, and can be revised from save_dir in configure files.
+- RCNN models training on CPU is not supported on PaddlePaddle<=1.5.1 and will be fixed on later version.
+
+
+### Mixed Precision Training
 
 Mixed precision training can be enabled with `--fp16` flag. Currently Faster-FPN, Mask-FPN and Yolov3 have been verified to be working with little to no loss of precision (less than 0.2 mAP)
 
 To speed up mixed precision training, it is recommended to train in multi-process mode, for example
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
 python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.py --fp16 -c configs/faster_rcnn_r50_fpn_1x.yml
 ```
 
@@ -99,130 +98,65 @@ If loss becomes `NaN` during training, try tweak the `--loss_scale` value. Pleas
 Also, please note mixed precision training currently requires changing `norm_type` from `affine_channel` to `bn`.
 
 
-##### NOTES
 
-- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](#faq)
-- Dataset is stored in `dataset/coco` by default (configurable).
-- Dataset will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
-- Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
-- Model checkpoints are saved in `output` by default (configurable).
-- When finetuning, users could set `pretrain_weights` to the models published by PaddlePaddle. Parameters matched by fields in finetune_exclude_pretrained_params will be ignored in loading and fields can be wildcard matching. For detailed information, please refer to [Transfer Learning](TRANSFER_LEARNING.md).
-- To check out hyper parameters used, please refer to the [configs](../configs).
-- RCNN models training on CPU is not supported on PaddlePaddle<=1.5.1 and will be fixed on later version.
-
-
-
-## Evaluation
-
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
-```
-
-#### Optional arguments
-
-- `-d` or `--dataset_dir`: Dataset path, same as dataset_dir of configs. Such as: `-d dataset/coco`
-- `--output_eval`: Evaluation directory, default is current directory.
-- `-o`: Set configuration options in config file. Such as: `-o weights=output/faster_rcnn_r50_1x/model_final`
-- `--json_eval`: Whether to eval with already existed bbox.json or mask.json. Default is `False`. Json file directory is assigned by `-f` argument.
-
-#### Examples
+### Evaluation
 
 - Evaluate by specified weights path and dataset path
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
-                        -o weights=output/faster_rcnn_r50_1x/model_final \
-                        -d dataset/coco
-```
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0
+  python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
+                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
+                          -d dataset/coco
+  ```
+
+  The path of model to be evaluted can be both local path and link in [MODEL_ZOO](MODEL_ZOO_cn.md).
 
 - Evaluate with json
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0
+  python tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
              --json_eval \
              -f evaluation/
-```
+  ```
 
-The json file must be named bbox.json or mask.json, placed in the `evaluation/` directory. Or without the `-f` parameter, default is the current directory.
+  The json file must be named bbox.json or mask.json, placed in the `evaluation/` directory.
 
 #### NOTES
 
-- Checkpoint is loaded from `output` by default (configurable)
 - Multi-GPU evaluation for R-CNN and SSD models is not supported at the
 moment, but it is a planned feature
 
 
-## Inference
-
-
-- Run inference on a single image:
-
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
-```
-
-- Multi-image inference:
-
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_dir=demo
-```
-
-#### Optional arguments
-
-- `--output_dir`: Directory for storing the output visualization files.
-- `--draw_threshold`: Threshold to reserve the result for visualization. Default is 0.5.
-- `--save_inference_model`: Save inference model in output_dir if True.
-- `--use_tb`: Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard, default is `False`
-- `--tb_log_dir`: tb-paddle logging directory for image, default is `tb_log_dir/image`
-
-#### Examples
+### Inference
 
 - Output specified directory && Set up threshold
 
-```bash
-# run on GPU with:
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0
+  python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/faster_rcnn_r50_1x/model_final \
                       --use_tb=Ture
-```
+  ```
 
-The visualization files are saved in `output` by default, to specify a different path, simply add a `--output_dir=` flag.
-`--draw_threshold` is an optional argument. Default is 0.5.
-Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659).
-If users want to infer according to customized model path, `-o weights` can be set for specified path.
-`--use_tb` is an optional argument, if `--use_tb` is `True`, the tb-paddle will record data in directory,
-so users can see the results in Tensorboard.
+  `--draw_threshold` is an optional argument. Default is 0.5.
+  Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659).
+
 
 - Save inference model
 
-```bash
-# run on GPU with:
-export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
-python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0
+  python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
                       --infer_img=demo/000000570688.jpg \
                       --save_inference_model
-```
+  ```
 
-Save inference model by set `--save_inference_model`, which can be loaded by PaddlePaddle predict library.
+  Save inference model by set `--save_inference_model`, which can be loaded by PaddlePaddle predict library.
 
 
 ## FAQ
