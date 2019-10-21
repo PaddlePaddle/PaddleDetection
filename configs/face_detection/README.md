@@ -39,7 +39,7 @@ Loads `wider_face` type dataset with directory structures like this:
   ```
 
 - Download dataset manually:  
-On the other hand, to download the WIDER FACE dataset, run the following commands:
+To download the WIDER FACE dataset, run the following commands:
 ```
 cd dataset/wider_face && ./download.sh
 ```
@@ -84,13 +84,13 @@ optimized network structure.
 
 #### mAP in WIDER FACE
 
-| Architecture | Type     | Size | Img/gpu | Lr schd | Easy Set | Medium Set | Hard Set |
-|:------------:|:--------:|:----:|:-------:|:-------:|:--------:|:----------:|:--------:|
-| BlazeFace    | Original | 640  |    8    | 32w     | **0.915**    | **0.892**      | **0.797**    |
-| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909    | 0.885      | 0.781    |
-| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837    | 0.807      | 0.658    |
-| FaceBoxes    | Original | 640  |    8    | 32w     | 0.875    | 0.848      | 0.568    |
-| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.898    | 0.872      | 0.752    |
+| Architecture | Type     | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download |
+|:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
+| BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
+| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
+| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
+| FaceBoxes    | Original | 640  |    8    | 32w     | 0.875     | 0.848      | 0.568     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
+| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.898     | 0.872      | 0.752     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
 
 **NOTES:**  
 - Get mAP in `Easy/Medium/Hard Set` by multi-scale evaluation in `tools/face_eval.py`.
@@ -140,7 +140,11 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 ## Get Started
 `Training` and `Inference` please refer to [GETTING_STARTED.md](../../docs/GETTING_STARTED.md)
-- **NOTES:**  Currently we do not support evaluation in training.
+- **NOTES:**     
+- `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32) 
+and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters 
+in the table of [calculation rules](../../docs/GETTING_STARTED.md#faq))
+- Currently we do not support evaluation in training.
 
 ### Evaluation
 ```
@@ -152,9 +156,13 @@ python tools/face_eval.py -c configs/face_detection/blazeface.yml
 - `-d` or `--dataset_dir`: Dataset path, same as dataset_dir of configs. Such as: `-d dataset/wider_face`.
 - `-f` or `--output_eval`: Evaluation file directory, default is `output/pred`.
 - `-e` or `--eval_mode`: Evaluation mode, include `widerface` and `fddb`, default is `widerface`.
+- `--multi_scale`: If you add this action button in the command, it will select `multi_scale` evaluation. 
+Default is `False`, it will select `single-scale` evaluation.
 
 After the evaluation is completed, the test result in txt format will be generated in `output/pred`,
-and then mAP will be calculated according to different data sets:
+and then mAP will be calculated according to different data sets. If you set `--eval_mode=widerface`,
+it will [Evaluate on the WIDER FACE](#Evaluate-on-the-WIDER-FACE).If you set `--eval_mode=fddb`,
+it will [Evaluate on the FDDB](#Evaluate-on-the-FDDB).
 
 #### Evaluate on the WIDER FACE
 - Download the official evaluation script to evaluate the AP metrics:
@@ -175,6 +183,7 @@ matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
 #### Evaluate on the FDDB
+[FDDB dataset](http://vis-www.cs.umass.edu/fddb/) details can refer to FDDB's official website.   
 - Download the official dataset and evaluation script to evaluate the ROC metrics:
 ```
 #external link to the Faces in the Wild data set
@@ -229,7 +238,7 @@ regression parameters of a bounding box as a weighted mean between the overlappi
 less network layer and conv channel number than `Lite`.
 
 ### FaceBoxes
-**Introduction:**
+**Introduction:**     
 [FaceBoxes](https://arxiv.org/abs/1708.05234) which named A CPU Real-time Face Detector
 with High Accuracy is face detector proposed by Shifeng Zhang, with high performance on
 both speed and accuracy. This paper is published by IJCB(2017).

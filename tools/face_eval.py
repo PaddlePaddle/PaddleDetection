@@ -56,7 +56,8 @@ def face_eval_run(exe,
                   img_root_dir,
                   gt_file,
                   pred_dir='output/pred',
-                  eval_mode='widerface'):
+                  eval_mode='widerface',
+                  multi_scale=False):
     # load ground truth files
     with open(gt_file, 'r') as f:
         gt_lines = f.readlines()
@@ -76,16 +77,18 @@ def face_eval_run(exe,
         if eval_mode == 'fddb':
             image_path += '.jpg'
         image = Image.open(image_path).convert('RGB')
-        shrink, max_shrink = get_shrink(image.size[1], image.size[0])
-
-        det0 = detect_face(exe, compile_program, fetches, image, shrink)
-        det1 = flip_test(exe, compile_program, fetches, image, shrink)
-        [det2, det3] = multi_scale_test(exe, compile_program, fetches, image,
+        if multi_scale:
+            shrink, max_shrink = get_shrink(image.size[1], image.size[0])
+            det0 = detect_face(exe, compile_program, fetches, image, shrink)
+            det1 = flip_test(exe, compile_program, fetches, image, shrink)
+            [det2, det3] = multi_scale_test(exe, compile_program, fetches, image,
                                         max_shrink)
-        det4 = multi_scale_test_pyramid(exe, compile_program, fetches, image,
+            det4 = multi_scale_test_pyramid(exe, compile_program, fetches, image,
                                         max_shrink)
-        det = np.row_stack((det0, det1, det2, det3, det4))
-        dets = bbox_vote(det)
+            det = np.row_stack((det0, det1, det2, det3, det4))
+            dets = bbox_vote(det)
+        else:
+            dets = detect_face(exe, compile_program, fetches, image, 1)
         if eval_mode == 'widerface':
             save_widerface_bboxes(image_path, dets, pred_dir)
         else:
@@ -261,7 +264,8 @@ def main():
         img_root_dir,
         gt_file,
         pred_dir=pred_dir,
-        eval_mode=FLAGS.eval_mode)
+        eval_mode=FLAGS.eval_mode,
+        multi_scale=FLAGS.multi_scale)
 
 
 if __name__ == '__main__':
@@ -285,5 +289,10 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation mode, include `widerface` and `fddb`, default is `widerface`."
     )
+    parser.add_argument(
+        "--multi_scale",
+        action='store_true',
+        default=False,
+        help="If True it will select `multi_scale` evaluation. Default is `False`, it will select `single-scale` evaluation.")
     FLAGS = parser.parse_args()
     main()
