@@ -27,7 +27,8 @@ from ppdet.data.reader import Reader
 from ppdet.data.transform.operators import (
     DecodeImage, MixupImage, NormalizeBox, NormalizeImage, RandomDistort,
     RandomFlipImage, RandomInterpImage, ResizeImage, ExpandImage, CropImage,
-    Permute, MultiscaleTestResize)
+    Permute, MultiscaleTestResize, Resize, ColorDistort, NormalizePermute,
+    RandomExpand, RandomCrop)
 from ppdet.data.transform.arrange_sample import (
     ArrangeRCNN, ArrangeEvalRCNN, ArrangeTestRCNN, ArrangeSSD, ArrangeEvalSSD,
     ArrangeTestSSD, ArrangeYOLO, ArrangeEvalYOLO, ArrangeTestYOLO)
@@ -195,7 +196,7 @@ class RandomShape(object):
 class PadMSTest(object):
     """
     Padding for multi-scale test
- 
+
     Args:
         pad_to_stride (int): pad to multiple of strides, e.g., 32
     """
@@ -895,25 +896,15 @@ class YoloTrainFeed(DataFeed):
                  sample_transforms=[
                      DecodeImage(to_rgb=True, with_mixup=True),
                      MixupImage(alpha=1.5, beta=1.5),
+                     ColorDistort(),
+                     RandomExpand(fill_value=[123.675, 116.28, 103.53]),
+                     RandomCrop(),
+                     RandomFlipImage(is_normalized=False),
+                     Resize(target_dim=608, interp='random'),
+                     NormalizePermute(
+                         mean=[123.675, 116.28, 103.53],
+                         std=[58.395, 57.120, 57.375]),
                      NormalizeBox(),
-                     RandomDistort(),
-                     ExpandImage(max_ratio=4., prob=.5,
-                                 mean=[123.675, 116.28, 103.53]),
-                     CropImage([[1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 1.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 1.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 1.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 1.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 1.0],
-                                [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]]),
-                     RandomInterpImage(target_size=608),
-                     RandomFlipImage(is_normalized=True),
-                     NormalizeImage(
-                         mean=[0.485, 0.456, 0.406],
-                         std=[0.229, 0.224, 0.225],
-                         is_scale=True,
-                         is_channel_first=False),
-                     Permute(to_bgr=False),
                  ],
                  batch_transforms=[
                      RandomShape(sizes=[
@@ -1009,6 +1000,8 @@ class YoloEvalFeed(DataFeed):
                 sample_transforms[i] = ResizeImage(
                         target_size=self.image_shape[-1],
                         interp=trans.interp)
+            if isinstance(trans, Resize):
+                sample_transforms[i].target_dim = self.image_shape[-1]
 
 
 @register
@@ -1065,4 +1058,6 @@ class YoloTestFeed(DataFeed):
                 sample_transforms[i] = ResizeImage(
                         target_size=self.image_shape[-1],
                         interp=trans.interp)
+            if isinstance(trans, Resize):
+                sample_transforms[i].target_dim = self.image_shape[-1]
 # yapf: enable
