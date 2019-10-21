@@ -36,7 +36,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 ### Requirements:
 
-- Python2 or Python3
+- Python2 or Python3 (Only support Python3 for windows)
 - CUDA >= 8.0
 - cuDNN >= 5.0
 - nccl >= 2.1.2
@@ -58,6 +58,12 @@ COCO-API is needed for running. Installation is as follows:
     # not to install the COCO API into global site-packages
     python setup.py install --user
 
+**Installation of COCO-API in windows:**
+
+    # if cython is not installed
+    pip install Cython
+    # Because the origin version of cocoapi does not support windows, another version is used which only supports Python3
+    pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
 
 ## PaddleDetection
 
