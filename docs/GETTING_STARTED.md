@@ -1,3 +1,5 @@
+English | [简体中文](GETTING_STARTED_cn.md)
+
 # Getting Started
 
 For setting up the running environment, please refer to [installation

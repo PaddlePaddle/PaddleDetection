@@ -1,3 +1,5 @@
+English | [简体中文](CONFIG_cn.md)
+
 # Config Pipline
 
 ## Introduction

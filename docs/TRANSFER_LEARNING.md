@@ -1,3 +1,5 @@
+English | [简体中文](TRANSFER_LEARNING_cn.md)
+
 # Transfer Learning
 
 Transfer learning aims at learning new knowledge from existing knowledge. For example, take pretrained model from ImageNet to initialize detection models, or take pretrained model from COCO dataset to initialize train detection models in PascalVOC dataset.

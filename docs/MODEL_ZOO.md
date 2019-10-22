@@ -1,3 +1,5 @@
+English | [简体中文](MODEL_ZOO_cn.md)
+
 # Model Zoo and Benchmark
 ## Environment
 
