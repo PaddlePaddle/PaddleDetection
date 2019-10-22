@@ -56,3 +56,9 @@ coverage.xml
 /docs/_build/
 
 *.json
+
+
+dataset/coco/annotations
+dataset/coco/train2017
+dataset/coco/val2017
+dataset/voc/VOCdevkit
