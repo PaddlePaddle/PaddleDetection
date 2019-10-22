@@ -150,3 +150,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | VGG16        | 512  |     8   |   240e  |      65.975     | 80.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_512_voc.tar) |
 
 **注意事项:** MobileNet-SSD在2卡，总batch size为64下训练120周期。VGG-SSD在总batch size为32下训练240周期。数据增强包括：随机颜色失真，随机剪裁，随机扩张，随机翻转。
+
+## 人脸检测
+
+详细请参考[人脸检测模型](../configs/face_detection).

@@ -156,3 +156,8 @@ results of image size 608/416/320 above.
 
 **NOTE**: MobileNet-SSD is trained in 2 GPU with totoal batch size as 64 and trained 120 epoches. VGG-SSD is trained in 4 GPU with total batch size as 32 and trained 240 epoches. SSD training data augmentations: randomly color distortion,
 randomly cropping, randomly expansion, randomly flipping.
+
+
+## Face Detection
+
+Please refer [face detection models](../configs/face_detection) for details.
