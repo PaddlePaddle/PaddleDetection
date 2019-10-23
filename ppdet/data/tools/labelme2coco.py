@@ -61,14 +61,14 @@ def categories(label, labels_list):
     return category
 
 
-def annotations_rectangle(points, label, num, label_to_num):
+def annotations_rectangle(points, label, image_num, object_num, label_to_num):
     annotation = {}
     seg_points = np.asarray(points).copy()
     seg_points[1, :] = np.asarray(points)[2, :]
     seg_points[2, :] = np.asarray(points)[1, :]
     annotation['segmentation'] = [list(seg_points.flatten())]
     annotation['iscrowd'] = 0
-    annotation['image_id'] = num + 1
+    annotation['image_id'] = image_num + 1
     annotation['bbox'] = list(
         map(float, [
             points[0][0], points[0][1], points[1][0] - points[0][0], points[1][
@@ -76,19 +76,19 @@ def annotations_rectangle(points, label, num, label_to_num):
         ]))
     annotation['area'] = annotation['bbox'][2] * annotation['bbox'][3]
     annotation['category_id'] = label_to_num[label]
-    annotation['id'] = num + 1
+    annotation['id'] = object_num + 1
     return annotation
 
 
-def annotations_polygon(height, width, points, label, num, label_to_num):
+def annotations_polygon(height, width, points, label, image_num, object_num, label_to_num):
     annotation = {}
     annotation['segmentation'] = [list(np.asarray(points).flatten())]
     annotation['iscrowd'] = 0
-    annotation['image_id'] = num + 1
+    annotation['image_id'] = image_num + 1
     annotation['bbox'] = list(map(float, get_bbox(height, width, points)))
     annotation['area'] = annotation['bbox'][2] * annotation['bbox'][3]
     annotation['category_id'] = label_to_num[label]
-    annotation['id'] = num + 1
+    annotation['id'] = object_num + 1
     return annotation
 
 
@@ -119,16 +119,18 @@ def deal_json(img_path, json_path):
     categories_list = []
     annotations_list = []
     labels_list = []
-    num = -1
+    image_num = -1
     for img_file in os.listdir(img_path):
         img_label = img_file.split('.')[0]
         label_file = osp.join(json_path, img_label + '.json')
         print('Generating dataset from:', label_file)
-        num = num + 1
+        image_num = image_num + 1
         with open(label_file) as f:
             data = json.load(f)
-            images_list.append(images(data, num))
+            images_list.append(images(data, image_num))
+            object_num = -1
             for shapes in data['shapes']:
+                object_num = object_num + 1
                 label = shapes['label']
                 if label not in labels_list:
                     categories_list.append(categories(label, labels_list))
@@ -139,13 +141,13 @@ def deal_json(img_path, json_path):
                 if p_type == 'polygon':
                     annotations_list.append(
                         annotations_polygon(data['imageHeight'], data[
-                            'imageWidth'], points, label, num, label_to_num))
+                            'imageWidth'], points, label, image_num, object_num, label_to_num))
 
                 if p_type == 'rectangle':
                     points.append([points[0][0], points[1][1]])
                     points.append([points[1][0], points[0][1]])
                     annotations_list.append(
-                        annotations_rectangle(points, label, num, label_to_num))
+                        annotations_rectangle(points, label, image_num, object_num, label_to_num))
     data_coco['images'] = images_list
     data_coco['categories'] = categories_list
     data_coco['annotations'] = annotations_list
