@@ -177,7 +177,8 @@ def load_and_fusebn(exe, prog, path):
         prog (fluid.Program): save weight from which Program object.
         path (string): the path to save model.
     """
-    logger.info('Load model and fuse batch norm from {}...'.format(path))
+    logger.info('Load model and fuse batch norm if have from {}...'.format(
+        path))
 
     if is_url(path):
         path = _get_weight_path(path)
@@ -253,8 +254,11 @@ def load_and_fusebn(exe, prog, path):
                         [scale_name, bias_name, mean_name, variance_name])
 
     if not bn_in_path:
-        raise ValueError("There is no params of batch norm in model {}.".format(
-            path))
+        fluid.io.load_vars(exe, path, prog, vars=all_vars)
+        logger.warning(
+            "There is no paramters of batch norm in model {}. "
+            "Skip to fuse batch norm. And load paramters done.".format(path))
+        return
 
     # load running mean and running variance on cpu place into global scope.
     place = fluid.CPUPlace()

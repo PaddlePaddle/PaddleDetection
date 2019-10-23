@@ -64,7 +64,7 @@ Advanced Features:
 ## Get Started
 
 - [Installation guide](docs/INSTALL.md)
-- [Quick Start on small dataset](docs/QUICK_STARTED.md)
+- [Quick start on small dataset](docs/QUICK_STARTED.md)
 - [Guide to traing, evaluate and arguments description](docs/GETTING_STARTED.md)
 - [Guide to preprocess pipeline and custom dataset](docs/DATA.md)
 - [Introduction to the configuration workflow](docs/CONFIG.md)

@@ -180,3 +180,7 @@ batch size可以达到每GPU 4 (Tesla V100 16GB)。
 **Q:**  如何修改数据预处理? </br>
 **A:**  可在配置文件中设置 `sample_transform`。注意需要在配置文件中加入**完整预处理**
 例如RCNN模型中`DecodeImage`, `NormalizeImage` and `Permute`。更多详细描述请参考[配置案例](config_example)。
+
+
+**Q:** affine_channel和batch norm是什么关系?
+**A:** 在RCNN系列模型加载预训练模型初始化，有时候会固定住batch norm的参数, 使用预训练模型中的全局均值和方式，并且batch norm的scale和bias参数不更新，已发布的大多ResNet系列的RCNN模型采用这种方式。这种情况下可以在config中设置norm_type为bn或affine_channel, freeze_norm为true (默认为true)，两种方式等价。affne_channel的计算方式为`scale * x + bias`。只不过设置affine_channel时，内部对batch norm的参数自动做了融合。如果训练使用的affine_channel，用保存的模型做初始化，训练其他任务时，即可使用affine_channel, 也可使用batch norm, 参数均可正确加载。

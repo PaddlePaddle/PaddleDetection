@@ -77,9 +77,6 @@ def main():
     if 'log_iter' not in cfg:
         cfg.log_iter = 20
 
-    ignore_params = cfg.finetune_exclude_pretrained_params \
-                 if 'finetune_exclude_pretrained_params' in cfg else []
-
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     if not FLAGS.dist or trainer_id == 0:
@@ -193,8 +190,11 @@ def main():
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
-    start_iter = 0
 
+    ignore_params = cfg.finetune_exclude_pretrained_params \
+                 if 'finetune_exclude_pretrained_params' in cfg else []
+
+    start_iter = 0
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
