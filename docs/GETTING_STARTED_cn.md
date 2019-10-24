@@ -37,7 +37,6 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
 |       --output_dir       |      infer     |  输出推断后可视化文件  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
-|  --save\_inference_model |      infer      |  是否保存预测模型  |  False  |  预测模型保存路径为`--output_dir`设置的路径  |
 |      --infer_dir         |       infer     |  用于推断的图片文件夹路径  |  None  |    |
 |      --infer_img         |       infer     |  用于推断的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
 |        --use_tb          |   train/infer   |  是否使用[tb-paddle](https://github.com/linshuliang/tb-paddle)记录数据，进而在TensorBoard中显示  |  False  |      |
@@ -144,18 +143,6 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 
   `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
   不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行推断，可以设置`-o weights`指定模型路径。
-
-- 保存推断模型
-
-  ```bash
-  # GPU推断
-  export CUDA_VISIBLE_DEVICES=0
-  python -u tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg \
-                      --save_inference_model
-  ```
-
-  通过设置`--save_inference_model`保存可供PaddlePaddle预测库加载的推断模型。
-
 
 ## FAQ
 

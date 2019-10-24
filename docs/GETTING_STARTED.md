@@ -40,7 +40,6 @@ list below can be viewed by `--help`
 |       --json_eval        |       eval     |  Whether to evaluate with already existed bbox.json or mask.json  |  False  |  json path is set in `--output_eval`  |
 |       --output_dir       |      infer     |  Directory for storing the output visualization files  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
-|  --save\_inference_model |      infer      |  Whether to save inference model in output_dir  |  False  |  save_inference_model is saved in `--output_dir`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
 |      --infer_img         |       infer     |  Image path  |  None  |  higher priority over --infer_dir  |
 |        --use_tb          |   train/infer   |  Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard  |  False  |      |
@@ -149,17 +148,16 @@ moment, but it is a planned feature
   Different thresholds will produce different results depending on the calculation of [NMS](https://ieeexplore.ieee.org/document/1699659).
 
 
-- Save inference model
+- Export model
 
   ```bash
-  export CUDA_VISIBLE_DEVICES=0
-  python tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
-                      --infer_img=demo/000000570688.jpg \
-                      --save_inference_model
+  python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
+                      --output_dir=inference_model \
+                      -o weights=output/faster_rcnn_r50_1x/model_final \
+                         FasterRCNNTestFeed.image_shape=[3,800,1333]
   ```
 
-  Save inference model by set `--save_inference_model`, which can be loaded by PaddlePaddle predict library.
-
+  Save inference model `tools/export_model.py`, which can be loaded by PaddlePaddle predict library.
 
 ## FAQ
 
