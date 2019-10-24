@@ -85,6 +85,7 @@ Advanced Features:
 
 ## Depoly
 
+- [Export model for inference depolyment](docs/EXPORT_MODEL.md)
 - [C++ inference depolyment](inference/README.md)
 
 ## Benchmark

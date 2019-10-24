@@ -23,7 +23,6 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.modeling.model_input import create_feed
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
 import ppdet.utils.checkpoint as checkpoint
 
 import logging

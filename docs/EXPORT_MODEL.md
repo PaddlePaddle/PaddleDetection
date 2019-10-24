@@ -14,25 +14,35 @@
 使用[训练/评估/推断](GETTING_STARTED_cn.md)中训练得到的模型进行试用，脚本如下
 
 ```bash
-# export model for RCNN
+# 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
 python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
         --output_dir=./inference_model \
         -o weights=output/faster_rcnn_r50_1x/model_final \
-           FasterRCNNTestFeed.image_shape=[3,800,1333]
-
-# export model for YOLOv3
-python tools/export_model.py -c configs/yolov3_darknet.yml \
-        --output_dir=./inference_model \
-        -o weights=output/yolov3_darknet/model_final \
-           YoloTestFeed.image_shape=[3,800,1333]
-
-# export model for SSD
-python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
-        --output_dir=./inference_model \
-        -o weights=output/ssd_mobilenet_v1_voc/model_final \
-           SSDTestFeed.image_shape=[3,300,300]
 
 ```
 
-- 预测模型会导出到`output/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
-- 通过`image_shape`修改保存模型中的图片大小。使用Fluid-TensorRT进行预测时，由于TensorRT仅支持定长输入，需要将输入图片大小与`image_shape`保持一致。
+预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
+
+## 设置导出模型的输入大小
+
+使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。可通过设置TestFeed的`image_shape`可以修改保存模型中的输入图片大小。示例如下:
+
+```bash
+# 导出FasterRCNN模型，输入是3x640x640
+python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
+        --output_dir=./inference_model \
+        -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
+           FasterRCNNTestFeed.image_shape=[3,640,640]
+
+# 导出YOLOv3模型，输入是3x320x320
+python tools/export_model.py -c configs/yolov3_darknet.yml \
+        --output_dir=./inference_model \
+        -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar \
+           YoloTestFeed.image_shape=[3,320,320]
+
+# 导出SSD模型，输入是3x300x300
+python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
+        --output_dir=./inference_model \
+        -o weights= https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
+           SSDTestFeed.image_shape=[3,300,300]
+```
