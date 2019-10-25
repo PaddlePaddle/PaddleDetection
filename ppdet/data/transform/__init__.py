@@ -67,7 +67,7 @@ def build_mapper(ops, context=None):
                 "invalid operator when build ops"
             o = op
         op_funcs.append(o)
-        op_repr.append('{{}}'.format(str(o)))
+        op_repr.append('{{{}}}'.format(str(o)))
     op_repr = '[{}]'.format(','.join(op_repr))
 
     def _mapper(sample):
@@ -78,7 +78,8 @@ def build_mapper(ops, context=None):
                 sample = out
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".format(f, e, str(stack_info)))
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                            format(f, e, str(stack_info)))
                 raise e
 
         return out
@@ -116,10 +117,8 @@ def batch(ds, batchsize, drop_last=False, drop_empty=True):
         a batched dataset
     """
 
-    return BatchedDataset(ds, 
-                          batchsize, 
-                          drop_last=drop_last, 
-                          drop_empty=drop_empty)
+    return BatchedDataset(
+        ds, batchsize, drop_last=drop_last, drop_empty=drop_empty)
 
 
 def batch_map(ds, config):
