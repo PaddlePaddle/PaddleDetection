@@ -32,10 +32,12 @@ from paddle.fluid.contrib.slim.quantization import QuantizationFreezePass
 from paddle.fluid.contrib.slim.quantization import ConvertToInt8Pass
 from paddle.fluid.contrib.slim.quantization import TransformForMobilePass
 
+
 def set_paddle_flags(**kwargs):
     for key, value in kwargs.items():
         if os.environ.get(key, None) is None:
             os.environ[key] = str(value)
+
 
 # NOTE(paddle-dev): All of these flags should be set before
 # `import paddle`. Otherwise, it would not take any effect.
@@ -59,6 +61,8 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+
 def eval_run(exe, compile_program, reader, keys, values, cls, test_feed):
     """
     Run evaluation program, return program outputs.
@@ -71,8 +75,7 @@ def eval_run(exe, compile_program, reader, keys, values, cls, test_feed):
     has_bbox = 'bbox' in keys
     for data in reader():
         data = test_feed.feed(data)
-        feed_data = {'image': data['image'],
-                     'im_size': data['im_size']}
+        feed_data = {'image': data['image'], 'im_size': data['im_size']}
         outs = exe.run(compile_program,
                        feed=feed_data,
                        fetch_list=values[0],
@@ -123,7 +126,6 @@ def main():
         devices_num = int(
             os.environ.get('CPU_NUM', multiprocessing.cpu_count()))
 
-
     if 'eval_feed' not in cfg:
         eval_feed = create(main_arch + 'EvalFeed')
     else:
@@ -138,85 +140,79 @@ def main():
     #eval_pyreader.decorate_sample_list_generator(eval_reader, place)
     test_data_feed = fluid.DataFeeder(test_feed_vars.values(), place)
 
-
     assert os.path.exists(FLAGS.model_path)
     infer_prog, feed_names, fetch_targets = fluid.io.load_inference_model(
-            dirname=FLAGS.model_path, executor=exe,
-            model_filename='__model__',
-            params_filename='__params__')
+        dirname=FLAGS.model_path,
+        executor=exe,
+        model_filename='__model__.infer',
+        params_filename='__params__')
 
     eval_keys = ['bbox', 'gt_box', 'gt_label', 'is_difficult']
-    eval_values = ['multiclass_nms_0.tmp_0', 'gt_box', 'gt_label', 'is_difficult']
+    eval_values = [
+        'multiclass_nms_0.tmp_0', 'gt_box', 'gt_label', 'is_difficult'
+    ]
     eval_cls = []
     eval_values[0] = fetch_targets[0]
 
-    results = eval_run(exe, infer_prog, eval_reader,
-                        eval_keys, eval_values, eval_cls, test_data_feed)
+    results = eval_run(exe, infer_prog, eval_reader, eval_keys, eval_values,
+                       eval_cls, test_data_feed)
 
     resolution = None
     if 'mask' in results[0]:
         resolution = model.mask_head.resolution
     box_ap_stats = eval_results(results, eval_feed, cfg.metric, cfg.num_classes,
-            resolution, False, FLAGS.output_eval)
+                                resolution, False, FLAGS.output_eval)
 
     logger.info("freeze the graph for inference")
     test_graph = IrGraph(core.Graph(infer_prog.desc), for_test=True)
 
     freeze_pass = QuantizationFreezePass(
-            scope=fluid.global_scope(),
-            place=place,
-            weight_quantize_type=FLAGS.weight_quant_type)
+        scope=fluid.global_scope(),
+        place=place,
+        weight_quantize_type=FLAGS.weight_quant_type)
     freeze_pass.apply(test_graph)
     server_program = test_graph.to_program()
     fluid.io.save_inference_model(
-            dirname=os.path.join(FLAGS.save_path, 'float'),
-            feeded_var_names=feed_names,
-            target_vars=fetch_targets,
-            executor=exe,
-            main_program=server_program,
-            model_filename='model',
-            params_filename='weights')
+        dirname=os.path.join(FLAGS.save_path, 'float'),
+        feeded_var_names=feed_names,
+        target_vars=fetch_targets,
+        executor=exe,
+        main_program=server_program,
+        model_filename='model',
+        params_filename='weights')
 
     logger.info("convert the weights into int8 type")
     convert_int8_pass = ConvertToInt8Pass(
-            scope=fluid.global_scope(),
-            place=place)
+        scope=fluid.global_scope(), place=place)
     convert_int8_pass.apply(test_graph)
     server_int8_program = test_graph.to_program()
     fluid.io.save_inference_model(
-            dirname=os.path.join(FLAGS.save_path, 'int8'),
-            feeded_var_names=feed_names,
-            target_vars=fetch_targets,
-            executor=exe,
-            main_program=server_int8_program,
-            model_filename='model',
-            params_filename='weights')
+        dirname=os.path.join(FLAGS.save_path, 'int8'),
+        feeded_var_names=feed_names,
+        target_vars=fetch_targets,
+        executor=exe,
+        main_program=server_int8_program,
+        model_filename='model',
+        params_filename='weights')
 
     logger.info("convert the freezed pass to paddle-lite execution")
     mobile_pass = TransformForMobilePass()
     mobile_pass.apply(test_graph)
     mobile_program = test_graph.to_program()
     fluid.io.save_inference_model(
-            dirname=os.path.join(FLAGS.save_path, 'mobile'),
-            feeded_var_names=feed_names,
-            target_vars=fetch_targets,
-            executor=exe,
-            main_program=mobile_program,
-            model_filename='model',
-            params_filename='weights')
-
-
-
+        dirname=os.path.join(FLAGS.save_path, 'mobile'),
+        feeded_var_names=feed_names,
+        target_vars=fetch_targets,
+        executor=exe,
+        main_program=mobile_program,
+        model_filename='model',
+        params_filename='weights')
 
 
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
-        "-m",
-        "--model_path",
-        default=None,
-        type=str,
-        help="path of checkpoint")
+        "-m", "--model_path", default=None, type=str, help="path of checkpoint")
     parser.add_argument(
         "--output_eval",
         default=None,

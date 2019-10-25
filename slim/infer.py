@@ -19,10 +19,12 @@ from __future__ import print_function
 import os
 import sys
 import glob
+import time
 
 import numpy as np
 from PIL import Image
 sys.path.append("../../")
+
 
 def set_paddle_flags(**kwargs):
     for key, value in kwargs.items():
@@ -117,20 +119,19 @@ def main():
 
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     test_feed.dataset.add_images(test_images)
-    
 
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
 
-
     infer_prog, feed_var_names, fetch_list = fluid.io.load_inference_model(
-            dirname=FLAGS.model_path, model_filename=FLAGS.model_name,
-            params_filename=FLAGS.params_name,
-            executor=exe)
+        dirname=FLAGS.model_path,
+        model_filename=FLAGS.model_name,
+        params_filename=FLAGS.params_name,
+        executor=exe)
 
     reader = create_reader(test_feed)
-    feeder = fluid.DataFeeder(place=place, feed_list=feed_var_names,
-                program=infer_prog)
+    feeder = fluid.DataFeeder(
+        place=place, feed_list=feed_var_names, program=infer_prog)
 
     # parse infer fetches
     assert cfg.metric in ['COCO', 'VOC'], \
@@ -140,7 +141,9 @@ def main():
         extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg['metric'] == 'VOC':
         extra_keys = ['im_id', 'im_shape']
-    keys, values, _ = parse_fetches({'bbox':fetch_list}, infer_prog, extra_keys)
+    keys, values, _ = parse_fetches({
+        'bbox': fetch_list
+    }, infer_prog, extra_keys)
 
     # parse dataset category
     if cfg.metric == 'COCO':
@@ -166,9 +169,33 @@ def main():
 
     imid2path = reader.imid2path
     keys = ['bbox']
+    infer_time = True
+    compile_prog = fluid.compiler.CompiledProgram(infer_prog)
+
     for iter_id, data in enumerate(reader()):
         feed_data = [[d[0], d[1]] for d in data]
-        outs = exe.run(infer_prog,
+        # for infer time
+        if infer_time:
+            warmup_times = 10
+            repeats_time = 100
+            feed_data_dict = feeder.feed(feed_data)
+            for i in range(warmup_times):
+                exe.run(compile_prog,
+                        feed=feed_data_dict,
+                        fetch_list=fetch_list,
+                        return_numpy=False)
+            start_time = time.time()
+            for i in range(repeats_time):
+                exe.run(compile_prog,
+                        feed=feed_data_dict,
+                        fetch_list=fetch_list,
+                        return_numpy=False)
+
+            print("infer time: {} ms/sample".format((time.time() - start_time) *
+                                                    1000 / repeats_time))
+            infer_time = False
+
+        outs = exe.run(compile_prog,
                        feed=feeder.feed(feed_data),
                        fetch_list=fetch_list,
                        return_numpy=False)
@@ -258,10 +285,7 @@ if __name__ == '__main__':
         default="tb_log_dir/image",
         help='Tensorboard logging directory for image.')
     parser.add_argument(
-        '--model_path',
-        type=str,
-        default=None,
-        help="inference model path")
+        '--model_path', type=str, default=None, help="inference model path")
     parser.add_argument(
         '--model_name',
         type=str,

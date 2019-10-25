@@ -20,9 +20,9 @@ import os
 import time
 import multiprocessing
 import numpy as np
-import sys
-sys.path.append("../../")
-from paddle.fluid.contrib.slim import Compressor
+from collections import deque, OrderedDict
+from paddle.fluid.contrib.slim.core import Compressor
+from paddle.fluid.framework import IrGraph
 
 
 def set_paddle_flags(**kwargs):
@@ -31,16 +31,20 @@ def set_paddle_flags(**kwargs):
             os.environ[key] = str(value)
 
 
-# NOTE(paddle-dev): All of these flags should be set before
+# NOTE(paddle-dev): All of these flags should be set before 
 # `import paddle`. Otherwise, it would not take any effect.
 set_paddle_flags(
     FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
 )
 
 from paddle import fluid
+
+import sys
+sys.path.append("../../")
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.data_feed import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results
+from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu
 import ppdet.utils.checkpoint as checkpoint
@@ -138,41 +142,43 @@ def main():
     optim_builder = create('OptimizerBuilder')
 
     # build program
-    startup_prog = fluid.Program()
-    train_prog = fluid.Program()
-    with fluid.program_guard(train_prog, startup_prog):
-        with fluid.unique_name.guard():
-            model = create(main_arch)
-            train_loader, feed_vars = create_feed(train_feed, iterable=True)
-            train_fetches = model.train(feed_vars)
-            loss = train_fetches['loss']
-            lr = lr_builder()
-            optimizer = optim_builder(lr)
-            optimizer.minimize(loss)
+    model = create(main_arch)
+    train_loader, train_feed_vars = create_feed(train_feed, iterable=True)
+    train_fetches = model.train(train_feed_vars)
+    loss = train_fetches['loss']
+    lr = lr_builder()
+    opt = optim_builder(lr)
+    opt.minimize(loss)
+    #for v in fluid.default_main_program().list_vars():
+    #    if "py_reader" not in v.name and "double_buffer" not in v.name and "generated_var" not in v.name:
+    #        print(v.name, v.shape)
 
+    cfg.max_iters = 258
     train_reader = create_reader(train_feed, cfg.max_iters, FLAGS.dataset_dir)
     train_loader.set_sample_list_generator(train_reader, place)
 
+    exe.run(fluid.default_startup_program())
+
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
-    train_keys.append("lr")
+    train_keys.append('lr')
     train_values.append(lr.name)
 
     train_fetch_list = []
     for k, v in zip(train_keys, train_values):
         train_fetch_list.append((k, v))
+    print("train_fetch_list: {}".format(train_fetch_list))
 
     eval_prog = fluid.Program()
+    startup_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
             _, test_feed_vars = create_feed(eval_feed, iterable=True)
             fetches = model.eval(test_feed_vars)
-
     eval_prog = eval_prog.clone(True)
 
     eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
-    #eval_pyreader.decorate_sample_list_generator(eval_reader, place)
     test_data_feed = fluid.DataFeeder(test_feed_vars.values(), place)
 
     # parse eval fetches
@@ -183,28 +189,29 @@ def main():
         extra_keys = ['gt_box', 'gt_label', 'is_difficult']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                      extra_keys)
+
     eval_fetch_list = []
     for k, v in zip(eval_keys, eval_values):
         eval_fetch_list.append((k, v))
+    print("eval_fetch_list: {}".format(eval_fetch_list))
 
     exe.run(startup_prog)
-    checkpoint.load_params(exe, train_prog, cfg.pretrain_weights)
+    checkpoint.load_params(exe,
+                           fluid.default_main_program(), cfg.pretrain_weights)
 
     best_box_ap_list = []
 
     def eval_func(program, scope):
-
-        #place = fluid.CPUPlace()
-        #exe = fluid.Executor(place)
         results = eval_run(exe, program, eval_reader, eval_keys, eval_values,
                            eval_cls, test_data_feed)
 
         resolution = None
+        is_bbox_normalized = False
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
         box_ap_stats = eval_results(results, eval_feed, cfg.metric,
-                                    cfg.num_classes, resolution, False,
-                                    FLAGS.output_eval)
+                                    cfg.num_classes, resolution,
+                                    is_bbox_normalized, FLAGS.output_eval)
         if len(best_box_ap_list) == 0:
             best_box_ap_list.append(box_ap_stats[0])
         elif box_ap_stats[0] > best_box_ap_list[0]:
@@ -215,21 +222,60 @@ def main():
     test_feed = [('image', test_feed_vars['image'].name),
                  ('im_size', test_feed_vars['im_size'].name)]
 
+    teacher_cfg = load_config(FLAGS.teacher_config)
+    teacher_arch = teacher_cfg.architecture
+    teacher_programs = []
+    teacher_program = fluid.Program()
+    teacher_startup_program = fluid.Program()
+    with fluid.program_guard(teacher_program, teacher_startup_program):
+        with fluid.unique_name.guard('teacher_'):
+            teacher_feed_vars = OrderedDict()
+            for name, var in train_feed_vars.items():
+                teacher_feed_vars[name] = teacher_program.global_block(
+                )._clone_variable(
+                    var, force_persistable=False)
+            model = create(teacher_arch)
+            train_fetches = model.train(teacher_feed_vars)
+    #print("="*50+"teacher_model_params"+"="*50)
+    #for v in teacher_program.list_vars():
+    #    print(v.name, v.shape)
+    #return
+
+    exe.run(teacher_startup_program)
+    assert FLAGS.teacher_pretrained and os.path.exists(
+        FLAGS.teacher_pretrained
+    ), "teacher_pretrained should be set when teacher_model is not None."
+
+    def if_exist(var):
+        return os.path.exists(os.path.join(FLAGS.teacher_pretrained, var.name))
+
+    fluid.io.load_vars(
+        exe,
+        FLAGS.teacher_pretrained,
+        main_program=teacher_program,
+        predicate=if_exist)
+
+    teacher_programs.append(teacher_program.clone(for_test=True))
+
     com = Compressor(
         place,
         fluid.global_scope(),
-        train_prog,
+        fluid.default_main_program(),
         train_reader=train_reader,
-        train_feed_list=[(key, value.name) for key, value in feed_vars.items()],
+        train_feed_list=[(key, value.name)
+                         for key, value in train_feed_vars.items()],
         train_fetch_list=train_fetch_list,
         eval_program=eval_prog,
         eval_reader=eval_reader,
         eval_feed_list=test_feed,
         eval_func={'map': eval_func},
-        eval_fetch_list=[eval_fetch_list[0]],
+        eval_fetch_list=eval_fetch_list[0:1],
         save_eval_model=True,
         prune_infer_model=[["image", "im_size"], ["multiclass_nms_0.tmp_0"]],
-        train_optimizer=None)
+        teacher_programs=teacher_programs,
+        train_optimizer=None,
+        distiller_optimizer=opt,
+        log_period=20)
     com.config(FLAGS.slim_file)
     com.run()
 
@@ -237,11 +283,33 @@ def main():
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
+        "-t",
+        "--teacher_config",
+        default=None,
+        type=str,
+        help="Config file of teacher architecture.")
+    parser.add_argument(
         "-s",
         "--slim_file",
         default=None,
         type=str,
         help="Config file of PaddleSlim.")
+    parser.add_argument(
+        "-r",
+        "--resume_checkpoint",
+        default=None,
+        type=str,
+        help="Checkpoint path for resuming training.")
+    parser.add_argument(
+        "--eval",
+        action='store_true',
+        default=False,
+        help="Whether to perform evaluation in train")
+    parser.add_argument(
+        "--teacher_pretrained",
+        default=None,
+        type=str,
+        help="Whether to use pretrained model.")
     parser.add_argument(
         "--output_eval",
         default=None,

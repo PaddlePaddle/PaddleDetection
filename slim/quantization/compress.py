@@ -28,10 +28,12 @@ from paddle.fluid.contrib.slim import Compressor
 from paddle.fluid.framework import IrGraph
 from paddle.fluid import core
 
+
 def set_paddle_flags(**kwargs):
     for key, value in kwargs.items():
         if os.environ.get(key, None) is None:
             os.environ[key] = str(value)
+
 
 # NOTE(paddle-dev): All of these flags should be set before
 # `import paddle`. Otherwise, it would not take any effect.
@@ -46,7 +48,7 @@ from ppdet.data.data_feed import create_reader
 
 from ppdet.utils.eval_utils import parse_fetches, eval_results
 from ppdet.utils.stats import TrainingStats
-from ppdet.utils.cli import ArgsParser
+from ppdet.utils.cli import ArgsParser, print_total_cfg
 from ppdet.utils.check import check_gpu, check_version
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.modeling.model_input import create_feed
@@ -55,6 +57,8 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+
 def eval_run(exe, compile_program, reader, keys, values, cls, test_feed):
     """
     Run evaluation program, return program outputs.
@@ -73,11 +77,10 @@ def eval_run(exe, compile_program, reader, keys, values, cls, test_feed):
     has_bbox = 'bbox' in keys
     for data in reader():
         data = test_feed.feed(data)
-        feed_data = {'image': data['image'],
-                     'im_size': data['im_size']}
+        feed_data = {'image': data['image'], 'im_size': data['im_size']}
         outs = exe.run(compile_program,
                        feed=feed_data,
-                       fetch_list=values[0],
+                       fetch_list=[values[0]],
                        return_numpy=False)
         outs.append(data['gt_box'])
         outs.append(data['gt_label'])
@@ -118,8 +121,8 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    # print_total_cfg(cfg)
     #check_version()
-
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
     else:
@@ -155,16 +158,14 @@ def main():
             optimizer = optim_builder(lr)
             optimizer.minimize(loss)
 
-
-    train_reader = create_reader(train_feed, cfg.max_iters * devices_num,
-                                 FLAGS.dataset_dir)
+    train_reader = create_reader(train_feed, cfg.max_iters, FLAGS.dataset_dir)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
     train_values.append(lr)
 
-    train_fetch_list=[]
+    train_fetch_list = []
     for k, v in zip(train_keys, train_values):
         train_fetch_list.append((k, v))
     print("train_fetch_list: {}".format(train_fetch_list))
@@ -188,13 +189,12 @@ def main():
     if cfg.metric == 'VOC':
         extra_keys = ['gt_box', 'gt_label', 'is_difficult']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
-                                                         extra_keys)
+                                                     extra_keys)
     # print(eval_values)
 
-    eval_fetch_list=[]
+    eval_fetch_list = []
     for k, v in zip(eval_keys, eval_values):
         eval_fetch_list.append((k, v))
-
 
     exe.run(startup_prog)
 
@@ -208,21 +208,20 @@ def main():
 
         #place = fluid.CPUPlace()
         #exe = fluid.Executor(place)
-        results = eval_run(exe, program, eval_reader,
-                           eval_keys, eval_values, eval_cls, test_data_feed)
+        results = eval_run(exe, program, eval_reader, eval_keys, eval_values,
+                           eval_cls, test_data_feed)
 
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
-        box_ap_stats = eval_results(results, eval_feed, cfg.metric, cfg.num_classes,
-                     resolution, False, FLAGS.output_eval)
+        box_ap_stats = eval_results(results, eval_feed, cfg.metric,
+                                    cfg.num_classes, resolution, False,
+                                    FLAGS.output_eval)
         if len(best_box_ap_list) == 0:
             best_box_ap_list.append(box_ap_stats[0])
         elif box_ap_stats[0] > best_box_ap_list[0]:
             best_box_ap_list[0] = box_ap_stats[0]
-            checkpoint.save(exe, train_prog, os.path.join(save_dir,"best_model"))
-        logger.info("Best test box ap: {}".format(
-            best_box_ap_list[0]))
+        logger.info("Best test box ap: {}".format(best_box_ap_list[0]))
         return best_box_ap_list[0]
 
     test_feed = [('image', test_feed_vars['image'].name),
@@ -240,10 +239,10 @@ def main():
         eval_feed_list=test_feed,
         eval_func={'map': eval_func},
         eval_fetch_list=[eval_fetch_list[0]],
+        prune_infer_model=[["image", "im_size"], ["multiclass_nms_0.tmp_0"]],
         train_optimizer=None)
     com.config(FLAGS.slim_file)
     com.run()
-
 
 
 if __name__ == '__main__':

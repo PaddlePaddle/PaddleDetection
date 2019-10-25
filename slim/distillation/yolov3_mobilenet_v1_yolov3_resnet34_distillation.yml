@@ -1,0 +1,18 @@
+version: 1.0
+distillers:
+    l2_distiller:
+        class: 'L2Distiller'
+        teacher_feature_map: 'teacher_teacher_conv2d_1.tmp_0' 
+        student_feature_map: 'conv2d_15.tmp_0' 
+        distillation_loss_weight: 1
+strategies:
+    distillation_strategy:
+        class: 'DistillationStrategy'
+        distillers: ['l2_distiller']
+        start_epoch: 0
+        end_epoch: 270
+compressor:
+    epoch: 271
+    checkpoint_path: './checkpoints/'
+    strategies:
+        - distillation_strategy
