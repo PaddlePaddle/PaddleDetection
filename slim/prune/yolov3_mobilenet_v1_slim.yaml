@@ -1,0 +1,23 @@
+version: 1.0
+pruners:
+    pruner_1:
+        class: 'StructurePruner'
+        pruning_axis:
+            '*': 0
+        criterions:
+            '*': 'l1_norm'
+strategies:
+    uniform_pruning_strategy:
+        class: 'UniformPruneStrategy'
+        pruner: 'pruner_1'
+        start_epoch: 0
+        target_ratio: 0.5
+        pruned_params: '(conv2_1_sep_weights)|(conv2_2_sep_weights)|(conv3_1_sep_weights)|(conv4_1_sep_weights)|(conv5_1_sep_weights)|(conv5_2_sep_weights)|(conv5_3_sep_weights)|(conv5_4_sep_weights)|(conv5_5_sep_weights)|(conv5_6_sep_weights)|(yolo_block.0.0.0.conv.weights)|(yolo_block.0.0.1.conv.weights)|(yolo_block.0.1.0.conv.weights)|(yolo_block.0.1.1.conv.weights)|(yolo_block.1.0.0.conv.weights)|(yolo_block.1.0.1.conv.weights)|(yolo_block.1.1.0.conv.weights)|(yolo_block.1.1.1.conv.weights)|(yolo_block.1.2.conv.weights)|(yolo_block.2.0.0.conv.weights)|(yolo_block.2.0.1.conv.weights)|(yolo_block.2.1.1.conv.weights)|(yolo_block.2.2.conv.weights)|(yolo_block.2.tip.conv.weights)'
+        metric_name: 'acc_top1'
+compressor:
+    epoch: 271
+    eval_epoch: 10
+    #init_model: './checkpoints/0' # Please enable this option for loading checkpoint.
+    checkpoint_path: './checkpoints/'
+    strategies:
+        - uniform_pruning_strategy

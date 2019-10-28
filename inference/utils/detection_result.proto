@@ -1,0 +1,21 @@
+syntax = "proto2";
+package PaddleSolution;
+
+message DetectionBox {
+    optional int32 class = 1;
+    optional float score = 2;
+    optional float left_top_x = 3;
+    optional float left_top_y = 4;
+    optional float right_bottom_x = 5;
+    optional float right_bottom_y = 6; 
+}
+
+message DetectionResult {
+    optional string filename = 1;
+    repeated DetectionBox detection_boxes = 2;
+}
+
+//message DetectionResultsContainer {
+//    repeated DetectionResult result = 1;
+//}
+
