@@ -1,0 +1,48 @@
+DATA:
+    TRAIN:
+        ANNO_FILE: data/coco.test/train2017.roidb
+        IMAGE_DIR: data/coco.test/train2017
+        SAMPLES: 10
+        TYPE: RoiDbSource
+    VAL: 
+        ANNO_FILE: data/coco.test/val2017.roidb
+        IMAGE_DIR: data/coco.test/val2017
+        SAMPLES: 10
+        TYPE: RoiDbSource
+TRANSFORM:
+    TRAIN:
+        OPS:
+            - OP: DecodeImage
+              TO_RGB: False
+            - OP: RandomFlipImage
+              PROB: 0.5
+            - OP: NormalizeImage
+              MEAN: [102.9801, 115.9465, 122.7717]
+              IS_SCALE: False
+              IS_CHANNEL_FIRST: False
+            - OP: ResizeImage
+              TARGET_SIZE: 800
+              MAX_SIZE: 1333
+            - OP: Permute
+              TO_BGR: False
+            - OP: ArrangeRCNN
+        BATCH_SIZE: 1
+        IS_PADDING: True
+        DROP_LAST: False
+        WORKER_CONF:
+            BUFSIZE: 100
+            WORKER_NUM: 4
+            USE_PROCESS: True
+            MEMSIZE: 2G
+    VAL:
+        OPS:
+            - OP: DecodeImage
+              TO_RGB: True
+            - OP: ResizeImage
+              TARGET_SIZE: 224
+            - OP: ArrangeSSD
+        BATCH_SIZE: 1
+        WORKER_CONF:
+            BUFSIZE: 100
+            WORKER_NUM: 4
+            USE_PROCESS: True

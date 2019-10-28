@@ -1,0 +1,82 @@
+architecture: YOLOv3
+train_feed: YoloTrainFeed
+eval_feed: YoloEvalFeed
+test_feed: YoloTestFeed
+use_gpu: true
+max_iters: 120000
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 2000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+weights: https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar
+num_classes: 6
+
+YOLOv3:
+  backbone: DarkNet
+  yolo_head: YOLOv3Head
+
+DarkNet:
+  norm_type: sync_bn
+  norm_decay: 0.
+  depth: 53
+
+YOLOv3Head:
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchors: [[8, 9], [10, 23], [19, 15],
+            [23, 33], [40, 25], [54, 50],
+            [101, 80], [139, 145], [253, 224]]
+  norm_decay: 0.
+  ignore_thresh: 0.7
+  label_smooth: false
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 400
+    normalized: false
+    score_threshold: 0.005
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 60000
+    - 80000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+YoloTrainFeed:
+  batch_size: 8
+  dataset:
+    dataset_dir: dataset/vehicle
+    annotation: annotations/instances_train2017.json
+    image_dir: train2017
+  num_workers: 8
+  bufsize: 128
+  use_process: true
+
+YoloEvalFeed:
+  batch_size: 8
+  image_shape: [3, 608, 608]
+  dataset:
+    dataset_dir: dataset/vehicle
+    annotation: annotations/instances_val2017.json
+    image_dir: val2017
+
+YoloTestFeed:
+  batch_size: 1
+  image_shape: [3, 608, 608]
+  dataset:
+    annotation: contrib/VehicleDetection/vehicle.json

@@ -1,0 +1,11 @@
+{
+    "images": [],
+    "annotations": [],
+    "categories": [
+        {
+            "supercategory": "component",
+            "id": 1,
+            "name": "pedestrian"
+        }
+   ]
+}

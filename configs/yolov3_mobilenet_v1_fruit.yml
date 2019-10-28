@@ -1,0 +1,125 @@
+architecture: YOLOv3
+train_feed: YoloTrainFeed
+eval_feed: YoloEvalFeed
+test_feed: YoloTestFeed
+use_gpu: true
+max_iters: 20000
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 200
+metric: VOC
+map_type: 11point
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
+weights: output/yolov3_mobilenet_v1_fruit/best_model
+num_classes: 3
+finetune_exclude_pretrained_params: ['yolo_output']
+
+YOLOv3:
+  backbone: MobileNet
+  yolo_head: YOLOv3Head
+
+MobileNet:
+  norm_type: sync_bn
+  norm_decay: 0.
+  conv_group_scale: 1
+  with_extra_blocks: false
+
+YOLOv3Head:
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  norm_decay: 0.
+  ignore_thresh: 0.7
+  label_smooth: true
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    normalized: false
+    score_threshold: 0.01
+
+LearningRate:
+  base_lr: 0.00001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 15000
+    - 18000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+YoloTrainFeed:
+  batch_size: 1
+  dataset:
+    dataset_dir: dataset/fruit/fruit-detection
+    annotation: ./ImageSets/Main/train.txt
+    image_dir: ./JPEGImages
+    use_default_label: false
+  num_workers: 16
+  bufsize: 128
+  use_process: true
+  mixup_epoch: -1
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeBox {}
+  - !ExpandImage
+    max_ratio: 4.0
+    mean: [123.675, 116.28, 103.53]
+    prob: 0.5
+  - !RandomInterpImage
+    max_size: 0
+    target_size: 608
+  - !RandomFlipImage
+    is_mask_flip: false
+    is_normalized: true
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !RandomShape 
+    sizes: [608] 
+  with_background: false
+
+YoloEvalFeed:
+  batch_size: 1
+  image_shape: [3, 608, 608]
+  dataset:
+    dataset_dir: dataset/fruit/fruit-detection
+    annotation: ./ImageSets/Main/val.txt
+    image_dir: ./JPEGImages
+    use_default_label: false
+ 
+
+YoloTestFeed:
+  batch_size: 1
+  image_shape: [3, 608, 608]
+  dataset:
+    dataset_dir: dataset/fruit/fruit-detection
+    annotation: ./ImageSets/Main/label_list.txt
+    use_default_label: false
