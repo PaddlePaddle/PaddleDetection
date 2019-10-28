@@ -143,7 +143,7 @@ def main():
 
     # build program
     model = create(main_arch)
-    train_loader, train_feed_vars = create_feed(train_feed, iterable=True)
+    _, train_feed_vars = create_feed(train_feed, False)
     train_fetches = model.train(train_feed_vars)
     loss = train_fetches['loss']
     lr = lr_builder()
@@ -155,7 +155,6 @@ def main():
 
     cfg.max_iters = 258
     train_reader = create_reader(train_feed, cfg.max_iters, FLAGS.dataset_dir)
-    train_loader.set_sample_list_generator(train_reader, place)
 
     exe.run(fluid.default_startup_program())
 
@@ -174,7 +173,7 @@ def main():
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            _, test_feed_vars = create_feed(eval_feed, iterable=True)
+            _, test_feed_vars = create_feed(eval_feed, False)
             fetches = model.eval(test_feed_vars)
     eval_prog = eval_prog.clone(True)
 
