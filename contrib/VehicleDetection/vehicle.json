@@ -1,0 +1,36 @@
+{
+    "images": [],
+    "annotations": [],
+    "categories": [
+        {
+            "supercategory": "component",
+            "id": 1,
+            "name": "car"
+        },
+        {
+            "supercategory": "component",
+            "id": 2,
+            "name": "truck"
+        },
+        {
+            "supercategory": "component",
+            "id": 3,
+            "name": "bus"
+        },
+        {
+            "supercategory": "component",
+            "id": 4,
+            "name": "motorbike"
+        },
+        {
+            "supercategory": "component",
+            "id": 5,
+            "name": "tricycle"
+        },
+        {
+            "supercategory": "component",
+            "id": 6,
+            "name": "carplate"
+        }
+    ]
+}

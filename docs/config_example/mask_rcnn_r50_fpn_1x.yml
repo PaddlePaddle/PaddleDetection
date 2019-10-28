@@ -1,0 +1,498 @@
+# Architecture of detection, which is also the prefix of data feed module
+architecture: MaskRCNN
+
+# Data feed module 
+train_feed: MaskRCNNTrainFeed
+eval_feed: MaskRCNNEvalFeed
+test_feed: MaskRCNNTestFeed
+
+# Use GPU or CPU, true by default
+use_gpu: true
+
+# Maximum number of iteration. 
+# In rcnn models, max_iters is 180000 if lr schedule is 1x and batch_size is 1.
+max_iters: 180000
+
+# Snapshot period. If training and test at same time, evaluate model at each snapshot_iter. 10000 by default.
+snapshot_iter: 10000
+
+# Smooth the log output in specified iterations, 20 by default.
+log_smooth_window: 20
+
+# The number of iteration interval to display in training log.
+log_iter: 20
+
+# The directory to save models.
+save_dir: output
+
+# The path of oretrained wegiths. If url is provided, it will download the pretrain_weights and decompress automatically.
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+
+# Evalution method, COCO and VOC are available. 
+metric: COCO
+
+# The path of final model for evaluation and test.
+weights: output/mask_rcnn_r50_fpn_1x/model_final/
+
+# Number of classes, 81 for COCO and 21 for VOC
+num_classes: 81
+
+# Mask RCNN architecture, see https://arxiv.org/abs/1703.06870
+MaskRCNN:
+  backbone: ResNet
+  fpn: FPN
+  roi_extractor: FPNRoIAlign
+  rpn_head: FPNRPNHead
+  bbox_assigner: BBoxAssigner
+  bbox_head: BBoxHead
+  mask_assigner: MaskAssigner
+  mask_head: MaskHead
+  rpn_only: false
+
+# Backbone module
+ResNet:
+  # Index of stages using deformable conv v2, [] by default
+  dcn_v2_stages: []
+  # ResNet depth, 50 by default
+  depth: 50
+  # Stage index of returned feature map, [2,3,4,5] by default
+  feature_maps:
+  - 2
+  - 3
+  - 4
+  - 5
+  # Stage Index of backbone to freeze, 2 by default
+  freeze_at: 2
+  # Whether freeze normalization layers, true by default
+  freeze_norm: true
+  # Weight decay for normalization layer weights, 0. by default
+  norm_decay: 0.0
+  # Normalization type, bn/sync_bn/affine_channel, affine_channel by default
+  norm_type: affine_channel
+  # ResNet variant, supports 'a', 'b', 'c', 'd' currently, b by default
+  variant: b
+
+# FPN module
+FPN:
+  # Whether has extra conv in higher levels, false by default
+  has_extra_convs: false
+  # Highest level of the backbone feature map to use, 6 by default
+  max_level: 6
+  # Lowest level of the backbone feature map to use, 6 by default
+  min_level: 2
+  # FPN normalization type, bn/sync_bn/affine_channel, null by default
+  norm_type: null
+  # Number of feature channels, 256 by default
+  num_chan: 256
+  # Feature map scaling factors, [0.03125, 0.0625, 0.125, 0.25] by default
+  spatial_scale:
+  - 0.03125
+  - 0.0625
+  - 0.125
+  - 0.25
+
+# RPN module, if use non-FPN architecture, use RPNHead instead
+# Extract proposals according to anchors and assign box targets and
+# score targets to selected proposals to compute RPN loss. For FPN
+# architecture, RPN is computed from each levels and collect proposals
+# together.
+FPNRPNHead:
+  # fluid.layers.anchor_generator
+  # Generate anchors for RCNN models. Each position of input produces
+  # N anchors. N = anchor_sizes * aspect_ratios. In FPNRPNHead, aspect_ratios
+  # is provided and anchor_sizes depends on FPN levels and anchor_start_size.
+  anchor_generator:
+    aspect_ratios:
+    - 0.5
+    - 1.0
+    - 2.0
+    variance:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+  # fluid.layers.rpn_target_assign
+  # Assign classification and regression targets to each anchor according
+  # to Intersection-over-Union(IoU) overlap between anchors and ground
+  # truth boxes. The classification targets is binary class labels. the 
+  # positive labels are two kinds of anchors: the anchors with the highest 
+  # IoU overlap with a ground-truth box, or an anchor that has an IoU overlap 
+  # higher than rpn_positive_overlap with any ground-truth box.  
+  rpn_target_assign:
+    rpn_batch_size_per_im: 256
+    rpn_fg_fraction: 0.5
+    rpn_negative_overlap: 0.3
+    rpn_positive_overlap: 0.7
+    rpn_straddle_thresh: 0.0
+  # fluid.layers.generate_proposals in training
+  # Generate RoIs according to each box with probability to be a foreground 
+  # object. The operation performs following steps: Transposes and resizes 
+  # scores and bbox_deltas; Calculate box locations as proposal candidates;
+  # Clip boxes to image; Remove predicted boxes with small area; Apply NMS to 
+  # get final proposals as output.
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    post_nms_top_n: 2000
+    pre_nms_top_n: 2000
+  # fluid.layers.generate_proposals in test
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    post_nms_top_n: 1000
+    pre_nms_top_n: 1000
+  # Size of anchor at the first scale, 32 by default
+  anchor_start_size: 32
+  # highest level of FPN output, 6 by default
+  max_level: 6
+  # Lowest level of FPN output, 2 by default
+  min_level: 2
+  # Number of FPN output channels, 256 by default
+  num_chan: 256
+  # Number of classes in RPN output, 1 by default
+  num_classes: 1
+
+# RoI extractor module, if use non-FPN architecture, use RoIAlign instead
+# For FPN architecture, proposals are distributed to different levels and
+# apply roi align at each level. Then concat the outputs.
+FPNRoIAlign:
+  # The canconical FPN feature map level, 4 by default
+  canconical_level: 4
+  # The canconical FPN feature map size, 224 by default
+  canonical_size: 224
+  # The highest level of FPN layer, 5 by default
+  max_level: 5
+  # The lowest level of FPN layer, 2 by default
+  min_level: 2
+  # Number of sampling points, 0 by default
+  sampling_ratio: 2
+  # Box resolution, 7 by default
+  box_resolution: 7
+  # Mask RoI resolution, 14 by default
+  mask_resolution: 14
+
+# Mask head module  
+# Generate mask output and compute loss mask.
+MaskHead:
+  # Number of convolutions, 4 for FPN, 0 otherwise. 0 by default
+  num_convs: 4
+  # size of the output mask, 14 by default
+  resolution: 28
+  # Dilation rate, 1 by default
+  dilation: 1
+  # Number of channels after first conv, 256 by default
+  num_chan_reduced: 256
+  # Number of output classes, 81 by default
+  num_classes: 81
+
+# fluid.layers.generate_proposal_labels
+# Combine boxes and gt_boxes, and sample foreground proposals and background 
+# prosals.Then assign classification and regression targets to selected RoIs. 
+BBoxAssigner:
+  batch_size_per_im: 512
+  bbox_reg_weights:
+  - 0.1
+  - 0.1
+  - 0.2
+  - 0.2
+  bg_thresh_hi: 0.5
+  bg_thresh_lo: 0.0
+  fg_fraction: 0.25
+  fg_thresh: 0.5
+  num_classes: 81
+  shuffle_before_sample: true
+
+# fluid.layers.generate_mask_labels
+# For given the RoIs and corresponding labels, sample foreground RoIs.
+# Assign mask targets to selected RoIs which are encoded to K binary masks 
+# of resolution M x M. 
+MaskAssigner:
+  resolution: 28
+  num_classes: 81
+
+# BBox head module
+# Faster bbox head following the RoI extractor, and apply post process, such as
+# NMS and box coder..
+BBoxHead:
+  # Head after RoI extractor, ResNetC5/TwoFCHead
+  head: TwoFCHead
+  # fluid.layers.multiclass_nms
+  # Select a subset of detection bounding boxes that have high scores larger 
+  # than score_threshold. Then  prune away boxes that have high IoU overlap 
+  # with already selected boxes by nms_threshold.
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
+  # fluid.layers.box_coder
+  box_coder:
+    axis: 1
+    box_normalized: false
+    code_type: decode_center_size
+    prior_box_var:
+    - 0.1
+    - 0.1
+    - 0.2
+    - 0.2
+  num_classes: 81
+
+# RCNN head with two Fully Connected layers
+TwoFCHead:
+  # The number of output channels, 1024 by default
+  num_chan: 1024
+
+# Learning rate configuration
+LearningRate:
+  # Base learning rate, 0.01 by default
+  base_lr: 0.01
+  # Learning rate schedulers, PiecewiseDecay and LinearWarmup by default
+  schedulers:
+  # fluid.layers.piecewise_decay
+  # Values has higher priority and if values is null, learning rate is multipled by gamma at each stage
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 120000
+    - 160000
+    values: null
+  # fluid.layers.linear_lr_warmup
+  # Start learning rate equals to base_lr * start_factor
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+# Optimizer module
+OptimizerBuilder:
+  # fluid.optimizer
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  # fluid.regularizer
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+# Data feed module for training
+MaskRCNNTrainFeed:
+  # Batch size per device, 1 by default
+  batch_size: 1
+  # Dataset module
+  dataset:
+    # Annotation file path
+    annotation: annotations/instances_train2017.json
+    # Dataset directory
+    dataset_dir: dataset/coco
+    # Directory where image files are stored
+    image_dir: train2017
+  # List of data fields needed
+  fields:
+  - image
+  - im_info
+  - im_id
+  - gt_box
+  - gt_label
+  - is_crowd
+  - gt_mask
+  # list of image dims
+  image_shape:
+  - 3
+  - 800
+  - 1333
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+    to_rgb: true  # default: true
+    with_mixup: false  # default: false
+  # Flip images randomly
+  # Transform the x coordinates of bboxes and segmentations
+  - !RandomFlipImage
+    is_mask_flip: true  # default: false
+    # Whether bbox is normalized
+    is_normalized: false  # default: false
+    prob: 0.5  # default: 0.5
+  # Normalize the image
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: false
+    # Whether divide by 255, true by default
+    is_scale: true
+    # default: [0.485, 0.456, 0.406]
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    # default: [1, 1, 1]
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+  # Rescale image to the specified target size, and capped at max_size
+  - !ResizeImage
+    # Resize method, cv2.INTER_LINEAR(1) by default
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true  # default: true
+  # Change the channel
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    to_bgr: false  # default: true
+  # List of batch transformations to use
+  batch_transforms:
+  # Pad a batch of samples to same dimensions
+  - !PadBatch
+    pad_to_stride: 32  # default: 32
+  # Drop last batch if size is uneven, false by default
+  drop_last: false
+  # Number of workers processes(or threads), 2 by default
+  num_workers: 2
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: true
+  # If update im_info after padding, false by default
+  use_padded_im_info: false
+  # If use multi-process, false by default
+  use_process: false
+
+# Data feed module for test
+MaskRCNNEvalFeed:
+  #  Batch size per device, 1 by default
+  batch_size: 1
+  # Dataset module
+  dataset:
+    # Annotation file path
+    annotation: annotations/instances_val2017.json
+    # Dataset directory
+    dataset_dir: dataset/coco
+    # Directory where image files are stored
+    image_dir: val2017
+  # List of data fields needed
+  fields:
+  - image
+  - im_info
+  - im_id
+  - im_shape
+  # list of image dims
+  image_shape:
+  - 3
+  - 800
+  - 1333
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+    to_rgb: true  # default: true
+    with_mixup: false  # default: false
+  # Normalize the image
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: false
+    # Whether divide by 255, true by default
+    is_scale: true
+    # default: [0.485, 0.456, 0.406]
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    # default: [1, 1, 1]
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+  # Rescale image to the specified target size, and capped at max_size
+  - !ResizeImage
+    # Resize method, cv2.INTER_LINEAR(1) by default
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true  # default: true
+  # Change the channel
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    to_bgr: false  # default: true
+  # List of batch transformations to use
+  batch_transforms:
+  # Pad a batch of samples to same dimensions
+  - !PadBatch
+    pad_to_stride: 32  # default: 32
+  # Drop last batch if size is uneven, false by default
+  drop_last: false
+  # Number of workers processes(or threads), 2 by default
+  num_workers: 2
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: false
+  # If update im_info after padding, false by default
+  use_padded_im_info: true
+  # If use multi-process, false by default
+  use_process: false
+
+# Data feed module for test
+MaskRCNNTestFeed:
+  # Batch size per device, 1 by default  
+  batch_size: 1
+  # Dataset module
+  dataset:
+    # Annotation file path
+    annotation: dataset/coco/annotations/instances_val2017.json
+  # List of data fields needed
+  fields:
+  - image
+  - im_info
+  - im_id
+  - im_shape
+  # list of image dims
+  image_shape:
+  - 3
+  - 800
+  - 1333
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+    to_rgb: true  # default: true
+    with_mixup: false  # default: false
+  # Normalize the image
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: false
+    # Whether divide by 255, true by default
+    is_scale: true
+    # default: [0.485, 0.456, 0.406]
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    # default: [1, 1, 1]
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+  # Change the channel
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    to_bgr: false  # default: true
+  # List of batch transformations to use
+  batch_transforms:
+  # Pad a batch of samples to same dimensions
+  - !PadBatch
+    pad_to_stride: 32  # default: 32
+  # Drop last batch if size is uneven, false by default 
+  drop_last: false
+  # Number of workers processes(or threads), 2 by default
+  num_workers: 2
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: false
+  # If update im_info after padding, false by default
+  use_padded_im_info: true
+  # If use multi-process, false by default
+  use_process: false
+
+

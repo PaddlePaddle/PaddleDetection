@@ -1,0 +1,19 @@
+DEPLOY:
+    USE_GPU: 1
+    MODEL_PATH: "/root/projects/models/faster_rcnn_pp50_fpn"
+    MODEL_FILENAME: "__model__"
+    PARAMS_FILENAME: "__params__"
+    EVAL_CROP_SIZE: (608, 608)
+    RESIZE_TYPE: "RANGE_SCALING"
+    TARGET_SHORT_SIZE : 800
+    MEAN:  [0.485, 0.456, 0.406]
+    STD: [0.229, 0.224, 0.225]
+    IMAGE_TYPE: "rgb"
+    NUM_CLASSES: 1
+    CHANNELS : 3
+    PRE_PROCESSOR: "DetectionPreProcessor"
+    PREDICTOR_MODE: "ANALYSIS"
+    BATCH_SIZE : 1 
+    RESIZE_MAX_SIZE: 1333
+    FEEDS_SIZE: 3
+    COARSEST_STRIDE: 32
