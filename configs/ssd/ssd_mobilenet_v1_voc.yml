@@ -61,8 +61,7 @@ SSDTrainFeed:
   use_process: true
   dataset:
     dataset_dir: dataset/voc
-    annotation: VOCdevkit/VOC_all/ImageSets/Main/train.txt
-    image_dir: VOCdevkit/VOC_all/JPEGImages
+    annotation: trainval.txt
     use_default_label: true
 
 SSDEvalFeed:
@@ -70,8 +69,7 @@ SSDEvalFeed:
   use_process: true
   dataset:
     dataset_dir: dataset/voc
-    annotation: VOCdevkit/VOC_all/ImageSets/Main/val.txt
-    image_dir: VOCdevkit/VOC_all/JPEGImages
+    annotation: test.txt
     use_default_label: true
   drop_last: false
 

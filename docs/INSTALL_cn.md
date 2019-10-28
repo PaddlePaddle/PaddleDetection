@@ -108,6 +108,13 @@ ln -sf <path/to/coco> <path/to/paddle_detection>/dataset/coco
 ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 ```
 
+对于Pascal VOC数据集，需通过如下命令创建文件列表：
+
+```
+export PYTHONPATH=$PYTHONPATH:.
+python dataset/voc/create_list.py
+```
+
 **手动下载数据集：**
 
 若您本地没有数据集，可通过如下命令下载：
@@ -119,12 +126,67 @@ export PYTHONPATH=$PYTHONPATH:.
 python dataset/coco/download_coco.py
 ```
 
+`COCO` 数据集目录结构如下：
+
+  ```
+  dataset/coco/
+  ├── annotations
+  │   ├── instances_train2014.json
+  │   ├── instances_train2017.json
+  │   ├── instances_val2014.json
+  │   ├── instances_val2017.json
+  │   |   ...
+  ├── train2017
+  │   ├── 000000000009.jpg
+  │   ├── 000000580008.jpg
+  │   |   ...
+  ├── val2017
+  │   ├── 000000000139.jpg
+  │   ├── 000000000285.jpg
+  │   |   ...
+  |   ...
+  ```
+
 - Pascal VOC
 
 ```
 export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/download_voc.py
+python dataset/voc/create_list.py
 ```
+
+`Pascal VOC` 数据集目录结构如下：
+
+  ```
+  dataset/voc/
+  ├── train.txt
+  ├── val.txt
+  ├── test.txt
+  ├── label_list.txt (optional)
+  ├── VOCdevkit/VOC2007
+  │   ├── Annotations
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
+  ├── VOCdevkit/VOC2012
+  │   ├── Annotations
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
+  |   ...
+  ```
+
+**说明：** 如果你在yaml配置文件中设置`use_default_label=False`, 将从`label_list.txt`
+中读取类别列表，反之则可以没有`label_list.txt`文件，检测库会使用Pascal VOC数据集的默
+认类别列表，默认类别列表定义在[voc\_loader.py](../ppdet/data/source/voc_loader.py)
 
 **自动下载数据集：**
 
