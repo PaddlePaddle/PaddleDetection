@@ -165,15 +165,17 @@ coco = Reader(ccfg.DATA, ccfg.TRANSFORM, maxiter=-1)
 ```
 #### 如何使用自定义数据集？
 
-- 选择1：将数据集转换为VOC格式或者COCO格式。
+- 选择1：将数据集转换为COCO格式。
 ```
- # 在./tools/中提供了labelme2coco.py用于将labelme标注的数据集转换为COCO数据集
- python ./ppdet/data/tools/labelme2coco.py --json_input_dir ./labelme_annos/
+ # 在./tools/中提供了x2coco.py用于将labelme标注的数据集或cityscape数据集转换为COCO数据集
+ python ./ppdet/data/tools/x2coco.py --dataset_type labelme
+                                --json_input_dir ./labelme_annos/
                                 --image_input_dir ./labelme_imgs/
                                 --output_dir ./cocome/
                                 --train_proportion 0.8
                                 --val_proportion 0.2
                                 --test_proportion 0.0
+ # --dataset_type：需要转换的数据格式，目前支持：’labelme‘和’cityscape‘
  # --json_input_dir：使用labelme标注的json文件所在文件夹
  # --image_input_dir：图像文件所在文件夹
  # --output_dir：转换后的COCO格式数据集存放位置

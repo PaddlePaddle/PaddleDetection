@@ -181,16 +181,18 @@ whole data pipeline is fully customizable through the yaml configuration files.
 
 #### Custom Datasets
 
-- Option 1: Convert the dataset to COCO or VOC format.
+- Option 1: Convert the dataset to COCO format.
 ```sh
- # a small utility (`tools/labelme2coco.py`) is provided to convert
- # Labelme-annotated dataset to COCO format.
- python ./ppdet/data/tools/labelme2coco.py --json_input_dir ./labelme_annos/
+ # a small utility (`tools/x2coco.py`) is provided to convert
+ # Labelme-annotated dataset or cityscape dataset to COCO format.
+ python ./ppdet/data/tools/x2coco.py --dataset_type labelme
+                                --json_input_dir ./labelme_annos/
                                 --image_input_dir ./labelme_imgs/
                                 --output_dir ./cocome/
                                 --train_proportion 0.8
                                 --val_proportion 0.2
                                 --test_proportion 0.0
+ # --dataset_type: The data format which is need to be converted. Currently supported are: 'labelme' and 'cityscape'
  # --json_input_dir：The path of json files which are annotated by Labelme.
  # --image_input_dir：The path of images.
  # --output_dir：The path of coverted COCO dataset.
