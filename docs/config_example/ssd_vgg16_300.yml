@@ -1,0 +1,427 @@
+# Architecture of detection, which is also the prefix of data feed module.
+architecture: SSD
+# Data feed module.
+# Data feed in training.
+train_feed: SSDTrainFeed
+# Data feed in Evaluation.
+eval_feed: SSDEvalFeed
+# Data feed in infer.
+test_feed: SSDTestFeed
+# Use GPU or CPU, true by default.
+use_gpu: true
+# Maximum number of iteration.
+max_iters: 400000
+# Snapshot period. If training and test at same time, evaluate model at each snapshot_iter. 10000 by default.
+snapshot_iter: 10000
+# Smooth the log output in specified iterations, 20 by default.
+log_smooth_window: 20
+# The log in training is displayed once every period.
+log_iter: 20
+# Evaluation method, COCO and VOC are available.
+metric: COCO
+# Evaluation mAP calculation method in VOC metric, 11point and integral are available.
+map_type: 11point
+# The path of final model for evaluation and test.
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
+# The directory to save models.
+save_dir: output
+# The path of final model for evaluation and test.
+weights: output/ssd_vgg16_300/model_final
+# Number of classes, 81 for COCO and 21 for VOC.
+num_classes: 81
+
+# SSD architecture, see https://arxiv.org/abs/1512.02325
+SSD:
+  # backbone instance, defined below.
+  backbone: VGG
+  # `MultiBoxHead` instance, defined below.
+  multi_box_head: MultiBoxHead
+
+  # fluid.layers.detection_output, Detection Output Layer for SSD.
+  # This operation is to get the detection results by performing following two steps:
+  #   1. Decode input bounding box predictions according to the prior boxes.
+  #   2. Get the final detection results by applying multi-class non maximum suppression (NMS).
+  # this operation doesn’t clip the final output bounding boxes to the image window.
+  output_decoder:
+    # The index of background label, the background label will be ignored.
+    # If set to -1, then all categories will be considered.
+    background_label: 0
+    # Number of total bboxes to be kept per image after NMS.
+    keep_top_k: 200
+    # The parameter for adaptive NMS.
+    nms_eta: 1.0
+    # The threshold to be used in NMS.
+    nms_threshold: 0.45
+    # Maximum number of detections to be kept according to the confidences
+    # aftern the filtering detections based on score_threshold.
+    nms_top_k: 400
+    # Threshold to filter out bounding boxes with low confidence score.
+    # If not provided, consider all boxes.
+    score_threshold: 0.01
+
+# VGG backbone, see https://arxiv.org/abs/1409.1556
+VGG:
+  # the VGG net depth (16 or 19
+  depth: 16
+  # whether or not extra blocks should be added
+  with_extra_blocks: true
+  # in each extra block, params:
+  # [in_channel, out_channel, padding_size, stride_size, filter_size]
+  extra_block_filters:
+  - [256, 512, 1, 2, 3]
+  - [128, 256, 1, 2, 3]
+  - [128, 256, 0, 1, 3]
+  - [128, 256, 0, 1, 3]
+  # params list of init scale in l2 norm, skip init scale if param is -1.
+  normalizations: [20., -1, -1, -1, -1, -1]
+
+# fluid.layers.multi_box_head, Generate prior boxes for SSD algorithm.
+# Generate `prior_box`  according to the inputs list and other parameters
+# Each position of the input produce N prior boxes, N is determined by 
+# the count of min_sizes, max_sizes and aspect_ratios, The size of the box 
+# is in range(min_size, max_size) interval, which is generated in sequence 
+# according to the aspect_ratios.
+MultiBoxHead:
+  # the base_size is used to get min_size and max_size according to min_ratio and max_ratio.
+  base_size: 300
+  # the aspect ratios of generated prior boxes. The length of input and aspect_ratios must be equal.
+  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]]
+  # the min ratio of generated prior boxes.
+  min_ratio: 15
+  # the max ratio of generated prior boxes.
+  max_ratio: 90
+  # If len(inputs) <=2, min_sizes must be set up, and the length of min_sizes
+  # should equal to the length of inputs. Default: None.
+  min_sizes: [30.0, 60.0, 111.0, 162.0, 213.0, 264.0]
+  # If len(inputs) <=2, max_sizes must be set up, and the length of min_sizes
+  # should equal to the length of inputs. Default: None.
+  max_sizes: [60.0, 111.0, 162.0, 213.0, 264.0, 315.0]
+  # If step_w and step_h are the same, step_w and step_h can be replaced by steps.
+  steps: [8, 16, 32, 64, 100, 300]
+  # Prior boxes center offset. Default: 0.5
+  offset: 0.5
+  # Whether to flip aspect ratios. Default:False.
+  flip: true
+  # The kernel size of conv2d. Default: 1.
+  kernel_size: 3
+  # The padding of conv2d. Default:0.
+  pad: 1
+
+# Learning rate configuration
+LearningRate:
+  # Base learning rate, 0.01 by default
+  base_lr: 0.001
+  # Learning rate schedulers, PiecewiseDecay and LinearWarmup by default
+  schedulers:
+  # fluid.layers.piecewise_decay
+  # Values has higher priority and if values is null, learning rate is multipled by gamma at each stage
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [280000, 360000]
+  # fluid.layers.linear_lr_warmup
+  # Start learning rate equals to base_lr * start_factor
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+# Optimizer module
+OptimizerBuilder:
+  # fluid.optimizer, Neural network in essence is a Optimization problem .
+  # With forward computing and back propagation , Optimizer use back-propagation
+  # gradients to optimize parameters in a neural network.
+  optimizer:
+    # Momentum optimizer adds momentum on the basis of SGD ,
+    # reducing noise problem in the process of random gradient descent.
+    momentum: 0.9
+    type: Momentum
+  # fluid.regularizer
+  regularizer:
+    # implements the L2 Weight Decay Regularization
+    # Small values of L2 can help prevent over fitting the training data.
+    factor: 0.0005
+    type: L2
+
+# Data feed module for training
+SSDTrainFeed:
+  # Batch size per device
+  batch_size: 16
+  # list of batch transformations to use
+  batch_transforms: []
+  # The data buffer size
+  bufsize: 10
+  # Dataset module
+  dataset:
+    # Dataset directory
+    dataset_dir: dataset/coco
+    # Annotation file path
+    annotation: annotations/instances_train2017.json
+    # Directory where image files are stored
+    image_dir: train2017
+  # Drop last batch if size is uneven, false by default
+  drop_last: true
+  # List of data fields needed
+  fields: [image, gt_box, gt_label]
+  # list of image dims
+  image_shape: [3, 300, 300]
+  # number of workers processes (or threads)
+  num_workers: 8
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+    # whether to convert BGR to RGB
+    to_rgb: true  # default: true
+    # whether or not to mixup image and gt_bbbox/gt_score
+    with_mixup: false   # default: false
+  # Transform the bounding box's coornidates to [0,1].
+  - !NormalizeBox {}
+  # modify image brightness，contrast，saturation，hue，reordering channels and etc.
+  - !RandomDistort
+    # brightness_lower/ brightness_upper (float): the brightness
+    # between brightness_lower and brightness_upper
+    brightness_lower: 0.875
+    brightness_upper: 1.125
+    # brightness_prob (float): the probability of changing brightness
+    brightness_prob: 0.5
+    # contrast_lower/ contrast_upper (float): the contrast between
+    # contrast_lower and contrast_lower
+    contrast_lower: 0.5
+    contrast_upper: 1.5
+    # contrast_prob (float): the probability of changing contrast
+    contrast_prob: 0.5
+    # count (int): the kinds of doing distrot
+    count: 4
+    # hue_lower/ hue_upper (float): the hue between hue_lower and hue_upper
+    hue_lower: -18
+    hue_upper: 18
+    # hue_prob (float): the probability of changing hue
+    hue_prob: 0.5
+    # is_order (bool): whether determine the order of distortion
+    is_order: true
+    # saturation_lower/ saturation_upper (float): the saturation
+    # between saturation_lower and saturation_upper
+    saturation_lower: 0.5
+    saturation_upper: 1.5
+    # saturation_prob (float): the probability of changing saturation
+    saturation_prob: 0.5
+  #Expand the image and modify bounding box.
+  #   Operators:
+  #     1. Scale the image weight and height.
+  #     2. Construct new images with new height and width.
+  #     3. Fill the new image with the mean.
+  #     4. Put original imge into new image.
+  #     5. Rescale the bounding box.
+  #     6. Determine if the new bbox is satisfied in the new image.
+  - !ExpandImage
+    # max_ratio (float): the ratio of expanding
+    max_ratio: 4
+    # mean (list): the pixel mean
+    mean: [104, 117, 123]
+    # prob (float): the probability of expanding image
+    prob: 0.5
+  # Crop the image and modify bounding box.
+  #   Operators:
+  #     1. Scale the image weight and height.
+  #     2. Crop the image according to a radom sample.
+  #     3. Rescale the bounding box.
+  #     4. Determine if the new bbox is satisfied in the new image.
+  - !CropImage
+    # avoid_no_bbox (bool): whether to to avoid the
+    # situation where the box does not appear.
+    avoid_no_bbox: false
+    # batch_sampler (list): Multiple sets of different parameters for cropping.
+    batch_sampler:
+    - [1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]
+    # satisfy_all (bool): whether all boxes must satisfy.
+    satisfy_all: false
+  # Rescale image to the specified target size, and capped at max_size if max_size != 0.
+  # If target_size is list, selected a scale randomly as the specified target size.
+  - !ResizeImage
+    # Resize method, cv2.INTER_LINEAR(1) by default
+    interp: 1
+    # max_size (int): the max size of image
+    max_size: 0
+    # target_size (int|list): the target size of image's short side,
+    # multi-scale training is adopted when type is list.
+    target_size: 300
+    # use_cv2 (bool): use the cv2 interpolation method or use PIL interpolation method
+    use_cv2: false
+  # Filp the image and bounding box.
+  #   Operators:
+  #     1. Flip the image numpy.
+  #     2. Transform the bboxes' x coordinates. (Must judge whether the coordinates are normalized!)
+  #     3. Transform the segmentations' x coordinates. (Must judge whether the coordinates are normalized!)
+  - !RandomFlipImage
+    # is_mask_flip (bool): whether flip the segmentation
+    is_mask_flip: false
+    # is_normalized (bool): whether the bbox scale to [0,1]
+    is_normalized: true
+    # prob (float): the probability of flipping image
+    prob: 0.5
+  # Change the channel
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    # to_bgr (bool): confirm whether to convert RGB to BGR
+    to_bgr: true
+  # Normalize the image.
+  #   Operators:
+  #     1.(optional) Scale the image to [0,1]
+  #     2. Each pixel minus mean and is divided by std
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: true
+    # Whether divide by 255, true by default
+    is_scale: false
+    # mean (list): the pixel mean
+    mean: [104, 117, 123]
+    # std (list): the pixel variance
+    std: [1, 1, 1]
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: true
+  # If use multi-process, false by default
+  use_process: true
+
+# Data feed module for Eval
+SSDEvalFeed:
+  # Batch size per device
+  batch_size: 32
+  # list of batch transformations to use
+  batch_transforms: []
+  # The data buffer size
+  bufsize: 10
+  # Dataset module
+  dataset:
+    # Dataset directory
+    dataset_dir: dataset/coco
+    # Annotation file path
+    annotation: annotations/instances_val2017.json
+    # Directory where image files are stored
+    image_dir: val2017
+  # Drop last batch if size is uneven, false by default
+  drop_last: true
+  # List of data fields needed
+  fields: [image, im_shape, im_id, gt_box, gt_label, is_difficult]
+  # list of image dims
+  image_shape: [3, 300, 300]
+  # number of workers processes (or threads)
+  num_workers: 8
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+  # whether to convert BGR to RGB
+    to_rgb: true  # default: true
+    # whether or not to mixup image and gt_bbbox/gt_score
+    with_mixup: false   # default: false
+  # Transform the bounding box's coornidates to [0,1].
+  - !NormalizeBox {}
+  # Rescale image to the specified target size, and capped at max_size if max_size != 0.
+  # If target_size is list, selected a scale randomly as the specified target size.
+  - !ResizeImage
+    # Resize method, cv2.INTER_LINEAR(1) by default
+    interp: 1
+    # max_size (int): the max size of image
+    max_size: 0
+    # target_size (int|list): the target size of image's short side,
+    # multi-scale training is adopted when type is list.
+    target_size: 300
+    # use_cv2 (bool): use the cv2 interpolation method or use PIL interpolation method
+    use_cv2: false
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    # to_bgr (bool): confirm whether to convert RGB to BGR
+    to_bgr: true
+  # Normalize the image.
+  #   Operators:
+  #     1.(optional) Scale the image to [0,1]
+  #     2. Each pixel minus mean and is divided by std
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: true
+    # Whether divide by 255, true by default
+    is_scale: false
+    # mean (list): the pixel mean
+    mean: [104, 117, 123]
+    # std (list): the pixel variance
+    std: [1, 1, 1]
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: false
+  # If use multi-process, false by default
+  use_process: false
+
+# Data feed module for test
+SSDTestFeed:
+  # Batch size per device
+  batch_size: 1
+  # list of batch transformations to use
+  batch_transforms: []
+  # The data buffer size
+  bufsize: 10
+  # Dataset module
+  dataset:
+    # Annotation file path
+    annotation: dataset/coco/annotations/instances_val2017.json
+  # Drop last batch if size is uneven, false by default
+  drop_last: false
+  # List of data fields needed
+  fields: [image, im_id]
+  # list of image dims
+  image_shape: [3, 300, 300]
+  # number of workers processes (or threads)
+  num_workers: 8
+  # List of sample transformations to use
+  sample_transforms:
+  # Transform the image data to numpy format.
+  - !DecodeImage
+  # whether to convert BGR to RGB
+    to_rgb: true  # default: true
+    # whether or not to mixup image and gt_bbbox/gt_score
+    with_mixup: false   # default: false
+  # Rescale image to the specified target size, and capped at max_size if max_size != 0.
+  # If target_size is list, selected a scale randomly as the specified target size.
+  - !ResizeImage
+    # Resize method, cv2.INTER_LINEAR(1) by default
+    interp: 1
+    # max_size (int): the max size of image
+    max_size: 0
+    # target_size (int|list): the target size of image's short side,
+    # multi-scale training is adopted when type is list.
+    target_size: 300
+    # use_cv2 (bool): use the cv2 interpolation method or use PIL interpolation method
+    use_cv2: false
+  - !Permute
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    channel_first: true
+    # to_bgr (bool): confirm whether to convert RGB to BGR
+    to_bgr: true
+  # Normalize the image.
+  #   Operators:
+  #     1.(optional) Scale the image to [0,1]
+  #     2. Each pixel minus mean and is divided by std
+  - !NormalizeImage
+    # The format of image, [H, W, C]/[C, H, W], true by default
+    is_channel_first: true
+    # Whether divide by 255, true by default
+    is_scale: false
+    # mean (list): the pixel mean
+    mean: [104, 117, 123]
+    # std (list): the pixel variance
+    std: [1, 1, 1]
+  # Number of samples, -1 represents all samples. -1 by default
+  samples: -1
+  # If samples should be shuffled, true by default
+  shuffle: false
+  # If use multi-process, false by default
+  use_process: false

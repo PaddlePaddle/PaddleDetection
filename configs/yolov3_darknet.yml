@@ -1,0 +1,82 @@
+architecture: YOLOv3
+train_feed: YoloTrainFeed
+eval_feed: YoloEvalFeed
+test_feed: YoloTestFeed
+use_gpu: true
+max_iters: 500200
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 2000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+weights: output/yolov3_darknet/model_final
+num_classes: 80
+
+YOLOv3:
+  backbone: DarkNet
+  yolo_head: YOLOv3Head
+
+DarkNet:
+  norm_type: sync_bn
+  norm_decay: 0.
+  depth: 53
+
+YOLOv3Head:
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  norm_decay: 0.
+  ignore_thresh: 0.7
+  label_smooth: true
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    normalized: false
+    score_threshold: 0.01
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 400000
+    - 450000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+YoloTrainFeed:
+  batch_size: 8
+  dataset:
+    dataset_dir: dataset/coco
+    annotation: annotations/instances_train2017.json
+    image_dir: train2017
+  num_workers: 8
+  bufsize: 128
+  use_process: true
+
+YoloEvalFeed:
+  batch_size: 8
+  image_shape: [3, 608, 608]
+  dataset:
+    dataset_dir: dataset/coco
+    annotation: annotations/instances_val2017.json
+    image_dir: val2017
+
+YoloTestFeed:
+  batch_size: 1
+  image_shape: [3, 608, 608]
+  dataset:
+    annotation: dataset/coco/annotations/instances_val2017.json
