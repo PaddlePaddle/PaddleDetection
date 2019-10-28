@@ -27,6 +27,7 @@ Parses various data sources and creates `data.Dataset` instances. Currently,
 following data sources are supported:
 
 - COCO data source
+
 Loads `COCO` type datasets with directory structures like this:
 
   ```
@@ -36,45 +37,53 @@ Loads `COCO` type datasets with directory structures like this:
   │   ├── instances_train2017.json
   │   ├── instances_val2014.json
   │   ├── instances_val2017.json
-  |   ...
+  │   |   ...
   ├── train2017
   │   ├── 000000000009.jpg
   │   ├── 000000580008.jpg
-  |   ...
+  │   |   ...
   ├── val2017
   │   ├── 000000000139.jpg
   │   ├── 000000000285.jpg
+  │   |   ...
   |   ...
   ```
 
 - Pascal VOC data source
+
 Loads `Pascal VOC` like datasets with directory structure like this:
 
   ```
-  data/pascalvoc/
-  ├──Annotations
-  │   ├── i000050.jpg
-  │   ├── 003876.xml
-  |   ...
-  ├── ImageSets
-  │   ├──Main
-              └── train.txt
-              └── val.txt
-              └── test.txt
-              └── dog_train.txt
-              └── dog_trainval.txt
-              └── dog_val.txt
-              └── dog_test.txt
-              └── ...
-  │   ├──Layout
-               └──...
-  │   ├── Segmentation
-                └──...
-  ├── JPEGImages
-  │   ├── 000050.jpg
-  │   ├── 003876.jpg
+  dataset/voc/
+  ├── train.txt
+  ├── val.txt
+  ├── test.txt
+  ├── label_list.txt (optional)
+  ├── VOCdevkit/VOC2007
+  │   ├── Annotations
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
+  ├── VOCdevkit/VOC2012
+  │   ├── Annotations
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
   |   ...
   ```
+
+**NOTE:** If you set `use_default_label=False` in yaml configs, the `label_list.txt`
+of Pascal VOC dataset will be read, otherwise, `label_list.txt` is unnecessary and
+the default Pascal VOC label list which defined in 
+[voc\_loader.py](../ppdet/data/source/voc_loader.py) will be used.
 
 - Roidb data source
 A generalized data source serialized as pickle files, which have the following

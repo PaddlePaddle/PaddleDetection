@@ -26,8 +26,7 @@ def get_roidb(anno_path,
     Load VOC records with annotations in xml directory 'anno_path'
 
     Notes:
-    ${anno_path}/ImageSets/Main/train.txt must contains xml file names for annotations
-    ${anno_path}/Annotations/xxx.xml must contain annotation info for one record
+    ${anno_path} must contains xml file and image file path for annotations
 
     Args:
         anno_path (str): root directory for voc annotation data
@@ -53,11 +52,7 @@ def get_roidb(anno_path,
         'cname2id' is a dict to map category name to class id
     """
 
-    txt_file = anno_path
-    part = txt_file.split('ImageSets')
-    xml_path = os.path.join(part[0], 'Annotations')
-    assert os.path.isfile(txt_file) and \
-        os.path.isdir(xml_path), 'invalid xml path'
+    data_dir = os.path.dirname(anno_path)
 
     records = []
     ct = 0
@@ -67,17 +62,16 @@ def get_roidb(anno_path,
 
     # mapping category name to class id
     # background:0, first_class:1, second_class:2, ...
-    with open(txt_file, 'r') as fr:
+    with open(anno_path, 'r') as fr:
         while True:
             line = fr.readline()
             if not line:
                 break
-            fname = line.strip() + '.xml'
-            xml_file = os.path.join(xml_path, fname)
+            img_file, xml_file = [os.path.join(data_dir, x) \
+                    for x in line.strip().split()[:2]]
             if not os.path.isfile(xml_file):
                 continue
             tree = ET.parse(xml_file)
-            im_fname = tree.find('filename').text
             if tree.find('id') is None:
                 im_id = np.array([ct])
             else:
@@ -114,7 +108,7 @@ def get_roidb(anno_path,
                 is_crowd[i][0] = 0
                 difficult[i][0] = _difficult
             voc_rec = {
-                'im_file': im_fname,
+                'im_file': img_file,
                 'im_id': im_id,
                 'h': im_h,
                 'w': im_w,
@@ -144,8 +138,7 @@ def load(anno_path,
     xml directory 'anno_path'
 
     Notes:
-    ${anno_path}/ImageSets/Main/train.txt must contains xml file names for annotations
-    ${anno_path}/Annotations/xxx.xml must contain annotation info for one record
+    ${anno_path} must contains xml file and image file path for annotations
 
     Args:
         @anno_path (str): root directory for voc annotation data
@@ -171,11 +164,7 @@ def load(anno_path,
         'cname2id' is a dict to map category name to class id
     """
 
-    txt_file = anno_path
-    part = txt_file.split('ImageSets')
-    xml_path = os.path.join(part[0], 'Annotations')
-    assert os.path.isfile(txt_file) and \
-        os.path.isdir(xml_path), 'invalid xml path'
+    data_dir = os.path.dirname(anno_path)
 
     # mapping category name to class id
     # if with_background is True:
@@ -186,7 +175,7 @@ def load(anno_path,
     ct = 0
     cname2cid = {}
     if not use_default_label:
-        label_path = os.path.join(part[0], 'ImageSets/Main/label_list.txt')
+        label_path = os.path.join(data_dir, 'label_list.txt')
         with open(label_path, 'r') as fr:
             label_id = int(with_background)
             for line in fr.readlines():
@@ -195,17 +184,16 @@ def load(anno_path,
     else:
         cname2cid = pascalvoc_label(with_background)
 
-    with open(txt_file, 'r') as fr:
+    with open(anno_path, 'r') as fr:
         while True:
             line = fr.readline()
             if not line:
                 break
-            fname = line.strip() + '.xml'
-            xml_file = os.path.join(xml_path, fname)
+            img_file, xml_file = [os.path.join(data_dir, x) \
+                    for x in line.strip().split()[:2]]
             if not os.path.isfile(xml_file):
                 continue
             tree = ET.parse(xml_file)
-            im_fname = tree.find('filename').text
             if tree.find('id') is None:
                 im_id = np.array([ct])
             else:
@@ -235,7 +223,7 @@ def load(anno_path,
                 is_crowd[i][0] = 0
                 difficult[i][0] = _difficult
             voc_rec = {
-                'im_file': im_fname,
+                'im_file': img_file,
                 'im_id': im_id,
                 'h': im_h,
                 'w': im_w,

@@ -11,9 +11,12 @@
 子功能介绍：
 
 1. 数据解析  
-     数据解析得到的是`data.Dataset`,实现逻辑位于`data.source`中。通过它可以实现解析不同格式的数据集，已支持的数据源包括：
+
+数据解析得到的是`data.Dataset`,实现逻辑位于`data.source`中。通过它可以实现解析不同格式的数据集，已支持的数据源包括：
+
 - COCO数据源
-     该数据集目前分为COCO2012和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
+
+该数据集目前分为COCO2014和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
 
   ```
   dataset/coco/
@@ -22,49 +25,53 @@
   │   ├── instances_train2017.json
   │   ├── instances_val2014.json
   │   ├── instances_val2017.json
-  |   ...
+  │   |   ...
   ├── train2017
   │   ├── 000000000009.jpg
   │   ├── 000000580008.jpg
-  |   ...
+  │   |   ...
   ├── val2017
   │   ├── 000000000139.jpg
   │   ├── 000000000285.jpg
+  │   |   ...
   |   ...
   ```
 
 
 - Pascal VOC数据源
-     该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
 
+该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
 
   ```
-  data/pascalvoc/
-  ├──Annotations
-  │   ├── i000050.jpg
-  │   ├── 003876.xml
-  |   ...
-  ├── ImageSets
-  │   ├──Main
-              └── train.txt
-              └── val.txt
-              └── test.txt
-              └── dog_train.txt
-              └── dog_trainval.txt
-              └── dog_val.txt
-              └── dog_test.txt
-              └── ...
-  │   ├──Layout
-               └──...
-  │   ├── Segmentation
-                └──...
-  ├── JPEGImages
-  │   ├── 000050.jpg
-  │   ├── 003876.jpg
+  dataset/voc/
+  ├── train.txt
+  ├── val.txt
+  ├── test.txt
+  ├── label_list.txt (optional)
+  ├── VOCdevkit/VOC2007
+  │   ├── Annotations
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 001789.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
+  ├── VOCdevkit/VOC2012
+  │   ├── Annotations
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── JPEGImages 
+  │       ├── 003876.xml
+  │       |   ...
+  │   ├── ImageSets
+  │       |   ...
   |   ...
   ```
 
-
+**说明：** 如果你在yaml配置文件中设置`use_default_label=False`, 将从`label_list.txt`
+中读取类别列表，反之则可以没有`label_list.txt`文件，检测库会使用Pascal VOC数据集的默
+认类别列表，默认类别列表定义在[voc\_loader.py](../ppdet/data/source/voc_loader.py)
 
 - Roidb数据源
     该数据集主要由COCO数据集和Pascal VOC数据集转换而成的pickle文件，包含一个dict，而dict中只包含一个命名为‘records’的list（可能还有一个命名为‘cname2cid’的字典），其内容如下所示：
