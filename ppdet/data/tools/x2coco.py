@@ -44,13 +44,21 @@ def getbbox(self, points):
     return self.mask2box(mask)
 
 
-def images(data, num):
+def images_labelme(data, num):
     image = {}
     image['height'] = data['imageHeight']
     image['width'] = data['imageWidth']
     image['id'] = num + 1
     image['file_name'] = data['imagePath'].split('/')[-1]
     return image
+
+def images_cityscape(data, num, img_file):
+    image = {}
+    image['height'] = data['imgHeight']
+    image['width'] = data['imgWidth']
+    image['id'] = num + 1
+    image['file_name'] = img_file
+    return image 
 
 
 def categories(label, labels_list):
@@ -112,7 +120,7 @@ def get_bbox(height, width, points):
     ]
 
 
-def deal_json(img_path, json_path):
+def deal_json(ds_type, img_path, json_path):
     data_coco = {}
     label_to_num = {}
     images_list = []
@@ -120,34 +128,52 @@ def deal_json(img_path, json_path):
     annotations_list = []
     labels_list = []
     image_num = -1
+    object_num = -1
     for img_file in os.listdir(img_path):
         img_label = img_file.split('.')[0]
+        if img_file.split('.')[-1] not in ['bmp', 'jpg', 'jpeg', 'png', 'JPEG', 'JPG', 'PNG']:
+            continue
         label_file = osp.join(json_path, img_label + '.json')
         print('Generating dataset from:', label_file)
         image_num = image_num + 1
         with open(label_file) as f:
             data = json.load(f)
-            images_list.append(images(data, image_num))
-            object_num = -1
-            for shapes in data['shapes']:
-                object_num = object_num + 1
-                label = shapes['label']
-                if label not in labels_list:
-                    categories_list.append(categories(label, labels_list))
-                    labels_list.append(label)
-                    label_to_num[label] = len(labels_list)
-                points = shapes['points']
-                p_type = shapes['shape_type']
-                if p_type == 'polygon':
-                    annotations_list.append(
-                        annotations_polygon(data['imageHeight'], data[
-                            'imageWidth'], points, label, image_num, object_num, label_to_num))
+            if ds_type == 'labelme':
+                images_list.append(images_labelme(data, image_num))
+            elif ds_type == 'cityscape':
+                images_list.append(images_cityscape(data, image_num, img_file)) 
+            if ds_type == 'labelme':
+                for shapes in data['shapes']:
+                    object_num = object_num + 1
+                    label = shapes['label']
+                    if label not in labels_list:
+                        categories_list.append(categories(label, labels_list))
+                        labels_list.append(label)
+                        label_to_num[label] = len(labels_list)
+                    points = shapes['points']
+                    p_type = shapes['shape_type']
+                    if p_type == 'polygon':
+                        annotations_list.append(
+                            annotations_polygon(data['imageHeight'], data[
+                                'imageWidth'], points, label, image_num, object_num, label_to_num))
 
-                if p_type == 'rectangle':
-                    points.append([points[0][0], points[1][1]])
-                    points.append([points[1][0], points[0][1]])
+                    if p_type == 'rectangle':
+                        points.append([points[0][0], points[1][1]])
+                        points.append([points[1][0], points[0][1]])
+                        annotations_list.append(
+                            annotations_rectangle(points, label, image_num, object_num, label_to_num))
+            elif ds_type == 'cityscape':
+                for shapes in data['objects']:
+                    object_num = object_num + 1
+                    label = shapes['label']
+                    if label not in labels_list:
+                        categories_list.append(categories(label, labels_list))
+                        labels_list.append(label)
+                        label_to_num[label] = len(labels_list)
+                    points = shapes['polygon']
                     annotations_list.append(
-                        annotations_rectangle(points, label, image_num, object_num, label_to_num))
+                        annotations_polygon(data['imgHeight'], data[
+                            'imgWidth'], points, label, image_num, object_num, label_to_num))
     data_coco['images'] = images_list
     data_coco['categories'] = categories_list
     data_coco['annotations'] = annotations_list
@@ -157,6 +183,7 @@ def deal_json(img_path, json_path):
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--dataset_type', help='the type of dataset')
     parser.add_argument('--json_input_dir', help='input annotated directory')
     parser.add_argument('--image_input_dir', help='image directory')
     parser.add_argument(
@@ -177,6 +204,11 @@ def main():
         type=float,
         default=0.0)
     args = parser.parse_args()
+    try:
+        assert args.dataset_type in ['labelme', 'cityscape']
+    except AssertionError as e:
+        print('Now only support the cityscape dataset and labelme dataset!!')
+        os._exit(0)
     try:
         assert os.path.exists(args.json_input_dir)
     except AssertionError as e:
@@ -234,7 +266,8 @@ def main():
     if not os.path.exists(args.output_dir + '/annotations'):
         os.makedirs(args.output_dir + '/annotations')
     if args.train_proportion != 0:
-        train_data_coco = deal_json(args.output_dir + '/train',
+        train_data_coco = deal_json(args.dataset_type,
+                                    args.output_dir + '/train',
                                     args.json_input_dir)
         train_json_path = osp.join(args.output_dir + '/annotations',
                                    'instance_train.json')

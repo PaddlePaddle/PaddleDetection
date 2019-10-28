@@ -25,7 +25,7 @@ import hashlib
 import tarfile
 import zipfile
 
-from .voc_utils import merge_and_create_list
+from .voc_utils import create_list
 
 import logging
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ DATASETS = {
         (
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
             'b6e924de25625d8de591ea690078ad9f', ),
-    ], ["VOCdevkit/VOC_all"]),
+    ], ["VOCdevkit/VOC2012", "VOCdevkit/VOC2007"]),
     'wider_face': ([
         (
             'https://dataset.bj.bcebos.com/wider_face/WIDER_train.zip',
@@ -85,7 +85,8 @@ def get_weights_path(url):
     """Get weights path from WEIGHT_HOME, if not exists,
     download it from url.
     """
-    return get_path(url, WEIGHTS_HOME)
+    path, _ = get_path(url, WEIGHTS_HOME)
+    return path
 
 
 def get_dataset_path(path, annotation, image_dir):
@@ -107,19 +108,26 @@ def get_dataset_path(path, annotation, image_dir):
                         "{}".format(path, name))
             data_dir = osp.join(DATASET_HOME, name)
 
-            # For voc, only check merged dir VOC_all
+            # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name == 'voc':
-                check_dir = osp.join(data_dir, dataset[1][0])
-                if osp.exists(check_dir):
-                    logger.info("Found {}".format(check_dir))
+                exists = True
+                for sub_dir in dataset[1]:
+                    check_dir = osp.join(data_dir, sub_dir)
+                    if osp.exists(check_dir):
+                        logger.info("Found {}".format(check_dir))
+                    else:
+                        exists = False
+                if exists:
                     return data_dir
 
+            # voc exist is checked above, voc is not exist here
+            check_exist = name != 'voc'
             for url, md5sum in dataset[0]:
-                get_path(url, data_dir, md5sum)
+                get_path(url, data_dir, md5sum, check_exist)
 
-            # voc should merge dir and create list after download
+            # voc should create list after download
             if name == 'voc':
-                _merge_voc_dir(data_dir, dataset[1][0])
+                create_voc_list(data_dir)
             return data_dir
 
     # not match any dataset in DATASETS
@@ -129,26 +137,17 @@ def get_dataset_path(path, annotation, image_dir):
                                                          osp.split(path)[-1]))
 
 
-def _merge_voc_dir(data_dir, output_subdir):
-    logger.info("Download voc dataset successed, merge "
-                "VOC2007 and VOC2012 to VOC_all...")
-    output_dir = osp.join(data_dir, output_subdir)
-    devkit_dir = "/".join(output_dir.split('/')[:-1])
+def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
+    logger.info("Create voc file list...")
+    devkit_dir = osp.join(data_dir, devkit_subdir)
     years = ['2007', '2012']
-    # merge dir in output_tmp_dir at first, move to 
-    # output_dir after merge sucessed.
-    output_tmp_dir = osp.join(data_dir, 'tmp')
-    if osp.isdir(output_tmp_dir):
-        shutil.rmtree(output_tmp_dir)
+
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
     # label, see ../data/source/voc_loader.py
-    merge_and_create_list(devkit_dir, years, output_tmp_dir)
-    shutil.move(output_tmp_dir, output_dir)
-    # remove source directory VOC2007 and VOC2012
-    shutil.rmtree(osp.join(devkit_dir, "VOC2007"))
-    shutil.rmtree(osp.join(devkit_dir, "VOC2012"))
+    create_list(devkit_dir, years, data_dir)
+    logger.info("Create voc file list finished")
 
 
 def map_path(url, root_dir):
@@ -161,7 +160,7 @@ def map_path(url, root_dir):
     return osp.join(root_dir, fpath)
 
 
-def get_path(url, root_dir, md5sum=None):
+def get_path(url, root_dir, md5sum=None, check_exist=True):
     """ Download from given url to root_dir.
     if file or directory specified by url is exists under
     root_dir, return the path directly, otherwise download
@@ -178,20 +177,25 @@ def get_path(url, root_dir, md5sum=None):
     # For same zip file, decompressed directory name different
     # from zip file name, rename by following map
     decompress_name_map = {
-        "VOC": "VOCdevkit/VOC_all",
+        "VOCtrainval_11-May-2012": "VOCdevkit/VOC2012",
+        "VOCtrainval_06-Nov-2007": "VOCdevkit/VOC2007",
+        "VOCtest_06-Nov-2007": "VOCdevkit/VOC2007",
         "annotations_trainval": "annotations"
     }
     for k, v in decompress_name_map.items():
         if fullpath.find(k) >= 0:
             fullpath = '/'.join(fullpath.split('/')[:-1] + [v])
 
-    if osp.exists(fullpath):
+    exist_flag = False
+    if osp.exists(fullpath) and check_exist:
+        exist_flag = True
         logger.info("Found {}".format(fullpath))
     else:
+        exist_flag = False
         fullname = _download(url, root_dir, md5sum)
         _decompress(fullname)
 
-    return fullpath
+    return fullpath, exist_flag
 
 
 def download_dataset(path, dataset=None):
@@ -201,9 +205,7 @@ def download_dataset(path, dataset=None):
         return
     dataset_info = DATASETS[dataset][0]
     for info in dataset_info:
-        get_path(info[0], path, info[1])
-    if dataset == 'voc':
-        _merge_voc_dir(path, DATASETS[dataset][1][0])
+        get_path(info[0], path, info[1], False)
     logger.info("Download dataset {} finished.".format(dataset))
 
 

@@ -64,8 +64,7 @@ SSDTrainFeed:
   batch_size: 8
   dataset:
     dataset_dir: dataset/voc
-    annotation: VOCdevkit/VOC_all/ImageSets/Main/train.txt
-    image_dir: VOCdevkit/VOC_all/JPEGImages
+    annotation: trainval.txt
     use_default_label: true
   image_shape: [3, 300, 300]
   sample_transforms:
@@ -109,8 +108,7 @@ SSDEvalFeed:
   batch_size: 32
   dataset:
     dataset_dir: dataset/voc
-    annotation: VOCdevkit/VOC_all/ImageSets/Main/val.txt
-    image_dir: VOCdevkit/VOC_all/JPEGImages
+    annotation: test.txt
     use_default_label: true
   drop_last: false
   image_shape: [3, 300, 300]

@@ -192,6 +192,28 @@ FasterRCNNEvalFeed:
     dataset_dir: dataset/objects365
     annotation: annotations/val.json
     image_dir: val
+  sample_transforms: 
+  - !DecodeImage
+    to_rgb: False
+    with_mixup: False
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: False
+    mean:
+    - 102.9801 
+    - 115.9465
+    - 122.7717
+    std:
+    - 1.0 
+    - 1.0 
+    - 1.0 
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+  - !Permute
+    channel_first: true
+    to_bgr: false
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
@@ -200,6 +222,24 @@ FasterRCNNTestFeed:
   batch_size: 1
   dataset:
     annotation: dataset/obj365/annotations/val.json
+  sample_transforms: 
+  - !DecodeImage
+    to_rgb: False
+    with_mixup: False
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: False
+    mean:
+    - 102.9801 
+    - 115.9465
+    - 122.7717
+    std:
+    - 1.0 
+    - 1.0 
+    - 1.0 
+  - !Permute
+    channel_first: true
+    to_bgr: false
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32

@@ -62,7 +62,7 @@ class RoiDbSource(Dataset):
         assert os.path.isfile(anno_file) or os.path.isdir(anno_file), \
                 'anno_file {} is not a file or a directory'.format(anno_file)
         self._fname = anno_file
-        self._image_dir = image_dir
+        self._image_dir = image_dir if image_dir is not None else ''
         if image_dir is not None:
             assert os.path.isdir(image_dir), \
                     'image_dir {} is not a directory'.format(image_dir)

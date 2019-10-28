@@ -219,7 +219,7 @@ class DataSet(object):
 
     def __init__(self,
                  annotation,
-                 image_dir,
+                 image_dir=None,
                  dataset_dir=None,
                  use_default_label=None):
         super(DataSet, self).__init__()
@@ -229,7 +229,7 @@ class DataSet(object):
         self.use_default_label = use_default_label
 
 
-COCO_DATASET_DIR = 'coco'
+COCO_DATASET_DIR = 'dataset/coco'
 COCO_TRAIN_ANNOTATION = 'annotations/instances_train2017.json'
 COCO_TRAIN_IMAGE_DIR = 'train2017'
 COCO_VAL_ANNOTATION = 'annotations/instances_val2017.json'
@@ -246,12 +246,11 @@ class CocoDataSet(DataSet):
             dataset_dir=dataset_dir, annotation=annotation, image_dir=image_dir)
 
 
-VOC_DATASET_DIR = 'pascalvoc'
-VOC_TRAIN_ANNOTATION = 'VOCdevkit/VOC_all/ImageSets/Main/train.txt'
-VOC_VAL_ANNOTATION = 'VOCdevkit/VOC_all/ImageSets/Main/val.txt'
-VOC_TEST_ANNOTATION = 'VOCdevkit/VOC_all/ImageSets/Main/test.txt'
-VOC_IMAGE_DIR = 'VOCdevkit/VOC_all/JPEGImages'
-VOC_USE_DEFAULT_LABEL = None
+VOC_DATASET_DIR = 'dataset/voc'
+VOC_TRAIN_ANNOTATION = 'train.txt'
+VOC_VAL_ANNOTATION = 'val.txt'
+VOC_IMAGE_DIR = None
+VOC_USE_DEFAULT_LABEL = True
 
 
 @serializable
@@ -843,7 +842,7 @@ class SSDTestFeed(DataFeed):
     __doc__ = DataFeed.__doc__
 
     def __init__(self,
-                 dataset=SimpleDataSet(VOC_TEST_ANNOTATION).__dict__,
+                 dataset=SimpleDataSet(VOC_VAL_ANNOTATION).__dict__,
                  fields=['image', 'im_id', 'im_shape'],
                  image_shape=[3, 300, 300],
                  sample_transforms=[
