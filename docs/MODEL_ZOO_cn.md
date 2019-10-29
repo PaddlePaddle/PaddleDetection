@@ -95,7 +95,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### Yolo v3
 
 | 骨架网络     | 预训练数据集 | 输入尺寸 | 加入deformable卷积 | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | 下载 |
-| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: |
+| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: | :-------: |
 | DarkNet53    | ImageNet | 608  |  否    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
 | DarkNet53    | ImageNet | 416  |  否    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
 | DarkNet53    | ImageNet | 320  |  否    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |

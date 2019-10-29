@@ -97,21 +97,8 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 
 ### Yolo v3
 
-| Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           |
-| :----------- | :--: | :-------: | :-----: | :------------: | :----: | :----------------------------------------------------------: |
-| DarkNet53    | 608  |     8     |  270e   |     45.571     |  38.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | 416  |     8     |  270e   |       -        |  37.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | 320  |     8     |  270e   |       -        |  34.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| MobileNet-V1 | 608  |     8     |  270e   |     78.302     |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | 416  |     8     |  270e   |       -        |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | 320  |     8     |  270e   |       -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| ResNet34     | 608  |     8     |  270e   |     63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | 416  |     8     |  270e   |       -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | 320  |     8     |  270e   |       -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-### Yolo v3
-
 | Backbone     | Pretrain dataset | Size | deformable Conv | Image/gpu | Lr schd | Inf time (fps) | Box AP |  Download |
-| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: |
+| :----------- | :--------: | :-----: | :-----: |:------------: |:----: | :-------: | :----: | :-------: |
 | DarkNet53    | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
 | DarkNet53    | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
 | DarkNet53    | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
