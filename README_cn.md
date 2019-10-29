@@ -4,6 +4,8 @@
 
 PaddleDetection的目的是为工业界和学术界提供丰富、易用的目标检测模型。不仅性能优越、易于部署，而且能够灵活的满足算法研究的需求。
 
+**目前检测库下模型均要求使用PaddlePaddle 1.6及以上版本或适当的develop版本。**
+
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
 </div>

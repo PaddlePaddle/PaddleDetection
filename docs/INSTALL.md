@@ -22,7 +22,7 @@ For general information about PaddleDetection, please see [README.md](../README.
 
 ## PaddlePaddle
 
-Running PaddleDetection requires PaddlePaddle Fluid v.1.5 and later. please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
+Running PaddleDetection requires PaddlePaddle Fluid v.1.6 and later. please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
 Please make sure your PaddlePaddle installation was successful and the version
 of your PaddlePaddle is not lower than required. Verify with the following commands.
@@ -170,7 +170,7 @@ python dataset/voc/create_list.py
   │   ├── Annotations
   │       ├── 001789.xml
   │       |   ...
-  │   ├── JPEGImages 
+  │   ├── JPEGImages
   │       ├── 001789.xml
   │       |   ...
   │   ├── ImageSets
@@ -179,7 +179,7 @@ python dataset/voc/create_list.py
   │   ├── Annotations
   │       ├── 003876.xml
   │       |   ...
-  │   ├── JPEGImages 
+  │   ├── JPEGImages
   │       ├── 003876.xml
   │       |   ...
   │   ├── ImageSets
@@ -189,7 +189,7 @@ python dataset/voc/create_list.py
 
 **NOTE:** If you set `use_default_label=False` in yaml configs, the `label_list.txt`
 of Pascal VOC dataset will be read, otherwise, `label_list.txt` is unnecessary and
-the default Pascal VOC label list which defined in 
+the default Pascal VOC label list which defined in
 [voc\_loader.py](../ppdet/data/source/voc_loader.py) will be used.
 
 **Download datasets automatically:**

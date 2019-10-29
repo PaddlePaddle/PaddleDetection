@@ -108,6 +108,25 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet34     | 608  |     8     |  270e   |     63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34     | 416  |     8     |  270e   |       -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34     | 320  |     8     |  270e   |       -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+### Yolo v3
+
+| Backbone     | Pretrain dataset | Size | deformable Conv | Image/gpu | Lr schd | Inf time (fps) | Box AP |  Download |
+| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: |
+| DarkNet53    | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53    | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53    | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| MobileNet-V1 | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1 | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1 | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| ResNet34     | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34     | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34     | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet50_vd  | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
+| ResNet50_vd  | ImageNet | 416  |  True     |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
+| ResNet50_vd  | ImageNet | 320  |  True     |    8    |   270e  |      -        |  33.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
+| ResNet50_vd  | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
+| ResNet50_vd  | Object365 | 416  |  True    |    8    |   270e  |      -        |  38.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
+| ResNet50_vd  | Object365 | 320  |  True    |    8    |   270e  |      -        |  34.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
 
 ### Yolo v3 on Pascal VOC
@@ -127,7 +146,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 **Notes:** Yolo v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
 randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. Yolo v3 used randomly
 reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
-results of image size 608/416/320 above.
+results of image size 608/416/320 above. Deformable conv is added on stage 5 of backbone.
 
 ### RetinaNet
 

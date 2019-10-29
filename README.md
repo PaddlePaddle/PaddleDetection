@@ -7,6 +7,7 @@ detection models in both industry and research settings. We design
 PaddleDetection to be not only performant, production-ready but also highly
 flexible, catering to research needs.
 
+**Now all models in PaddleDetection require PaddlePaddle version 1.6 or higher, or suitable develop version.**
 
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
