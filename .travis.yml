@@ -26,8 +26,6 @@ script:
   - .travis/precommit.sh || exit_code=$(( exit_code | $? ))
   - docker run -i --rm -v "$PWD:/py_unittest" paddlepaddle/paddle:latest /bin/bash -c
     'cd /py_unittest; sh .travis/unittest.sh' || exit_code=$(( exit_code | $? ))
-  - |
-    script/deploy_doc.sh
 
 notifications:
   email:
