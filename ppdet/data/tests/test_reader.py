@@ -132,6 +132,7 @@ class TestReader(unittest.TestCase):
     def test_create(self):
         """ Test create a reader using my source
         """
+
         def _my_data_reader():
             mydata = build_source(self.rcnn_conf['DATA']['TRAIN'])
             for i, sample in enumerate(mydata):
@@ -139,10 +140,12 @@ class TestReader(unittest.TestCase):
 
         my_source = IteratorSource(_my_data_reader)
         mode = 'TRAIN'
-        train_rd = Reader.create(mode,
+        train_rd = Reader.create(
+            mode,
             self.rcnn_conf['DATA'][mode],
             self.rcnn_conf['TRANSFORM'][mode],
-            max_iter=10, my_source=my_source)
+            max_iter=10,
+            my_source=my_source)
 
         out = None
         for sample in train_rd():

@@ -43,15 +43,13 @@ class VGG(object):
                  with_extra_blocks=False,
                  normalizations=[20., -1, -1, -1, -1, -1],
                  extra_block_filters=[[256, 512, 1, 2, 3], [128, 256, 1, 2, 3],
-                                      [128, 256, 0, 1, 3], [128, 256, 0, 1, 3]]):
+                                      [128, 256, 0, 1, 3],
+                                      [128, 256, 0, 1, 3]]):
         assert depth in [16, 19], \
             "depth {} not in [16, 19]"
 
         self.depth = depth
-        self.depth_cfg = {
-            16: [2, 2, 3, 3, 3],
-            19: [2, 2, 4, 4, 4]
-        }
+        self.depth_cfg = {16: [2, 2, 3, 3, 3], 19: [2, 2, 4, 4, 4]}
         self.with_extra_blocks = with_extra_blocks
         self.normalizations = normalizations
         self.extra_block_filters = extra_block_filters
@@ -77,7 +75,8 @@ class VGG(object):
         conv = input
         layers = []
         for k, v in enumerate(vgg_base):
-            conv = self._conv_block(conv, v, nums[k], name="conv{}_".format(k + 1))
+            conv = self._conv_block(
+                conv, v, nums[k], name="conv{}_".format(k + 1))
             layers.append(conv)
             if k == 4:
                 conv = self._pooling_block(conv, 3, 1, pool_padding=1)
@@ -95,8 +94,14 @@ class VGG(object):
         layers = []
         for k, v in enumerate(cfg):
             assert len(v) == 5, "extra_block_filters size not fix"
-            conv = self._extra_block(conv, v[0], v[1],
-                                     v[2], v[3], v[4], name="conv{}_".format(6 + k))
+            conv = self._extra_block(
+                conv,
+                v[0],
+                v[1],
+                v[2],
+                v[3],
+                v[4],
+                name="conv{}_".format(6 + k))
             layers.append(conv)
 
         return layers
@@ -144,15 +149,15 @@ class VGG(object):
         return conv_2
 
     def _conv_layer(self,
-                   input,
-                   num_filters,
-                   filter_size,
-                   stride,
-                   padding,
-                   dilation=1,
-                   act='relu',
-                   use_cudnn=True,
-                   name=None):
+                    input,
+                    num_filters,
+                    filter_size,
+                    stride,
+                    padding,
+                    dilation=1,
+                    act='relu',
+                    use_cudnn=True,
+                    name=None):
         conv = fluid.layers.conv2d(
             input=input,
             num_filters=num_filters,
@@ -195,6 +200,8 @@ class VGG(object):
             dtype=input.dtype,
             default_initializer=Constant(init_scale))
         out = fluid.layers.elementwise_mul(
-            x=l2_norm, y=scale, axis=-1 if channel_shared else 1,
+            x=l2_norm,
+            y=scale,
+            axis=-1 if channel_shared else 1,
             name="conv4_3_norm_scale")
         return out

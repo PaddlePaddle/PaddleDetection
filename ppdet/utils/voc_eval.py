@@ -28,9 +28,7 @@ from .coco_eval import bbox2out
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    'bbox_eval', 'bbox2out', 'get_category_info'
-]
+__all__ = ['bbox_eval', 'bbox2out', 'get_category_info']
 
 
 def bbox_eval(results,
@@ -57,11 +55,12 @@ def bbox_eval(results,
     assert 'bbox' in results[0]
     logger.info("Start evaluate...")
 
-    detection_map = DetectionMAP(class_num=class_num,
-                        overlap_thresh=overlap_thresh,
-                        map_type=map_type,
-                        is_bbox_normalized=is_bbox_normalized,
-                        evaluate_difficult=evaluate_difficult)
+    detection_map = DetectionMAP(
+        class_num=class_num,
+        overlap_thresh=overlap_thresh,
+        map_type=map_type,
+        is_bbox_normalized=is_bbox_normalized,
+        evaluate_difficult=evaluate_difficult)
 
     for t in results:
         bboxes = t['bbox'][0]
@@ -84,9 +83,9 @@ def bbox_eval(results,
                 difficult = None if difficults is None \
                                 else difficults[i]
                 bbox_num = bbox_lengths[i]
-                bbox = bboxes[bbox_idx: bbox_idx + bbox_num]
+                bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
                 gt_box, gt_label, difficult = prune_zero_padding(
-                                        gt_box, gt_label, difficult)
+                    gt_box, gt_label, difficult)
                 detection_map.update(bbox, gt_box, gt_label, difficult)
                 bbox_idx += bbox_num
         else:
@@ -97,9 +96,9 @@ def bbox_eval(results,
             for i in range(len(bbox_lengths)):
                 bbox_num = bbox_lengths[i]
                 gt_box_num = gt_box_lengths[i]
-                bbox = bboxes[bbox_idx: bbox_idx + bbox_num]
-                gt_box = gt_boxes[gt_box_idx: gt_box_idx + gt_box_num]
-                gt_label = gt_labels[gt_box_idx: gt_box_idx + gt_box_num]
+                bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+                gt_box = gt_boxes[gt_box_idx:gt_box_idx + gt_box_num]
+                gt_label = gt_labels[gt_box_idx:gt_box_idx + gt_box_num]
                 difficult = None if difficults is None else \
                             difficults[gt_box_idx: gt_box_idx + gt_box_num]
                 detection_map.update(bbox, gt_box, gt_label, difficult)
@@ -109,8 +108,8 @@ def bbox_eval(results,
     logger.info("Accumulating evaluatation results...")
     detection_map.accumulate()
     map_stat = 100. * detection_map.get_map()
-    logger.info("mAP({:.2f}, {}) = {:.2f}".format(overlap_thresh,
-                            map_type, map_stat))
+    logger.info("mAP({:.2f}, {}) = {:.2f}".format(overlap_thresh, map_type,
+                                                  map_stat))
     return map_stat
 
 
@@ -121,8 +120,8 @@ def prune_zero_padding(gt_box, gt_label, difficult=None):
                 gt_box[i, 2] == 0 and gt_box[i, 3] == 0:
             break
         valid_cnt += 1
-    return (gt_box[:valid_cnt], gt_label[:valid_cnt],
-            difficult[:valid_cnt] if difficult is not None else None)
+    return (gt_box[:valid_cnt], gt_label[:valid_cnt], difficult[:valid_cnt]
+            if difficult is not None else None)
 
 
 def get_category_info(anno_file=None,

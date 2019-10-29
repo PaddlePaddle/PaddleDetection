@@ -71,11 +71,9 @@ DATASETS = {
             'https://dataset.bj.bcebos.com/wider_face/wider_face_split.zip',
             'a4a898d6193db4b9ef3260a68bad0dc7', ),
     ], ["WIDER_train", "WIDER_val", "wider_face_split"]),
-    'fruit': ([
-        (
-            'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
-            '374554a7633b1b68d6a5fbb7c061b8ba', ),
-    ], ["fruit-detection"]),
+    'fruit': ([(
+        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
+        '374554a7633b1b68d6a5fbb7c061b8ba', ), ], ["fruit-detection"]),
 }
 
 DOWNLOAD_RETRY_LIMIT = 3

@@ -77,10 +77,11 @@ def _walk_voc_dir(devkit_dir, year, output_dir):
                 if name_prefix in added:
                     continue
                 added.add(name_prefix)
-                ann_path = osp.join(osp.relpath(annotation_dir, output_dir),
-                                    name_prefix + '.xml')
-                img_path = osp.join(osp.relpath(img_dir, output_dir),
-                                    name_prefix + '.jpg')
+                ann_path = osp.join(
+                    osp.relpath(annotation_dir, output_dir),
+                    name_prefix + '.xml')
+                img_path = osp.join(
+                    osp.relpath(img_dir, output_dir), name_prefix + '.jpg')
                 img_ann_list.append((img_path, ann_path))
 
     return trainval_list, test_list

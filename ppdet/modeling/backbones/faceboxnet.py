@@ -34,9 +34,7 @@ class FaceBoxNet(object):
         lite_edition (bool): whether or not is FaceBoxes-lite
     """
 
-    def __init__(self,
-                 with_extra_blocks=True,
-                 lite_edition=False):
+    def __init__(self, with_extra_blocks=True, lite_edition=False):
         super(FaceBoxNet, self).__init__()
 
         self.with_extra_blocks = with_extra_blocks
@@ -212,17 +210,16 @@ class FaceBoxNet(object):
 
         return layers[-3], layers[-2], layers[-1]
 
-    def _conv_norm(
-            self,
-            input,
-            filter_size,
-            num_filters,
-            stride,
-            padding,
-            num_groups=1,
-            act='relu',
-            use_cudnn=True,
-            name=None):
+    def _conv_norm(self,
+                   input,
+                   filter_size,
+                   num_filters,
+                   stride,
+                   padding,
+                   num_groups=1,
+                   act='relu',
+                   use_cudnn=True,
+                   name=None):
         parameter_attr = ParamAttr(
             learning_rate=0.1,
             initializer=fluid.initializer.MSRA(),
@@ -240,17 +237,16 @@ class FaceBoxNet(object):
             bias_attr=False)
         return fluid.layers.batch_norm(input=conv, act=act)
 
-    def _conv_norm_crelu(
-            self,
-            input,
-            filter_size,
-            num_filters,
-            stride,
-            padding,
-            num_groups=1,
-            act='relu',
-            use_cudnn=True,
-            name=None):
+    def _conv_norm_crelu(self,
+                         input,
+                         filter_size,
+                         num_filters,
+                         stride,
+                         padding,
+                         num_groups=1,
+                         act='relu',
+                         use_cudnn=True,
+                         name=None):
         parameter_attr = ParamAttr(
             learning_rate=0.1,
             initializer=fluid.initializer.MSRA(),
@@ -358,7 +354,6 @@ class FaceBoxNet(object):
             act='relu',
             name='inceptionA_' + idx + '_conv4_3')
 
-        concat = fluid.layers.concat(
-                [conv1, conv2, conv3, conv4], axis=1)
+        concat = fluid.layers.concat([conv1, conv2, conv3, conv4], axis=1)
 
         return concat

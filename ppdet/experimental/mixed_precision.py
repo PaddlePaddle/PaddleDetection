@@ -23,8 +23,10 @@ from paddle.fluid import unique_name
 import paddle.fluid.layer_helper_base as lhb
 import paddle.fluid.optimizer as optim
 
-__all__ = ['mixed_precision_global_state', 'mixed_precision_context',
-           'StaticLossScale', 'DynamicLossScale']
+__all__ = [
+    'mixed_precision_global_state', 'mixed_precision_context',
+    'StaticLossScale', 'DynamicLossScale'
+]
 
 _mixed_precision_global_state = None
 
@@ -134,8 +136,8 @@ class DynamicLossScale(LossScale):
                 with layers.Switch() as switch2:
                     with switch2.case(scale_valid):
                         layers.assign(new_scale, self.scale)
-                        layers.assign(layers.zeros_like(self.good_steps),
-                                      self.good_steps)
+                        layers.assign(
+                            layers.zeros_like(self.good_steps), self.good_steps)
                     with switch2.default():
                         layers.increment(self.good_steps)
             with switch.default():
@@ -151,8 +153,7 @@ class DynamicLossScale(LossScale):
             with switch.default():
                 layers.assign(new_scale, self.scale)
 
-        layers.assign(layers.zeros_like(self.good_steps),
-                      self.good_steps)
+        layers.assign(layers.zeros_like(self.good_steps), self.good_steps)
 
 
 class mixed_precision_context(object):
@@ -197,7 +198,7 @@ class mixed_precision_context(object):
         if not enabled:
             return
         monkey_patch()
-        if isinstance(loss_scale, six.integer_types + (float,)):
+        if isinstance(loss_scale, six.integer_types + (float, )):
             self.loss_scale = StaticLossScale(loss_scale)
         elif loss_scale == 'dynamic':
             self.loss_scale = DynamicLossScale()
@@ -243,8 +244,8 @@ def create_parameter(self,
     if is_half and mp_state is not None:
         dtype = 'float32'
 
-    param = self._create_parameter(attr, shape, dtype,
-                                   is_bias, default_initializer)
+    param = self._create_parameter(attr, shape, dtype, is_bias,
+                                   default_initializer)
     if not is_half or mp_state is None:
         return param
 

@@ -35,11 +35,7 @@ class SimpleSource(Dataset):
         load_img (bool): should images be loaded
     """
 
-    def __init__(self,
-                 images=[],
-                 samples=-1,
-                 load_img=True,
-                 **kwargs):
+    def __init__(self, images=[], samples=-1, load_img=True, **kwargs):
         super(SimpleSource, self).__init__()
         self._epoch = -1
         for image in images:
