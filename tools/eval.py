@@ -39,7 +39,6 @@ from ppdet.utils.check import check_gpu, check_version
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils.cli import ArgsParser
 
 import logging
@@ -63,7 +62,6 @@ def main():
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    print_total_cfg(cfg)
 
     if 'eval_feed' not in cfg:
         eval_feed = create(main_arch + 'EvalFeed')
