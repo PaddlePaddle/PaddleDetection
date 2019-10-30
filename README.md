@@ -65,7 +65,7 @@ Advanced Features:
 
 - [Installation guide](docs/INSTALL.md)
 - [Quick start on small dataset](docs/QUICK_STARTED.md)
-- [Guide to traing, evaluate and arguments description](docs/GETTING_STARTED.md)
+- For detailed training and evaluation workflow, please refer to [GETTING_STARTED](docs/GETTING_STARTED.md)
 - [Guide to preprocess pipeline and custom dataset](docs/DATA.md)
 - [Introduction to the configuration workflow](docs/CONFIG.md)
 - [Examples for detailed configuration explanation](docs/config_example/)
@@ -80,13 +80,13 @@ Advanced Features:
 
 ## Model compression
 
-- [ Quantification aware training example](slim/quantization)
-- [ Pruning compression example](slim/prune)
+- [Quantization-aware training example](slim/quantization)
+- [Model pruning example](slim/prune)
 
-## Depoly
+## Deployment
 
-- [Export model for inference depolyment](docs/EXPORT_MODEL.md)
-- [C++ inference depolyment](inference/README.md)
+- [Export model for inference](docs/EXPORT_MODEL.md)
+- [C++ inference](inference/README.md)
 
 ## Benchmark
 
