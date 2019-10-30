@@ -55,7 +55,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 - [安装说明](docs/INSTALL_cn.md)
 - [快速开始](docs/QUICK_STARTED_cn.md)
-- [训练、评估及参数说明](docs/GETTING_STARTED_cn.md)
+- [训练、评估流程](docs/GETTING_STARTED_cn.md)
 - [数据预处理及自定义数据集](docs/DATA_cn.md)
 - [配置模块设计和介绍](docs/CONFIG_cn.md)
 - [详细的配置信息和参数说明示例](docs/config_example/)
