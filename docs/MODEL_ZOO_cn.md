@@ -106,11 +106,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet34     | ImageNet | 416  |  否    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34     | ImageNet | 320  |  否    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet50_vd  | ImageNet | 608  |  是    |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
-| ResNet50_vd  | ImageNet | 416  |  是    |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
-| ResNet50_vd  | ImageNet | 320  |  是    |    8    |   270e  |      -        |  33.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
 | ResNet50_vd  | Object365 | 608  |  是    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
-| ResNet50_vd  | Object365 | 416  |  是    |    8    |   270e  |      -        |  38.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
-| ResNet50_vd  | Object365 | 320  |  是    |    8    |   270e  |      -        |  34.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
 ### Yolo v3 基于Pasacl VOC数据集
 

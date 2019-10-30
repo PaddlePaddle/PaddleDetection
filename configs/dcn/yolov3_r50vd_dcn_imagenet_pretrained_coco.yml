@@ -9,7 +9,7 @@ save_dir: output
 snapshot_iter: 20000
 metric: COCO
 pretrain_weights: /paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar 
-weights: output/yolov3_r50vd_dcn_imagenet/model_final
+weights: output/yolov3_r50vd_dcn_imagenet_pretrained_coco/model_final
 num_classes: 80
 
 YOLOv3:
@@ -49,7 +49,7 @@ LearningRate:
     gamma: 0.1
     milestones:
     - 400000
-    - 500000
+    - 450000
   - !LinearWarmup
     start_factor: 0.
     steps: 4000

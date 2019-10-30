@@ -109,11 +109,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet34     | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34     | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet50_vd  | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
-| ResNet50_vd  | ImageNet | 416  |  True     |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
-| ResNet50_vd  | ImageNet | 320  |  True     |    8    |   270e  |      -        |  33.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_imagenet_pretrained_coco.tar) |
 | ResNet50_vd  | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
-| ResNet50_vd  | Object365 | 416  |  True    |    8    |   270e  |      -        |  38.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
-| ResNet50_vd  | Object365 | 320  |  True    |    8    |   270e  |      -        |  34.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
 
 ### Yolo v3 on Pascal VOC
