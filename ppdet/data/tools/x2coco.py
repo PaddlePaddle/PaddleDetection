@@ -52,13 +52,14 @@ def images_labelme(data, num):
     image['file_name'] = data['imagePath'].split('/')[-1]
     return image
 
+
 def images_cityscape(data, num, img_file):
     image = {}
     image['height'] = data['imgHeight']
     image['width'] = data['imgWidth']
     image['id'] = num + 1
     image['file_name'] = img_file
-    return image 
+    return image
 
 
 def categories(label, labels_list):
@@ -88,7 +89,8 @@ def annotations_rectangle(points, label, image_num, object_num, label_to_num):
     return annotation
 
 
-def annotations_polygon(height, width, points, label, image_num, object_num, label_to_num):
+def annotations_polygon(height, width, points, label, image_num, object_num,
+                        label_to_num):
     annotation = {}
     annotation['segmentation'] = [list(np.asarray(points).flatten())]
     annotation['iscrowd'] = 0
@@ -131,7 +133,8 @@ def deal_json(ds_type, img_path, json_path):
     object_num = -1
     for img_file in os.listdir(img_path):
         img_label = img_file.split('.')[0]
-        if img_file.split('.')[-1] not in ['bmp', 'jpg', 'jpeg', 'png', 'JPEG', 'JPG', 'PNG']:
+        if img_file.split('.')[
+                -1] not in ['bmp', 'jpg', 'jpeg', 'png', 'JPEG', 'JPG', 'PNG']:
             continue
         label_file = osp.join(json_path, img_label + '.json')
         print('Generating dataset from:', label_file)
@@ -141,7 +144,7 @@ def deal_json(ds_type, img_path, json_path):
             if ds_type == 'labelme':
                 images_list.append(images_labelme(data, image_num))
             elif ds_type == 'cityscape':
-                images_list.append(images_cityscape(data, image_num, img_file)) 
+                images_list.append(images_cityscape(data, image_num, img_file))
             if ds_type == 'labelme':
                 for shapes in data['shapes']:
                     object_num = object_num + 1
@@ -155,13 +158,15 @@ def deal_json(ds_type, img_path, json_path):
                     if p_type == 'polygon':
                         annotations_list.append(
                             annotations_polygon(data['imageHeight'], data[
-                                'imageWidth'], points, label, image_num, object_num, label_to_num))
+                                'imageWidth'], points, label, image_num,
+                                                object_num, label_to_num))
 
                     if p_type == 'rectangle':
                         points.append([points[0][0], points[1][1]])
                         points.append([points[1][0], points[0][1]])
                         annotations_list.append(
-                            annotations_rectangle(points, label, image_num, object_num, label_to_num))
+                            annotations_rectangle(points, label, image_num,
+                                                  object_num, label_to_num))
             elif ds_type == 'cityscape':
                 for shapes in data['objects']:
                     object_num = object_num + 1
@@ -173,7 +178,8 @@ def deal_json(ds_type, img_path, json_path):
                     points = shapes['polygon']
                     annotations_list.append(
                         annotations_polygon(data['imgHeight'], data[
-                            'imgWidth'], points, label, image_num, object_num, label_to_num))
+                            'imgWidth'], points, label, image_num, object_num,
+                                            label_to_num))
     data_coco['images'] = images_list
     data_coco['categories'] = categories_list
     data_coco['annotations'] = annotations_list
@@ -266,9 +272,8 @@ def main():
     if not os.path.exists(args.output_dir + '/annotations'):
         os.makedirs(args.output_dir + '/annotations')
     if args.train_proportion != 0:
-        train_data_coco = deal_json(args.dataset_type,
-                                    args.output_dir + '/train',
-                                    args.json_input_dir)
+        train_data_coco = deal_json(
+            args.dataset_type, args.output_dir + '/train', args.json_input_dir)
         train_json_path = osp.join(args.output_dir + '/annotations',
                                    'instance_train.json')
         json.dump(
@@ -289,6 +294,7 @@ def main():
                                   'instance_test.json')
         json.dump(
             test_data_coco, open(test_json_path, 'w'), indent=4, cls=MyEncoder)
+
 
 if __name__ == '__main__':
     main()

@@ -140,9 +140,9 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 ## Get Started
 `Training` and `Inference` please refer to [GETTING_STARTED.md](../../docs/GETTING_STARTED.md)
-- **NOTES:**     
-- `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32) 
-and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters 
+- **NOTES:**  
+- `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32)
+and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters
 in the table of [calculation rules](../../docs/GETTING_STARTED.md#faq))
 - Currently we do not support evaluation in training.
 
@@ -156,7 +156,7 @@ python tools/face_eval.py -c configs/face_detection/blazeface.yml
 - `-d` or `--dataset_dir`: Dataset path, same as dataset_dir of configs. Such as: `-d dataset/wider_face`.
 - `-f` or `--output_eval`: Evaluation file directory, default is `output/pred`.
 - `-e` or `--eval_mode`: Evaluation mode, include `widerface` and `fddb`, default is `widerface`.
-- `--multi_scale`: If you add this action button in the command, it will select `multi_scale` evaluation. 
+- `--multi_scale`: If you add this action button in the command, it will select `multi_scale` evaluation.
 Default is `False`, it will select `single-scale` evaluation.
 
 After the evaluation is completed, the test result in txt format will be generated in `output/pred`,
@@ -183,7 +183,7 @@ matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
 #### Evaluate on the FDDB
-[FDDB dataset](http://vis-www.cs.umass.edu/fddb/) details can refer to FDDB's official website.   
+[FDDB dataset](http://vis-www.cs.umass.edu/fddb/) details can refer to FDDB's official website.  
 - Download the official dataset and evaluation script to evaluate the ROC metrics:
 ```
 #external link to the Faces in the Wild data set
@@ -238,7 +238,7 @@ regression parameters of a bounding box as a weighted mean between the overlappi
 less network layer and conv channel number than `Lite`.
 
 ### FaceBoxes
-**Introduction:**     
+**Introduction:**  
 [FaceBoxes](https://arxiv.org/abs/1708.05234) which named A CPU Real-time Face Detector
 with High Accuracy is face detector proposed by Shifeng Zhang, with high performance on
 both speed and accuracy. This paper is published by IJCB(2017).

@@ -63,8 +63,8 @@ OptimizerBuilder:
 YoloTrainFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/fruit/fruit-detection
-    annotation: train.txt
+    dataset_dir: dataset/fruit
+    annotation: fruit-detection/train.txt
     use_default_label: false
   num_workers: 16
   bufsize: 128
@@ -109,8 +109,8 @@ YoloEvalFeed:
   batch_size: 1
   image_shape: [3, 608, 608]
   dataset:
-    dataset_dir: dataset/fruit/fruit-detection
-    annotation: val.txt
+    dataset_dir: dataset/fruit
+    annotation: fruit-detection/val.txt
     use_default_label: false
  
 
@@ -118,5 +118,5 @@ YoloTestFeed:
   batch_size: 1
   image_shape: [3, 608, 608]
   dataset:
-    dataset_dir: dataset/fruit/fruit-detection
+    dataset_dir: dataset/fruit
     use_default_label: false

@@ -18,10 +18,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def load(anno_path,
-         sample_num=-1,
-         cname2cid=None,
-         with_background=True):
+def load(anno_path, sample_num=-1, cname2cid=None, with_background=True):
     """
     Load WiderFace records with 'anno_path'
 
@@ -120,9 +117,7 @@ def _load_file_list(input_txt):
 
 
 def widerface_label(with_background=True):
-    labels_map = {
-            'face': 1
-    }
+    labels_map = {'face': 1}
     if not with_background:
         labels_map = {k: v - 1 for k, v in labels_map.items()}
     return labels_map

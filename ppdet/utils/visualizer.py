@@ -38,8 +38,7 @@ def visualize_results(image,
     if mask_results:
         image = draw_mask(image, im_id, mask_results, threshold)
     if bbox_results:
-        image = draw_bbox(image, im_id, catid2name, bbox_results,
-                          threshold)
+        image = draw_bbox(image, im_id, catid2name, bbox_results, threshold)
     return image
 
 
@@ -102,9 +101,8 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         # draw label
         text = "{} {:.2f}".format(catid2name[catid], score)
         tw, th = draw.textsize(text)
-        draw.rectangle([(xmin + 1, ymin - th), 
-                       (xmin + tw + 1, ymin)],
-                       fill=color)
+        draw.rectangle(
+            [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
 
     return image
