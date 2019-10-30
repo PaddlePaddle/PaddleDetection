@@ -35,10 +35,7 @@ class IteratorSource(Dataset):
         samples (int): number of samples to load, -1 means all
     """
 
-    def __init__(self,
-                 iter_maker,
-                 samples=-1,
-                 **kwargs):
+    def __init__(self, iter_maker, samples=-1, **kwargs):
         super(IteratorSource, self).__init__()
         self._epoch = -1
 
@@ -63,7 +60,8 @@ class IteratorSource(Dataset):
                     self._sample_num = self._pos
                 elif self._sample_num != self._pos:
                     logger.info('num of loaded samples is different '
-                        'with previouse setting[prev:%d,now:%d]' % (self._sample_num, self._pos))
+                                'with previouse setting[prev:%d,now:%d]' %
+                                (self._sample_num, self._pos))
                     self._sample_num = self._pos
 
                 self._data_iter = None
@@ -100,4 +98,3 @@ class IteratorSource(Dataset):
 
     def epoch_id(self):
         return self._epoch
-

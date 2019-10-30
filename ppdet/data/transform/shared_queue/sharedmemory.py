@@ -318,8 +318,7 @@ class PageAllocator(object):
         while True:
             # maybe flags already has some '0' pages,
             # so just check 'page_num - len(flags)' pages
-            flags = self.get_page_status(
-                pos, page_num, ret_flag=True)
+            flags = self.get_page_status(pos, page_num, ret_flag=True)
 
             if flags.count('0') == page_num:
                 break
@@ -526,7 +525,7 @@ class SharedMemoryMgr(object):
 
         if not self._released and not self._allocator.empty():
             logger.debug('not empty when delete this SharedMemoryMgr[%s]' %
-                        (self))
+                         (self))
         else:
             self._released = True
 

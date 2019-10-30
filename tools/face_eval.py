@@ -81,10 +81,10 @@ def face_eval_run(exe,
             shrink, max_shrink = get_shrink(image.size[1], image.size[0])
             det0 = detect_face(exe, compile_program, fetches, image, shrink)
             det1 = flip_test(exe, compile_program, fetches, image, shrink)
-            [det2, det3] = multi_scale_test(exe, compile_program, fetches, image,
-                                        max_shrink)
-            det4 = multi_scale_test_pyramid(exe, compile_program, fetches, image,
-                                        max_shrink)
+            [det2, det3] = multi_scale_test(exe, compile_program, fetches,
+                                            image, max_shrink)
+            det4 = multi_scale_test_pyramid(exe, compile_program, fetches,
+                                            image, max_shrink)
             det = np.row_stack((det0, det1, det2, det3, det4))
             dets = bbox_vote(det)
         else:
@@ -293,6 +293,7 @@ if __name__ == '__main__':
         "--multi_scale",
         action='store_true',
         default=False,
-        help="If True it will select `multi_scale` evaluation. Default is `False`, it will select `single-scale` evaluation.")
+        help="If True it will select `multi_scale` evaluation. Default is `False`, it will select `single-scale` evaluation."
+    )
     FLAGS = parser.parse_args()
     main()

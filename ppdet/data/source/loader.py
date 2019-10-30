@@ -127,12 +127,14 @@ def load(fname,
     elif os.path.isfile(fname):
         from . import voc_loader
         if use_default_label is None or cname2cid is not None:
-            records, cname2cid = voc_loader.get_roidb(fname, samples, cname2cid,
-                                                with_background=with_background)
+            records, cname2cid = voc_loader.get_roidb(
+                fname, samples, cname2cid, with_background=with_background)
         else:
-            records, cname2cid = voc_loader.load(fname, samples,
-                                                 use_default_label,
-                                                 with_background=with_background)
+            records, cname2cid = voc_loader.load(
+                fname,
+                samples,
+                use_default_label,
+                with_background=with_background)
     else:
         raise ValueError('invalid file type when load data from file[%s]' %
                          (fname))

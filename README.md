@@ -7,6 +7,7 @@ detection models in both industry and research settings. We design
 PaddleDetection to be not only performant, production-ready but also highly
 flexible, catering to research needs.
 
+**Now all models in PaddleDetection require PaddlePaddle version 1.6 or higher, or suitable develop version.**
 
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
@@ -97,6 +98,7 @@ Advanced Features:
 
 #### 10/2019
 
+- Add enhanced YOLOv3 models, box mAP up to 41.4%.
 - Face detection models included: BlazeFace, Faceboxes.
 - Enrich COCO models,  box mAP up to 51.9%.
 - Add CACacascade RCNN, one of the best single model of Objects365 2019 challenge Full Track champion.

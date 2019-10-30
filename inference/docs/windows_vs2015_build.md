@@ -42,9 +42,9 @@ fluid_inference
 1. 在OpenCV官网下载适用于Windows平台的3.4.6版本， [下载地址](https://sourceforge.net/projects/opencvlibrary/files/3.4.6/opencv-3.4.6-vc14_vc15.exe/download)  
 2. 运行下载的可执行文件，将OpenCV解压至指定目录，如`D:\projects\opencv`  
 3. 配置环境变量，如下流程所示  
-	- 我的电脑->属性->高级系统设置->环境变量  
+    - 我的电脑->属性->高级系统设置->环境变量  
     - 在系统变量中找到Path（如没有，自行创建），并双击编辑  
-    - 新建，将opencv路径填入并保存，如`D:\projects\opencv\build\x64\vc14\bin` 
+    - 新建，将opencv路径填入并保存，如`D:\projects\opencv\build\x64\vc14\bin`
 
 ### Step4: 以VS2015为例编译代码
 
@@ -56,7 +56,7 @@ fluid_inference
 ```
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 ```
-    
+
 * CMAKE编译工程
     * PADDLE_DIR: fluid_inference预测库路径
     * CUDA_LIB: CUDA动态库目录, 请根据实际安装情况调整
@@ -94,4 +94,3 @@ detection_demo.exe --conf=/path/to/your/conf --input_dir=/path/to/your/input/dat
 ```
 
 更详细说明请参考ReadMe文档： [预测和可视化部分](../README.md)
-

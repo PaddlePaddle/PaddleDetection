@@ -151,7 +151,7 @@ def main():
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            _, feed_vars = create_feed(train_feed, False)
+            _, feed_vars = create_feed(train_feed, True)
             train_fetches = model.train(feed_vars)
             loss = train_fetches['loss']
             lr = lr_builder()
@@ -173,7 +173,7 @@ def main():
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            _, test_feed_vars = create_feed(eval_feed, False)
+            _, test_feed_vars = create_feed(eval_feed, True)
             fetches = model.eval(test_feed_vars)
     eval_prog = eval_prog.clone(True)
 

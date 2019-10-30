@@ -96,7 +96,7 @@ def clean_res(result, keep_name_list):
 
 def eval_run(exe,
              compile_program,
-             pyreader,
+             loader,
              keys,
              values,
              cls,
@@ -121,7 +121,7 @@ def eval_run(exe,
     has_bbox = 'bbox' in keys
 
     try:
-        pyreader.start()
+        loader.start()
         while True:
             outs = exe.run(compile_program,
                            fetch_list=values,
@@ -158,7 +158,7 @@ def eval_run(exe,
             iter_id += 1
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
-        pyreader.reset()
+        loader.reset()
     logger.info('Test finish iter {}'.format(iter_id))
 
     end_time = time.time()

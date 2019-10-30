@@ -4,6 +4,8 @@
 
 PaddleDetection的目的是为工业界和学术界提供丰富、易用的目标检测模型。不仅性能优越、易于部署，而且能够灵活的满足算法研究的需求。
 
+**目前检测库下模型均要求使用PaddlePaddle 1.6及以上版本或适当的develop版本。**
+
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
 </div>
@@ -88,6 +90,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 ### 10/2019
 
+- 增加增强版YOLOv3模型，精度高达41.4%。
 - 增加人脸检测模型BlazeFace、Faceboxes。
 - 丰富基于COCO的模型，精度高达51.9%。
 - 增加Objects365 2019 Challenge上夺冠的最佳单模型之一CACascade-RCNN。
