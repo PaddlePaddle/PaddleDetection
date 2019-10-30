@@ -98,6 +98,7 @@ Advanced Features:
 
 #### 10/2019
 
+- Add enhanced YOLOv3 models, box mAP up to 41.4%.
 - Face detection models included: BlazeFace, Faceboxes.
 - Enrich COCO models,  box mAP up to 51.9%.
 - Add CACacascade RCNN, one of the best single model of Objects365 2019 challenge Full Track champion.

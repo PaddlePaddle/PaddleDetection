@@ -90,6 +90,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 ### 10/2019
 
+- 增加增强版YOLOv3模型，精度高达41.4%。
 - 增加人脸检测模型BlazeFace、Faceboxes。
 - 丰富基于COCO的模型，精度高达51.9%。
 - 增加Objects365 2019 Challenge上夺冠的最佳单模型之一CACascade-RCNN。

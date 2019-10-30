@@ -21,7 +21,7 @@ PaddleDetection实现版本中使用了 [Bag of Freebies for Training Object Det
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python tools/train.py -c configs/dcn/yolov3_r50vd_dcn.py
+python tools/train.py -c configs/dcn/yolov3_r50vd_dcn.yml
 ```
 
 更多模型参数请使用``python tools/train.py --help``查看，或参考[训练、评估及参数说明](docs/GETTING_STARTED_cn.md)文档
