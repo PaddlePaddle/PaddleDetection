@@ -37,7 +37,6 @@ set_paddle_flags(
 
 from paddle import fluid
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
@@ -108,7 +107,6 @@ def main():
 
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
-    print_total_cfg(cfg)
 
     if 'test_feed' not in cfg:
         test_feed = create(main_arch + 'TestFeed')
