@@ -21,6 +21,7 @@ import math
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register, serializable
 from .resnext import ResNeXt
 
@@ -72,12 +73,13 @@ class SENet(ResNeXt):
         self.dcn_v2_stages = dcn_v2_stages
 
     def _squeeze_excitation(self, input, num_channels, name=None):
+        mixed_precision_enabled = mixed_precision_global_state() is not None
         pool = fluid.layers.pool2d(
             input=input,
             pool_size=0,
             pool_type='avg',
             global_pooling=True,
-            use_cudnn=False)
+            use_cudnn=mixed_precision_enabled)
         stdv = 1.0 / math.sqrt(pool.shape[1] * 1.0)
         squeeze = fluid.layers.fc(
             input=pool,
