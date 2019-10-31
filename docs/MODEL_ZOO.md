@@ -99,17 +99,17 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 
 | Backbone     | Pretrain dataset | Size | deformable Conv | Image/gpu | Lr schd | Inf time (fps) | Box AP |  Download |
 | :----------- | :--------: | :-----: | :-----: |:------------: |:----: | :-------: | :----: | :-------: |
-| DarkNet53    | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| MobileNet-V1 | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| ResNet34     | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet50_vd  | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
-| ResNet50_vd  | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
+| DarkNet53    | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53    | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53    | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| MobileNet-V1 | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1 | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1 | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| ResNet34     | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34     | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34     | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet50_vd  | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
+| ResNet50_vd  | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
 
 ### Yolo v3 on Pascal VOC
