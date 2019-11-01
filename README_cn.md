@@ -107,14 +107,14 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 #### 5/8/2019
 - 增加Modulated Deformable Convolution系列模型。
 
-#### 7/22/2019
+#### 29/7/2019
 
 - 增加检测库中文文档
 - 修复R-CNN系列模型训练同时进行评估的问题
 - 新增ResNext101-vd + Mask R-CNN + FPN模型
 - 新增基于VOC数据集的YOLOv3模型
 
-#### 7/3/2019
+#### 3/7/2019
 
 - 首次发布PaddleDetection检测库和检测模型库
 - 模型包括：Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask

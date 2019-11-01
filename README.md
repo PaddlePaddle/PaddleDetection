@@ -117,14 +117,14 @@ Advanced Features:
 
 - Add a series of models ralated modulated Deformable Convolution.
 
-#### 7/29/2019
+#### 29/7/2019
 
 - Update Chinese docs for PaddleDetection
 - Fix bug in R-CNN models when train and test at the same time
 - Add ResNext101-vd + Mask R-CNN + FPN models
 - Add YOLOv3 on VOC models
 
-#### 7/3/2019
+#### 3/7/2019
 
 - Initial release of PaddleDetection and detection model zoo
 - Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
