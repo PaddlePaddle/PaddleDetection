@@ -74,6 +74,7 @@ DATASETS = {
     'fruit': ([(
         'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
         'ee4a1bf2e321b75b0850cc6e063f79d7', ), ], ["fruit-detection"]),
+    'objects365': (),
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
@@ -102,6 +103,10 @@ def get_dataset_path(path, annotation, image_dir):
 
     for name, dataset in DATASETS.items():
         if os.path.split(path.strip().lower())[-1] == name:
+            if name == 'objects365':
+                raise NotImplementedError(
+                    "Dataset {} is not valid for download automatically. Please apply and download the dataset from https://www.objects365.org/download.html".
+                    format(name))
             logger.info("Parse dataset_dir {} as dataset "
                         "{}".format(path, name))
             data_dir = osp.join(DATASET_HOME, name)
