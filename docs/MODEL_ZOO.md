@@ -95,24 +95,26 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 - Group Normalization reference from [Group Normalization](https://arxiv.org/abs/1803.08494).
 - Detailed configuration file in [configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
 
-### Yolo v3
+### YOLO v3
 
 | Backbone     | Pretrain dataset | Size | deformable Conv | Image/gpu | Lr schd | Inf time (fps) | Box AP |  Download |
 | :----------- | :--------: | :-----: | :-----: |:------------: |:----: | :-------: | :----: | :-------: |
-| DarkNet53    | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| MobileNet-V1 | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| ResNet34     | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet50_vd  | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
-| ResNet50_vd  | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
+| DarkNet53 (paper) | ImageNet | 608  |  False    |    8    |   270e  |      -        |  33.0  | - |
+| DarkNet53 (paper) | ImageNet | 416  |  False    |    8    |   270e  |      -        |  31.0  | - |
+| DarkNet53 (paper) | ImageNet | 320  |  False    |    8    |   270e  |      -        |  28.2  | - |
+| DarkNet53         | ImageNet | 608  |  False    |    8    |   270e  |    45.571     |  38.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53         | ImageNet | 416  |  False    |    8    |   270e  |      -        |  37.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53         | ImageNet | 320  |  False    |    8    |   270e  |      -        |  34.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| MobileNet-V1      | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1      | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1      | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| ResNet34          | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34          | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34          | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet50_vd       | ImageNet | 608  |  True     |    8    |   270e  |      -        |  39.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
+| ResNet50_vd       | Object365 | 608  |  True    |    8    |   270e  |      -        |  41.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
-
-### Yolo v3 on Pascal VOC
+### YOLO v3 on Pascal VOC
 
 | Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           |
 | :----------- | :--: | :-------: | :-----: | :------------: | :----: | :----------------------------------------------------------: |
@@ -126,8 +128,11 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet34     | 416  |     8     |  270e   |       -        |  81.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 | ResNet34     | 320  |     8     |  270e   |       -        |  80.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 
-**Notes:** Yolo v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. Yolo v3 training data augmentations: mixup,
-randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. Yolo v3 used randomly
+#### Notes:
+- YOLOv3-DarkNet53 performance in paper [YOLOv3](https://arxiv.org/abs/1804.02767) is also provided above, our implements
+improved performance mainly by using L1 loss in bounding box width and height regression, image mixup and label smooth.
+- YOLO v3 is trained in 8 GPU with total batch size as 64 and trained 270 epoches. YOLO v3 training data augmentations: mixup,
+randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. YOLO v3 used randomly
 reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
 results of image size 608/416/320 above. Deformable conv is added on stage 5 of backbone.
 
