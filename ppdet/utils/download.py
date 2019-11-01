@@ -30,13 +30,13 @@ from .voc_utils import create_list
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['get_weights_path', 'get_dataset_path']
+__all__ = ['get_weights_path', 'get_dataset_path', 'download_dataset', 'create_voc_list']
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
 
 # dict of {dataset_name: (download_info, sub_dirs)}
-# download info: (url, md5sum)
+# download info: [(url, md5sum)]
 DATASETS = {
     'coco': ([
         (
