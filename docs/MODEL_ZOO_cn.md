@@ -92,23 +92,26 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 - Group Normalization参考论文[Group Normalization](https://arxiv.org/abs/1803.08494).
 - 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
 
-### Yolo v3
+### YOLO v3
 
 | 骨架网络     | 预训练数据集 | 输入尺寸 | 加入deformable卷积 | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | 下载 |
 | :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: | :-------: |
-| DarkNet53    | ImageNet | 608  |  否    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 416  |  否    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| DarkNet53    | ImageNet | 320  |  否    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
-| MobileNet-V1 | ImageNet | 608  |  否    |    8    |   270e  |    78.302     |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 416  |  否    |    8    |   270e  |      -        |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1 | ImageNet | 320  |  否    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| ResNet34     | ImageNet | 608  |  否    |    8    |   270e  |    63.356     |  36.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 416  |  否    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet34     | ImageNet | 320  |  否    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
-| ResNet50_vd  | ImageNet | 608  |  是    |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
-| ResNet50_vd  | Object365 | 608  |  是    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
+| DarkNet53 (paper)   | ImageNet | 608  |  否    |    8    |   270e  |      -        |  33.0  | - |
+| DarkNet53 (paper)   | ImageNet | 416  |  否    |    8    |   270e  |      -        |  31.0  | - |
+| DarkNet53 (paper)   | ImageNet | 320  |  否    |    8    |   270e  |      -        |  28.2  | - |
+| DarkNet53           | ImageNet | 608  |  否    |    8    |   270e  |    45.571     |  38.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53           | ImageNet | 416  |  否    |    8    |   270e  |      -        |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| DarkNet53           | ImageNet | 320  |  否    |    8    |   270e  |      -        |  34.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar) |
+| MobileNet-V1        | ImageNet | 608  |  否    |    8    |   270e  |    78.302     |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1        | ImageNet | 416  |  否    |    8    |   270e  |      -        |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V1        | ImageNet | 320  |  否    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| ResNet34            | ImageNet | 608  |  否    |    8    |   270e  |    63.356     |  36.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34            | ImageNet | 416  |  否    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet34            | ImageNet | 320  |  否    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
+| ResNet50_vd         | ImageNet | 608  |  是    |    8    |   270e  |      -        |  39.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
+| ResNet50_vd         | Object365 | 608  |  是    |    8    |   270e  |      -        |  41.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.tar) |
 
-### Yolo v3 基于Pasacl VOC数据集
+### YOLO v3 基于Pasacl VOC数据集
 
 | 骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | 下载 |
 | :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: |
@@ -122,7 +125,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet34     | 416  |    8    |   270e  |      -        |  81.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 | ResNet34     | 320  |    8    |   270e  |      -        |  80.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 
-**注意事项:** Yolo v3在8卡，总batch size为64下训练270轮。数据增强包括：mixup, 随机颜色失真，随机剪裁，随机扩张，随机插值法，随机翻转。Yolo v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型测试不同尺寸图片，我们分别提供了尺寸为608/416/320大小的测试结果。deformable卷积作用在骨架网络5阶段。
+#### 注意事项:
+- 上表中也提供了原论文[YOLOv3](https://arxiv.org/abs/1804.02767)中YOLOv3-DarkNet53的精度，我们的实现版本主要从在bounding box的宽度和高度回归上使用了L1损失，图像mixup和label smooth等方法优化了其精度。
+- YOLO v3在8卡，总batch size为64下训练270轮。数据增强包括：mixup, 随机颜色失真，随机剪裁，随机扩张，随机插值法，随机翻转。YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型测试不同尺寸图片，我们分别提供了尺寸为608/416/320大小的测试结果。deformable卷积作用在骨架网络5阶段。
 
 ### RetinaNet
 
