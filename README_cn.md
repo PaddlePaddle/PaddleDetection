@@ -4,6 +4,8 @@
 
 PaddleDetection的目的是为工业界和学术界提供丰富、易用的目标检测模型。不仅性能优越、易于部署，而且能够灵活的满足算法研究的需求。
 
+**目前检测库下模型均要求使用PaddlePaddle 1.6及以上版本或适当的develop版本。**
+
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
 </div>
@@ -55,7 +57,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 - [安装说明](docs/INSTALL_cn.md)
 - [快速开始](docs/QUICK_STARTED_cn.md)
-- [训练、评估及参数说明](docs/GETTING_STARTED_cn.md)
+- [训练、评估流程](docs/GETTING_STARTED_cn.md)
 - [数据预处理及自定义数据集](docs/DATA_cn.md)
 - [配置模块设计和介绍](docs/CONFIG_cn.md)
 - [详细的配置信息和参数说明示例](docs/config_example/)
@@ -88,6 +90,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 ### 10/2019
 
+- 增加增强版YOLOv3模型，精度高达41.4%。
 - 增加人脸检测模型BlazeFace、Faceboxes。
 - 丰富基于COCO的模型，精度高达51.9%。
 - 增加Objects365 2019 Challenge上夺冠的最佳单模型之一CACascade-RCNN。
@@ -104,14 +107,14 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 #### 5/8/2019
 - 增加Modulated Deformable Convolution系列模型。
 
-#### 7/22/2019
+#### 29/7/2019
 
 - 增加检测库中文文档
 - 修复R-CNN系列模型训练同时进行评估的问题
 - 新增ResNext101-vd + Mask R-CNN + FPN模型
 - 新增基于VOC数据集的YOLOv3模型
 
-#### 7/3/2019
+#### 3/7/2019
 
 - 首次发布PaddleDetection检测库和检测模型库
 - 模型包括：Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask

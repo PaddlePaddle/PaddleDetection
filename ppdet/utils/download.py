@@ -71,11 +71,10 @@ DATASETS = {
             'https://dataset.bj.bcebos.com/wider_face/wider_face_split.zip',
             'a4a898d6193db4b9ef3260a68bad0dc7', ),
     ], ["WIDER_train", "WIDER_val", "wider_face_split"]),
-    'fruit': ([
-        (
-            'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
-            '374554a7633b1b68d6a5fbb7c061b8ba', ),
-    ], ["fruit-detection"]),
+    'fruit': ([(
+        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
+        'ee4a1bf2e321b75b0850cc6e063f79d7', ), ], ["fruit-detection"]),
+    'objects365': (),
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
@@ -106,8 +105,11 @@ def get_dataset_path(path, annotation, image_dir):
         if os.path.split(path.strip().lower())[-1] == name:
             logger.info("Parse dataset_dir {} as dataset "
                         "{}".format(path, name))
+            if name == 'objects365':
+                raise NotImplementedError(
+                    "Dataset {} is not valid for download automatically. Please apply and download the dataset from https://www.objects365.org/download.html".
+                    format(name))
             data_dir = osp.join(DATASET_HOME, name)
-
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name == 'voc':
                 exists = True
@@ -133,8 +135,8 @@ def get_dataset_path(path, annotation, image_dir):
     # not match any dataset in DATASETS
     raise ValueError("Dataset {} is not valid and cannot parse dataset type "
                      "'{}' for automaticly downloading, which only supports "
-                     "'voc' and 'coco' currently".format(path,
-                                                         osp.split(path)[-1]))
+                     "'voc' , 'coco', 'wider_face' and 'fruit' currently".
+                     format(path, osp.split(path)[-1]))
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):

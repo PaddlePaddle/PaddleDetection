@@ -7,6 +7,7 @@ detection models in both industry and research settings. We design
 PaddleDetection to be not only performant, production-ready but also highly
 flexible, catering to research needs.
 
+**Now all models in PaddleDetection require PaddlePaddle version 1.6 or higher, or suitable develop version.**
 
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
@@ -65,7 +66,7 @@ Advanced Features:
 
 - [Installation guide](docs/INSTALL.md)
 - [Quick start on small dataset](docs/QUICK_STARTED.md)
-- [Guide to traing, evaluate and arguments description](docs/GETTING_STARTED.md)
+- For detailed training and evaluation workflow, please refer to [GETTING_STARTED](docs/GETTING_STARTED.md)
 - [Guide to preprocess pipeline and custom dataset](docs/DATA.md)
 - [Introduction to the configuration workflow](docs/CONFIG.md)
 - [Examples for detailed configuration explanation](docs/config_example/)
@@ -80,13 +81,13 @@ Advanced Features:
 
 ## Model compression
 
-- [ Quantification aware training example](slim/quantization)
-- [ Pruning compression example](slim/prune)
+- [Quantization-aware training example](slim/quantization)
+- [Model pruning example](slim/prune)
 
-## Depoly
+## Deployment
 
-- [Export model for inference depolyment](docs/EXPORT_MODEL.md)
-- [C++ inference depolyment](inference/README.md)
+- [Export model for inference](docs/EXPORT_MODEL.md)
+- [C++ inference](inference/README.md)
 
 ## Benchmark
 
@@ -97,6 +98,7 @@ Advanced Features:
 
 #### 10/2019
 
+- Add enhanced YOLOv3 models, box mAP up to 41.4%.
 - Face detection models included: BlazeFace, Faceboxes.
 - Enrich COCO models,  box mAP up to 51.9%.
 - Add CACacascade RCNN, one of the best single model of Objects365 2019 challenge Full Track champion.
@@ -115,14 +117,14 @@ Advanced Features:
 
 - Add a series of models ralated modulated Deformable Convolution.
 
-#### 7/29/2019
+#### 29/7/2019
 
 - Update Chinese docs for PaddleDetection
 - Fix bug in R-CNN models when train and test at the same time
 - Add ResNext101-vd + Mask R-CNN + FPN models
 - Add YOLOv3 on VOC models
 
-#### 7/3/2019
+#### 3/7/2019
 
 - Initial release of PaddleDetection and detection model zoo
 - Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask

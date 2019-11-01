@@ -35,11 +35,10 @@ import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_version
 from ppdet.modeling.model_input import create_feed
 from ppdet.data.data_feed import create_reader
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils.cli import ArgsParser
 
 import logging
@@ -61,7 +60,8 @@ def main():
     merge_config(FLAGS.opt)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
-    print_total_cfg(cfg)
+    # check if paddlepaddle version is satisfied
+    check_version()
 
     if 'eval_feed' not in cfg:
         eval_feed = create(main_arch + 'EvalFeed')
@@ -80,14 +80,14 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            pyreader, feed_vars = create_feed(eval_feed)
+            loader, feed_vars = create_feed(eval_feed)
             if multi_scale_test is None:
                 fetches = model.eval(feed_vars)
             else:
                 fetches = model.eval(feed_vars, multi_scale_test)
     eval_prog = eval_prog.clone(True)
     reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
-    pyreader.decorate_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader, place)
 
     # eval already exists json file
     if FLAGS.json_eval:
@@ -131,8 +131,7 @@ def main():
         sub_eval_prog = fluid.Program()
         with fluid.program_guard(sub_eval_prog, startup_prog):
             with fluid.unique_name.guard():
-                _, feed_vars = create_feed(
-                    eval_feed, use_pyreader=False, sub_prog_feed=True)
+                _, feed_vars = create_feed(eval_feed, False, sub_prog_feed=True)
                 sub_fetches = model.eval(
                     feed_vars, multi_scale_test, mask_branch=True)
                 extra_keys = []
@@ -147,7 +146,7 @@ def main():
         if 'weights' in cfg:
             checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
 
-    results = eval_run(exe, compile_program, pyreader, keys, values, cls, cfg,
+    results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)
 
     # evaluation

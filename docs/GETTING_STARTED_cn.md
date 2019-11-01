@@ -148,7 +148,7 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 
 **Q:**  为什么我使用单GPU训练loss会出`NaN`? </br>
 **A:**  默认学习率是适配多GPU训练(8x GPU)，若使用单GPU训练，须对应调整学习率（例如，除以8）。
-计算规则表如下所示，它们是等价的: </br>
+计算规则表如下所示，它们是等价的，表中变化节点即为`piecewise decay`里的`boundaries`: </br>
 
 
 | GPU数  | 学习率  | 最大轮数 | 变化节点       |

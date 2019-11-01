@@ -16,7 +16,7 @@
 
 ```yaml
 # 预测部署时所有配置字段需在DEPLOY字段下
-DEPLOY: 
+DEPLOY:
     # 类型：required int
     # 含义：是否使用GPU预测。 0:不使用  1:使用
     USE_GPU: 1
@@ -71,5 +71,5 @@ DEPLOY:
     FEEDS_SIZE: 2
     # 类型: optional int
     # 含义: 将图像的边变为该字段的值的整数倍。默认值为1。
-    COARSEST_STRIDE: 32 
+    COARSEST_STRIDE: 32
 ```

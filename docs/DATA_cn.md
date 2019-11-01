@@ -52,7 +52,7 @@
   │   ├── Annotations
   │       ├── 001789.xml
   │       |   ...
-  │   ├── JPEGImages 
+  │   ├── JPEGImages
   │       ├── 001789.xml
   │       |   ...
   │   ├── ImageSets
@@ -61,7 +61,7 @@
   │   ├── Annotations
   │       ├── 003876.xml
   │       |   ...
-  │   ├── JPEGImages 
+  │   ├── JPEGImages
   │       ├── 003876.xml
   │       |   ...
   │   ├── ImageSets

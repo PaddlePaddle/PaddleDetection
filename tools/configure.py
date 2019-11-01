@@ -24,6 +24,20 @@ from ppdet.utils.cli import ColorTTY, print_total_cfg
 
 color_tty = ColorTTY()
 
+try:
+    from docstring_parser import parse as doc_parse
+except Exception:
+    message = "docstring_parser is not installed, " \
+        + "argument description is not available"
+    print(color_tty.yellow(message))
+
+try:
+    from typeguard import check_type
+except Exception:
+    message = "typeguard is not installed," \
+        + "type checking is not available"
+    print(color_tty.yellow(message))
+
 MISC_CONFIG = {
     "architecture": "<value>",
     "max_iters": "<value>",

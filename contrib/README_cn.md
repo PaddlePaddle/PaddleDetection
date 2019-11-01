@@ -45,7 +45,7 @@ IOU=.5时的AP为 0.764。
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/infer.py -c contrib/VehicleDetection/vehicle_yolov3_darknet.yml \
-                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar \ 
+                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar \
                          --infer_dir contrib/VehicleDetection/demo \
                          --draw_threshold 0.2 \
                          --output_dir contrib/VehicleDetection/demo/output
@@ -92,9 +92,9 @@ IOU=.5-.95时的AP为 0.518。
 ```
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONPATH=$PYTHONPATH:.
-python -u tools/infer.py -c contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml \ 
+python -u tools/infer.py -c contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar \
-                         --infer_dir contrib/PedestrianDetection/demo \ 
+                         --infer_dir contrib/PedestrianDetection/demo \
                          --draw_threshold 0.3 \
                          --output_dir contrib/PedestrianDetection/demo/output
 ```

@@ -28,6 +28,7 @@ def _generate_iter_maker(num=10):
 
     return _reader
 
+
 class TestIteratorSource(unittest.TestCase):
     """Test cases for dataset.source.roidb_source
     """

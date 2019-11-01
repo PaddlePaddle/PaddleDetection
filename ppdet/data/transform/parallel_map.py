@@ -49,14 +49,18 @@ class ParallelMappedDataset(ProxiedDataset):
         super(ParallelMappedDataset, self).__init__(source)
         worker_args = {k.lower(): v for k, v in worker_args.items()}
 
-        args = {'bufsize': 100, 'worker_num': 8,
-            'use_process': False, 'memsize': '3G'}
+        args = {
+            'bufsize': 100,
+            'worker_num': 8,
+            'use_process': False,
+            'memsize': '3G'
+        }
         args.update(worker_args)
         if args['use_process'] and type(args['memsize']) is str:
             assert args['memsize'][-1].lower() == 'g', \
                 "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (args['memsize'])
             gb = args['memsize'][:-1]
-            args['memsize'] = int(gb) * 1024 ** 3
+            args['memsize'] = int(gb) * 1024**3
 
         self._worker_args = args
         self._started = False
