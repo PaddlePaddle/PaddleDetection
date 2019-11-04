@@ -26,7 +26,7 @@ Training:
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
                         --use_tb=True \
                         --tb_log_dir=tb_fruit_dir/scalar \
-                        --eval \
+                        --eval 
 ```
 
 Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on tensorboard.  
