@@ -97,7 +97,7 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(test_feed, use_pyreader=False)
+            _, feed_vars = create_feed(test_feed, iterable=True)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
