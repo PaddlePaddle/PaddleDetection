@@ -36,7 +36,8 @@ class CascadeBBoxAssigner(object):
                  bg_thresh_lo=[0., 0., 0.],
                  bbox_reg_weights=[10, 20, 30],
                  num_classes=81,
-                 shuffle_before_sample=True):
+                 shuffle_before_sample=True,
+                 class_aware=False):
         super(CascadeBBoxAssigner, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
@@ -46,6 +47,7 @@ class CascadeBBoxAssigner(object):
         self.bbox_reg_weights = bbox_reg_weights
         self.class_nums = num_classes
         self.use_random = shuffle_before_sample
+        self.class_aware = class_aware
 
     def __call__(self, input_rois, feed_vars, curr_stage):
 
@@ -67,7 +69,7 @@ class CascadeBBoxAssigner(object):
             bg_thresh_lo=self.bg_thresh_lo[curr_stage],
             bbox_reg_weights=curr_bbox_reg_w,
             use_random=self.use_random,
-            class_nums=2,
+            class_nums=self.class_nums if self.class_aware else 2,
             is_cls_agnostic=True,
-            is_cascade_rcnn=True if curr_stage > 0 else False)
+            is_cascade_rcnn=True if curr_stage > 0 and not self.class_aware else False)
         return outs

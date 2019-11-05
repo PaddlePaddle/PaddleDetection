@@ -27,6 +27,7 @@ from paddle.fluid.initializer import Constant
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
+from .nonlocal_helper import add_space_nonlocal
 from .name_adapter import NameAdapter
 
 __all__ = ['ResNet', 'ResNetC5']
@@ -46,6 +47,7 @@ class ResNet(object):
         variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
         feature_maps (list): index of stages whose feature maps are returned
         dcn_v2_stages (list): index of stages who select deformable conv v2
+        nonlocal_stages (list): index of stages who select nonlocal networks
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
@@ -58,14 +60,15 @@ class ResNet(object):
                  variant='b',
                  feature_maps=[2, 3, 4, 5],
                  dcn_v2_stages=[],
-                 weight_prefix_name=''):
+                 weight_prefix_name='',
+                 nonlocal_stages=[]):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
 
-        assert depth in [18, 34, 50, 101, 152], \
-            "depth {} not in [18, 34, 50, 101, 152]"
+        assert depth in [18, 34, 50, 101, 152, 200], \
+            "depth {} not in [18, 34, 50, 101, 152, 200]"
         assert variant in ['a', 'b', 'c', 'd'], "invalid ResNet variant"
         assert 0 <= freeze_at <= 4, "freeze_at should be 0, 1, 2, 3 or 4"
         assert len(feature_maps) > 0, "need one or more feature maps"
@@ -85,12 +88,23 @@ class ResNet(object):
             34: ([3, 4, 6, 3], self.basicblock),
             50: ([3, 4, 6, 3], self.bottleneck),
             101: ([3, 4, 23, 3], self.bottleneck),
-            152: ([3, 8, 36, 3], self.bottleneck)
+            152: ([3, 8, 36, 3], self.bottleneck),
+            200: ([3, 12, 48, 3], self.bottleneck),
         }
         self.stage_filters = [64, 128, 256, 512]
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
         self.prefix_name = weight_prefix_name
+        
+        self.nonlocal_stages = nonlocal_stages
+        if len(nonlocal_stages) > 0:
+            assert depth >= 50
+        self.nonlocal_mod_cfg = {
+            50  : 2,
+            101 : 5,
+            152 : 8,
+            200 : 12,
+        }
 
     def _conv_offset(self,
                      input,
@@ -340,6 +354,11 @@ class ResNet(object):
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
         dcn_v2 = True if stage_num in self.dcn_v2_stages else False
+        
+        nonlocal_mod = 1000
+        if stage_num in self.nonlocal_stages:
+            nonlocal_mod = self.nonlocal_mod_cfg[self.depth] if stage_num==4 else 2
+        
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
         conv = input
@@ -354,6 +373,14 @@ class ResNet(object):
                 is_first=is_first,
                 name=conv_name,
                 dcn_v2=dcn_v2)
+            
+            # add non local model
+            dim_in = conv.shape[1]
+            nonlocal_name = "nonlocal_conv{}".format( stage_num )
+            if i % nonlocal_mod == nonlocal_mod - 1:
+                conv = add_space_nonlocal(
+                    conv, dim_in, dim_in,
+                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )
         return conv
 
     def c1_stage(self, input):
