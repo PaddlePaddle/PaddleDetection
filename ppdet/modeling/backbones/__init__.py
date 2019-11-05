@@ -23,6 +23,7 @@ from . import fpn
 from . import vgg
 from . import blazenet
 from . import faceboxnet
+from . import cb_resnet
 
 from .resnet import *
 from .resnext import *
@@ -33,3 +34,4 @@ from .fpn import *
 from .vgg import *
 from .blazenet import *
 from .faceboxnet import *
+from .cb_resnet import *

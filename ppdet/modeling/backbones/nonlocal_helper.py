@@ -91,8 +91,8 @@ def space_nonlocal(input, dim_in, dim_out, prefix, dim_inner, max_pool_stride = 
         p = None  # not implemented
         raise "Not implemented when not use softmax"
 
-#     # note g's axis[2] corresponds to p's axis[2]
-#     # e.g. g(8, 1024, 784_2) * p(8, 784_1, 784_2) => (8, 1024, 784_1)
+    # note g's axis[2] corresponds to p's axis[2]
+    # e.g. g(8, 1024, 784_2) * p(8, 784_1, 784_2) => (8, 1024, 784_1)
     p = fluid.layers.transpose(p, [0, 2, 1])
     t = fluid.layers.matmul(g, p, name = prefix + '_y')
 
@@ -148,7 +148,7 @@ def space_nonlocal(input, dim_in, dim_out, prefix, dim_inner, max_pool_stride = 
 def add_space_nonlocal(input, dim_in, dim_out, prefix, dim_inner ):
     '''
     add_space_nonlocal: 
-        Non-local Neural Networks: https://arxiv.org/abs/1711.07971
+        Non-local Neural Networks: see https://arxiv.org/abs/1711.07971
     '''
     conv = space_nonlocal(input, dim_in, dim_out, prefix, dim_inner)
     output = fluid.layers.elementwise_add(input, conv, name = prefix + '_sum')

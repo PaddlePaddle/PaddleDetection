@@ -7,7 +7,7 @@ snapshot_iter: 10000
 use_gpu: true
 log_smooth_window: 20
 save_dir: output
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
 weights: output/cascade_rcnn_cls_aware_r101_vd_fpn/model_final
 metric: COCO
 num_classes: 81
@@ -97,8 +97,8 @@ LearningRate:
     gamma: 0.1
     milestones: [60000, 80000]
   - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 500
+    start_factor: 0.1
+    steps: 1000
 
 OptimizerBuilder:
   optimizer:

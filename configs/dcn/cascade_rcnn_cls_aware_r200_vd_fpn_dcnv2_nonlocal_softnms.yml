@@ -2,7 +2,7 @@ architecture: CascadeRCNNClsAware
 train_feed: FasterRCNNTrainFeed
 eval_feed: FasterRCNNEvalFeed
 test_feed: FasterRCNNTestFeed
-max_iters: 450000
+max_iters: 460000
 snapshot_iter: 10000
 use_gpu: true
 log_smooth_window: 20
@@ -111,7 +111,7 @@ OptimizerBuilder:
     type: L2
 
 FasterRCNNTrainFeed:
-  batch_size: 2
+  batch_size: 1
   dataset:
     dataset_dir: dataset/coco
     annotation: annotations/instances_train2017.json
@@ -135,40 +135,8 @@ FasterRCNNTrainFeed:
     - 0.225 
   - !ResizeImage
     interp: 1
-    target_size:
-    - 416
-    - 448
-    - 480
-    - 512
-    - 544
-    - 576
-    - 608
-    - 640
-    - 672
-    - 704 
-    - 736
-    - 768
-    - 800
-    - 832
-    - 864
-    - 896
-    - 928
-    - 960
-    - 992
-    - 1024
-    - 1056
-    - 1088
-    - 1120
-    - 1152
-    - 1184
-    - 1216
-    - 1248
-    - 1280
-    - 1312
-    - 1344
-    - 1376
-    - 1408
-    max_size: 600
+    target_size: [416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408]
+    max_size: 1800
     use_cv2: true
   - !Permute
     to_bgr: false
