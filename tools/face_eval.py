@@ -235,7 +235,7 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(eval_feed, use_pyreader=False)
+            _, feed_vars = create_feed(eval_feed, iterable=True)
             fetches = model.eval(feed_vars)
 
     eval_prog = eval_prog.clone(True)
