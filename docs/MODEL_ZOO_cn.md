@@ -80,7 +80,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNeXt101-vd-FPN    | Cascade Faster | c3-c5   |    2      |   1x    |      -        |  47.3  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
 | SENet154-vd-FPN      | Cascade Mask   | c3-c5   |    1      |  1.44x  |      -        |  51.9  |  43.9   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_s1x.tar) |
 | ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar.tar) |
-| CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.4%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
+| CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
 #### 注意事项:
