@@ -90,7 +90,7 @@ CascadeTwoFCHead:
 MultiClassSoftNMS:
   score_threshold: 0.01
   keep_top_k: 300
-  softnms_sigma: 0.4
+  softnms_sigma: 0.5
 
 LearningRate:
   base_lr: 0.01

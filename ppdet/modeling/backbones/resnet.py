@@ -27,7 +27,7 @@ from paddle.fluid.initializer import Constant
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
-from .nonlocal_helper import add_space_nonlocal
+from .nonlocal import add_space_nonlocal
 from .name_adapter import NameAdapter
 
 __all__ = ['ResNet', 'ResNetC5']
@@ -73,6 +73,8 @@ class ResNet(object):
         assert 0 <= freeze_at <= 4, "freeze_at should be 0, 1, 2, 3 or 4"
         assert len(feature_maps) > 0, "need one or more feature maps"
         assert norm_type in ['bn', 'sync_bn', 'affine_channel']
+        assert not (len(nonlocal_stages)>0 and depth<50), \
+                    "non-local is not supported for resnet18 or resnet34"
 
         self.depth = depth
         self.freeze_at = freeze_at
@@ -97,8 +99,6 @@ class ResNet(object):
         self.prefix_name = weight_prefix_name
         
         self.nonlocal_stages = nonlocal_stages
-        if len(nonlocal_stages) > 0:
-            assert depth >= 50
         self.nonlocal_mod_cfg = {
             50  : 2,
             101 : 5,
