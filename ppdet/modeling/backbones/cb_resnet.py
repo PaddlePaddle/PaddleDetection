@@ -46,6 +46,7 @@ class CBResNet(object):
         norm_decay (float): weight decay for normalization layer weights
         variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
         feature_maps (list): index of stages whose feature maps are returned
+        dcn_v2_stages (list): index of stages who select deformable conv v2
         nonlocal_stages (list): index of stages who select nonlocal networks
         repeat_num (int): number of repeat for backbone
     Attention:
@@ -62,7 +63,7 @@ class CBResNet(object):
                  norm_decay=0.,
                  variant='b',
                  feature_maps=[2, 3, 4, 5],
-                 dcn_stages=[],
+                 dcn_v2_stages=[],
                  nonlocal_stages = [],
                  repeat_num = 2):
         super(CBResNet, self).__init__()
@@ -76,9 +77,11 @@ class CBResNet(object):
         assert 0 <= freeze_at <= 4, "freeze_at should be 0, 1, 2, 3 or 4"
         assert len(feature_maps) > 0, "need one or more feature maps"
         assert norm_type in ['bn', 'sync_bn', 'affine_channel']
+        assert not (len(nonlocal_stages)>0 and depth<50), \
+                    "non-local is not supported for resnet18 or resnet34"
 
         self.depth = depth
-        self.dcn_stages = dcn_stages
+        self.dcn_v2_stages = dcn_v2_stages
         self.freeze_at = freeze_at
         self.norm_type = norm_type
         self.norm_decay = norm_decay
@@ -97,20 +100,18 @@ class CBResNet(object):
             200: ([3, 12, 48, 3], self.bottleneck),
         }
         
+        self.nonlocal_stages = nonlocal_stages
         self.nonlocal_mod_cfg = {
             50  : 2,
             101 : 5,
             152 : 8,
             200 : 12,
         }
+        
         self.stage_filters = [64, 128, 256, 512]
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
         
-        self.nonlocal_stages = nonlocal_stages
-        if len(nonlocal_stages) > 0:
-            assert depth >= 50
-
     def _conv_offset(self, input, filter_size, stride, padding, act=None, name=None):
         out_channel = filter_size * filter_size * 3
         out = fluid.layers.conv2d(input,
@@ -118,8 +119,10 @@ class CBResNet(object):
             filter_size=filter_size,
             stride=stride,
             padding=padding,
-            param_attr=ParamAttr(initializer=Constant(0.0)),
-            bias_attr=ParamAttr(initializer=Constant(0.0)),
+            param_attr=ParamAttr(
+                initializer=Constant(0.0), name=name + ".w_0"),
+            bias_attr=ParamAttr(
+                initializer=Constant(0.0), name=name + ".b_0"),
             act=act,
             name=name)
         return out
@@ -155,7 +158,7 @@ class CBResNet(object):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 act=None,
-                name=name + "_conv_offset")
+                name=name + "_conv_offset_" + str(self.curr_level))
             offset_channel = filter_size ** 2 * 2
             mask_channel = filter_size ** 2
             offset, mask = fluid.layers.split(
@@ -312,7 +315,7 @@ class CBResNet(object):
 
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
-        dcn = True if stage_num in self.dcn_stages else False
+        dcn = True if stage_num in self.dcn_v2_stages else False
         
         
         nonlocal_mod = 1000

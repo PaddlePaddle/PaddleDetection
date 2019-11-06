@@ -273,9 +273,7 @@ class MultiClassSoftNMS(object):
             
             cls_boxes = [[] for _ in range(class_nums)]
             cls_ids = [[] for _ in range(class_nums)]
-            
-            filtered_inds = np.where(scores[:, j] >= softnms_thres)[0]
-            
+                        
             start_idx = 1 if self.background_label == 0 else 0
             for j in range(start_idx, class_nums):
                 inds = np.where(scores[:, j] >= softnms_thres)[0]
@@ -286,18 +284,17 @@ class MultiClassSoftNMS(object):
                 dets_j = dets_j[cls_rank]
 
                 cls_boxes[j] = _soft_nms_for_cls( dets_j, sigma=softnms_sigma, thres=softnms_thres )
-                cls_ids[j] = np.array( [j]*len(keep) ).reshape(-1,1)
+                cls_ids[j] = np.array( [j]*cls_boxes[j].shape[0] ).reshape(-1,1)
             
-            
-            cls_boxes = np.vstack(cls_boxes)
-            cls_ids = np.vstack(cls_ids)
+            cls_boxes = np.vstack(cls_boxes[start_idx:])
+            cls_ids = np.vstack(cls_ids[start_idx:])
             pred_result = np.hstack( [cls_ids, cls_boxes] )
 
             # Limit to max_per_image detections **over all classes**
             image_scores = cls_boxes[:,0]
             if len(image_scores) > keep_top_k:
                 image_thresh = np.sort(image_scores)[-keep_top_k]
-                keep = np.where(cls_boxes[j][:, 0] >= image_thresh)[0]
+                keep = np.where(cls_boxes[:, 0] >= image_thresh)[0]
                 pred_result = pred_result[keep, :]
             
             res = fluid.LoDTensor()
