@@ -65,7 +65,7 @@ deploy
 
 完成编译后，便生成了需要的可执行文件和链接库。这里以我们基于`faster rcnn`检测模型为例，介绍部署图像检测模型的通用流程。
 
-### 1. 下载模型文件
+### 4.1. 下载模型文件
 我们提供faster rcnn，faster rcnn+fpn模型用于预测coco17数据集，可在以下链接下载：[faster rcnn示例模型下载地址](https://paddleseg.bj.bcebos.com/inference/faster_rcnn_pp50.zip)，
  [faster rcnn + fpn示例模型下载地址](https://paddleseg.bj.bcebos.com/inference/faster_rcnn_pp50_fpn.zip)。
 
@@ -83,7 +83,7 @@ faster_rcnn_pp50/
 **假设**`Linux`上对应的路径则为`/root/projects/models/faster_rcnn_pp50/`。
 
 
-### 2. 修改配置
+### 4.2. 修改配置
 
 `inference`源代码(即本目录)的`conf`目录下提供了示例基于faster rcnn的配置文件`detection_rcnn.yaml`, 相关的字段含义和说明如下：
 
@@ -118,7 +118,7 @@ DEPLOY:
     # 预测模式，支持 NATIVE 和 ANALYSIS
     PREDICTOR_MODE: "ANALYSIS"
     # 每次预测的 batch_size
-    BATCH_SIZE : 3
+    BATCH_SIZE : 3 
     # 长边伸缩的最大长度，-1代表无限制。
     RESIZE_MAX_SIZE: 1333
     # 输入的tensor数量。
@@ -127,7 +127,9 @@ DEPLOY:
 ```
 修改字段`MODEL_PATH`的值为你在**上一步**下载并解压的模型文件所放置的目录即可。更多配置文件字段介绍，请参考文档[预测部署方案配置文件说明](./docs/configuration.md)。
 
-### 3. 执行预测
+**注意**在使用CPU版本预测库时，`USE_GPU`的值必须设为0，否则无法正常预测。
+
+### 4.3. 执行预测
 
 在终端中切换到生成的可执行文件所在目录为当前目录(Windows系统为`cmd`)。
 
@@ -155,7 +157,7 @@ DEPLOY:
 
 运行可视化脚本时，只需输入命令行参数图片路径、检测结果pb文件路径、目标框阈值以及类别-标签映射文件路径即可得到可视化的图片`X.png` (tools目录下提供coco17的类别标签映射文件coco17.json)。
 
-```bash
+```bash 
 python vis.py --img_path=../build/images/detection_rcnn/000000087038.jpg --img_result_path=../build/images/detection_rcnn/000000087038.jpg.pb --threshold=0.1 --c2l_path=coco17.json
 ```
 
@@ -168,3 +170,4 @@ python vis.py --img_path=../build/images/detection_rcnn/000000087038.jpg --img_r
 ```检测结果图：```
 
 ![检测结果](./demo_images/000000087038.jpg.png)
+
