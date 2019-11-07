@@ -23,18 +23,24 @@ int main(int argc, char** argv) {
     // 0. parse args
     google::ParseCommandLineFlags(&argc, &argv, true);
     if (FLAGS_conf.empty() || FLAGS_input_dir.empty()) {
-        std::cout << "Usage: ./predictor --conf=/config/path/to/your/model --input_dir=/directory/of/your/input/images";
+        std::cout << "Usage: ./predictor --conf=/config/path/to/your/model "
+                  << "--input_dir=/directory/of/your/input/images" << std::endl;
         return -1;
     }
     // 1. create a predictor and init it with conf
     PaddleSolution::DetectionPredictor predictor;
     if (predictor.init(FLAGS_conf) != 0) {
+     #ifdef _WIN32
+        std::cerr << "Fail to init predictor" << std::endl;
+     #else
         LOG(FATAL) << "Fail to init predictor";
+     #endif
         return -1;
     }
 
     // 2. get all the images with extension '.jpeg' at input_dir
-    auto imgs = PaddleSolution::utils::get_directory_images(FLAGS_input_dir, ".jpeg|.jpg|.JPEG|.JPG|.bmp|.BMP|.png|.PNG");
+    auto imgs = PaddleSolution::utils::get_directory_images(FLAGS_input_dir,
+                                ".jpeg|.jpg|.JPEG|.JPG|.bmp|.BMP|.png|.PNG");
 
     // 3. predict
     predictor.predict(imgs);
