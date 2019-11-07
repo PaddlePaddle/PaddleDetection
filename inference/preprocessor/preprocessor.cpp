@@ -16,14 +16,18 @@
 
 #include "preprocessor.h"
 #include "preprocessor_detection.h"
+#include <iostream>
 
 namespace PaddleSolution {
 
     std::shared_ptr<ImagePreProcessor> create_processor(const std::string& conf_file) {
-
         auto config = std::make_shared<PaddleSolution::PaddleModelConfigPaser>();
         if (!config->load_config(conf_file)) {
-            LOG(FATAL) << "fail to laod conf file [" << conf_file << "]";
+        #ifdef _WIN32
+            std::cerr << "fail to load conf file [" << conf_file << "]" << std::endl;
+        #else
+            LOG(FATAL) << "fail to load conf file [" << conf_file << "]";
+        #endif
             return nullptr;
         }
 
@@ -34,10 +38,13 @@ namespace PaddleSolution {
             }
             return p;
         }
-	
-
-        LOG(FATAL) << "unknown processor_name [" << config->_pre_processor << "]";
-
+        #ifdef _WIN32
+        std::cerr << "unknown processor_name [" << config->_pre_processor << "],"
+                  << "please check whether PRE_PROCESSOR is set correctly" << std::endl;
+        #else
+        LOG(FATAL) << "unknown processor_name [" << config->_pre_processor << "],"
+                  << "please check whether PRE_PROCESSOR is set correctly";
+        #endif
         return nullptr;
     }
-}
+}  // namespace PaddleSolution
