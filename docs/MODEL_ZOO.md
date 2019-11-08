@@ -49,6 +49,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet50-FPN            | Cascade Mask   |     1     |   1x    |       -        |  41.3  |  35.5   | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_r50_fpn_1x.tar) |
 | ResNet50-vd-FPN         | Faster         |     2     |   2x    |     21.847     |  38.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar) |
 | ResNet50-vd-FPN         | Mask           |     1     |   2x    |     15.825     |  39.8  |  35.4   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_2x.tar) |
+| CBResNet50-vd-FPN         | Faster         |     2     |   1x    |     -     |  39.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_cbr50_vd_dual_fpn_1x.tar) |
 | ResNet101               | Faster         |     1     |   1x    |     9.316      |  38.3  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_1x.tar) |
 | ResNet101-FPN           | Faster         |     1     |   1x    |     17.297     |  38.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_fpn_1x.tar) |
 | ResNet101-FPN           | Faster         |     1     |   2x    |     17.246     |  39.1  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_fpn_2x.tar) |
@@ -56,12 +57,14 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet101-vd-FPN        | Faster         |     1     |   1x    |     17.011     |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_1x.tar) |
 | ResNet101-vd-FPN        | Faster         |     1     |   2x    |     16.934     |  40.8  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_2x.tar) |
 | ResNet101-vd-FPN        | Mask           |     1     |   1x    |     13.105     |  41.4  |  36.8   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r101_vd_fpn_1x.tar) |
+| CBResNet101-vd-FPN         | Faster         |     2     |   1x    |     -     |  42.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_cbr101_vd_dual_fpn_1x.tar) |
 | ResNeXt101-vd-64x4d-FPN | Faster         |     1     |   1x    |     8.815      |  42.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_1x.tar) |
 | ResNeXt101-vd-64x4d-FPN | Faster         |     1     |   2x    |     8.809      |  41.7  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_2x.tar) |
 | ResNeXt101-vd-64x4d-FPN | Mask           |     1     |   1x    |     7.689      |  42.9  |  37.9   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_x101_vd_64x4d_fpn_1x.tar) |
 | ResNeXt101-vd-64x4d-FPN | Mask           |     1     |   2x    |     7.859      |  42.6  |  37.6   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_x101_vd_64x4d_fpn_2x.tar) |
 | SENet154-vd-FPN         | Faster         |     1     |  1.44x  |     3.408      |  42.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_se154_vd_fpn_s1x.tar) |
 | SENet154-vd-FPN         | Mask           |     1     |  1.44x  |     3.233      |  44.0  |  38.7   | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_se154_vd_fpn_s1x.tar) |
+| ResNet101-vd-FPN            | CascadeClsAware Faster   |     2     |   1x    |     -     |  44.7(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r101_vd_fpn_1x_softnms.tar) |
 
 ### Deformable ConvNets v2
 
@@ -79,6 +82,10 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet101-vd-FPN        | Cascade Faster | c3-c5 |     2     |   1x    |       -        |  46.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_1x.tar) |
 | ResNeXt101-vd-FPN       | Cascade Faster | c3-c5 |     2     |   1x    |       -        |  47.3  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) |
 | SENet154-vd-FPN         | Cascade Mask   | c3-c5 |    1      |  1.44x  |       -        |  51.9  |  43.9   | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_s1x.tar) |
+| ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
+| CBResNet200-vd-FPN-Nonlocal | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
+
+
 
 #### Notes:
 - Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
