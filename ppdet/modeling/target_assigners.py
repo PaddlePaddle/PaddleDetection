@@ -35,8 +35,8 @@ class CascadeBBoxAssigner(object):
                  bg_thresh_hi=[0.5, 0.6, 0.7],
                  bg_thresh_lo=[0., 0., 0.],
                  bbox_reg_weights=[10, 20, 30],
-                 num_classes=81,
                  shuffle_before_sample=True,
+                 num_classes=81,
                  class_aware=False):
         super(CascadeBBoxAssigner, self).__init__()
         self.batch_size_per_im = batch_size_per_im

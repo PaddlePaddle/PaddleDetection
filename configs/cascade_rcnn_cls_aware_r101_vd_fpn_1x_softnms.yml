@@ -8,7 +8,7 @@ use_gpu: true
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
-weights: output/cascade_rcnn_cls_aware_r101_vd_fpn/model_final
+weights: output/cascade_rcnn_cls_aware_r101_vd_fpn_1x_softnms/model_final
 metric: COCO
 num_classes: 81
 
@@ -75,7 +75,6 @@ CascadeBBoxAssigner:
   bg_thresh_hi: [0.5, 0.6, 0.7]
   fg_thresh: [0.5, 0.6, 0.7]
   fg_fraction: 0.25
-  num_classes: 81
   class_aware: True
 
 CascadeBBoxHead:

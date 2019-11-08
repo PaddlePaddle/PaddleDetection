@@ -127,10 +127,6 @@ class CBResNet(object):
             name=name)
         return out
     
-    def add_prefix_name(self, name):
-        name = "cb_lvl_" + str(self.curr_level) + "_" + name
-        return name
-
     def _conv_norm(self,
                    input,
                    num_filters,
@@ -207,7 +203,7 @@ class CBResNet(object):
             scale = fluid.framework._get_var(pattr.name)
             bias = fluid.framework._get_var(battr.name)
         elif self.norm_type == 'affine_channel':
-            assert False, "depricated!!!"
+            assert False, "deprecated!!!"
         if self.freeze_norm:
             scale.stop_gradient = True
             bias.stop_gradient = True
@@ -407,6 +403,7 @@ class CBResNet(object):
 
         res_endpoints = []
 
+        self.curr_level = 0
         res = self.c1_stage(input)
         feature_maps = range(2, max(self.feature_maps) + 1)
         for i in feature_maps:
@@ -414,8 +411,8 @@ class CBResNet(object):
             if i in self.feature_maps:
                 res_endpoints.append(res)
         
-        self.curr_level = 1
         for num in range(1, self.repeat_num):
+            self.curr_level = num
             res = self.c1_stage(input)
             for i in range( len(res_endpoints) ):
                 res = self.connect( res_endpoints[i], res, "test_c"+str(i+1) )
@@ -423,7 +420,6 @@ class CBResNet(object):
                 res_endpoints[i] = res
                 if self.freeze_at >= i+2:
                     res.stop_gradient = True
-            self.curr_level += 1
         
         return OrderedDict([('res{}_sum'.format(self.feature_maps[idx]), feat)
                             for idx, feat in enumerate(res_endpoints)])
