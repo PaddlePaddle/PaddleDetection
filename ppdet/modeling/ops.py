@@ -266,64 +266,82 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MultiClassSoftNMS(object):
-    def __init__(
-            self,
-            score_threshold=0.01,
-            keep_top_k=300,
-            softnms_sigma=0.5,
-            normalized=False,
-            background_label=0, ):
+    def __init__(self,
+                 score_threshold=0.01,
+                 keep_top_k=300,
+                 softnms_sigma=0.5,
+                 normalized=False,
+                 background_label=0,
+                 Nt=0.3,
+                 method='gaussian',
+                 use_cpp=False):
         super(MultiClassSoftNMS, self).__init__()
         self.score_threshold = score_threshold
         self.keep_top_k = keep_top_k
         self.softnms_sigma = softnms_sigma
         self.normalized = normalized
         self.background_label = background_label
+        self.Nt = Nt
+        methods = ['gaussian', 'linear', 'hard']
+        assert method in methods, "supported methods are " + str(methods)
+        self.method = method
+        self.use_cpp = use_cpp
+        if not use_cpp:
+            return
+
+        try:
+            from ppdet.modeling.nms import NMSMethod, soft_nms
+            self.method = getattr(NMSMethod, method.upper())
+            self.soft_nms_native = soft_nms
+        except ImportError:
+            print("nms native extension not found, please build it with"
+                  + "`cmake -B build . ; cmake --build build -t install`")
+
+    def per_class_soft_nms(self, dets):
+        """soft_nms_for_cls"""
+        if self.use_cpp:
+            keep, _ = self.soft_nms_native(dets, self.method, Nt=self.Nt,
+                                           sigma=self.softnms_sigma,
+                                           threshold=self.score_threshold)
+            return keep
+
+        dets_final = []
+        while len(dets) > 0:
+            maxpos = np.argmax(dets[:, 0])
+            dets_final.append(dets[maxpos].copy())
+            ts, tx1, ty1, tx2, ty2 = dets[maxpos]
+            scores = dets[:, 0]
+            # force remove bbox at maxpos
+            scores[maxpos] = -1
+            x1 = dets[:, 1]
+            y1 = dets[:, 2]
+            x2 = dets[:, 3]
+            y2 = dets[:, 4]
+            eta = 0 if self.normalized else 1
+            areas = (x2 - x1 + eta) * (y2 - y1 + eta)
+            xx1 = np.maximum(tx1, x1)
+            yy1 = np.maximum(ty1, y1)
+            xx2 = np.minimum(tx2, x2)
+            yy2 = np.minimum(ty2, y2)
+            w = np.maximum(0.0, xx2 - xx1 + eta)
+            h = np.maximum(0.0, yy2 - yy1 + eta)
+            inter = w * h
+            ovr = inter / (areas + areas[maxpos] - inter)
+            weight = np.exp(-(ovr * ovr) / self.softnms_sigma)
+            scores = scores * weight
+            idx_keep = np.where(scores >= self.score_threshold)
+            dets[:, 0] = scores
+            dets = dets[idx_keep]
+        dets_final = np.array(dets_final).reshape(-1, 5)
+        return dets_final
 
     def __call__(self, bboxes, scores):
-        def create_tmp_var(program, name, dtype, shape, lod_level):
-            return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
-
-        def _soft_nms_for_cls(dets, sigma, thres):
-            """soft_nms_for_cls"""
-            dets_final = []
-            while len(dets) > 0:
-                maxpos = np.argmax(dets[:, 0])
-                dets_final.append(dets[maxpos].copy())
-                ts, tx1, ty1, tx2, ty2 = dets[maxpos]
-                scores = dets[:, 0]
-                # force remove bbox at maxpos
-                scores[maxpos] = -1
-                x1 = dets[:, 1]
-                y1 = dets[:, 2]
-                x2 = dets[:, 3]
-                y2 = dets[:, 4]
-                eta = 0 if self.normalized else 1
-                areas = (x2 - x1 + eta) * (y2 - y1 + eta)
-                xx1 = np.maximum(tx1, x1)
-                yy1 = np.maximum(ty1, y1)
-                xx2 = np.minimum(tx2, x2)
-                yy2 = np.minimum(ty2, y2)
-                w = np.maximum(0.0, xx2 - xx1 + eta)
-                h = np.maximum(0.0, yy2 - yy1 + eta)
-                inter = w * h
-                ovr = inter / (areas + areas[maxpos] - inter)
-                weight = np.exp(-(ovr * ovr) / sigma)
-                scores = scores * weight
-                idx_keep = np.where(scores >= thres)
-                dets[:, 0] = scores
-                dets = dets[idx_keep]
-            dets_final = np.array(dets_final).reshape(-1, 5)
-            return dets_final
-
         def _soft_nms(bboxes, scores):
             bboxes = np.array(bboxes)
             scores = np.array(scores)
             class_nums = scores.shape[-1]
 
             softnms_thres = self.score_threshold
-            softnms_sigma = self.softnms_sigma
             keep_top_k = self.keep_top_k
 
             cls_boxes = [[] for _ in range(class_nums)]
@@ -339,10 +357,9 @@ class MultiClassSoftNMS(object):
                 cls_rank = np.argsort(-dets_j[:, 0])
                 dets_j = dets_j[cls_rank]
 
-                cls_boxes[j] = _soft_nms_for_cls(
-                    dets_j, sigma=softnms_sigma, thres=softnms_thres)
-                cls_ids[j] = np.array([j] * cls_boxes[j].shape[0]).reshape(-1,
-                                                                           1)
+                cls_boxes[j] = self.per_class_soft_nms(dets_j)
+                cls_ids[j] = np.array(
+                    [j] * cls_boxes[j].shape[0]).reshape(-1, 1)
 
             cls_boxes = np.vstack(cls_boxes[start_idx:])
             cls_ids = np.vstack(cls_ids[start_idx:])
@@ -360,17 +377,13 @@ class MultiClassSoftNMS(object):
             if pred_result.shape[0] == 0:
                 pred_result = np.array([[1]], dtype=np.float32)
             res.set(pred_result, fluid.CPUPlace())
-
             return res
 
-        pred_result = create_tmp_var(
-            fluid.default_main_program(),
-            name='softnms_pred_result',
-            dtype='float32',
-            shape=[6],
-            lod_level=1)
-        fluid.layers.py_func(
-            func=_soft_nms, x=[bboxes, scores], out=pred_result)
+        pred_result = fluid.default_main_program().current_block().create_var(
+            name='softnms_pred_result', dtype='float32', shape=[6],
+            lod_leval=1)
+        fluid.layers.py_func(func=_soft_nms,
+                             x=[bboxes, scores], out=pred_result)
         return pred_result
 
 
