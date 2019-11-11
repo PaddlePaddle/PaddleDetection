@@ -28,7 +28,7 @@ from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
 from .name_adapter import NameAdapter
-from .nonlocal_helper import add_space_nonlocal
+from .nonlocal import add_space_nonlocal
 
 __all__ = ['CBResNet']
 
