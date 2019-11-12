@@ -82,6 +82,18 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 | CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
+### Faster RCNN 基于Object365数据集
+
+| 骨架网络             | 网络类型           | 卷积    | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | Mask AP |                           下载                           |
+| :------------------- | :------------- | :-----: |:--------: | :-----: | :-----------: |:----: | :-----: | :----------------------------------------------------------: |
+| ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   -    |     -     |  34.5%(softnms)  |    -    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/obj365_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
+
+
+### Faster RCNN基于Open Images Dataset V5数据集
+| 骨架网络             | 网络类型           | 卷积    | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Public Score | Private Score |                           下载                           |
+| :------------------- | :------------- | :-----: |:--------: | :-----: | :-----------: |:----: | :-----: | :----------------------------------------------------------: |
+| ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   -    |     -     |  0.62690(softnms)  |   0.59459(softnms)     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
+
 
 #### 注意事项:
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
