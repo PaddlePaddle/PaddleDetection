@@ -28,7 +28,7 @@ from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
 from .name_adapter import NameAdapter
-from .nonlocal import add_space_nonlocal
+from .nonlocal_helper import add_space_nonlocal
 
 __all__ = ['CBResNet']
 
@@ -99,7 +99,7 @@ class CBResNet(object):
             152: ([3, 8, 36, 3], self.bottleneck),
             200: ([3, 12, 48, 3], self.bottleneck),
         }
-        
+
         self.nonlocal_stages = nonlocal_stages
         self.nonlocal_mod_cfg = {
             50  : 2,
@@ -107,11 +107,11 @@ class CBResNet(object):
             152 : 8,
             200 : 12,
         }
-        
+
         self.stage_filters = [64, 128, 256, 512]
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
-        
+
     def _conv_offset(self, input, filter_size, stride, padding, act=None, name=None):
         out_channel = filter_size * filter_size * 3
         out = fluid.layers.conv2d(input,
@@ -126,7 +126,7 @@ class CBResNet(object):
             act=act,
             name=name)
         return out
-    
+
     def _conv_norm(self,
                    input,
                    num_filters,
@@ -247,7 +247,7 @@ class CBResNet(object):
 
         conv_name1, conv_name2, conv_name3, \
             shortcut_name = self.na.fix_bottleneck_name(name)
-        
+
         conv_def = [[num_filters, 1, stride1, 'relu', 1, conv_name1],
                     [num_filters, 3, stride2, 'relu', groups, conv_name2],
                     [num_filters * expand, 1, 1, None, 1, conv_name3]]
@@ -312,12 +312,12 @@ class CBResNet(object):
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
         dcn = True if stage_num in self.dcn_v2_stages else False
-        
-        
+
+
         nonlocal_mod = 1000
         if stage_num in self.nonlocal_stages:
             nonlocal_mod = self.nonlocal_mod_cfg[self.depth] if stage_num==4 else 2
-        
+
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
         conv = input
@@ -332,15 +332,15 @@ class CBResNet(object):
                 is_first=is_first,
                 name=conv_name,
                 dcn=dcn)
-            
+
             # add non local model
             dim_in = conv.shape[1]
             nonlocal_name = "nonlocal_conv{}_lvl{}".format( stage_num, self.curr_level )
             if i % nonlocal_mod == nonlocal_mod - 1:
                 conv = add_space_nonlocal(
                     conv, dim_in, dim_in,
-                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )   
-                
+                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )
+
         return conv
 
     def c1_stage(self, input):
@@ -376,7 +376,7 @@ class CBResNet(object):
             pool_padding=1,
             pool_type='max')
         return output
-    
+
     def connect( self, left, right, name ):
         ch_right = right.shape[1]
         conv = self._conv_norm( left,
@@ -392,7 +392,7 @@ class CBResNet(object):
         out_shape.stop_gradient = True
         conv = fluid.layers.resize_nearest(
             conv, scale=2., actual_shape=out_shape)
-        
+
         output = fluid.layers.elementwise_add(x=right, y=conv)
         return output
 
@@ -410,7 +410,7 @@ class CBResNet(object):
             res = self.layer_warp(res, i)
             if i in self.feature_maps:
                 res_endpoints.append(res)
-        
+
         for num in range(1, self.repeat_num):
             self.curr_level = num
             res = self.c1_stage(input)
@@ -420,7 +420,6 @@ class CBResNet(object):
                 res_endpoints[i] = res
                 if self.freeze_at >= i+2:
                     res.stop_gradient = True
-        
+
         return OrderedDict([('res{}_sum'.format(self.feature_maps[idx]), feat)
                             for idx, feat in enumerate(res_endpoints)])
-
