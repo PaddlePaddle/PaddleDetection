@@ -27,7 +27,7 @@ from paddle.fluid.initializer import Constant
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
-from .nonlocal import add_space_nonlocal
+from .nonlocal_helper import add_space_nonlocal
 from .name_adapter import NameAdapter
 
 __all__ = ['ResNet', 'ResNetC5']
