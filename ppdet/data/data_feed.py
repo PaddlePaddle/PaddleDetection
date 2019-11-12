@@ -558,6 +558,7 @@ class FasterRCNNTestFeed(DataFeed):
                                     std=[0.229, 0.224, 0.225],
                                     is_scale=True,
                                     is_channel_first=False),
+                     ResizeImage(target_size=800, max_size=1333, interp=1),
                      Permute(to_bgr=False)
                  ],
                  batch_transforms=[PadBatch()],
@@ -704,6 +705,7 @@ class MaskRCNNTestFeed(DataFeed):
                          std=[0.229, 0.224, 0.225],
                          is_scale=True,
                          is_channel_first=False),
+                     ResizeImage(target_size=800, max_size=1333, interp=1),
                      Permute(to_bgr=False, channel_first=True)
                  ],
                  batch_transforms=[PadBatch()],
