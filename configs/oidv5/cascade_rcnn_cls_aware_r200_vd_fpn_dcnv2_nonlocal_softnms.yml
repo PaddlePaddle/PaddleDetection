@@ -2,7 +2,7 @@ architecture: CascadeRCNNClsAware
 train_feed: FasterRCNNTrainFeed
 eval_feed: FasterRCNNEvalFeed
 test_feed: FasterRCNNTestFeed
-max_iters: 460000
+max_iters: 1500000
 snapshot_iter: 10000
 use_gpu: true
 log_smooth_window: 20
@@ -96,7 +96,7 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [340000, 440000]
+    milestones: [1000000, 1400000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
