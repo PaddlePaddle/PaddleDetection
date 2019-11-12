@@ -389,6 +389,7 @@ class RetinaHead(object):
                 im_info=im_info,
                 num_classes=self.num_classes - 1)
         fg_num = fluid.layers.reduce_sum(fg_num, name='fg_num')
+        score_tgt = fluid.layers.cast(score_tgt, 'int32')
         loss_cls = fluid.layers.sigmoid_focal_loss(
             x=score_pred,
             label=score_tgt,
