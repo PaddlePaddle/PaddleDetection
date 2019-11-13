@@ -9,6 +9,7 @@ log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet200_vd_pretrained.tar
 weights: output/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms/model_final
+# obj365 dataset format and its eval method are same as those for coco
 metric: COCO
 num_classes: 366
 
