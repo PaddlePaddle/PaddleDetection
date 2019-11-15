@@ -1000,20 +1000,21 @@ class RandomInterpImage(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
+    """Resize image and bbox.
+
+    Args:
+        target_dim (int or list): target size, can be a single number or a list
+            (for random shape).
+        interp (int or str): interpolation method, can be an integer or
+            'random' (for randomized interpolation).
+            default to `cv2.INTER_LINEAR`.
+    """
     def __init__(self,
-                 resize_shorter=None,
-                 resize_longer=None,
                  target_dim=[],
-                 interp=cv2.INTER_LINEAR,
-                 scale_box=None,
-                 force_pil=False):
+                 interp=cv2.INTER_LINEAR):
         super(Resize, self).__init__()
-        self.resize_shorter = resize_shorter
-        self.resize_longer = resize_longer
         self.target_dim = target_dim
         self.interp = interp  # 'random' for yolov3
-        self.scale_box = scale_box
-        self.force_pil = force_pil
 
     def __call__(self, sample, context=None):
         w = sample['w']
@@ -1023,63 +1024,43 @@ class Resize(BaseOperator):
         if interp == 'random':
             interp = np.random.choice(range(5))
 
-        if self.target_dim:
-            assert (self.resize_shorter is None
-                    and self.resize_longer is None), \
-                "do not set both target_dim and resize_shorter/resize_longer"
-            if isinstance(self.target_dim, Sequence):
-                dim = np.random.choice(self.target_dim)
-            else:
-                dim = self.target_dim
-            resize_w = resize_h = dim
-            scale_x = dim / w
-            scale_y = dim / h
-            # XXX default to scale bbox for YOLO and SSD
-            if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-                if self.scale_box or self.scale_box is None:
-                    scale_array = np.array([scale_x, scale_y] * 2,
-                                           dtype=np.float32)
-                    sample['gt_bbox'] = np.clip(
-                        sample['gt_bbox'] * scale_array, 0, dim - 1)
-            sample['h'] = resize_h
-            sample['w'] = resize_w
+        if isinstance(self.target_dim, Sequence):
+            dim = np.random.choice(self.target_dim)
         else:
-            resize_shorter = self.resize_shorter
-            if isinstance(self.resize_shorter, Sequence):
-                resize_shorter = np.random.choice(resize_shorter)
+            dim = self.target_dim
+        resize_w = resize_h = dim
+        scale_x = dim / w
+        scale_y = dim / h
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            if self.scale_box or self.scale_box is None:
+                scale_array = np.array([scale_x, scale_y] * 2,
+                                       dtype=np.float32)
+                sample['gt_bbox'] = np.clip(
+                    sample['gt_bbox'] * scale_array, 0, dim - 1)
+        sample['h'] = resize_h
+        sample['w'] = resize_w
 
-            dim_max, dim_min = w > h and (w, h) or (h, w)
-            scale = min(self.resize_longer / dim_max, resize_shorter / dim_min)
-            resize_w = int(round(w * scale))
-            resize_h = int(round(h * scale))
-            sample['scale'] = scale
-            # XXX this is for RCNN, not scaling bbox by default
-            # commonly the labels (bboxes and masks) are scaled by the
-            # dataloader, but somehow Paddle choose to do it later.
-            # This is why we need to pass "scale" around, and this also results
-            # in some other caveats, e.g., all transformations that modify
-            # bboxes (currently `RandomFlip`) must be applied BEFORE `Resize`.
-            if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-                if self.scale_box:
-                    scale_array = np.array([scale, scale] * 2,
-                                           dtype=np.float32)
-                    sample['gt_bbox'] = np.clip(
-                        sample['gt_bbox'] * scale_array, 0, dim - 1)
-
-        if self.force_pil:
-            from PIL import Image
-            img = Image.fromarray(sample['image'])
-            img = img.resize((resize_w, resize_h), interp)
-            img = np.array(img)
-            sample['image'] = img
-        else:
-            sample['image'] = cv2.resize(
-                sample['image'], (resize_w, resize_h), interpolation=interp)
+        sample['image'] = cv2.resize(
+            sample['image'], (resize_w, resize_h), interpolation=interp)
         return sample
 
 
 @register_op
 class ColorDistort(BaseOperator):
+    """Random color distortion.
+
+    Args:
+        hue (list): hue settings.
+            in [lower, upper, probability] format.
+        saturation (list): saturation settings.
+            in [lower, upper, probability] format.
+        contrast (list): contrast settings.
+            in [lower, upper, probability] format.
+        brightness (list): brightness settings.
+            in [lower, upper, probability] format.
+        random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
+            order.
+    """
     def __init__(self,
                  hue=[-18, 18, 0.5],
                  saturation=[0.5, 1.5, 0.5],
@@ -1181,6 +1162,12 @@ class ColorDistort(BaseOperator):
 
 @register_op
 class NormalizePermute(BaseOperator):
+    """Normalize and permute channel order.
+
+    Args:
+        mean (list): mean values in RGB order.
+        std (list): std values in RGB order.
+    """
     def __init__(self,
                  mean=[123.675, 116.28, 103.53],
                  std=[58.395, 57.120, 57.375]):
@@ -1204,6 +1191,13 @@ class NormalizePermute(BaseOperator):
 
 @register_op
 class RandomExpand(BaseOperator):
+    """Random expand the canvas.
+
+    Args:
+        ratio (float): maximum expansion ratio.
+        prob (float): probability to expand.
+        fill_value (list): color value used to fill the canvas. in RGB order.
+    """
     def __init__(self, ratio=4., prob=0.5, fill_value=(127.5,) * 3):
         super(RandomExpand, self).__init__()
         assert ratio > 1.01, "expand ratio must be larger than 1.01"
@@ -1246,6 +1240,18 @@ class RandomExpand(BaseOperator):
 
 @register_op
 class RandomCrop(BaseOperator):
+    """Random crop image and bboxes.
+
+    Args:
+        aspect_ratio (list): aspect ratio of cropped region.
+            in [min, max] format.
+        thresholds (list): iou thresholds for decide a valid bbox crop.
+        scaling (list): ratio between a cropped region and the original image.
+             in [min, max] format.
+        num_attempts (int): number of tries before giving up.
+        allow_no_crop (bool): allow return without actually cropping them.
+        cover_all_box (bool): ensure all bboxes are covered in the final crop.
+    """
     def __init__(self,
                  aspect_ratio=[.5, 2.],
                  thresholds=[.0, .1, .3, .5, .7, .9],
