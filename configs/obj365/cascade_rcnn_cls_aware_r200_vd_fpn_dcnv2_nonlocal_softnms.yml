@@ -113,9 +113,9 @@ OptimizerBuilder:
 FasterRCNNTrainFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
+    dataset_dir: dataset/obj365
+    annotation: train.json
+    image_dir: train
   sample_transforms: 
   - !DecodeImage
     to_rgb: True

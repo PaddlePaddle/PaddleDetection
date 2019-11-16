@@ -85,15 +85,6 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 | CBResNet200-vd-FPN-Nonlocal | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
-### Faster RCNN on Object365
-| Backbone                | Type           | Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
-| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   -    |     -     |  34.5%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/obj365_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
-
-### Faster RCNN on Open Images Dataset V5
-| Backbone                | Type           | Conv  | Image/gpu | Lr schd | Inf time (fps) | Public Score | Private Score |                           Download                           |
-| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| ResNet200-vd-FPN-Nonlocal    | CascadeClsAware Faster  | c3-c5 |     1     |   -    |     -     |  0.62690(softnms)  |   0.59459(softnms)     | [model](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
 #### Notes:

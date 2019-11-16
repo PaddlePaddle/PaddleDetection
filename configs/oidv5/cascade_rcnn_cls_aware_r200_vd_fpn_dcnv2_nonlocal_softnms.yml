@@ -112,9 +112,9 @@ OptimizerBuilder:
 FasterRCNNTrainFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
+    dataset_dir: dataset/oid
+    annotation: train.json
+    image_dir: train
   sample_transforms: 
   - !DecodeImage
     to_rgb: True
@@ -148,8 +148,8 @@ FasterRCNNTrainFeed:
 FasterRCNNEvalFeed:
   batch_size: 1
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
+    dataset_dir: dataset/oidv5
+    annotation: val.json
     image_dir: val
   sample_transforms: 
   - !DecodeImage
@@ -181,7 +181,7 @@ FasterRCNNEvalFeed:
 FasterRCNNTestFeed:
   batch_size: 1
   dataset:
-    annotation: annotations/instances_val2017.json
+    annotation: dataset/oidv5/val.json
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
