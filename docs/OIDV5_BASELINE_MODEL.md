@@ -26,14 +26,14 @@ OIDV5模型训练结果如下。
 | CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd |    0.62690/0.59459    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
-此外，为验证模型的性能，团队基于该模型结构，也训练了针对COCO2017和Objects365 Dataset的模型，模型和验证集指标如下表，这也验证了模型的泛化性能。
+此外，为验证模型的性能，团队基于该模型结构，也训练了针对COCO2017和Objects365 Dataset的模型，模型和验证集指标如下表。
 
 |        模型结构         | 数据集 |  验证集mAP |                           下载链接                           |
 | :-----------------: | :--------: | :--------: | :----------------------------------------------------------: |
 | CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | COCO2017 |    51.7%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 | CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | Objects365 |    34.5%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/obj365_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
-COCO和Objects365 Dataset数据格式相同，目前支持预测和评估。
+COCO和Objects365 Dataset数据格式相同，目前只支持预测和评估。
 
 ## 使用方法
 
