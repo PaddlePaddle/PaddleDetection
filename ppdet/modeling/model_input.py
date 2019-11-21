@@ -52,10 +52,10 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
     # tensor padding with 0 is used instead of LoD tensor when 
     # num_max_boxes is set
     if getattr(feed, 'num_max_boxes', None) is not None:
-        feed_var_map['gt_label']['shape'] = [feed.num_max_boxes]
-        feed_var_map['gt_score']['shape'] = [feed.num_max_boxes]
-        feed_var_map['gt_box']['shape'] = [feed.num_max_boxes, 4]
-        feed_var_map['is_difficult']['shape'] = [feed.num_max_boxes]
+        feed_var_map['gt_label']['shape'] = [None, feed.num_max_boxes]
+        feed_var_map['gt_score']['shape'] = [None, feed.num_max_boxes]
+        feed_var_map['gt_box']['shape'] = [None, feed.num_max_boxes, 4]
+        feed_var_map['is_difficult']['shape'] = [None, feed.num_max_boxes]
         feed_var_map['gt_label']['lod_level'] = 0
         feed_var_map['gt_score']['lod_level'] = 0
         feed_var_map['gt_box']['lod_level'] = 0
