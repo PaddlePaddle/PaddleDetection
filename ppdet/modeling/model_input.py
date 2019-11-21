@@ -25,16 +25,16 @@ __all__ = ['create_feed']
 
 # yapf: disable
 feed_var_def = [
-    {'name': 'im_info',       'shape': [3],  'dtype': 'float32', 'lod_level': 0},
-    {'name': 'im_id',         'shape': [1],  'dtype': 'int32',   'lod_level': 0},
-    {'name': 'gt_box',        'shape': [4],  'dtype': 'float32', 'lod_level': 1},
-    {'name': 'gt_label',      'shape': [1],  'dtype': 'int32',   'lod_level': 1},
-    {'name': 'is_crowd',      'shape': [1],  'dtype': 'int32',   'lod_level': 1},
-    {'name': 'gt_mask',       'shape': [2],  'dtype': 'float32', 'lod_level': 3},
-    {'name': 'is_difficult',  'shape': [1],  'dtype': 'int32',   'lod_level': 1},
-    {'name': 'gt_score',      'shape': [1],  'dtype': 'float32', 'lod_level': 0},
-    {'name': 'im_shape',      'shape': [3],  'dtype': 'float32', 'lod_level': 0},
-    {'name': 'im_size',       'shape': [2],  'dtype': 'int32',   'lod_level': 0},
+    {'name': 'im_info',       'shape': [None, 3],  'dtype': 'float32', 'lod_level': 0},
+    {'name': 'im_id',         'shape': [None, 1],  'dtype': 'int32',   'lod_level': 0},
+    {'name': 'gt_box',        'shape': [None, 4],  'dtype': 'float32', 'lod_level': 1},
+    {'name': 'gt_label',      'shape': [None, 1],  'dtype': 'int32',   'lod_level': 1},
+    {'name': 'is_crowd',      'shape': [None, 1],  'dtype': 'int32',   'lod_level': 1},
+    {'name': 'gt_mask',       'shape': [None, 2],  'dtype': 'float32', 'lod_level': 3},
+    {'name': 'is_difficult',  'shape': [None, 1],  'dtype': 'int32',   'lod_level': 1},
+    {'name': 'gt_score',      'shape': [None, 1],  'dtype': 'float32', 'lod_level': 0},
+    {'name': 'im_shape',      'shape': [None, 3],  'dtype': 'float32', 'lod_level': 0},
+    {'name': 'im_size',       'shape': [None, 2],  'dtype': 'int32',   'lod_level': 0},
 ]
 # yapf: enable
 
@@ -113,7 +113,7 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
             feed.fields = feed.fields + [box_name]
             feed_var_map[box_name] = sub_prog_feed
 
-    feed_vars = OrderedDict([(key, fluid.layers.data(
+    feed_vars = OrderedDict([(key, fluid.data(
         name=feed_var_map[key]['name'],
         shape=feed_var_map[key]['shape'],
         dtype=feed_var_map[key]['dtype'],
