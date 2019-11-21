@@ -130,6 +130,10 @@ Advanced Features:
 - Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
   R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, and SSD.
 
+#### 21/11/2019
+- Add CascadeClsAware RCNN model.
+- Add models of Open Image V5 Dataset and Objects365 Dataset.
+
 
 ## Contributing
 

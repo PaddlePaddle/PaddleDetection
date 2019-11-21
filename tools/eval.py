@@ -106,13 +106,16 @@ def main():
     exe.run(startup_prog)
     if 'weights' in cfg:
         checkpoint.load_params(exe, eval_prog, cfg.weights)
-
+    
+    assert cfg.metric != 'OID', "eval process of OID dataset \
+                          is not supported."
     if cfg.metric == "WIDERFACE":
         raise ValueError("metric type {} does not support in tools/eval.py, "
                          "please use tools/face_eval.py".format(cfg.metric))
     assert cfg.metric in ['COCO', 'VOC'], \
             "unknown metric type {}".format(cfg.metric)
     extra_keys = []
+    
     if cfg.metric == 'COCO':
         extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg.metric == 'VOC':

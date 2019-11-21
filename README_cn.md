@@ -120,6 +120,11 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - 模型包括：Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
   R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, 和SSD.
 
+
+#### 21/11/2019
+- 增加CascadeClsAware RCNN模型。
+- 增加Open Image V5数据集和Objects365数据集模型。
+
 ## 如何贡献代码
 
 我们非常欢迎你可以为PaddleDetection提供代码，也十分感谢你的反馈。
