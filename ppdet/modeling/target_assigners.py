@@ -70,6 +70,6 @@ class CascadeBBoxAssigner(object):
             bbox_reg_weights=curr_bbox_reg_w,
             use_random=self.use_random,
             class_nums=self.class_nums if self.class_aware else 2,
-            is_cls_agnostic=True,
+            is_cls_agnostic=not self.class_aware,
             is_cascade_rcnn=True if curr_stage > 0 and not self.class_aware else False)
         return outs
