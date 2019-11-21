@@ -1032,11 +1032,10 @@ class Resize(BaseOperator):
         scale_x = dim / w
         scale_y = dim / h
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            if self.scale_box or self.scale_box is None:
-                scale_array = np.array([scale_x, scale_y] * 2,
-                                       dtype=np.float32)
-                sample['gt_bbox'] = np.clip(
-                    sample['gt_bbox'] * scale_array, 0, dim - 1)
+            scale_array = np.array([scale_x, scale_y] * 2,
+                                   dtype=np.float32)
+            sample['gt_bbox'] = np.clip(
+                sample['gt_bbox'] * scale_array, 0, dim - 1)
         sample['h'] = resize_h
         sample['w'] = resize_w
 
