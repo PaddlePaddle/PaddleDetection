@@ -96,6 +96,10 @@ Advanced Features:
 
 ## Updates
 
+#### 21/11/2019
+- Add CascadeClsAware RCNN model.
+- Add models of Open Image V5 Dataset and Objects365 Dataset.
+
 #### 10/2019
 
 - Add enhanced YOLOv3 models, box mAP up to 41.4%.
@@ -129,10 +133,6 @@ Advanced Features:
 - Initial release of PaddleDetection and detection model zoo
 - Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
   R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, and SSD.
-
-#### 21/11/2019
-- Add CascadeClsAware RCNN model.
-- Add models of Open Image V5 Dataset and Objects365 Dataset.
 
 
 ## Contributing
