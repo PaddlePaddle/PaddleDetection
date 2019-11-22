@@ -68,10 +68,8 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 - [模型库](docs/MODEL_ZOO_cn.md)
 - [人脸检测模型](configs/face_detection/README.md)
-
-## 特色模型
 - [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
-- [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度提升2.5%，速度提升17%
+- [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
 
 

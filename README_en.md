@@ -77,10 +77,8 @@ Advanced Features:
 
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
 - [Face detection models](configs/face_detection/README.md)
-
-## Featured models
 - [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios. 
-- [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Enhance YOLOv3 to increase the MAP by 2.5% and boost speed by 17%
+- [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 41.4% and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
 
 ## Model compression
