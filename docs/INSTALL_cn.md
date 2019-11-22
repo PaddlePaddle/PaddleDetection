@@ -67,12 +67,11 @@ python -c "import paddle; print(paddle.__version__)"
 
 **克隆Paddle models模型库：**
 
-您可以通过以下命令克隆Paddle models模型库并切换工作目录至PaddleDetection：
+您可以通过以下命令克隆PaddleDetection：
 
 ```
-cd <path/to/clone/models>
-git clone https://github.com/PaddlePaddle/models
-cd models/PaddleCV/PaddleDetection
+cd <path/to/clone/PaddleDetection>
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
 
 **安装Python依赖库：**
