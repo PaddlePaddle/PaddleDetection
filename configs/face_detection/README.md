@@ -135,8 +135,11 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 **NOTES:**  
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
-- P4(trt32) and CPU test based on PaddlePaddle, PaddlePaddle version is 1.6.1
-- thread number is 1 test on Qualcomm SnapDragon 855(armv8) and based on PaddleLite, PaddleLite version is 2.0.0
+- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.6.1
+- ARM test environment:
+    - Qualcomm SnapDragon 855(armv8)
+    - Single thread
+    - Paddle-Lite version 2.0.0
 
 
 ## Get Started
