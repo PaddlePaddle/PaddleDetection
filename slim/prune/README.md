@@ -8,7 +8,7 @@
 在阅读该示例前，建议您先了解以下内容：
 
 - <a href="../../README_cn.md">检测库的常规训练方法</a>
-- [检测模型数据准备](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/docs/INSTALL_cn.md#%E6%95%B0%E6%8D%AE%E9%9B%86)
+- [检测模型数据准备](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/INSTALL_cn.md#%E6%95%B0%E6%8D%AE%E9%9B%86)
 - [PaddleSlim使用文档](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md)
 
 
