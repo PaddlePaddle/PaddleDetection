@@ -167,4 +167,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ## 人脸检测
 
-详细请参考[人脸检测模型](../configs/face_detection).
+详细请参考[人脸检测模型](../configs/face_detection)。
+
+
+## 基于Open Images V5数据集的物体检测
+
+详细请参考[Open Images V5数据集基线模型](OIDV5_BASELINE_MODEL.md)。

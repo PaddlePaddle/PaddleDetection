@@ -177,3 +177,8 @@ randomly cropping, randomly expansion, randomly flipping.
 ## Face Detection
 
 Please refer [face detection models](../configs/face_detection) for details.
+
+
+## Object Detection in Open Images Dataset V5
+
+Please refer [Open Images Dataset V5 Baseline model](OIDV5_BASELINE_MODEL.md) for details.

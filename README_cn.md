@@ -69,6 +69,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [模型库](docs/MODEL_ZOO_cn.md)
 - [人脸检测模型](configs/face_detection/README.md)
 - [行人检测和车辆检测预训练模型](contrib/README_cn.md)
+- [Open Images V5和Objects365数据集模型](docs/OIDV5_BASELINE_MODEL.md)
 
 
 ## 模型压缩

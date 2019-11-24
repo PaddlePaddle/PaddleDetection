@@ -78,6 +78,7 @@ Advanced Features:
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
 - [Face detection models](configs/face_detection/README.md)
 - [Pretrained models for pedestrian  and vehicle detection](contrib/README.md)
+- [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
 
 ## Model compression
 
