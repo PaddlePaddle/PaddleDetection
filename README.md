@@ -71,6 +71,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
 - [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
+- [Open Images V5和Objects365数据集模型](docs/OIDV5_BASELINE_MODEL.md)
 
 
 ## 模型压缩
@@ -90,8 +91,13 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 ## 版本更新
 
-### 10/2019
+### 21/11/2019
+- 增加CascadeClsAware RCNN模型。
+- 增加CBNet，ResNet200和Non-local模型。
+- 增加SoftNMS。
+- 增加Open Image V5数据集和Objects365数据集模型。
 
+### 10/2019
 - 增加增强版YOLOv3模型，精度高达41.4%。
 - 增加人脸检测模型BlazeFace、Faceboxes。
 - 丰富基于COCO的模型，精度高达51.9%。
