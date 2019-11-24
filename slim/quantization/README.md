@@ -7,7 +7,7 @@
 该示例使用PaddleSlim提供的[量化压缩策略](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/tutorial.md#1-quantization-aware-training%E9%87%8F%E5%8C%96%E4%BB%8B%E7%BB%8D)对分类模型进行压缩。
 在阅读该示例前，建议您先了解以下内容：
 
-- [检测模型的常规训练方法](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection)
+- [检测模型的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim使用文档](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md)
 
 
@@ -29,7 +29,7 @@
 根据运行结果可看到Variable的名字为：`multiclass_nms_0.tmp_0`。
 ## 训练
 
-根据 [PaddleCV/PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/tools/train.py) 编写压缩脚本compress.py。
+根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py) 编写压缩脚本compress.py。
 在该脚本中定义了Compressor对象，用于执行压缩任务。
 
 通过`python compress.py --help`查看可配置参数，简述如下：

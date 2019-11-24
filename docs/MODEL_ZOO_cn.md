@@ -87,7 +87,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 #### 注意事项:
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5`意思是在resnet模块的3到5阶段增加`dcn`.
-- 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/dcn)
+- 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
 
 ### Group Normalization
 | 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |
@@ -97,7 +97,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 #### 注意事项:
 - Group Normalization参考论文[Group Normalization](https://arxiv.org/abs/1803.08494).
-- 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
+- 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gn)
 
 ### YOLO v3
 
