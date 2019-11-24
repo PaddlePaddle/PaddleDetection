@@ -98,7 +98,9 @@ Advanced Features:
 
 #### 21/11/2019
 - Add CascadeClsAware RCNN model.
-- Add models of Open Image V5 Dataset and Objects365 Dataset.
+- Add CBNet, ResNet200 and Non-local model.
+- Add SoftNMS.
+- Add models of Open Images Dataset V5 and Objects365 Dataset.
 
 #### 10/2019
 

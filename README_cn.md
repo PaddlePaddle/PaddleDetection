@@ -90,6 +90,8 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 #### 21/11/2019
 - 增加CascadeClsAware RCNN模型。
+- 增加CBNet，ResNet200和Non-local模型。
+- 增加SoftNMS。
 - 增加Open Image V5数据集和Objects365数据集模型。
 
 ### 10/2019
