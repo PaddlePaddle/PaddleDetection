@@ -83,6 +83,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
+
 #### 注意事项:
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5`意思是在resnet模块的3到5阶段增加`dcn`.
@@ -166,4 +167,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ## 人脸检测
 
-详细请参考[人脸检测模型](../configs/face_detection).
+详细请参考[人脸检测模型](../configs/face_detection)。
+
+
+## 基于Open Images V5数据集的物体检测
+
+详细请参考[Open Images V5数据集基线模型](OIDV5_BASELINE_MODEL.md)。
