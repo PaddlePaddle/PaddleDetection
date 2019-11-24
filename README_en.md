@@ -80,6 +80,7 @@ Advanced Features:
 - [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios. 
 - [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 41.4% and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
+- [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
 
 ## Model compression
 
@@ -97,6 +98,12 @@ Advanced Features:
 
 
 ## Updates
+
+#### 21/11/2019
+- Add CascadeClsAware RCNN model.
+- Add CBNet, ResNet200 and Non-local model.
+- Add SoftNMS.
+- Add models of Open Images Dataset V5 and Objects365 Dataset.
 
 #### 10/2019
 

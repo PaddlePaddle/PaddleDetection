@@ -66,18 +66,11 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 ## 模型库
 
-<<<<<<< HEAD
-- Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
-- [Face detection models](configs/face_detection/README.md)
-- [Pretrained models for pedestrian  and vehicle detection](contrib/README.md)
-- [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
-=======
 - [模型库](docs/MODEL_ZOO_cn.md)
 - [人脸检测模型](configs/face_detection/README.md)
 - [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
 - [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
->>>>>>> dadbbca4f7ce57d1af3b773bdaaa4597bf68a01a
 
 
 ## 模型压缩
@@ -95,20 +88,15 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 
 
-<<<<<<< HEAD
-#### 21/11/2019
-- Add CascadeClsAware RCNN model.
-- Add CBNet, ResNet200 and Non-local model.
-- Add SoftNMS.
-- Add models of Open Images Dataset V5 and Objects365 Dataset.
-
-#### 10/2019
-=======
 ## 版本更新
->>>>>>> dadbbca4f7ce57d1af3b773bdaaa4597bf68a01a
+
+#### 21/11/2019
+- 增加CascadeClsAware RCNN模型。
+- 增加CBNet，ResNet200和Non-local模型。
+- 增加SoftNMS。
+- 增加Open Image V5数据集和Objects365数据集模型。
 
 ### 10/2019
-
 - 增加增强版YOLOv3模型，精度高达41.4%。
 - 增加人脸检测模型BlazeFace、Faceboxes。
 - 丰富基于COCO的模型，精度高达51.9%。
