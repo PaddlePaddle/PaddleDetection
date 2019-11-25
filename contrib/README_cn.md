@@ -18,7 +18,7 @@ Backbone为Dacknet53的YOLOv3。
 
 ### 2. 训练参数配置
 
-PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darnet.yml](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/configs/yolov3_darknet.yml)，与之相比，在进行车辆检测的模型训练时，我们对以下参数进行了修改：
+PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darnet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml)，与之相比，在进行车辆检测的模型训练时，我们对以下参数进行了修改：
 
 * max_iters: 120000
 * num_classes: 6
@@ -69,7 +69,7 @@ Backbone为Dacknet53的YOLOv3。
 
 ### 2. 训练参数配置
 
-PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darnet.yml](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/configs/yolov3_darknet.yml)，与之相比，在进行行人检测的模型训练时，我们对以下参数进行了修改：
+PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml)，与之相比，在进行行人检测的模型训练时，我们对以下参数进行了修改：
 
 * max_iters: 200000
 * num_classes: 1

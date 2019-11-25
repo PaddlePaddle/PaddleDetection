@@ -17,7 +17,7 @@ The network for detecting vehicles is YOLOv3, the backbone of which is Dacknet53
 
 ### 2. Configuration for training
 
-PaddleDetection provides users with a configuration file [yolov3_darnet.yml](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/configs/yolov3_darknet.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for vehicle detection:
+PaddleDetection provides users with a configuration file [yolov3_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for vehicle detection:
 
 * max_iters: 120000
 * num_classes: 6
@@ -67,7 +67,7 @@ The network for detecting vehicles is YOLOv3, the backbone of which is Dacknet53
 
 ### 2. Configuration for training
 
-PaddleDetection provides users with a configuration file [yolov3_darnet.yml](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/configs/yolov3_darknet.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for pedestrian detection:
+PaddleDetection provides users with a configuration file [yolov3_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml) to train YOLOv3 on the COCO dataset, compared with this file, we modify some parameters as followed to conduct the training for pedestrian detection:
 
 * max_iters: 200000
 * num_classes: 1

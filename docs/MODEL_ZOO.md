@@ -90,7 +90,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 #### Notes:
 - Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5` means adding `dcn` in resnet stage 3 to 5.
-- Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/dcn)
+- Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
 
 ### Group Normalization
 | Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
@@ -100,7 +100,7 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 
 #### Notes:
 - Group Normalization reference from [Group Normalization](https://arxiv.org/abs/1803.08494).
-- Detailed configuration file in [configs/gn](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection/configs/gn)
+- Detailed configuration file in [configs/gn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gn)
 
 ### YOLO v3
 
@@ -177,3 +177,8 @@ randomly cropping, randomly expansion, randomly flipping.
 ## Face Detection
 
 Please refer [face detection models](../configs/face_detection) for details.
+
+
+## Object Detection in Open Images Dataset V5
+
+Please refer [Open Images Dataset V5 Baseline model](OIDV5_BASELINE_MODEL.md) for details.
