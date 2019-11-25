@@ -82,7 +82,7 @@ class CascadeMaskRCNN(object):
     def build(self, feed_vars, mode='train'):
         if mode == 'train':
             required_fields = [
-                'gt_label', 'gt_box', 'gt_mask', 'is_crowd', 'im_info'
+                'gt_class', 'gt_bbox', 'gt_mask', 'is_crowd', 'im_info'
             ]
         else:
             required_fields = ['im_shape', 'im_info']
@@ -90,7 +90,7 @@ class CascadeMaskRCNN(object):
 
         im = feed_vars['image']
         if mode == 'train':
-            gt_box = feed_vars['gt_box']
+            gt_bbox = feed_vars['gt_bbox']
             is_crowd = feed_vars['is_crowd']
 
         im_info = feed_vars['im_info']
@@ -116,7 +116,7 @@ class CascadeMaskRCNN(object):
         rpn_rois = self.rpn_head.get_proposals(body_feats, im_info, mode=mode)
 
         if mode == 'train':
-            rpn_loss = self.rpn_head.get_loss(im_info, gt_box, is_crowd)
+            rpn_loss = self.rpn_head.get_loss(im_info, gt_bbox, is_crowd)
         else:
             if self.rpn_only:
                 im_scale = fluid.layers.slice(
@@ -174,7 +174,7 @@ class CascadeMaskRCNN(object):
 
             mask_rois, roi_has_mask_int32, mask_int32 = self.mask_assigner(
                 rois=rois,
-                gt_classes=feed_vars['gt_label'],
+                gt_classes=feed_vars['gt_class'],
                 is_crowd=feed_vars['is_crowd'],
                 gt_segms=feed_vars['gt_mask'],
                 im_info=feed_vars['im_info'],
@@ -371,6 +371,39 @@ class CascadeMaskRCNN(object):
         refined_bbox = fluid.layers.reshape(refined_bbox, shape=[-1, 4])
 
         return refined_bbox
+
+    def _inputs_def(self, image_shape):
+        im_shape = [None] + image_shape
+        # yapf: disable
+        inputs_def = {
+            'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
+            'im_info':  {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'im_id':    {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 0},
+            'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'gt_mask':  {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 3}, # polygon coordinates
+        }
+        # yapf: enable
+        return inputs_def
+
+    def build_inputs(self,
+                     image_shape,
+                     fields,
+                     use_dataloader=True,
+                     iterable=False):
+        inputs_def = self._inputs_def(image_shape)
+        feed_vars = OrderedDict([(key, fluid.layers.data(
+            name=key,
+            shape=inputs_def[key]['shape'],
+            dtype=inputs_def[key]['dtype'],
+            lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        loader = fluid.io.DataLoader.from_generator(
+            feed_list=list(feed_vars.values()),
+            capacity=64,
+            use_double_buffer=True,
+            iterable=iterable) if use_dataloader else None
+        return feed_vars, loader
 
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')

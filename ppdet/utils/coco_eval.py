@@ -22,8 +22,6 @@ import sys
 import json
 import cv2
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 
 import logging
 logger = logging.getLogger(__name__)

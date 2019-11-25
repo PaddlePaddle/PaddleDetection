@@ -61,16 +61,42 @@ class TestLoader(unittest.TestCase):
             sample_transforms=sample_trans,
             batch_transforms=batch_trans,
             batch_size=2,
+            fields=[
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
             shuffle=True,
             drop_empty=True)
 
         for i in range(2):
             for samples in data_loader:
                 for sample in samples:
-                    shape = sample['image'].shape
-                    self.assertEqual(shape[0], 3)
-                    self.assertEqual(shape[1] % 32, 0)
-                    self.assertEqual(shape[2] % 32, 0)
+                    im_shape = sample[0].shape
+                    self.assertEqual(im_shape[0], 3)
+                    self.assertEqual(im_shape[1] % 32, 0)
+                    self.assertEqual(im_shape[2] % 32, 0)
+
+                    im_info_shape = sample[1].shape
+                    self.assertEqual(im_info_shape[-1], 3)
+
+                    im_id_shape = sample[2].shape
+                    self.assertEqual(im_id_shape[-1], 1)
+
+                    gt_bbox_shape = sample[3].shape
+                    self.assertEqual(gt_bbox_shape[-1], 4)
+
+                    gt_class_shape = sample[4].shape
+                    self.assertEqual(gt_class_shape[-1], 1)
+                    self.assertEqual(gt_class_shape[0], gt_bbox_shape[0])
+
+                    is_crowd_shape = sample[5].shape
+                    self.assertEqual(is_crowd_shape[-1], 1)
+                    self.assertEqual(is_crowd_shape[0], gt_bbox_shape[0])
+
+                    mask = sample[6]
+                    self.assertEqual(len(mask), gt_bbox_shape[0])
+                    self.assertEqual(mask[0][0].shape[-1], 2)
+            data_loader.reset()
 
     def test_loader_multi_threads(self):
         coco_loader = COCODataSet(self.image_dir, self.anno_path, 10)
@@ -85,6 +111,10 @@ class TestLoader(unittest.TestCase):
             sample_transforms=sample_trans,
             batch_transforms=batch_trans,
             batch_size=2,
+            fields=[
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
             shuffle=True,
             drop_empty=True,
             worker_num=2,
@@ -93,11 +123,31 @@ class TestLoader(unittest.TestCase):
         for i in range(2):
             for samples in data_loader:
                 for sample in samples:
-                    shape = sample['image'].shape
-                    self.assertEqual(shape[0], 3)
-                    self.assertEqual(shape[1] % 32, 0)
-                    self.assertEqual(shape[2] % 32, 0)
+                    im_shape = sample[0].shape
+                    self.assertEqual(im_shape[0], 3)
+                    self.assertEqual(im_shape[1] % 32, 0)
+                    self.assertEqual(im_shape[2] % 32, 0)
 
+                    im_info_shape = sample[1].shape
+                    self.assertEqual(im_info_shape[-1], 3)
+
+                    im_id_shape = sample[2].shape
+                    self.assertEqual(im_id_shape[-1], 1)
+
+                    gt_bbox_shape = sample[3].shape
+                    self.assertEqual(gt_bbox_shape[-1], 4)
+
+                    gt_class_shape = sample[4].shape
+                    self.assertEqual(gt_class_shape[-1], 1)
+                    self.assertEqual(gt_class_shape[0], gt_bbox_shape[0])
+
+                    is_crowd_shape = sample[5].shape
+                    self.assertEqual(is_crowd_shape[-1], 1)
+                    self.assertEqual(is_crowd_shape[0], gt_bbox_shape[0])
+
+                    mask = sample[6]
+                    self.assertEqual(len(mask), gt_bbox_shape[0])
+                    self.assertEqual(mask[0][0].shape[-1], 2)
             data_loader.reset()
 
 

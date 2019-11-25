@@ -65,6 +65,8 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
+LOADER_KEY = '_LOADER_'
+
 
 def load_config(file_path):
     """
@@ -77,25 +79,44 @@ def load_config(file_path):
     """
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
+
+    cfg = AttrDict()
     with open(file_path) as f:
-        merge_config(yaml.load(f, Loader=yaml.Loader))
+        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+
+    if LOADER_KEY in cfg:
+        yml_cfg_file = cfg[LOADER_KEY]
+        if yml_cfg_file.startswith("~"):
+            yml_cfg_file = os.path.expanduser(yml_cfg_file)
+        if not yml_cfg_file.startswith('/'):
+            yml_cfg_file = os.path.join(
+                os.path.dirname(file_path), yml_cfg_file)
+
+        with open(yml_cfg_file) as f:
+            merge_config(yaml.load(f, Loader=yaml.Loader))
+        del cfg[LOADER_KEY]
+
+    merge_config(cfg)
     return global_config
 
 
-def merge_config(config):
+def merge_config(config, another_cfg=None):
     """
-    Merge config into global config.
+    Merge config into global config or another_cfg.
 
     Args:
         config (dict): Config to be merged.
 
     Returns: global config
     """
+    global global_config
+    b = another_cfg if another_cfg is not None else global_config
     for key, value in config.items():
-        if isinstance(value, dict) and key in global_config:
-            global_config[key].update(value)
+        if isinstance(value, dict) and key in b:
+            b[key].update(value)
         else:
-            global_config[key] = value
+            b[key] = value
+    return b
 
 
 def get_registered_modules():

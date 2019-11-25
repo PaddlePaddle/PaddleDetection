@@ -65,6 +65,7 @@ class COCODataSet(DataSet):
         self.image_dir = image_dir
         if dataset_dir:
             self.image_dir = os.path.join(dataset_dir, image_dir)
+            self.anno_path = os.path.join(dataset_dir, anno_path)
         self.roidbs = None
         self.cname2cid = None
 

@@ -91,6 +91,46 @@ def has_empty(items):
     return False
 
 
+def batch_arrange(batch_samples, fields):
+    def segm(samples):
+        assert 'gt_poly' in samples
+        assert 'is_crowd' in samples
+        segms = samples['gt_poly']
+        is_crowd = samples['is_crowd']
+        if len(segms) != 0:
+            assert len(segms) == is_crowd.shape[0]
+
+        gt_masks = []
+        valid = True
+        for i in range(len(segms)):
+            segm, iscrowd = segms[i], is_crowd[i]
+            gt_segm = []
+            if iscrowd:
+                gt_segm.append([[0, 0]])
+            else:
+                for poly in segm:
+                    if len(poly) == 0:
+                        valid = False
+                        break
+                    gt_segm.append(np.array(poly).reshape(-1, 2))
+            if (not valid) or len(gt_segm) == 0:
+                break
+            gt_masks.append(gt_segm)
+        return gt_masks
+
+    arrange_batch = []
+    for samples in batch_samples:
+        one_ins = ()
+        for i, field in enumerate(fields):
+            if field == 'gt_mask':
+                one_ins += (segm(samples), )
+            else:
+                assert field in samples, '{} not in samples'.format(field)
+                one_ins += (samples[field], )
+        arrange_batch.append(one_ins)
+    return arrange_batch
+
+
 @register
 @serializable
 class Loader(object):
@@ -99,6 +139,7 @@ class Loader(object):
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=None,
+                 fields=None,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
@@ -107,7 +148,9 @@ class Loader(object):
                  worker_num=-1,
                  use_process=False,
                  bufsize=100,
-                 memsize='3G'):
+                 memsize='3G',
+                 inputs_def=None,
+                 **kwargs):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
         # transform
@@ -117,6 +160,7 @@ class Loader(object):
             self._batch_transforms = Compose(batch_transforms)
 
         # data
+        self._fields = inputs_def['fields'] if inputs_def else None
         self._batch_size = batch_size
         self._shuffle = shuffle
         self._drop_last = drop_last
@@ -206,9 +250,9 @@ class Loader(object):
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
-                mix_idx = random.randint(1, num - 1)
+                mix_idx = np.random.randint(1, num)
                 mix_idx = (mix_idx + pos) % num
-                sample['mixup'] = copy.deepcopy(roidbs[mix_idx])
+                sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
                         'im_file'])
@@ -229,6 +273,8 @@ class Loader(object):
             batch.append(sample)
         if len(batch) > 0 and self._batch_transforms:
             batch = self._batch_transforms(batch)
+        if self._fields:
+            batch = batch_arrange(batch, self._fields)
         return batch
 
     def size(self):

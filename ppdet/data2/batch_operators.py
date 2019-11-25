@@ -87,20 +87,20 @@ class RandomShape(BaseOperator):
     def __call__(self, samples, context=None):
         # For YOLO: gt_bbox is normalized, is scale invariant.
         shape = np.random.choice(self.sizes)
-        scaled_batch = []
         h, w = samples[0]['image'].shape[1:3]
         scale_x = float(shape) / w
         scale_y = float(shape) / h
+        out_samples = []
         for data in samples:
             im = cv2.resize(
-                data['image'].transpose((1, 2, 0)),
+                data['image'],
                 None,
                 None,
                 fx=scale_x,
                 fy=scale_y,
                 interpolation=cv2.INTER_NEAREST)
-            data['image'] = im
-        return samples
+            out_samples.append(data)
+        return out_samples
 
 
 @register_op
