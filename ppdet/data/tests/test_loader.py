@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,96 +12,143 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-import os
-import time
 import unittest
-import sys
-import logging
-import numpy as np
+import os
 
-import set_env
+from ppdet.data2.coco import COCODataSet
+from ppdet.data2.loader import Reader
+from ppdet.utils.download import get_path
+from ppdet.utils.download import DATASET_HOME
+
+from ppdet.data2.operators import DecodeImage, ResizeImage, Permute
+from ppdet.data2.batch_operators import PadBatch
+
+COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
+COCO_VAL_MD5SUM = '442b8da7639aecaf257c1dceb8ba8c80'
+COCO_ANNO_URL = 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip'
+COCO_ANNO_MD5SUM = 'f4bbac642086de4f52a3fdda2de5fa2c'
 
 
-class TestLoader(unittest.TestCase):
-    """Test cases for dataset.source.loader
-    """
-
+class TestReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ setup
         """
-        cls.prefix = os.path.dirname(os.path.abspath(__file__))
+        root_path = os.path.join(DATASET_HOME, 'coco')
+        image_path, _ = get_path(COCO_VAL_URL, root_path, COCO_VAL_MD5SUM)
+
+        anno_path, _ = get_path(COCO_ANNO_URL, root_path, COCO_ANNO_MD5SUM)
+
         # json data
-        cls.anno_path = os.path.join(cls.prefix,
-                                     'data/coco/instances_val2017.json')
-        cls.image_dir = os.path.join(cls.prefix, 'data/coco/val2017')
-        cls.anno_path1 = os.path.join(cls.prefix,
-                                      "data/voc/ImageSets/Main/train.txt")
-        cls.image_dir1 = os.path.join(cls.prefix, "data/voc/JPEGImages")
+        cls.anno_path = os.path.join(anno_path, 'instances_val2017.json')
+        cls.image_dir = image_path
 
     @classmethod
     def tearDownClass(cls):
         """ tearDownClass """
         pass
 
-    def test_load_coco_in_json(self):
-        """ test loading COCO data in json file
-        """
-        from ppdet.data.source.coco_loader import load
-        if not os.path.exists(self.anno_path):
-            logging.warn('not found %s, so skip this test' % (self.anno_path))
-            return
-        samples = 10
-        records, cname2id = load(self.anno_path, samples)
-        self.assertEqual(len(records), samples)
-        self.assertGreater(len(cname2id), 0)
+    def test_loader(self):
+        coco_loader = COCODataSet(self.image_dir, self.anno_path, 10)
+        sample_trans = [
+            DecodeImage(to_rgb=True), ResizeImage(
+                target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
+        ]
+        batch_trans = [PadBatch(pad_to_stride=32, use_padded_im_info=True), ]
 
-    def test_load_coco_in_roidb(self):
-        """ test loading COCO data in pickled records
-        """
-        anno_path = os.path.join(self.prefix,
-                                 'data/roidbs/instances_val2017.roidb')
+        data_loader = Reader(
+            coco_loader,
+            sample_transforms=sample_trans,
+            batch_transforms=batch_trans,
+            batch_size=2,
+            fields=[
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
+            shuffle=True,
+            drop_empty=True)
 
-        if not os.path.exists(anno_path):
-            logging.warn('not found %s, so skip this test' % (anno_path))
-            return
+        for i in range(2):
+            for samples in data_loader:
+                for sample in samples:
+                    im_shape = sample[0].shape
+                    self.assertEqual(im_shape[0], 3)
+                    self.assertEqual(im_shape[1] % 32, 0)
+                    self.assertEqual(im_shape[2] % 32, 0)
 
-        samples = 10
-        from ppdet.data.source.loader import load_roidb
-        records, cname2cid = load_roidb(anno_path, samples)
-        self.assertEqual(len(records), samples)
-        self.assertGreater(len(cname2cid), 0)
+                    im_info_shape = sample[1].shape
+                    self.assertEqual(im_info_shape[-1], 3)
 
-    def test_load_voc_in_xml(self):
-        """ test loading VOC data in xml files
-        """
-        from ppdet.data.source.voc_loader import load
-        if not os.path.exists(self.anno_path1):
-            logging.warn('not found %s, so skip this test' % (self.anno_path1))
-            return
-        samples = 3
-        records, cname2cid = load(self.anno_path1, samples)
-        self.assertEqual(len(records), samples)
-        self.assertGreater(len(cname2cid), 0)
+                    im_id_shape = sample[2].shape
+                    self.assertEqual(im_id_shape[-1], 1)
 
-    def test_load_voc_in_roidb(self):
-        """ test loading VOC data in pickled records
-        """
-        anno_path = os.path.join(self.prefix, 'data/roidbs/train.roidb')
+                    gt_bbox_shape = sample[3].shape
+                    self.assertEqual(gt_bbox_shape[-1], 4)
 
-        if not os.path.exists(anno_path):
-            logging.warn('not found %s, so skip this test' % (anno_path))
-            return
+                    gt_class_shape = sample[4].shape
+                    self.assertEqual(gt_class_shape[-1], 1)
+                    self.assertEqual(gt_class_shape[0], gt_bbox_shape[0])
 
-        samples = 3
-        from ppdet.data.source.loader import load_roidb
-        records, cname2cid = load_roidb(anno_path, samples)
-        self.assertEqual(len(records), samples)
-        self.assertGreater(len(cname2cid), 0)
+                    is_crowd_shape = sample[5].shape
+                    self.assertEqual(is_crowd_shape[-1], 1)
+                    self.assertEqual(is_crowd_shape[0], gt_bbox_shape[0])
+
+                    mask = sample[6]
+                    self.assertEqual(len(mask), gt_bbox_shape[0])
+                    self.assertEqual(mask[0][0].shape[-1], 2)
+            data_loader.reset()
+
+    def test_loader_multi_threads(self):
+        coco_loader = COCODataSet(self.image_dir, self.anno_path, 10)
+        sample_trans = [
+            DecodeImage(to_rgb=True), ResizeImage(
+                target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
+        ]
+        batch_trans = [PadBatch(pad_to_stride=32, use_padded_im_info=True), ]
+
+        data_loader = Reader(
+            coco_loader,
+            sample_transforms=sample_trans,
+            batch_transforms=batch_trans,
+            batch_size=2,
+            fields=[
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
+            shuffle=True,
+            drop_empty=True,
+            worker_num=2,
+            use_process=False,
+            bufsize=8)()
+        for i in range(2):
+            for samples in data_loader:
+                for sample in samples:
+                    im_shape = sample[0].shape
+                    self.assertEqual(im_shape[0], 3)
+                    self.assertEqual(im_shape[1] % 32, 0)
+                    self.assertEqual(im_shape[2] % 32, 0)
+
+                    im_info_shape = sample[1].shape
+                    self.assertEqual(im_info_shape[-1], 3)
+
+                    im_id_shape = sample[2].shape
+                    self.assertEqual(im_id_shape[-1], 1)
+
+                    gt_bbox_shape = sample[3].shape
+                    self.assertEqual(gt_bbox_shape[-1], 4)
+
+                    gt_class_shape = sample[4].shape
+                    self.assertEqual(gt_class_shape[-1], 1)
+                    self.assertEqual(gt_class_shape[0], gt_bbox_shape[0])
+
+                    is_crowd_shape = sample[5].shape
+                    self.assertEqual(is_crowd_shape[-1], 1)
+                    self.assertEqual(is_crowd_shape[0], gt_bbox_shape[0])
+
+                    mask = sample[6]
+                    self.assertEqual(len(mask), gt_bbox_shape[0])
+                    self.assertEqual(mask[0][0].shape[-1], 2)
+            data_loader.reset()
 
 
 if __name__ == '__main__':

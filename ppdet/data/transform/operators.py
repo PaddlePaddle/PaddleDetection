@@ -25,6 +25,8 @@ import logging
 import random
 import math
 import numpy as np
+import collections
+
 import cv2
 from PIL import Image, ImageEnhance
 
@@ -178,7 +180,9 @@ class MultiscaleTestResize(BaseOperator):
             sample['flip_image'] = im[:, ::-1, :]
             base_name_list.append('flip_image')
             origin_ims['flip_image'] = sample['flip_image']
-        im_info = []
+
+        ms_samples = []
+
         for base_name in base_name_list:
             im_scale = float(self.origin_target_size) / float(im_size_min)
             # Prevent the biggest axis from being more than max_size
@@ -196,8 +200,10 @@ class MultiscaleTestResize(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
-            im_info.extend([resize_h, resize_w, im_scale])
-            sample[base_name] = im_resize
+
+            im_info = [resize_h, resize_w, im_scale]
+            ms_samples.append([{'image': im_resize, 'im_info': im_info}])
+
             for i, size in enumerate(self.target_size):
                 im_scale = float(size) / float(im_size_min)
                 if np.round(im_scale * im_size_max) > self.max_size:
@@ -213,10 +219,9 @@ class MultiscaleTestResize(BaseOperator):
                     fx=im_scale_x,
                     fy=im_scale_y,
                     interpolation=self.interp)
-                im_info.extend([resize_h, resize_w, im_scale])
-                name = base_name + '_scale_' + str(i)
-                sample[name] = im_resize
-        sample['im_info'] = np.array(im_info, dtype=np.float32)
+                im_info = [resize_h, resize_w, im_scale]
+                ms_samples.append([{'image': im_resize, 'im_info': im_info}])
+        sample['multi_scales_image'] = ms_samples
         return sample
 
 
@@ -888,17 +893,27 @@ class Permute(BaseOperator):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
-        assert 'image' in sample, "image data not found"
-        for k in sample.keys():
-            if 'image' in k:
-                im = sample[k]
-                if self.channel_first:
-                    im = np.swapaxes(im, 1, 2)
-                    im = np.swapaxes(im, 1, 0)
-                if self.to_bgr:
-                    im = im[[2, 1, 0], :, :]
-                sample[k] = im
-        return sample
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, collections.Sequence):
+            batch_input = False
+            samples = [samples]
+        out_samples = []
+        for sample in samples:
+            assert 'image' in sample, "image data not found"
+            for k in sample.keys():
+                if 'image' in k:
+                    im = sample[k]
+                    if self.channel_first:
+                        im = np.swapaxes(im, 1, 2)
+                        im = np.swapaxes(im, 1, 0)
+                    if self.to_bgr:
+                        im = im[[2, 1, 0], :, :]
+                    sample[k] = im
+            out_samples.append(sample)
+        if not batch_input:
+            out_samples = out_samples[0]
+        return out_samples
 
 
 @register_op
@@ -989,3 +1004,61 @@ class RandomInterpImage(BaseOperator):
         """Resise the image numpy by random resizer."""
         resizer = random.choice(self.resizers)
         return resizer(sample, context)
+
+
+@register_op
+class PadBboxes(BaseOperator):
+    def __init__(self, num_max_boxes=50):
+        """
+        Args:
+            num_max_boxes (int): the max size of bboxes
+        """
+        self.num_max_boxes = num_max_boxes
+        super(PadBboxes, self).__init__()
+
+    def __call__(self, sample, context=None):
+        assert 'gt_bbox' in sample and 'image' in sample
+        im = sample['image']
+        bbox = sample['gt_bbox']
+        gt_num = min(self.num_max_boxes, len(bbox))
+        num_max = self.num_max_boxes
+        if gt_num > 0:
+            bbox = sample['gt_bbox']
+            pad_bbox = np.zeros((num_max, 4), dtype=im.dtype)
+            pad_bbox[:gt_num, :] = bbox[:gt_num, :]
+            sample['gt_bbox'] = pad_bbox
+        if 'gt_class' in sample:
+            pad_class = np.zeros((num_max), dtype=np.int32)
+            pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
+            sample['gt_class'] = pad_class
+        if 'gt_score' in sample:
+            pad_score = np.zeros((num_max), dtype=np.int32)
+            pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
+            sample['gt_score'] = pad_score
+        # in training, for example in op ExpandImage,
+        # the bbox and gt_class is expandded, but the difficult is not,
+        # so, judging by it's length
+        #print(sample['gt_class'].shape, sample['pad_score'].shape)
+        if 'difficult' in sample and sample['difficult'].shape[0] > gt_num:
+            pad_diff = np.zeros((num_max), dtype=np.int32)
+            pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
+            sample['difficult'] = pad_diff
+        return sample
+
+
+@register_op
+class BoxXYXY2BoxXYWH(BaseOperator):
+    def __init__(self):
+        """
+        Args:
+            num_max_boxes (int): the max size of bboxes
+        """
+        super(BoxXYXY2BoxXYWH, self).__init__()
+
+    def __call__(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
+        bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
+        return sample

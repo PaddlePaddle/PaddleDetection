@@ -22,24 +22,12 @@ import numpy as np
 import datetime
 from collections import deque
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.data_feed import create_reader
+#from ppdet.data.data_feed import create_reader
+from ppdet.data2.loader import create_reader
 
 from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
@@ -81,24 +69,13 @@ def main():
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+    #if not FLAGS.dist or trainer_id == 0:
+    #    print_total_cfg(cfg)
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
     else:
         devices_num = int(os.environ.get('CPU_NUM', 1))
-
-    if 'train_feed' not in cfg:
-        train_feed = create(main_arch + 'TrainFeed')
-    else:
-        train_feed = create(cfg.train_feed)
-
-    if FLAGS.eval:
-        if 'eval_feed' not in cfg:
-            eval_feed = create(main_arch + 'EvalFeed')
-        else:
-            eval_feed = create(cfg.eval_feed)
 
     if 'FLAGS_selected_gpus' in env:
         device_id = int(env['FLAGS_selected_gpus'])
@@ -116,8 +93,6 @@ def main():
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            train_loader, feed_vars = create_feed(train_feed)
-
             if FLAGS.fp16:
                 assert (getattr(model.backbone, 'norm_type', None)
                         != 'affine_channel'), \
@@ -125,8 +100,10 @@ def main():
                     ' please modify backbone settings to use batch norm'
 
             with mixed_precision_context(FLAGS.loss_scale, FLAGS.fp16) as ctx:
+                print(cfg)
+                inputs_def = cfg['TrainLoader']['inputs_def']
+                feed_vars, train_loader = model.build_inputs(**inputs_def)
                 train_fetches = model.train(feed_vars)
-
                 loss = train_fetches['loss']
                 if FLAGS.fp16:
                     loss *= ctx.get_loss_scale_var()
@@ -145,11 +122,12 @@ def main():
         with fluid.program_guard(eval_prog, startup_prog):
             with fluid.unique_name.guard():
                 model = create(main_arch)
-                eval_loader, feed_vars = create_feed(eval_feed)
+                inputs_def = cfg['EvalLoader']['inputs_def']
+                feed_vars, eval_loader = model.build_inputs(**inputs_def)
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
+        eval_reader = create_reader(cfg.EvalLoader)
         eval_loader.set_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -206,8 +184,8 @@ def main():
         checkpoint.load_params(
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
-    train_reader = create_reader(train_feed, (cfg.max_iters - start_iter) *
-                                 devices_num, FLAGS.dataset_dir)
+    train_reader = create_reader(cfg.TrainLoader,
+                                 (cfg.max_iters - start_iter) * devices_num)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer

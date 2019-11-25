@@ -33,7 +33,7 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-class TestLoaderYAML(unittest.TestCase):
+class TestReaderYAML(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ setup
@@ -59,13 +59,13 @@ class TestLoaderYAML(unittest.TestCase):
             'anno_path: {1}, sample_num: 10}}]'.format(
                 self.image_dir, self.anno_path)
         dataset_ins = yaml.load(data_cfg, Loader=yaml.Loader)
-        update_train_cfg = {'TrainLoader': {'dataset': dataset_ins[0]}}
-        update_test_cfg = {'EvalLoader': {'dataset': dataset_ins[0]}}
+        update_train_cfg = {'TrainReader': {'dataset': dataset_ins[0]}}
+        update_test_cfg = {'EvalReader': {'dataset': dataset_ins[0]}}
         merge_config(update_train_cfg)
         merge_config(update_test_cfg)
 
-        #reader = Loader(**cfg['TrainLoader'])()
-        reader = create_reader(cfg['TrainLoader'], 10)()
+        #reader = Reader(**cfg['TrainReader'])()
+        reader = create_reader(cfg['TrainReader'], 10)()
         for samples in reader:
             for sample in samples:
                 shape = sample['image'].shape
@@ -73,8 +73,8 @@ class TestLoaderYAML(unittest.TestCase):
                 self.assertEqual(shape[1] % 32, 0)
                 self.assertEqual(shape[2] % 32, 0)
 
-        #reader = Loader(**cfg['EvalLoader'])()
-        reader = create_reader(cfg['EvalLoader'], 10)()
+        #reader = Reader(**cfg['EvalReader'])()
+        reader = create_reader(cfg['EvalReader'], 10)()
         for samples in reader:
             for sample in samples:
                 shape = sample['image'].shape
