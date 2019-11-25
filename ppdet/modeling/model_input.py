@@ -40,7 +40,7 @@ feed_var_def = [
 
 
 def create_feed(feed, iterable=False, sub_prog_feed=False):
-    image_shape = feed.image_shape
+    image_shape = [None] + feed.image_shape
     feed_var_map = {var['name']: var for var in feed_var_def}
     feed_var_map['image'] = {
         'name': 'image',
@@ -98,14 +98,14 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
                     'lod_level': 0
                 }
                 image_name_list.append(name)
-        feed_var_map['im_info']['shape'] = [feed.num_scale * 3]
+        feed_var_map['im_info']['shape'] = [None, feed.num_scale * 3]
         feed.fields = image_name_list + feed.fields[1:]
     if sub_prog_feed:
         box_names = ['bbox', 'bbox_flip']
         for box_name in box_names:
             sub_prog_feed = {
                 'name': box_name,
-                'shape': [6],
+                'shape': [None, 6],
                 'dtype': 'float32',
                 'lod_level': 1
             }
