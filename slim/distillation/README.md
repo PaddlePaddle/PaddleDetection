@@ -7,7 +7,7 @@
 该示例使用PaddleSlim提供的[蒸馏策略](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/tutorial.md#3-蒸馏)对检测库中的模型进行蒸馏训练。
 在阅读该示例前，建议您先了解以下内容：
 
-- [检测库的常规训练方法](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/PaddleDetection)
+- [检测库的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim使用文档](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md)
 
 
@@ -61,7 +61,7 @@ strategies:
 
 ## 训练
 
-根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/models/blob/develop/PaddleCV/PaddleDetection/tools/train.py)编写压缩脚本compress.py。
+根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py)编写压缩脚本compress.py。
 在该脚本中定义了Compressor对象，用于执行压缩任务。
 
 

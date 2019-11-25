@@ -71,13 +71,11 @@ COCO-API is needed for running. Installation is as follows:
 
 **Clone Paddle models repository:**
 
-You can clone Paddle models and change working directory to PaddleDetection
-with the following commands:
+You can clone PaddleDetection with the following commands:
 
 ```
-cd <path/to/clone/models>
-git clone https://github.com/PaddlePaddle/models
-cd models/PaddleCV/PaddleDetection
+cd <path/to/clone/PaddleDetection>
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
 
 **Install Python dependencies:**

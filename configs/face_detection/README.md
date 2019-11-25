@@ -114,28 +114,32 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 #### Infer Time and Model Size comparison  
 
-| Architecture | Type     | Size | P4 (ms)   | CPU (ms) | ARM (ms)   | File size (MB) | Flops     |
-|:------------:|:--------:|:----:|:---------:|:--------:|:----------:|:--------------:|:---------:|
-| BlazeFace    | Original | 128  | -         | -        | -          | -              | -         |
-| BlazeFace    | Lite     | 128  | -         | -        | -          | -              | -         |
-| BlazeFace    | NAS      | 128  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Original | 128  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Lite     | 128  | -         | -        | -          | -              | -         |
-| BlazeFace    | Original | 320  | -         | -        | -          | -              | -         |
-| BlazeFace    | Lite     | 320  | -         | -        | -          | -              | -         |
-| BlazeFace    | NAS      | 320  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Original | 320  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Lite     | 320  | -         | -        | -          | -              | -         |
-| BlazeFace    | Original | 640  | -         | -        | -          | -              | -         |
-| BlazeFace    | Lite     | 640  | -         | -        | -          | -              | -         |
-| BlazeFace    | NAS      | 640  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Original | 640  | -         | -        | -          | -              | -         |
-| FaceBoxes    | Lite     | 640  | -         | -        | -          | -              | -         |
+| Architecture | Type     | Size | P4(trt32) (ms) | CPU (ms) | Qualcomm SnapDragon 855(armv8) (ms)   | Model size (MB) |
+|:------------:|:--------:|:----:|:--------------:|:--------:|:-------------------------------------:|:---------------:|
+| BlazeFace    | Original | 128  | 1.387          | 23.461   |  6.036                                | 0.777           |
+| BlazeFace    | Lite     | 128  | 1.323          | 12.802   |  6.193                                | 0.68            |
+| BlazeFace    | NAS      | 128  | 1.03           | 6.714    |  2.7152                               | 0.234           |
+| FaceBoxes    | Original | 128  | 3.144          | 14.972   |  19.2196                              | 3.6             |
+| FaceBoxes    | Lite     | 128  | 2.295          | 11.276   |  8.5278                               | 2               |
+| BlazeFace    | Original | 320  | 3.01           | 132.408  |  70.6916                              | 0.777           |
+| BlazeFace    | Lite     | 320  | 2.535          | 69.964   |  69.9438                              | 0.68            |
+| BlazeFace    | NAS      | 320  | 2.392          | 36.962   |  39.8086                              | 0.234           |
+| FaceBoxes    | Original | 320  | 7.556          | 84.531   |  52.1022                              | 3.6             |
+| FaceBoxes    | Lite     | 320  | 18.605         | 78.862   |  59.8996                              | 2               |
+| BlazeFace    | Original | 640  | 8.885          | 519.364  |  149.896                              | 0.777           |
+| BlazeFace    | Lite     | 640  | 6.988          | 284.13   |  149.902                              | 0.68            |
+| BlazeFace    | NAS      | 640  | 7.448          | 142.91   |  69.8266                              | 0.234           |
+| FaceBoxes    | Original | 640  | 78.201         | 394.043  |  169.877                              | 3.6             |
+| FaceBoxes    | Lite     | 640  | 59.47          | 313.683  |  139.918                              | 2               |
 
 
 **NOTES:**  
-- CPU: i5-7360U @ 2.30GHz. Single core and single thread.
-
+- CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
+- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.6.1
+- ARM test environment:
+    - Qualcomm SnapDragon 855(armv8)
+    - Single thread
+    - Paddle-Lite version 2.0.0
 
 
 ## Get Started

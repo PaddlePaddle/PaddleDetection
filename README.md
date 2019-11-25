@@ -1,136 +1,133 @@
-English | [简体中文](README_cn.md)
+[English](README_en.md) | 简体中文
 
 # PaddleDetection
 
-The goal of PaddleDetection is to provide easy access to a wide range of object
-detection models in both industry and research settings. We design
-PaddleDetection to be not only performant, production-ready but also highly
-flexible, catering to research needs.
+PaddleDetection的目的是为工业界和学术界提供丰富、易用的目标检测模型。不仅性能优越、易于部署，而且能够灵活的满足算法研究的需求。
 
-**Now all models in PaddleDetection require PaddlePaddle version 1.6 or higher, or suitable develop version.**
+**目前检测库下模型均要求使用PaddlePaddle 1.6及以上版本或适当的develop版本。**
 
 <div align="center">
   <img src="demo/output/000000570688.jpg" />
 </div>
 
 
-## Introduction
+## 简介
 
-Features:
+特性：
 
-- Production Ready:
+- 易部署:
 
-  Key operations are implemented in C++ and CUDA, together with PaddlePaddle's
-highly efficient inference engine, enables easy deployment in server environments.
+  PaddleDetection的模型中使用的核心算子均通过C++或CUDA实现，同时基于PaddlePaddle的高性能推理引擎可以方便地部署在多种硬件平台上。
 
-- Highly Flexible:
+- 高灵活度：
 
-  Components are designed to be modular. Model architectures, as well as data
-preprocess pipelines, can be easily customized with simple configuration
-changes.
+  PaddleDetection通过模块化设计来解耦各个组件，基于配置文件可以轻松地搭建各种检测模型。
 
-- Performance Optimized:
+- 高性能：
 
-  With the help of the underlying PaddlePaddle framework, faster training and
-reduced GPU memory footprint is achieved. Notably, YOLOv3 training is
-much faster compared to other frameworks. Another example is Mask-RCNN
-(ResNet50), we managed to fit up to 4 images per GPU (Tesla V100 16GB) during
-multi-GPU training.
+  基于PaddlePaddle框架的高性能内核，在模型训练速度、显存占用上有一定的优势。例如，YOLOv3的训练速度快于其他框架，在Tesla V100 16GB环境下，Mask-RCNN(ResNet50)可以单卡Batch Size可以达到4 (甚至到5)。
 
-Supported Architectures:
+支持的模型结构：
 
-|                     | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG  |
-| ------------------- | :----: | ----------------------------: | :--------: | :---: | :-------: | :-----: | :--: |
-| Faster R-CNN        |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Faster R-CNN + FPN  |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Mask R-CNN          |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Mask R-CNN + FPN    |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Cascade Faster-RCNN |   ✓    |                             ✓ |     ✓      |   ✗   |     ✗     |    ✗    |  ✗   |
-| Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |    ✗    |  ✗   |
-| RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |    ✗    |  ✗   |
-| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✓    |  ✗   |
-| SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✗    |  ✓   |
+|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG |
+|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:-------:|:---:|
+| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   |
+| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   |
+| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   |
+| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   |
+| Cascade Faster-CNN | ✓      |                             ✓ | ✓          | ✗     | ✗         | ✗       | ✗  |
+| Cascade Mask-CNN   | ✓      |                             ✗ | ✗          | ✓     | ✗         | ✗       | ✗   |
+| RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         | ✗       | ✗   |
+| YOLOv3             | ✓      |                             ✗ | ✗          | ✗     | ✓         | ✓       | ✗   |
+| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         | ✗       | ✓   |
 
-<a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
+<a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型提供了较大的精度提高和较少的性能损失。
 
-Advanced Features:
+扩展特性：
 
-- [x] **Synchronized Batch Norm**: currently used by YOLOv3.
+- [x] **Synchronized Batch Norm**: 目前在YOLOv3中使用。
 - [x] **Group Norm**
 - [x] **Modulated Deformable Convolution**
 - [x] **Deformable PSRoI Pooling**
 
-**NOTE:** Synchronized batch normalization can only be used on multiple GPU devices, can not be used on CPU devices or single GPU device.
+**注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
 
-## Get Started
 
-- [Installation guide](docs/INSTALL.md)
-- [Quick start on small dataset](docs/QUICK_STARTED.md)
-- For detailed training and evaluation workflow, please refer to [GETTING_STARTED](docs/GETTING_STARTED.md)
-- [Guide to preprocess pipeline and custom dataset](docs/DATA.md)
-- [Introduction to the configuration workflow](docs/CONFIG.md)
-- [Examples for detailed configuration explanation](docs/config_example/)
+## 使用教程
+
+- [安装说明](docs/INSTALL_cn.md)
+- [快速开始](docs/QUICK_STARTED_cn.md)
+- [训练、评估流程](docs/GETTING_STARTED_cn.md)
+- [数据预处理及自定义数据集](docs/DATA_cn.md)
+- [配置模块设计和介绍](docs/CONFIG_cn.md)
+- [详细的配置信息和参数说明示例](docs/config_example/)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
-- [Transfer learning document](docs/TRANSFER_LEARNING.md)
+- [迁移学习教程](docs/TRANSFER_LEARNING_cn.md)
 
-## Model Zoo
+## 模型库
 
-- Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
-- [Face detection models](configs/face_detection/README.md)
-- [Pretrained models for pedestrian  and vehicle detection](contrib/README.md)
+- [模型库](docs/MODEL_ZOO_cn.md)
+- [人脸检测模型](configs/face_detection/README.md)
+- [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
+- [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
+- [Objects365 2019 Challenge夺冠模型](docs/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
+- [Open Images V5和Objects365数据集模型](docs/OIDV5_BASELINE_MODEL.md)
 
-## Model compression
 
-- [Quantization-aware training example](slim/quantization)
-- [Model pruning example](slim/prune)
+## 模型压缩
+- [量化训练压缩示例](slim/quantization)
+- [剪枝压缩示例](slim/prune)
 
-## Deployment
+## 推理部署
 
-- [Export model for inference](docs/EXPORT_MODEL.md)
-- [C++ inference](inference/README.md)
+- [模型导出教程](docs/EXPORT_MODEL.md)
+- [C++推理部署](inference/README.md)
 
 ## Benchmark
 
-- [Inference benchmark](docs/BENCHMARK_INFER_cn.md)
+- [推理Benchmark](docs/BENCHMARK_INFER_cn.md)
 
 
-## Updates
 
-#### 10/2019
+## 版本更新
 
-- Add enhanced YOLOv3 models, box mAP up to 41.4%.
-- Face detection models included: BlazeFace, Faceboxes.
-- Enrich COCO models,  box mAP up to 51.9%.
-- Add CACacascade RCNN, one of the best single model of Objects365 2019 challenge Full Track champion.
-- Add pretrained models for pedestrian and vehicle detection.
-- Support mixed-precision training.
-- Add C++ inference depolyment.
-- Add model compression examples.
+### 21/11/2019
+- 增加CascadeClsAware RCNN模型。
+- 增加CBNet，ResNet200和Non-local模型。
+- 增加SoftNMS。
+- 增加Open Image V5数据集和Objects365数据集模型。
 
-#### 2/9/2019
+### 10/2019
+- 增加增强版YOLOv3模型，精度高达41.4%。
+- 增加人脸检测模型BlazeFace、Faceboxes。
+- 丰富基于COCO的模型，精度高达51.9%。
+- 增加Objects365 2019 Challenge上夺冠的最佳单模型之一CACascade-RCNN。
+- 增加行人检测和车辆检测预训练模型。
+- 支持FP16训练。
+- 增加跨平台的C++推理部署方案。
+- 增加模型压缩示例。
 
-- Add retrained models for GroupNorm.
 
-- Add Cascade-Mask-RCNN+FPN.
+### 2/9/2019
+- 增加GroupNorm模型。
+- 增加CascadeRCNN+Mask模型。
 
 #### 5/8/2019
-
-- Add a series of models ralated modulated Deformable Convolution.
+- 增加Modulated Deformable Convolution系列模型。
 
 #### 29/7/2019
 
-- Update Chinese docs for PaddleDetection
-- Fix bug in R-CNN models when train and test at the same time
-- Add ResNext101-vd + Mask R-CNN + FPN models
-- Add YOLOv3 on VOC models
+- 增加检测库中文文档
+- 修复R-CNN系列模型训练同时进行评估的问题
+- 新增ResNext101-vd + Mask R-CNN + FPN模型
+- 新增基于VOC数据集的YOLOv3模型
 
 #### 3/7/2019
 
-- Initial release of PaddleDetection and detection model zoo
-- Models included: Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
-  R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, and SSD.
+- 首次发布PaddleDetection检测库和检测模型库
+- 模型包括：Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
+  R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, 和SSD.
 
+## 如何贡献代码
 
-## Contributing
-
-Contributions are highly welcomed and we would really appreciate your feedback!!
+我们非常欢迎你可以为PaddleDetection提供代码，也十分感谢你的反馈。
