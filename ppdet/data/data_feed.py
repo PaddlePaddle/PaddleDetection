@@ -893,7 +893,7 @@ class YoloTrainFeed(DataFeed):
     def __init__(self,
                  dataset=CocoDataSet().__dict__,
                  fields=['image', 'gt_box', 'gt_label', 'gt_score'],
-                 image_shape=[3, 608, 608],
+                 image_shape=[3, None, None],
                  sample_transforms=[
                      DecodeImage(to_rgb=True, with_mixup=True),
                      MixupImage(alpha=1.5, beta=1.5),
