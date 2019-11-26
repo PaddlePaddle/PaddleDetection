@@ -14,14 +14,14 @@
 使用[训练/评估/推断](GETTING_STARTED_cn.md)中训练得到的模型进行试用，脚本如下
 
 ```bash
-# 导出FasterRCNN模型
+# 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
 python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
         --output_dir=./inference_model \
         -o weights=output/faster_rcnn_r50_1x/model_final \
 
 ```
 
-- 预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
+预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
 
 ## 设置导出模型的输入大小
 
@@ -46,5 +46,3 @@ python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
         -o weights= https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
            SSDTestFeed.image_shape=[3,300,300]
 ```
-
-- 保存FPN系列模型时，需要保证上下采样维度一致，因此image_shape须设置为32的倍数
