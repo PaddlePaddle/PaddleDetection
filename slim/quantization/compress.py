@@ -88,7 +88,6 @@ def eval_run(exe, compile_program, reader, keys, values, cls, test_feed, cfg):
             outs.append(data['is_difficult'])
         elif cfg.metric == 'COCO':
             outs.append(data['im_id'])
-
         res = {
             k: (np.array(v), v.recursive_sequence_lengths())
             for k, v in zip(keys, outs)
