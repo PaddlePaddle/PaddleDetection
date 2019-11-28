@@ -84,14 +84,14 @@ class ParallelMap(object):
 
         bufsize = self._bufsize
         if use_process:
-            #from .shared_queue import SharedQueue as Queue
+            from .shared_queue import SharedQueue as Queue
             from multiprocessing import Queue
             from multiprocessing import Process as Worker
             from multiprocessing import Event
             memsize = self._memsize
             self._inq = Queue(bufsize)
-            #self._outq = Queue(bufsize, memsize=memsize)
-            self._outq = Queue(bufsize)
+            self._outq = Queue(bufsize, memsize=memsize)
+            #self._outq = Queue(bufsize)
         else:
             if six.PY3:
                 from queue import Queue
