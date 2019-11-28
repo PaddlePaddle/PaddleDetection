@@ -32,7 +32,6 @@ import logging
 import random
 import math
 import numpy as np
-import collections
 
 import cv2
 from PIL import Image, ImageEnhance
@@ -184,11 +183,9 @@ class MultiscaleTestResize(BaseOperator):
         base_name_list = ['image']
         origin_ims['image'] = im
         if self.use_flip:
-            sample['flip_image'] = im[:, ::-1, :]
-            base_name_list.append('flip_image')
-            origin_ims['flip_image'] = sample['flip_image']
-
-        ms_samples = []
+            sample['image_flip'] = im[:, ::-1, :]
+            base_name_list.append('image_flip')
+            origin_ims['image_flip'] = sample['image_flip']
 
         for base_name in base_name_list:
             im_scale = float(self.origin_target_size) / float(im_size_min)
@@ -208,9 +205,11 @@ class MultiscaleTestResize(BaseOperator):
                 fy=im_scale_y,
                 interpolation=self.interp)
 
-            im_info = [resize_h, resize_w, im_scale]
-            ms_samples.append([{'image': im_resize, 'im_info': im_info}])
-
+            sample[base_name] = im_resize
+            info_name = 'im_info' if base_name == 'image' else 'im_info_image_flip'
+            sample[base_name] = im_resize
+            sample[info_name] = np.array(
+                [resize_h, resize_w, im_scale], dtype=np.float32)
             for i, size in enumerate(self.target_size):
                 im_scale = float(size) / float(im_size_min)
                 if np.round(im_scale * im_size_max) > self.max_size:
@@ -226,9 +225,15 @@ class MultiscaleTestResize(BaseOperator):
                     fx=im_scale_x,
                     fy=im_scale_y,
                     interpolation=self.interp)
+
                 im_info = [resize_h, resize_w, im_scale]
-                ms_samples.append([{'image': im_resize, 'im_info': im_info}])
-        sample['multi_scales_image'] = ms_samples
+                # hard-code here, must be consistent with
+                # ppdet/modeling/architectures/input_helper.py
+                name = base_name + '_scale_' + str(i)
+                info_name = 'im_info_' + name
+                sample[name] = im_resize
+                sample[info_name] = np.array(
+                    [resize_h, resize_w, im_scale], dtype=np.float32)
         return sample
 
 
@@ -446,7 +451,8 @@ class NormalizeImage(BaseOperator):
             2. Each pixel minus mean and is divided by std
         """
         for k in sample.keys():
-            if 'image' in k:
+            # hard code
+            if k.startswith('image'):
                 im = sample[k]
                 im = im.astype(np.float32, copy=False)
                 if self.is_channel_first:
@@ -902,14 +908,15 @@ class Permute(BaseOperator):
     def __call__(self, sample, context=None):
         samples = sample
         batch_input = True
-        if not isinstance(samples, collections.Sequence):
+        if not isinstance(samples, Sequence):
             batch_input = False
             samples = [samples]
         out_samples = []
         for sample in samples:
             assert 'image' in sample, "image data not found"
             for k in sample.keys():
-                if 'image' in k:
+                # hard code
+                if k.startswith('image'):
                     im = sample[k]
                     if self.channel_first:
                         im = np.swapaxes(im, 1, 2)
@@ -1405,7 +1412,6 @@ class PadBboxes(BaseOperator):
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        #print(sample['gt_class'].shape, sample['pad_score'].shape)
         if 'difficult' in sample and sample['difficult'].shape[0] > gt_num:
             pad_diff = np.zeros((num_max), dtype=np.int32)
             pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]

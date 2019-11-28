@@ -17,11 +17,14 @@ from __future__ import division
 from __future__ import print_function
 
 from collections import OrderedDict
+import copy
 
 import paddle.fluid as fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+
+from .input_helper import multiscale_def
 
 __all__ = ['CascadeMaskRCNN']
 
@@ -204,25 +207,16 @@ class CascadeMaskRCNN(object):
         required_fields = ['image', 'im_info']
         self._input_check(required_fields, feed_vars)
 
-        ims = []
-        for k in feed_vars.keys():
-            if 'image' in k:
-                ims.append(feed_vars[k])
         result = {}
-
         if not mask_branch:
             assert 'im_shape' in feed_vars, \
                 "{} has no im_shape field".format(feed_vars)
             result.update(feed_vars)
 
-        for i, im in enumerate(ims):
-            im_info = fluid.layers.slice(
-                input=feed_vars['im_info'],
-                axes=[1],
-                starts=[3 * i],
-                ends=[3 * i + 3])
+        for i in range(len(self.im_info_names) // 2):
+            im = feed_vars[self.im_info_names[2 * i]]
+            im_info = feed_vars[self.im_info_names[2 * i + 1]]
             body_feats = self.backbone(im)
-            result.update(body_feats)
 
             # FPN
             if self.fpn is not None:
@@ -282,7 +276,6 @@ class CascadeMaskRCNN(object):
             else:
                 mask_name = 'mask_pred_' + str(i)
                 bbox_pred = feed_vars['bbox']
-                result.update({im.name: im})
                 if 'flip' in im.name:
                     mask_name += '_flip'
                     bbox_pred = feed_vars['bbox_flip']
@@ -383,21 +376,46 @@ class CascadeMaskRCNN(object):
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'gt_mask':  {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 3}, # polygon coordinates
+            'im_shape': {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
         }
         # yapf: enable
         return inputs_def
 
     def build_inputs(self,
-                     image_shape,
-                     fields,
+                     image_shape=[3, None, None],
+                     fields=[
+                         'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
+                         'is_crowd', 'gt_mask'
+                     ],
+                     multi_scale=False,
+                     num_scales=-1,
+                     use_flip=None,
                      use_dataloader=True,
-                     iterable=False):
+                     iterable=False,
+                     mask_branch=False):
         inputs_def = self._inputs_def(image_shape)
+        fields = copy.deepcopy(fields)
+        if multi_scale:
+            ms_def, ms_fields = multiscale_def(image_shape, num_scales,
+                                               use_flip)
+            inputs_def.update(ms_def)
+            fields += ms_fields
+            self.im_info_names = ['image', 'im_info'] + ms_fields
+            if mask_branch:
+                box_fields = ['bbox', 'bbox_flip'] if use_flip else ['bbox']
+                for key in box_fields:
+                    inputs_def[key] = {
+                        'shape': [6],
+                        'dtype': 'float32',
+                        'lod_level': 1
+                    }
+                fields += box_fields
         feed_vars = OrderedDict([(key, fluid.layers.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],
             lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        use_dataloader = use_dataloader and not mask_branch
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
             capacity=64,

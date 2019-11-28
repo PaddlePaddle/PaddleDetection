@@ -17,8 +17,13 @@ import numpy as np
 import logging
 logger = logging.getLogger(__name__)
 
+from ppdet.core.workspace import register, serializable
+from dataset import DataSet
 
-def load(anno_path, sample_num=-1, cname2cid=None, with_background=True):
+
+@register
+@serializable
+class WIDERFaceDataSet(DataSet):
     """
     Load WiderFace records with 'anno_path'
 
@@ -41,50 +46,76 @@ def load(anno_path, sample_num=-1, cname2cid=None, with_background=True):
         'cname2id' is a dict to map category name to class id
     """
 
-    txt_file = anno_path
+    def __init__(self,
+                 image_dir=None,
+                 anno_path=None,
+                 dataset_dir=None,
+                 sample_num=-1,
+                 with_background=True):
+        super(WIDERFaceDataSet, self).__init__(
+            image_dir=image_dir,
+            anno_path=anno_path,
+            sample_num=sample_num,
+            dataset_dir=dataset_dir,
+            with_background=with_background)
+        self.anno_path = anno_path
+        self.sample_num = sample_num
+        self.with_background = with_background
+        self.image_dir = image_dir
+        if dataset_dir:
+            self.anno_path = os.path.join(dataset_dir, anno_path)
+            self.image_dir = os.path.join(dataset_dir, image_dir)
+        self.roidbs = None
+        self.cname2cid = None
 
-    records = []
-    ct = 0
-    file_lists = _load_file_list(txt_file)
-    cname2cid = widerface_label(with_background)
+    def load_roidb_and_cname2cid(self):
+        txt_file = self.anno_path
 
-    for item in file_lists:
-        im_fname = item[0]
-        im_id = np.array([ct])
-        gt_bbox = np.zeros((len(item) - 2, 4), dtype=np.float32)
-        gt_class = np.ones((len(item) - 2, 1), dtype=np.int32)
-        for index_box in range(len(item)):
-            if index_box >= 2:
-                temp_info_box = item[index_box].split(' ')
-                xmin = float(temp_info_box[0])
-                ymin = float(temp_info_box[1])
-                w = float(temp_info_box[2])
-                h = float(temp_info_box[3])
-                # Filter out wrong labels
-                if w < 0 or h < 0:
-                    continue
-                xmin = max(0, xmin)
-                ymin = max(0, ymin)
-                xmax = xmin + w
-                ymax = ymin + h
-                gt_bbox[index_box - 2] = [xmin, ymin, xmax, ymax]
+        records = []
+        ct = 0
+        file_lists = _load_file_list(txt_file)
+        cname2cid = widerface_label(self.with_background)
 
-        widerface_rec = {
-            'im_file': im_fname,
-            'im_id': im_id,
-            'gt_bbox': gt_bbox,
-            'gt_class': gt_class,
-        }
-        # logger.debug
-        if len(item) != 0:
-            records.append(widerface_rec)
+        for item in file_lists:
+            im_fname = item[0]
+            im_id = np.array([ct])
+            gt_bbox = np.zeros((len(item) - 2, 4), dtype=np.float32)
+            gt_class = np.ones((len(item) - 2, 1), dtype=np.int32)
+            for index_box in range(len(item)):
+                if index_box >= 2:
+                    temp_info_box = item[index_box].split(' ')
+                    xmin = float(temp_info_box[0])
+                    ymin = float(temp_info_box[1])
+                    w = float(temp_info_box[2])
+                    h = float(temp_info_box[3])
+                    # Filter out wrong labels
+                    if w < 0 or h < 0:
+                        continue
+                    xmin = max(0, xmin)
+                    ymin = max(0, ymin)
+                    xmax = xmin + w
+                    ymax = ymin + h
+                    gt_bbox[index_box - 2] = [xmin, ymin, xmax, ymax]
 
-        ct += 1
-        if sample_num > 0 and ct >= sample_num:
-            break
-    assert len(records) > 0, 'not found any widerface in %s' % (anno_path)
-    logger.info('{} samples in file {}'.format(ct, anno_path))
-    return records, cname2cid
+            im_fname = os.path.join(self.image_dir,
+                                    im_fname) if self.image_dir else im_fname
+            widerface_rec = {
+                'im_file': im_fname,
+                'im_id': im_id,
+                'gt_bbox': gt_bbox,
+                'gt_class': gt_class,
+            }
+            # logger.debug
+            if len(item) != 0:
+                records.append(widerface_rec)
+
+            ct += 1
+            if self.sample_num > 0 and ct >= self.sample_num:
+                break
+        assert len(records) > 0, 'not found any widerface in %s' % (
+            self.anno_path)
+        logger.info('{} samples in file {}'.format(ct, self.anno_path))
+        self.roidbs, self.cname2cid = records, cname2cid
 
 
 def _load_file_list(input_txt):

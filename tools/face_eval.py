@@ -29,7 +29,6 @@ from ppdet.utils.check import check_gpu
 from ppdet.utils.widerface_eval_utils import get_shrink, bbox_vote, \
     save_widerface_bboxes, save_fddb_bboxes, to_chw_bgr
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -53,7 +52,7 @@ def face_img_process(image,
 def face_eval_run(exe,
                   compile_program,
                   fetches,
-                  img_root_dir,
+                  image_dir,
                   gt_file,
                   pred_dir='output/pred',
                   eval_mode='widerface',
@@ -73,9 +72,10 @@ def face_eval_run(exe,
 
     dets_dist = OrderedDict()
     for iter_id, im_path in enumerate(imid2path):
-        image_path = os.path.join(img_root_dir, im_path)
+        image_path = os.path.join(image_dir, im_path)
         if eval_mode == 'fddb':
             image_path += '.jpg'
+        assert os.path.exists(image_path)
         image = Image.open(image_path).convert('RGB')
         if multi_scale:
             shrink, max_shrink = get_shrink(image.size[1], image.size[0])
@@ -220,11 +220,6 @@ def main():
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
 
-    if 'eval_feed' not in cfg:
-        eval_feed = create(main_arch + 'EvalFeed')
-    else:
-        eval_feed = create(cfg.eval_feed)
-
     # define executor
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -235,7 +230,9 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(eval_feed, iterable=True)
+            inputs_def = cfg['EvalReader']['inputs_def']
+            inputs_def['use_dataloader'] = False
+            feed_vars, _ = model.build_inputs(**inputs_def)
             fetches = model.eval(feed_vars)
 
     eval_prog = eval_prog.clone(True)
@@ -248,21 +245,19 @@ def main():
     assert cfg.metric in ['WIDERFACE'], \
             "unknown metric type {}".format(cfg.metric)
 
-    annotation_file = getattr(eval_feed.dataset, 'annotation', None)
-    dataset_dir = FLAGS.dataset_dir if FLAGS.dataset_dir else \
-        getattr(eval_feed.dataset, 'dataset_dir', None)
-    img_root_dir = dataset_dir
-    if FLAGS.eval_mode == "widerface":
-        image_dir = getattr(eval_feed.dataset, 'image_dir', None)
-        img_root_dir = os.path.join(dataset_dir, image_dir)
-    gt_file = os.path.join(dataset_dir, annotation_file)
+    dataset = cfg['EvalReader']['dataset']
+
+    annotation_file = dataset.get_anno()
+    dataset_dir = dataset.dataset_dir
+    image_dir = dataset.image_dir
+
     pred_dir = FLAGS.output_eval if FLAGS.output_eval else 'output/pred'
     face_eval_run(
         exe,
         eval_prog,
         fetches,
-        img_root_dir,
-        gt_file,
+        image_dir,
+        annotation_file,
         pred_dir=pred_dir,
         eval_mode=FLAGS.eval_mode,
         multi_scale=FLAGS.multi_scale)

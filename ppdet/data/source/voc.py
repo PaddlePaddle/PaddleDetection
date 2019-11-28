@@ -55,11 +55,19 @@ class VOCDataSet(DataSet):
     """
 
     def __init__(self,
-                 anno_path,
+                 image_dir=None,
+                 anno_path=None,
                  sample_num=-1,
                  use_default_label=True,
                  with_background=True,
-                 label_list='label_list.txt'):
+                 label_list='label_list.txt',
+                 dataset_dir=None):
+        super(VOCDataSet, self).__init__(
+            image_dir=image_dir,
+            anno_path=anno_path,
+            sample_num=sample_num,
+            dataset_dir=dataset_dir,
+            with_background=with_background)
         self.anno_path = anno_path
         self.sample_num = sample_num
         self.use_default_label = use_default_label
@@ -67,18 +75,13 @@ class VOCDataSet(DataSet):
         self.label_list = label_list
         self.roidbs = None
         self.cname2cid = None
+        self.image_dir = image_dir
+        if dataset_dir and image_dir:
+            self.image_dir = os.path.join(dataset_dir, image_dir)
+        if dataset_dir:
+            self.anno_path = os.path.join(dataset_dir, anno_path)
 
-    def get_roidb(self):
-        if not self.roidbs:
-            self.roidbs, self.cname2cid = self.load_roidb()
-        return self.roidbs
-
-    def get_cname2cid(self):
-        if not self.cname2cid:
-            self.roidbs, self.cname2cid = self.load_roidb()
-        return self.cname2cid
-
-    def load_roidb(self):
+    def load_roidb_and_cname2cid(self):
         data_dir = os.path.dirname(self.anno_path)
         # mapping category name to class id
         # if with_background is True:
@@ -156,7 +159,7 @@ class VOCDataSet(DataSet):
                     break
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
-        return records, cname2cid
+        self.roidbs, self.cname2cid = records, cname2cid
 
 
 def pascalvoc_label(with_background=True):

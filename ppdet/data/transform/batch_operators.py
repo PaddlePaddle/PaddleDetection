@@ -16,6 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
+
 import logging
 import cv2
 import numpy as np
@@ -117,25 +122,37 @@ class PadMultiScaleTest(BaseOperator):
         self.pad_to_stride = pad_to_stride
 
     def __call__(self, samples, context=None):
-        if len(samples) != 1:
-            raise ValueError("Batch size must be 1 when using multiscale test, "
-                             "but now batch size is {}".format(len(samples)))
         coarsest_stride = self.pad_to_stride
         if coarsest_stride == 0:
             return samples
 
-        data = samples[0]
-        assert 'multi_scales_image' in data
-        for i in range(len(samples['multi_scales_image'])):
-            im = data['multi_scales_image'][i]['image']
-            im_c, im_h, im_w = im.shape
-            max_h = int(np.ceil(im_h / coarsest_stride) * coarsest_stride)
-            max_w = int(np.ceil(im_w / coarsest_stride) * coarsest_stride)
-            padding_im = np.zeros((im_c, max_h, max_w), dtype=np.float32)
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        if len(samples) != 1:
+            raise ValueError("Batch size must be 1 when using multiscale test, "
+                             "but now batch size is {}".format(len(samples)))
+        out_samples = []
+        for sample in samples:
+            for k in sample.keys():
+                # hard code
+                if k.startswith('image'):
+                    im = sample[k]
+                    im_c, im_h, im_w = im.shape
+                    max_h = int(
+                        np.ceil(im_h / coarsest_stride) * coarsest_stride)
+                    max_w = int(
+                        np.ceil(im_w / coarsest_stride) * coarsest_stride)
+                    padding_im = np.zeros(
+                        (im_c, max_h, max_w), dtype=np.float32)
 
-            padding_im[:, :im_h, :im_w] = im
-            data['multi_scales_image'][i]['image'] = padding_im
-            # update im_info
-            data['multi_scales_image'][i]['im_info'][:2] = [max_h, max_w]
-        samples[0] = data
-        return samples
+                    padding_im[:, :im_h, :im_w] = im
+                    sample[k] = padding_im
+                    info_name = 'im_info' if k == 'image' else 'im_info_' + k
+                    # update im_info
+                    sample[info_name][:2] = [max_h, max_w]
+            out_samples.append(sample)
+        if not batch_input:
+            out_samples = out_samples[0]
+        return out_samples

@@ -54,11 +54,17 @@ class COCODataSet(DataSet):
     """
 
     def __init__(self,
-                 image_dir,
-                 anno_path,
+                 image_dir=None,
+                 anno_path=None,
+                 dataset_dir=None,
                  sample_num=-1,
-                 with_background=True,
-                 dataset_dir=None):
+                 with_background=True):
+        super(COCODataSet, self).__init__(
+            image_dir=image_dir,
+            anno_path=anno_path,
+            dataset_dir=dataset_dir,
+            sample_num=sample_num,
+            with_background=with_background)
         self.anno_path = anno_path
         self.sample_num = sample_num
         self.with_background = with_background
@@ -69,17 +75,7 @@ class COCODataSet(DataSet):
         self.roidbs = None
         self.cname2cid = None
 
-    def get_roidb(self):
-        if not self.roidbs:
-            self.roidbs, self.cname2cid = self.load_roidb()
-        return self.roidbs
-
-    def get_cname2cid(self):
-        if not self.cname2cid:
-            self.roidbs, self.cname2cid = self.load_roidb()
-        return self.cname2cid
-
-    def load_roidb(self):
+    def load_roidb_and_cname2cid(self):
         assert self.anno_path.endswith('.json'), \
             'invalid coco annotation file: ' + anno_path
         coco = COCO(self.anno_path)
@@ -164,4 +160,4 @@ class COCODataSet(DataSet):
         assert len(records) > 0, 'not found any coco record in %s' % (
             self.anno_path)
         logger.info('{} samples in file {}'.format(ct, self.anno_path))
-        return records, cname2cid
+        self.roidbs, self.cname2cid = records, cname2cid

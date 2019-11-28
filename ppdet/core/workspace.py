@@ -65,7 +65,7 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
-LOADER_KEY = '_LOADER_'
+READER_KEY = '_READER_'
 
 
 def load_config(file_path):
@@ -84,8 +84,8 @@ def load_config(file_path):
     with open(file_path) as f:
         cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
 
-    if LOADER_KEY in cfg:
-        yml_cfg_file = cfg[LOADER_KEY]
+    if READER_KEY in cfg:
+        yml_cfg_file = cfg[READER_KEY]
         if yml_cfg_file.startswith("~"):
             yml_cfg_file = os.path.expanduser(yml_cfg_file)
         if not yml_cfg_file.startswith('/'):
@@ -94,7 +94,7 @@ def load_config(file_path):
 
         with open(yml_cfg_file) as f:
             merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[LOADER_KEY]
+        del cfg[READER_KEY]
 
     merge_config(cfg)
     return global_config

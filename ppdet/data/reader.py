@@ -74,7 +74,7 @@ def _calc_img_weights(roidbs):
     return img_weights
 
 
-def has_empty(items):
+def _has_empty(item):
     def empty(x):
         if isinstance(x, np.ndarray) and x.size == 0:
             return True
@@ -83,47 +83,65 @@ def has_empty(items):
         else:
             return False
 
-    if any(x is None for x in items):
+    if isinstance(item, collections.Sequence) and len(item) == 0:
         return True
-    if any(empty(x) for x in items):
+    if item is None:
+        return True
+    if empty(item):
         return True
     return False
 
 
-def batch_arrange(batch_samples, fields):
-    def segm(samples):
-        assert 'gt_poly' in samples
-        assert 'is_crowd' in samples
-        segms = samples['gt_poly']
+def _segm(samples):
+    assert 'gt_poly' in samples
+    segms = samples['gt_poly']
+    if 'is_crowd' in samples:
         is_crowd = samples['is_crowd']
         if len(segms) != 0:
             assert len(segms) == is_crowd.shape[0]
 
-        gt_masks = []
-        valid = True
-        for i in range(len(segms)):
-            segm, iscrowd = segms[i], is_crowd[i]
-            gt_segm = []
-            if iscrowd:
-                gt_segm.append([[0, 0]])
-            else:
-                for poly in segm:
-                    if len(poly) == 0:
-                        valid = False
-                        break
-                    gt_segm.append(np.array(poly).reshape(-1, 2))
-            if (not valid) or len(gt_segm) == 0:
-                break
-            gt_masks.append(gt_segm)
-        return gt_masks
+    gt_masks = []
+    valid = True
+    for i in range(len(segms)):
+        segm = segms[i]
+        gt_segm = []
+        if 'is_crowd' in samples and is_crowd[i]:
+            gt_segm.append([[0, 0]])
+        else:
+            for poly in segm:
+                if len(poly) == 0:
+                    valid = False
+                    break
+                gt_segm.append(np.array(poly).reshape(-1, 2))
+        if (not valid) or len(gt_segm) == 0:
+            break
+        gt_masks.append(gt_segm)
+    return gt_masks
+
+
+def batch_arrange(batch_samples, fields):
+    def im_shape(samples, dim=3):
+        # hard code
+        assert 'h' in samples
+        assert 'w' in samples
+        if dim == 3:  # RCNN, ..
+            return np.array((samples['h'], samples['w'], 1), dtype=np.float32)
+        else:  # YOLOv3, ..
+            return np.array((samples['h'], samples['w']), dtype=np.int32)
 
     arrange_batch = []
     for samples in batch_samples:
         one_ins = ()
         for i, field in enumerate(fields):
             if field == 'gt_mask':
-                one_ins += (segm(samples), )
+                one_ins += (_segm(samples), )
+            elif field == 'im_shape':
+                one_ins += (im_shape(samples), )
+            elif field == 'im_size':
+                one_ins += (im_shape(samples, 2), )
             else:
+                if field == 'is_difficult':
+                    field = 'difficult'
                 assert field in samples, '{} not in samples'.format(field)
                 one_ins += (samples[field], )
         arrange_batch.append(one_ins)
@@ -145,11 +163,10 @@ class Reader(object):
                  mixup_epoch=-1,
                  class_aware_sampling=False,
                  worker_num=-1,
-                 use_process=False,
+                 use_multi_process=False,
                  bufsize=100,
                  memsize='3G',
-                 inputs_def=None,
-                 **kwargs):
+                 inputs_def=None):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
         # transform
@@ -159,7 +176,14 @@ class Reader(object):
             self._batch_transforms = Compose(batch_transforms)
 
         # data
-        self._fields = inputs_def['fields'] if inputs_def else None
+        self._fields = copy.deepcopy(inputs_def[
+            'fields']) if inputs_def else None
+        if inputs_def and inputs_def['multi_scale']:
+            from ppdet.modeling.architectures.input_helper import multiscale_def
+            _, ms_fields = multiscale_def(inputs_def['image_shape'],
+                                          inputs_def['num_scales'],
+                                          inputs_def['use_flip'])
+            self._fields += ms_fields
         self._batch_size = batch_size
         self._shuffle = shuffle
         self._drop_last = drop_last
@@ -185,7 +209,7 @@ class Reader(object):
         if self._worker_num > -1:
             task = functools.partial(self.worker, self._drop_empty)
             self._parallel = ParallelMap(self, task, worker_num, bufsize,
-                                         use_process, memsize)
+                                         use_multi_process, memsize)
 
     def __call__(self):
         if self._worker_num > -1:
@@ -238,11 +262,26 @@ class Reader(object):
 
     def _load_batch(self):
         batch = []
-        for i in range(self._batch_size):
+        bs = 0
+        #for i in range(self._batch_size):
+        while bs != self._batch_size:
             if self._pos >= self.size():
                 break
             pos = self.indexes[self._pos]
             sample = copy.deepcopy(self._roidbs[pos])
+            self._pos += 1
+
+            if self._drop_empty and 'gt_mask' in self._fields:
+                if _has_empty(_segm(sample)):
+                    #logger.warn('gt_mask is empty or not valid in {}'.format(
+                    #    sample['im_file']))
+                    continue
+            if self._drop_empty and 'gt_bbox' in self._fields:
+                if _has_empty(sample['gt_bbox']):
+                    #logger.warn('gt_bbox {} is empty or not valid in {}, '
+                    #   'drop this sample'.format(
+                    #    sample['im_file'], sample['gt_bbox']))
+                    continue
 
             if self._load_img:
                 sample['image'] = self._load_image(sample['im_file'])
@@ -257,24 +296,39 @@ class Reader(object):
                         'im_file'])
 
             batch.append(sample)
-            self._pos += 1
+            bs += 1
         return batch
 
     def worker(self, drop_empty=True, batch_samples=None):
         """
         sample transform and data transform.
         """
+
+        def _empty_gt(sample):
+            flag = False
+            if 'gt_bbox' in sample:
+                flag = _has_empty((sample['gt_bbox'], ))
+            return flag
+
         batch = []
         for sample in batch_samples:
             sample = self._sample_transforms(sample)
-            if self._drop_empty and has_empty(sample):
-                continue
+            if drop_empty and 'gt_bbox' in self._fields:
+                if _has_empty(sample['gt_bbox']):
+                    #logger.warn('gt_bbox {} is empty or not valid in {}, '
+                    #   'drop this sample'.format(
+                    #    sample['im_file'], sample['gt_bbox']))
+                    continue
             batch.append(sample)
         if len(batch) > 0 and self._batch_transforms:
             batch = self._batch_transforms(batch)
-        if self._fields:
+        if len(batch) > 0 and self._fields:
             batch = batch_arrange(batch, self._fields)
         return batch
+
+    def _load_image(self, filename):
+        with open(filename, 'rb') as f:
+            return f.read()
 
     def size(self):
         """ implementation of Dataset.size
@@ -302,13 +356,17 @@ def create_reader(cfg, max_iter=0):
         reader = Reader(**cfg)()
         n = 0
         while True:
-            for _batch in reader:
-                yield _batch
-                n += 1
-                if max_iter > 0 and n == max_iter:
+            try:
+                for _batch in reader:
+                    if len(_batch) > 0:
+                        yield _batch
+                        n += 1
+                    if max_iter > 0 and n == max_iter:
+                        return
+                reader.reset()
+                if max_iter <= 0:
                     return
-            reader.reset()
-            if max_iter <= 0:
-                return
+            except Exception as e:
+                raise e
 
     return _reader

@@ -14,6 +14,8 @@
 
 from . import coco
 from . import voc
+from . import widerface
 
 from .coco import *
 from .voc import *
+from .widerface import *

@@ -30,7 +30,10 @@ from .voc_utils import create_list
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['get_weights_path', 'get_dataset_path', 'download_dataset', 'create_voc_list']
+__all__ = [
+    'get_weights_path', 'get_dataset_path', 'download_dataset',
+    'create_voc_list'
+]
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
@@ -147,7 +150,7 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
-    # label, see ../data/source/voc_loader.py
+    # label, see ../data/source/voc.py
     create_list(devkit_dir, years, data_dir)
     logger.info("Create voc file list finished")
 

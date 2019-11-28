@@ -81,7 +81,7 @@ class YOLOv3(object):
         # yapf: disable
         inputs_def = {
             'image':    {'shape': im_shape,                 'dtype': 'float32', 'lod_level': 0},
-     'im_size':  {'shape': [None, 2],                'dtype': 'int32',   'lod_level': 0},
+            'im_size':  {'shape': [None, 2],                'dtype': 'int32',   'lod_level': 0},
             'im_id':    {'shape': [None, 1],                'dtype': 'int32',   'lod_level': 0},
             'gt_bbox':  {'shape': [None, num_max_boxes, 4], 'dtype': 'float32', 'lod_level': 0},
             'gt_class': {'shape': [None, num_max_boxes],    'dtype': 'int32',   'lod_level': 0},
@@ -99,7 +99,7 @@ class YOLOv3(object):
             use_dataloader=True,
             iterable=False):
         inputs_def = self._inputs_def(image_shape, num_max_boxes)
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],

@@ -88,7 +88,7 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-_LOADER_: 'faster_loader.yml'
+_LOADER_: 'faster_reader.yml'
 TrainLoader:
   inputs_def:
     image_shape: [3,800,800]
