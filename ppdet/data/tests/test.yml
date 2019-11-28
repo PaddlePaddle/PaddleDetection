@@ -1,4 +1,6 @@
 TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
   dataset:
     !COCODataSet
     image_dir: val2017
@@ -34,9 +36,12 @@ TrainReader:
   shuffle: true
   worker_num: 2
   drop_last: false
-  use_process: false
+  use_multi_process: false
 
 EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id']
+  dataset:
   dataset:
     !COCODataSet
     image_dir: val2017

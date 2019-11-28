@@ -178,7 +178,7 @@ class Reader(object):
         # data
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
-        if inputs_def and inputs_def['multi_scale']:
+        if inputs_def and inputs_def.get('multi_scale', False):
             from ppdet.modeling.architectures.input_helper import multiscale_def
             _, ms_fields = multiscale_def(inputs_def['image_shape'],
                                           inputs_def['num_scales'],
@@ -271,12 +271,12 @@ class Reader(object):
             sample = copy.deepcopy(self._roidbs[pos])
             self._pos += 1
 
-            if self._drop_empty and 'gt_mask' in self._fields:
+            if self._drop_empty and self._fields and 'gt_mask' in self._fields:
                 if _has_empty(_segm(sample)):
                     #logger.warn('gt_mask is empty or not valid in {}'.format(
                     #    sample['im_file']))
                     continue
-            if self._drop_empty and 'gt_bbox' in self._fields:
+            if self._drop_empty and self._fields and 'gt_bbox' in self._fields:
                 if _has_empty(sample['gt_bbox']):
                     #logger.warn('gt_bbox {} is empty or not valid in {}, '
                     #   'drop this sample'.format(
@@ -313,7 +313,7 @@ class Reader(object):
         batch = []
         for sample in batch_samples:
             sample = self._sample_transforms(sample)
-            if drop_empty and 'gt_bbox' in self._fields:
+            if drop_empty and self._fields and 'gt_bbox' in self._fields:
                 if _has_empty(sample['gt_bbox']):
                     #logger.warn('gt_bbox {} is empty or not valid in {}, '
                     #   'drop this sample'.format(

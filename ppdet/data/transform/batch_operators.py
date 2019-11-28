@@ -51,7 +51,7 @@ class PadBatch(BaseOperator):
             samples (list): a batch of sample, each is dict.
         """
         coarsest_stride = self.pad_to_stride
-        if len(samples) == 1 and coarsest_stride == 0:
+        if coarsest_stride == 0:
             return samples
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
@@ -70,7 +70,6 @@ class PadBatch(BaseOperator):
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
             padding_im[:, :im_h, :im_w] = im
             data['image'] = padding_im
-
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
         return samples

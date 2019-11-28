@@ -14,6 +14,6 @@
 
 from __future__ import absolute_import
 
-from .reader import Reader
 from .reader import *
+from .source import *
 from .transform import *

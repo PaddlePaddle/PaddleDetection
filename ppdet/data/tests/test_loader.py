@@ -15,13 +15,13 @@
 import unittest
 import os
 
-from ppdet.data2.coco import COCODataSet
-from ppdet.data2.loader import Reader
+from ppdet.data.source.coco import COCODataSet
+from ppdet.data.reader import Reader
 from ppdet.utils.download import get_path
 from ppdet.utils.download import DATASET_HOME
 
-from ppdet.data2.operators import DecodeImage, ResizeImage, Permute
-from ppdet.data2.batch_operators import PadBatch
+from ppdet.data.transform.operators import DecodeImage, ResizeImage, Permute
+from ppdet.data.transform.batch_operators import PadBatch
 
 COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
 COCO_VAL_MD5SUM = '442b8da7639aecaf257c1dceb8ba8c80'
@@ -49,13 +49,20 @@ class TestReader(unittest.TestCase):
         pass
 
     def test_loader(self):
-        coco_loader = COCODataSet(self.image_dir, self.anno_path, 10)
+        coco_loader = COCODataSet(
+            image_dir=self.image_dir, anno_path=self.anno_path, sample_num=10)
         sample_trans = [
             DecodeImage(to_rgb=True), ResizeImage(
                 target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
         ]
         batch_trans = [PadBatch(pad_to_stride=32, use_padded_im_info=True), ]
 
+        inputs_def = {
+            'fields': [
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
+        }
         data_loader = Reader(
             coco_loader,
             sample_transforms=sample_trans,
@@ -66,8 +73,8 @@ class TestReader(unittest.TestCase):
                 'gt_mask'
             ],
             shuffle=True,
-            drop_empty=True)
-
+            drop_empty=True,
+            inputs_def=inputs_def)()
         for i in range(2):
             for samples in data_loader:
                 for sample in samples:
@@ -99,13 +106,20 @@ class TestReader(unittest.TestCase):
             data_loader.reset()
 
     def test_loader_multi_threads(self):
-        coco_loader = COCODataSet(self.image_dir, self.anno_path, 10)
+        coco_loader = COCODataSet(
+            image_dir=self.image_dir, anno_path=self.anno_path, sample_num=10)
         sample_trans = [
             DecodeImage(to_rgb=True), ResizeImage(
                 target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
         ]
         batch_trans = [PadBatch(pad_to_stride=32, use_padded_im_info=True), ]
 
+        inputs_def = {
+            'fields': [
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
+                'gt_mask'
+            ],
+        }
         data_loader = Reader(
             coco_loader,
             sample_transforms=sample_trans,
@@ -118,8 +132,9 @@ class TestReader(unittest.TestCase):
             shuffle=True,
             drop_empty=True,
             worker_num=2,
-            use_process=False,
-            bufsize=8)()
+            use_multi_process=False,
+            bufsize=8,
+            inputs_def=inputs_def)()
         for i in range(2):
             for samples in data_loader:
                 for sample in samples:

@@ -21,7 +21,7 @@ from ppdet.utils.download import get_path
 from ppdet.utils.download import DATASET_HOME
 from ppdet.core.workspace import load_config, merge_config
 
-from ppdet.data2.loader import create_reader
+from ppdet.data.reader import create_reader
 
 COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
 COCO_VAL_MD5SUM = '442b8da7639aecaf257c1dceb8ba8c80'
@@ -53,7 +53,7 @@ class TestReaderYAML(unittest.TestCase):
         pass
 
     def test_loader_yaml(self):
-        cfg_file = 'ppdet/data2/tests/test.yml'
+        cfg_file = 'ppdet/data/tests/test.yml'
         cfg = load_config(cfg_file)
         data_cfg = '[!COCODataSet {{image_dir: {0}, dataset_dir: null, ' \
             'anno_path: {1}, sample_num: 10}}]'.format(
@@ -64,23 +64,48 @@ class TestReaderYAML(unittest.TestCase):
         merge_config(update_train_cfg)
         merge_config(update_test_cfg)
 
-        #reader = Reader(**cfg['TrainReader'])()
         reader = create_reader(cfg['TrainReader'], 10)()
         for samples in reader:
             for sample in samples:
-                shape = sample['image'].shape
-                self.assertEqual(shape[0], 3)
-                self.assertEqual(shape[1] % 32, 0)
-                self.assertEqual(shape[2] % 32, 0)
+                im_shape = sample[0].shape
+                self.assertEqual(im_shape[0], 3)
+                self.assertEqual(im_shape[1] % 32, 0)
+                self.assertEqual(im_shape[2] % 32, 0)
 
-        #reader = Reader(**cfg['EvalReader'])()
+                im_info_shape = sample[1].shape
+                self.assertEqual(im_info_shape[-1], 3)
+
+                im_id_shape = sample[2].shape
+                self.assertEqual(im_id_shape[-1], 1)
+
+                gt_bbox_shape = sample[3].shape
+                self.assertEqual(gt_bbox_shape[-1], 4)
+
+                gt_class_shape = sample[4].shape
+                self.assertEqual(gt_class_shape[-1], 1)
+                self.assertEqual(gt_class_shape[0], gt_bbox_shape[0])
+
+                is_crowd_shape = sample[5].shape
+                self.assertEqual(is_crowd_shape[-1], 1)
+                self.assertEqual(is_crowd_shape[0], gt_bbox_shape[0])
+
+                mask = sample[6]
+                self.assertEqual(len(mask), gt_bbox_shape[0])
+                self.assertEqual(mask[0][0].shape[-1], 2)
+
         reader = create_reader(cfg['EvalReader'], 10)()
         for samples in reader:
             for sample in samples:
-                shape = sample['image'].shape
-                self.assertEqual(shape[0], 3)
-                self.assertEqual(shape[1] % 32, 0)
-                self.assertEqual(shape[2] % 32, 0)
+                im_shape = sample[0].shape
+                self.assertEqual(im_shape[0], 3)
+                self.assertEqual(im_shape[1] % 32, 0)
+                self.assertEqual(im_shape[2] % 32, 0)
+
+                im_info_shape = sample[1].shape
+                self.assertEqual(im_info_shape[-1], 3)
+
+                im_id_shape = sample[2].shape
+                self.assertEqual(im_id_shape[-1], 1)
 
 
 if __name__ == '__main__':
