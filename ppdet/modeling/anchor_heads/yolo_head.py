@@ -44,6 +44,7 @@ class YOLOv3Head(object):
     __shared__ = ['num_classes', 'weight_prefix_name']
 
     def __init__(self,
+                 asff=False,
                  norm_decay=0.,
                  num_classes=80,
                  ignore_thresh=0.7,
@@ -66,6 +67,7 @@ class YOLOv3Head(object):
         self._parse_anchors(anchors)
         self.nms = nms
         self.prefix_name = weight_prefix_name
+        self.asff = asff
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -105,6 +107,127 @@ class YOLOv3Head(object):
         if act == 'leaky':
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
+
+
+    def _adaptively_spatial_feature_fusion(self, level, input0, input1, input2, rfb=False, is_test=True, name=None):
+        inter_dim = [512, 256, 256]
+        inter_dim = inter_dim[level]
+        output_dim = 1
+        if level == 0:
+            output_dim = 1024
+            level0 = input0
+            level1 = self._conv_bn(
+                    input1,
+                    inter_dim,
+                    filter_size=3,
+                    stride=2,
+                    padding=1,
+                    is_test=is_test,
+                    name='{}.asff.level1'.format(name))
+            level2_pool = fluid.layers.pool2d(
+                    input=input2,
+                    pool_size=3,
+                    pool_stride=2,
+                    pool_padding=1,
+                    ceil_mode=False,
+                    pool_type='max')
+            level2 = self._conv_bn(
+                    level2_pool,
+                    inter_dim,
+                    filter_size=3,
+                    stride=2,
+                    padding=1,
+                    is_test=is_test,
+                    name='{}.asff.level2'.format(name))
+        elif level == 1:
+            output_dim = 512
+            level0_compressed = self._conv_bn(
+                    input0,
+                    inter_dim,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    is_test=is_test,
+                    name='{}.asff.level0.compressed'.format(name))
+            level0 = fluid.layers.resize_nearest(
+                    level0_compressed, scale=2., name='{}.asff.level0'.format(name))
+            level1 = input1
+            level2 = self._conv_bn(
+                    input2,
+                    inter_dim,
+                    filter_size=3,
+                    stride=2,
+                    padding=1,
+                    is_test=is_test,
+                    name='{}.asff.level2'.format(name))
+        elif level == 2:
+            output_dim = 256
+            level0_compressed = self._conv_bn(
+                    input0,
+                    inter_dim,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    is_test=is_test,
+                    name='{}.asff.level0.compressed'.format(name))
+            level0 = fluid.layers.resize_nearest(
+                    level0_compressed, scale=4., name='{}.asff.level0'.format(name))
+            level1 = fluid.layers.resize_nearest(
+                    input1, scale=2., name='{}.asff.level1'.format(name))
+            level2 = input2
+
+        compress_dim = 8 if rfb else 16
+
+        level0 = self._conv_bn(
+                level0,
+                compress_dim,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name='{}.compress.level0'.format(name))
+        level1 = self._conv_bn(
+                level1,
+                compress_dim,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name='{}.compress.level1'.format(name))
+        level2 = self._conv_bn(
+                level2,
+                compress_dim,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name='{}.compress.level2'.format(name))
+        level_all = fluid.layers.concat(input=[level0, level1, level2], axis=1)
+        level_all = fluid.layers.conv2d(
+            input=level_all,
+            num_filters=3,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            act=None,
+            param_attr=ParamAttr(name=name + ".attention.weights"),
+            bias_attr=False)
+        level_weight = fluid.layers.softmax(level_all, use_cudnn=False)
+        level0_weighted = fluid.layers.slice(level_weight, [1], starts=[0], ends=[1])
+        level1_weighted = fluid.layers.slice(level_weight, [1], starts=[1], ends=[2])
+        level2_weighted = fluid.layers.slice(level_weight, [1], starts=[2], ends=[3])
+
+        fused = level0 * level0_weighted + level1 * level1_weighted + level2 * level2_weighted
+        output = self._conv_bn(
+                fused,
+                output_dim,
+                filter_size=3,
+                stride=1,
+                padding=1,
+                is_test=is_test,
+                name='{}.expand'.format(name))
+        return output
+
 
     def _detection_block(self, input, channel, is_test=True, name=None):
         assert channel % 2 == 0, \
@@ -187,6 +310,7 @@ class YOLOv3Head(object):
         """
 
         outputs = []
+        tips = []
 
         # get last out_layer_num blocks in reverse order
         out_layer_num = len(self.anchor_masks)
@@ -201,7 +325,26 @@ class YOLOv3Head(object):
                 channel=512 // (2**i),
                 is_test=(not is_train),
                 name=self.prefix_name + "yolo_block.{}".format(i))
+            tips.append(tip)
 
+            if i < len(blocks) - 1:
+                # do not perform upsample in the last detection_block
+                route = self._conv_bn(
+                    input=route,
+                    ch_out=256 // (2**i),
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    is_test=(not is_train),
+                    name=self.prefix_name + "yolo_transition.{}".format(i))
+                # upsample
+                route = self._upsample(route)
+
+        for i in range(len(tips)):
+            if self.asff:
+                tip = self._adaptively_spatial_feature_fusion(
+                    i, tips[0], tips[1], tips[2], is_test=(not is_train), 
+                    name="level{}".format(i))
             # out channel number = mask_num * (5 + class_num)
             num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
             block_out = fluid.layers.conv2d(
@@ -218,20 +361,6 @@ class YOLOv3Head(object):
                     name=self.prefix_name +
                     "yolo_output.{}.conv.bias".format(i)))
             outputs.append(block_out)
-
-            if i < len(blocks) - 1:
-                # do not perform upsample in the last detection_block
-                route = self._conv_bn(
-                    input=route,
-                    ch_out=256 // (2**i),
-                    filter_size=1,
-                    stride=1,
-                    padding=0,
-                    is_test=(not is_train),
-                    name=self.prefix_name + "yolo_transition.{}".format(i))
-                # upsample
-                route = self._upsample(route)
-
         return outputs
 
     def get_loss(self, input, gt_box, gt_label, gt_score):
