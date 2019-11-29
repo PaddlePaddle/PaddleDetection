@@ -33,11 +33,12 @@ logger = logging.getLogger(__name__)
 @register_op
 class PadBatch(BaseOperator):
     """
-    Pad a batch of samples to same dimensions.
+    Pad a batch of samples so they can be divisible by a stride.
     The layout of each image should be 'CHW'.
 
     Args:
-        pad_to_stride (int): pad to multiple of strides, e.g., 32
+        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
+            height and width is divisible by `pad_to_stride`.
     """
 
     def __init__(self, pad_to_stride=0, use_padded_im_info=True):
@@ -110,10 +111,11 @@ class RandomShape(BaseOperator):
 @register_op
 class PadMultiScaleTest(BaseOperator):
     """
-    Padding for multi-scale test
+    Pad the image so they can be divisible by a stride for multi-scale testing.
  
     Args:
-        pad_to_stride (int): pad to multiple of strides, e.g., 32
+        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
+            height and width is divisible by `pad_to_stride`.
     """
 
     def __init__(self, pad_to_stride=0):

@@ -1384,8 +1384,9 @@ class RandomCrop(BaseOperator):
 class PadBboxes(BaseOperator):
     def __init__(self, num_max_boxes=50):
         """
+        Pad zeros to bboxes if number of bboxes is less than num_max_boxes.
         Args:
-            num_max_boxes (int): the max size of bboxes
+            num_max_boxes (int): the max number of bboxes
         """
         self.num_max_boxes = num_max_boxes
         super(PadBboxes, self).__init__()
@@ -1420,13 +1421,13 @@ class PadBboxes(BaseOperator):
 
 
 @register_op
-class BoxXYXY2BoxXYWH(BaseOperator):
+class BboxXYXY2BboxXYWH(BaseOperator):
+    """
+    Convert bbox XYXY format to XYWH format.
+    """
+
     def __init__(self):
-        """
-        Args:
-            num_max_boxes (int): the max size of bboxes
-        """
-        super(BoxXYXY2BoxXYWH, self).__init__()
+        super(BboxXYXY2BboxXYWH, self).__init__()
 
     def __call__(self, sample, context=None):
         assert 'gt_bbox' in sample
