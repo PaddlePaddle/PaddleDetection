@@ -1421,13 +1421,13 @@ class PadBboxes(BaseOperator):
 
 
 @register_op
-class BboxXYXY2BboxXYWH(BaseOperator):
+class BboxXYXY2XYWH(BaseOperator):
     """
     Convert bbox XYXY format to XYWH format.
     """
 
     def __init__(self):
-        super(BboxXYXY2BboxXYWH, self).__init__()
+        super(BboxXYXY2XYWH, self).__init__()
 
     def __call__(self, sample, context=None):
         assert 'gt_bbox' in sample

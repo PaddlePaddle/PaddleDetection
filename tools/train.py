@@ -252,7 +252,7 @@ def main():
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type,
-                    cfg['EvalReader']['dataset'].__dict__)
+                    cfg['EvalReader']['dataset'])
 
                 # use tb_paddle to log mAP
                 if FLAGS.use_tb:
