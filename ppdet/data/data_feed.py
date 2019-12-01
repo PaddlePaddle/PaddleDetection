@@ -743,7 +743,7 @@ class SSDTrainFeed(DataFeed):
     def __init__(self,
                  dataset=VocDataSet().__dict__,
                  fields=['image', 'gt_box', 'gt_label'],
-                 image_shape=[None, 3, 300, 300],
+                 image_shape=[3, 300, 300],
                  sample_transforms=[
                      DecodeImage(to_rgb=True, with_mixup=False),
                      NormalizeBox(),
@@ -802,7 +802,7 @@ class SSDEvalFeed(DataFeed):
             dataset=VocDataSet(VOC_VAL_ANNOTATION).__dict__,
             fields=['image', 'im_shape', 'im_id', 'gt_box',
                          'gt_label', 'is_difficult'],
-            image_shape=[None, 3, 300, 300],
+            image_shape=[3, 300, 300],
             sample_transforms=[
                 DecodeImage(to_rgb=True, with_mixup=False),
                 NormalizeBox(),
@@ -847,7 +847,7 @@ class SSDTestFeed(DataFeed):
     def __init__(self,
                  dataset=SimpleDataSet(VOC_VAL_ANNOTATION).__dict__,
                  fields=['image', 'im_id', 'im_shape'],
-                 image_shape=[None, 3, 300, 300],
+                 image_shape=[3, 300, 300],
                  sample_transforms=[
                      DecodeImage(to_rgb=True),
                      ResizeImage(target_size=300, use_cv2=False, interp=1),
@@ -893,7 +893,7 @@ class YoloTrainFeed(DataFeed):
     def __init__(self,
                  dataset=CocoDataSet().__dict__,
                  fields=['image', 'gt_box', 'gt_label', 'gt_score'],
-                 image_shape=[None, 3, 608, 608],
+                 image_shape=[3, 608, 608],
                  sample_transforms=[
                      DecodeImage(to_rgb=True, with_mixup=True),
                      MixupImage(alpha=1.5, beta=1.5),
@@ -955,7 +955,7 @@ class YoloEvalFeed(DataFeed):
                                      COCO_VAL_IMAGE_DIR).__dict__,
                  fields=['image', 'im_size', 'im_id', 'gt_box',
                          'gt_label', 'is_difficult'],
-                 image_shape=[None, 3, 608, 608],
+                 image_shape=[3, 608, 608],
                  sample_transforms=[
                      DecodeImage(to_rgb=True),
                      ResizeImage(target_size=608, interp=2),
@@ -1013,7 +1013,7 @@ class YoloTestFeed(DataFeed):
                  dataset=SimpleDataSet(COCO_VAL_ANNOTATION,
                                        COCO_VAL_IMAGE_DIR).__dict__,
                  fields=['image', 'im_size', 'im_id'],
-                 image_shape=[None, 3, 608, 608],
+                 image_shape=[3, 608, 608],
                  sample_transforms=[
                      DecodeImage(to_rgb=True),
                      ResizeImage(target_size=608, interp=2),
