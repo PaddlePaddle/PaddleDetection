@@ -5,7 +5,7 @@
 
 ## 训练/评估/推断
 
-PaddleDetection提供了训练/训练/评估三个功能的使用脚本，支持通过不同可选参数实现特定功能
+PaddleDetection提供了训练/评估/推断三个功能的使用脚本，支持通过不同可选参数实现特定功能
 
 ```bash
 # 设置PYTHONPATH路径
@@ -27,13 +27,13 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
 |          -c              |      ALL       |  指定配置文件  |  None  |  **完整配置说明请参考[配置案例](config_example)** |
-|          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
+|          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |
 |   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  是否边训练边测试  |  False  |    |
 |      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
 |   -d/--dataset_dir       |   train/eval   |  数据集路径, 同配置文件里的dataset_dir  |  None  |  `-d dataset/coco`  |
 |       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
-|       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
+|       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
 |       --output_dir       |      infer     |  输出推断后可视化文件  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
