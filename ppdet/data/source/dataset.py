@@ -36,10 +36,10 @@ class DataSet(object):
     __source__ = 'RoiDbSource'
 
     def __init__(self,
+                 dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 dataset_dir=None,
                  with_background=True,
                  use_default_label=None,
                  **kwargs):
@@ -106,10 +106,10 @@ class ImageFolder(DataSet):
     """
 
     def __init__(self,
+                 dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 dataset_dir=None,
                  with_background=True,
                  **kwargs):
         super(ImageFolder, self).__init__(image_dir, anno_path, sample_num,
@@ -125,7 +125,7 @@ class ImageFolder(DataSet):
             self.anno_path = os.path.join(dataset_dir, anno_path)
 
         if self.image_dir is not None:
-            self.roidbs = self._load_images(images)
+            self.roidbs = self._load_images()
 
     def set_images(self, images):
         self.image_dir = images

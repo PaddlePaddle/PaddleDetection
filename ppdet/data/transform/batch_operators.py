@@ -79,33 +79,41 @@ class PadBatch(BaseOperator):
 @register_op
 class RandomShape(BaseOperator):
     """
-    Randomly reshape a batch
+    Randomly reshape a batch. If random_inter is True, also randomly
+    select one an interpolation algorithm [cv2.INTER_NEAREST, cv2.INTER_LINEAR,
+    cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]. If random_inter is
+    False, use cv2.INTER_NEAREST.
 
     Args:
         sizes (list): list of int, random choose a size from these
+        random_inter (bool): whether to randomly interpolation, defalut true.
     """
 
-    def __init__(self, sizes=[]):
+    def __init__(self, sizes=[], random_inter=True):
         super(RandomShape, self).__init__()
         self.sizes = sizes
+        self.random_inter = random_inter
+        self.interps = [
+            cv2.INTER_NEAREST,
+            cv2.INTER_LINEAR,
+            cv2.INTER_AREA,
+            cv2.INTER_CUBIC,
+            cv2.INTER_LANCZOS4,
+        ] if random_inter else []
 
     def __call__(self, samples, context=None):
-        # For YOLO: gt_bbox is normalized, is scale invariant.
         shape = np.random.choice(self.sizes)
-        h, w = samples[0]['image'].shape[1:3]
-        scale_x = float(shape) / w
-        scale_y = float(shape) / h
-        out_samples = []
-        for data in samples:
+        method = np.random.choice(self.interps) if self.random_inter \
+            else cv2.INTER_NEAREST
+        for i in range(len(samples)):
+            im = samples[i]['image']
+            h, w = im.shape[:2]
+            scale_x = float(shape) / w
+            scale_y = float(shape) / h
             im = cv2.resize(
-                data['image'],
-                None,
-                None,
-                fx=scale_x,
-                fy=scale_y,
-                interpolation=cv2.INTER_NEAREST)
-            out_samples.append(data)
-        return out_samples
+                im, None, None, fx=scale_x, fy=scale_y, interpolation=method)
+            samples[i]['image'] = im
+        return samples
 
 
 @register_op
@@ -134,8 +142,8 @@ class PadMultiScaleTest(BaseOperator):
         if len(samples) != 1:
             raise ValueError("Batch size must be 1 when using multiscale test, "
                              "but now batch size is {}".format(len(samples)))
-        out_samples = []
-        for sample in samples:
+        for i in range(len(samples)):
+            sample = samples[i]
             for k in sample.keys():
                 # hard code
                 if k.startswith('image'):
@@ -153,7 +161,6 @@ class PadMultiScaleTest(BaseOperator):
                     info_name = 'im_info' if k == 'image' else 'im_info_' + k
                     # update im_info
                     sample[info_name][:2] = [max_h, max_w]
-            out_samples.append(sample)
         if not batch_input:
-            out_samples = out_samples[0]
-        return out_samples
+            samples = samples[0]
+        return samples

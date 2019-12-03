@@ -85,14 +85,13 @@ def load_config(file_path):
         cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
 
     if READER_KEY in cfg:
-        yml_cfg_file = cfg[READER_KEY]
-        if yml_cfg_file.startswith("~"):
-            yml_cfg_file = os.path.expanduser(yml_cfg_file)
-        if not yml_cfg_file.startswith('/'):
-            yml_cfg_file = os.path.join(
-                os.path.dirname(file_path), yml_cfg_file)
+        reader_cfg = cfg[READER_KEY]
+        if reader_cfg.startswith("~"):
+            reader_cfg = os.path.expanduser(reader_cfg)
+        if not reader_cfg.startswith('/'):
+            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
 
-        with open(yml_cfg_file) as f:
+        with open(reader_cfg) as f:
             merge_config(yaml.load(f, Loader=yaml.Loader))
         del cfg[READER_KEY]
 

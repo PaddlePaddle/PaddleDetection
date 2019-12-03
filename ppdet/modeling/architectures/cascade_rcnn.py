@@ -292,8 +292,11 @@ class CascadeRCNN(object):
         return inputs_def
 
     def build_inputs(self,
-                     image_shape,
-                     fields,
+                     image_shape=[3, None, None],
+                     fields=[
+                         'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
+                         'is_crowd'
+                     ],
                      multi_scale=False,
                      num_scales=-1,
                      use_flip=None,

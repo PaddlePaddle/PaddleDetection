@@ -33,11 +33,12 @@ logger = logging.getLogger(__name__)
 
 
 class Compose(object):
-    def __init__(self, transforms):
+    def __init__(self, transforms, ctx=None):
         self.transforms = transforms
+        self.ctx = ctx
 
     def __call__(self, data):
-        ctx = {}
+        ctx = self.ctx if self.ctx else {}
         for f in self.transforms:
             try:
                 data = f(data, ctx)
@@ -169,15 +170,18 @@ class Reader(object):
                  inputs_def=None):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
-        # transform
-        self._sample_transforms = Compose(sample_transforms)
-        self._batch_transforms = None
-        if batch_transforms:
-            self._batch_transforms = Compose(batch_transforms)
-
-        # data
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
+
+        # transform
+        self._sample_transforms = Compose(sample_transforms,
+                                          {'fields': self._fields})
+        self._batch_transforms = None
+        if batch_transforms:
+            self._batch_transforms = Compose(batch_transforms,
+                                             {'fields': self._fields})
+
+        # data
         if inputs_def and inputs_def.get('multi_scale', False):
             from ppdet.modeling.architectures.input_helper import multiscale_def
             _, ms_fields = multiscale_def(inputs_def['image_shape'],
@@ -206,6 +210,7 @@ class Reader(object):
 
         # multi-process
         self._worker_num = worker_num
+        self._parallel = None
         if self._worker_num > -1:
             task = functools.partial(self.worker, self._drop_empty)
             self._parallel = ParallelMap(self, task, worker_num, bufsize,
@@ -341,6 +346,10 @@ class Reader(object):
         assert self._epoch >= 0, 'The first epoch has not begin!'
         return self._pos >= self.size()
 
+    def stop(self):
+        if self._parallel:
+            self._parallel.stop()
+
 
 def create_reader(cfg, max_iter=0):
     """
@@ -356,17 +365,16 @@ def create_reader(cfg, max_iter=0):
         reader = Reader(**cfg)()
         n = 0
         while True:
-            try:
-                for _batch in reader:
-                    if len(_batch) > 0:
-                        yield _batch
-                        n += 1
-                    if max_iter > 0 and n == max_iter:
-                        return
-                reader.reset()
-                if max_iter <= 0:
+            for _batch in reader:
+                if len(_batch) > 0:
+                    yield _batch
+                    n += 1
+                if max_iter > 0 and n == max_iter:
+                    reader.stop()
                     return
-            except Exception as e:
-                raise e
+            reader.reset()
+            if max_iter <= 0:
+                reader.stop()
+                return
 
     return _reader

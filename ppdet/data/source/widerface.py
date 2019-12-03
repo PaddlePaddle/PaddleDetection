@@ -28,28 +28,18 @@ class WIDERFaceDataSet(DataSet):
     Load WiderFace records with 'anno_path'
 
     Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
         anno_path (str): root directory for voc annotation data
         sample_num (int): number of samples to load, -1 means all
         with_background (bool): whether load background as a class.
-                                 if True, total class number will
-                                 be 2. default True
-
-    Returns:
-        (records, catname2clsid)
-        'records' is list of dict whose structure is:
-        {
-            'im_file': im_fname, # image file name
-            'im_id': im_id, # image id
-            'gt_class': gt_class,
-            'gt_bbox': gt_bbox,
-        }
-        'cname2id' is a dict to map category name to class id
+            if True, total class number will be 2. default True.
     """
 
     def __init__(self,
+                 dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
-                 dataset_dir=None,
                  sample_num=-1,
                  with_background=True):
         super(WIDERFaceDataSet, self).__init__(

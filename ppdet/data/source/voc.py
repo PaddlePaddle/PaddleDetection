@@ -26,60 +26,57 @@ from dataset import DataSet
 @serializable
 class VOCDataSet(DataSet):
     """
-    Load VOC records with annotations in xml directory 'anno_path'.
+    Load dataset with PascalVOC format.
 
     Notes:
     `anno_path` must contains xml file and image file path for annotations.
 
     Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
         anno_path (str): root directory for voc annotation data.
         sample_num (int): number of samples to load, -1 means all.
         use_default_label (bool): whether use the default mapping of
             label to integer index. Default True.
         with_background (bool): whether load background as a class,
             default True.
-    Returns:
-        (records, catname2clsid)
-        'records' is list of dict whose structure is:
-        {
-            'im_file': im_fname, # image file name
-            'im_id': im_id, # image id
-            'h': im_h, # height of image
-            'w': im_w, # width
-            'is_crowd': is_crowd,
-            'gt_class': gt_class,
-            'gt_bbox': gt_bbox,
-            'gt_poly': gt_poly,
-        }
-        'cname2id' is a dict to map category name to class id
+        label_list (str): if use_default_label is False, will load
+            mapping between category and class index.
     """
 
     def __init__(self,
+                 dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
                  use_default_label=True,
                  with_background=True,
-                 label_list='label_list.txt',
-                 dataset_dir=None):
+                 label_list='label_list.txt'):
         super(VOCDataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
             sample_num=sample_num,
             dataset_dir=dataset_dir,
             with_background=with_background)
-        self.anno_path = anno_path
-        self.sample_num = sample_num
-        self.use_default_label = use_default_label
-        self.with_background = with_background
-        self.label_list = label_list
+        # roidbs is list of dict whose structure is:
+        # {
+        #     'im_file': im_fname, # image file name
+        #     'im_id': im_id, # image id
+        #     'h': im_h, # height of image
+        #     'w': im_w, # width
+        #     'is_crowd': is_crowd,
+        #     'gt_class': gt_class,
+        #     'gt_bbox': gt_bbox,
+        #     'gt_poly': gt_poly,
+        # }
         self.roidbs = None
+        # 'cname2id' is a dict to map category name to class id
         self.cname2cid = None
-        self.image_dir = image_dir
-        if dataset_dir and image_dir:
-            self.image_dir = os.path.join(dataset_dir, image_dir)
+        self.image_dir = image_dir if image_dir else './'
+        self.label_list = label_list
         if dataset_dir:
-            self.anno_path = os.path.join(dataset_dir, anno_path)
+            self.image_dir = os.path.join(dataset_dir, self.image_dir)
+            self.anno_path = os.path.join(dataset_dir, self.anno_path)
 
     def load_roidb_and_cname2cid(self):
         data_dir = os.path.dirname(self.anno_path)
@@ -93,6 +90,9 @@ class VOCDataSet(DataSet):
         cname2cid = {}
         if not self.use_default_label:
             label_path = os.path.join(data_dir, self.label_list)
+            if not os.path.exists(label_path):
+                raise ValueError("label_list {} does not exists".format(
+                    label_path))
             with open(label_path, 'r') as fr:
                 label_id = int(self.with_background)
                 for line in fr.readlines():

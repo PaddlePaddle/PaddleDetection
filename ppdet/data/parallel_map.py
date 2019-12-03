@@ -51,7 +51,7 @@ class ParallelMap(object):
                  worker_num,
                  bufsize=100,
                  use_process=False,
-                 memsize='4G'):
+                 memsize='3G'):
         self._worker_num = worker_num
         self._bufsize = bufsize
         self._use_process = use_process
@@ -85,13 +85,11 @@ class ParallelMap(object):
         bufsize = self._bufsize
         if use_process:
             from .shared_queue import SharedQueue as Queue
-            from multiprocessing import Queue
             from multiprocessing import Process as Worker
             from multiprocessing import Event
             memsize = self._memsize
-            self._inq = Queue(bufsize)
+            self._inq = Queue(bufsize, memsize=memsize)
             self._outq = Queue(bufsize, memsize=memsize)
-            #self._outq = Queue(bufsize)
         else:
             if six.PY3:
                 from queue import Queue

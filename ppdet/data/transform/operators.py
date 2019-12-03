@@ -389,34 +389,44 @@ class RandomFlipImage(BaseOperator):
             sample: the image, bounding box and segmentation part
                     in sample are flipped.
         """
-        gt_bbox = sample['gt_bbox']
-        im = sample['image']
-        if not isinstance(im, np.ndarray):
-            raise TypeError("{}: image is not a numpy array.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError("{}: image is not 3-dimensional.".format(self))
-        height, width, _ = im.shape
-        if np.random.uniform(0, 1) < self.prob:
-            im = im[:, ::-1, :]
-            if gt_bbox.shape[0] == 0:
-                return sample
-            oldx1 = gt_bbox[:, 0].copy()
-            oldx2 = gt_bbox[:, 2].copy()
-            if self.is_normalized:
-                gt_bbox[:, 0] = 1 - oldx2
-                gt_bbox[:, 2] = 1 - oldx1
-            else:
-                gt_bbox[:, 0] = width - oldx2 - 1
-                gt_bbox[:, 2] = width - oldx1 - 1
-            if gt_bbox.shape[0] != 0 and (gt_bbox[:, 2] < gt_bbox[:, 0]).all():
-                m = "{}: invalid box, x2 should be greater than x1".format(self)
-                raise BboxError(m)
-            sample['gt_bbox'] = gt_bbox
-            if self.is_mask_flip and len(sample['gt_poly']) != 0:
-                sample['gt_poly'] = self.flip_segms(sample['gt_poly'], height,
-                                                    width)
-            sample['flipped'] = True
-            sample['image'] = im
+
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+            height, width, _ = im.shape
+            if np.random.uniform(0, 1) < self.prob:
+                im = im[:, ::-1, :]
+                if gt_bbox.shape[0] == 0:
+                    return sample
+                oldx1 = gt_bbox[:, 0].copy()
+                oldx2 = gt_bbox[:, 2].copy()
+                if self.is_normalized:
+                    gt_bbox[:, 0] = 1 - oldx2
+                    gt_bbox[:, 2] = 1 - oldx1
+                else:
+                    gt_bbox[:, 0] = width - oldx2 - 1
+                    gt_bbox[:, 2] = width - oldx1 - 1
+                if gt_bbox.shape[0] != 0 and (
+                        gt_bbox[:, 2] < gt_bbox[:, 0]).all():
+                    m = "{}: invalid box, x2 should be greater than x1".format(
+                        self)
+                    raise BboxError(m)
+                sample['gt_bbox'] = gt_bbox
+                if self.is_mask_flip and len(sample['gt_poly']) != 0:
+                    sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
+                                                        height, width)
+                sample['flipped'] = True
+                sample['image'] = im
+        sample = samples if batch_input else samples[0]
         return sample
 
 
@@ -450,23 +460,31 @@ class NormalizeImage(BaseOperator):
             1.(optional) Scale the image to [0,1]
             2. Each pixel minus mean and is divided by std
         """
-        for k in sample.keys():
-            # hard code
-            if k.startswith('image'):
-                im = sample[k]
-                im = im.astype(np.float32, copy=False)
-                if self.is_channel_first:
-                    mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
-                    std = np.array(self.std)[:, np.newaxis, np.newaxis]
-                else:
-                    mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-                    std = np.array(self.std)[np.newaxis, np.newaxis, :]
-                if self.is_scale:
-                    im = im / 255.0
-                im -= mean
-                im /= std
-                sample[k] = im
-        return sample
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            for k in sample.keys():
+                # hard code
+                if k.startswith('image'):
+                    im = sample[k]
+                    im = im.astype(np.float32, copy=False)
+                    if self.is_channel_first:
+                        mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
+                        std = np.array(self.std)[:, np.newaxis, np.newaxis]
+                    else:
+                        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+                        std = np.array(self.std)[np.newaxis, np.newaxis, :]
+                    if self.is_scale:
+                        im = im / 255.0
+                    im -= mean
+                    im /= std
+                    sample[k] = im
+        if not batch_input:
+            samples = samples[0]
+        return samples
 
 
 @register_op
@@ -911,7 +929,6 @@ class Permute(BaseOperator):
         if not isinstance(samples, Sequence):
             batch_input = False
             samples = [samples]
-        out_samples = []
         for sample in samples:
             assert 'image' in sample, "image data not found"
             for k in sample.keys():
@@ -924,10 +941,9 @@ class Permute(BaseOperator):
                     if self.to_bgr:
                         im = im[[2, 1, 0], :, :]
                     sample[k] = im
-            out_samples.append(sample)
         if not batch_input:
-            out_samples = out_samples[0]
-        return out_samples
+            samples = samples[0]
+        return samples
 
 
 @register_op
@@ -1413,7 +1429,7 @@ class PadBboxes(BaseOperator):
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        if 'difficult' in sample and sample['difficult'].shape[0] > gt_num:
+        if context and 'difficult' in context.get('fields', []):
             pad_diff = np.zeros((num_max), dtype=np.int32)
             pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
             sample['difficult'] = pad_diff

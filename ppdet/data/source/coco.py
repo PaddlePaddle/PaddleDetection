@@ -30,27 +30,12 @@ class COCODataSet(DataSet):
     Load COCO records with annotations in json file 'anno_path'
 
     Args:
-        anno_path (str): json file path
-        sample_num (int): number of samples to load, -1 means all
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): json file path.
+        sample_num (int): number of samples to load, -1 means all.
         with_background (bool): whether load background as a class.
-                                if True, total class number will
-                                be 81. default True
-
-    Returns:
-        (records, cname2cid)
-        'records' is list of dict whose structure is:
-        {
-            'im_file': im_fname, # image file name
-            'im_id': img_id, # image id
-            'h': im_h, # height of image
-            'w': im_w, # width
-            'is_crowd': is_crowd,
-            'gt_score': gt_score,
-            'gt_class': gt_class,
-            'gt_bbox': gt_bbox,
-            'gt_poly': gt_poly,
-        }
-        'cname2cid' is a dict used to map category name to class id
+            if True, total class number will be 81. default True.
     """
 
     def __init__(self,
@@ -72,7 +57,20 @@ class COCODataSet(DataSet):
         if dataset_dir:
             self.image_dir = os.path.join(dataset_dir, image_dir)
             self.anno_path = os.path.join(dataset_dir, anno_path)
+        # `roidbs` is list of dict whose structure is:
+        # {
+        #     'im_file': im_fname, # image file name
+        #     'im_id': img_id, # image id
+        #     'h': im_h, # height of image
+        #     'w': im_w, # width
+        #     'is_crowd': is_crowd,
+        #     'gt_score': gt_score,
+        #     'gt_class': gt_class,
+        #     'gt_bbox': gt_bbox,
+        #     'gt_poly': gt_poly,
+        # }
         self.roidbs = None
+        # a dict used to map category name to class id
         self.cname2cid = None
 
     def load_roidb_and_cname2cid(self):

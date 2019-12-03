@@ -22,6 +22,19 @@ import numpy as np
 import datetime
 from collections import deque
 
+
+def set_paddle_flags(**kwargs):
+    for key, value in kwargs.items():
+        if os.environ.get(key, None) is None:
+            os.environ[key] = str(value)
+
+
+# NOTE(paddle-dev): All of these flags should be set before
+# `import paddle`. Otherwise, it would not take any effect.
+set_paddle_flags(
+    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
+)
+
 from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
@@ -63,7 +76,6 @@ def main():
     if 'log_iter' not in cfg:
         cfg.log_iter = 20
 
-    cfg.log_iter = 1
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
@@ -133,16 +145,15 @@ def main():
         if cfg.metric == 'COCO':
             extra_keys = ['im_info', 'im_id', 'im_shape']
         if cfg.metric == 'VOC':
-            extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+            extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
         if cfg.metric == 'WIDERFACE':
-            extra_keys = ['im_id', 'im_shape', 'gt_box']
+            extra_keys = ['im_id', 'im_shape', 'gt_bbox']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
     # compile program for multi-devices
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_optimizer_ops = False
-    build_strategy.enable_inplace = False
     build_strategy.fuse_elewise_add_act_ops = True
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
