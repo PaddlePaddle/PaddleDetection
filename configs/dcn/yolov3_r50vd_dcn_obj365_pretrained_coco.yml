@@ -117,7 +117,7 @@ EvalReader:
     dataset_dir: dataset/coco
     anno_path: annotations/instances_val2017.json
     image_dir: val2017
-    with_background: true
+    with_background: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True

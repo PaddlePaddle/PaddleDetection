@@ -70,7 +70,7 @@ EvalReader:
   dataset:
     !VOCDataSet
     dataset_dir: dataset/voc
-    anno_path: trainval.txt
+    anno_path: test.txt
     use_default_label: true
 
 TestReader:

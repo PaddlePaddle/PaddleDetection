@@ -76,7 +76,7 @@ TrainReader:
     is_order: true
   - !ExpandImage
     max_ratio: 4
-    mean: [123, 117, 104]
+    mean: [104, 117, 123]
     prob: 0.5
   - !CropImage
     avoid_no_bbox: true
@@ -99,7 +99,7 @@ TrainReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [123, 117, 104]
+    mean: [104, 117, 123]
     std: [1, 1, 1]
   batch_size: 8
   shuffle: true
@@ -129,7 +129,7 @@ EvalReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [123, 117, 104]
+    mean: [104, 117, 123]
     std: [1, 1, 1]
   batch_size: 32
   worker_num: 8
@@ -156,6 +156,6 @@ TestReader:
     to_bgr: false
   - !NormalizeImage
     is_scale: false
-    mean: [123, 117, 104]
+    mean: [104, 117, 123]
     std: [1, 1, 1]
   batch_size: 1

@@ -3,7 +3,7 @@ use_gpu: true
 max_iters: 20000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 2000
+snapshot_iter: 1000
 metric: VOC
 map_type: 11point
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
@@ -67,7 +67,6 @@ TrainReader:
   dataset:
     !VOCDataSet
     dataset_dir: dataset/fruit/fruit-detection
-    #image_dir: dataset/fruit/fruit-detection
     anno_path: train.txt
     with_background: false
     use_default_label: false
@@ -114,7 +113,6 @@ EvalReader:
     num_max_boxes: 50
   dataset:
     !VOCDataSet
-    #image_dir: dataset/fruit/fruit-detection
     dataset_dir: dataset/fruit/fruit-detection
     anno_path: val.txt
     use_default_label: false
