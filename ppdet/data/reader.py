@@ -239,10 +239,6 @@ class Reader(object):
         if self._shuffle:
             np.random.shuffle(self.indexes)
 
-        if self._drop_last:
-            self.indexes = self.indexes[0:self.size() // self._batch_size *
-                                        self._batch_size]
-
         if self._epoch < 0:
             self._epoch = 0
         else:
@@ -258,8 +254,10 @@ class Reader(object):
         if self._epoch < 0:
             self.reset()
         if self.drained():
-            raise StopIteration('There is no more data in %s.' % (str(self)))
+            raise StopIteration
         batch = self._load_batch()
+        if self._drop_last and len(batch) < self._batch_size:
+            raise StopIteration
         if self._worker_num > -1:
             return batch
         else:
@@ -268,7 +266,6 @@ class Reader(object):
     def _load_batch(self):
         batch = []
         bs = 0
-        #for i in range(self._batch_size):
         while bs != self._batch_size:
             if self._pos >= self.size():
                 break
@@ -306,24 +303,11 @@ class Reader(object):
 
     def worker(self, drop_empty=True, batch_samples=None):
         """
-        sample transform and data transform.
+        sample transform and batch transform.
         """
-
-        def _empty_gt(sample):
-            flag = False
-            if 'gt_bbox' in sample:
-                flag = _has_empty((sample['gt_bbox'], ))
-            return flag
-
         batch = []
         for sample in batch_samples:
             sample = self._sample_transforms(sample)
-            if drop_empty and self._fields and 'gt_bbox' in self._fields:
-                if _has_empty(sample['gt_bbox']):
-                    #logger.warn('gt_bbox {} is empty or not valid in {}, '
-                    #   'drop this sample'.format(
-                    #    sample['im_file'], sample['gt_bbox']))
-                    continue
             batch.append(sample)
         if len(batch) > 0 and self._batch_transforms:
             batch = self._batch_transforms(batch)

@@ -1268,6 +1268,8 @@ class RandomExpand(BaseOperator):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
 
+        return sample
+
 
 @register_op
 class RandomCrop(BaseOperator):
@@ -1397,7 +1399,7 @@ class RandomCrop(BaseOperator):
 
 
 @register_op
-class PadBboxes(BaseOperator):
+class PadBox(BaseOperator):
     def __init__(self, num_max_boxes=50):
         """
         Pad zeros to bboxes if number of bboxes is less than num_max_boxes.
@@ -1405,7 +1407,7 @@ class PadBboxes(BaseOperator):
             num_max_boxes (int): the max number of bboxes
         """
         self.num_max_boxes = num_max_boxes
-        super(PadBboxes, self).__init__()
+        super(PadBox, self).__init__()
 
     def __call__(self, sample, context=None):
         assert 'gt_bbox' in sample and 'image' in sample
@@ -1429,7 +1431,7 @@ class PadBboxes(BaseOperator):
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        if context and 'difficult' in context.get('fields', []):
+        if context and 'is_difficult' in context.get('fields', []):
             pad_diff = np.zeros((num_max), dtype=np.int32)
             pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
             sample['difficult'] = pad_diff
