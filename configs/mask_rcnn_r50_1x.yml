@@ -1,7 +1,4 @@
 architecture: MaskRCNN
-train_feed: MaskRCNNTrainFeed
-eval_feed: MaskRCNNEvalFeed
-test_feed: MaskRCNNTestFeed
 use_gpu: true
 max_iters: 180000
 snapshot_iter: 10000
@@ -102,22 +99,4 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-MaskRCNNTrainFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
-  num_workers: 2
-
-MaskRCNNEvalFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
-    image_dir: val2017
-
-MaskRCNNTestFeed:
-  batch_size: 1
-  dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+_READER_: 'mask_reader.yml'

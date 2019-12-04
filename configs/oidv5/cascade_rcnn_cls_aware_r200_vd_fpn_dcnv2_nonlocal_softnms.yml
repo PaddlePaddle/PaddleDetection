@@ -1,7 +1,4 @@
 architecture: CascadeRCNNClsAware
-train_feed: FasterRCNNTrainFeed
-eval_feed: FasterRCNNEvalFeed
-test_feed: FasterRCNNTestFeed
 max_iters: 1500000
 snapshot_iter: 10000
 use_gpu: true
@@ -109,16 +106,17 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-FasterRCNNTrainFeed:
-  batch_size: 1
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
+    !COCODataSet
     dataset_dir: dataset/oid
-    annotation: train.json
+    anno_path: train.json
     image_dir: train
   sample_transforms: 
   - !DecodeImage
     to_rgb: True
-    with_mixup: False
   - !RandomFlipImage
     prob: 0.5
   - !NormalizeImage
@@ -142,14 +140,18 @@ FasterRCNNTrainFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  drop_last: false
-  num_workers: 2
-
-FasterRCNNEvalFeed:
   batch_size: 1
+  drop_last: false
+  shuffle: true
+  worker_num: 2
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
+    !COCODataSet
     dataset_dir: dataset/oidv5
-    annotation: val.json
+    anno_path: val.json
     image_dir: val
   sample_transforms: 
   - !DecodeImage
@@ -177,13 +179,34 @@ FasterRCNNEvalFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-
-FasterRCNNTestFeed:
   batch_size: 1
+  worker_num: 2
+  drop_empty: false
+
+TestReader:
+  batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    annotation: dataset/oidv5/val.json
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  drop_last: false
-  num_workers: 2
+  worker_num: 2

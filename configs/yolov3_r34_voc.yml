@@ -1,7 +1,4 @@
 architecture: YOLOv3
-train_feed: YoloTrainFeed
-eval_feed: YoloEvalFeed
-test_feed: YoloTestFeed
 use_gpu: true
 max_iters: 70000
 log_smooth_window: 20
@@ -61,27 +58,22 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-YoloTrainFeed:
-  batch_size: 8
+_READER_: 'yolov3_reader.yml'
+TrainReader:
   dataset:
+    !VOCDataSet
     dataset_dir: dataset/voc
-    annotation: trainval.txt
-    use_default_label: true
-  num_workers: 8
-  bufsize: 128
-  use_process: true
-  mixup_epoch: 250
-
-YoloEvalFeed:
-  batch_size: 8
-  image_shape: [3, 608, 608]
-  dataset:
-    dataset_dir: dataset/voc
-    annotation: test.txt
+    anno_path: trainval.txt
     use_default_label: true
 
-YoloTestFeed:
-  batch_size: 1
-  image_shape: [3, 608, 608]
+EvalReader:
   dataset:
+    !VOCDataSet
+    dataset_dir: dataset/voc
+    anno_path: trainval.txt
+    use_default_label: true
+
+TestReader:
+  dataset:
+    !ImageFolder
     use_default_label: true

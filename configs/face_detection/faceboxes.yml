@@ -1,7 +1,4 @@
 architecture: FaceBoxes
-train_feed: SSDTrainFeed
-eval_feed: SSDEvalFeed
-test_feed: SSDTestFeed
 pretrain_weights:
 use_gpu: true
 max_iters: 320000
@@ -43,18 +40,21 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-SSDTrainFeed:
+TrainReader:
   batch_size: 8
-  use_process: True
+  use_multi_process: True
+  shuffle: true
+  inputs_def:
+    image_shape: [3, 640, 640]
+    fields: ['image', 'gt_bbox', 'gt_class']
   dataset:
+    !WIDERFaceDataSet
     dataset_dir: dataset/wider_face
-    annotation: wider_face_split/wider_face_train_bbx_gt.txt
+    anno_path: wider_face_split/wider_face_train_bbx_gt.txt
     image_dir: WIDER_train/images
-  image_shape: [3, 640, 640]
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-    with_mixup: false
   - !NormalizeBox {}
   - !RandomDistort
     brightness_lower: 0.875
@@ -83,48 +83,37 @@ SSDTrainFeed:
     mean: [104, 117, 123]
     std: [127.502231, 127.502231, 127.502231]
 
-SSDEvalFeed:
+EvalReader:
   batch_size: 1
-  use_process: false
-  fields: ['image', 'im_id', 'gt_box']
+  use_multi_process: false
+  inputs_def:
+    fields: ['image', 'im_id']
   dataset:
+    !WIDERFaceDataSet
     dataset_dir: dataset/wider_face
-    annotation: wider_face_split/wider_face_val_bbx_gt.txt
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt   
     image_dir: WIDER_val/images
-  drop_last: false
-  image_shape: [3, 640, 640]
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-    with_mixup: false
-  - !NormalizeBox {}
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false
     mean: [104, 117, 123]
     std: [127.502231, 127.502231, 127.502231]
 
-SSDTestFeed:
-  batch_size: 1
-  use_process: false
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'im_shape']
   dataset:
+    !ImageFolder
     use_default_label: true
-  drop_last: false
-  image_shape: [3, 640, 640]
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-    with_mixup: false
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false
     mean: [104, 117, 123]
     std: [127.502231, 127.502231, 127.502231]
+  batch_size: 1

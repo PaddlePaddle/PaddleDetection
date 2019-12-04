@@ -1,7 +1,4 @@
 architecture: CascadeMaskRCNN
-train_feed: MaskRCNNTrainFeed
-eval_feed: MaskRCNNEvalFeed
-test_feed: MaskRCNNTestFeed
 max_iters: 300000
 snapshot_iter: 10000
 use_gpu: true
@@ -130,13 +127,16 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-MaskRCNNTrainFeed:
+TrainReader:
   # batch size per device
   batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
   dataset:
+    !COCODataSet
     dataset_dir: dataset/coco
     image_dir: train2017
-    annotation: annotations/instances_train2017.json
+    anno_path: annotations/instances_train2017.json
   sample_transforms: 
   - !DecodeImage
     to_rgb: False
@@ -199,14 +199,22 @@ MaskRCNNTrainFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  num_workers: 8
+  worker_num: 8
+  shuffle: true
 
-MaskRCNNEvalFeed:
+EvalReader:
   batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+    multi_scale: true
+    # num_scale = (len(target_size) + 1) * (1 + use_flip)
+    num_scales: 18
+    use_flip: true
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
+    !COCODataSet
     image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
   sample_transforms: 
   - !DecodeImage
     to_rgb: False
@@ -239,16 +247,18 @@ MaskRCNNEvalFeed:
     channel_first: true
     to_bgr: false
   batch_transforms:
-  - !PadMSTest
+  - !PadMultiScaleTest
     pad_to_stride: 32
-  # num_scale = (len(target_size) + 1) * (1 + use_flip)
-  num_scale: 18 
-  num_workers: 2
+  worker_num: 2
 
-MaskRCNNTestFeed:
+TestReader:
   batch_size: 1
+  inputs_def:
+    #image_shape: [3,800,1333]
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
   sample_transforms:
   - !DecodeImage
     to_rgb: False
@@ -269,4 +279,3 @@ MaskRCNNTestFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  num_workers: 2

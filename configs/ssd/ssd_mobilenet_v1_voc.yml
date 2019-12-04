@@ -1,7 +1,4 @@
 architecture: SSD
-train_feed: SSDTrainFeed
-eval_feed: SSDEvalFeed
-test_feed: SSDTestFeed
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_coco_pretrained.tar
 use_gpu: true
 max_iters: 28000
@@ -56,25 +53,102 @@ OptimizerBuilder:
     factor: 0.00005
     type: L2
 
-SSDTrainFeed:
-  batch_size: 32
-  use_process: true
+TrainReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class']
   dataset:
+    !VOCDataSet
+    anno_path: trainval.txt
     dataset_dir: dataset/voc
-    annotation: trainval.txt
     use_default_label: true
-
-SSDEvalFeed:
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !RandomDistort
+    brightness_lower: 0.875
+    brightness_upper: 1.125
+    is_order: true
+  - !ExpandImage
+    max_ratio: 4
+    mean: [127.5, 127.5, 127.5]
+    prob: 0.5
+  - !CropImage
+    avoid_no_bbox: true
+    batch_sampler:
+    - [1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 0.0]
+    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]
+    satisfy_all: false
+    avoid_no_bbox: false
+  - !ResizeImage
+    interp: 1
+    target_size: 300
+    use_cv2: false
+  - !RandomFlipImage
+    is_normalized: true
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [127.5, 127.5, 127.5]
+    std: [127.502231, 127.502231, 127.502231]
   batch_size: 64
-  use_process: true
-  dataset:
-    dataset_dir: dataset/voc
-    annotation: test.txt
-    use_default_label: true
-  drop_last: false
+  shuffle: true
+  worker_num: 8
+  bufsize: 32
+  use_multi_process: true
 
-SSDTestFeed:
-  batch_size: 1
+EvalReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id', 'is_difficult']
   dataset:
+    !VOCDataSet
+    anno_path: test.txt
+    dataset_dir: dataset/voc
     use_default_label: true
-  drop_last: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !ResizeImage
+    interp: 1
+    target_size: 300
+    use_cv2: false
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [127.5, 127.5, 127.5]
+    std: [127.502231, 127.502231, 127.502231]
+  batch_size: 64
+  worker_num: 8
+  bufsize: 32
+  use_multi_process: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3,300,300]
+    fields: ['image', 'im_id', 'im_shape']
+  dataset:
+    !ImageFolder
+    anno_path: test.txt
+    use_default_label: true
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !ResizeImage
+    interp: 1
+    max_size: 0
+    target_size: 300
+    use_cv2: false
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [127.5, 127.5, 127.5]
+    std: [127.502231, 127.502231, 127.502231]
+  batch_size: 1
