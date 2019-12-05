@@ -1,7 +1,4 @@
 architecture: SSD
-train_feed: SSDTrainFeed
-eval_feed: SSDEvalFeed
-test_feed: SSDTestFeed
 use_gpu: true
 max_iters: 400000
 snapshot_iter: 10000
@@ -62,13 +59,15 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-SSDTrainFeed:
-  batch_size: 8
+TrainReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+    fields: ['image', 'gt_bbox', 'gt_class']
   dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
-  image_shape: [3, 512, 512]
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -105,15 +104,21 @@ SSDTrainFeed:
     is_scale: false
     mean: [104, 117, 123]
     std: [1, 1, 1]
-
-SSDEvalFeed:
   batch_size: 8
+  shuffle: true
+  worker_num: 8
+  bufsize: 32
+  use_multi_process: 8
+
+EvalReader:
+  inputs_def:
+    image_shape: [3,512,512]
+    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id', 'is_difficult']
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
+    !COCODataSet
     image_dir: val2017
-  drop_last: false
-  image_shape: [3, 512, 512]
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -128,12 +133,18 @@ SSDEvalFeed:
     is_scale: false
     mean: [104, 117, 123]
     std: [1, 1, 1]
+  batch_size: 8
+  worker_num: 8
+  bufsize: 32
+  drop_empty: false
 
-SSDTestFeed:
-  batch_size: 1
+TestReader:
+  inputs_def:
+    image_shape: [3,512,512]
+    fields: ['image', 'im_id', 'im_shape']
   dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
-  image_shape: [3, 512, 512]
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -149,3 +160,4 @@ SSDTestFeed:
     is_scale: false
     mean: [104, 117, 123]
     std: [1, 1, 1]
+  batch_size: 1

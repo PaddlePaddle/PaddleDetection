@@ -1,14 +1,11 @@
 architecture: YOLOv3
-train_feed: YoloTrainFeed
-eval_feed: YoloEvalFeed
-test_feed: YoloTestFeed
 use_gpu: true
 max_iters: 55000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_obj365_pretrained.tar 
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_obj365_pretrained.tar
 weights: output/yolov3_r50vd_dcn_obj365_pretrained_coco/model_final
 num_classes: 80
 
@@ -62,12 +59,16 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-YoloTrainFeed:
-  batch_size: 8
+TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
+    !COCODataSet
     image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: False
   sample_transforms:
     - !DecodeImage
       to_rgb: True
@@ -86,35 +87,42 @@ YoloTrainFeed:
     - !RandomFlipImage
       is_normalized: True
     - !NormalizeImage
-      mean:
-      - 0.485
-      - 0.456
-      - 0.406
-      std:
-      - 0.229
-      - 0.224
-      - 0.225
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
       is_scale: False
-      is_channel_first: False      
-    - !Permute
-      to_bgr: False
-  num_workers: 8
-  bufsize: 128
-  use_process: true
-
-YoloEvalFeed:
+      is_channel_first: False
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
+  batch_transforms:
+  - !RandomShape
+    sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+  - !Permute
+    to_bgr: False
+    channel_first: True
   batch_size: 8
-  image_shape: [3, 608, 608]
+  shuffle: true
+  worker_num: 8
+  bufsize: 128
+  use_multi_process: true
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 608, 608]
+    fields: ['image', 'im_size', 'im_id']
+    num_max_boxes: 50
   dataset:
+    !COCODataSet
     dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
+    anno_path: annotations/instances_val2017.json
     image_dir: val2017
+    with_background: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True
       with_mixup: False
     - !ResizeImage
-      interp: 2 
+      interp: 2
       target_size: 608
     - !NormalizeImage
       mean:
@@ -126,22 +134,27 @@ YoloEvalFeed:
       - 0.224
       - 0.225
       is_scale: False
-      is_channel_first: False      
+      is_channel_first: False
     - !Permute
       to_bgr: False
+  batch_size: 8
+  worker_num: 8
+  bufsize: 128
 
-
-YoloTestFeed:
-  batch_size: 1
-  image_shape: [3, 608, 608]
+TestReader:
+  inputs_def:
+    image_shape: [3, 608, 608]
+    fields: ['image', 'im_size', 'im_id']
   dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+    !ImageFolder
+      anno_path: annotations/instances_val2017.json
+      with_background: False
   sample_transforms:
     - !DecodeImage
       to_rgb: True
       with_mixup: False
     - !ResizeImage
-      interp: 2 
+      interp: 2
       target_size: 608
     - !NormalizeImage
       mean:
@@ -153,7 +166,7 @@ YoloTestFeed:
       - 0.224
       - 0.225
       is_scale: False
-      is_channel_first: False      
+      is_channel_first: False
     - !Permute
       to_bgr: False
-
+  batch_size: 1
