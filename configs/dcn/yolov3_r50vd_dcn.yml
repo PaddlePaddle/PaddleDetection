@@ -115,5 +115,5 @@ TrainReader:
   shuffle: true
   mixup_epoch: 250
   worker_num: 8
-  bufsize: 128
+  bufsize: 32
   use_multi_process: true
