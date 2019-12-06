@@ -6,7 +6,6 @@ TrainReader:
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
     dataset_dir: dataset/coco
-    sample_num: 5000
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -43,7 +42,6 @@ EvalReader:
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
-    #sample_num: 100
   sample_transforms:
   - !DecodeImage
     to_rgb: true

@@ -9,7 +9,6 @@ TrainReader:
       anno_path: annotations/instances_train2017.json
       dataset_dir: dataset/coco
       with_background: False
-      sample_num: 5000
   sample_transforms:
     - !DecodeImage
       to_rgb: True
@@ -21,11 +20,11 @@ TrainReader:
     - !RandomExpand
       fill_value: [123.675, 116.28, 103.53]
     - !RandomCrop {}
-    - !RandomFlipImage
-      is_normalized: True
     - !Resize
       target_dim: 608
       interp: 'random'
+    - !RandomFlipImage
+      is_normalized: false
     - !NormalizeImage
       mean: [0.485, 0.456, 0.406]
       std: [0.229, 0.224, 0.225]
