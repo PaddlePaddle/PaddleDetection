@@ -291,7 +291,7 @@ class Reader(object):
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
                 mix_idx = np.random.randint(1, num)
-                mix_idx = (mix_idx + pos) % num
+                mix_idx = self.indexes[(mix_idx + self._pos - 1) % num]
                 sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][

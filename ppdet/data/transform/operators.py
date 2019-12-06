@@ -1415,25 +1415,28 @@ class PadBox(BaseOperator):
         bbox = sample['gt_bbox']
         gt_num = min(self.num_max_boxes, len(bbox))
         num_max = self.num_max_boxes
+        pad_bbox = np.zeros((num_max, 4), dtype=im.dtype)
         if gt_num > 0:
-            bbox = sample['gt_bbox']
-            pad_bbox = np.zeros((num_max, 4), dtype=im.dtype)
             pad_bbox[:gt_num, :] = bbox[:gt_num, :]
-            sample['gt_bbox'] = pad_bbox
-        if 'gt_class' in sample:
+        sample['gt_bbox'] = pad_bbox
+        fields = context['fields'] if context else []
+        if 'gt_class' in fields:
             pad_class = np.zeros((num_max), dtype=np.int32)
-            pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
+            if gt_num > 0:
+                pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
             sample['gt_class'] = pad_class
-        if 'gt_score' in sample:
-            pad_score = np.zeros((num_max), dtype=np.int32)
-            pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
+        if 'gt_score' in fields:
+            pad_score = np.zeros((num_max), dtype=im.dtype)
+            if gt_num > 0:
+                pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
             sample['gt_score'] = pad_score
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        if context and 'is_difficult' in context.get('fields', []):
+        if 'is_difficult' in fields:
             pad_diff = np.zeros((num_max), dtype=np.int32)
-            pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
+            if gt_num > 0:
+                pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
             sample['difficult'] = pad_diff
         return sample
 
