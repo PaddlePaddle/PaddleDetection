@@ -89,7 +89,7 @@ class RandomShape(BaseOperator):
         random_inter (bool): whether to randomly interpolation, defalut true.
     """
 
-    def __init__(self, sizes=[], random_inter=True):
+    def __init__(self, sizes=[], random_inter=False):
         super(RandomShape, self).__init__()
         self.sizes = sizes
         self.random_inter = random_inter
