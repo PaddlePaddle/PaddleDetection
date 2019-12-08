@@ -113,6 +113,7 @@ def create_reader(feed, max_iter=0, args_path=None, my_source=None):
     batch_transforms = feed.batch_transforms
     pad = [t for t in batch_transforms if isinstance(t, PadBatch)]
     rand_shape = [t for t in batch_transforms if isinstance(t, RandomShape)]
+    gt2target = [t for t in batch_transforms if isinstance(t, Gt2Target)]
     multi_scale = [t for t in batch_transforms if isinstance(t, MultiScale)]
     pad_ms_test = [t for t in batch_transforms if isinstance(t, PadMSTest)]
 
@@ -122,6 +123,11 @@ def create_reader(feed, max_iter=0, args_path=None, my_source=None):
             transform_config['COARSEST_STRIDE'] = pad[0].pad_to_stride
     if any(rand_shape):
         transform_config['RANDOM_SHAPES'] = rand_shape[0].sizes
+    if any(gt2target):
+        transform_config['ANCHORS'] = gt2target[0].anchors
+        transform_config['ANCHOR_MASKS'] = gt2target[0].anchor_masks
+        transform_config['DOWNSAMPLE_RATIOS'] = gt2target[0].downsample_ratios
+        transform_config['CLASS_NUM'] = gt2target[0].class_num
     if any(multi_scale):
         transform_config['MULTI_SCALES'] = multi_scale[0].scales
     if any(pad_ms_test):
@@ -190,6 +196,26 @@ class RandomShape(object):
     def __init__(self, sizes=[]):
         super(RandomShape, self).__init__()
         self.sizes = sizes
+
+
+@serializable
+class Gt2Target(object):
+    """
+    Map gt to target
+
+    Args:
+        anchors (list): list of width and height of anchor
+        anchor_masks (list): list of anchor mask of yolo loss layers
+        downsample_ratios (list): list of downsample_ratio of yolo loss layers
+        class_num (int): class_num of dataset
+    """
+
+    def __init__(self, anchors=[], anchor_masks=[], downsample_ratios=[], class_num=0):
+        super(Gt2Target, self).__init__()
+        self.anchors = anchors
+        self.anchor_masks = anchor_masks
+        self.downsample_ratios = downsample_ratios
+        self.class_num = class_num
 
 
 @serializable
@@ -892,7 +918,8 @@ class YoloTrainFeed(DataFeed):
 
     def __init__(self,
                  dataset=CocoDataSet().__dict__,
-                 fields=['image', 'gt_box', 'gt_label', 'gt_score'],
+                 fields=['image', 'gt_box', 'gt_label', 'gt_score',
+                         'target0', 'target1', 'target2'],
                  image_shape=[3, 608, 608],
                  sample_transforms=[
                      DecodeImage(to_rgb=True, with_mixup=True),
@@ -909,8 +936,15 @@ class YoloTrainFeed(DataFeed):
                  ],
                  batch_transforms=[
                      RandomShape(sizes=[
-                         320, 352, 384, 416, 448, 480, 512, 544, 576, 608
-                     ])
+                         # 320, 352, 384, 416, 448, 480, 512, 544, 576, 608
+                         320,
+                     ]),
+                     Gt2Target(anchors=[[10, 13], [16, 30], [33, 23],
+                                        [30, 61], [62, 45], [59, 119],
+                                        [116, 90], [156, 198], [373, 326]],
+                               anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                               downsample_ratios=[32, 16, 8],
+                               class_num=20)
                  ],
                  batch_size=8,
                  shuffle=True,

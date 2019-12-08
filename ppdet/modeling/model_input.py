@@ -35,6 +35,9 @@ feed_var_def = [
     {'name': 'gt_score',      'shape': [1],  'dtype': 'float32', 'lod_level': 0},
     {'name': 'im_shape',      'shape': [3],  'dtype': 'float32', 'lod_level': 0},
     {'name': 'im_size',       'shape': [2],  'dtype': 'int32',   'lod_level': 0},
+    {'name': 'target0',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
+    {'name': 'target1',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
+    {'name': 'target2',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
 ]
 # yapf: enable
 
