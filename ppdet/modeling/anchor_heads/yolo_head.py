@@ -306,7 +306,7 @@ class YOLOv3Head(object):
         downsample = 32
         loss_xys, loss_whs, loss_obj_poss, loss_obj_negs, loss_clss = [], [], [], [], []
         for i, (output, target, mask) in enumerate(zip(outputs, targets, self.anchor_masks)):
-            print("output", i, output)
+            # print("output", i, output)
             # split x, y, w, h, obj, cls
             x = fluid.layers.strided_slice(output, axes=[1], starts=[0],
                         ends=[output.shape[1]], strides=[5 + self.num_classes])
@@ -358,6 +358,7 @@ class YOLOv3Head(object):
                 class_num=self.num_classes,
                 conf_thresh=0.,
                 downsample_ratio=downsample,
+                clip_bbox=False,
                 name=self.prefix_name + "yolo_box" + str(i))
             # 2. split pred bbox and gt bbox by sample, calc IoU between pred bbox
             #    and gt bbox in each sample
@@ -386,7 +387,7 @@ class YOLOv3Head(object):
             iou = fluid.layers.stack(ious, axis=0)
             # 3. max_iou <= ignore_threshold as iou_mask for objectness loss calc
             max_iou = fluid.layers.reduce_max(iou, dim=-1)
-            fluid.layers.Print(max_iou, message="max_iou{}".format(i), summarize=-1)
+            # fluid.layers.Print(max_iou, message="max_iou{}".format(i), summarize=-1)
             iou_mask = fluid.layers.cast(max_iou <= self.ignore_thresh, dtype="float32")
             output_shape = fluid.layers.shape(output)
             iou_mask = fluid.layers.reshape(iou_mask, (-1, len(mask), output_shape[2], output_shape[3]))
