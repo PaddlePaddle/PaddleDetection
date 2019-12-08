@@ -19,6 +19,7 @@ from __future__ import print_function
 import logging
 import cv2
 import numpy as np
+from .op_helper import jaccard_overlap
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,10 @@ logger = logging.getLogger(__name__)
 def build_post_map(coarsest_stride=1,
                    is_padding=False,
                    random_shapes=[],
+                   anchors=[],
+                   anchor_masks=[],
+                   downsample_ratios=[],
+                   class_num=20,
                    multi_scales=[],
                    use_padded_im_info=False,
                    enable_multiscale_test=False,
@@ -40,6 +45,11 @@ def build_post_map(coarsest_stride=1,
             is_padding (bool): whether to padding in minibatch
             random_shapes (list of int): resize to image to random shapes, 
                 [] for not resize.
+            anchors (list of list of int): height and width of yolo anchors.
+            anchor_masks (list of list of int): anchor mask for yolo loss layers.
+            downsample_ratios (list of int): downsample ratio from input to yolo
+                loss layers.
+            class_num (int): class number of dataset
             multi_scales (list of int): resize image by random scales, 
                 [] for not resize.
             use_padded_im_info (bool): whether to update im_info after padding
@@ -116,6 +126,60 @@ def build_post_map(coarsest_stride=1,
             scaled_batch.append((im.transpose(2, 0, 1), ) + data[1:])
         return scaled_batch
 
+    def gtbbox2target(batch_data):
+        assert len(anchor_masks) == len(downsample_ratios), \
+            "anchor_masks', and 'downsample_ratios' should have same length."
+        
+        h, w = batch_data[0][0].shape[1:3]
+        an_hw = np.array(anchors) / np.array([[w, h]])
+        new_batch = []
+        for data in batch_data:
+            im, gt_bbox, gt_class, gt_score = data
+            new_data = [im, gt_bbox, gt_class, gt_score]
+            for mask, downsample_ratio in zip(anchor_masks, downsample_ratios):
+                grid_h = int(h / downsample_ratio)
+                grid_w = int(w / downsample_ratio)
+                target = np.zeros((len(mask), 6 + class_num, grid_h, grid_w),
+                                   dtype=np.float32)
+                for b in range(gt_bbox.shape[0]):
+                    gx, gy, gw, gh = gt_bbox[b, :]
+                    cls = gt_class[b]
+                    score = gt_score[b]
+                    if gw <= 0. or gh <= 0. or score <= 0.:
+                        continue
+
+                    # find best match anchor
+                    best_iou = 0.
+                    best_idx = -1
+                    for an_idx in range(an_hw.shape[0]):
+                        iou = jaccard_overlap([0., 0., gw, gh],
+                                [0., 0., an_hw[an_idx, 0], an_hw[an_idx, 1]])
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_idx = an_idx
+
+                    # find best match anchor
+                    if best_idx in mask:
+                        best_n = mask.index(best_idx)
+                        gi = int(gx * grid_w)
+                        gj = int(gy * grid_h)
+
+                        # x, y, w, h
+                        target[best_n, 0, gj, gi] = gx * grid_w - gi
+                        target[best_n, 1, gj, gi] = gy * grid_h - gj
+                        target[best_n, 2, gj, gi] = np.log(gw * w / anchors[best_idx][0])
+                        target[best_n, 3, gj, gi] = np.log(gh * h / anchors[best_idx][1])
+                        target[best_n, 4, gj, gi] = 2.0 - gw * gh
+
+                        # objectness record gt_score
+                        target[best_n, 5, gj, gi] = score
+
+                        # classification
+                        target[best_n, 6+cls, gj, gi] = 1.
+                new_data.append(target)
+            new_batch.append(new_data)
+        return new_batch
+
     def multi_scale_resize(batch_data):
         # For RCNN: image shape in record in im_info.
         scale = np.random.choice(multi_scales)
@@ -134,10 +198,25 @@ def build_post_map(coarsest_stride=1,
 
     def _mapper(batch_data):
         try:
+            # for b, data in enumerate(batch_data):
+            #     for i, d in enumerate(data):
+            #         np.save('./output/{}_{}.npy'.format(b, i), d)
+            # hahahaahahaha
+            # batch_size = len(batch_data)
+            # data_len = len(batch_data[0])
+            # batch_data = []
+            # for i in range(batch_size):
+            #     data = []
+            #     for j in range(data_len):
+            #         data.append(np.load('./output/{}_{}.npy'.format(i, j)))
+            #     batch_data.append(tuple(data))
+
             if is_padding:
                 batch_data = padding_minibatch(batch_data)
             if len(random_shapes) > 0:
                 batch_data = random_shape(batch_data)
+            if len(downsample_ratios):
+                batch_data = gtbbox2target(batch_data)
             if len(multi_scales) > 0:
                 batch_data = multi_scale_resize(batch_data)
             if enable_multiscale_test:

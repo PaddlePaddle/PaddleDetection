@@ -3,15 +3,17 @@ train_feed: YoloTrainFeed
 eval_feed: YoloEvalFeed
 test_feed: YoloTestFeed
 use_gpu: true
-max_iters: 70000
+max_iters: 1
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 2000
 metric: VOC
 map_type: 11point
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+# pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar
 weights: output/yolov3_darknet_voc/model_final
 num_classes: 20
+log_iter: 1
 
 YOLOv3:
   backbone: DarkNet
@@ -30,6 +32,8 @@ YOLOv3Head:
   norm_decay: 0.
   ignore_thresh: 0.7
   label_smooth: false
+  batch_size: 8
+  use_splited_loss: True
   nms:
     background_label: -1
     keep_top_k: 100

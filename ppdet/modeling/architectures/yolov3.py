@@ -68,10 +68,19 @@ class YOLOv3(object):
             gt_label = feed_vars['gt_label']
             gt_score = feed_vars['gt_score']
 
-            return {
-                'loss': self.yolo_head.get_loss(body_feats, gt_box, gt_label,
-                                                gt_score)
-            }
+            # Get targets for splited yolo loss calculation
+            # YOLOv3 supports up to three output layers currently
+            targets = []
+            for i in range(3):
+                k = 'target{}'.format(i)
+                if k in feed_vars:
+                    targets.append(feed_vars[k])
+
+            loss = self.yolo_head.get_loss(body_feats, gt_box, gt_label,
+                                           gt_score, targets)
+            total_loss = fluid.layers.sum(list(loss.values()))
+            loss.update({'loss': total_loss})
+            return loss
         else:
             im_size = feed_vars['im_size']
             return self.yolo_head.get_prediction(body_feats, im_size)
