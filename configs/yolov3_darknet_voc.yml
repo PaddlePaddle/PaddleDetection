@@ -33,7 +33,7 @@ YOLOv3Head:
   ignore_thresh: 0.7
   label_smooth: false
   batch_size: 8
-  use_splited_loss: True
+  use_splited_loss: true
   nms:
     background_label: -1
     keep_top_k: 100

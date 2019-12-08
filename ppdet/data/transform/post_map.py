@@ -201,7 +201,8 @@ def build_post_map(coarsest_stride=1,
             # for b, data in enumerate(batch_data):
             #     for i, d in enumerate(data):
             #         np.save('./output/{}_{}.npy'.format(b, i), d)
-            # hahahaahahaha
+            # 233333333
+
             # batch_size = len(batch_data)
             # data_len = len(batch_data[0])
             # batch_data = []
