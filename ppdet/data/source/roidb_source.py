@@ -79,8 +79,8 @@ class RoiDbSource(Dataset):
         self._imid2path = None
 
     def __str__(self):
-        return 'RoiDbSource(fname:%s,epoch:%d,size:%d,pos:%d)' \
-            % (self._fname, self._epoch, self.size(), self._pos)
+        return 'RoiDbSource(epoch:%d,size:%d,pos:%d,fname:%s)' \
+            % (self._epoch, self.size(), self._pos, self._fname)
 
     def next(self):
         """ load next sample
