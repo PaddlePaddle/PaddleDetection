@@ -1410,13 +1410,12 @@ class PadBox(BaseOperator):
         super(PadBox, self).__init__()
 
     def __call__(self, sample, context=None):
-        assert 'gt_bbox' in sample and 'image' in sample
-        im = sample['image']
+        assert 'gt_bbox' in sample
         bbox = sample['gt_bbox']
         gt_num = min(self.num_max_boxes, len(bbox))
         num_max = self.num_max_boxes
         fields = context['fields'] if context else []
-        pad_bbox = np.zeros((num_max, 4), dtype=im.dtype)
+        pad_bbox = np.zeros((num_max, 4), dtype=np.float32)
         if gt_num > 0:
             pad_bbox[:gt_num, :] = bbox[:gt_num, :]
         sample['gt_bbox'] = pad_bbox
@@ -1426,7 +1425,7 @@ class PadBox(BaseOperator):
                 pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
             sample['gt_class'] = pad_class
         if 'gt_score' in fields:
-            pad_score = np.zeros((num_max), dtype=im.dtype)
+            pad_score = np.zeros((num_max), dtype=np.float32)
             if gt_num > 0:
                 pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
             sample['gt_score'] = pad_score
