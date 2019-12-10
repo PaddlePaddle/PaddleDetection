@@ -282,13 +282,16 @@ def main():
             indent=4,
             cls=MyEncoder)
     if args.val_proportion != 0:
-        val_data_coco = deal_json(args.output_dir + '/val', args.json_input_dir)
+        val_data_coco = deal_json(args.dataset_type,
+                                  args.output_dir + '/val', 
+                                  args.json_input_dir)
         val_json_path = osp.join(args.output_dir + '/annotations',
                                  'instance_val.json')
         json.dump(
             val_data_coco, open(val_json_path, 'w'), indent=4, cls=MyEncoder)
     if args.test_proportion != 0:
-        test_data_coco = deal_json(args.output_dir + '/test',
+        test_data_coco = deal_json(args.dataset_type,
+                                   args.output_dir + '/test',
                                    args.json_input_dir)
         test_json_path = osp.join(args.output_dir + '/annotations',
                                   'instance_test.json')
