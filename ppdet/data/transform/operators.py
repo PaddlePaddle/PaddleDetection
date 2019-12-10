@@ -287,8 +287,8 @@ class ResizeImage(BaseOperator):
             im_scale_x = im_scale
             im_scale_y = im_scale
 
-            resize_w = np.round(im_scale_x * float(im_shape[1]))
-            resize_h = np.round(im_scale_y * float(im_shape[0]))
+            resize_w = im_scale_x * float(im_shape[1])
+            resize_h = im_scale_y * float(im_shape[0])
             im_info = [resize_h, resize_w, im_scale]
             if 'im_info' in sample and sample['im_info'][2] != 1.:
                 sample['im_info'] = np.append(
@@ -311,8 +311,12 @@ class ResizeImage(BaseOperator):
                 fy=im_scale_y,
                 interpolation=self.interp)
         else:
+            if self.max_size != 0:
+                raise TypeError(
+                    'If you set max_size to cap the maximum size of image,'
+                    'please set use_cv2 to True to resize the image.')
             im = Image.fromarray(im)
-            im = im.resize((resize_w, resize_h), self.interp)
+            im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
 
         sample['image'] = im
@@ -1009,9 +1013,8 @@ class Resize(BaseOperator):
             'random' (for randomized interpolation).
             default to `cv2.INTER_LINEAR`.
     """
-    def __init__(self,
-                 target_dim=[],
-                 interp=cv2.INTER_LINEAR):
+
+    def __init__(self, target_dim=[], interp=cv2.INTER_LINEAR):
         super(Resize, self).__init__()
         self.target_dim = target_dim
         self.interp = interp  # 'random' for yolov3
@@ -1032,10 +1035,9 @@ class Resize(BaseOperator):
         scale_x = dim / w
         scale_y = dim / h
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            scale_array = np.array([scale_x, scale_y] * 2,
-                                   dtype=np.float32)
-            sample['gt_bbox'] = np.clip(
-                sample['gt_bbox'] * scale_array, 0, dim - 1)
+            scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
+            sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
+                                        dim - 1)
         sample['h'] = resize_h
         sample['w'] = resize_w
 
@@ -1060,6 +1062,7 @@ class ColorDistort(BaseOperator):
         random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
             order.
     """
+
     def __init__(self,
                  hue=[-18, 18, 0.5],
                  saturation=[0.5, 1.5, 0.5],
@@ -1084,14 +1087,10 @@ class ColorDistort(BaseOperator):
         delta = np.random.uniform(low, high)
         u = np.cos(delta * np.pi)
         w = np.sin(delta * np.pi)
-        bt = np.array([[1.0, 0.0, 0.0],
-                       [0.0, u, -w],
-                       [0.0, w, u]])
-        tyiq = np.array([[0.299, 0.587, 0.114],
-                         [0.596, -0.274, -0.321],
+        bt = np.array([[1.0, 0.0, 0.0], [0.0, u, -w], [0.0, w, u]])
+        tyiq = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.321],
                          [0.211, -0.523, 0.311]])
-        ityiq = np.array([[1.0, 0.956, 0.621],
-                          [1.0, -0.272, -0.647],
+        ityiq = np.array([[1.0, 0.956, 0.621], [1.0, -0.272, -0.647],
                           [1.0, -1.107, 1.705]])
         t = np.dot(np.dot(ityiq, bt), tyiq).T
         img = np.dot(img, t)
@@ -1135,10 +1134,8 @@ class ColorDistort(BaseOperator):
         img = sample['image']
         if self.random_apply:
             distortions = np.random.permutation([
-                self.apply_brightness,
-                self.apply_contrast,
-                self.apply_saturation,
-                self.apply_hue
+                self.apply_brightness, self.apply_contrast,
+                self.apply_saturation, self.apply_hue
             ])
             for func in distortions:
                 img = func(img)
@@ -1167,6 +1164,7 @@ class NormalizePermute(BaseOperator):
         mean (list): mean values in RGB order.
         std (list): std values in RGB order.
     """
+
     def __init__(self,
                  mean=[123.675, 116.28, 103.53],
                  std=[58.395, 57.120, 57.375]):
@@ -1197,7 +1195,8 @@ class RandomExpand(BaseOperator):
         prob (float): probability to expand.
         fill_value (list): color value used to fill the canvas. in RGB order.
     """
-    def __init__(self, ratio=4., prob=0.5, fill_value=(127.5,) * 3):
+
+    def __init__(self, ratio=4., prob=0.5, fill_value=(127.5, ) * 3):
         super(RandomExpand, self).__init__()
         assert ratio > 1.01, "expand ratio must be larger than 1.01"
         self.ratio = ratio
@@ -1205,7 +1204,7 @@ class RandomExpand(BaseOperator):
         assert isinstance(fill_value, (Number, Sequence)), \
             "fill value must be either float or sequence"
         if isinstance(fill_value, Number):
-            fill_value = (fill_value,) * 3
+            fill_value = (fill_value, ) * 3
         if not isinstance(fill_value, tuple):
             fill_value = tuple(fill_value)
         self.fill_value = fill_value
@@ -1251,6 +1250,7 @@ class RandomCrop(BaseOperator):
         allow_no_crop (bool): allow return without actually cropping them.
         cover_all_box (bool): ensure all bboxes are covered in the final crop.
     """
+
     def __init__(self,
                  aspect_ratio=[.5, 2.],
                  thresholds=[.0, .1, .3, .5, .7, .9],
@@ -1295,15 +1295,16 @@ class RandomCrop(BaseOperator):
             for i in range(self.num_attempts):
                 scale = np.random.uniform(*self.scaling)
                 min_ar, max_ar = self.aspect_ratio
-                aspect_ratio = np.random.uniform(max(min_ar, scale**2),
-                                                 min(max_ar, scale**-2))
+                aspect_ratio = np.random.uniform(
+                    max(min_ar, scale**2), min(max_ar, scale**-2))
                 crop_h = int(h * scale / np.sqrt(aspect_ratio))
                 crop_w = int(w * scale * np.sqrt(aspect_ratio))
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
-                iou = self._iou_matrix(gt_bbox,
-                                       np.array([crop_box], dtype=np.float32))
+                iou = self._iou_matrix(
+                    gt_bbox, np.array(
+                        [crop_box], dtype=np.float32))
                 if iou.max() < thresh:
                     continue
 
@@ -1311,7 +1312,8 @@ class RandomCrop(BaseOperator):
                     continue
 
                 cropped_box, valid_ids = self._crop_box_with_center_constraint(
-                    gt_bbox, np.array(crop_box, dtype=np.float32))
+                    gt_bbox, np.array(
+                        crop_box, dtype=np.float32))
                 if valid_ids.size > 0:
                     found = True
                     break
@@ -1349,8 +1351,8 @@ class RandomCrop(BaseOperator):
         cropped_box[:, 2:] -= crop[:2]
 
         centers = (box[:, :2] + box[:, 2:]) / 2
-        valid = np.logical_and(
-            crop[:2] <= centers, centers < crop[2:]).all(axis=1)
+        valid = np.logical_and(crop[:2] <= centers,
+                               centers < crop[2:]).all(axis=1)
         valid = np.logical_and(
             valid, (cropped_box[:, :2] < cropped_box[:, 2:]).all(axis=1))
 
