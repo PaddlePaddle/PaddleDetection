@@ -28,6 +28,9 @@ import copy
 import pickle as pkl
 from ..dataset import Dataset
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class RoiDbSource(Dataset):
     """ interface to load roidb data from files
@@ -133,6 +136,10 @@ class RoiDbSource(Dataset):
         self._samples = len(self._roidb)
         if self._is_shuffle:
             random.shuffle(self._roidb)
+
+        if self._mixup_epoch > 0 and self._samples < 2:
+            logger.info("Disable mixup for dataset samples less than 2")
+            self._mixup_epoch = -1
 
         if self._epoch < 0:
             self._epoch = 0
