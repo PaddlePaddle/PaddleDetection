@@ -132,7 +132,7 @@ def deal_json(ds_type, img_path, json_path):
     image_num = -1
     object_num = -1
     for img_file in os.listdir(img_path):
-        img_label = img_file.split('.')[0]
+        img_label = os.path.splitext(img_file)[0]
         if img_file.split('.')[
                 -1] not in ['bmp', 'jpg', 'jpeg', 'png', 'JPEG', 'JPG', 'PNG']:
             continue
