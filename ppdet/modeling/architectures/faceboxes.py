@@ -53,7 +53,8 @@ class FaceBoxes(object):
                  output_decoder=SSDOutputDecoder().__dict__,
                  densities=[[4, 2, 1], [1], [1]],
                  fixed_sizes=[[32., 64., 128.], [256.], [512.]],
-                 num_classes=2):
+                 num_classes=2,
+                 steps=[8., 16., 32.]):
         super(FaceBoxes, self).__init__()
         self.backbone = backbone
         self.num_classes = num_classes
@@ -62,6 +63,7 @@ class FaceBoxes(object):
             self.output_decoder = SSDOutputDecoder(**output_decoder)
         self.densities = densities
         self.fixed_sizes = fixed_sizes
+        self.steps = steps
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
@@ -113,7 +115,8 @@ class FaceBoxes(object):
                 fixed_sizes=fixed_sizes,
                 fixed_ratios=[1.],
                 clip=False,
-                offset=0.5)
+                offset=0.5,
+                steps=[self.steps[i]] * 2)
 
             num_boxes = box.shape[2]
 
