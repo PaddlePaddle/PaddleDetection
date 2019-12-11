@@ -75,6 +75,19 @@ list below can be viewed by `--help`
                               finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
   ```
 
+- Training YOLOv3 with YOLOv3 loss built by Paddle OPs in python
+
+  In order to facilitate the redesign of YOLOv3 loss function, we also provide YOLOv3 loss function building in python code by common Paddle OPs instread of using `fluid.layers.yolov3_loss`,
+  training YOLOv3 with python loss function as follows:
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/yolov3_darknet.yml \
+                           -o use_splited_loss=true
+  ```
+
+  YOLOv3 loss python code is defined in `ppdet/modeling/anchor_heads/yolo_head.py`.
+
 ##### NOTES
 
 - `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](#faq)

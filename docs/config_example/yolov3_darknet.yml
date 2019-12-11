@@ -36,6 +36,11 @@ weights: output/yolov3_darknet/model_final
 # Number of classes, 80 for COCO and 20 for VOC.
 num_classes: 80
 
+# Whether use splited YOLOv3 loss, if true, build YOLOv3 loss by python code with common OPs,
+# if false, use fluid.layer.yolov3_loss OP to calculate YOLOv3 loss, the former one is better
+# for redesign YOLOv3 loss, the latter one is better for training by original YOLOv3 loss
+use_splited_loss: false
+
 
 # YOLOv3 architecture, see https://arxiv.org/abs/1804.02767
 YOLOv3:
