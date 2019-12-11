@@ -30,7 +30,7 @@ def build_post_map(coarsest_stride=1,
                    anchors=[],
                    anchor_masks=[],
                    downsample_ratios=[],
-                   class_num=20,
+                   num_classes=20,
                    multi_scales=[],
                    use_padded_im_info=False,
                    enable_multiscale_test=False,
@@ -49,7 +49,7 @@ def build_post_map(coarsest_stride=1,
             anchor_masks (list of list of int): anchor mask for yolo loss layers.
             downsample_ratios (list of int): downsample ratio from input to yolo
                 loss layers.
-            class_num (int): class number of dataset
+            num_classes (int): class number of dataset
             multi_scales (list of int): resize image by random scales, 
                 [] for not resize.
             use_padded_im_info (bool): whether to update im_info after padding
@@ -129,7 +129,7 @@ def build_post_map(coarsest_stride=1,
     def gtbbox2target(batch_data):
         assert len(anchor_masks) == len(downsample_ratios), \
             "anchor_masks', and 'downsample_ratios' should have same length."
-        
+
         h, w = batch_data[0][0].shape[1:3]
         an_hw = np.array(anchors) / np.array([[w, h]])
         new_batch = []
@@ -139,7 +139,7 @@ def build_post_map(coarsest_stride=1,
             for mask, downsample_ratio in zip(anchor_masks, downsample_ratios):
                 grid_h = int(h / downsample_ratio)
                 grid_w = int(w / downsample_ratio)
-                target = np.zeros((len(mask), 6 + class_num, grid_h, grid_w),
+                target = np.zeros((len(mask), 6 + num_classes, grid_h, grid_w),
                                    dtype=np.float32)
                 for b in range(gt_bbox.shape[0]):
                     gx, gy, gw, gh = gt_bbox[b, :]
@@ -198,20 +198,6 @@ def build_post_map(coarsest_stride=1,
 
     def _mapper(batch_data):
         try:
-            # for b, data in enumerate(batch_data):
-            #     for i, d in enumerate(data):
-            #         np.save('./output/{}_{}.npy'.format(b, i), d)
-            # 233333333
-
-            # batch_size = len(batch_data)
-            # data_len = len(batch_data[0])
-            # batch_data = []
-            # for i in range(batch_size):
-            #     data = []
-            #     for j in range(data_len):
-            #         data.append(np.load('./output/{}_{}.npy'.format(i, j)))
-            #     batch_data.append(tuple(data))
-
             if is_padding:
                 batch_data = padding_minibatch(batch_data)
             if len(random_shapes) > 0:

@@ -34,7 +34,7 @@ from ppdet.data.transform.arrange_sample import (
     ArrangeTestSSD, ArrangeYOLO, ArrangeEvalYOLO, ArrangeTestYOLO)
 
 __all__ = [
-    'PadBatch', 'MultiScale', 'RandomShape', 'PadMSTest', 'DataSet',
+    'PadBatch', 'MultiScale', 'RandomShape', 'Gt2Target', 'PadMSTest', 'DataSet',
     'CocoDataSet', 'DataFeed', 'TrainFeed', 'EvalFeed', 'FasterRCNNTrainFeed',
     'MaskRCNNTrainFeed', 'FasterRCNNEvalFeed', 'MaskRCNNEvalFeed',
     'FasterRCNNTestFeed', 'MaskRCNNTestFeed', 'SSDTrainFeed', 'SSDEvalFeed',
@@ -127,7 +127,7 @@ def create_reader(feed, max_iter=0, args_path=None, my_source=None):
         transform_config['ANCHORS'] = gt2target[0].anchors
         transform_config['ANCHOR_MASKS'] = gt2target[0].anchor_masks
         transform_config['DOWNSAMPLE_RATIOS'] = gt2target[0].downsample_ratios
-        transform_config['CLASS_NUM'] = gt2target[0].class_num
+        transform_config['NUM_CLASSES'] = gt2target[0].num_classes
     if any(multi_scale):
         transform_config['MULTI_SCALES'] = multi_scale[0].scales
     if any(pad_ms_test):
@@ -210,12 +210,12 @@ class Gt2Target(object):
         class_num (int): class_num of dataset
     """
 
-    def __init__(self, anchors=[], anchor_masks=[], downsample_ratios=[], class_num=0):
+    def __init__(self, anchors=[], anchor_masks=[], downsample_ratios=[], num_classes=0):
         super(Gt2Target, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
-        self.class_num = class_num
+        self.num_classes = num_classes
 
 
 @serializable
@@ -915,6 +915,7 @@ class SSDTestFeed(DataFeed):
 @register
 class YoloTrainFeed(DataFeed):
     __doc__ = DataFeed.__doc__
+    __shared__ = ["num_classes", "use_splited_loss"]
 
     def __init__(self,
                  dataset=CocoDataSet().__dict__,
@@ -936,15 +937,14 @@ class YoloTrainFeed(DataFeed):
                  ],
                  batch_transforms=[
                      RandomShape(sizes=[
-                         # 320, 352, 384, 416, 448, 480, 512, 544, 576, 608
-                         320,
+                         320, 352, 384, 416, 448, 480, 512, 544, 576, 608
                      ]),
                      Gt2Target(anchors=[[10, 13], [16, 30], [33, 23],
                                         [30, 61], [62, 45], [59, 119],
                                         [116, 90], [156, 198], [373, 326]],
                                anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                                downsample_ratios=[32, 16, 8],
-                               class_num=20)
+                               num_classes=80)
                  ],
                  batch_size=8,
                  shuffle=True,
@@ -957,7 +957,9 @@ class YoloTrainFeed(DataFeed):
                  memsize=None,
                  num_max_boxes=50,
                  mixup_epoch=250,
-                 class_aware_sampling=False):
+                 class_aware_sampling=False,
+                 num_classes=80,
+                 use_splited_loss=False):
         sample_transforms.append(ArrangeYOLO())
         super(YoloTrainFeed, self).__init__(
             dataset,
@@ -977,7 +979,18 @@ class YoloTrainFeed(DataFeed):
             class_aware_sampling=class_aware_sampling)
         self.num_max_boxes = num_max_boxes
         self.mixup_epoch = mixup_epoch
+        self.num_classes = num_classes
         self.mode = 'TRAIN'
+
+        # whether use splited yolov3 loss
+        if not use_splited_loss:
+            self.fields = [f for f in self.fields if not f.startswith('target')]
+            self.batch_transforms = [bt for bt in batch_transforms \
+                                        if not isinstance(bt, Gt2Target)]
+        else:
+            for bt in self.batch_transforms:
+                if isinstance(bt, Gt2Target):
+                    bt.num_classes = num_classes
 
 
 @register

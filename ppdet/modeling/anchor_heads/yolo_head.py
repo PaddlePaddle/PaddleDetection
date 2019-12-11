@@ -41,7 +41,7 @@ class YOLOv3Head(object):
         nms (object): an instance of `MultiClassNMS`
     """
     __inject__ = ['nms']
-    __shared__ = ['num_classes', 'weight_prefix_name']
+    __shared__ = ['num_classes', 'weight_prefix_name', 'use_splited_loss']
 
     def __init__(self,
                  norm_decay=0.,
@@ -68,7 +68,7 @@ class YOLOv3Head(object):
         self._parse_anchors(anchors)
         self.nms = nms
         self._use_splited_loss = use_splited_loss
-        self._batch_size = batch_size
+        self.batch_size = batch_size
         self.prefix_name = weight_prefix_name
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
@@ -302,11 +302,9 @@ class YOLOv3Head(object):
         assert len(outputs) == len(targets), \
             "YOLOv3 output layer number not equal target number"
 
-
         downsample = 32
         loss_xys, loss_whs, loss_obj_poss, loss_obj_negs, loss_clss = [], [], [], [], []
         for i, (output, target, mask) in enumerate(zip(outputs, targets, self.anchor_masks)):
-            # print("output", i, output)
             # split x, y, w, h, obj, cls
             x = fluid.layers.strided_slice(output, axes=[1], starts=[0],
                         ends=[output.shape[1]], strides=[5 + self.num_classes])
@@ -349,11 +347,11 @@ class YOLOv3Head(object):
 
             # pred bbox overlap any gt_bbox over ignore_thresh, 
             # objectness loss will be ignored
-            # 1. get pred bbox, note yolo_box api is will cut bbox by image boundary,
-            #    which may incur diff, further test required
+            # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box
+            #    here, note img_size is set as 1.0 to get noramlized pred bbox
             bbox, _ = fluid.layers.yolo_box(
                 x=output,
-                img_size=fluid.layers.ones(shape=[self._batch_size, 2], dtype="int32"),
+                img_size=fluid.layers.ones(shape=[self.batch_size, 2], dtype="int32"),
                 anchors=self.mask_anchors[i],
                 class_num=self.num_classes,
                 conf_thresh=0.,
@@ -362,9 +360,9 @@ class YOLOv3Head(object):
                 name=self.prefix_name + "yolo_box" + str(i))
             # 2. split pred bbox and gt bbox by sample, calc IoU between pred bbox
             #    and gt bbox in each sample
-            if self._batch_size > 1:
-                preds = fluid.layers.split(bbox, self._batch_size, dim=0)
-                gts = fluid.layers.split(gt_box, self._batch_size, dim=0)
+            if self.batch_size > 1:
+                preds = fluid.layers.split(bbox, self.batch_size, dim=0)
+                gts = fluid.layers.split(gt_box, self.batch_size, dim=0)
             else:
                 preds = [bbox]
                 gts = [gt_box]
@@ -387,7 +385,6 @@ class YOLOv3Head(object):
             iou = fluid.layers.stack(ious, axis=0)
             # 3. max_iou <= ignore_threshold as iou_mask for objectness loss calc
             max_iou = fluid.layers.reduce_max(iou, dim=-1)
-            # fluid.layers.Print(max_iou, message="max_iou{}".format(i), summarize=-1)
             iou_mask = fluid.layers.cast(max_iou <= self.ignore_thresh, dtype="float32")
             output_shape = fluid.layers.shape(output)
             iou_mask = fluid.layers.reshape(iou_mask, (-1, len(mask), output_shape[2], output_shape[3]))
@@ -395,12 +392,12 @@ class YOLOv3Head(object):
             iou_mask.stop_gradient = True
 
             loss_obj = fluid.layers.sigmoid_cross_entropy_with_logits(obj, obj_mask) * iou_mask
-            # loss_obj = fluid.layers.reduce_sum(loss_obj * tobj + loss_obj * (1. - obj_mask), dim=[1, 2, 3])
             loss_obj_pos = fluid.layers.reduce_sum(loss_obj * tobj, dim=[1, 2, 3])
             loss_obj_neg = fluid.layers.reduce_sum(loss_obj * (1.0 - obj_mask) * iou_mask, dim=[1, 2, 3])
 
-            loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls) * tobj
-            loss_cls = fluid.layers.reduce_sum(loss_cls * obj_mask, dim=[1, 2, 3, 4])
+            loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
+            loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj * obj_mask, axis=0)
+            loss_cls = fluid.layers.reduce_sum(loss_cls, dim=[1, 2, 3, 4])
             downsample //= 2
 
             loss_xys.append(fluid.layers.reduce_mean(loss_x + loss_y))
@@ -408,11 +405,6 @@ class YOLOv3Head(object):
             loss_obj_poss.append(fluid.layers.reduce_mean(loss_obj_pos))
             loss_obj_negs.append(fluid.layers.reduce_mean(loss_obj_neg))
             loss_clss.append(fluid.layers.reduce_mean(loss_cls))
-            # fluid.layers.Print(loss_xys[-1], message="loss_xy{}".format(i))
-            # fluid.layers.Print(loss_whs[-1], message="loss_wh{}".format(i))
-            # fluid.layers.Print(loss_obj_poss[-1], message="loss_obj_pos{}".format(i))
-            # fluid.layers.Print(loss_obj_negs[-1], message="loss_obj_neg{}".format(i))
-            # fluid.layers.Print(loss_clss[-1], message="loss_cls{}".format(i))
 
         return { "loss_xy": fluid.layers.sum(loss_xys),
                  "loss_wh": fluid.layers.sum(loss_whs),

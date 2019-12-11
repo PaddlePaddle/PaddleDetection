@@ -79,7 +79,7 @@ class Reader(object):
             'anchors',
             'anchor_masks',
             'downsample_ratios',
-            'class_num',
+            'num_classes',
             'multi_scales',
             'use_padded_im_info',
             'enable_multiscale_test',

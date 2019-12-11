@@ -18,6 +18,7 @@ from __future__ import division
 
 from collections import OrderedDict
 from ppdet.data.transform.operators import *
+from ppdet.data.data_feed import *
 
 from paddle import fluid
 
@@ -35,9 +36,9 @@ feed_var_def = [
     {'name': 'gt_score',      'shape': [1],  'dtype': 'float32', 'lod_level': 0},
     {'name': 'im_shape',      'shape': [3],  'dtype': 'float32', 'lod_level': 0},
     {'name': 'im_size',       'shape': [2],  'dtype': 'int32',   'lod_level': 0},
-    {'name': 'target0',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
-    {'name': 'target1',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
-    {'name': 'target2',       'shape': [-1, -1, -1, -1, -1],  'dtype': 'float32',   'lod_level': 0}, # [N, 3, 5 + class_num, h, w]
+    {'name': 'target0',       'shape': [3, 85, 19, 19],  'dtype': 'float32',   'lod_level': 0},
+    {'name': 'target1',       'shape': [3, 85, 38, 38],  'dtype': 'float32',   'lod_level': 0},
+    {'name': 'target2',       'shape': [3, 85, 76, 76],  'dtype': 'float32',   'lod_level': 0},
 ]
 # yapf: enable
 
@@ -51,6 +52,20 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
         'dtype': 'float32',
         'lod_level': 0
     }
+    
+    # target shape should be [N, 3, 5 + num_classes, H / downsample_ratio, W / downsample_ratio]
+    target_keys = sorted([k for k in feed_var_map.keys() if k.startswith('target')])
+    gt2target = [bt for bt in feed.batch_transforms if isinstance(bt, Gt2Target)]
+    if len(gt2target) > 0:
+        assert len(gt2target) == 1, "multiply Gt2Target is set"
+        anchor_masks = gt2target[0].anchor_masks
+        downsample_ratios = gt2target[0].downsample_ratios
+        target_keys = target_keys[:len(anchor_masks)]
+        num_classes = getattr(feed, 'num_classes', 80)
+        for tk, mask, downsample_ratio in zip(target_keys, anchor_masks, downsample_ratios):
+            feed_var_map[tk]['shape'] = [len(mask), 5 + num_classes,
+                                         image_shape[-2] // downsample_ratio,
+                                         image_shape[-1] // downsample_ratio]
 
     # tensor padding with 0 is used instead of LoD tensor when 
     # num_max_boxes is set
