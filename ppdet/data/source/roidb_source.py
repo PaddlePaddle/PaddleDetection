@@ -100,7 +100,8 @@ class RoiDbSource(Dataset):
             sample['im_file'] = os.path.join(self._image_dir, sample['im_file'])
 
         if self._epoch < self._mixup_epoch:
-            mix_idx = random.randint(1, self._samples - 1)
+            mix_idx = random.randint(
+                1, self._samples - 1) if self._samples > 1 else 0
             mix_pos = (mix_idx + self._pos) % self._samples
             sample['mixup'] = copy.deepcopy(self._roidb[mix_pos])
             if self._load_img:
