@@ -316,8 +316,6 @@ class PageAllocator(object):
         start_pos = pos
         flags = ''
         while True:
-            # maybe flags already has some '0' pages,
-            # so just check 'page_num - len(flags)' pages
             flags = self.get_page_status(pos, page_num, ret_flag=True)
 
             if flags.count('0') == page_num:
@@ -343,10 +341,10 @@ class PageAllocator(object):
             if free_pages == 0:
                 err_msg = 'all pages have been used:%s' % (str(self))
             else:
-                err_msg = 'not found available pages with page_status[%s] '\
-                    'and %d free pages' % (str(page_status), free_pages)
-            err_msg = 'failed to malloc %d pages at pos[%d] for reason[%s] and allocator status[%s]' \
-                % (page_num, pos, err_msg, str(self))
+                err_msg = 'not found enough pages[avail:%d, expect:%d] '\
+                    'with total free pages[%d]' % (page_status[0], page_num, free_pages)
+            err_msg = 'failed to malloc %d pages at pos[%d] for reason[%s] '\
+                    'and allocator status[%s]' % (page_num, pos, err_msg, str(self))
             raise MemoryFullError(err_msg)
 
         self.set_page_status(pos, page_num, '1')
