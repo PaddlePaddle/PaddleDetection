@@ -5,7 +5,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 20000
 metric: COCO
-pretrain_weights: /paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar 
+pretrain_weights: /paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
 weights: output/yolov3_r50vd_dcn/model_final
 num_classes: 80
 
@@ -60,60 +60,3 @@ OptimizerBuilder:
     type: L2
 
 _READER_: '../yolov3_reader.yml'
-TrainReader:
-  batch_size: 8
-  inputs_def:
-    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
-    num_max_boxes: 50
-  dataset:
-    !COCODataSet
-    image_dir: train2017
-    anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
-    with_background: false
-  sample_transforms:
-    - !DecodeImage
-      to_rgb: True
-      with_mixup: True
-    - !MixupImage
-      alpha: 1.5
-      beta: 1.5
-    - !NormalizeBox {}
-    - !RandomDistort {}
-    - !ExpandImage
-      max_ratio: 4
-      prob: 0.5
-      mean:
-      - 123.675
-      - 116.28
-      - 103.53
-    - !CropImage
-      batch_sampler: [[1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 1.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 1.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 1.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 1.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 1.0],
-        [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]]
-    - !RandomInterpImage
-      target_size: 608
-    - !RandomFlipImage
-      is_normalized: True
-    - !NormalizeImage
-      mean:
-      - 0.485
-      - 0.456
-      - 0.406
-      std:
-      - 0.229
-      - 0.224
-      - 0.225
-      is_scale: True
-      is_channel_first: False      
-    - !Permute
-      to_bgr: False
-  shuffle: true
-  mixup_epoch: 250
-  worker_num: 8
-  bufsize: 32
-  use_multi_process: true
