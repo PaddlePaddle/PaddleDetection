@@ -1,6 +1,5 @@
 TrainReader:
   inputs_def:
-    image_shape: [3,null,null]
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
     !COCODataSet

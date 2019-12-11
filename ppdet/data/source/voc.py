@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 
 from ppdet.core.workspace import register, serializable
 
-from dataset import DataSet
+from .dataset import DataSet
 
 
 @register

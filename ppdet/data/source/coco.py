@@ -16,7 +16,7 @@ import os
 import numpy as np
 from pycocotools.coco import COCO
 
-from dataset import DataSet
+from .dataset import DataSet
 from ppdet.core.workspace import register, serializable
 
 import logging

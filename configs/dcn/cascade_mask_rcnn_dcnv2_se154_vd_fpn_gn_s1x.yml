@@ -235,7 +235,7 @@ EvalReader:
 TestReader:
   batch_size: 1
   inputs_def:
-    #image_shape: [3,800,1333]
+    image_shape: [3,800,1333]
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder

@@ -1,6 +1,5 @@
 TrainReader:
   inputs_def:
-    image_shape: [3, 608, 608]
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
   dataset:

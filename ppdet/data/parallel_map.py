@@ -72,7 +72,7 @@ class ParallelMap(object):
         return self
 
     def __next__(self):
-        self.next()
+        return self.next()
 
     def _setup(self):
         """setup input/output queues and workers """
