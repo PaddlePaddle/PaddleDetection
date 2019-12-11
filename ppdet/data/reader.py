@@ -239,6 +239,11 @@ class Reader(object):
         if self._shuffle:
             np.random.shuffle(self.indexes)
 
+        if self._mixup_epoch > 0 and len(self.indexes) < 2:
+            logger.info("Disable mixup for dataset samples "
+                        "less than 2 samples")
+            self._mixup_epoch = -1
+
         if self._epoch < 0:
             self._epoch = 0
         else:
@@ -290,7 +295,7 @@ class Reader(object):
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
-                mix_idx = np.random.randint(1, num) if num > 1 else 0
+                mix_idx = np.random.randint(1, num)
                 mix_idx = self.indexes[(mix_idx + self._pos - 1) % num]
                 sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
                 if self._load_img:
