@@ -982,7 +982,7 @@ class YoloTrainFeed(DataFeed):
         self.num_classes = num_classes
         self.mode = 'TRAIN'
 
-        # whether use splited yolov3 loss
+        # if not use splited yolov3 loss, remove target input 
         if not use_splited_loss:
             self.fields = [f for f in self.fields if not f.startswith('target')]
             self.batch_transforms = [bt for bt in batch_transforms \

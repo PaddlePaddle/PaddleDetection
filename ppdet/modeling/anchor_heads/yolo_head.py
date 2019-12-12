@@ -336,14 +336,15 @@ class YOLOv3Head(object):
             # NOTE: tobj holds gt_score, obj_mask holds object existence mask
             obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
 
-            loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(x, tx) * tscale * tobj
-            loss_x = fluid.layers.reduce_sum(loss_x * obj_mask, dim=[1, 2, 3])
-            loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(y, ty) * tscale * tobj
-            loss_y = fluid.layers.reduce_sum(loss_y * obj_mask, dim=[1, 2, 3])
-            loss_w = fluid.layers.abs(w - tw) * tscale * tobj
-            loss_w = fluid.layers.reduce_sum(loss_w * obj_mask, dim=[1, 2, 3])
-            loss_h = fluid.layers.abs(h - th) * tscale * tobj
-            loss_h = fluid.layers.reduce_sum(loss_h * obj_mask, dim=[1, 2, 3])
+            tscale_tobj = tscale * tobj
+            loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(x, tx) * tscale_tobj
+            loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
+            loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(y, ty) * tscale_tobj
+            loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+            loss_w = fluid.layers.abs(w - tw) * tscale_tobj
+            loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
+            loss_h = fluid.layers.abs(h - th) * tscale_tobj
+            loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
 
             # pred bbox overlap any gt_bbox over ignore_thresh, 
             # objectness loss will be ignored
@@ -396,7 +397,7 @@ class YOLOv3Head(object):
             loss_obj_neg = fluid.layers.reduce_sum(loss_obj * (1.0 - obj_mask) * iou_mask, dim=[1, 2, 3])
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
-            loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj * obj_mask, axis=0)
+            loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
             loss_cls = fluid.layers.reduce_sum(loss_cls, dim=[1, 2, 3, 4])
             downsample //= 2
 
