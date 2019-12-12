@@ -219,6 +219,7 @@ class MaskRCNN(object):
                           bbox_pred=None):
         if not bbox_pred:
             if self.fpn is None:
+                last_feat = body_feats[list(body_feats.keys())[-1]]
                 roi_feat = self.roi_extractor(last_feat, rois)
             else:
                 roi_feat = self.roi_extractor(body_feats, rois, spatial_scale)

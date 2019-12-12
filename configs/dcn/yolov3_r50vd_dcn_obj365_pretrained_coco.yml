@@ -76,7 +76,7 @@ TrainReader:
     - !RandomFlipImage
       is_normalized: false
     - !NormalizeBox {}
-    - !PadBboxes
+    - !PadBox
       num_max_boxes: 50
     - !BboxXYXY2XYWH {}
   batch_transforms:

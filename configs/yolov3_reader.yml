@@ -47,7 +47,6 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    image_shape: [3, 608, 608]
     fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 50
   dataset:

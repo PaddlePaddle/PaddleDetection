@@ -19,6 +19,9 @@ from __future__ import print_function
 import numpy as np
 import sys
 
+from collections import OrderedDict
+import copy
+
 import paddle.fluid as fluid
 
 from ppdet.core.workspace import register
@@ -174,7 +177,8 @@ class CascadeRCNNClsAware(object):
             'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
             'im_info':  {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
             'im_id':    {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 0},
-            'gt_bbox':   {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'im_shape': {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
         }

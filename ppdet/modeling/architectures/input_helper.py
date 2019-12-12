@@ -29,7 +29,7 @@ def multiscale_def(image_shape, num_scale, use_flip=True):
         for i in range(0, num_scale - 1):
             name = base_name + '_scale_' + str(i)
             multiscale_def[name] = {
-                'shape': image_shape,
+                'shape': [None] + image_shape,
                 'dtype': 'float32',
                 'lod_level': 0
             }

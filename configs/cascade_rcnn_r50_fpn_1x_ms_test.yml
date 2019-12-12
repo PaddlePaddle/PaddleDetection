@@ -116,7 +116,6 @@ TrainReader:
 EvalReader:
   batch_size: 1
   inputs_def:
-    image_shape: [3,800,1333]
     fields: ['image', 'im_info', 'im_id', 'im_shape']
     multi_scale: true
     num_scales: 18
