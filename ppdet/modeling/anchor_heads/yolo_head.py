@@ -305,7 +305,7 @@ class YOLOv3Head(object):
         downsample = 32
         loss_xys, loss_whs, loss_obj_poss, loss_obj_negs, loss_clss = [], [], [], [], []
         for i, (output, target, mask) in enumerate(zip(outputs, targets, self.anchor_masks)):
-            # split x, y, w, h, obj, cls
+            # split x, y, w, h, objectness, classification
             x = fluid.layers.strided_slice(output, axes=[1], starts=[0],
                         ends=[output.shape[1]], strides=[5 + self.num_classes])
             y = fluid.layers.strided_slice(output, axes=[1], starts=[1],
@@ -323,7 +323,6 @@ class YOLOv3Head(object):
                                                 ends=[stride*m+5+self.num_classes]))
             cls = fluid.layers.transpose(fluid.layers.stack(clss, axis=1), perm=[0, 1, 3, 4, 2])
 
-            # split tx, ty, tw, th, tobj, tcls
             tx = target[:, :, 0, :, :]
             ty = target[:, :, 1, :, :]
             tw = target[:, :, 2, :, :]
@@ -333,23 +332,22 @@ class YOLOv3Head(object):
             tcls = fluid.layers.transpose(target[:, :, 6:, :, :], perm=[0, 1, 3, 4, 2])
             tcls.stop_gradient = True
 
-            # NOTE: tobj holds gt_score, obj_mask holds object existence mask
-            obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
-
             tscale_tobj = tscale * tobj
             loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(x, tx) * tscale_tobj
             loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
             loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(y, ty) * tscale_tobj
             loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+            # NOTE: we refined loss function of (w, h) as L1Loss
             loss_w = fluid.layers.abs(w - tw) * tscale_tobj
             loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
             loss_h = fluid.layers.abs(h - th) * tscale_tobj
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
 
-            # pred bbox overlap any gt_bbox over ignore_thresh, 
-            # objectness loss will be ignored
-            # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box
-            #    here, note img_size is set as 1.0 to get noramlized pred bbox
+            # A prediction bbox overlap any gt_bbox over ignore_thresh, 
+            # objectness loss will be ignored, process as follows:
+
+            # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
+            # NOTE: img_size is set as 1.0 to get noramlized pred bbox
             bbox, _ = fluid.layers.yolo_box(
                 x=output,
                 img_size=fluid.layers.ones(shape=[self.batch_size, 2], dtype="int32"),
@@ -359,7 +357,8 @@ class YOLOv3Head(object):
                 downsample_ratio=downsample,
                 clip_bbox=False,
                 name=self.prefix_name + "yolo_box" + str(i))
-            # 2. split pred bbox and gt bbox by sample, calc IoU between pred bbox
+
+            # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
             #    and gt bbox in each sample
             if self.batch_size > 1:
                 preds = fluid.layers.split(bbox, self.batch_size, dim=0)
@@ -384,28 +383,36 @@ class YOLOv3Head(object):
                 gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
                 ious.append(fluid.layers.iou_similarity(pred, gt))
             iou = fluid.layers.stack(ious, axis=0)
-            # 3. max_iou <= ignore_threshold as iou_mask for objectness loss calc
+
+            # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
+            #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
             max_iou = fluid.layers.reduce_max(iou, dim=-1)
             iou_mask = fluid.layers.cast(max_iou <= self.ignore_thresh, dtype="float32")
             output_shape = fluid.layers.shape(output)
             iou_mask = fluid.layers.reshape(iou_mask, (-1, len(mask), output_shape[2], output_shape[3]))
-            iou_mask = fluid.layers.elementwise_max(iou_mask, obj_mask)
             iou_mask.stop_gradient = True
 
-            loss_obj = fluid.layers.sigmoid_cross_entropy_with_logits(obj, obj_mask) * iou_mask
+            # NOTE: tobj holds gt_score, obj_mask holds object existence mask
+            obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
+            obj_mask.stop_gradient = True
+
+            # For positive objectness grids, objectness loss should be calculated
+            # For negative objectness grids, objectness loss is calculated only iou_mask == 1.0
+            loss_obj = fluid.layers.sigmoid_cross_entropy_with_logits(obj, obj_mask)
             loss_obj_pos = fluid.layers.reduce_sum(loss_obj * tobj, dim=[1, 2, 3])
             loss_obj_neg = fluid.layers.reduce_sum(loss_obj * (1.0 - obj_mask) * iou_mask, dim=[1, 2, 3])
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
             loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
             loss_cls = fluid.layers.reduce_sum(loss_cls, dim=[1, 2, 3, 4])
-            downsample //= 2
 
             loss_xys.append(fluid.layers.reduce_mean(loss_x + loss_y))
             loss_whs.append(fluid.layers.reduce_mean(loss_w + loss_h))
             loss_obj_poss.append(fluid.layers.reduce_mean(loss_obj_pos))
             loss_obj_negs.append(fluid.layers.reduce_mean(loss_obj_neg))
             loss_clss.append(fluid.layers.reduce_mean(loss_cls))
+
+            downsample //= 2
 
         return { "loss_xy": fluid.layers.sum(loss_xys),
                  "loss_wh": fluid.layers.sum(loss_whs),
