@@ -915,7 +915,7 @@ class SSDTestFeed(DataFeed):
 @register
 class YoloTrainFeed(DataFeed):
     __doc__ = DataFeed.__doc__
-    __shared__ = ["num_classes", "use_splited_loss"]
+    __shared__ = ["num_classes", "use_fine_grained_loss"]
 
     def __init__(self,
                  dataset=CocoDataSet().__dict__,
@@ -959,7 +959,7 @@ class YoloTrainFeed(DataFeed):
                  mixup_epoch=250,
                  class_aware_sampling=False,
                  num_classes=80,
-                 use_splited_loss=False):
+                 use_fine_grained_loss=False):
         sample_transforms.append(ArrangeYOLO())
         super(YoloTrainFeed, self).__init__(
             dataset,
@@ -983,7 +983,7 @@ class YoloTrainFeed(DataFeed):
         self.mode = 'TRAIN'
 
         # if not use splited yolov3 loss, remove target input 
-        if not use_splited_loss:
+        if not use_fine_grained_loss:
             self.fields = [f for f in self.fields if not f.startswith('target')]
             self.batch_transforms = [bt for bt in batch_transforms \
                                         if not isinstance(bt, Gt2Target)]

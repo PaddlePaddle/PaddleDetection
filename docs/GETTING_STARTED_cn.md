@@ -83,7 +83,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
   ```bash
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   python -u tools/train.py -c configs/yolov3_darknet.yml \
-                           -o use_splited_loss=true
+                           -o use_fine_grained_loss=true
   ```
 
   Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/anchor_heads/yolo_head.py`

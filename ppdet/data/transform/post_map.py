@@ -197,21 +197,29 @@ def build_post_map(coarsest_stride=1,
         return scaled_batch
 
     def _mapper(batch_data):
-        try:
-            if is_padding:
-                batch_data = padding_minibatch(batch_data)
-            if len(random_shapes) > 0:
-                batch_data = random_shape(batch_data)
-            if len(downsample_ratios):
-                batch_data = gtbbox2target(batch_data)
-            if len(multi_scales) > 0:
-                batch_data = multi_scale_resize(batch_data)
-            if enable_multiscale_test:
-                batch_data = padding_multiscale_test(batch_data)
-        except Exception as e:
-            errmsg = "post-process failed with error: " + str(e)
-            logger.warn(errmsg)
-            raise e
+        # try:
+	batch_size = len(batch_data)
+	data_len = len(batch_data[0])
+	batch_data = []
+	for i in range(batch_size):
+	    data = []
+	    for j in range(data_len):
+		data.append(np.load('./output/{}_{}.npy'.format(i, j)))
+	    batch_data.append(tuple(data))
+	if is_padding:
+	    batch_data = padding_minibatch(batch_data)
+	if len(random_shapes) > 0:
+	    batch_data = random_shape(batch_data)
+	if len(downsample_ratios):
+	    batch_data = gtbbox2target(batch_data)
+	if len(multi_scales) > 0:
+	    batch_data = multi_scale_resize(batch_data)
+	if enable_multiscale_test:
+	    batch_data = padding_multiscale_test(batch_data)
+        # except Exception as e:
+        #     errmsg = "post-process failed with error: " + str(e)
+        #     logger.warn(errmsg)
+        #     raise e
 
         return batch_data
 
