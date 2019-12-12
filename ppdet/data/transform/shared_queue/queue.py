@@ -22,9 +22,11 @@ import six
 if six.PY3:
     import pickle
     from io import BytesIO as StringIO
+    from queue import Empty
 else:
     import cPickle as pickle
     from cStringIO import StringIO
+    from Queue import Empty
 
 import logging
 import traceback
@@ -87,6 +89,8 @@ class SharedQueue(Queue):
             buff = super(SharedQueue, self).get(**kwargs)
             data = buff.get()
             return pickle.load(StringIO(data))
+        except Empty as e:
+            raise e
         except Exception as e:
             stack_info = traceback.format_exc()
             err_msg = 'failed to get element from SharedQueue '\
