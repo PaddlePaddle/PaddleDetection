@@ -22,6 +22,7 @@ import sys
 
 import yaml
 import copy
+import collections
 
 from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
@@ -99,6 +100,27 @@ def load_config(file_path):
     return global_config
 
 
+def dict_merge(dct, merge_dct):
+    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
+    updating only top-level keys, dict_merge recurses down into dicts nested
+    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
+    ``dct``.
+
+    Args:
+        dct: dict onto which the merge is executed
+        merge_dct: dct merged into dct
+
+    Returns: dct
+    """
+    for k, v in merge_dct.iteritems():
+        if (k in dct and isinstance(dct[k], dict) and
+                isinstance(merge_dct[k], collections.Mapping)):
+            dict_merge(dct[k], merge_dct[k])
+        else:
+            dct[k] = merge_dct[k]
+    return dct
+
+
 def merge_config(config, another_cfg=None):
     """
     Merge config into global config or another_cfg.
@@ -109,13 +131,8 @@ def merge_config(config, another_cfg=None):
     Returns: global config
     """
     global global_config
-    b = another_cfg if another_cfg is not None else global_config
-    for key, value in config.items():
-        if isinstance(value, dict) and key in b:
-            b[key].update(value)
-        else:
-            b[key] = value
-    return b
+    dct = another_cfg if another_cfg is not None else global_config
+    return dict_merge(dct, config)
 
 
 def get_registered_modules():
