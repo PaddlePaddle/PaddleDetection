@@ -25,6 +25,7 @@ class Dataset(object):
 
     def __init__(self):
         self._epoch = -1
+        self._pos = 0
 
     def __next__(self):
         return self.next()
@@ -33,8 +34,8 @@ class Dataset(object):
         return self
 
     def __str__(self):
-        return "{}(fname:{}, epoch:{:d}, size:{:d}, pos:{:d})".format(
-            type(self).__name__, self._fname, self._epoch,
+        return "{}(epoch:{:d}, size:{:d}, pos:{:d})".format(
+            type(self).__name__, self._epoch,
             self.size(), self._pos)
 
     def next(self):
