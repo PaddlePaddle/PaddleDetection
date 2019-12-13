@@ -56,9 +56,17 @@ coverage.xml
 /docs/_build/
 
 *.json
+*.tar
 
 
 dataset/coco/annotations
 dataset/coco/train2017
 dataset/coco/val2017
 dataset/voc/VOCdevkit
+dataset/fruit/fruit-detection/
+dataset/voc/test.txt
+dataset/voc/trainval.txt
+dataset/wider_face/WIDER_test
+dataset/wider_face/WIDER_train
+dataset/wider_face/WIDER_val
+dataset/wider_face/wider_face_split
