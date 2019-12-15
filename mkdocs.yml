@@ -1,0 +1,15 @@
+site_name: PaddleDetection Docs
+nav:
+- Home: index.md
+- Installation: docs/INSTALL.md
+- Quick start: docs/QUICK_STARTED.md
+- Modle Zoo: docs/MODEL_ZOO.md
+- Deployment: 
+  - Export model: docs/EXPORT_MODEL.md
+theme: readthedocs
+
+markdown_extensions:
+  - pymdownx.arithmatex
+extra_javascript:
+  - mathjax-config.js
+  - MathJax.js?config=TeX-AMS-MML_HTMLorMML
