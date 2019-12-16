@@ -97,7 +97,7 @@ TrainReader:
     is_scale: false
     mean: [127.5, 127.5, 127.5]
     std: [127.502231, 127.502231, 127.502231]
-  batch_size: 64
+  batch_size: 32
   shuffle: true
   worker_num: 8
   bufsize: 32
@@ -125,7 +125,7 @@ EvalReader:
     is_scale: false
     mean: [127.5, 127.5, 127.5]
     std: [127.502231, 127.502231, 127.502231]
-  batch_size: 64
+  batch_size: 32
   worker_num: 8
   bufsize: 32
   use_multi_process: false

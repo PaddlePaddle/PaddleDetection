@@ -93,6 +93,7 @@ TrainReader:
       channel_first: True
   batch_size: 8
   shuffle: true
+  drop_last: true
   worker_num: 8
   bufsize: 32
   use_multi_process: true
@@ -124,6 +125,7 @@ EvalReader:
       to_bgr: false
       channel_first: True
   batch_size: 8
+  drop_empty: false
   worker_num: 8
   bufsize: 32
 

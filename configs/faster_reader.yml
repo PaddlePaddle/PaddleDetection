@@ -59,7 +59,7 @@ EvalReader:
   batch_size: 1
   shuffle: false
   drop_empty: false
-  #worker_num: 2
+  worker_num: 2
 
 TestReader:
   inputs_def:

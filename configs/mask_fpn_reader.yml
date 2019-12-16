@@ -68,6 +68,7 @@ EvalReader:
   batch_size: 1
   shuffle: false
   drop_last: false
+  drop_empty: false
   worker_num: 2
 
 TestReader:

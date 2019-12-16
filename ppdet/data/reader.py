@@ -316,6 +316,12 @@ class Reader(object):
         batch = []
         for sample in batch_samples:
             sample = self._sample_transforms(sample)
+            if drop_empty and 'gt_bbox' in sample:
+                if _has_empty(sample['gt_bbox']):
+                    #logger.warn('gt_bbox {} is empty or not valid in {}, '
+                    #   'drop this sample'.format(
+                    #    sample['im_file'], sample['gt_bbox']))
+                    continue
             batch.append(sample)
         if len(batch) > 0 and self._batch_transforms:
             batch = self._batch_transforms(batch)
