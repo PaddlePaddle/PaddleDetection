@@ -25,6 +25,8 @@ from . import blazenet
 from . import faceboxnet
 from . import cb_resnet
 from . import res2net
+from . import hrnet
+from . import hrfpn
 
 from .resnet import *
 from .resnext import *
@@ -37,3 +39,5 @@ from .blazenet import *
 from .faceboxnet import *
 from .cb_resnet import *
 from .res2net import *
+from .hrnet import *
+from .hrfpn import *

@@ -101,6 +101,7 @@ Advanced Features:
 
 #### 12/2019
 - Add Res2Net model.
+- Add HRNet model.
 
 #### 21/11/2019
 - Add CascadeClsAware RCNN model.

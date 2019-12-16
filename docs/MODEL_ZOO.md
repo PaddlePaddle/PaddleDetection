@@ -95,6 +95,13 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | Res2Net50-vd-FPN            | Mask         | True |     2     |   2x    |     -     |  43.5  |    38.4    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_dcnv2_1x.tar) |
 
 
+### HRNet
+| Backbone                | Type           | deformable Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
+| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
+| HRNetV2p_W18            | Faster         | False |     2     |   1x    |     -     |  36.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_1x.tar) |
+| HRNetV2p_W18            | Faster         | False |     2     |   2x    |     -     |  38.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_2x.tar) |
+
+
 #### Notes:
 - Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5` means adding `dcn` in resnet stage 3 to 5.
