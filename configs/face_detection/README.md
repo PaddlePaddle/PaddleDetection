@@ -1,5 +1,3 @@
-English | [简体中文](README_cn.md)
-
 # FaceDetection
 The goal of FaceDetection is to provide efficient and high-speed face detection solutions,
 including cutting-edge and classic models.
