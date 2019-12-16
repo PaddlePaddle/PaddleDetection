@@ -99,6 +99,9 @@ Advanced Features:
 
 ## Updates
 
+#### 12/2019
+- Add Res2Net model.
+
 #### 21/11/2019
 - Add CascadeClsAware RCNN model.
 - Add CBNet, ResNet200 and Non-local model.

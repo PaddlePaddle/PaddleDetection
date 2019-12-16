@@ -83,6 +83,14 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
+### Res2Net
+| 骨架网络             | 网络类型           | 加入deformable卷积    | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | Mask AP |                           下载                           |
+| :------------------- | :------------- | :-----: |:--------: | :-----: | :-----------: |:----: | :-----: | :----------------------------------------------------------: |
+| Res2Net50-FPN            | Faster         | 否 |     2     |   1x    |     -     |  39.5  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_res2net50_vb_26w_4s_fpn_1x.tar) |
+| Res2Net50-FPN            | Mask         | 否 |     2     |   2x    |     -     |  40.7  |    36.2    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vb_26w_4s_fpn_2x.tar) |
+| Res2Net50-vd-FPN            | Mask         | 否 |     2     |   2x    |     -     |  40.9  |    36.2    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_2x.tar) |
+| Res2Net50-vd-FPN            | Mask         | 是 |     2     |   2x    |     -     |  43.5  |    38.4    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_dcnv2_1x.tar) |
+
 
 #### 注意事项:
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
