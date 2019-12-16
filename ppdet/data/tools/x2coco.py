@@ -26,6 +26,10 @@ import numpy as np
 import PIL.ImageDraw
 
 
+label_to_num = {}
+categories_list = []
+labels_list = []
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -124,11 +128,8 @@ def get_bbox(height, width, points):
 
 def deal_json(ds_type, img_path, json_path):
     data_coco = {}
-    label_to_num = {}
     images_list = []
-    categories_list = []
     annotations_list = []
-    labels_list = []
     image_num = -1
     object_num = -1
     for img_file in os.listdir(img_path):
