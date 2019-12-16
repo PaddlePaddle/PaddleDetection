@@ -21,6 +21,11 @@ from __future__ import print_function
 
 import sys
 import six
+if six.PY3:
+    from queue import Empty
+else:
+    from Queue import Empty
+
 import uuid
 import logging
 import signal
@@ -31,15 +36,20 @@ logger = logging.getLogger(__name__)
 
 
 class EndSignal(object):
-    def __init__(self, errno=0, errmsg=''):
+    """ signal used to notify worker to exit
+    """
+
+    def __init__(self, id, errno=0, errmsg=''):
+        self.id = id
         self.errno = errno
         self.errmsg = errmsg
 
 
 class ParallelMap(object):
     """
-    Transform samples to mapped samples which is similar to 'basic.MappedDataset',
-    but multiple workers (threads or processes) will be used
+    Transform samples to mapped samples which is similar to 
+    'basic.MappedDataset', but multiple workers (threads or processes) 
+    will be used
 
     Notes:
         this class is not thread-safe
@@ -60,7 +70,6 @@ class ParallelMap(object):
                 "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (memsize)
             gb = memsize[:-1]
             self._memsize = int(gb) * 1024**3
-
         self._started = False
         self._source = source
         self._worker = worker
@@ -108,22 +117,24 @@ class ParallelMap(object):
         self._producer.daemon = True
 
         self._consumers = []
+        self._consumer_endsig = {}
         for i in range(consumer_num):
+            consumer_id = 'consumer-' + id + '-' + str(i)
             p = Worker(
                 target=self._consume,
-                args=('consumer-' + id + '_' + str(i), self._inq, self._outq,
-                      self._worker))
+                args=(consumer_id, self._inq, self._outq, self._worker))
             self._consumers.append(p)
             p.daemon = True
+            setattr(p, 'id', consumer_id)
 
         self._epoch = -1
         self._feeding_ev = Event()
         self._produced = 0  # produced sample in self._produce
         self._consumed = 0  # consumed sample in self.next
-        self._stopped_consumers = 0
 
     def _produce(self, id, source, inq):
         """Fetch data from source and feed it to 'inq' queue"""
+        endsig = EndSignal(id)
         while True:
             self._feeding_ev.wait()
             if self._exit:
@@ -135,33 +146,38 @@ class ParallelMap(object):
             except StopIteration:
                 self._souce_drained = True
                 self._feeding_ev.clear()
-                self._feeding_ev.wait()  # wait other guy to wake up me
-                logger.debug("producer[{}] starts new epoch".format(id))
+                self._feeding_ev.wait()
             except Exception as e:
-                msg = "producer[{}] failed with error: {}".format(id, str(e))
-                inq.put(EndSignal(-1, msg))
+                endsig.errno = -1
+                endsig.errmsg = "producer[{}] failed with error: {}" \
+                    .format(id, str(e))
+                inq.put(endsig)
                 break
-
-        logger.debug("producer[{}] exits".format(id))
 
     def _consume(self, id, inq, outq, worker):
         """Fetch data from 'inq', process it and put result to 'outq'"""
+        if self._use_process:
+            # handle SIGTERM signal to exit to prevent print stack frame
+            signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
+
+        endsig = EndSignal(id)
         while True:
             sample = inq.get()
             if isinstance(sample, EndSignal):
-                sample.errmsg += "[consumer[{}] exits]".format(id)
-                outq.put(sample)
-                logger.debug("end signal received, " +
-                             "consumer[{}] exits".format(id))
+                endsig.errno = sample.errno
+                endsig.errmsg = "consumer[{}] exits for reason[{}]" \
+                    .format(id, sample.errmsg)
+                outq.put(endsig)
                 break
 
             try:
                 result = worker(sample)
                 outq.put(result)
             except Exception as e:
-                stack_info = traceback.format_exc()
-                msg = 'failed to map consumer[%s], error: {}'.format(id, str(e))
-                outq.put(EndSignal(-1, msg))
+                endsig.errno = -2
+                endsig.errmsg = "consumer[{}] failed to map with error:[{}]" \
+                    .format(id, str(e))
+                outq.put(endsig)
                 break
 
     def drained(self):
@@ -176,6 +192,25 @@ class ParallelMap(object):
         for _ in range(len(self._consumers)):
             self._inq.put(EndSignal(0, "notify consumers to exit"))
 
+    def _consumer_healthy(self):
+        abnormal_num = 0
+        for w in self._consumers:
+            if not w.is_alive() and w.id not in self._consumer_endsig:
+                abnormal_num += 1
+                if self._worker_args['use_process']:
+                    errmsg = "consumer[{}] exit abnormally with exitcode[{}]" \
+                                .format(w.pid, w.exitcode)
+                else:
+                    errmsg = "consumer[{}] exit abnormally".format(w.ident)
+
+                logger.warn(errmsg)
+
+        if abnormal_num > 0:
+            logger.warn("{} consumers have exited abnormally!!!" \
+                .format(abnormal_num))
+
+        return abnormal_num == 0
+
     def next(self):
         """ get next transformed sample
         """
@@ -185,33 +220,47 @@ class ParallelMap(object):
         if self.drained():
             raise StopIteration()
 
-        while True:
-            sample = self._outq.get()
-            if isinstance(sample, EndSignal):
-                self._stopped_consumers += 1
-                if sample.errno != 0:
-                    logger.warn("consumer failed with error: {}".format(
-                        sample.errmsg))
+        while not self._exit:
+            try:
+                sample = self._outq.get(timeout=3)
+            except Empty as e:
+                if not self._consumer_healthy():
+                    raise StopIteration()
+                else:
+                    continue
 
-                if self._stopped_consumers < len(self._consumers):
+            if isinstance(sample, EndSignal):
+                self._consumer_endsig[sample.id] = sample
+                logger.warn("recv endsignal from outq with errmsg[{}]" \
+                    .format(sample.errmsg))
+
+                if len(self._consumer_endsig.keys()) < len(self._consumers):
                     self._inq.put(sample)
                 else:
-                    raise ValueError("all consumers exited, no more samples")
+                    self._exit = True
+                    raise StopIteration("all consumers exited, no more samples")
             else:
                 self._consumed += 1
                 return sample
 
+        raise StopIteration()
+
     def reset(self):
         """ reset for a new epoch of samples
         """
+        assert not self._exit, "cannot reset for already stopped dataset"
+
         if self._epoch < 0:
             self._epoch = 0
-            for p in self._consumers:
-                p.start()
+            for w in self._consumers:
+                w.start()
             self._producer.start()
         else:
+            assert self._consumer_healthy(), "cannot start another pass of data" \
+                " for some consumers exited abnormally before!!!"
+
             if not self.drained():
-                logger.warn("do not reset before epoch[%d] finishes".format(
+                logger.warn("reset before epoch[{}] finishes".format(
                     self._epoch))
                 self._produced = self._produced - self._consumed
             else:
@@ -219,7 +268,7 @@ class ParallelMap(object):
 
             self._epoch += 1
 
-        assert self._stopped_consumers == 0, "some consumers already exited," \
+        assert len(self._consumer_endsig.keys()) == 0, "some consumers already exited," \
             + " cannot start another epoch"
 
         self._source.reset()
@@ -230,9 +279,4 @@ class ParallelMap(object):
 
 # FIXME(dengkaipeng): fix me if you have better impliment
 # handle terminate reader process, do not print stack frame
-def _reader_exit(signum, frame):
-    logger.debug("Reader process exit.")
-    sys.exit()
-
-
-signal.signal(signal.SIGTERM, _reader_exit)
+signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())

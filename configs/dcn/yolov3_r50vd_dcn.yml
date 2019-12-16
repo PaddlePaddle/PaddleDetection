@@ -5,7 +5,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 20000
 metric: COCO
-pretrain_weights: /paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
 weights: output/yolov3_r50vd_dcn/model_final
 num_classes: 80
 

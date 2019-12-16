@@ -297,8 +297,8 @@ class ResizeImage(BaseOperator):
             im_scale_x = im_scale
             im_scale_y = im_scale
 
-            resize_w = np.round(im_scale_x * float(im_shape[1]))
-            resize_h = np.round(im_scale_y * float(im_shape[0]))
+            resize_w = im_scale_x * float(im_shape[1])
+            resize_h = im_scale_y * float(im_shape[0])
             im_info = [resize_h, resize_w, im_scale]
             if 'im_info' in sample and sample['im_info'][2] != 1.:
                 sample['im_info'] = np.append(
@@ -321,8 +321,12 @@ class ResizeImage(BaseOperator):
                 fy=im_scale_y,
                 interpolation=self.interp)
         else:
+            if self.max_size != 0:
+                raise TypeError(
+                    'If you set max_size to cap the maximum size of image,'
+                    'please set use_cv2 to True to resize the image.')
             im = Image.fromarray(im)
-            im = im.resize((resize_w, resize_h), self.interp)
+            im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
 
         sample['image'] = im
