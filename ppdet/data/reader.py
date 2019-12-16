@@ -184,8 +184,11 @@ class Reader(object):
         # data
         if inputs_def and inputs_def.get('multi_scale', False):
             from ppdet.modeling.architectures.input_helper import multiscale_def
-            _, ms_fields = multiscale_def(inputs_def['image_shape'],
-                                          inputs_def['num_scales'],
+            im_shape = inputs_def[
+                'image_shape'] if 'image_shape' in inputs_def else [
+                    3, None, None
+                ]
+            _, ms_fields = multiscale_def(im_shape, inputs_def['num_scales'],
                                           inputs_def['use_flip'])
             self._fields += ms_fields
         self._batch_size = batch_size
