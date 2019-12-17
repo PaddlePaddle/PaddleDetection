@@ -52,20 +52,25 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
         'dtype': 'float32',
         'lod_level': 0
     }
-    
+
     # target shape should be [N, 3, 6 + num_classes, H / downsample_ratio, W / downsample_ratio]
-    target_keys = sorted([k for k in feed_var_map.keys() if k.startswith('target')])
-    gt2target = [bt for bt in feed.batch_transforms if isinstance(bt, Gt2Target)]
+    target_keys = sorted(
+        [k for k in feed_var_map.keys() if k.startswith('target')])
+    gt2target = [
+        bt for bt in feed.batch_transforms if isinstance(bt, Gt2Target)
+    ]
     if len(gt2target) > 0:
         assert len(gt2target) == 1, "multiply Gt2Target is set"
         anchor_masks = gt2target[0].anchor_masks
         downsample_ratios = gt2target[0].downsample_ratios
         target_keys = target_keys[:len(anchor_masks)]
         num_classes = getattr(feed, 'num_classes', 80)
-        for tk, mask, downsample_ratio in zip(target_keys, anchor_masks, downsample_ratios):
-            feed_var_map[tk]['shape'] = [len(mask), 6 + num_classes,
-                                         image_shape[-2] // downsample_ratio,
-                                         image_shape[-1] // downsample_ratio]
+        for tk, mask, downsample_ratio in zip(target_keys, anchor_masks,
+                                              downsample_ratios):
+            feed_var_map[tk]['shape'] = [
+                len(mask), 6 + num_classes, image_shape[-2] // downsample_ratio,
+                image_shape[-1] // downsample_ratio
+            ]
 
     # tensor padding with 0 is used instead of LoD tensor when 
     # num_max_boxes is set

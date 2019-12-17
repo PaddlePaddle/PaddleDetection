@@ -139,8 +139,9 @@ def build_post_map(coarsest_stride=1,
             for mask, downsample_ratio in zip(anchor_masks, downsample_ratios):
                 grid_h = int(h / downsample_ratio)
                 grid_w = int(w / downsample_ratio)
-                target = np.zeros((len(mask), 6 + num_classes, grid_h, grid_w),
-                                   dtype=np.float32)
+                target = np.zeros(
+                    (len(mask), 6 + num_classes, grid_h, grid_w),
+                    dtype=np.float32)
                 for b in range(gt_bbox.shape[0]):
                     gx, gy, gw, gh = gt_bbox[b, :]
                     cls = gt_class[b]
@@ -152,8 +153,9 @@ def build_post_map(coarsest_stride=1,
                     best_iou = 0.
                     best_idx = -1
                     for an_idx in range(an_hw.shape[0]):
-                        iou = jaccard_overlap([0., 0., gw, gh],
-                                [0., 0., an_hw[an_idx, 0], an_hw[an_idx, 1]])
+                        iou = jaccard_overlap(
+                            [0., 0., gw, gh],
+                            [0., 0., an_hw[an_idx, 0], an_hw[an_idx, 1]])
                         if iou > best_iou:
                             best_iou = iou
                             best_idx = an_idx
@@ -168,15 +170,17 @@ def build_post_map(coarsest_stride=1,
                         # x, y, w, h, scale
                         target[best_n, 0, gj, gi] = gx * grid_w - gi
                         target[best_n, 1, gj, gi] = gy * grid_h - gj
-                        target[best_n, 2, gj, gi] = np.log(gw * w / anchors[best_idx][0])
-                        target[best_n, 3, gj, gi] = np.log(gh * h / anchors[best_idx][1])
+                        target[best_n, 2, gj, gi] = np.log(gw * w /
+                                                           anchors[best_idx][0])
+                        target[best_n, 3, gj, gi] = np.log(gh * h /
+                                                           anchors[best_idx][1])
                         target[best_n, 4, gj, gi] = 2.0 - gw * gh
 
                         # objectness record gt_score
                         target[best_n, 5, gj, gi] = score
 
                         # classification
-                        target[best_n, 6+cls, gj, gi] = 1.
+                        target[best_n, 6 + cls, gj, gi] = 1.
                 new_data.append(target)
             new_batch.append(new_data)
         return new_batch

@@ -34,12 +34,12 @@ from ppdet.data.transform.arrange_sample import (
     ArrangeTestSSD, ArrangeYOLO, ArrangeEvalYOLO, ArrangeTestYOLO)
 
 __all__ = [
-    'PadBatch', 'MultiScale', 'RandomShape', 'Gt2Target', 'PadMSTest', 'DataSet',
-    'CocoDataSet', 'DataFeed', 'TrainFeed', 'EvalFeed', 'FasterRCNNTrainFeed',
-    'MaskRCNNTrainFeed', 'FasterRCNNEvalFeed', 'MaskRCNNEvalFeed',
-    'FasterRCNNTestFeed', 'MaskRCNNTestFeed', 'SSDTrainFeed', 'SSDEvalFeed',
-    'SSDTestFeed', 'YoloTrainFeed', 'YoloEvalFeed', 'YoloTestFeed',
-    'create_reader'
+    'PadBatch', 'MultiScale', 'RandomShape', 'Gt2Target', 'PadMSTest',
+    'DataSet', 'CocoDataSet', 'DataFeed', 'TrainFeed', 'EvalFeed',
+    'FasterRCNNTrainFeed', 'MaskRCNNTrainFeed', 'FasterRCNNEvalFeed',
+    'MaskRCNNEvalFeed', 'FasterRCNNTestFeed', 'MaskRCNNTestFeed',
+    'SSDTrainFeed', 'SSDEvalFeed', 'SSDTestFeed', 'YoloTrainFeed',
+    'YoloEvalFeed', 'YoloTestFeed', 'create_reader'
 ]
 
 
@@ -210,7 +210,11 @@ class Gt2Target(object):
         class_num (int): class_num of dataset
     """
 
-    def __init__(self, anchors=[], anchor_masks=[], downsample_ratios=[], num_classes=0):
+    def __init__(self,
+                 anchors=[],
+                 anchor_masks=[],
+                 downsample_ratios=[],
+                 num_classes=0):
         super(Gt2Target, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
