@@ -120,8 +120,9 @@ def main():
 
             # YOLOv3 splited loss code need batch_size for calculation
             # set yolo_head.batch_size by batch_size in YoloTrainFeed here
-            if main_arch == "YOLOv3" and getattr(cfg, 'use_splited_loss', False):
-                model.yolo_head.batch_size = train_feed.batch_size
+            if main_arch == "YOLOv3" and getattr(cfg, 'use_splited_loss',
+                                                 False):
+                model.yolo_head.yolo_loss.batch_size = train_feed.batch_size
 
             if FLAGS.fp16:
                 assert (getattr(model.backbone, 'norm_type', None)

@@ -21,8 +21,8 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.losses.yolo_loss import YOLOv3CombinedLoss
 from ppdet.core.workspace import register
-from ppdet.modeling.losses.yolo_loss import yolov3_fine_grained_loss
 
 __all__ = ['YOLOv3Head']
 
@@ -35,23 +35,20 @@ class YOLOv3Head(object):
     Args:
         norm_decay (float): weight decay for normalization layer weights
         num_classes (int): number of output classes
-        ignore_thresh (float): threshold to ignore confidence loss
-        label_smooth (bool): whether to use label smoothing
         anchors (list): anchors
         anchor_masks (list): anchor masks
         nms (object): an instance of `MultiClassNMS`
     """
-    __inject__ = ['nms']
-    __shared__ = ['num_classes', 'weight_prefix_name', 'use_fine_grained_loss']
+    __inject__ = ['yolo_loss', 'nms']
+    __shared__ = ['num_classes', 'use_fine_grained_loss']
 
     def __init__(self,
                  norm_decay=0.,
                  num_classes=80,
-                 ignore_thresh=0.7,
-                 label_smooth=True,
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 yolo_loss="YOLOv3CombinedLoss",
                  nms=MultiClassNMS(
                      score_threshold=0.01,
                      nms_top_k=1000,
@@ -59,18 +56,17 @@ class YOLOv3Head(object):
                      nms_threshold=0.45,
                      background_label=-1).__dict__,
                  use_fine_grained_loss=False,
-                 batch_size=8,
                  weight_prefix_name=''):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
-        self.ignore_thresh = ignore_thresh
-        self.label_smooth = label_smooth
         self.anchor_masks = anchor_masks
         self._parse_anchors(anchors)
+        self.yolo_loss = yolo_loss
         self.nms = nms
-        self._use_fine_grained_loss = use_fine_grained_loss
-        self.batch_size = batch_size
         self.prefix_name = weight_prefix_name
+        if isinstance(yolo_loss, dict):
+            self.yolo_loss = YOLOv3CombinedLoss(**yolo_loss)
+        self.yolo_loss._use_fine_grained_loss = use_fine_grained_loss
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -257,35 +253,10 @@ class YOLOv3Head(object):
         """
         outputs = self._get_outputs(input, is_train=True)
 
-        if self._use_fine_grained_loss:
-            return yolov3_fine_grained_loss(outputs,
-                                            targets,
-                                            gt_box,
-                                            self.batch_size,
-                                            self.num_classes,
-                                            self.mask_anchors,
-                                            self.ignore_thresh)
-        
-        losses = []
-        downsample = 32
-        for i, output in enumerate(outputs):
-            anchor_mask = self.anchor_masks[i]
-            loss = fluid.layers.yolov3_loss(
-                x=output,
-                gt_box=gt_box,
-                gt_label=gt_label,
-                gt_score=gt_score,
-                anchors=self.anchors,
-                anchor_mask=anchor_mask,
-                class_num=self.num_classes,
-                ignore_thresh=self.ignore_thresh,
-                downsample_ratio=downsample,
-                use_label_smooth=self.label_smooth,
-                name=self.prefix_name + "yolo_loss" + str(i))
-            losses.append(fluid.layers.reduce_mean(loss))
-            downsample //= 2
-
-        return {'loss': sum(losses)}
+        return self.yolo_loss.get_loss(outputs, gt_box, gt_label, gt_score,
+                                       targets, self.anchors, self.anchor_masks,
+                                       self.mask_anchors, self.num_classes,
+                                       self.prefix_name)
 
     def get_prediction(self, input, im_size):
         """
