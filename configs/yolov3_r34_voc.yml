@@ -31,8 +31,9 @@ YOLOv3Head:
             [30, 61], [62, 45], [59, 119],
             [116, 90], [156, 198], [373, 326]]
   norm_decay: 0.
-  ignore_thresh: 0.7
-  label_smooth: false
+  yolo_loss:
+    ignore_thresh: 0.7
+    label_smooth: false
   nms:
     background_label: -1
     keep_top_k: 100

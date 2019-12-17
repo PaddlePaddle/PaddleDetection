@@ -203,14 +203,6 @@ def build_post_map(coarsest_stride=1,
 
     def _mapper(batch_data):
         try:
-            batch_size = len(batch_data)
-            data_len = len(batch_data[0])
-            batch_data = []
-            for i in range(batch_size):
-                data = []
-                for j in range(data_len):
-                    data.append(np.load('./output/{}_{}.npy'.format(i, j)))
-                batch_data.append(tuple(data))
             if is_padding:
                 batch_data = padding_minibatch(batch_data)
             if len(random_shapes) > 0:
