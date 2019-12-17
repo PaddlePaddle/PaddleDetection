@@ -368,11 +368,9 @@ def create_reader(cfg, max_iter=0):
                     yield _batch
                     n += 1
                 if max_iter > 0 and n == max_iter:
-                    reader.stop()
                     return
             reader.reset()
             if max_iter <= 0:
-                reader.stop()
                 return
 
     return _reader

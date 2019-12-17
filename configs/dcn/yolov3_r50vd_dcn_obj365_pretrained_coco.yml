@@ -148,7 +148,8 @@ TestReader:
       mean: [0.485, 0.456, 0.406]
       std: [0.229, 0.224, 0.225]
       is_scale: True
-      channel_first: True
+      is_channel_first: false
     - !Permute
       to_bgr: false
+      channel_first: True
   batch_size: 1

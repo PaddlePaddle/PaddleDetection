@@ -101,6 +101,7 @@ TrainReader:
     to_bgr: false
   batch_size: 1
   shuffle: true
+  mixup_epoch: -1
   worker_num: 4
   bufsize: 64
   use_multi_process: true
