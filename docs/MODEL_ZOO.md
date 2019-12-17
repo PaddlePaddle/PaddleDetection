@@ -91,21 +91,6 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 - `c3-c5` means adding `dcn` in resnet stage 3 to 5.
 - Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
 
-### Res2Net
-| Backbone                | Type           | deformable Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
-| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| Res2Net50-FPN            | Faster         | False |     2     |   1x    |     -     |  39.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_res2net50_vb_26w_4s_fpn_1x.tar) |
-| Res2Net50-FPN            | Mask         | False |     2     |   2x    |     -     |  40.7  |    36.2    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vb_26w_4s_fpn_2x.tar) |
-| Res2Net50-vd-FPN            | Mask         | False |     2     |   2x    |     -     |  40.9  |    36.2    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_2x.tar) |
-| Res2Net50-vd-FPN            | Mask         | True |     2     |   2x    |     -     |  43.5  |    38.4    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_dcnv2_1x.tar) |
-
-
-### HRNet
-| Backbone                | Type           | deformable Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
-| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| HRNetV2p_W18            | Faster         | False |     2     |   1x    |     -     |  36.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_1x.tar) |
-| HRNetV2p_W18            | Faster         | False |     2     |   2x    |     -     |  38.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_2x.tar) |
-
 
 ### Group Normalization
 | Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
