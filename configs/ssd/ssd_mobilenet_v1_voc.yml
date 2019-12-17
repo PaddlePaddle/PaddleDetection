@@ -65,27 +65,15 @@ TrainReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-  - !NormalizeBox {}
   - !RandomDistort
     brightness_lower: 0.875
     brightness_upper: 1.125
     is_order: true
-  - !ExpandImage
-    max_ratio: 4
-    mean: [127.5, 127.5, 127.5]
-    prob: 0.5
-  - !CropImage
-    avoid_no_bbox: true
-    batch_sampler:
-    - [1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]
-    satisfy_all: false
-    avoid_no_bbox: false
+  - !RandomExpand
+    fill_value: [127.5, 127.5, 127.5]
+  - !RandomCrop
+    allow_no_crop: false
+  - !NormalizeBox {}
   - !ResizeImage
     interp: 1
     target_size: 300
@@ -99,8 +87,9 @@ TrainReader:
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 32
   shuffle: true
+  drop_last: true
   worker_num: 8
-  bufsize: 32
+  bufsize: 16
   use_multi_process: true
 
 EvalReader:

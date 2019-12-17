@@ -325,6 +325,7 @@ class ResizeImage(BaseOperator):
                 raise TypeError(
                     'If you set max_size to cap the maximum size of image,'
                     'please set use_cv2 to True to resize the image.')
+            im = im.astype('uint8')
             im = Image.fromarray(im)
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)

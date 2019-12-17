@@ -73,26 +73,15 @@ TrainReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-  - !NormalizeBox {}
   - !RandomDistort
     brightness_lower: 0.875
     brightness_upper: 1.125
     is_order: true
-  - !ExpandImage
-    max_ratio: 4
-    mean: [123, 117, 104]
-    prob: 0.5
-  - !CropImage
-    avoid_no_bbox: true
-    batch_sampler:
-    - [1, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.1, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.3, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.5, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.7, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.9, 0.0]
-    - [1, 50, 0.3, 1.0, 0.5, 2.0, 0.0, 1.0]
-    satisfy_all: false
+  - !RandomExpand
+    fill_value: [123, 117, 104]
+  - !RandomCrop
+    allow_no_crop: true
+  - !NormalizeBox {}
   - !ResizeImage
     interp: 1
     target_size: 512
