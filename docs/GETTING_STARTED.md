@@ -77,7 +77,7 @@ list below can be viewed by `--help`
 
 - Training YOLOv3 with fine grained YOLOv3 loss built by Paddle OPs in python
 
-  In order to facilitate the redesign of YOLOv3 loss function, we also provide fine grained YOLOv3 loss function building in python code by common Paddle OPs instread of using `fluid.layers.yolov3_loss`,
+  In order to facilitate the redesign of YOLOv3 loss function, we also provide fine grained YOLOv3 loss function building in python code by common Paddle OPs instead of using `fluid.layers.yolov3_loss`,
   training YOLOv3 with python loss function as follows:
 
   ```bash
@@ -86,7 +86,7 @@ list below can be viewed by `--help`
                            -o use_fine_grained_loss=true
   ```
 
-  Fine grained YOLOv3 loss code is defined in `ppdet/modeling/anchor_heads/yolo_head.py`.
+  Fine grained YOLOv3 loss code is defined in `ppdet/modeling/losses/yolo_loss.py`.
 
 ##### NOTES
 

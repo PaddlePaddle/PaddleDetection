@@ -86,7 +86,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
                            -o use_fine_grained_loss=true
   ```
 
-  Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/anchor_heads/yolo_head.py`
+  Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/losses/yolo_loss.py`
 
 #### 提示
 
