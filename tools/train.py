@@ -118,8 +118,8 @@ def main():
             model = create(main_arch)
             train_loader, feed_vars = create_feed(train_feed)
 
-            # YOLOv3 splited loss code need batch_size for calculation
-            # set yolo_head.batch_size by batch_size in YoloTrainFeed here
+            # YOLOv3 splited loss code need batch_size for calculation set
+            # yolo_head.yolo_loss.batch_size by batch_size in YoloTrainFeed here
             if main_arch == "YOLOv3" and getattr(cfg, 'use_fine_grained_loss',
                                                  False):
                 model.yolo_head.yolo_loss.batch_size = train_feed.batch_size
