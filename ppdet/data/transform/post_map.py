@@ -148,7 +148,7 @@ def build_post_map(coarsest_stride=1,
                     if gw <= 0. or gh <= 0. or score <= 0.:
                         continue
 
-                    # find best match anchor
+                    # find best match anchor index
                     best_iou = 0.
                     best_idx = -1
                     for an_idx in range(an_hw.shape[0]):
@@ -158,13 +158,14 @@ def build_post_map(coarsest_stride=1,
                             best_iou = iou
                             best_idx = an_idx
 
-                    # find best match anchor
+                    # gtbox should be regresed in this layes if best match 
+                    # anchor index in anchor mask of this layer
                     if best_idx in mask:
                         best_n = mask.index(best_idx)
                         gi = int(gx * grid_w)
                         gj = int(gy * grid_h)
 
-                        # x, y, w, h
+                        # x, y, w, h, scale
                         target[best_n, 0, gj, gi] = gx * grid_w - gi
                         target[best_n, 1, gj, gi] = gy * grid_h - gj
                         target[best_n, 2, gj, gi] = np.log(gw * w / anchors[best_idx][0])
@@ -197,29 +198,29 @@ def build_post_map(coarsest_stride=1,
         return scaled_batch
 
     def _mapper(batch_data):
-        # try:
-	batch_size = len(batch_data)
-	data_len = len(batch_data[0])
-	batch_data = []
-	for i in range(batch_size):
-	    data = []
-	    for j in range(data_len):
-		data.append(np.load('./output/{}_{}.npy'.format(i, j)))
-	    batch_data.append(tuple(data))
-	if is_padding:
-	    batch_data = padding_minibatch(batch_data)
-	if len(random_shapes) > 0:
-	    batch_data = random_shape(batch_data)
-	if len(downsample_ratios):
-	    batch_data = gtbbox2target(batch_data)
-	if len(multi_scales) > 0:
-	    batch_data = multi_scale_resize(batch_data)
-	if enable_multiscale_test:
-	    batch_data = padding_multiscale_test(batch_data)
-        # except Exception as e:
-        #     errmsg = "post-process failed with error: " + str(e)
-        #     logger.warn(errmsg)
-        #     raise e
+        try:
+            batch_size = len(batch_data)
+            data_len = len(batch_data[0])
+            batch_data = []
+            for i in range(batch_size):
+                data = []
+                for j in range(data_len):
+                    data.append(np.load('./output/{}_{}.npy'.format(i, j)))
+                batch_data.append(tuple(data))
+            if is_padding:
+                batch_data = padding_minibatch(batch_data)
+            if len(random_shapes) > 0:
+                batch_data = random_shape(batch_data)
+            if len(downsample_ratios):
+                batch_data = gtbbox2target(batch_data)
+            if len(multi_scales) > 0:
+                batch_data = multi_scale_resize(batch_data)
+            if enable_multiscale_test:
+                batch_data = padding_multiscale_test(batch_data)
+        except Exception as e:
+            errmsg = "post-process failed with error: " + str(e)
+            logger.warn(errmsg)
+            raise e
 
         return batch_data
 

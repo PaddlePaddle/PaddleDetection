@@ -982,12 +982,14 @@ class YoloTrainFeed(DataFeed):
         self.num_classes = num_classes
         self.mode = 'TRAIN'
 
-        # if not use splited yolov3 loss, remove target input 
+        # if not use find grained yolov3 loss, remove target inputs
         if not use_fine_grained_loss:
             self.fields = [f for f in self.fields if not f.startswith('target')]
             self.batch_transforms = [bt for bt in batch_transforms \
                                         if not isinstance(bt, Gt2Target)]
         else:
+            # Gt2Target need num_classes as input, read it here,
+            # which is configurable by global config
             for bt in self.batch_transforms:
                 if isinstance(bt, Gt2Target):
                     bt.num_classes = num_classes
