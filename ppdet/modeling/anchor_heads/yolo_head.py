@@ -21,7 +21,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.modeling.ops import MultiClassNMS
-from ppdet.modeling.losses.yolo_loss import YOLOv3CombinedLoss
+from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 
 __all__ = ['YOLOv3Head']
@@ -40,7 +40,7 @@ class YOLOv3Head(object):
         nms (object): an instance of `MultiClassNMS`
     """
     __inject__ = ['yolo_loss', 'nms']
-    __shared__ = ['num_classes', 'use_fine_grained_loss']
+    __shared__ = ['num_classes', 'weight_prefix_name', 'use_fine_grained_loss']
 
     def __init__(self,
                  norm_decay=0.,
@@ -48,7 +48,7 @@ class YOLOv3Head(object):
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
-                 yolo_loss="YOLOv3CombinedLoss",
+                 yolo_loss="YOLOv3Loss",
                  nms=MultiClassNMS(
                      score_threshold=0.01,
                      nms_top_k=1000,
@@ -65,7 +65,7 @@ class YOLOv3Head(object):
         self.nms = nms
         self.prefix_name = weight_prefix_name
         if isinstance(yolo_loss, dict):
-            self.yolo_loss = YOLOv3CombinedLoss(**yolo_loss)
+            self.yolo_loss = YOLOv3Loss(**yolo_loss)
         self.yolo_loss._use_fine_grained_loss = use_fine_grained_loss
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)

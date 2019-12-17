@@ -19,11 +19,11 @@ from __future__ import print_function
 from paddle import fluid
 from ppdet.core.workspace import register
 
-__all__ = ['YOLOv3CombinedLoss']
+__all__ = ['YOLOv3Loss']
 
 
 @register
-class YOLOv3CombinedLoss(object):
+class YOLOv3Loss(object):
     """
     Combined loss for YOLOv3 network
 
