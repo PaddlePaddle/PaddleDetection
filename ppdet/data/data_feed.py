@@ -34,7 +34,7 @@ from ppdet.data.transform.arrange_sample import (
     ArrangeTestSSD, ArrangeYOLO, ArrangeEvalYOLO, ArrangeTestYOLO)
 
 __all__ = [
-    'PadBatch', 'MultiScale', 'RandomShape', 'Gt2Target', 'PadMSTest',
+    'PadBatch', 'MultiScale', 'RandomShape', 'Gt2YoloTarget', 'PadMSTest',
     'DataSet', 'CocoDataSet', 'DataFeed', 'TrainFeed', 'EvalFeed',
     'FasterRCNNTrainFeed', 'MaskRCNNTrainFeed', 'FasterRCNNEvalFeed',
     'MaskRCNNEvalFeed', 'FasterRCNNTestFeed', 'MaskRCNNTestFeed',
@@ -113,7 +113,7 @@ def create_reader(feed, max_iter=0, args_path=None, my_source=None):
     batch_transforms = feed.batch_transforms
     pad = [t for t in batch_transforms if isinstance(t, PadBatch)]
     rand_shape = [t for t in batch_transforms if isinstance(t, RandomShape)]
-    gt2target = [t for t in batch_transforms if isinstance(t, Gt2Target)]
+    gt2target = [t for t in batch_transforms if isinstance(t, Gt2YoloTarget)]
     multi_scale = [t for t in batch_transforms if isinstance(t, MultiScale)]
     pad_ms_test = [t for t in batch_transforms if isinstance(t, PadMSTest)]
 
@@ -199,7 +199,7 @@ class RandomShape(object):
 
 
 @serializable
-class Gt2Target(object):
+class Gt2YoloTarget(object):
     """
     Map gt to target
 
@@ -215,7 +215,7 @@ class Gt2Target(object):
                  anchor_masks=[],
                  downsample_ratios=[],
                  num_classes=0):
-        super(Gt2Target, self).__init__()
+        super(Gt2YoloTarget, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
@@ -943,7 +943,7 @@ class YoloTrainFeed(DataFeed):
                      RandomShape(sizes=[
                          320, 352, 384, 416, 448, 480, 512, 544, 576, 608
                      ]),
-                     Gt2Target(anchors=[[10, 13], [16, 30], [33, 23],
+                     Gt2YoloTarget(anchors=[[10, 13], [16, 30], [33, 23],
                                         [30, 61], [62, 45], [59, 119],
                                         [116, 90], [156, 198], [373, 326]],
                                anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
@@ -990,12 +990,12 @@ class YoloTrainFeed(DataFeed):
         if not use_fine_grained_loss:
             self.fields = [f for f in self.fields if not f.startswith('target')]
             self.batch_transforms = [bt for bt in batch_transforms \
-                                        if not isinstance(bt, Gt2Target)]
+                                        if not isinstance(bt, Gt2YoloTarget)]
         else:
-            # Gt2Target need num_classes as input, read it here,
+            # Gt2YoloTarget need num_classes as input, read it here,
             # which is configurable by global config
             for bt in self.batch_transforms:
-                if isinstance(bt, Gt2Target):
+                if isinstance(bt, Gt2YoloTarget):
                     bt.num_classes = num_classes
 
 

@@ -57,10 +57,10 @@ def create_feed(feed, iterable=False, sub_prog_feed=False):
     target_keys = sorted(
         [k for k in feed_var_map.keys() if k.startswith('target')])
     gt2target = [
-        bt for bt in feed.batch_transforms if isinstance(bt, Gt2Target)
+        bt for bt in feed.batch_transforms if isinstance(bt, Gt2YoloTarget)
     ]
     if len(gt2target) > 0:
-        assert len(gt2target) == 1, "multiply Gt2Target is set"
+        assert len(gt2target) == 1, "multiply Gt2YoloTarget is set"
         anchor_masks = gt2target[0].anchor_masks
         downsample_ratios = gt2target[0].downsample_ratios
         target_keys = target_keys[:len(anchor_masks)]
