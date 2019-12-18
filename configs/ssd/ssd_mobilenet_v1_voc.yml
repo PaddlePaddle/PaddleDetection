@@ -90,7 +90,7 @@ TrainReader:
   drop_last: true
   worker_num: 8
   bufsize: 16
-  use_multi_process: true
+  use_process: true
 
 EvalReader:
   inputs_def:
@@ -117,7 +117,7 @@ EvalReader:
   batch_size: 32
   worker_num: 8
   bufsize: 32
-  use_multi_process: false
+  use_process: false
 
 TestReader:
   inputs_def:

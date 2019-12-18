@@ -66,6 +66,7 @@ class DataSet(object):
             if data_dir:
                 self.dataset_dir = data_dir
             self.load_roidb_and_cname2cid()
+
         return self.roidbs
 
     def get_cname2cid(self):

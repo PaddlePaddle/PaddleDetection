@@ -185,7 +185,7 @@ TrainReader:
   worker_num: 4
   shuffle: true
   class_aware_sampling: true
-  use_multi_process: false
+  use_process: false
 
 EvalReader:
   inputs_def:

@@ -80,7 +80,7 @@ TrainReader:
     mean: [104, 117, 123]
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 8
-  use_multi_process: true
+  use_process: true
   shuffle: true
 
 EvalReader:

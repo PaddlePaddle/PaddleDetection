@@ -98,7 +98,7 @@ TrainReader:
   shuffle: true
   worker_num: 8
   bufsize: 32
-  use_multi_process: 8
+  use_process: 8
 
 EvalReader:
   inputs_def:

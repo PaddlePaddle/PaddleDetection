@@ -42,7 +42,7 @@ OptimizerBuilder:
 
 TrainReader:
   batch_size: 8
-  use_multi_process: True
+  use_process: True
   shuffle: true
   inputs_def:
     image_shape: [3, 640, 640]
@@ -85,7 +85,7 @@ TrainReader:
 
 EvalReader:
   batch_size: 1
-  use_multi_process: false
+  use_process: false
   inputs_def:
     fields: ['image', 'im_id']
   dataset:

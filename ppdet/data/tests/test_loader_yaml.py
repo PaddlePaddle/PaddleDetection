@@ -39,13 +39,11 @@ class TestReaderYAML(unittest.TestCase):
         """ setup
         """
         root_path = os.path.join(DATASET_HOME, 'coco')
-        image_path, _ = get_path(COCO_VAL_URL, root_path, COCO_VAL_MD5SUM)
-
-        anno_path, _ = get_path(COCO_ANNO_URL, root_path, COCO_ANNO_MD5SUM)
-
-        # json data
-        cls.anno_path = os.path.join(anno_path, 'instances_val2017.json')
-        cls.image_dir = image_path
+        _, _ = get_path(COCO_VAL_URL, root_path, COCO_VAL_MD5SUM)
+        _, _ = get_path(COCO_ANNO_URL, root_path, COCO_ANNO_MD5SUM)
+        cls.anno_path = 'annotations/instances_val2017.json'
+        cls.image_dir = 'val2017'
+        cls.root_path = root_path
 
     @classmethod
     def tearDownClass(cls):
@@ -55,9 +53,9 @@ class TestReaderYAML(unittest.TestCase):
     def test_loader_yaml(self):
         cfg_file = 'ppdet/data/tests/test.yml'
         cfg = load_config(cfg_file)
-        data_cfg = '[!COCODataSet {{image_dir: {0}, dataset_dir: null, ' \
-            'anno_path: {1}, sample_num: 10}}]'.format(
-                self.image_dir, self.anno_path)
+        data_cfg = '[!COCODataSet {{image_dir: {0}, dataset_dir: {1}, ' \
+            'anno_path: {2}, sample_num: 10}}]'.format(
+                self.image_dir, self.root_path, self.anno_path)
         dataset_ins = yaml.load(data_cfg, Loader=yaml.Loader)
         update_train_cfg = {'TrainReader': {'dataset': dataset_ins[0]}}
         update_test_cfg = {'EvalReader': {'dataset': dataset_ins[0]}}

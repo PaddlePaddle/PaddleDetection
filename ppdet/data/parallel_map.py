@@ -197,7 +197,7 @@ class ParallelMap(object):
         for w in self._consumers:
             if not w.is_alive() and w.id not in self._consumer_endsig:
                 abnormal_num += 1
-                if self._worker_args['use_process']:
+                if self._use_process:
                     errmsg = "consumer[{}] exit abnormally with exitcode[{}]" \
                                 .format(w.pid, w.exitcode)
                 else:

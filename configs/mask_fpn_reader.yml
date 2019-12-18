@@ -33,7 +33,7 @@ TrainReader:
   shuffle: true
   worker_num: 2
   drop_last: false
-  use_multi_process: false
+  use_process: false
 
 EvalReader:
   inputs_def:

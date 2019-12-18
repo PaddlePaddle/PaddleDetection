@@ -35,13 +35,11 @@ class TestReader(unittest.TestCase):
         """ setup
         """
         root_path = os.path.join(DATASET_HOME, 'coco')
-        image_path, _ = get_path(COCO_VAL_URL, root_path, COCO_VAL_MD5SUM)
-
-        anno_path, _ = get_path(COCO_ANNO_URL, root_path, COCO_ANNO_MD5SUM)
-
-        # json data
-        cls.anno_path = os.path.join(anno_path, 'instances_val2017.json')
-        cls.image_dir = image_path
+        _, _ = get_path(COCO_VAL_URL, root_path, COCO_VAL_MD5SUM)
+        _, _ = get_path(COCO_ANNO_URL, root_path, COCO_ANNO_MD5SUM)
+        cls.anno_path = 'annotations/instances_val2017.json'
+        cls.image_dir = 'val2017'
+        cls.root_path = root_path
 
     @classmethod
     def tearDownClass(cls):
@@ -50,7 +48,10 @@ class TestReader(unittest.TestCase):
 
     def test_loader(self):
         coco_loader = COCODataSet(
-            image_dir=self.image_dir, anno_path=self.anno_path, sample_num=10)
+            dataset_dir=self.root_path,
+            image_dir=self.image_dir,
+            anno_path=self.anno_path,
+            sample_num=10)
         sample_trans = [
             DecodeImage(to_rgb=True), ResizeImage(
                 target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
@@ -68,10 +69,6 @@ class TestReader(unittest.TestCase):
             sample_transforms=sample_trans,
             batch_transforms=batch_trans,
             batch_size=2,
-            fields=[
-                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
-                'gt_mask'
-            ],
             shuffle=True,
             drop_empty=True,
             inputs_def=inputs_def)()
@@ -107,7 +104,10 @@ class TestReader(unittest.TestCase):
 
     def test_loader_multi_threads(self):
         coco_loader = COCODataSet(
-            image_dir=self.image_dir, anno_path=self.anno_path, sample_num=10)
+            dataset_dir=self.root_path,
+            image_dir=self.image_dir,
+            anno_path=self.anno_path,
+            sample_num=10)
         sample_trans = [
             DecodeImage(to_rgb=True), ResizeImage(
                 target_size=800, max_size=1333, interp=1), Permute(to_bgr=False)
@@ -125,14 +125,10 @@ class TestReader(unittest.TestCase):
             sample_transforms=sample_trans,
             batch_transforms=batch_trans,
             batch_size=2,
-            fields=[
-                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
-                'gt_mask'
-            ],
             shuffle=True,
             drop_empty=True,
             worker_num=2,
-            use_multi_process=False,
+            use_process=False,
             bufsize=8,
             inputs_def=inputs_def)()
         for i in range(2):

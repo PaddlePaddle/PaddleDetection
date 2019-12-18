@@ -31,7 +31,7 @@ TrainReader:
   batch_size: 1
   shuffle: true
   worker_num: 2
-  use_multi_process: false
+  use_process: false
 
 EvalReader:
   inputs_def:
@@ -72,7 +72,6 @@ EvalReader:
 TestReader:
   inputs_def:
     # set image_shape if needed
-    # image_shape: [3,800,1333]
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder

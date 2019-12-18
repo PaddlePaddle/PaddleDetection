@@ -76,7 +76,6 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-
             inputs_def = cfg['EvalReader']['inputs_def']
             feed_vars, loader = model.build_inputs(**inputs_def)
             if multi_scale_test is None:

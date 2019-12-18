@@ -29,11 +29,10 @@ TrainReader:
   shuffle: true
   worker_num: 2
   drop_last: false
-  use_multi_process: false
+  use_process: false
 
 EvalReader:
   inputs_def:
-    image_shape: [3,800,1333]
     fields: ['image', 'im_info', 'im_id', 'im_shape']
     # for voc
     #fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']

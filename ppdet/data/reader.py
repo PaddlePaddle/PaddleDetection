@@ -170,12 +170,12 @@ class Reader(object):
             Default False.
         worker_num (int): number of working threads/processes.
             Default -1, meaning not use multi-threads/multi-processes.
-        use_multi_process (bool): whether use multi-processes or not.
+        use_process (bool): whether use multi-processes or not.
             It only works when worker_num > 1. Default False.
         bufsize (int): buffer size for multi-threads/multi-processes,
             please note, one instance in buffer is one batch data.
         memsize (str): size of shared memory used in result queue when
-            use_multi_process is true. Default 3G.
+            use_process is true. Default 3G.
         inputs_def (dict): network input definition use to get input fields,
             which is used to determine the order of returned data.
     """
@@ -191,7 +191,7 @@ class Reader(object):
                  mixup_epoch=-1,
                  class_aware_sampling=False,
                  worker_num=-1,
-                 use_multi_process=False,
+                 use_process=False,
                  bufsize=100,
                  memsize='3G',
                  inputs_def=None):
@@ -244,7 +244,7 @@ class Reader(object):
         if self._worker_num > -1:
             task = functools.partial(self.worker, self._drop_empty)
             self._parallel = ParallelMap(self, task, worker_num, bufsize,
-                                         use_multi_process, memsize)
+                                         use_process, memsize)
 
     def __call__(self):
         if self._worker_num > -1:
@@ -386,8 +386,9 @@ def create_reader(cfg, max_iter=0):
     if not isinstance(cfg, dict):
         raise TypeError("The config should be a dict when creating reader.")
 
+    reader = Reader(**cfg)()
+
     def _reader():
-        reader = Reader(**cfg)()
         n = 0
         while True:
             for _batch in reader:
