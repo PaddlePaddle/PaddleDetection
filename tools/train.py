@@ -310,12 +310,6 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
-    parser.add_argument(
         "--use_tb",
         type=bool,
         default=False,

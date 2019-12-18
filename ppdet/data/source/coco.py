@@ -53,10 +53,6 @@ class COCODataSet(DataSet):
         self.anno_path = anno_path
         self.sample_num = sample_num
         self.with_background = with_background
-        self.image_dir = image_dir
-        if dataset_dir:
-            self.image_dir = os.path.join(dataset_dir, image_dir)
-            self.anno_path = os.path.join(dataset_dir, anno_path)
         # `roidbs` is list of dict whose structure is:
         # {
         #     'im_file': im_fname, # image file name
@@ -74,9 +70,12 @@ class COCODataSet(DataSet):
         self.cname2cid = None
 
     def load_roidb_and_cname2cid(self):
-        assert self.anno_path.endswith('.json'), \
+        anno_path = os.path.join(self.dataset_dir, self.anno_path)
+        image_dir = os.path.join(self.dataset_dir, self.image_dir)
+
+        assert anno_path.endswith('.json'), \
             'invalid coco annotation file: ' + anno_path
-        coco = COCO(self.anno_path)
+        coco = COCO(anno_path)
         img_ids = coco.getImgIds()
         cat_ids = coco.getCatIds()
         records = []
@@ -134,8 +133,8 @@ class COCODataSet(DataSet):
                 if 'segmentation' in box:
                     gt_poly[i] = box['segmentation']
 
-            im_fname = os.path.join(self.image_dir,
-                                    im_fname) if self.image_dir else im_fname
+            im_fname = os.path.join(image_dir,
+                                    im_fname) if image_dir else im_fname
             coco_rec = {
                 'im_file': im_fname,
                 'im_id': np.array([img_id]),
@@ -155,7 +154,6 @@ class COCODataSet(DataSet):
             ct += 1
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
-        assert len(records) > 0, 'not found any coco record in %s' % (
-            self.anno_path)
-        logger.info('{} samples in file {}'.format(ct, self.anno_path))
+        assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
+        logger.info('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid

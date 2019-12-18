@@ -182,12 +182,6 @@ if __name__ == '__main__':
         default=False,
         help="Whether to re eval with already exists bbox.json or mask.json")
     parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
-    parser.add_argument(
         "-f",
         "--output_eval",
         default=None,

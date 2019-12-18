@@ -21,6 +21,7 @@ except Exception:
     from collections import Sequence
 
 from ppdet.core.workspace import register, serializable
+from ppdet.utils.download import get_dataset_path
 
 
 @serializable
@@ -33,7 +34,6 @@ class DataSet(object):
         image_dir (str): directory where image files are stored
         shuffle (bool): shuffle samples
     """
-    __source__ = 'RoiDbSource'
 
     def __init__(self,
                  dataset_dir=None,
@@ -44,9 +44,9 @@ class DataSet(object):
                  use_default_label=None,
                  **kwargs):
         super(DataSet, self).__init__()
-        self.image_dir = image_dir
         self.anno_path = anno_path
-        self.dataset_dir = dataset_dir
+        self.image_dir = image_dir if image_dir is not None else ''
+        self.dataset_dir = dataset_dir if dataset_dir is not None else ''
         self.sample_num = sample_num
         self.with_background = with_background
         self.use_default_label = use_default_label
@@ -61,6 +61,10 @@ class DataSet(object):
 
     def get_roidb(self):
         if not self.roidbs:
+            data_dir = get_dataset_path(self.dataset_dir, self.anno_path,
+                                        self.image_dir)
+            if data_dir:
+                self.dataset_dir = data_dir
             self.load_roidb_and_cname2cid()
         return self.roidbs
 
@@ -70,7 +74,7 @@ class DataSet(object):
         return self.cname2cid
 
     def get_anno(self):
-        return self.anno_path
+        return os.path.join(self.dataset_dir, self.anno_path)
 
     def get_imid2path(self):
         return self._imid2path
@@ -101,7 +105,9 @@ def _make_dataset(dir):
 class ImageFolder(DataSet):
     """
     Args:
-        image_dir(list|string): image path or image list file
+        dataset_dir (str): root directory for dataset.
+        image_dir(list|str): list of image folders or list of image files
+        anno_path (str): annotation file path.
         samples (int): number of samples to load, -1 means all
     """
 
@@ -117,34 +123,33 @@ class ImageFolder(DataSet):
         self.anno_path = anno_path
         self.sample_num = sample_num
         self.with_background = with_background
-        self.image_dir = image_dir
+        self.roidbs = None
         self._imid2path = {}
 
-        if dataset_dir:
-            self.image_dir = os.path.join(dataset_dir, image_dir)
-            self.anno_path = os.path.join(dataset_dir, anno_path)
-
-        if self.image_dir is not None:
+    def get_roidb(self):
+        if not self.roidbs:
             self.roidbs = self._load_images()
+        return self.roidbs
 
     def set_images(self, images):
         self.image_dir = images
         self.roidbs = self._load_images()
 
-    def parse(self):
+    def _parse(self):
         image_dir = self.image_dir
         if not isinstance(image_dir, Sequence):
             image_dir = [image_dir]
         images = []
         for im_dir in image_dir:
             if os.path.isdir(im_dir):
+                im_dir = os.path.join(self.dataset_dir, im_dir)
                 images.extend(_make_dataset(im_dir))
             elif os.path.isfile(im_dir) and _is_valid_file(im_dir):
                 images.append(im_dir)
         return images
 
     def _load_images(self):
-        images = self.parse()
+        images = self._parse()
         ct = 0
         records = []
         for image in images:

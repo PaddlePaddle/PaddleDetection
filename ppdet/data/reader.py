@@ -152,12 +152,39 @@ def batch_arrange(batch_samples, fields):
 @register
 @serializable
 class Reader(object):
+    """
+    Args:
+        dataset (DataSet): DataSet object
+        sample_transforms (list of BaseOperator): a list of sample transforms
+            operators.
+        batch_transforms (list of BaseOperator): a list of batch transforms
+            operators.
+        batch_size (int): batch size.
+        shuffle (bool): whether shuffle dataset or not. Default False.
+        drop_last (bool): whether drop last batch or not. Default False.
+        drop_empty (bool): whether drop sample when it's gt is empty or not.
+            Default True.
+        mixup_epoch (int): mixup epoc number. Default is -1, meaning
+            not use mixup.
+        class_aware_sampling (bool): whether use class-aware sampling or not.
+            Default False.
+        worker_num (int): number of working threads/processes.
+            Default -1, meaning not use multi-threads/multi-processes.
+        use_multi_process (bool): whether use multi-processes or not.
+            It only works when worker_num > 1. Default False.
+        bufsize (int): buffer size for multi-threads/multi-processes,
+            please note, one instance in buffer is one batch data.
+        memsize (str): size of shared memory used in result queue when
+            use_multi_process is true. Default 3G.
+        inputs_def (dict): network input definition use to get input fields,
+            which is used to determine the order of returned data.
+    """
+
     def __init__(self,
                  dataset=None,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=None,
-                 fields=None,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,

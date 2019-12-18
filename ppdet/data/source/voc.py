@@ -34,7 +34,7 @@ class VOCDataSet(DataSet):
     Args:
         dataset_dir (str): root directory for dataset.
         image_dir (str): directory for images.
-        anno_path (str): root directory for voc annotation data.
+        anno_path (str): voc annotation file path.
         sample_num (int): number of samples to load, -1 means all.
         use_default_label (bool): whether use the default mapping of
             label to integer index. Default True.
@@ -72,14 +72,12 @@ class VOCDataSet(DataSet):
         self.roidbs = None
         # 'cname2id' is a dict to map category name to class id
         self.cname2cid = None
-        self.image_dir = image_dir if image_dir else './'
         self.label_list = label_list
-        if dataset_dir:
-            self.image_dir = os.path.join(dataset_dir, self.image_dir)
-            self.anno_path = os.path.join(dataset_dir, self.anno_path)
 
     def load_roidb_and_cname2cid(self):
-        data_dir = os.path.dirname(self.anno_path)
+        anno_path = os.path.join(self.dataset_dir, self.anno_path)
+        image_dir = os.path.join(self.dataset_dir, self.image_dir)
+
         # mapping category name to class id
         # if with_background is True:
         #   background:0, first_class:1, second_class:2, ...
@@ -89,7 +87,7 @@ class VOCDataSet(DataSet):
         ct = 0
         cname2cid = {}
         if not self.use_default_label:
-            label_path = os.path.join(data_dir, self.label_list)
+            label_path = os.path.join(self.dataset_dir, self.label_list)
             if not os.path.exists(label_path):
                 raise ValueError("label_list {} does not exists".format(
                     label_path))
@@ -101,12 +99,12 @@ class VOCDataSet(DataSet):
         else:
             cname2cid = pascalvoc_label(self.with_background)
 
-        with open(self.anno_path, 'r') as fr:
+        with open(anno_path, 'r') as fr:
             while True:
                 line = fr.readline()
                 if not line:
                     break
-                img_file, xml_file = [os.path.join(data_dir, x) \
+                img_file, xml_file = [os.path.join(image_dir, x) \
                         for x in line.strip().split()[:2]]
                 if not os.path.isfile(xml_file):
                     continue
