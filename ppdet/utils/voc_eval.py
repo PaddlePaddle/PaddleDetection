@@ -21,7 +21,7 @@ import os
 import sys
 import numpy as np
 
-from ..data.source.voc_loader import pascalvoc_label
+from ..data.source.voc import pascalvoc_label
 from .map_utils import DetectionMAP
 from .coco_eval import bbox2out
 
@@ -69,13 +69,13 @@ def bbox_eval(results,
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
 
-        gt_boxes = t['gt_box'][0]
-        gt_labels = t['gt_label'][0]
+        gt_boxes = t['gt_bbox'][0]
+        gt_labels = t['gt_class'][0]
         difficults = t['is_difficult'][0] if not evaluate_difficult \
                             else None
 
-        if len(t['gt_box'][1]) == 0:
-            # gt_box, gt_label, difficult read as zero padded Tensor
+        if len(t['gt_bbox'][1]) == 0:
+            # gt_bbox, gt_class, difficult read as zero padded Tensor
             bbox_idx = 0
             for i in range(len(gt_boxes)):
                 gt_box = gt_boxes[i]
@@ -90,7 +90,7 @@ def bbox_eval(results,
                 bbox_idx += bbox_num
         else:
             # gt_box, gt_label, difficult read as LoDTensor
-            gt_box_lengths = t['gt_box'][1][0]
+            gt_box_lengths = t['gt_bbox'][1][0]
             bbox_idx = 0
             gt_box_idx = 0
             for i in range(len(bbox_lengths)):

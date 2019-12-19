@@ -19,21 +19,25 @@ import logging
 import random
 import copy
 
-import set_env
+from ppdet.data.parallel_map import ParallelMap
 
-import ppdet.data.transform as tf
-from ppdet.data.dataset import Dataset
 
-class MemorySource(Dataset):
+class MemorySource(object):
     """ memory data source for testing
     """
+
     def __init__(self, samples):
-        super(MemorySource, self).__init__()
         self._epoch = -1
 
         self._pos = -1
         self._drained = False
         self._samples = samples
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
 
     def next(self):
         if self._epoch < 0:
@@ -95,20 +99,20 @@ class TestDataset(unittest.TestCase):
     def test_transform_with_abnormal_worker(self):
         """ test dataset transform with abnormally exit process
         """
-        samples = list(range(1000))
-        ds = MemorySource(samples)
+        samples = list(range(20))
+        mem_sc = MemorySource(samples)
 
-        def _mapper(sample):
+        def _worker(sample):
             if sample == 3:
                 sys.exit(1)
 
             return 2 * sample
 
-        worker_conf = {'WORKER_NUM': 2, 'use_process': True}
-        mapped = tf.map(ds, _mapper, worker_conf)
+        test_worker = ParallelMap(
+            mem_sc, _worker, worker_num=2, use_process=True)
 
         ct = 0
-        for i, d in enumerate(mapped):
+        for i, d in enumerate(test_worker):
             ct += 1
             self.assertTrue(d / 2 in samples)
 
@@ -117,20 +121,20 @@ class TestDataset(unittest.TestCase):
     def test_transform_with_delay_worker(self):
         """ test dataset transform with delayed process
         """
-        samples = list(range(1000))
-        ds = MemorySource(samples)
+        samples = list(range(20))
+        mem_sc = MemorySource(samples)
 
-        def _mapper(sample):
+        def _worker(sample):
             if sample == 3:
                 time.sleep(30)
 
             return 2 * sample
 
-        worker_conf = {'WORKER_NUM': 2, 'use_process': True}
-        mapped = tf.map(ds, _mapper, worker_conf)
+        test_worker = ParallelMap(
+            mem_sc, _worker, worker_num=2, use_process=True)
 
         ct = 0
-        for i, d in enumerate(mapped):
+        for i, d in enumerate(test_worker):
             ct += 1
             self.assertTrue(d / 2 in samples)
 
@@ -140,4 +144,3 @@ class TestDataset(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig()
     unittest.main()
-

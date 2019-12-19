@@ -31,7 +31,6 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  是否边训练边测试  |  False  |    |
 |      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
-|   -d/--dataset_dir       |   train/eval   |  数据集路径, 同配置文件里的dataset_dir  |  None  |  `-d dataset/coco`  |
 |       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
 |       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |

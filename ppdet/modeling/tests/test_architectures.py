@@ -37,16 +37,18 @@ class TestFasterRCNN(unittest.TestCase):
 
     @prog_scope()
     def test_train(self):
-        train_feed = create(self.cfg['train_feed'])
         model = create(self.detector_type)
-        _, feed_vars = create_feed(train_feed)
+        inputs_def = self.cfg['TrainReader']['inputs_def']
+        inputs_def['image_shape'] = [3, None, None]
+        feed_vars, _ = model.build_inputs(**inputs_def)
         train_fetches = model.train(feed_vars)
 
     @prog_scope()
     def test_test(self):
-        test_feed = create(self.cfg['eval_feed'])
+        inputs_def = self.cfg['EvalReader']['inputs_def']
+        inputs_def['image_shape'] = [3, None, None]
         model = create(self.detector_type)
-        _, feed_vars = create_feed(test_feed)
+        feed_vars, _ = model.build_inputs(**inputs_def)
         test_fetches = model.eval(feed_vars)
 
 

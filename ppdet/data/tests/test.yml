@@ -1,0 +1,73 @@
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+    sample_num: 10
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !RandomFlipImage
+    is_mask_flip: true
+    is_normalized: false
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
+  batch_size: 1
+  shuffle: true
+  worker_num: 2
+  drop_last: false
+  use_process: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+    sample_num: 10
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: true
+  batch_size: 1
+  shuffle: false
+  drop_last: false

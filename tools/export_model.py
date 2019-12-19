@@ -82,11 +82,6 @@ def main():
 
     merge_config(FLAGS.opt)
 
-    if 'test_feed' not in cfg:
-        test_feed = create(main_arch + 'TestFeed')
-    else:
-        test_feed = create(cfg.test_feed)
-
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -97,7 +92,9 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(test_feed, iterable=True)
+            inputs_def = cfg['TestReader']['inputs_def']
+            inputs_def['use_dataloader'] = False
+            feed_vars, _ = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 

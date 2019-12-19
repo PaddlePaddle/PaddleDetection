@@ -11,17 +11,17 @@
     -   id: detect-private-key
         files: (?!.*paddle)^.*$
     -   id: end-of-file-fixer
-        files: \.md$
+        files: \.(md|yml)$
     -   id: trailing-whitespace
-        files: \.md$
+        files: \.(md|yml)$
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
     sha: v1.0.1
     hooks:
     -   id: forbid-crlf
-        files: \.md$
+        files: \.(md|yml)$
     -   id: remove-crlf
-        files: \.md$
+        files: \.(md|yml)$
     -   id: forbid-tabs
-        files: \.md$
+        files: \.(md|yml)$
     -   id: remove-tabs
-        files: \.md$
+        files: \.(md|yml)$

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # function:
-#   transform samples in 'source' using 'mapper'
+#   transform samples in 'source' using 'worker'
 
 from __future__ import absolute_import
 from __future__ import division
@@ -30,7 +30,7 @@ import uuid
 import logging
 import signal
 import threading
-from .transformer import ProxiedDataset
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -38,13 +38,14 @@ logger = logging.getLogger(__name__)
 class EndSignal(object):
     """ signal used to notify worker to exit
     """
+
     def __init__(self, id, errno=0, errmsg=''):
         self.id = id
         self.errno = errno
         self.errmsg = errmsg
 
 
-class ParallelMappedDataset(ProxiedDataset):
+class ParallelMap(object):
     """
     Transform samples to mapped samples which is similar to 
     'basic.MappedDataset', but multiple workers (threads or processes) 
@@ -54,45 +55,48 @@ class ParallelMappedDataset(ProxiedDataset):
         this class is not thread-safe
     """
 
-    def __init__(self, source, mapper, worker_args):
-        super(ParallelMappedDataset, self).__init__(source)
-        worker_args = {k.lower(): v for k, v in worker_args.items()}
-
-        args = {
-            'bufsize': 100,
-            'worker_num': 8,
-            'use_process': False,
-            'memsize': '3G'
-        }
-        args.update(worker_args)
-        if args['use_process'] and type(args['memsize']) is str:
-            assert args['memsize'][-1].lower() == 'g', \
-                "invalid param for memsize[{}], should " \
-                "be ended with 'G' or 'g'".format(args['memsize'])
-            gb = args['memsize'][:-1]
-            args['memsize'] = int(gb) * 1024 ** 3
-
-        self._worker_args = args
+    def __init__(self,
+                 source,
+                 worker,
+                 worker_num,
+                 bufsize=100,
+                 use_process=False,
+                 memsize='3G'):
+        self._worker_num = worker_num
+        self._bufsize = bufsize
+        self._use_process = use_process
+        if self._use_process and type(memsize) is str:
+            assert memsize[-1].lower() == 'g', \
+                "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (memsize)
+            gb = memsize[:-1]
+            self._memsize = int(gb) * 1024**3
         self._started = False
         self._source = source
-        self._mapper = mapper
+        self._worker = worker
         self._exit = False
         self._setup()
+        self._souce_drained = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.next()
 
     def _setup(self):
         """setup input/output queues and workers """
-        use_process = self._worker_args.get('use_process', False)
+        use_process = self._use_process
         if use_process and sys.platform == "win32":
             logger.info("Use multi-thread reader instead of "
                         "multi-process reader on Windows.")
             use_process = False
 
-        bufsize = self._worker_args['bufsize']
+        bufsize = self._bufsize
         if use_process:
             from .shared_queue import SharedQueue as Queue
             from multiprocessing import Process as Worker
             from multiprocessing import Event
-            memsize = self._worker_args['memsize']
+            memsize = self._memsize
             self._inq = Queue(bufsize, memsize=memsize)
             self._outq = Queue(bufsize, memsize=memsize)
         else:
@@ -105,7 +109,7 @@ class ParallelMappedDataset(ProxiedDataset):
             self._inq = Queue(bufsize)
             self._outq = Queue(bufsize)
 
-        consumer_num = self._worker_args['worker_num']
+        consumer_num = self._worker_num
         id = str(uuid.uuid4())[-3:]
         self._producer = threading.Thread(
             target=self._produce,
@@ -118,8 +122,7 @@ class ParallelMappedDataset(ProxiedDataset):
             consumer_id = 'consumer-' + id + '-' + str(i)
             p = Worker(
                 target=self._consume,
-                args=(consumer_id, self._inq, self._outq,
-                      self._mapper))
+                args=(consumer_id, self._inq, self._outq, self._worker))
             self._consumers.append(p)
             p.daemon = True
             setattr(p, 'id', consumer_id)
@@ -137,9 +140,11 @@ class ParallelMappedDataset(ProxiedDataset):
             if self._exit:
                 break
             try:
-                inq.put(source.next())
+                s = source.next()
+                inq.put(s)
                 self._produced += 1
             except StopIteration:
+                self._souce_drained = True
                 self._feeding_ev.clear()
                 self._feeding_ev.wait()
             except Exception as e:
@@ -149,11 +154,11 @@ class ParallelMappedDataset(ProxiedDataset):
                 inq.put(endsig)
                 break
 
-    def _consume(self, id, inq, outq, mapper):
+    def _consume(self, id, inq, outq, worker):
         """Fetch data from 'inq', process it and put result to 'outq'"""
-        if self._worker_args['use_process']:
+        if self._use_process:
             # handle SIGTERM signal to exit to prevent print stack frame
-            signal.signal(signal.SIGTERM, lambda signum, frame : sys.exit())
+            signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
 
         endsig = EndSignal(id)
         while True:
@@ -166,7 +171,7 @@ class ParallelMappedDataset(ProxiedDataset):
                 break
 
             try:
-                result = mapper(sample)
+                result = worker(sample)
                 outq.put(result)
             except Exception as e:
                 endsig.errno = -2
@@ -192,12 +197,12 @@ class ParallelMappedDataset(ProxiedDataset):
         for w in self._consumers:
             if not w.is_alive() and w.id not in self._consumer_endsig:
                 abnormal_num += 1
-                if self._worker_args['use_process']:
+                if self._use_process:
                     errmsg = "consumer[{}] exit abnormally with exitcode[{}]" \
                                 .format(w.pid, w.exitcode)
                 else:
                     errmsg = "consumer[{}] exit abnormally".format(w.ident)
-    
+
                 logger.warn(errmsg)
 
         if abnormal_num > 0:
@@ -255,7 +260,8 @@ class ParallelMappedDataset(ProxiedDataset):
                 " for some consumers exited abnormally before!!!"
 
             if not self.drained():
-                logger.warn("reset before epoch[{}] finishes".format(self._epoch))
+                logger.warn("reset before epoch[{}] finishes".format(
+                    self._epoch))
                 self._produced = self._produced - self._consumed
             else:
                 self._produced = 0
@@ -266,10 +272,11 @@ class ParallelMappedDataset(ProxiedDataset):
             + " cannot start another epoch"
 
         self._source.reset()
+        self._souce_drained = False
         self._consumed = 0
         self._feeding_ev.set()
 
 
 # FIXME(dengkaipeng): fix me if you have better impliment
 # handle terminate reader process, do not print stack frame
-signal.signal(signal.SIGTERM, lambda signum, frame : sys.exit())
+signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())

@@ -50,8 +50,8 @@ class RetinaNet(object):
         im = feed_vars['image']
         im_info = feed_vars['im_info']
         if mode == 'train':
-            gt_box = feed_vars['gt_box']
-            gt_label = feed_vars['gt_label']
+            gt_bbox = feed_vars['gt_bbox']
+            gt_class = feed_vars['gt_class']
             is_crowd = feed_vars['is_crowd']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -73,7 +73,7 @@ class RetinaNet(object):
         # retinanet head
         if mode == 'train':
             loss = self.retina_head.get_loss(body_feats, spatial_scale, im_info,
-                                             gt_box, gt_label, is_crowd)
+                                             gt_bbox, gt_class, is_crowd)
             total_loss = fluid.layers.sum(list(loss.values()))
             loss.update({'loss': total_loss})
             return loss
@@ -81,6 +81,43 @@ class RetinaNet(object):
             pred = self.retina_head.get_prediction(body_feats, spatial_scale,
                                                    im_info)
             return pred
+
+    def _inputs_def(self, image_shape):
+        im_shape = [None] + image_shape
+        # yapf: disable
+        inputs_def = {
+            'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
+            'im_info':  {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'im_id':    {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 0},
+            'im_shape': {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'is_difficult': {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
+        }
+        # yapf: enable
+        return inputs_def
+
+    def build_inputs(
+            self,
+            image_shape=[3, None, None],
+            fields=[
+                'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd'
+            ],  # for-train
+            use_dataloader=True,
+            iterable=False):
+        inputs_def = self._inputs_def(image_shape)
+        feed_vars = OrderedDict([(key, fluid.layers.data(
+            name=key,
+            shape=inputs_def[key]['shape'],
+            dtype=inputs_def[key]['dtype'],
+            lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        loader = fluid.io.DataLoader.from_generator(
+            feed_list=list(feed_vars.values()),
+            capacity=64,
+            use_double_buffer=True,
+            iterable=iterable) if use_dataloader else None
+        return feed_vars, loader
 
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
