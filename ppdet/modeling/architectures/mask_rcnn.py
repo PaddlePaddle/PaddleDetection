@@ -280,6 +280,7 @@ class MaskRCNN(object):
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'gt_mask':  {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 3}, # polygon coordinates
+            'is_difficult': {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
         }
         # yapf: enable
         return inputs_def
