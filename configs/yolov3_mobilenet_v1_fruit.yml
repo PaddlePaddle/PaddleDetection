@@ -13,6 +13,7 @@ pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mob
 weights: output/yolov3_mobilenet_v1_fruit/best_model
 num_classes: 3
 finetune_exclude_pretrained_params: ['yolo_output']
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: MobileNet

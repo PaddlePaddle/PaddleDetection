@@ -12,6 +12,7 @@ map_type: 11point
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
 weights: output/yolov3_mobilenet_v1_voc/model_final
 num_classes: 20
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: MobileNet

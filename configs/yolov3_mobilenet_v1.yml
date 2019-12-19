@@ -11,6 +11,7 @@ metric: COCO
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
 weights: output/yolov3_mobilenet_v1/model_final
 num_classes: 80
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: MobileNet

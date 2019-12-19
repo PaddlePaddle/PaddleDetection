@@ -12,6 +12,7 @@ map_type: 11point
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 weights: output/yolov3_r34_voc/model_final
 num_classes: 20
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: ResNet

@@ -11,6 +11,7 @@ metric: COCO
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_obj365_pretrained.tar 
 weights: output/yolov3_r50vd_dcn_obj365_pretrained_coco/model_final
 num_classes: 80
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: ResNet

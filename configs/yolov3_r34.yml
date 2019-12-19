@@ -11,6 +11,7 @@ metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 weights: output/yolov3_r34/model_final
 num_classes: 80
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: ResNet
