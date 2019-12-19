@@ -1,7 +1,4 @@
 architecture: FasterRCNN
-train_feed: FasterRCNNTrainFeed
-eval_feed: FasterRCNNEvalFeed
-test_feed: FasterRCNNTestFeed
 max_iters: 260000
 snapshot_iter: 10000
 use_gpu: true
@@ -106,34 +103,4 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-FasterRCNNTrainFeed:
-  # batch size per device
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    image_dir: train2017
-    annotation: annotations/instances_train2017.json
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
-
-FasterRCNNEvalFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
-    image_dir: val2017
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
-
-FasterRCNNTestFeed:
-  batch_size: 1
-  dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
+_READER_: 'faster_fpn_reader.yml'

@@ -32,6 +32,7 @@ import logging
 import random
 import math
 import numpy as np
+
 import cv2
 from PIL import Image, ImageEnhance
 
@@ -182,10 +183,10 @@ class MultiscaleTestResize(BaseOperator):
         base_name_list = ['image']
         origin_ims['image'] = im
         if self.use_flip:
-            sample['flip_image'] = im[:, ::-1, :]
-            base_name_list.append('flip_image')
-            origin_ims['flip_image'] = sample['flip_image']
-        im_info = []
+            sample['image_flip'] = im[:, ::-1, :]
+            base_name_list.append('image_flip')
+            origin_ims['image_flip'] = sample['image_flip']
+
         for base_name in base_name_list:
             im_scale = float(self.origin_target_size) / float(im_size_min)
             # Prevent the biggest axis from being more than max_size
@@ -203,8 +204,12 @@ class MultiscaleTestResize(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
-            im_info.extend([resize_h, resize_w, im_scale])
+
             sample[base_name] = im_resize
+            info_name = 'im_info' if base_name == 'image' else 'im_info_image_flip'
+            sample[base_name] = im_resize
+            sample[info_name] = np.array(
+                [resize_h, resize_w, im_scale], dtype=np.float32)
             for i, size in enumerate(self.target_size):
                 im_scale = float(size) / float(im_size_min)
                 if np.round(im_scale * im_size_max) > self.max_size:
@@ -220,10 +225,15 @@ class MultiscaleTestResize(BaseOperator):
                     fx=im_scale_x,
                     fy=im_scale_y,
                     interpolation=self.interp)
-                im_info.extend([resize_h, resize_w, im_scale])
+
+                im_info = [resize_h, resize_w, im_scale]
+                # hard-code here, must be consistent with
+                # ppdet/modeling/architectures/input_helper.py
                 name = base_name + '_scale_' + str(i)
+                info_name = 'im_info_' + name
                 sample[name] = im_resize
-        sample['im_info'] = np.array(im_info, dtype=np.float32)
+                sample[info_name] = np.array(
+                    [resize_h, resize_w, im_scale], dtype=np.float32)
         return sample
 
 
@@ -315,6 +325,7 @@ class ResizeImage(BaseOperator):
                 raise TypeError(
                     'If you set max_size to cap the maximum size of image,'
                     'please set use_cv2 to True to resize the image.')
+            im = im.astype('uint8')
             im = Image.fromarray(im)
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
@@ -383,34 +394,44 @@ class RandomFlipImage(BaseOperator):
             sample: the image, bounding box and segmentation part
                     in sample are flipped.
         """
-        gt_bbox = sample['gt_bbox']
-        im = sample['image']
-        if not isinstance(im, np.ndarray):
-            raise TypeError("{}: image is not a numpy array.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError("{}: image is not 3-dimensional.".format(self))
-        height, width, _ = im.shape
-        if np.random.uniform(0, 1) < self.prob:
-            im = im[:, ::-1, :]
-            if gt_bbox.shape[0] == 0:
-                return sample
-            oldx1 = gt_bbox[:, 0].copy()
-            oldx2 = gt_bbox[:, 2].copy()
-            if self.is_normalized:
-                gt_bbox[:, 0] = 1 - oldx2
-                gt_bbox[:, 2] = 1 - oldx1
-            else:
-                gt_bbox[:, 0] = width - oldx2 - 1
-                gt_bbox[:, 2] = width - oldx1 - 1
-            if gt_bbox.shape[0] != 0 and (gt_bbox[:, 2] < gt_bbox[:, 0]).all():
-                m = "{}: invalid box, x2 should be greater than x1".format(self)
-                raise BboxError(m)
-            sample['gt_bbox'] = gt_bbox
-            if self.is_mask_flip and len(sample['gt_poly']) != 0:
-                sample['gt_poly'] = self.flip_segms(sample['gt_poly'], height,
-                                                    width)
-            sample['flipped'] = True
-            sample['image'] = im
+
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+            height, width, _ = im.shape
+            if np.random.uniform(0, 1) < self.prob:
+                im = im[:, ::-1, :]
+                if gt_bbox.shape[0] == 0:
+                    return sample
+                oldx1 = gt_bbox[:, 0].copy()
+                oldx2 = gt_bbox[:, 2].copy()
+                if self.is_normalized:
+                    gt_bbox[:, 0] = 1 - oldx2
+                    gt_bbox[:, 2] = 1 - oldx1
+                else:
+                    gt_bbox[:, 0] = width - oldx2 - 1
+                    gt_bbox[:, 2] = width - oldx1 - 1
+                if gt_bbox.shape[0] != 0 and (
+                        gt_bbox[:, 2] < gt_bbox[:, 0]).all():
+                    m = "{}: invalid box, x2 should be greater than x1".format(
+                        self)
+                    raise BboxError(m)
+                sample['gt_bbox'] = gt_bbox
+                if self.is_mask_flip and len(sample['gt_poly']) != 0:
+                    sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
+                                                        height, width)
+                sample['flipped'] = True
+                sample['image'] = im
+        sample = samples if batch_input else samples[0]
         return sample
 
 
@@ -444,22 +465,31 @@ class NormalizeImage(BaseOperator):
             1.(optional) Scale the image to [0,1]
             2. Each pixel minus mean and is divided by std
         """
-        for k in sample.keys():
-            if 'image' in k:
-                im = sample[k]
-                im = im.astype(np.float32, copy=False)
-                if self.is_channel_first:
-                    mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
-                    std = np.array(self.std)[:, np.newaxis, np.newaxis]
-                else:
-                    mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-                    std = np.array(self.std)[np.newaxis, np.newaxis, :]
-                if self.is_scale:
-                    im = im / 255.0
-                im -= mean
-                im /= std
-                sample[k] = im
-        return sample
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            for k in sample.keys():
+                # hard code
+                if k.startswith('image'):
+                    im = sample[k]
+                    im = im.astype(np.float32, copy=False)
+                    if self.is_channel_first:
+                        mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
+                        std = np.array(self.std)[:, np.newaxis, np.newaxis]
+                    else:
+                        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+                        std = np.array(self.std)[np.newaxis, np.newaxis, :]
+                    if self.is_scale:
+                        im = im / 255.0
+                    im -= mean
+                    im /= std
+                    sample[k] = im
+        if not batch_input:
+            samples = samples[0]
+        return samples
 
 
 @register_op
@@ -899,17 +929,26 @@ class Permute(BaseOperator):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
-        assert 'image' in sample, "image data not found"
-        for k in sample.keys():
-            if 'image' in k:
-                im = sample[k]
-                if self.channel_first:
-                    im = np.swapaxes(im, 1, 2)
-                    im = np.swapaxes(im, 1, 0)
-                if self.to_bgr:
-                    im = im[[2, 1, 0], :, :]
-                sample[k] = im
-        return sample
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            assert 'image' in sample, "image data not found"
+            for k in sample.keys():
+                # hard code
+                if k.startswith('image'):
+                    im = sample[k]
+                    if self.channel_first:
+                        im = np.swapaxes(im, 1, 2)
+                        im = np.swapaxes(im, 1, 0)
+                    if self.to_bgr:
+                        im = im[[2, 1, 0], :, :]
+                    sample[k] = im
+        if not batch_input:
+            samples = samples[0]
+        return samples
 
 
 @register_op
@@ -1233,6 +1272,7 @@ class RandomExpand(BaseOperator):
         sample['image'] = canvas
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
+
         return sample
 
 
@@ -1361,3 +1401,63 @@ class RandomCrop(BaseOperator):
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
+
+
+@register_op
+class PadBox(BaseOperator):
+    def __init__(self, num_max_boxes=50):
+        """
+        Pad zeros to bboxes if number of bboxes is less than num_max_boxes.
+        Args:
+            num_max_boxes (int): the max number of bboxes
+        """
+        self.num_max_boxes = num_max_boxes
+        super(PadBox, self).__init__()
+
+    def __call__(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        gt_num = min(self.num_max_boxes, len(bbox))
+        num_max = self.num_max_boxes
+        fields = context['fields'] if context else []
+        pad_bbox = np.zeros((num_max, 4), dtype=np.float32)
+        if gt_num > 0:
+            pad_bbox[:gt_num, :] = bbox[:gt_num, :]
+        sample['gt_bbox'] = pad_bbox
+        if 'gt_class' in fields:
+            pad_class = np.zeros((num_max), dtype=np.int32)
+            if gt_num > 0:
+                pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
+            sample['gt_class'] = pad_class
+        if 'gt_score' in fields:
+            pad_score = np.zeros((num_max), dtype=np.float32)
+            if gt_num > 0:
+                pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
+            sample['gt_score'] = pad_score
+        # in training, for example in op ExpandImage,
+        # the bbox and gt_class is expandded, but the difficult is not,
+        # so, judging by it's length
+        if 'is_difficult' in fields:
+            pad_diff = np.zeros((num_max), dtype=np.int32)
+            if gt_num > 0:
+                pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
+            sample['difficult'] = pad_diff
+        return sample
+
+
+@register_op
+class BboxXYXY2XYWH(BaseOperator):
+    """
+    Convert bbox XYXY format to XYWH format.
+    """
+
+    def __init__(self):
+        super(BboxXYXY2XYWH, self).__init__()
+
+    def __call__(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
+        bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
+        return sample

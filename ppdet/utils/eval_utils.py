@@ -23,8 +23,8 @@ import time
 
 import paddle.fluid as fluid
 
-from ppdet.utils.voc_eval import bbox_eval as voc_bbox_eval
-from ppdet.utils.post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
+from .voc_eval import bbox_eval as voc_bbox_eval
+from .post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
 
 __all__ = ['parse_fetches', 'eval_run', 'eval_results', 'json_eval_results']
 
@@ -41,7 +41,7 @@ def parse_fetches(fetches, prog=None, extra_keys=None):
     for k, v in fetches.items():
         if hasattr(v, 'name'):
             keys.append(k)
-            v.persistable = True
+            #v.persistable = True
             values.append(v.name)
         else:
             cls.append(v)
@@ -174,19 +174,19 @@ def eval_run(exe,
 
 
 def eval_results(results,
-                 feed,
                  metric,
                  num_classes,
                  resolution=None,
                  is_bbox_normalized=False,
                  output_directory=None,
-                 map_type='11point'):
+                 map_type='11point',
+                 dataset=None):
     """Evaluation for evaluation program results"""
     box_ap_stats = []
     if metric == 'COCO':
         from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
-        anno_file = getattr(feed.dataset, 'annotation', None)
-        with_background = getattr(feed, 'with_background', True)
+        anno_file = dataset.get_anno()
+        with_background = dataset.with_background
         if 'proposal' in results[0]:
             output = 'proposal.json'
             if output_directory:
@@ -224,13 +224,13 @@ def eval_results(results,
     return box_ap_stats
 
 
-def json_eval_results(feed, metric, json_directory=None):
+def json_eval_results(metric, json_directory=None, dataset=None):
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
     """
     assert metric == 'COCO'
     from ppdet.utils.coco_eval import cocoapi_eval
-    anno_file = getattr(feed.dataset, 'annotation', None)
+    anno_file = dataset.get_anno()
     json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
     if json_directory:
         assert os.path.exists(

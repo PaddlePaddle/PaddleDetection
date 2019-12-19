@@ -19,7 +19,7 @@ from __future__ import print_function
 import os
 import numpy as np
 
-from ppdet.data.source.widerface_loader import widerface_label
+from ppdet.data.source.widerface import widerface_label
 from ppdet.utils.coco_eval import bbox2out
 
 import logging
