@@ -99,7 +99,7 @@ class TestDataset(unittest.TestCase):
     def test_transform_with_abnormal_worker(self):
         """ test dataset transform with abnormally exit process
         """
-        samples = list(range(50))
+        samples = list(range(20))
         mem_sc = MemorySource(samples)
 
         def _worker(sample):
@@ -121,7 +121,7 @@ class TestDataset(unittest.TestCase):
     def test_transform_with_delay_worker(self):
         """ test dataset transform with delayed process
         """
-        samples = list(range(50))
+        samples = list(range(20))
         mem_sc = MemorySource(samples)
 
         def _worker(sample):
