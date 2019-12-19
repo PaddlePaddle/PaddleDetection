@@ -34,22 +34,23 @@ class YOLOv3Loss(object):
         use_fine_grained_loss (bool): whether use fine grained YOLOv3 loss
                                       instead of fluid.layers.yolov3_loss
     """
+    __shared__ = ['use_fine_grained_loss']
 
     def __init__(self,
                  batch_size=8,
                  ignore_thresh=0.7,
                  label_smooth=True,
                  use_fine_grained_loss=False):
-        self.batch_size = batch_size
+        self._batch_size = batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
         self._use_fine_grained_loss = use_fine_grained_loss
 
-    def get_loss(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
+    def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
                  anchor_masks, mask_anchors, num_classes, prefix_name):
         if self._use_fine_grained_loss:
             return self._get_fine_grained_loss(
-                outputs, targets, gt_box, self.batch_size, num_classes,
+                outputs, targets, gt_box, self._batch_size, num_classes,
                 mask_anchors, self._ignore_thresh)
         else:
             losses = []
@@ -125,7 +126,7 @@ class YOLOv3Loss(object):
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
 
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
-                output, obj, tobj, gt_box, self.batch_size, anchors,
+                output, obj, tobj, gt_box, self._batch_size, anchors,
                 num_classes, downsample, self._ignore_thresh)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)

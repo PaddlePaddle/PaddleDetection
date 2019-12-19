@@ -40,7 +40,7 @@ class YOLOv3Head(object):
         nms (object): an instance of `MultiClassNMS`
     """
     __inject__ = ['yolo_loss', 'nms']
-    __shared__ = ['num_classes', 'weight_prefix_name', 'use_fine_grained_loss']
+    __shared__ = ['num_classes', 'weight_prefix_name']
 
     def __init__(self,
                  norm_decay=0.,
@@ -55,7 +55,6 @@ class YOLOv3Head(object):
                      keep_top_k=100,
                      nms_threshold=0.45,
                      background_label=-1).__dict__,
-                 use_fine_grained_loss=False,
                  weight_prefix_name=''):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
@@ -64,9 +63,6 @@ class YOLOv3Head(object):
         self.yolo_loss = yolo_loss
         self.nms = nms
         self.prefix_name = weight_prefix_name
-        if isinstance(yolo_loss, dict):
-            self.yolo_loss = YOLOv3Loss(**yolo_loss)
-        self.yolo_loss._use_fine_grained_loss = use_fine_grained_loss
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -253,10 +249,10 @@ class YOLOv3Head(object):
         """
         outputs = self._get_outputs(input, is_train=True)
 
-        return self.yolo_loss.get_loss(outputs, gt_box, gt_label, gt_score,
-                                       targets, self.anchors, self.anchor_masks,
-                                       self.mask_anchors, self.num_classes,
-                                       self.prefix_name)
+        return self.yolo_loss(outputs, gt_box, gt_label, gt_score, targets,
+                              self.anchors, self.anchor_masks,
+                              self.mask_anchors, self.num_classes,
+                              self.prefix_name)
 
     def get_prediction(self, input, im_size):
         """

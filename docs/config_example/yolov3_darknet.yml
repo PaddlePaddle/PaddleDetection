@@ -68,14 +68,8 @@ YOLOv3Head:
             [116, 90], [156, 198], [373, 326]]
   # L2 weight decay factor of batch normalization layer
   norm_decay: 0.
-  # define config of YOLOv3 loss
-  yolo_loss:
-    # Ignore threshold for yolo_loss layer, 0.7 by default.
-    # Objectness loss will be ignored if a predcition bbox overlap a gtbox over ignore_thresh.
-    ignore_thresh: 0.7
-    # Whether use label smooth in yolo_loss layer
-    # It is recommended to set as true when only num_classes is very big
-    label_smooth: true
+  # use YOLOv3Loss, which will be defined in following YOLOv3Loss segmentation.
+  yolo_loss: YOLOv3Loss
   # fluid.layers.multiclass_nms
   # Non-max suppress for output prediction boxes, see multiclass_nms for following parameters.
   #   1. Select detection bounding boxes with high scores larger than score_threshold.
@@ -95,6 +89,18 @@ YOLOv3Head:
     normalized: false
     # Threshold to filter out bounding boxes with low confidence score. 
     score_threshold: 0.01
+
+YOLOv3Loss:
+  # training batch size, this will be used when use_fine_grained_loss is set as True.
+  # ATTENTION: this should be same as batch size defined in YoloTrainFeed in fine
+  # grained loss mode.
+  batch_size: 8
+  # Ignore threshold for yolo_loss layer, 0.7 by default.
+  # Objectness loss will be ignored if a predcition bbox overlap a gtbox over ignore_thresh.
+  ignore_thresh: 0.7
+  # Whether use label smooth in yolo_loss layer
+  # It is recommended to set as true when only num_classes is very big
+  label_smooth: false
 
 # Learning rate configuration
 LearningRate:
