@@ -37,6 +37,22 @@ __all__ = ['CBResNet']
 @serializable
 class CBResNet(object):
     """
+    CBNet, see https://arxiv.org/abs/1909.03625
+    Args:
+        depth (int): ResNet depth, should be 18, 34, 50, 101, 152.
+        freeze_at (int): freeze the backbone at which stage
+        norm_type (str): normalization type, 'bn'/'sync_bn'/'affine_channel'
+        freeze_norm (bool): freeze normalization layers
+        norm_decay (float): weight decay for normalization layer weights
+        variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
+        feature_maps (list): index of stages whose feature maps are returned
+        dcn_v2_stages (list): index of stages who select deformable conv v2
+        nonlocal_stages (list): index of stages who select nonlocal networks
+        repeat_num (int): number of repeat for backbone
+    Attention:
+        1. Here we set the ResNet as the base backbone.
+        2. All the pretraned params are copied from corresponding names,
+           but with different names to avoid name refliction.
     """
 
     def __init__(self,
