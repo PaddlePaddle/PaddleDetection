@@ -44,7 +44,6 @@ class YOLOv3Head(object):
     __shared__ = ['num_classes', 'weight_prefix_name']
 
     def __init__(self,
-                 asff=False,
                  norm_decay=0.,
                  num_classes=80,
                  ignore_thresh=0.7,
@@ -58,6 +57,9 @@ class YOLOv3Head(object):
                      keep_top_k=100,
                      nms_threshold=0.45,
                      background_label=-1).__dict__,
+                 aspp=False,
+                 asff=False,
+                 dropblock=False,
                  weight_prefix_name=''):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
@@ -68,6 +70,8 @@ class YOLOv3Head(object):
         self.nms = nms
         self.prefix_name = weight_prefix_name
         self.asff = asff
+        self.aspp = aspp
+        self.dropblock = dropblock
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -112,7 +116,7 @@ class YOLOv3Head(object):
     def _adaptively_spatial_feature_fusion(self, level, input0, input1, input2, rfb=False, is_test=True, name=None):
         inter_dim = [512, 256, 256]
         inter_dim = inter_dim[level]
-        output_dim = 1
+        output_dim = 0
         if level == 0:
             output_dim = 1024
             level0 = input0
@@ -162,6 +166,14 @@ class YOLOv3Head(object):
                     name='{}.asff.level2'.format(name))
         elif level == 2:
             output_dim = 256
+            input2 = self._conv_bn(
+                    input2,
+                    inter_dim,
+                    filter_size=3,
+                    stride=1,
+                    padding=1,
+                    is_test=is_test,
+                    name='{}.asff.level2.expand'.format(name))
             level0_compressed = self._conv_bn(
                     input0,
                     inter_dim,
@@ -178,7 +190,7 @@ class YOLOv3Head(object):
 
         compress_dim = 8 if rfb else 16
 
-        level0 = self._conv_bn(
+        level0_t = self._conv_bn(
                 level0,
                 compress_dim,
                 filter_size=1,
@@ -186,7 +198,7 @@ class YOLOv3Head(object):
                 padding=0,
                 is_test=is_test,
                 name='{}.compress.level0'.format(name))
-        level1 = self._conv_bn(
+        level1_t = self._conv_bn(
                 level1,
                 compress_dim,
                 filter_size=1,
@@ -194,7 +206,7 @@ class YOLOv3Head(object):
                 padding=0,
                 is_test=is_test,
                 name='{}.compress.level1'.format(name))
-        level2 = self._conv_bn(
+        level2_t = self._conv_bn(
                 level2,
                 compress_dim,
                 filter_size=1,
@@ -202,7 +214,7 @@ class YOLOv3Head(object):
                 padding=0,
                 is_test=is_test,
                 name='{}.compress.level2'.format(name))
-        level_all = fluid.layers.concat(input=[level0, level1, level2], axis=1)
+        level_all = fluid.layers.concat(input=[level0_t, level1_t, level2_t], axis=1)
         level_all = fluid.layers.conv2d(
             input=level_all,
             num_filters=3,
@@ -212,7 +224,7 @@ class YOLOv3Head(object):
             act=None,
             param_attr=ParamAttr(name=name + ".attention.weights"),
             bias_attr=False)
-        level_weight = fluid.layers.softmax(level_all, use_cudnn=False)
+        level_weight = fluid.layers.softmax(level_all, use_cudnn=False, axis=1)
         level0_weighted = fluid.layers.slice(level_weight, [1], starts=[0], ends=[1])
         level1_weighted = fluid.layers.slice(level_weight, [1], starts=[1], ends=[2])
         level2_weighted = fluid.layers.slice(level_weight, [1], starts=[2], ends=[3])
@@ -228,6 +240,58 @@ class YOLOv3Head(object):
                 name='{}.expand'.format(name))
         return output
 
+    def _calculate_gamma(self, x, block_size=7, keep_prob=0.9):
+        input_shape = fluid.layers.shape(x)
+        feat_shape_tmp = fluid.layers.slice(input_shape, [0], [3], [4])
+        feat_shape_tmp = fluid.layers.cast(feat_shape_tmp, dtype="float32")
+        feat_shape_t = fluid.layers.reshape(feat_shape_tmp, [1, 1, 1, 1])
+        feat_area = fluid.layers.pow(feat_shape_t, factor=2)
+
+        block_shape_t = fluid.layers.fill_constant(shape=[1, 1, 1, 1], value=block_size, dtype='float32')
+        block_area = fluid.layers.pow(block_shape_t, factor=2)
+
+        useful_shape_t = feat_shape_t - block_shape_t + 1
+        useful_area = fluid.layers.pow(useful_shape_t, factor=2)
+
+        upper_t = feat_area * (1 - keep_prob)
+        bottom_t = block_area * useful_area
+        out = upper_t / bottom_t
+        return out
+
+    def _drop_block(self, x, gamma=None, block_size=7, is_test=True):
+        if is_test:
+            return x
+        if gamma is None:
+            gamma = self._calculate_gamma(x)
+        else:
+            gamma = fluid.layers.fill_constant(shape=[1, 1, 1, 1], dtype='float32', value=gamma)
+
+        input_shape = fluid.layers.shape(x)
+        p = fluid.layers.expand_as(gamma, x)
+
+        input_shape_tmp = fluid.layers.cast(input_shape, dtype="int64")
+        random_matrix = fluid.layers.uniform_random(input_shape_tmp, dtype='float32', min=0.0, max=1.0)
+        one_zero_m = fluid.layers.less_than(random_matrix, p)
+        one_zero_m.stop_gradient = True
+        one_zero_m = fluid.layers.cast(one_zero_m, dtype="float32")
+
+        mask_flag = fluid.layers.pool2d(one_zero_m, pool_size=block_size, pool_type='max', pool_stride=1, pool_padding=block_size//2)
+        
+        ones_like_m = fluid.layers.ones_like(one_zero_m)
+        mask = fluid.layers.elementwise_sub(ones_like_m, mask_flag)
+
+        elem_numel = fluid.layers.reduce_prod(input_shape)
+        elem_numel = fluid.layers.cast(elem_numel, dtype="float32")
+        elem_numel_tmp = fluid.layers.reshape(elem_numel, [1, 1, 1, 1])
+        elem_numel_m = fluid.layers.expand_as(elem_numel_tmp, x)
+
+        elem_sum = fluid.layers.reduce_sum(mask)
+        elem_sum_tmp = fluid.layers.cast(elem_sum, dtype="float32")
+        elem_sum_tmp = fluid.layers.reshape(elem_sum_tmp, [1, 1, 1, 1])
+        elem_sum_m = fluid.layers.expand_as(elem_sum_tmp, x)
+
+        out = x * mask * elem_numel_m / elem_sum_m
+        return out
 
     def _detection_block(self, input, channel, is_test=True, name=None):
         assert channel % 2 == 0, \
@@ -244,6 +308,16 @@ class YOLOv3Head(object):
                 padding=0,
                 is_test=is_test,
                 name='{}.{}.0'.format(name, j))
+            if self.aspp and channel == 512 and j == 1:
+                conv = self._aspp_module(conv, is_test=is_test, name="aspp")
+                conv = self._conv_bn(
+                   conv,
+                   512,
+                   filter_size=1,
+                   stride=1,
+                   padding=0,
+                   is_test=is_test,
+                   name='{}.aspp.conv'.format(name, j))
             conv = self._conv_bn(
                 conv,
                 channel * 2,
@@ -252,6 +326,12 @@ class YOLOv3Head(object):
                 padding=1,
                 is_test=is_test,
                 name='{}.{}.1'.format(name, j))
+            if self.dropblock and j == 0 and channel != 512:
+                conv = self._drop_block(conv, is_test=is_test)
+
+        if self.dropblock and channel == 512:
+            conv = self._drop_block(conv, is_test=is_test)
+
         route = self._conv_bn(
             conv,
             channel,
@@ -297,6 +377,57 @@ class YOLOv3Head(object):
                 assert mask < anchor_num, "anchor mask index overflow"
                 self.mask_anchors[-1].extend(anchors[mask])
 
+    def _aspp_module(self, input, is_test=True, name=""):
+        conv1 = self._conv_bn(
+                input,
+                ch_out=512,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name=name+".0")
+        conv2 = self._conv_bn(
+                conv1,
+                ch_out=1024,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name=name+".1")
+        conv3 = self._conv_bn(
+                conv2,
+                ch_out=512,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                is_test=is_test,
+                name=name+".2")
+        output1 = conv3
+        output2 = fluid.layers.pool2d(
+                input=conv3,
+                pool_size=5,
+                pool_stride=1,
+                pool_padding=2,
+                ceil_mode=False,
+                pool_type='max')
+        output3 = fluid.layers.pool2d(
+                input=conv3,
+                pool_size=9,
+                pool_stride=1,
+                pool_padding=4,
+                ceil_mode=False,
+                pool_type='max')
+        output4 = fluid.layers.pool2d(
+                input=conv3,
+                pool_size=13,
+                pool_stride=1,
+                pool_padding=6,
+                ceil_mode=False,
+                pool_type='max')
+        output = fluid.layers.concat(input=[output1, output2, output3, output4], axis=1)
+        return output
+
+
     def _get_outputs(self, input, is_train=True):
         """
         Get YOLOv3 head output
@@ -310,10 +441,12 @@ class YOLOv3Head(object):
         """
 
         outputs = []
+        routes = []
         tips = []
 
         # get last out_layer_num blocks in reverse order
         out_layer_num = len(self.anchor_masks)
+
         blocks = input[-1:-out_layer_num - 1:-1]
 
         route = None
@@ -325,6 +458,7 @@ class YOLOv3Head(object):
                 channel=512 // (2**i),
                 is_test=(not is_train),
                 name=self.prefix_name + "yolo_block.{}".format(i))
+            routes.append(route)
             tips.append(tip)
 
             if i < len(blocks) - 1:
@@ -340,12 +474,14 @@ class YOLOv3Head(object):
                 # upsample
                 route = self._upsample(route)
 
-        for i in range(len(tips)):
+        for i in range(len(routes)):
             if self.asff:
                 tip = self._adaptively_spatial_feature_fusion(
-                    i, tips[0], tips[1], tips[2], is_test=(not is_train), 
+                    i, routes[0], routes[1], routes[2], is_test=(not is_train), 
                     name="level{}".format(i))
             # out channel number = mask_num * (5 + class_num)
+            else:
+                tip = tips[i]
             num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
             block_out = fluid.layers.conv2d(
                 input=tip,
