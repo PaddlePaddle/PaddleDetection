@@ -39,17 +39,17 @@ multi-GPU training.
 
 Supported Architectures:
 
-|                     | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG  |
-| ------------------- | :----: | ----------------------------: | :--------: | :---: | :-------: | :-----: | :--: |
-| Faster R-CNN        |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Faster R-CNN + FPN  |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Mask R-CNN          |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Mask R-CNN + FPN    |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |
-| Cascade Faster-RCNN |   ✓    |                             ✓ |     ✓      |   ✗   |     ✗     |    ✗    |  ✗   |
-| Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |    ✗    |  ✗   |
-| RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |    ✗    |  ✗   |
-| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✓    |  ✗   |
-| SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✗    |  ✓   |
+|                     | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG  | HRNet | Res2Net |
+| ------------------- | :----: | ----------------------------: | :--------: | :---: | :-------: | :-----: | :--: | :--:  | :--:    |
+| Faster R-CNN        |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
+| Faster R-CNN + FPN  |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |  ✓    |  ✓      |
+| Mask R-CNN          |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
+| Mask R-CNN + FPN    |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✓      |
+| Cascade Faster-RCNN |   ✓    |                             ✓ |     ✓      |   ✗   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
+| Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
+| RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
+| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✓    |  ✗   |  ✗    |  ✗      |
+| SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✗    |  ✓   |  ✗    |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
 
@@ -77,7 +77,7 @@ Advanced Features:
 
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
 - [Face detection models](configs/face_detection/README.md)
-- [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios. 
+- [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios.
 - [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 41.4% and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
 - [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)

@@ -30,5 +30,5 @@
 
 | Backbone                | Type           | deformable Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
 | :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| HRNetV2p_W18            | Faster         | False |     2     |   1x    |     -     |  36.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_1x.tar) |
-| HRNetV2p_W18            | Faster         | False |     2     |   2x    |     -     |  38.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_2x.tar) |
+| HRNetV2p_W18            | Faster         | False |     2     |   1x    |     17.509     |  36.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_1x.tar) |
+| HRNetV2p_W18            | Faster         | False |     2     |   2x    |     17.509     |  38.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_hrnetv2p_w18_2x.tar) |

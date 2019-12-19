@@ -88,6 +88,14 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 - 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
 
 
+### HRNet
+* 详情见[HRNet模型库](../configs/hrnet/README.md)。
+
+
+### Res2Net
+* 详情见[Res2Net模型库](../configs/res2net/README.md)。
+
+
 ### Group Normalization
 | 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |
 | :------------------- | :------------- |:--------: | :-----: | :----: | :-----: | :----------------------------------------------------------: |

@@ -92,6 +92,14 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 - Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
 
 
+### HRNet
+* See more details in [HRNet model zoo](../configs/hrnet/README.md)。
+
+
+### Res2Net
+* See more details in [Res2Net model zoo](../configs/res2net/README.md)。
+
+
 ### Group Normalization
 | Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
 | :------------------- | :------------- | :-----: | :-----: | :----: | :-----: | :----------------------------------------------------------: |
