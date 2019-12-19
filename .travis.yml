@@ -1,7 +1,5 @@
 language: cpp
 cache: ccache
-  directories:
-    - $HOME/.ccache
 sudo: required
 dist: trusty
 services:
