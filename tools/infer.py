@@ -38,14 +38,14 @@ set_paddle_flags(
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
-from ppdet.data.data_feed import create_reader
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
+
+from ppdet.data.reader import create_reader
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -110,13 +110,10 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
-    if 'test_feed' not in cfg:
-        test_feed = create(main_arch + 'TestFeed')
-    else:
-        test_feed = create(cfg.test_feed)
+    dataset = cfg.TestReader['dataset']
 
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
-    test_feed.dataset.add_images(test_images)
+    dataset.set_images(test_images)
 
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -127,11 +124,13 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            loader, feed_vars = create_feed(test_feed, iterable=True)
+            inputs_def = cfg['TestReader']['inputs_def']
+            inputs_def['iterable'] = True
+            feed_vars, loader = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
-    reader = create_reader(test_feed)
+    reader = create_reader(cfg.TestReader)
     loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
@@ -158,9 +157,10 @@ def main():
     if cfg.metric == "WIDERFACE":
         from ppdet.utils.widerface_eval_utils import bbox2out, get_category_info
 
-    anno_file = getattr(test_feed.dataset, 'annotation', None)
-    with_background = getattr(test_feed, 'with_background', True)
-    use_default_label = getattr(test_feed, 'use_default_label', False)
+    anno_file = dataset.get_anno()
+    with_background = dataset.with_background
+    use_default_label = dataset.use_default_label
+
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
@@ -177,7 +177,7 @@ def main():
         tb_image_step = 0
         tb_image_frame = 0  # each frame can display ten pictures at most. 
 
-    imid2path = reader.imid2path
+    imid2path = dataset.get_imid2path()
     for iter_id, data in enumerate(loader()):
         outs = exe.run(infer_prog,
                        feed=data,

@@ -59,9 +59,9 @@ class CascadeBBoxAssigner(object):
         ]
         outs = fluid.layers.generate_proposal_labels(
             rpn_rois=input_rois,
-            gt_classes=feed_vars['gt_label'],
+            gt_classes=feed_vars['gt_class'],
             is_crowd=feed_vars['is_crowd'],
-            gt_boxes=feed_vars['gt_box'],
+            gt_boxes=feed_vars['gt_bbox'],
             im_info=feed_vars['im_info'],
             batch_size_per_im=self.batch_size_per_im,
             fg_thresh=self.fg_thresh[curr_stage],
@@ -71,5 +71,6 @@ class CascadeBBoxAssigner(object):
             use_random=self.use_random,
             class_nums=self.class_nums if self.class_aware else 2,
             is_cls_agnostic=not self.class_aware,
-            is_cascade_rcnn=True if curr_stage > 0 and not self.class_aware else False)
+            is_cascade_rcnn=True
+            if curr_stage > 0 and not self.class_aware else False)
         return outs

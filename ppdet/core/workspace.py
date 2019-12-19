@@ -22,6 +22,7 @@ import sys
 
 import yaml
 import copy
+import collections
 
 from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
@@ -65,6 +66,8 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
+READER_KEY = '_READER_'
+
 
 def load_config(file_path):
     """
@@ -77,25 +80,59 @@ def load_config(file_path):
     """
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
+
+    cfg = AttrDict()
     with open(file_path) as f:
-        merge_config(yaml.load(f, Loader=yaml.Loader))
+        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+
+    if READER_KEY in cfg:
+        reader_cfg = cfg[READER_KEY]
+        if reader_cfg.startswith("~"):
+            reader_cfg = os.path.expanduser(reader_cfg)
+        if not reader_cfg.startswith('/'):
+            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
+
+        with open(reader_cfg) as f:
+            merge_config(yaml.load(f, Loader=yaml.Loader))
+        del cfg[READER_KEY]
+
+    merge_config(cfg)
     return global_config
 
 
-def merge_config(config):
+def dict_merge(dct, merge_dct):
+    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
+    updating only top-level keys, dict_merge recurses down into dicts nested
+    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
+    ``dct``.
+
+    Args:
+        dct: dict onto which the merge is executed
+        merge_dct: dct merged into dct
+
+    Returns: dct
     """
-    Merge config into global config.
+    for k, v in merge_dct.items():
+        if (k in dct and isinstance(dct[k], dict) and
+                isinstance(merge_dct[k], collections.Mapping)):
+            dict_merge(dct[k], merge_dct[k])
+        else:
+            dct[k] = merge_dct[k]
+    return dct
+
+
+def merge_config(config, another_cfg=None):
+    """
+    Merge config into global config or another_cfg.
 
     Args:
         config (dict): Config to be merged.
 
     Returns: global config
     """
-    for key, value in config.items():
-        if isinstance(value, dict) and key in global_config:
-            global_config[key].update(value)
-        else:
-            global_config[key] = value
+    global global_config
+    dct = another_cfg if another_cfg is not None else global_config
+    return dict_merge(dct, config)
 
 
 def get_registered_modules():

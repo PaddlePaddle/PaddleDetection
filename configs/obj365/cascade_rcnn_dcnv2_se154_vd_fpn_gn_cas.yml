@@ -1,7 +1,4 @@
 architecture: CascadeRCNN
-train_feed: FasterRCNNTrainFeed
-eval_feed: FasterRCNNEvalFeed
-test_feed: FasterRCNNTestFeed
 max_iters: 500000
 snapshot_iter: 10000
 use_gpu: true
@@ -85,7 +82,7 @@ CascadeBBoxAssigner:
   fg_fraction: 0.25
 
 CascadeBBoxHead:
-  head: CascadeXConvNormHead 
+  head: CascadeXConvNormHead
   nms:
     keep_top_k: 100
     nms_threshold: 0.5
@@ -115,16 +112,17 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-FasterRCNNTrainFeed:
-  batch_size: 1
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
+    !COCODataSet
     dataset_dir: dataset/objects365
-    annotation: annotations/train.json
+    anno_path: annotations/train.json
     image_dir: train
-  sample_transforms: 
+  sample_transforms:
   - !DecodeImage
     to_rgb: False
-    with_mixup: False
   - !RandomFlipImage
     is_mask_flip: true
     is_normalized: false
@@ -133,13 +131,13 @@ FasterRCNNTrainFeed:
     is_channel_first: false
     is_scale: False
     mean:
-    - 102.9801 
+    - 102.9801
     - 115.9465
     - 122.7717
     std:
-    - 1.0 
-    - 1.0 
-    - 1.0 
+    - 1.0
+    - 1.0
+    - 1.0
   - !ResizeImage
     interp: 1
     target_size:
@@ -152,7 +150,7 @@ FasterRCNNTrainFeed:
     - 608
     - 640
     - 672
-    - 704 
+    - 704
     - 736
     - 768
     - 800
@@ -183,30 +181,34 @@ FasterRCNNTrainFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  num_workers: 4
-  class_aware_sampling: true
-
-FasterRCNNEvalFeed:
   batch_size: 1
+  worker_num: 4
+  shuffle: true
+  class_aware_sampling: true
+  use_process: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
+    !COCODataSet
     dataset_dir: dataset/objects365
-    annotation: annotations/val.json
+    anno_path: annotations/val.json
     image_dir: val
-  sample_transforms: 
+  sample_transforms:
   - !DecodeImage
     to_rgb: False
-    with_mixup: False
   - !NormalizeImage
     is_channel_first: false
     is_scale: False
     mean:
-    - 102.9801 
+    - 102.9801
     - 115.9465
     - 122.7717
     std:
-    - 1.0 
-    - 1.0 
-    - 1.0 
+    - 1.0
+    - 1.0
+    - 1.0
   - !ResizeImage
     target_size: 800
     max_size: 1333
@@ -217,31 +219,33 @@ FasterRCNNEvalFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
+  batch_size: 1
+  drop_empty: false
+  worker_num: 2
 
-FasterRCNNTestFeed:
+TestReader:
   batch_size: 1
   dataset:
-    annotation: dataset/obj365/annotations/val.json
-  sample_transforms: 
+    !ImageFolder
+    anno_path: dataset/obj365/annotations/val.json
+  sample_transforms:
   - !DecodeImage
     to_rgb: False
-    with_mixup: False
   - !NormalizeImage
     is_channel_first: false
     is_scale: False
     mean:
-    - 102.9801 
+    - 102.9801
     - 115.9465
     - 122.7717
     std:
-    - 1.0 
-    - 1.0 
-    - 1.0 
+    - 1.0
+    - 1.0
+    - 1.0
   - !Permute
     channel_first: true
     to_bgr: false
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  drop_last: false
-  num_workers: 2
+  worker_num: 2

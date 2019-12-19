@@ -1,7 +1,4 @@
 architecture: CascadeRCNN
-train_feed: FasterRCNNTrainFeed
-eval_feed: FasterRCNNEvalFeed
-test_feed: FasterRCNNTestFeed
 max_iters: 460000
 snapshot_iter: 10000
 use_gpu: true
@@ -109,16 +106,18 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-FasterRCNNTrainFeed:
+TrainReader:
   batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
-  sample_transforms: 
+  sample_transforms:
   - !DecodeImage
-    to_rgb: True
-    with_mixup: False
+    to_rgb: true
   - !RandomFlipImage
     prob: 0.5
   - !NormalizeImage
@@ -131,7 +130,7 @@ FasterRCNNTrainFeed:
     std:
     - 0.229
     - 0.224
-    - 0.225 
+    - 0.225
   - !ResizeImage
     interp: 1
     target_size: [416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408]
@@ -142,16 +141,19 @@ FasterRCNNTrainFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  drop_last: false
-  num_workers: 2
+  worker_num: 2
+  shuffle: true
 
-FasterRCNNEvalFeed:
+EvalReader:
   batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
+    !COCODataSet
     image_dir: val2017
-  sample_transforms: 
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+  sample_transforms:
   - !DecodeImage
     to_rgb: True
     with_mixup: False
@@ -165,7 +167,7 @@ FasterRCNNEvalFeed:
     std:
     - 0.229
     - 0.224
-    - 0.225 
+    - 0.225
   - !ResizeImage
     interp: 1
     target_size:
@@ -177,13 +179,34 @@ FasterRCNNEvalFeed:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
+  worker_num: 2
 
-FasterRCNNTestFeed:
-  batch_size: 1
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
   batch_transforms:
   - !PadBatch
     pad_to_stride: 32
-  drop_last: false
-  num_workers: 2
+    use_padded_im_info: true
+  batch_size: 1
+  worker_num: 2
