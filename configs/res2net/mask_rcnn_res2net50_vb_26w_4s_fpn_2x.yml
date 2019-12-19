@@ -1,7 +1,5 @@
 architecture: MaskRCNN
-train_feed: MaskRCNNTrainFeed
-eval_feed: MaskRCNNEvalFeed
-test_feed: MaskRCNNTestFeed
+trarchitecture: MaskRCNN
 use_gpu: true
 max_iters: 180000
 snapshot_iter: 10000
@@ -65,8 +63,8 @@ FPNRoIAlign:
   canonical_size: 224
   max_level: 5
   min_level: 2
-  box_resolution: 7
   sampling_ratio: 2
+  box_resolution: 7
   mask_resolution: 14
 
 MaskHead:
@@ -97,7 +95,7 @@ TwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.02
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -114,34 +112,6 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-MaskRCNNTrainFeed:
-  # batch size per device
+_READER_: '../mask_fpn_reader.yml'
+TrainReader:
   batch_size: 2
-  dataset:
-    dataset_dir: dataset/coco
-    image_dir: train2017
-    annotation: annotations/instances_train2017.json
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
-
-MaskRCNNEvalFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
-    image_dir: val2017
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
-
-MaskRCNNTestFeed:
-  batch_size: 1
-  dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  num_workers: 2
