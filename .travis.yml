@@ -2,7 +2,6 @@ language: cpp
 cache: ccache
   directories:
     - $HOME/.ccache
-    - $HOME/.cache/pip
 sudo: required
 dist: trusty
 services:
