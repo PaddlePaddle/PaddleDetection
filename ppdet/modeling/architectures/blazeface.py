@@ -131,7 +131,8 @@ class BlazeFace(object):
                     fixed_sizes=min_size,
                     fixed_ratios=[1.],
                     clip=False,
-                    offset=0.5)
+                    offset=0.5,
+                    steps=[self.steps[i]] * 2)
             else:
                 box, var = fluid.layers.prior_box(
                     input,
