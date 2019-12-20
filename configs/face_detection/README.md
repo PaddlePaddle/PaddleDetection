@@ -89,8 +89,8 @@ optimized network structure.
 | BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
 | BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
 | BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
-| FaceBoxes    | Original | 640  |    8    | 32w     | 0.875     | 0.848      | 0.568     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
-| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.898     | 0.872      | 0.752     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
+| FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
+| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
 
 **NOTES:**  
 - Get mAP in `Easy/Medium/Hard Set` by multi-scale evaluation in `tools/face_eval.py`.
@@ -105,8 +105,8 @@ configs file and set `lite_edition: true`.
 | BlazeFace    | Original | 640  | **0.992**   | **0.762**   |
 | BlazeFace    | Lite     | 640  | 0.990   | 0.756   |
 | BlazeFace    | NAS      | 640  | 0.981   | 0.741   |
-| FaceBoxes    | Original | 640  | 0.985   | 0.731   |
-| FaceBoxes    | Lite     | 640  | 0.987   | 0.741   |
+| FaceBoxes    | Original | 640  | 0.987   | 0.736   |
+| FaceBoxes    | Lite     | 640  | 0.988   | 0.751   |
 
 **NOTES:**  
 - Get mAP by multi-scale evaluation on the FDDB dataset.
