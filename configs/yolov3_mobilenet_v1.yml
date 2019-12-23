@@ -1,7 +1,4 @@
 architecture: YOLOv3
-train_feed: YoloTrainFeed
-eval_feed: YoloEvalFeed
-test_feed: YoloTestFeed
 use_gpu: true
 max_iters: 500200
 log_smooth_window: 20
@@ -63,26 +60,4 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-YoloTrainFeed:
-  batch_size: 8
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
-  num_workers: 8
-  bufsize: 128
-  use_process: true
-
-YoloEvalFeed:
-  batch_size: 8
-  image_shape: [3, 608, 608]
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
-    image_dir: val2017
-
-YoloTestFeed:
-  batch_size: 1
-  image_shape: [3, 608, 608]
-  dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+_READER_: 'yolov3_reader.yml'

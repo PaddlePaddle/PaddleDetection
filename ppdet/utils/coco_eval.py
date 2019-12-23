@@ -22,8 +22,6 @@ import sys
 import json
 import cv2
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 
 import logging
 logger = logging.getLogger(__name__)
@@ -221,7 +219,8 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                             clip_bbox([xmin, ymin, xmax, ymax])
                     w = xmax - xmin
                     h = ymax - ymin
-                    im_height, im_width = t['im_shape'][0][i].tolist()
+                    im_shape = t['im_shape'][0][i].tolist()
+                    im_height, im_width = int(im_shape[0]), int(im_shape[1])
                     xmin *= im_width
                     ymin *= im_height
                     w *= im_width

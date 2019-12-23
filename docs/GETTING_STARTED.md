@@ -34,7 +34,6 @@ list below can be viewed by `--help`
 |   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |
 |      --output_eval       |     train/eval |  json path in evalution  |  current path  |  `--output_eval ./json_result`  |
-|   -d/--dataset_dir       |   train/eval   |  path for dataset, same as dataset_dir in configs  |  None  |  `-d dataset/coco`  |
 |       --fp16             |     train      |  Whether to enable mixed precision training  |  False  |  GPU training is required  |
 |       --loss_scale       |     train      |  Loss scaling factor for mixed precision training  |  8.0  |  enable when `--fp16` is True  |  
 |       --json_eval        |       eval     |  Whether to evaluate with already existed bbox.json or mask.json  |  False  |  json path is set in `--output_eval`  |
