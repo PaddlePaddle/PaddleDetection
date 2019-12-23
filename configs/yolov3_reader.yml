@@ -37,6 +37,9 @@ TrainReader:
   - !Permute
     to_bgr: false
     channel_first: True
+  # Gt2YoloTarget is only used when use_fine_grained_loss set as true,
+  # this operator will be deleted automatically if use_fine_grained_loss
+  # is set as false
   - !Gt2YoloTarget
     anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
     anchors: [[10, 13], [16, 30], [33, 23],

@@ -405,9 +405,6 @@ def create_reader(cfg, max_iter=0, global_cfg=None):
         cfg['use_fine_grained_loss'] = getattr(global_cfg,
                                                'use_fine_grained_loss', False)
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
-        import sys
-        print(cfg)
-        sys.stdout.flush()
     reader = Reader(**cfg)()
 
     def _reader():
