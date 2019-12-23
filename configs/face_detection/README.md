@@ -148,7 +148,6 @@ cd dataset/wider_face && ./download.sh
 目前我们支持在`WIDER FACE`数据集和`FDDB`数据集上评估。首先运行`tools/face_eval.py`生成评估结果文件，其次使用matlab（WIDER FACE）
 或OpenCV（FDDB）计算具体的评估指标。  
 其中，运行`tools/face_eval.py`的参数列表如下：
-- `-d` 或者 `--dataset_dir`: 数据集路径, 用法同配置文件configs中的`dataset_dir`，例如: `-d dataset/wider_face`；
 - `-f` 或者 `--output_eval`: 评估生成的结果文件保存路径，默认是： `output/pred`；
 - `-e` 或者 `--eval_mode`: 评估模式，包括 `widerface` 和 `fddb`，默认是`widerface`；
 - `--multi_scale`: 如果在命令中添加此操作按钮，它将选择多尺度评估。默认值为`False`，它将选择单尺度评估。

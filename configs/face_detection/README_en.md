@@ -162,7 +162,6 @@ Currently we support evaluation on the `WIDER FACE` dataset and the` FDDB` datas
 to generate the evaluation result file, and then use matlab(WIDER FACE)
 or OpenCV(FDDB) calculates specific evaluation indicators.  
 Among them, the optional arguments list for running `tools / face_eval.py` is as follows:
-- `-d` or `--dataset_dir`: Dataset path, same as dataset_dir of configs. Such as: `-d dataset/wider_face`.
 - `-f` or `--output_eval`: Evaluation file directory, default is `output/pred`.
 - `-e` or `--eval_mode`: Evaluation mode, include `widerface` and `fddb`, default is `widerface`.
 - `--multi_scale`: If you add this action button in the command, it will select `multi_scale` evaluation.
