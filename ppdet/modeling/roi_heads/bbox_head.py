@@ -26,6 +26,7 @@ from paddle.fluid.initializer import MSRA
 
 from ppdet.modeling.ops import MultiClassNMS
 from ppdet.modeling.ops import ConvNorm
+from ppdet.modeling.losses import SmoothL1Loss
 from ppdet.core.workspace import register, serializable
 from ppdet.experimental import mixed_precision_global_state
 
@@ -166,23 +167,28 @@ class BBoxHead(object):
         nms (object): `MultiClassNMS` instance
         num_classes: number of output classes
     """
-    __inject__ = ['head', 'box_coder', 'nms']
+    __inject__ = ['head', 'box_coder', 'nms', 'bbox_loss']
     __shared__ = ['num_classes']
 
     def __init__(self,
                  head,
                  box_coder=BoxCoder().__dict__,
                  nms=MultiClassNMS().__dict__,
+                 bbox_loss=SmoothL1Loss().__dict__,
                  num_classes=81):
         super(BBoxHead, self).__init__()
         self.head = head
         self.num_classes = num_classes
         self.box_coder = box_coder
         self.nms = nms
+        self.bbox_loss = bbox_loss
         if isinstance(box_coder, dict):
             self.box_coder = BoxCoder(**box_coder)
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
+        if isinstance(bbox_loss, dict):
+            print("recalc bbox loss")
+            self.bbox_loss = SmoothL1Loss(**bbox_loss)
         self.head_feat = None
 
     def get_head_feat(self, input=None):
@@ -271,12 +277,11 @@ class BBoxHead(object):
         loss_cls = fluid.layers.softmax_with_cross_entropy(
             logits=cls_score, label=labels_int64, numeric_stable_mode=True)
         loss_cls = fluid.layers.reduce_mean(loss_cls)
-        loss_bbox = fluid.layers.smooth_l1(
+        loss_bbox = self.bbox_loss(
             x=bbox_pred,
             y=bbox_targets,
             inside_weight=bbox_inside_weights,
-            outside_weight=bbox_outside_weights,
-            sigma=1.0)
+            outside_weight=bbox_outside_weights)
         loss_bbox = fluid.layers.reduce_mean(loss_bbox)
         return {'loss_cls': loss_cls, 'loss_bbox': loss_bbox}
 
