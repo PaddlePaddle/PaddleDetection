@@ -153,8 +153,8 @@ according to the randomly selected face height and width, and judge the value of
 Please refer to [DATA.md](../../docs/DATA.md#APIs) for details.
 
 ### Training and Inference
-`Training` and `Inference` please refer to [GETTING_STARTED.md](../../docs/GETTING_STARTED.md)
-- **NOTES:**
+`Training` and `Inference` please refer to [GETTING_STARTED.md](../../docs/GETTING_STARTED.md)  
+**NOTES:**
 - `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32)
 and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters
 in the table of [calculation rules](../../docs/GETTING_STARTED.md#faq))

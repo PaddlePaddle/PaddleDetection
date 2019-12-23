@@ -2,7 +2,7 @@
 # FaceDetection
 
 ## 内容
-- [介绍](#介绍)
+- [简介](#简介)
 - [模型库与基线](#模型库与基线)
 - [快速开始](#快速开始)
     - [数据准备](#数据准备)
@@ -11,7 +11,7 @@
 - [算法细节](#算法细节)
 - [如何贡献代码](#如何贡献代码)
 
-## 介绍
+## 简介
 FaceDetection的目标是提供高效、高速的人脸检测解决方案，包括最先进的模型和经典模型。
 
 <div align="center">
@@ -138,11 +138,11 @@ cd dataset/wider_face && ./download.sh
 具体操作是:根据随机选择的人脸高和宽，获取到$v=\sqrt{width * height}$，之后再判断`v`的值范围，其中`v`值位于缩放区间`[16,32,64,128]`
 假设`v=45`，则选定`32<v<64`, 以均匀分布的概率选取`[16,32,64]`中的任意一个值。若选中`64`，则该人脸的缩放区间在`[64 / 2, min(v * 2, 64 * 2)]`中选定。
 
-- **其他方法:** 包括随机扰动、翻转、裁剪等。具体请参考[DATA_cn.md](../../docs/DATA_cn.md#APIs) for details.
+- **其他方法:** 包括随机扰动、翻转、裁剪等。具体请参考[DATA_cn.md](../../docs/DATA_cn.md#APIs)。
 
 ### 训练与推理
-训练流程与推理流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../../docs/GETTING_STARTED_cn.md)
-- **注意:**
+训练流程与推理流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../../docs/GETTING_STARTED_cn.md)。  
+**注意:**
 - `BlazeFace`和`FaceBoxes`训练是以每卡`batch_size=8`在4卡GPU上进行训练(总`batch_size`是32),并且训练320000轮
 (如果你的GPU数达不到4，请参考[学习率计算规则表](../../docs/GETTING_STARTED_cn.md#faq))。
 - 人脸检测模型目前我们不支持边训练边评估。
@@ -209,7 +209,7 @@ evaluate: $(OBJS)
 //#define __IMAGE_FORMAT__ ".ppm"
 #define __CVLOADIMAGE_WORKING__
 ```
-根据`grep -r "CV_RGB"`命令找到含有`CV_RGB`的代码段，将`CV_RGB`改成`Scalar`，并且在cpp中加入`using namespace cv;`,
+根据`grep -r "CV_RGB"`命令找到含有`CV_RGB`的代码段，将`CV_RGB`改成`Scalar`，并且在cpp中加入`using namespace cv;`，
 然后编译：
 ```
 make clean && make
