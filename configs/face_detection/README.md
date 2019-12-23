@@ -19,19 +19,15 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 </div>
 
 ## 模型库与基线
-下表中展示了我们当前支持的网络结构，具体细节请参考[算法细节](#算法细节)。
+下表中展示了PaddleDetection当前支持的网络结构，具体细节请参考[算法细节](#算法细节)。
 
 |                          | 原始版本  | Lite版本 <sup>[1](#lite)</sup> | NAS版本 <sup>[2](#nas)</sup> |
 |:------------------------:|:--------:|:--------------------------:|:------------------------:|
 | [BlazeFace](#BlazeFace)  | ✓        |                          ✓ | ✓                        |
 | [FaceBoxes](#FaceBoxes)  | ✓        |                          ✓ | x                        |
 
-<a name="lite">[1]</a> `Lite版本`表示减少网络层数和通道数.  
+<a name="lite">[1]</a> `Lite版本`表示减少网络层数和通道数。  
 <a name="nas">[2]</a> `NA版本`表示使用 `神经网络搜索`方法来构建网络结构。
-
-**Todo列表:**
-- [ ] HamBox
-- [ ] Pyramidbox
 
 ### 模型库
 
@@ -60,7 +56,7 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 | FaceBoxes    | Lite版本   | 640  | 0.988   | 0.751   |
 
 **注意:**  
-- 我们在FDDB数据集上使用多尺度测试的方法得到mAP，具体细节请参考[在FDDB数据集上评估](#在FDDB数据集上评估).
+- 我们在FDDB数据集上使用多尺度测试的方法得到mAP，具体细节请参考[在FDDB数据集上评估](#在FDDB数据集上评估)。
 
 #### 推理时间和模型大小比较
 
@@ -87,9 +83,9 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz。
 - P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.6.1版本。
 - ARM测试环境:
-    - 高通骁龙855(armv8)
-    - 单线程
-    - Paddle-Lite 2.0.0版本
+    - 高通骁龙855(armv8)；
+    - 单线程；
+    - Paddle-Lite 2.0.0版本。
 
 
 ## 快速开始
@@ -152,9 +148,9 @@ cd dataset/wider_face && ./download.sh
 目前我们支持在`WIDER FACE`数据集和`FDDB`数据集上评估。首先运行`tools/face_eval.py`生成评估结果文件，其次使用matlab（WIDER FACE）
 或OpenCV（FDDB）计算具体的评估指标。  
 其中，运行`tools/face_eval.py`的参数列表如下：
-- `-d` 或者 `--dataset_dir`: 数据集路径, 用法同配置文件configs中的`dataset_dir`，例如: `-d dataset/wider_face`.
-- `-f` 或者 `--output_eval`: 评估生成的结果文件保存路径，默认是： `output/pred`.
-- `-e` 或者 `--eval_mode`: 评估模式，包括 `widerface` 和 `fddb`，默认是`widerface`.
+- `-d` 或者 `--dataset_dir`: 数据集路径, 用法同配置文件configs中的`dataset_dir`，例如: `-d dataset/wider_face`；
+- `-f` 或者 `--output_eval`: 评估生成的结果文件保存路径，默认是： `output/pred`；
+- `-e` 或者 `--eval_mode`: 评估模式，包括 `widerface` 和 `fddb`，默认是`widerface`；
 - `--multi_scale`: 如果在命令中添加此操作按钮，它将选择多尺度评估。默认值为`False`，它将选择单尺度评估。
 
 #### 在WIDER-FACE数据集上评估
@@ -186,19 +182,19 @@ matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
 #### 在FDDB数据集上评估
-我们提供了一套FDDB数据集的评估流程(目前仅支持Linux系统)，其他具体细节请参考[FDDB官网](http://vis-www.cs.umass.edu/fddb/).  
+我们提供了一套FDDB数据集的评估流程(目前仅支持Linux系统)，其他具体细节请参考[FDDB官网](http://vis-www.cs.umass.edu/fddb/)。  
 
 - 1)下载安装opencv：  
 下载OpenCV: 进入[OpenCV library](https://opencv.org/releases/)手动下载  
-安装OpenCV：请参考[OpenCV官方安装教程](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html)通过源码安装
+安装OpenCV：请参考[OpenCV官方安装教程](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html)通过源码安装。
 
-- 2)下载数据集、评估代码以及格式化数据:  
+- 2)下载数据集、评估代码以及格式化数据：  
 ```
 ./dataset/fddb/download.sh
 ```
 
-- 3)编译FDDB评估代码:
-进入`dataset/fddb/evaluation`目录下，修改MakeFile文件中内容如下:
+- 3)编译FDDB评估代码：
+进入`dataset/fddb/evaluation`目录下，修改MakeFile文件中内容如下：
 ```
 evaluate: $(OBJS)
     $(CC) $(OBJS) -o $@ $(LIBS)
@@ -216,28 +212,34 @@ make clean && make
 ```
 
 - 4)开始评估:  
-修改config文件中`dataset_dir`和`annotation`字段内容
+修改config文件中`dataset_dir`和`annotation`字段内容：
 ```
-SSDEvalFeed:
+EvalReader:
   ...
   dataset:
     dataset_dir: dataset/fddb
     annotation: FDDB-folds/fddb_annotFile.txt
     ...
 ```
-评估并生成结果文件
+评估并生成结果文件：
 ```
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
        -o weights=output/blazeface/model_final/ \
        --eval_mode=fddb
 ```
 评估完成后，将在`output/pred/pred_fddb_res.txt`中生成txt格式的测试结果。  
-生成ContROC与DiscROC数据  
+生成ContROC与DiscROC数据：  
 ```
-./evaluate.sh {RESULT_FILE} {OUTPUT_DIR}
+cd dataset/fddb/evaluation
+./evaluate -a ./FDDB-folds/fddb_annotFile.txt \
+           -f 0 -i ./ -l ./FDDB-folds/filePath.txt -z .jpg \
+           -d {RESULT_FILE} \
+           -r {OUTPUT_DIR}
 ```
-`RESULT_FILE`是`tools/face_eval.py`输出的FDDB预测结果文件；  
-`OUTPUT_DIR`是FDDB评估输出结果文件前缀，会生成两个文件`{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`。
+**注意:**  
+(1)`RESULT_FILE`是`tools/face_eval.py`输出的FDDB预测结果文件；  
+(2)`OUTPUT_DIR`是FDDB评估输出结果文件前缀，会生成两个文件`{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`；  
+(3)参数用法及注释可通过执行`./evaluate --help`来获取。
 
 ## 算法细节
 
@@ -252,8 +254,8 @@ python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
 - 用混合策略替换非极大值抑制算法，该策略将边界框的回归参数估计为重叠预测之间的加权平均值。
 
 **版本信息:**
-- 原始版本: 参考原始论文复现。
-- Lite版本: 使用3x3卷积替换5x5卷积，更少的网络层数和通道数。
+- 原始版本: 参考原始论文复现；
+- Lite版本: 使用3x3卷积替换5x5卷积，更少的网络层数和通道数；
 - NAS版本: 使用神经网络搜索算法构建网络结构，相比于`Lite`版本，NAS版本需要更少的网络层数和通道数。
 
 ### FaceBoxes
@@ -267,7 +269,7 @@ python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
 - 使用密度先验盒（density_prior_box）可提高检测精度。
 
 **版本信息:**
-- 原始版本: 参考原始论文复现。
+- 原始版本: 参考原始论文复现；
 - Lite版本: 使用更少的网络层数和通道数，具体可参考[代码](../../ppdet/modeling/architectures/faceboxes.py)。
 
 

@@ -20,7 +20,7 @@ including cutting-edge and classic models.
 </div>
 
 ## Benchmark and Model Zoo
-Supported architectures is shown in the below table, please refer to
+PaddleDetection Supported architectures is shown in the below table, please refer to
 [Algorithm Description](#Algorithm-Description) for details of the algorithm.
 
 |                          | Original | Lite <sup>[1](#lite)</sup> | NAS <sup>[2](#nas)</sup> |
@@ -32,9 +32,6 @@ Supported architectures is shown in the below table, please refer to
 <a name="nas">[2]</a> `NAS` edition means use `Neural Architecture Search` algorithm to
 optimized network structure.
 
-**Todo List:**
-- [ ] HamBox
-- [ ] Pyramidbox
 
 ### Model Zoo
 
@@ -90,12 +87,12 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 
 **NOTES:**  
-- CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
-- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.6.1
+- CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz.
+- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.6.1.
 - ARM test environment:
-    - Qualcomm SnapDragon 855(armv8)
-    - Single thread
-    - Paddle-Lite version 2.0.0
+    - Qualcomm SnapDragon 855(armv8);
+    - Single thread;
+    - Paddle-Lite version 2.0.0.
 
 ## Quick Start
 
@@ -157,7 +154,7 @@ Please refer to [DATA.md](../../docs/DATA.md#APIs) for details.
 **NOTES:**
 - `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32)
 and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters
-in the table of [calculation rules](../../docs/GETTING_STARTED.md#faq))
+in the table of [calculation rules](../../docs/GETTING_STARTED.md#faq)).
 - Currently we do not support evaluation in training.
 
 ### Evaluation
@@ -201,12 +198,12 @@ matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 
 #### Evaluate on the FDDB
 We provide a FDDB data set evaluation process (currently only supports Linux systems),
-please refer to [FDDB official website](http://vis-www.cs.umass.edu/fddb/) for other specific details
+please refer to [FDDB official website](http://vis-www.cs.umass.edu/fddb/) for other specific details.
 
 - 1)Download and install OpenCV：  
 Download OpenCV: go to [OpenCV library](https://opencv.org/releases/) to Manual download  
 Install OpenCV：Please refer to [Official OpenCV Installation Tutorial](https://docs.opencv.org/master/d7/d9f/tutorial_linux_install.html)
-to install through source code
+to install through source code.
 
 - 2)Download datasets, evaluation code, and formatted data:  
 ```
@@ -234,7 +231,7 @@ make clean && make
 - 4)Start evaluation:  
 Modify the contents of the `dataset_dir` and` annotation` fields in the config file:
 ```
-SSDEvalFeed:
+EvalReader:
   ...
   dataset:
     dataset_dir: dataset/fddb
@@ -250,11 +247,17 @@ python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
 After the evaluation is completed, the test result in txt format will be generated in `output/pred/pred_fddb_res.txt`.  
 Generate ContROC and DiscROC data:  
 ```
-./evaluate.sh {RESULT_FILE} {OUTPUT_DIR}
+cd dataset/fddb/evaluation
+./evaluate -a ./FDDB-folds/fddb_annotFile.txt \
+           -f 0 -i ./ -l ./FDDB-folds/filePath.txt -z .jpg \
+           -d {RESULT_FILE} \
+           -r {OUTPUT_DIR}
 ```
-`RESULT_FILE` is the FDDB prediction result file output by `tools/face_eval.py`;  
-`OUTPUT_DIR` is the prefix of the FDDB evaluation output file,
-which will generate two files `{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`.
+**NOTES:**  
+(1)`RESULT_FILE` is the FDDB prediction result file output by `tools/face_eval.py`;  
+(2)`OUTPUT_DIR` is the prefix of the FDDB evaluation output file,
+which will generate two files `{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`;  
+(3)The interpretation of the argument can be performed by `./evaluate --help`.
 
 ## Algorithm Description
 
