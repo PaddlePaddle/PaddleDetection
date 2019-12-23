@@ -74,6 +74,19 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
   详细说明请参考[Transfer Learning](TRANSFER_LEARNING_cn.md)
 
+- 使用Paddle OP组建的YOLOv3损失函数训练YOLOv3
+
+  为了便于用户重新设计修改YOLOv3的损失函数，我们也提供了不使用`fluid.layer.yolov3_loss`接口而是在python代码中使用Paddle OP的方式组建YOLOv3损失函数,
+  可通过如下命令用Paddle OP组建YOLOv3损失函数版本的YOLOv3模型：
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/yolov3_darknet.yml \
+                           -o use_fine_grained_loss=true
+  ```
+
+  Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/losses/yolo_loss.py`
+
 #### 提示
 
 - `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](#faq)

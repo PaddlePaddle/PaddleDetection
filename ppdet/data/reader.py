@@ -26,6 +26,7 @@ import logging
 from ppdet.core.workspace import register, serializable
 
 from .parallel_map import ParallelMap
+from .transform.batch_operators import Gt2YoloTarget
 
 __all__ = ['Reader', 'create_reader']
 
@@ -192,6 +193,8 @@ class Reader(object):
                  class_aware_sampling=False,
                  worker_num=-1,
                  use_process=False,
+                 use_fine_grained_loss=False,
+                 num_classes=80,
                  bufsize=100,
                  memsize='3G',
                  inputs_def=None):
@@ -204,6 +207,17 @@ class Reader(object):
         self._sample_transforms = Compose(sample_transforms,
                                           {'fields': self._fields})
         self._batch_transforms = None
+
+        if use_fine_grained_loss:
+            for bt in batch_transforms:
+                if isinstance(bt, Gt2YoloTarget):
+                    bt.num_classes = num_classes
+        elif batch_transforms:
+            batch_transforms = [
+                bt for bt in batch_transforms
+                if not isinstance(bt, Gt2YoloTarget)
+            ]
+
         if batch_transforms:
             self._batch_transforms = Compose(batch_transforms,
                                              {'fields': self._fields})
@@ -376,7 +390,7 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, max_iter=0):
+def create_reader(cfg, max_iter=0, global_cfg=None):
     """
     Return iterable data reader.
 
@@ -386,6 +400,11 @@ def create_reader(cfg, max_iter=0):
     if not isinstance(cfg, dict):
         raise TypeError("The config should be a dict when creating reader.")
 
+    # synchornize use_fine_grained_loss/num_classes from global_cfg to reader cfg
+    if global_cfg:
+        cfg['use_fine_grained_loss'] = getattr(global_cfg,
+                                               'use_fine_grained_loss', False)
+        cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
     reader = Reader(**cfg)()
 
     def _reader():
