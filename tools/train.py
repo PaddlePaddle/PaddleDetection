@@ -194,8 +194,8 @@ def main():
         checkpoint.load_params(
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
-    train_reader = create_reader(cfg.TrainReader,
-                                 (cfg.max_iters - start_iter) * devices_num)
+    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
+                                 devices_num, cfg)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer

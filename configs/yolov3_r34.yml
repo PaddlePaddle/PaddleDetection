@@ -8,6 +8,7 @@ metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 weights: output/yolov3_r34/model_final
 num_classes: 80
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: ResNet
@@ -27,8 +28,7 @@ YOLOv3Head:
             [30, 61], [62, 45], [59, 119],
             [116, 90], [156, 198], [373, 326]]
   norm_decay: 0.
-  ignore_thresh: 0.7
-  label_smooth: true
+  yolo_loss: YOLOv3Loss
   nms:
     background_label: -1
     keep_top_k: 100
@@ -36,6 +36,11 @@ YOLOv3Head:
     nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
+
+YOLOv3Loss:
+  batch_size: 8
+  ignore_thresh: 0.7
+  label_smooth: false
 
 LearningRate:
   base_lr: 0.001

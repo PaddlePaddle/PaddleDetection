@@ -38,11 +38,16 @@ class YOLOv3(object):
 
     __category__ = 'architecture'
     __inject__ = ['backbone', 'yolo_head']
+    __shared__ = ['use_fine_grained_loss']
 
-    def __init__(self, backbone, yolo_head='YOLOv3Head'):
+    def __init__(self,
+                 backbone,
+                 yolo_head='YOLOv3Head',
+                 use_fine_grained_loss=False):
         super(YOLOv3, self).__init__()
         self.backbone = backbone
         self.yolo_head = yolo_head
+        self.use_fine_grained_loss = use_fine_grained_loss
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
@@ -68,10 +73,19 @@ class YOLOv3(object):
             gt_class = feed_vars['gt_class']
             gt_score = feed_vars['gt_score']
 
-            return {
-                'loss': self.yolo_head.get_loss(body_feats, gt_bbox, gt_class,
-                                                gt_score)
-            }
+            # Get targets for splited yolo loss calculation
+            # YOLOv3 supports up to 3 output layers currently
+            targets = []
+            for i in range(3):
+                k = 'target{}'.format(i)
+                if k in feed_vars:
+                    targets.append(feed_vars[k])
+
+            loss = self.yolo_head.get_loss(body_feats, gt_bbox, gt_class,
+                                           gt_score, targets)
+            total_loss = fluid.layers.sum(list(loss.values()))
+            loss.update({'loss': total_loss})
+            return loss
         else:
             im_size = feed_vars['im_size']
             return self.yolo_head.get_prediction(body_feats, im_size)
@@ -89,6 +103,28 @@ class YOLOv3(object):
             'is_difficult': {'shape': [None, num_max_boxes],'dtype': 'int32',   'lod_level': 0},
         }
         # yapf: enable
+
+        if self.use_fine_grained_loss:
+            # yapf: disable
+            targets_def = {
+                'target0':  {'shape': [None, 3, 86, 19, 19],  'dtype': 'float32',   'lod_level': 0},
+                'target1':  {'shape': [None, 3, 86, 38, 38],  'dtype': 'float32',   'lod_level': 0},
+                'target2':  {'shape': [None, 3, 86, 76, 76],  'dtype': 'float32',   'lod_level': 0},
+            }
+            # yapf: enable
+
+            downsample = 32
+            for k, mask in zip(targets_def.keys(), self.yolo_head.anchor_masks):
+                targets_def[k]['shape'][1] = len(mask)
+                targets_def[k]['shape'][2] = 6 + self.yolo_head.num_classes
+                targets_def[k]['shape'][3] = image_shape[
+                    -2] // downsample if image_shape[-2] else None
+                targets_def[k]['shape'][4] = image_shape[
+                    -1] // downsample if image_shape[-1] else None
+                downsample // 2
+
+            inputs_def.update(targets_def)
+
         return inputs_def
 
     def build_inputs(
@@ -99,6 +135,8 @@ class YOLOv3(object):
             use_dataloader=True,
             iterable=False):
         inputs_def = self._inputs_def(image_shape, num_max_boxes)
+        if self.use_fine_grained_loss:
+            fields.extend(['target0', 'target1', 'target2'])
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
