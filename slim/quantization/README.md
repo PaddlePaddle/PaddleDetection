@@ -4,37 +4,18 @@
 
 ## 概述
 
-该示例使用PaddleSlim提供的[量化压缩策略](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/tutorial.md#1-quantization-aware-training%E9%87%8F%E5%8C%96%E4%BB%8B%E7%BB%8D)对分类模型进行压缩。
+该示例使用PaddleSlim提供的[量化压缩API](https://paddlepaddle.github.io/PaddleSlim/api/quantization_api/)对检测模型进行压缩。
 在阅读该示例前，建议您先了解以下内容：
 
 - [检测模型的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
-- [PaddleSlim使用文档](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md)
+- [PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
 
 
-## 配置文件说明
-
-关于配置文件如何编写您可以参考：
-
-- [PaddleSlim配置文件编写说明](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md#122-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%BF%E7%94%A8)
-- [量化策略配置文件编写说明](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md#21-%E9%87%8F%E5%8C%96%E8%AE%AD%E7%BB%83)
-
-其中save_out_nodes需要得到检测结果的Variable的名称，下面介绍如何确定save_out_nodes的参数
-以MobileNet V1为例，可在compress.py中构建好网络之后，直接打印Variable得到Variable的名称信息。
-代码示例：
-```
-    eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
-                                                         extra_keys)
-    # print(eval_values)
-```
-根据运行结果可看到Variable的名字为：`multiclass_nms_0.tmp_0`。
 ## 训练
 
-根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py) 编写压缩脚本compress.py。
-在该脚本中定义了Compressor对象，用于执行压缩任务。
+根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py) 编写压缩脚本compress.py。使用过程如下。
 
-通过`python compress.py --help`查看可配置参数，简述如下：
-
-- config: 检测库的配置，其中配置了训练超参数、数据集信息等。
+### 定义量化配置
 - slim_file: PaddleSlim的配置文件，参见[配置文件说明](#配置文件说明)。
 
 您可以通过运行以下命令运行该示例。
