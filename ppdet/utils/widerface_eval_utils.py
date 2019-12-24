@@ -124,6 +124,8 @@ def get_shrink(height, width):
         max_shrink = max_shrink - 0.4
     elif max_shrink >= 5:
         max_shrink = max_shrink - 0.5
+    elif max_shrink <= 0.1:
+        max_shrink = 0.1
 
     shrink = max_shrink if max_shrink < 1 else 1
     return shrink, max_shrink
