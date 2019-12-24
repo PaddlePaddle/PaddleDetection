@@ -72,6 +72,7 @@ class VOCDataSet(DataSet):
         self.roidbs = None
         # 'cname2id' is a dict to map category name to class id
         self.cname2cid = None
+        self.use_default_label = use_default_label
         self.label_list = label_list
 
     def load_roidb_and_cname2cid(self):
