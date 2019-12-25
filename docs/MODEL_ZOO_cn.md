@@ -95,6 +95,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### Res2Net
 * 详情见[Res2Net模型库](../configs/res2net/README.md)。
 
+### IOU loss
+* 目前模型库中包括GIOU loss和DIOU loss，详情加[IOU loss模型库](../configs/iou_loss/README.md).
+
 
 ### Group Normalization
 | 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |

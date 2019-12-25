@@ -187,7 +187,6 @@ class BBoxHead(object):
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
         if isinstance(bbox_loss, dict):
-            print("recalc bbox loss")
             self.bbox_loss = SmoothL1Loss(**bbox_loss)
         self.head_feat = None
 

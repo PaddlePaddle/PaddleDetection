@@ -94,6 +94,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 ### 12/2019
 - 增加Res2Net模型。
 - 增加HRNet模型。
+- 增加GIOU loss和DIOU loss。
 
 
 ### 21/11/2019
