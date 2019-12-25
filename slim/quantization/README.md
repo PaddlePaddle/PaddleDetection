@@ -1,4 +1,4 @@
->运行该示例前请安装Paddle1.6或更高版本
+>运行该示例前请安装Paddle1.6或更高版本和PaddleSlim
 
 # 检测模型量化压缩示例
 
@@ -29,7 +29,7 @@ config = {
 
 如何配置以及含义请参考[PaddleSlim 量化API](https://paddlepaddle.github.io/PaddleSlim/api/quantization_api/)。
 
-### 传入量化反量化OP
+### 插入量化反量化OP
 使用[PaddleSlim quant_aware API](https://paddlepaddle.github.io/PaddleSlim/api/quantization_api/#quant_aware)在Program中插入量化和反量化OP。
 ```
 train_prog = quant_aware(train_prog, place, config, for_test=False)
