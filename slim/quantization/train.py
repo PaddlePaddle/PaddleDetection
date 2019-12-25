@@ -40,7 +40,7 @@ from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.data_feed import create_reader
+from ppdet.data.reader import create_reader
 
 from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
@@ -49,8 +49,6 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.modeling.model_input import create_feed
-sys.path.append('/cv/workspace/PaddleSlim')
 from paddleslim.quant import quant_aware, convert
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -91,17 +89,6 @@ def main():
     else:
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
-    if 'train_feed' not in cfg:
-        train_feed = create(main_arch + 'TrainFeed')
-    else:
-        train_feed = create(cfg.train_feed)
-
-    if FLAGS.eval:
-        if 'eval_feed' not in cfg:
-            eval_feed = create(main_arch + 'EvalFeed')
-        else:
-            eval_feed = create(cfg.eval_feed)
-
     if 'FLAGS_selected_gpus' in env:
         device_id = int(env['FLAGS_selected_gpus'])
     else:
@@ -118,8 +105,6 @@ def main():
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            train_loader, feed_vars = create_feed(train_feed)
-
             if FLAGS.fp16:
                 assert (getattr(model.backbone, 'norm_type', None)
                         != 'affine_channel'), \
@@ -127,8 +112,9 @@ def main():
                     ' please modify backbone settings to use batch norm'
 
             with mixed_precision_context(FLAGS.loss_scale, FLAGS.fp16) as ctx:
+                inputs_def = cfg['TrainReader']['inputs_def']
+                feed_vars, train_loader = model.build_inputs(**inputs_def)
                 train_fetches = model.train(feed_vars)
-
                 loss = train_fetches['loss']
                 if FLAGS.fp16:
                     loss *= ctx.get_loss_scale_var()
@@ -147,11 +133,12 @@ def main():
         with fluid.program_guard(eval_prog, startup_prog):
             with fluid.unique_name.guard():
                 model = create(main_arch)
-                eval_loader, feed_vars = create_feed(eval_feed)
+                inputs_def = cfg['EvalReader']['inputs_def']
+                feed_vars, eval_loader = model.build_inputs(**inputs_def)
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
+        eval_reader = create_reader(cfg.EvalReader)
         eval_loader.set_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -159,9 +146,9 @@ def main():
         if cfg.metric == 'COCO':
             extra_keys = ['im_info', 'im_id', 'im_shape']
         if cfg.metric == 'VOC':
-            extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+            extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
         if cfg.metric == 'WIDERFACE':
-            extra_keys = ['im_id', 'im_shape', 'gt_box']
+            extra_keys = ['im_id', 'im_shape', 'gt_bbox']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
@@ -169,12 +156,10 @@ def main():
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_optimizer_ops = False
     build_strategy.fuse_elewise_add_act_ops = True
-    # when use quant_aware, fuse_all_reduce_ops must set to False
     build_strategy.fuse_all_reduce_ops = False
-    # build_strategy.enable_sequential_execution = False
+
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
-    # when use multi-gpu, sync_batch_norm  must set False
     sync_bn = False
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
         and cfg.use_gpu
@@ -196,11 +181,11 @@ def main():
         'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
         'not_quant_pattern': ['yolo_output']
     }
-    print(config)
-    fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
     ignore_params = cfg.finetune_exclude_pretrained_params \
                  if 'finetune_exclude_pretrained_params' in cfg else []
+
+    fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
@@ -212,7 +197,7 @@ def main():
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
     # insert quantize op in train_prog, return type is CompiledProgram
     train_prog = quant_aware(train_prog, place, config, for_test=False)
-    # use returned CompiledProgram to set build_strategy
+
     compiled_train_prog = train_prog.with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
@@ -221,12 +206,13 @@ def main():
     if FLAGS.eval:
         # insert quantize op in eval_prog
         eval_prog = quant_aware(eval_prog, place, config, for_test=True)
+
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
     start_iter = 0
 
-    train_reader = create_reader(train_feed, (cfg.max_iters - start_iter) *
-                                 devices_num, FLAGS.dataset_dir)
+    train_reader = create_reader(cfg.TrainReader,
+                                 (cfg.max_iters - start_iter) * devices_num)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer
@@ -292,15 +278,14 @@ def main():
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
                 box_ap_stats = eval_results(
-                    results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-                    is_bbox_normalized, FLAGS.output_eval, map_type)
+                    results, cfg.metric, cfg.num_classes, resolution,
+                    is_bbox_normalized, FLAGS.output_eval, map_type,
+                    cfg['EvalReader']['dataset'])
 
                 # use tb_paddle to log mAP
                 if FLAGS.use_tb:
                     tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
                     tb_mAP_step += 1
-                logger.info("box ap: {}, in iter: {}".format(box_ap_stats[0],
-                                                             it))
 
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
@@ -341,12 +326,6 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation directory, default is current directory.")
-    parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
     parser.add_argument(
         "--use_tb",
         type=bool,

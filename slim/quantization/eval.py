@@ -37,16 +37,19 @@ import paddle.fluid as fluid
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.check import check_gpu, check_version
-from ppdet.modeling.model_input import create_feed
-from ppdet.data.data_feed import create_reader
+
+from ppdet.data.reader import create_reader
+
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
-sys.path.append('/cv/workspace/PaddleSlim')
-from paddleslim.quant import quant_aware, convert
+
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+# import paddleslim
+from paddleslim.quant import quant_aware, convert
 
 
 def main():
@@ -65,11 +68,6 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
-    if 'eval_feed' not in cfg:
-        eval_feed = create(main_arch + 'EvalFeed')
-    else:
-        eval_feed = create(cfg.eval_feed)
-
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
 
     # define executor
@@ -82,13 +80,15 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            loader, feed_vars = create_feed(eval_feed)
+            inputs_def = cfg['EvalReader']['inputs_def']
+            test_feed_vars, loader = model.build_inputs(**inputs_def)
             if multi_scale_test is None:
-                fetches = model.eval(feed_vars)
+                test_fetches = model.eval(test_feed_vars)
             else:
-                fetches = model.eval(feed_vars, multi_scale_test)
+                test_fetches = model.eval(test_feed_vars, multi_scale_test)
     eval_prog = eval_prog.clone(True)
-    reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
+
+    reader = create_reader(cfg.EvalReader)
     loader.set_sample_list_generator(reader, place)
 
     # eval already exists json file
@@ -98,25 +98,9 @@ def main():
             "output_eval directly. And proposal.json, bbox.json and mask.json "
             "will be detected by default.")
         json_eval_results(
-            eval_feed, cfg.metric, json_directory=FLAGS.output_eval)
+            cfg.metric, json_directory=FLAGS.output_eval, dataset=dataset)
         return
-    config = {
-        'weight_quantize_type': 'channel_wise_abs_max',
-        'activation_quantize_type': 'moving_average_abs_max',
-        'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
-        'not_quant_pattern': ['yolo_output']
-    }
 
-    eval_prog = quant_aware(eval_prog, place, config, for_test=True)
-
-    # load model
-    exe.run(startup_prog)
-    if 'weights' in cfg:
-        fluid.io.load_persistables(exe, cfg.weights, eval_prog)
-    eval_prog, int8_program = convert(eval_prog, place, config, save_int8=True)
-
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."
 
@@ -130,15 +114,17 @@ def main():
     if cfg.metric == 'COCO':
         extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg.metric == 'VOC':
-        extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
 
-    keys, values, cls = parse_fetches(fetches, eval_prog, extra_keys)
+    keys, values, cls = parse_fetches(test_fetches, eval_prog, extra_keys)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
     if hasattr(model, 'is_bbox_normalized') and \
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
+
+    dataset = cfg['EvalReader']['dataset']
 
     sub_eval_prog = None
     sub_keys = None
@@ -148,34 +134,57 @@ def main():
         sub_eval_prog = fluid.Program()
         with fluid.program_guard(sub_eval_prog, startup_prog):
             with fluid.unique_name.guard():
-                _, feed_vars = create_feed(eval_feed, False, sub_prog_feed=True)
+                inputs_def = cfg['EvalReader']['inputs_def']
+                inputs_def['mask_branch'] = True
+                feed_vars, eval_loader = model.build_inputs(**inputs_def)
                 sub_fetches = model.eval(
                     feed_vars, multi_scale_test, mask_branch=True)
-                extra_keys = []
-                if cfg.metric == 'COCO':
-                    extra_keys = ['im_id', 'im_shape']
-                if cfg.metric == 'VOC':
-                    extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+                assert cfg.metric == 'COCO'
+                extra_keys = ['im_id', 'im_shape']
         sub_keys, sub_values, _ = parse_fetches(sub_fetches, sub_eval_prog,
                                                 extra_keys)
         sub_eval_prog = sub_eval_prog.clone(True)
 
-        if 'weights' in cfg:
-            checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
+    #if 'weights' in cfg:
+    #    checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
+
+    config = {
+        'weight_quantize_type': 'channel_wise_abs_max',
+        'activation_quantize_type': 'moving_average_abs_max',
+        'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
+        'not_quant_pattern': ['yolo_output']
+    }
+
+    eval_prog = quant_aware(eval_prog, place, config, for_test=True)
+
+    # load model
+    exe.run(startup_prog)
+    if 'weights' in cfg:
+        fluid.io.load_persistables(exe, cfg.weights, eval_prog)
+    eval_prog = convert(eval_prog, place, config, save_int8=False)
+
+    compile_program = fluid.compiler.CompiledProgram(
+        eval_prog).with_data_parallel()
 
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)
 
+    #print(cfg['EvalReader']['dataset'].__dict__)
     # evaluation
     resolution = None
     if 'mask' in results[0]:
         resolution = model.mask_head.resolution
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
-    ap = eval_results(results, eval_feed, cfg.metric, cfg.num_classes,
-                      resolution, is_bbox_normalized, FLAGS.output_eval,
-                      map_type)
-    print("box ap {}".format(ap[0]))
+    eval_results(
+        results,
+        cfg.metric,
+        cfg.num_classes,
+        resolution,
+        is_bbox_normalized,
+        FLAGS.output_eval,
+        map_type,
+        dataset=dataset)
 
 
 if __name__ == '__main__':
@@ -185,12 +194,6 @@ if __name__ == '__main__':
         action='store_true',
         default=False,
         help="Whether to re eval with already exists bbox.json or mask.json")
-    parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
     parser.add_argument(
         "-f",
         "--output_eval",
