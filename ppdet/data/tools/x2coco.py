@@ -255,18 +255,21 @@ def main():
     count = 1
     for img_name in os.listdir(args.image_input_dir):
         if count <= train_num:
-            shutil.copyfile(
-                osp.join(args.image_input_dir, img_name),
-                osp.join(args.output_dir + '/train/', img_name))
+            if os.path.exists(args.output_dir + '/train/'):
+                shutil.copyfile(
+                    osp.join(args.image_input_dir, img_name),
+                    osp.join(args.output_dir + '/train/', img_name))
         else:
             if count <= train_num + val_num:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/val/', img_name))
+                if os.path.exists(args.output_dir + '/val/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/val/', img_name))
             else:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/test/', img_name))
+                if os.path.exists(args.output_dir + '/test/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/test/', img_name))
         count = count + 1
 
     # Deal with the json files.
