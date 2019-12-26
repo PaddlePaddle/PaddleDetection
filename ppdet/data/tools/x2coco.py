@@ -227,7 +227,8 @@ def main():
         print('The image folder does not exist!')
         os._exit(0)
     try:
-        assert args.train_proportion + args.val_proportion + args.test_proportion == 1.0
+        assert abs(args.train_proportion + args.val_proportion \
+                   + args.test_proportion - 1.0) < 1e-5
     except AssertionError as e:
         print(
             'The sum of pqoportion of training, validation and test datase must be 1!'
@@ -255,18 +256,21 @@ def main():
     count = 1
     for img_name in os.listdir(args.image_input_dir):
         if count <= train_num:
-            shutil.copyfile(
-                osp.join(args.image_input_dir, img_name),
-                osp.join(args.output_dir + '/train/', img_name))
+            if osp.exists(args.output_dir + '/train/'):
+                shutil.copyfile(
+                    osp.join(args.image_input_dir, img_name),
+                    osp.join(args.output_dir + '/train/', img_name))
         else:
             if count <= train_num + val_num:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/val/', img_name))
+                if osp.exists(args.output_dir + '/val/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/val/', img_name))
             else:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/test/', img_name))
+                if osp.exists(args.output_dir + '/test/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/test/', img_name))
         count = count + 1
 
     # Deal with the json files.
