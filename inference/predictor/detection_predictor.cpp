@@ -32,17 +32,18 @@ namespace PaddleSolution {
         int max_h = -1;
         int max_w = -1;
         for (int i = 0; i < batch_size; ++i) {
-            max_h = (max_h > resize_heights[i])? max_h:resize_heights[i];
-            max_w = (max_w > resize_widths[i])? max_w:resize_widths[i];
+            max_h = (max_h > resize_heights[i])? max_h : resize_heights[i];
+            max_w = (max_w > resize_widths[i])? max_w : resize_widths[i];
         }
+
         max_h = static_cast<int>(ceil(static_cast<float>(max_h)
-              / static_cast<float>(coarsest_stride)) * coarsest_stride);
+            / static_cast<float>(coarsest_stride)) * coarsest_stride);
         max_w = static_cast<int>(ceil(static_cast<float>(max_w)
-              / static_cast<float>(coarsest_stride)) * coarsest_stride);
-        std::cout << "max_w: " << max_w << " max_h: " << max_h << std::endl;
+            / static_cast<float>(coarsest_stride)) * coarsest_stride);
         input_buffer.insert(input_buffer.end(),
                             batch_size * channels * max_h * max_w, 0);
         // flatten tensor and padding
+        #pragma omp parallel for
         for (int i = 0; i < lod_buffer.size(); ++i) {
             float *input_buffer_ptr = input_buffer.data()
                                     + i * channels * max_h * max_w;
@@ -121,6 +122,8 @@ namespace PaddleSolution {
         }
 
         bool use_gpu = _model_config._use_gpu;
+        bool enable_trt = _model_config._enable_trt & use_gpu;
+        auto trt_precision = _model_config._trt_precision;
         const auto& model_dir = _model_config._model_path;
         const auto& model_filename = _model_config._model_file_name;
         const auto& params_filename = _model_config._param_file_name;
@@ -136,10 +139,16 @@ namespace PaddleSolution {
             config.use_gpu = use_gpu;
             config.device = 0;
             _main_predictor = paddle::CreatePaddlePredictor(config);
+
         } else if (_model_config._predictor_mode == "ANALYSIS") {
             paddle::AnalysisConfig config;
             if (use_gpu) {
                 config.EnableUseGpu(100, 0);
+            }
+            if (enable_trt) {
+                auto use_cab = (trt_precision == paddle::AnalysisConfig::Precision::kInt8);
+                config.EnableTensorRtEngine(1 << 20, _model_config._batch_size, 40,
+                    trt_precision, false, use_cab);
             }
             auto prog_file = utils::path_join(model_dir, model_filename);
             auto param_file = utils::path_join(model_dir, params_filename);
@@ -288,7 +297,6 @@ namespace PaddleSolution {
            }
            feeds.push_back(im_size_tensor);
            _outputs.clear();
-
             auto t1 = std::chrono::high_resolution_clock::now();
             if (!_main_predictor->Run(feeds, &_outputs, batch_size)) {
             #ifdef _WIN32
@@ -376,7 +384,6 @@ namespace PaddleSolution {
                 std::cout << "Failed to preprocess!" << std::endl;
                 return -1;
             }
-
             // flatten tensor
             padding_minibatch(lod_buffer, input_buffer, resize_heights,
                               resize_widths, channels,
@@ -423,7 +430,6 @@ namespace PaddleSolution {
                 im_size_tensor->Reshape({batch_size, 2});
                 im_size_tensor->copy_from_cpu(image_size.data());
             }
-
             auto t1 = std::chrono::high_resolution_clock::now();
             _main_predictor->ZeroCopyRun();
             auto t2 = std::chrono::high_resolution_clock::now();

@@ -62,16 +62,22 @@ bool DetectionPreProcessor::single_process(const std::string& fname,
     int rw = im.cols;
     int rh = im.rows;
     float im_scale_ratio;
-    utils::scaling(_config->_resize_type, rw, rh, _config->_resize[0],
-                   _config->_resize[1], _config->_target_short_size,
-                   _config->_resize_max_size, im_scale_ratio);
+    if (!_config->_enable_trt) {
+        utils::scaling(_config->_resize_type, rw, rh, _config->_resize[0],
+            _config->_resize[1], _config->_target_short_size,
+            _config->_resize_max_size, im_scale_ratio);
+    } else {
+        // TensorRT 5 only support fixed shape input
+        rw = _config->_resize[0];
+        rh = _config->_resize[1];
+    }
     cv::Size resize_size(rw, rh);
     *resize_w = rw;
     *resize_h = rh;
     *scale_ratio = im_scale_ratio;
     if (*ori_h != rh || *ori_w != rw) {
         cv::Mat im_temp;
-        if (_config->_resize_type == utils::SCALE_TYPE::UNPADDING) {
+        if (_config->_enable_trt || _config->_resize_type == utils::SCALE_TYPE::UNPADDING) {
             cv::resize(im, im_temp, resize_size, 0, 0, cv::INTER_LINEAR);
         } else if (_config->_resize_type == utils::SCALE_TYPE::RANGE_SCALING) {
                 cv::resize(im, im_temp, cv::Size(), im_scale_ratio,
@@ -85,6 +91,7 @@ bool DetectionPreProcessor::single_process(const std::string& fname,
 
     float* pmean = _config->_mean.data();
     float* pscale = _config->_std.data();
+    #pragma omp parallel for
     for (int h = 0; h < rh; ++h) {
         const uchar* uptr = im.ptr<uchar>(h);
         const float* fptr = im.ptr<float>(h);

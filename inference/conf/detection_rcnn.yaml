@@ -13,6 +13,8 @@ DEPLOY:
     CHANNELS : 3
     PRE_PROCESSOR: "DetectionPreProcessor"
     PREDICTOR_MODE: "ANALYSIS"
-    BATCH_SIZE : 1 
+    BATCH_SIZE : 1
     RESIZE_MAX_SIZE: 1333
     FEEDS_SIZE: 3
+    USE_TRT : 0
+    TRT_MODE : FP32
