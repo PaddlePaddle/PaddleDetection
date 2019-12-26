@@ -266,6 +266,24 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MultiClassSoftNMS(object):
+    """ Multi-Class Soft NMS
+
+    Args:
+        score_threshold (float): Threshold to filter out bounding boxes with
+                                 low confidence score. If not provided,
+                                 consider all boxes.
+        softnms_sigma (float): Soft NMS sigma . Default: 0.5
+        keep_top_k (int): Number of total bboxes to be kept per image after NMS
+                          step. -1 means keeping all bboxes after NMS step.
+        normalized (bool): Whether detections are normalized. Default: True
+        background_label (int): The index of background label, the background
+                                label will be ignored. If set to -1, then all
+                                categories will be considered. Default: 0
+        Nt (float): Soft NMS threshold. Default: 0.3
+        method (str): Soft NMS weighting method, can be 'gaussian', 'linear'
+                      or 'hard'. default 'gaussian'
+        use_cpp (bool): Use CPP implementation. Default: False
+    """
     def __init__(self,
                  score_threshold=0.01,
                  keep_top_k=300,
