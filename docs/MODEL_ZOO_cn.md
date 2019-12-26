@@ -54,6 +54,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet101-vd-FPN     | Faster         |    1    |   1x    |     17.011     |  40.5  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_1x.tar) |
 | ResNet101-vd-FPN     | Faster         |    1    |   2x    |     16.934     |  40.8  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_2x.tar) |
 | ResNet101-vd-FPN     | Mask           |    1    |   1x    |     13.105     |  41.4  |  36.8   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r101_vd_fpn_1x.tar) |
+| CBResNet101-vd-FPN         | Faster         |     2     |   1x    |     -     |  42.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_cbr101_vd_dual_fpn_1x.tar) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   1x    |     8.815      |  42.2  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_1x.tar) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |     8.809      |  41.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_2x.tar) |
 | ResNeXt101-vd-FPN    | Mask           |    1    |   1x    |     7.689      |  42.9  |  37.9   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_x101_vd_64x4d_fpn_1x.tar) |
