@@ -4,36 +4,21 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
+namespace nms {
+enum class Method : uint32_t { LINEAR = 0, GAUSSIAN, HARD };
 
-namespace nms
-{
-enum class Method : uint32_t
-{
-  LINEAR = 0,
-  GAUSSIAN,
-  HARD
-};
-
-size_t soft_nms(float* boxes,
-                int32_t* index,
-                size_t count,
-                Method method,
-                float Nt,
-                float sigma,
-                float threshold);
+size_t soft_nms(float* boxes, int32_t* index, size_t count, Method method,
+                float Nt, float sigma, float threshold);
 }  // namespace nms
 
-namespace binding
-{
+namespace binding {
 namespace py = pybind11;
 using namespace pybind11::literals;
 
 py::tuple py_soft_nms(py::array_t<float, py::array::c_style> boxes,
                       nms::Method method = nms::Method::GAUSSIAN,
-                      float Nt           = 0.3,
-                      float sigma        = 0.5,
-                      float threshold    = 0.001)
-{
+                      float Nt = 0.3, float sigma = 0.5,
+                      float threshold = 0.001) {
   assert(boxes.ndim() == 2 && "Input should be 2-D NumPy array");
   assert(boxes.shape()[1] == 5 && "Input should have size [N,5]");
 
@@ -44,8 +29,8 @@ py::tuple py_soft_nms(py::array_t<float, py::array::c_style> boxes,
 
   auto N = nms::soft_nms(b, i, count, method, Nt, sigma, threshold);
 
-  std::vector<size_t> shape5    = {N, 5};
-  std::vector<size_t> shape1    = {N};
+  std::vector<size_t> shape5 = {N, 5};
+  std::vector<size_t> shape1 = {N};
   std::vector<ssize_t> strides5 = {sizeof(float) * 5, sizeof(float)};
   std::vector<ssize_t> strides1 = {sizeof(float)};
 
@@ -63,12 +48,12 @@ PYBIND11_MODULE(nms, m) {
   m.doc() = "SoftNMS for object detection.";
 
   py::enum_<nms::Method>(m, "NMSMethod")
-    .value("LINEAR", nms::Method::LINEAR)
-    .value("GAUSSIAN", nms::Method::GAUSSIAN)
-    .value("HARD", nms::Method::HARD)
-    .export_values();
+      .value("LINEAR", nms::Method::LINEAR)
+      .value("GAUSSIAN", nms::Method::GAUSSIAN)
+      .value("HARD", nms::Method::HARD)
+      .export_values();
   m.def("soft_nms", &py_soft_nms, "boxes"_a.noconvert(),
-        "method"_a = nms::Method::GAUSSIAN,
-        "Nt"_a = 0.3, "sigma"_a = 0.5, "threshold"_a = 0.001);
+        "method"_a = nms::Method::GAUSSIAN, "Nt"_a = 0.3, "sigma"_a = 0.5,
+        "threshold"_a = 0.001);
 }
 } /* namespace binding */
