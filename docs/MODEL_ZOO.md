@@ -93,11 +93,14 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 
 
 ### HRNet
-* See more details in [HRNet model zoo](../configs/hrnet/README.md)。
+* See more details in [HRNet model zoo](../configs/hrnet/README.md).
 
 
 ### Res2Net
-* See more details in [Res2Net model zoo](../configs/res2net/README.md)。
+* See more details in [Res2Net model zoo](../configs/res2net/README.md).
+
+### IOU loss
+* GIOU loss and DIOU loss are included now. See more details in [IOU loss model zoo](../configs/iou_loss/README.md).
 
 
 ### Group Normalization

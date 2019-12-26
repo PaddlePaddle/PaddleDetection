@@ -154,7 +154,6 @@ def main():
     # compile program for multi-devices
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_optimizer_ops = False
-    build_strategy.fuse_elewise_add_act_ops = True
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
@@ -247,6 +246,7 @@ def main():
             strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
                 it, np.mean(outs[-1]), logs, time_cost, eta)
             logger.info(strs)
+
 
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):

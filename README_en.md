@@ -102,6 +102,7 @@ Advanced Features:
 #### 12/2019
 - Add Res2Net model.
 - Add HRNet model.
+- Add GIOU loss and DIOU loss.
 
 #### 21/11/2019
 - Add CascadeClsAware RCNN model.
