@@ -33,7 +33,7 @@ print("="*50+"teacher_model_vars"+"="*50)
 print(teacher_vars)
 ```
 
-经过对比可以发现，`student model`和`teacher model`输入到`yolov3_loss`的特征图分别为：
+经过对比可以发现，`student model`和`teacher model`输入到3个`yolov3_loss`的特征图分别为：
 
 ```bash
 # student model
@@ -55,7 +55,7 @@ dist_loss_3 = l2_loss('teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1')
 
 ## 训练
 
-根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py)编写压缩脚本distill.py。
+根据[PaddleDetection/tools/train.py](../../tools/train.py)编写压缩脚本distill.py。
 在该脚本中定义了teacher_model和student_model，用teacher_model的输出指导student_model的训练
 
 ### 执行示例
@@ -67,8 +67,6 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 ```
 
 step2: 开始训练
-
-使用PaddleDetection提供的配置文件在用8卡进行训练：
 
 ```bash
 python distill.py \
@@ -115,19 +113,18 @@ python -u distill.py \
 
 ## 评估
 
-每隔`snap_shot_iter`步后会保存一个checkpoint模型可以用于评估，使用PaddleDetection目录下[tools/eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/tools/eval.py)评估脚本，并指定`weights`为训练得到的模型路径
+每隔`snap_shot_iter`步后会保存一个checkpoint模型可以用于评估，使用PaddleDetection目录下[tools/eval.py](../../tools/eval.py)评估脚本，并指定`weights`为训练得到的模型路径
 
 运行命令为：
 ```bash
 export CUDA_VISIBLE_DEVICES=0
 python -u ../../tools/eval.py -c ../../configs/yolov3_mobilenet_v1_voc.yml \
        -o weights=output/yolov3_mobilenet_v1_voc/model_final \
-       -d ../../dataset/voc
 ```
 
 ## 预测
 
-每隔`snap_shot_iter`步后保存的checkpoint模型也可以用于预测，使用PaddleDetection目录下[tools/infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/tools/infer.py)评估脚本，并指定`weights`为训练得到的模型路径
+每隔`snap_shot_iter`步后保存的checkpoint模型也可以用于预测，使用PaddleDetection目录下[tools/infer.py](../../tools/infer.py)评估脚本，并指定`weights`为训练得到的模型路径
 
 ### Python预测
 

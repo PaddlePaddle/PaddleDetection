@@ -17,28 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import time
-import multiprocessing
 import numpy as np
-import datetime
-from collections import deque, OrderedDict
+from collections import OrderedDict
 from paddleslim.dist.single_distiller import merge, l2_loss
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before 
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
-
 import sys
 sys.path.append("../../")
 from ppdet.core.workspace import load_config, merge_config, create
@@ -73,8 +56,7 @@ def main():
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
     else:
-        devices_num = int(
-            os.environ.get('CPU_NUM', multiprocessing.cpu_count()))
+        devices_num = int(os.environ.get('CPU_NUM', 1))
 
     if 'FLAGS_selected_gpus' in env:
         device_id = int(env['FLAGS_selected_gpus'])
@@ -95,8 +77,8 @@ def main():
         if "py_reader" not in v.name and "double_buffer" not in v.name and "generated_var" not in v.name:
             student_vars.append((v.name, v.shape))
     # uncomment the following lines to observe student's variables for distillation
-    #print("="*50+"student_model_vars"+"="*50)
-    #print(student_vars)
+    # print("="*50+"student_model_vars"+"="*50)
+    # print(student_vars)
 
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, fluid.default_startup_program()):
@@ -140,8 +122,8 @@ def main():
     for v in teacher_program.list_vars():
         teacher_vars.append((v.name, v.shape))
     # uncomment the following lines to observe teacher's variables for distillation
-    #print("="*50+"teacher_model_vars"+"="*50)
-    #print(teacher_vars)
+    # print("="*50+"teacher_model_vars"+"="*50)
+    # print(teacher_vars)
 
     exe.run(teacher_startup_program)
     assert FLAGS.teacher_pretrained, "teacher_pretrained should be set"
@@ -155,17 +137,27 @@ def main():
         'gt_class': 'gt_class',
         'gt_score': 'gt_score'
     }
-    main = merge(teacher_program,
-                 fluid.default_main_program(), data_name_map, place)
+    distill_prog = merge(teacher_program,
+                         fluid.default_main_program(), data_name_map, place)
 
     distill_weight = 100
-    distill_loss_1 = l2_loss('teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1')
-    distill_loss_2 = l2_loss('teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1')
-    distill_loss_3 = l2_loss('teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1')
-    distill_loss = fluid.layers.sum(
-        [distill_loss_1, distill_loss_2, distill_loss_3])
-    distill_loss = distill_loss * distill_weight
+    distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
+                     ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
+                     ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
 
+    def distill(pairs, weight):
+        """
+        Add 3 pairs of distillation losses, each pair of feature maps is the
+        input of teacher and student's yolov3_loss respectively
+        """
+        loss_1 = l2_loss(pairs[0][0], pairs[0][1])
+        loss_2 = l2_loss(pairs[1][0], pairs[1][1])
+        loss_3 = l2_loss(pairs[2][0], pairs[2][1])
+        loss = fluid.layers.sum([loss_1, loss_2, loss_3])
+        weighted_loss = loss * weight
+        return weighted_loss
+
+    distill_loss = distill(distill_pairs, distill_weight)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
     optim_builder = create('OptimizerBuilder')
@@ -192,8 +184,7 @@ def main():
     # local execution scopes can be deleted after each iteration.
     exec_strategy.num_iteration_per_drop_scope = 1
 
-    parallel_main = fluid.CompiledProgram(fluid.default_main_program(
-    )).with_data_parallel(
+    parallel_main = fluid.CompiledProgram(distill_prog).with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
@@ -205,18 +196,14 @@ def main():
                  if 'finetune_exclude_pretrained_params' in cfg else []
     start_iter = 0
     if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe,
-                                   fluid.default_main_program(),
-                                   FLAGS.resume_checkpoint)
+        checkpoint.load_checkpoint(exe, distill_prog, FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
     elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe,
-                                   fluid.default_main_program(),
-                                   cfg.pretrain_weights)
+        checkpoint.load_and_fusebn(exe, distill_prog, cfg.pretrain_weights)
     elif cfg.pretrain_weights:
         checkpoint.load_params(
             exe,
-            fluid.default_main_program(),
+            distill_prog,
             cfg.pretrain_weights,
             ignore_params=ignore_params)
 
@@ -249,15 +236,12 @@ def main():
         if step_id % cfg.snapshot_iter == 0 and step_id != 0 or step_id == cfg.max_iters - 1:
             save_name = str(
                 step_id) if step_id != cfg.max_iters - 1 else "model_final"
-            checkpoint.save(exe,
-                            fluid.default_main_program(),
+            checkpoint.save(exe, distill_prog,
                             os.path.join(save_dir, save_name))
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
                                eval_values, eval_cls)
             resolution = None
-            if 'mask' in results[0]:
-                resolution = model.mask_head.resolution
             box_ap_stats = eval_results(results, cfg.metric, cfg.num_classes,
                                         resolution, is_bbox_normalized,
                                         FLAGS.output_eval, map_type,
@@ -266,8 +250,7 @@ def main():
             if box_ap_stats[0] > best_box_ap_list[0]:
                 best_box_ap_list[0] = box_ap_stats[0]
                 best_box_ap_list[1] = step_id
-                checkpoint.save(exe,
-                                fluid.default_main_program(),
+                checkpoint.save(exe, distill_prog,
                                 os.path.join("./", "best_model"))
             logger.info("Best test box ap: {}, in step: {}".format(
                 best_box_ap_list[0], best_box_ap_list[1]))
