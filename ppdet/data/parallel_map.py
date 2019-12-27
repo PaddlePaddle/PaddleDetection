@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import sys
 import six
 if six.PY3:
@@ -280,3 +281,13 @@ class ParallelMap(object):
 # FIXME(dengkaipeng): fix me if you have better impliment
 # handle terminate reader process, do not print stack frame
 signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
+
+
+def _term_group(sig_num, frame):
+    pid = os.getpid()
+    pg = os.getpgid(os.getpid())
+    logger.info("main proc {} exit, kill process group " "{}".format(pid, pg))
+    os.killpg(pg, signal.SIGKILL)
+
+
+signal.signal(signal.SIGINT, _term_group)
