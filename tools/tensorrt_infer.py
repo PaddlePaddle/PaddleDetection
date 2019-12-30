@@ -209,7 +209,6 @@ def benchmark():
                            return_numpy=False)
         else:
             outs = predict.run(inputs)
-    #print('outs: ', np.array(outs[-1].data.float_data()))
     t2 = time.time()
     #fluid.profiler.stop_profiler('total', 'logs')
 
@@ -273,7 +272,7 @@ if __name__ == '__main__':
         "--arch",
         type=str,
         default='YOLO',
-        help="architecture for different preprocessing and input. It can be YOLO, SSD, RCNN, RetinaNet"
+        help="architecture for different input. It can be YOLO, SSD, RCNN, RetinaNet"
     )
     parser.add_argument(
         "--target_shape",
