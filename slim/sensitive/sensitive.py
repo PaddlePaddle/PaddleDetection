@@ -21,10 +21,28 @@ import time
 import numpy as np
 import datetime
 from collections import deque
+
+
+def set_paddle_flags(**kwargs):
+    for key, value in kwargs.items():
+        if os.environ.get(key, None) is None:
+            os.environ[key] = str(value)
+
+
+# NOTE(paddle-dev): All of these flags should be set before
+# `import paddle`. Otherwise, it would not take any effect.
+set_paddle_flags(
+    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
+)
+
+
 from paddle import fluid
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.data_feed import create_reader
+#from ppdet.data.data_feed import create_reader
+
+from ppdet.data.reader import create_reader
+
 from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
@@ -43,6 +61,7 @@ logger = logging.getLogger(__name__)
 def main():
     env = os.environ
 
+    print("FLAGS.config: {}".format(FLAGS.config))
     cfg = load_config(FLAGS.config)
     assert 'architecture' in cfg
     main_arch = cfg.architecture
@@ -50,8 +69,6 @@ def main():
     merge_config(FLAGS.opt)
 
     print_total_cfg(cfg)
-
-    eval_feed = create(cfg.eval_feed)
 
     place = fluid.CUDAPlace(0)
     exe = fluid.Executor(place)
@@ -62,7 +79,8 @@ def main():
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            eval_loader, feed_vars = create_feed(eval_feed)
+            inputs_def = cfg['EvalReader']['inputs_def']
+            feed_vars, eval_loader = model.build_inputs(**inputs_def)
             fetches = model.eval(feed_vars)
     eval_prog = eval_prog.clone(True)
 
@@ -120,9 +138,16 @@ def main():
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
+        dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
-            results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-            is_bbox_normalized, FLAGS.output_eval, map_type)
+            results, 
+            cfg.metric, 
+            cfg.num_classes, 
+            resolution,
+            is_bbox_normalized,
+            FLAGS.output_eval,
+            map_type,
+            dataset=dataset)
         return box_ap_stats[0]
 
     pruned_params = FLAGS.pruned_params
@@ -132,7 +157,6 @@ def main():
     logger.info("pruned params: {}".format(pruned_params))
     pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
-#    pruned_params += ["yolo_block.0.0.0.conv.weights", "yolo_block.0.0.1.conv.weights", "yolo_block.0.1.0.conv.weights", "yolo_block.0.1.1.conv.weights", "yolo_block.0.2.conv.weights", "yolo_block.0.tip.conv.weights", "yolo_block.1.0.0.conv.weights", "yolo_block.1.0.1.conv.weights", "yolo_block.1.1.0.conv.weights", "yolo_block.1.1.1.conv.weights", "yolo_block.1.2.conv.weights", "yolo_block.1.tip.conv.weights", "yolo_block.2.0.0.conv.weights", "yolo_block.2.0.1.conv.weights", "yolo_block.2.1.0.conv.weights", "yolo_block.2.1.1.conv.weights", "yolo_block.2.2.conv.weights", "yolo_block.2.tip.conv.weights"]
     sensitivity(eval_prog,
                 place,
                 pruned_params,
