@@ -18,7 +18,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import numpy as np
-import pycocotools.mask as mask_util
 from PIL import Image, ImageDraw
 
 from .colormap import colormap
@@ -56,6 +55,7 @@ def draw_mask(image, im_id, segms, threshold, alpha=0.7):
         segm, score = dt['segmentation'], dt['score']
         if score < threshold:
             continue
+        import pycocotools.mask as mask_util
         mask = mask_util.decode(segm) * 255
         color_mask = color_list[mask_color_id % len(color_list), 0:3]
         mask_color_id += 1

@@ -14,7 +14,6 @@
 
 import os
 import numpy as np
-from pycocotools.coco import COCO
 
 from .dataset import DataSet
 from ppdet.core.workspace import register, serializable
@@ -75,6 +74,7 @@ class COCODataSet(DataSet):
 
         assert anno_path.endswith('.json'), \
             'invalid coco annotation file: ' + anno_path
+        from pycocotools.coco import COCO
         coco = COCO(anno_path)
         img_ids = coco.getImgIds()
         cat_ids = coco.getCatIds()
