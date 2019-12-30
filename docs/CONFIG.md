@@ -191,7 +191,7 @@ A small utility (`tools/configure.py`) is included to simplify the configuration
     For a minimal version, run:
 
     ```shell
-    python tools/configure.py --minimal generate FasterRCNN BBoxHead
+    python tools/configure.py generate --minimal FasterRCNN BBoxHead
     ```
 
 
