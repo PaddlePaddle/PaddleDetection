@@ -75,6 +75,8 @@ class DataSet(object):
         return self.cname2cid
 
     def get_anno(self):
+        if self.anno_path is None:
+            return
         return os.path.join(self.dataset_dir, self.anno_path)
 
     def get_imid2path(self):
