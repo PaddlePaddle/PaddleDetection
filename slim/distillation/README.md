@@ -10,6 +10,8 @@
 - [检测库的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim蒸馏API文档](https://paddlepaddle.github.io/PaddleSlim/api/single_distiller_api/)
 
+## 安装PaddleSlim
+可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim
 
 ## 蒸馏策略说明
 
@@ -55,7 +57,7 @@ dist_loss_3 = l2_loss('teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1')
 
 ## 训练
 
-根据[PaddleDetection/tools/train.py](../../tools/train.py)编写压缩脚本distill.py。
+根据[PaddleDetection/tools/train.py](../../tools/train.py)编写压缩脚本`distill.py`。
 在该脚本中定义了teacher_model和student_model，用teacher_model的输出指导student_model的训练
 
 ### 执行示例
@@ -69,15 +71,15 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 step2: 开始训练
 
 ```bash
-python distill.py \
-    -c ../../configs/yolov3_mobilenet_v1_voc.yml \
-    -t ../../configs/yolov3_r34_voc.yml \
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1_voc.yml \
+    -t configs/yolov3_r34_voc.yml \
     --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
 ```
 
 如果要调整训练卡数，需要调整配置文件`yolov3_mobilenet_v1_voc.yml`中的以下参数：
 
-- **max_iters:** 一个`epoch`中batch的数量，需要设置为`total_num / batch_size`, 其中`total_num`为训练样本总数量，`batch_size`为多卡上总的batch size.
+- **max_iters:** 训练过程迭代总步数。
 - **YOLOv3Loss.batch_size:** 该参数表示单张GPU卡上的`batch_size`, 总`batch_size`是GPU卡数乘以这个值， `batch_size`的设定受限于显存大小。
 - **LeaningRate.base_lr:** 根据多卡的总`batch_size`调整`base_lr`，两者大小正相关，可以简单的按比例进行调整。
 - **LearningRate.schedulers.PiecewiseDecay.milestones：** 请根据batch size的变化对其调整。
@@ -86,9 +88,10 @@ python distill.py \
 以下为4卡训练示例，通过命令行覆盖`yolov3_mobilenet_v1_voc.yml`中的参数：
 
 ```shell
-python distill.py \
-    -c ../../configs/yolov3_mobilenet_v1_voc.yml \
-    -t ../../configs/yolov3_r34_voc.yml \
+CUDA_VISIBLE_DEVICES=0,1,2,3
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1_voc.yml \
+    -t configs/yolov3_r34_voc.yml \
     -o YoloTrainFeed.batch_size=16 \
     --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
 ```
@@ -101,9 +104,9 @@ python distill.py \
 蒸馏任务执行过程中会自动保存断点。如果需要从断点继续训练请用`-r`参数指定checkpoint路径，示例如下：
 
 ```bash
-python -u distill.py \
--c ../../configs/yolov3_mobilenet_v1_voc.yml \
--t ../../configs/yolov3_r34_voc.yml \
+python -u slim/distillation/distill.py \
+-c configs/yolov3_mobilenet_v1_voc.yml \
+-t configs/yolov3_r34_voc.yml \
 -r output/yolov3_mobilenet_v1_voc/10000 \
 --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
 ```
@@ -118,7 +121,7 @@ python -u distill.py \
 运行命令为：
 ```bash
 export CUDA_VISIBLE_DEVICES=0
-python -u ../../tools/eval.py -c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python -u tools/eval.py -c configs/yolov3_mobilenet_v1_voc.yml \
        -o weights=output/yolov3_mobilenet_v1_voc/model_final \
 ```
 
@@ -131,7 +134,7 @@ python -u ../../tools/eval.py -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 运行命令为：
 ```
 export CUDA_VISIBLE_DEVICES=0
-python -u ../../tools/infer.py -c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python -u tools/infer.py -c configs/yolov3_mobilenet_v1_voc.yml \
                     --infer_img=demo/000000570688.jpg \
                     --output_dir=infer_output/ \
                     --draw_threshold=0.5 \

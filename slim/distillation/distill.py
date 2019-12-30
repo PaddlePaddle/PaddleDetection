@@ -22,8 +22,6 @@ from collections import OrderedDict
 from paddleslim.dist.single_distiller import merge, l2_loss
 
 from paddle import fluid
-import sys
-sys.path.append("../../")
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
