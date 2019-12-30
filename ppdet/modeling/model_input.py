@@ -26,7 +26,7 @@ __all__ = ['create_feed']
 # yapf: disable
 feed_var_def = [
     {'name': 'im_info',       'shape': [3],  'dtype': 'float32', 'lod_level': 0},
-    {'name': 'im_id',         'shape': [1],  'dtype': 'int32',   'lod_level': 0},
+    {'name': 'im_id',         'shape': [1],  'dtype': 'int64',   'lod_level': 0},
     {'name': 'gt_box',        'shape': [4],  'dtype': 'float32', 'lod_level': 1},
     {'name': 'gt_label',      'shape': [1],  'dtype': 'int32',   'lod_level': 1},
     {'name': 'is_crowd',      'shape': [1],  'dtype': 'int32',   'lod_level': 1},
