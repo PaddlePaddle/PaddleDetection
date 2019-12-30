@@ -96,7 +96,7 @@ class YOLOv3(object):
         inputs_def = {
             'image':    {'shape': im_shape,                 'dtype': 'float32', 'lod_level': 0},
             'im_size':  {'shape': [None, 2],                'dtype': 'int32',   'lod_level': 0},
-            'im_id':    {'shape': [None, 1],                'dtype': 'int32',   'lod_level': 0},
+            'im_id':    {'shape': [None, 1],                'dtype': 'int64',   'lod_level': 0},
             'gt_bbox':  {'shape': [None, num_max_boxes, 4], 'dtype': 'float32', 'lod_level': 0},
             'gt_class': {'shape': [None, num_max_boxes],    'dtype': 'int32',   'lod_level': 0},
             'gt_score': {'shape': [None, num_max_boxes],    'dtype': 'float32', 'lod_level': 0},
