@@ -1,7 +1,4 @@
 architecture: YOLOv3
-train_feed: YoloTrainFeed
-eval_feed: YoloEvalFeed
-test_feed: YoloTestFeed
 use_gpu: true
 max_iters: 20000
 log_smooth_window: 20
@@ -13,6 +10,7 @@ pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mob
 weights: output/yolov3_mobilenet_v1_fruit/best_model
 num_classes: 3
 finetune_exclude_pretrained_params: ['yolo_output']
+use_fine_grained_loss: false
 
 YOLOv3:
   backbone: MobileNet
@@ -30,8 +28,7 @@ YOLOv3Head:
             [30, 61], [62, 45], [59, 119],
             [116, 90], [156, 198], [373, 326]]
   norm_decay: 0.
-  ignore_thresh: 0.7
-  label_smooth: true
+  yolo_loss: YOLOv3Loss
   nms:
     background_label: -1
     keep_top_k: 100
@@ -39,6 +36,11 @@ YOLOv3Head:
     nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
+
+YOLOv3Loss:
+  batch_size: 8
+  ignore_thresh: 0.7
+  label_smooth: true
 
 LearningRate:
   base_lr: 0.00001
@@ -60,16 +62,19 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-YoloTrainFeed:
-  batch_size: 1
+_READER_: 'yolov3_reader.yml'
+# will merge TrainReader into yolov3_reader.yml
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 608]
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
   dataset:
+    !VOCDataSet
     dataset_dir: dataset/fruit
-    annotation: fruit-detection/train.txt
+    anno_path: train.txt
+    with_background: false
     use_default_label: false
-  num_workers: 16
-  bufsize: 128
-  use_process: true
-  mixup_epoch: -1
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -83,40 +88,45 @@ YoloTrainFeed:
     max_size: 0
     target_size: 608
   - !RandomFlipImage
-    is_mask_flip: false
     is_normalized: true
     prob: 0.5
   - !NormalizeImage
-    is_channel_first: false
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
     is_scale: true
-    mean:
-    - 0.485
-    - 0.456
-    - 0.406
-    std:
-    - 0.229
-    - 0.224
-    - 0.225
+    is_channel_first: false
+  - !PadBox
+    num_max_boxes: 50
+  - !BboxXYXY2XYWH {}
+  batch_transforms:
+  - !RandomShape
+    sizes: [608]
   - !Permute
     channel_first: true
     to_bgr: false
-  batch_transforms:
-  - !RandomShape 
-    sizes: [608] 
-  with_background: false
-
-YoloEvalFeed:
   batch_size: 1
-  image_shape: [3, 608, 608]
-  dataset:
-    dataset_dir: dataset/fruit
-    annotation: fruit-detection/val.txt
-    use_default_label: false
- 
+  shuffle: true
+  mixup_epoch: -1
+  worker_num: 4
+  bufsize: 64
+  use_process: true
 
-YoloTestFeed:
+EvalReader:
   batch_size: 1
-  image_shape: [3, 608, 608]
+  inputs_def:
+    image_shape: [3, 608, 608]
+    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+    num_max_boxes: 50
   dataset:
+    !VOCDataSet
     dataset_dir: dataset/fruit
+    anno_path: val.txt
     use_default_label: false
+    with_background: false
+
+TestReader:
+  batch_size: 1
+  dataset:
+    !ImageFolder
+    use_default_label: false
+    with_background: false

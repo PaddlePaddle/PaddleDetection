@@ -86,11 +86,22 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | CBResNet200-vd-FPN-Nonlocal | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
 
-
 #### Notes:
 - Deformable ConvNets v2(dcn_v2) reference from [Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5` means adding `dcn` in resnet stage 3 to 5.
 - Detailed configuration file in [configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
+
+
+### HRNet
+* See more details in [HRNet model zoo](../configs/hrnet/README.md).
+
+
+### Res2Net
+* See more details in [Res2Net model zoo](../configs/res2net/README.md).
+
+### IOU loss
+* GIOU loss and DIOU loss are included now. See more details in [IOU loss model zoo](../configs/iou_loss/README.md).
+
 
 ### Group Normalization
 | Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |

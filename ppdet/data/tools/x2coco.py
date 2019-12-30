@@ -26,6 +26,10 @@ import numpy as np
 import PIL.ImageDraw
 
 
+label_to_num = {}
+categories_list = []
+labels_list = []
+
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, np.integer):
@@ -124,15 +128,12 @@ def get_bbox(height, width, points):
 
 def deal_json(ds_type, img_path, json_path):
     data_coco = {}
-    label_to_num = {}
     images_list = []
-    categories_list = []
     annotations_list = []
-    labels_list = []
     image_num = -1
     object_num = -1
     for img_file in os.listdir(img_path):
-        img_label = img_file.split('.')[0]
+        img_label = os.path.splitext(img_file)[0]
         if img_file.split('.')[
                 -1] not in ['bmp', 'jpg', 'jpeg', 'png', 'JPEG', 'JPG', 'PNG']:
             continue
@@ -226,7 +227,8 @@ def main():
         print('The image folder does not exist!')
         os._exit(0)
     try:
-        assert args.train_proportion + args.val_proportion + args.test_proportion == 1.0
+        assert abs(args.train_proportion + args.val_proportion \
+                   + args.test_proportion - 1.0) < 1e-5
     except AssertionError as e:
         print(
             'The sum of pqoportion of training, validation and test datase must be 1!'
@@ -254,18 +256,21 @@ def main():
     count = 1
     for img_name in os.listdir(args.image_input_dir):
         if count <= train_num:
-            shutil.copyfile(
-                osp.join(args.image_input_dir, img_name),
-                osp.join(args.output_dir + '/train/', img_name))
+            if osp.exists(args.output_dir + '/train/'):
+                shutil.copyfile(
+                    osp.join(args.image_input_dir, img_name),
+                    osp.join(args.output_dir + '/train/', img_name))
         else:
             if count <= train_num + val_num:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/val/', img_name))
+                if osp.exists(args.output_dir + '/val/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/val/', img_name))
             else:
-                shutil.copyfile(
-                    osp.join(args.image_input_dir, img_name),
-                    osp.join(args.output_dir + '/test/', img_name))
+                if osp.exists(args.output_dir + '/test/'):
+                    shutil.copyfile(
+                        osp.join(args.image_input_dir, img_name),
+                        osp.join(args.output_dir + '/test/', img_name))
         count = count + 1
 
     # Deal with the json files.
@@ -282,13 +287,16 @@ def main():
             indent=4,
             cls=MyEncoder)
     if args.val_proportion != 0:
-        val_data_coco = deal_json(args.output_dir + '/val', args.json_input_dir)
+        val_data_coco = deal_json(args.dataset_type, 
+                                  args.output_dir + '/val', 
+                                  args.json_input_dir)
         val_json_path = osp.join(args.output_dir + '/annotations',
                                  'instance_val.json')
         json.dump(
             val_data_coco, open(val_json_path, 'w'), indent=4, cls=MyEncoder)
     if args.test_proportion != 0:
-        test_data_coco = deal_json(args.output_dir + '/test',
+        test_data_coco = deal_json(args.dataset_type, 
+                                   args.output_dir + '/test',
                                    args.json_input_dir)
         test_json_path = osp.join(args.output_dir + '/annotations',
                                   'instance_test.json')

@@ -5,7 +5,7 @@
 
 ## 训练/评估/推断
 
-PaddleDetection提供了训练/训练/评估三个功能的使用脚本，支持通过不同可选参数实现特定功能
+PaddleDetection提供了训练/评估/推断三个功能的使用脚本，支持通过不同可选参数实现特定功能
 
 ```bash
 # 设置PYTHONPATH路径
@@ -31,7 +31,6 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  是否边训练边测试  |  False  |    |
 |      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
-|   -d/--dataset_dir       |   train/eval   |  数据集路径, 同配置文件里的dataset_dir  |  None  |  `-d dataset/coco`  |
 |       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
 |       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
@@ -74,6 +73,19 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
   ```
 
   详细说明请参考[Transfer Learning](TRANSFER_LEARNING_cn.md)
+
+- 使用Paddle OP组建的YOLOv3损失函数训练YOLOv3
+
+  为了便于用户重新设计修改YOLOv3的损失函数，我们也提供了不使用`fluid.layer.yolov3_loss`接口而是在python代码中使用Paddle OP的方式组建YOLOv3损失函数,
+  可通过如下命令用Paddle OP组建YOLOv3损失函数版本的YOLOv3模型：
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/yolov3_darknet.yml \
+                           -o use_fine_grained_loss=true
+  ```
+
+  Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/losses/yolo_loss.py`
 
 #### 提示
 

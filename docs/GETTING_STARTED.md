@@ -34,7 +34,6 @@ list below can be viewed by `--help`
 |   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |
 |      --output_eval       |     train/eval |  json path in evalution  |  current path  |  `--output_eval ./json_result`  |
-|   -d/--dataset_dir       |   train/eval   |  path for dataset, same as dataset_dir in configs  |  None  |  `-d dataset/coco`  |
 |       --fp16             |     train      |  Whether to enable mixed precision training  |  False  |  GPU training is required  |
 |       --loss_scale       |     train      |  Loss scaling factor for mixed precision training  |  8.0  |  enable when `--fp16` is True  |  
 |       --json_eval        |       eval     |  Whether to evaluate with already existed bbox.json or mask.json  |  False  |  json path is set in `--output_eval`  |
@@ -74,6 +73,19 @@ list below can be viewed by `--help`
                            -o pretrain_weights=output/faster_rcnn_r50_1x/model_final/ \
                               finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
   ```
+
+- Training YOLOv3 with fine grained YOLOv3 loss built by Paddle OPs in python
+
+  In order to facilitate the redesign of YOLOv3 loss function, we also provide fine grained YOLOv3 loss function building in python code by common Paddle OPs instead of using `fluid.layers.yolov3_loss`,
+  training YOLOv3 with python loss function as follows:
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/yolov3_darknet.yml \
+                           -o use_fine_grained_loss=true
+  ```
+
+  Fine grained YOLOv3 loss code is defined in `ppdet/modeling/losses/yolo_loss.py`.
 
 ##### NOTES
 

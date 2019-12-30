@@ -54,6 +54,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet101-vd-FPN     | Faster         |    1    |   1x    |     17.011     |  40.5  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_1x.tar) |
 | ResNet101-vd-FPN     | Faster         |    1    |   2x    |     16.934     |  40.8  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_2x.tar) |
 | ResNet101-vd-FPN     | Mask           |    1    |   1x    |     13.105     |  41.4  |  36.8   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r101_vd_fpn_1x.tar) |
+| CBResNet101-vd-FPN         | Faster         |     2     |   1x    |     -     |  42.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_cbr101_vd_dual_fpn_1x.tar) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   1x    |     8.815      |  42.2  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_1x.tar) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |     8.809      |  41.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_x101_vd_64x4d_fpn_2x.tar) |
 | ResNeXt101-vd-FPN    | Mask           |    1    |   1x    |     7.689      |  42.9  |  37.9   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_x101_vd_64x4d_fpn_1x.tar) |
@@ -82,12 +83,22 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 | CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
-
-
 #### 注意事项:
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5`意思是在resnet模块的3到5阶段增加`dcn`.
 - 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
+
+
+### HRNet
+* 详情见[HRNet模型库](../configs/hrnet/README.md)。
+
+
+### Res2Net
+* 详情见[Res2Net模型库](../configs/res2net/README.md)。
+
+### IOU loss
+* 目前模型库中包括GIOU loss和DIOU loss，详情加[IOU loss模型库](../configs/iou_loss/README.md).
+
 
 ### Group Normalization
 | 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |

@@ -195,7 +195,11 @@ def extract_schema(cls):
     docs = cls.__doc__
     if docs is None and getattr(cls, '__category__', None) == 'op':
         docs = cls.__call__.__doc__
-    docstring = doc_parse(docs)
+    try:
+        docstring = doc_parse(docs)
+    except Exception:
+        docstring = None
+
     if docstring is None:
         comments = {}
     else:

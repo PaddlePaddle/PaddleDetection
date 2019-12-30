@@ -30,7 +30,10 @@ from .voc_utils import create_list
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['get_weights_path', 'get_dataset_path', 'download_dataset', 'create_voc_list']
+__all__ = [
+    'get_weights_path', 'get_dataset_path', 'download_dataset',
+    'create_voc_list'
+]
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
@@ -72,8 +75,9 @@ DATASETS = {
             'a4a898d6193db4b9ef3260a68bad0dc7', ),
     ], ["WIDER_train", "WIDER_val", "wider_face_split"]),
     'fruit': ([(
-        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
-        'ee4a1bf2e321b75b0850cc6e063f79d7', ), ], ["fruit-detection"]),
+        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit.tar',
+        'baa8806617a54ccf3685fa7153388ae6', ), ],
+              ['Annotations', 'JPEGImages']),
     'objects365': (),
 }
 
@@ -101,17 +105,19 @@ def get_dataset_path(path, annotation, image_dir):
                 "downloading dataset...".format(
                     osp.realpath(path), DATASET_HOME))
 
+    data_name = os.path.split(path.strip().lower())[-1]
     for name, dataset in DATASETS.items():
-        if os.path.split(path.strip().lower())[-1] == name:
+        if data_name == name:
             logger.info("Parse dataset_dir {} as dataset "
                         "{}".format(path, name))
             if name == 'objects365':
                 raise NotImplementedError(
-                    "Dataset {} is not valid for download automatically. Please apply and download the dataset from https://www.objects365.org/download.html".
-                    format(name))
+                    "Dataset {} is not valid for download automatically. "
+                    "Please apply and download the dataset from "
+                    "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
-            if name == 'voc':
+            if name == 'voc' or name == 'fruit':
                 exists = True
                 for sub_dir in dataset[1]:
                     check_dir = osp.join(data_dir, sub_dir)
@@ -123,7 +129,7 @@ def get_dataset_path(path, annotation, image_dir):
                     return data_dir
 
             # voc exist is checked above, voc is not exist here
-            check_exist = name != 'voc'
+            check_exist = name != 'voc' and name != 'fruit'
             for url, md5sum in dataset[0]:
                 get_path(url, data_dir, md5sum, check_exist)
 
@@ -147,7 +153,7 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
-    # label, see ../data/source/voc_loader.py
+    # label, see ../data/source/voc.py
     create_list(devkit_dir, years, data_dir)
     logger.info("Create voc file list finished")
 
@@ -344,6 +350,8 @@ def _move_and_merge_tree(src, dst):
     merge src to dst
     """
     if not osp.exists(dst):
+        shutil.move(src, dst)
+    elif osp.isfile(src):
         shutil.move(src, dst)
     else:
         for fp in os.listdir(src):

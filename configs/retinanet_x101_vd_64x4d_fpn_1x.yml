@@ -1,7 +1,4 @@
 architecture: RetinaNet
-train_feed: FasterRCNNTrainFeed
-eval_feed: FasterRCNNEvalFeed
-test_feed: FasterRCNNTestFeed
 max_iters: 180000
 use_gpu: true
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNeXt101_vd_64x4d_pretrained.tar
@@ -76,33 +73,18 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-FasterRCNNTrainFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_train2017.json
-    image_dir: train2017
+_READER_: 'faster_fpn_reader.yml'
+TrainReader:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 128
-  num_workers: 2
 
-FasterRCNNEvalFeed:
-  batch_size: 1
-  dataset:
-    dataset_dir: dataset/coco
-    annotation: annotations/instances_val2017.json
-    image_dir: val2017
+EvalReader:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 128
-  num_workers: 2
 
-FasterRCNNTestFeed:
-  batch_size: 1
-  dataset:
-    annotation: dataset/coco/annotations/instances_val2017.json
+TestReader:
   batch_transforms:
   - !PadBatch
     pad_to_stride: 128
-  num_workers: 2

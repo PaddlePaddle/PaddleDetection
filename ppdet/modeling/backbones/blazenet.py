@@ -34,6 +34,7 @@ class BlazeNet(object):
         double_blaze_filters (list): number of filter for each double_blaze block
         with_extra_blocks (bool): whether or not extra blocks should be added
         lite_edition (bool): whether or not is blazeface-lite
+        use_5x5kernel (bool): whether or not filter size is 5x5 in depth-wise conv
     """
 
     def __init__(
@@ -42,13 +43,15 @@ class BlazeNet(object):
             double_blaze_filters=[[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
                                   [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]],
             with_extra_blocks=True,
-            lite_edition=False):
+            lite_edition=False,
+            use_5x5kernel=True):
         super(BlazeNet, self).__init__()
 
         self.blaze_filters = blaze_filters
         self.double_blaze_filters = double_blaze_filters
         self.with_extra_blocks = with_extra_blocks
         self.lite_edition = lite_edition
+        self.use_5x5kernel = use_5x5kernel
 
     def __call__(self, input):
         if not self.lite_edition:
@@ -67,13 +70,18 @@ class BlazeNet(object):
                     "blaze_filters {} not in [2, 3]"
                 if len(v) == 2:
                     conv = self.BlazeBlock(
-                        conv, v[0], v[1], name='blaze_{}'.format(k))
+                        conv,
+                        v[0],
+                        v[1],
+                        use_5x5kernel=self.use_5x5kernel,
+                        name='blaze_{}'.format(k))
                 elif len(v) == 3:
                     conv = self.BlazeBlock(
                         conv,
                         v[0],
                         v[1],
                         stride=v[2],
+                        use_5x5kernel=self.use_5x5kernel,
                         name='blaze_{}'.format(k))
 
             layers = []
@@ -86,6 +94,7 @@ class BlazeNet(object):
                         v[0],
                         v[1],
                         double_channels=v[2],
+                        use_5x5kernel=self.use_5x5kernel,
                         name='double_blaze_{}'.format(k))
                 elif len(v) == 4:
                     layers.append(conv)
@@ -95,6 +104,7 @@ class BlazeNet(object):
                         v[1],
                         double_channels=v[2],
                         stride=v[3],
+                        use_5x5kernel=self.use_5x5kernel,
                         name='double_blaze_{}'.format(k))
             layers.append(conv)
 
