@@ -74,7 +74,7 @@ def main():
         print("------------------------------------------------------------------------------")
         return
 
-    eval_reader = create_reader(eval_feed, args_path=FLAGS.dataset_dir)
+    eval_reader = create_reader(cfg.EvalReader)
     eval_loader.set_sample_list_generator(eval_reader, place)
 
     # parse eval fetches
