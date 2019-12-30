@@ -21,26 +21,10 @@ import time
 import numpy as np
 import datetime
 from collections import deque
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
-
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.data_feed import create_reader
-
 from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
@@ -67,9 +51,6 @@ def main():
 
     print_total_cfg(cfg)
 
-    devices_num = fluid.core.get_cuda_device_count()
-
-    train_feed = create(cfg.train_feed)
     eval_feed = create(cfg.eval_feed)
 
     place = fluid.CUDAPlace(0)
@@ -115,11 +96,11 @@ def main():
                  if 'finetune_exclude_pretrained_params' in cfg else []
 
     start_iter = 0
-    if cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe, eval_prog, cfg.pretrain_weights)
-    elif cfg.pretrain_weights:
-        checkpoint.load_params(
-            exe, eval_prog, cfg.pretrain_weights, ignore_params=ignore_params)
+
+    if cfg.weights:
+        checkpoint.load_params(exe, eval_prog, cfg.weights)
+    else:
+        logger.warn("Please set cfg.weights to load trained model.")
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
@@ -195,7 +176,7 @@ if __name__ == '__main__':
         "-P",
         "--print_params",
         default=False,
-        type=bool,
+        action='store_true',
         help="Whether to only print the parameters' names and shapes.")
     FLAGS = parser.parse_args()
     main()

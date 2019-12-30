@@ -37,7 +37,7 @@
 ```
 python sensitive.py \ 
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
---print_params True
+--print_params
 ```
 
 通过观察参数名称和参数的形状，筛选出所有卷积层参数，并确定要分析的卷积层参数。
@@ -60,7 +60,7 @@ nohup python sensitive.py \
 
 ## 分析敏感度信息
 
-可以通过[paddleslim.prune.load_sensitivities](https://paddlepaddle.github.io/PaddleSlim/api/prune_api/#load_sensitivities)从文件中加载敏感度信息，并使用python数据分析工具画图分析。下图展示了`MobileNetv1-YOLOv3-VOC`模型在VOC数据上的敏感度信息：
+可以通过[paddleslim.prune.load_sensitivities](https://paddlepaddle.github.io/PaddleSlim/api/prune_api/#load_sensitivities)从文件中加载敏感度信息，并使用Python数据分析工具画图分析。下图展示了`MobileNetv1-YOLOv3-VOC`模型在VOC数据上的敏感度信息：
 
 <div align="center">
   <img src="./images/mobilev1_yolov3_voc_sensitives.png" />
