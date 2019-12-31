@@ -23,14 +23,19 @@
 # 观察student model的Variables
 student_vars = []
 for v in fluid.default_main_program().list_vars():
-    if "py_reader" not in v.name and "double_buffer" not in v.name and "generated_var" not in v.name:
+    try:
         student_vars.append((v.name, v.shape))
+    except:
+        pass
 print("="*50+"student_model_vars"+"="*50)
 print(student_vars)
 # 观察teacher model的Variables
 teacher_vars = []
 for v in teacher_program.list_vars():
-    teacher_vars.append((v.name, v.shape))
+    try:
+        teacher_vars.append((v.name, v.shape))
+    except:
+        pass
 print("="*50+"teacher_model_vars"+"="*50)
 print(teacher_vars)
 ```

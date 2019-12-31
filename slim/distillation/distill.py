@@ -72,9 +72,11 @@ def main():
     # get all student variables
     student_vars = []
     for v in fluid.default_main_program().list_vars():
-        if "py_reader" not in v.name and "double_buffer" not in v.name and "generated_var" not in v.name:
+        try:
             student_vars.append((v.name, v.shape))
-    # uncomment the following lines to observe student's variables for distillation
+        except:
+            pass
+    # uncomment the following lines to print all student variables
     # print("="*50+"student_model_vars"+"="*50)
     # print(student_vars)
 
@@ -118,8 +120,11 @@ def main():
     # get all teacher variables
     teacher_vars = []
     for v in teacher_program.list_vars():
-        teacher_vars.append((v.name, v.shape))
-    # uncomment the following lines to observe teacher's variables for distillation
+        try:
+            teacher_vars.append((v.name, v.shape))
+        except:
+            pass
+    # uncomment the following lines to print all teacher variables
     # print("="*50+"teacher_model_vars"+"="*50)
     # print(teacher_vars)
 
@@ -143,19 +148,19 @@ def main():
                      ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
                      ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
 
-    def distill(pairs, weight):
+    def l2_distill(pairs, weight):
         """
         Add 3 pairs of distillation losses, each pair of feature maps is the
         input of teacher and student's yolov3_loss respectively
         """
-        loss_1 = l2_loss(pairs[0][0], pairs[0][1])
-        loss_2 = l2_loss(pairs[1][0], pairs[1][1])
-        loss_3 = l2_loss(pairs[2][0], pairs[2][1])
-        loss = fluid.layers.sum([loss_1, loss_2, loss_3])
+        loss = []
+        for pair in pairs:
+            loss.append(l2_loss(pair[0], pair[1]))
+        loss = fluid.layers.sum(loss)
         weighted_loss = loss * weight
         return weighted_loss
 
-    distill_loss = distill(distill_pairs, distill_weight)
+    distill_loss = l2_distill(distill_pairs, distill_weight)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
     optim_builder = create('OptimizerBuilder')
