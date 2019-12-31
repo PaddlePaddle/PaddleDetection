@@ -52,24 +52,6 @@ def create_config(model_path, mode='fluid', batch_size=1, min_subgraph_size=3):
     return config
 
 
-def create_tensor(np_data, dtype, debug=False):
-    """
-    Args:
-        np_data (numpy.array): numpy.array data with dtype
-        dtype (string): float32, int64 or int32
-    """
-    dtype_map = {
-        'float32': fluid.core.PaddleDType.FLOAT32,
-        'int64': fluid.core.PaddleDType.INT64,
-        'int32': fluid.core.PaddleDType.INT32
-    }
-    t = fluid.core.PaddleTensor()
-    t.dtype = dtype_map[dtype]
-    t.shape = np_data.shape
-    t.data = fluid.core.PaddleBuf(np_data.flatten())
-    return t
-
-
 def offset_to_lengths(lod):
     offset = lod[0]
     lengths = [offset[i + 1] - offset[i] for i in range(len(offset) - 1)]
@@ -174,7 +156,7 @@ def benchmark():
             params_filename='__params__')
         data_dict = {k: v for k, v in zip(feed_var_names, img_data)}
     else:
-        inputs = [create_tensor(d, str(d.dtype)) for d in img_data]
+        inputs = [fluid.core.PaddleTensor(d.copy()) for d in img_data]
         config = create_config(
             model_path,
             mode=FLAGS.mode,
@@ -221,8 +203,8 @@ def benchmark():
         res = {}
         lod = out.lod() if FLAGS.use_python_inference else out.lod
         lengths = offset_to_lengths(lod)
-        np_data = np.array(out) if FLAGS.use_python_inference else np.array(
-            out.data.float_data()).reshape(out.shape)
+        np_data = np.array(
+            out) if FLAGS.use_python_inference else out.as_ndarray()
 
         res['bbox'] = (np_data, lengths)
         res['im_id'] = np.array([[0]])
