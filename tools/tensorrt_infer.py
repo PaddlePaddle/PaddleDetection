@@ -115,12 +115,6 @@ def NormalizeImage(im,
     return im
 
 
-def Permute(im):
-    im = np.swapaxes(im, 1, 2)
-    im = np.swapaxes(im, 1, 0)
-    return im
-
-
 def get_extra_info(im, arch, shape, scale):
     info = []
     input_shape = []
@@ -157,7 +151,7 @@ def Preprocess(img_path, arch):
     orig_img = DecodeImage(img_path)
     img, scale = ResizeImage(orig_img, FLAGS.target_shape)
     img = NormalizeImage(img, FLAGS.mean, FLAGS.std)
-    img = Permute(img)
+    img = img.transpose((2, 0, 1))
     img = img[np.newaxis, :]  # N, C, H, W
     data.append(img)
     extra_info = get_extra_info(img, arch, orig_img.shape, scale)
@@ -199,7 +193,6 @@ def benchmark():
 
     cnt = 100
     logger.info('run benchmark...')
-    #fluid.profiler.start_profiler('GPU')
     t1 = time.time()
     for i in range(cnt):
         if FLAGS.use_python_inference:
@@ -210,7 +203,6 @@ def benchmark():
         else:
             outs = predict.run(inputs)
     t2 = time.time()
-    #fluid.profiler.stop_profiler('total', 'logs')
 
     ms = (t2 - t1) * 1000.0 / float(cnt)
 
