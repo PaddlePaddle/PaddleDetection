@@ -150,8 +150,9 @@ def main():
 
     def l2_distill(pairs, weight):
         """
-        Add 3 pairs of distillation losses, each pair of feature maps is the
-        input of teacher and student's yolov3_loss respectively
+        Add l2 distillation losses composed of multi pairs of feature maps,
+        each pair of feature maps is the input of teacher and student's
+        yolov3_loss respectively
         """
         loss = []
         for pair in pairs:
