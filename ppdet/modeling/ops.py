@@ -226,9 +226,9 @@ class MultiClassSoftNMS(object):
         self.background_label = background_label
 
     def __call__(self, bboxes, scores):
-        def create_tmp_var(program, name, dtype, shape, lod_leval):
+        def create_tmp_var(program, name, dtype, shape, lod_level):
             return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_leval=lod_leval)
+                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
 
         def _soft_nms_for_cls(dets, sigma, thres):
             """soft_nms_for_cls"""
@@ -313,7 +313,7 @@ class MultiClassSoftNMS(object):
             name='softnms_pred_result',
             dtype='float32',
             shape=[6],
-            lod_leval=1)
+            lod_level=1)
         fluid.layers.py_func(
             func=_soft_nms, x=[bboxes, scores], out=pred_result)
         return pred_result
@@ -337,9 +337,9 @@ class MultiClassDiouNMS(object):
         self.background_label = background_label
 
     def __call__(self, bboxes, scores):
-        def create_tmp_var(program, name, dtype, shape, lod_leval):
+        def create_tmp_var(program, name, dtype, shape, lod_level):
             return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_leval=lod_leval)
+                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
 
         def _calc_diou_term(dets1, dets2):
             eps = 1.e-10
@@ -460,7 +460,7 @@ class MultiClassDiouNMS(object):
             name='diou_nms_pred_result',
             dtype='float32',
             shape=[6],
-            lod_leval=1)
+            lod_level=1)
         fluid.layers.py_func(
             func=_diou_nms, x=[bboxes, scores], out=pred_result)
         return pred_result
