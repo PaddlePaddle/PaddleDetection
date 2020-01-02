@@ -169,18 +169,13 @@ def main():
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
-    ignore_params = cfg.finetune_exclude_pretrained_params \
-                 if 'finetune_exclude_pretrained_params' in cfg else []
-
     start_iter = 0
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
     elif cfg.pretrain_weights:
         checkpoint.load_params(
-            exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
+            exe, train_prog, cfg.pretrain_weights)
 
 
     pruned_params = FLAGS.pruned_params
@@ -189,6 +184,9 @@ def main():
     logger.info("pruned params: {}".format(pruned_params))
     pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
+    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
+    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
+    
 
     pruner = Pruner()
     train_prog = pruner.prune(
@@ -215,7 +213,7 @@ def main():
             place=place,
             only_graph=True)[0]
         pruned_flops = flops(eval_prog)
-        logger.info("pruned FLOPS: {}".format(float(base_flops - pruned_flops)/base_flops))
+        logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
 
@@ -356,12 +354,6 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation directory, default is current directory.")
-    parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
     parser.add_argument(
         "--use_tb",
         type=bool,
