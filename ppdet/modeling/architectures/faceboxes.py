@@ -150,7 +150,7 @@ class FaceBoxes(object):
         # yapf: disable
         inputs_def = {
             'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
-            'im_id':    {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 0},
+            'im_id':    {'shape': [None, 1], 'dtype': 'int64',   'lod_level': 0},
             'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'im_shape': {'shape': [None, 3], 'dtype': 'int32',   'lod_level': 0},

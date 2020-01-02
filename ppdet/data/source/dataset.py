@@ -75,6 +75,8 @@ class DataSet(object):
         return self.cname2cid
 
     def get_anno(self):
+        if self.anno_path is None:
+            return
         return os.path.join(self.dataset_dir, self.anno_path)
 
     def get_imid2path(self):
@@ -118,12 +120,11 @@ class ImageFolder(DataSet):
                  anno_path=None,
                  sample_num=-1,
                  with_background=True,
+                 use_default_label=None,
                  **kwargs):
-        super(ImageFolder, self).__init__(image_dir, anno_path, sample_num,
-                                          dataset_dir, with_background)
-        self.anno_path = anno_path
-        self.sample_num = sample_num
-        self.with_background = with_background
+        super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
+                                          sample_num, with_background,
+                                          use_default_label)
         self.roidbs = None
         self._imid2path = {}
 

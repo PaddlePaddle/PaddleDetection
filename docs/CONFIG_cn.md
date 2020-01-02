@@ -181,7 +181,7 @@ pip install typeguard http://github.com/willthefrog/docstring_parser/tarball/mas
     如需最小配置，运行：
 
     ```shell
-    python tools/configure.py --minimal generate FasterRCNN BBoxHead
+    python tools/configure.py generate --minimal FasterRCNN BBoxHead
     ```
 
 
