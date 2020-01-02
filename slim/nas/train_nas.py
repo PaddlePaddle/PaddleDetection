@@ -224,8 +224,7 @@ def main():
     eval_reader = create_reader(cfg.EvalReader)
 
     for step in range(cfg.search_steps):
-        print('----------------->>> search step: {} <<<------------------'.
-              format(step))
+        logger.info('----->>> search step: {} <<<------'.format(step))
         archs = sa_nas.next_archs()[0]
 
         # build program

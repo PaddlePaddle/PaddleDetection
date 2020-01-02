@@ -104,17 +104,12 @@ class BlazeFaceNasSpace(SearchSpaceBase):
         return net_arch
 
     def print_nas_structure(self, tokens=None):
-        blaze_filters, double_blaze_filters, is_5x5kernel = self.get_nas_cnf(
-            tokens)
-        print(
-            '------------->>> BlazeFace-NAS structure start: <<<----------------'
-        )
+        blaze_filters, double_filters, is_5x5kernel = self.get_nas_cnf(tokens)
+        print('---------->>> BlazeFace-NAS structure start: <<<------------')
         print('BlazeNet:')
         print('  blaze_filters: {}'.format(blaze_filters))
-        print('  double_blaze_filters: {}'.format(double_blaze_filters))
+        print('  double_blaze_filters: {}'.format(double_filters))
         print('  use_5x5kernel: {}'.format(is_5x5kernel))
         print('  with_extra_blocks: true')
         print('  lite_edition: false')
-        print(
-            '-------------->>> BlazeFace-NAS structure end! <<<-----------------'
-        )
+        print('---------->>> BlazeFace-NAS structure end! <<<------------')
