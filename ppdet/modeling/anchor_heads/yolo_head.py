@@ -48,6 +48,7 @@ class YOLOv3Head(object):
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 drop_block=False,
                  yolo_loss="YOLOv3Loss",
                  nms=MultiClassNMS(
                      score_threshold=0.01,
@@ -63,6 +64,7 @@ class YOLOv3Head(object):
         self.yolo_loss = yolo_loss
         self.nms = nms
         self.prefix_name = weight_prefix_name
+        self.drop_block = drop_block
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -103,6 +105,60 @@ class YOLOv3Head(object):
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
 
+    def _calculate_gamma(self, x, block_size=3, keep_prob=0.9):
+        input_shape = fluid.layers.shape(x)
+        feat_shape_tmp = fluid.layers.slice(input_shape, [0], [3], [4])
+        feat_shape_tmp = fluid.layers.cast(feat_shape_tmp, dtype="float32")
+        feat_shape_t = fluid.layers.reshape(feat_shape_tmp, [1, 1, 1, 1])
+        feat_area = fluid.layers.pow(feat_shape_t, factor=2)
+
+        block_shape_t = fluid.layers.fill_constant(shape=[1, 1, 1, 1], value=block_size, dtype='float32')
+        block_area = fluid.layers.pow(block_shape_t, factor=2)
+
+        useful_shape_t = feat_shape_t - block_shape_t + 1
+        useful_area = fluid.layers.pow(useful_shape_t, factor=2)
+
+        upper_t = feat_area * (1 - keep_prob)
+        bottom_t = block_area * useful_area
+        out = upper_t / bottom_t
+        return out
+
+    def _drop_block(self, x, gamma=None, block_size=3, is_test=True):
+        if is_test:
+            return x
+        if gamma is None:
+            gamma = self._calculate_gamma(x)
+        else:
+            gamma = fluid.layers.fill_constant(shape=[1, 1, 1, 1], dtype='float32', value=gamma)
+
+        input_shape = fluid.layers.shape(x)
+        p = fluid.layers.expand_as(gamma, x)
+
+        input_shape_tmp = fluid.layers.cast(input_shape, dtype="int64")
+        random_matrix = fluid.layers.uniform_random(input_shape_tmp, dtype='float32', min=0.0, max=1.0)
+        one_zero_m = fluid.layers.less_than(random_matrix, p)
+        one_zero_m.stop_gradient = True
+        one_zero_m = fluid.layers.cast(one_zero_m, dtype="float32")
+
+        mask_flag = fluid.layers.pool2d(one_zero_m, pool_size=block_size, pool_type='max', pool_stride=1, pool_padding=block_size//2)
+        
+        ones_like_m = fluid.layers.ones_like(one_zero_m)
+        mask = fluid.layers.elementwise_sub(ones_like_m, mask_flag)
+
+        elem_numel = fluid.layers.reduce_prod(input_shape)
+        elem_numel = fluid.layers.cast(elem_numel, dtype="float32")
+        elem_numel_tmp = fluid.layers.reshape(elem_numel, [1, 1, 1, 1])
+        elem_numel_m = fluid.layers.expand_as(elem_numel_tmp, x)
+
+        elem_sum = fluid.layers.reduce_sum(mask)
+        elem_sum_tmp = fluid.layers.cast(elem_sum, dtype="float32")
+        elem_sum_tmp = fluid.layers.reshape(elem_sum_tmp, [1, 1, 1, 1])
+        elem_sum_m = fluid.layers.expand_as(elem_sum_tmp, x)
+
+        out = x * mask * elem_numel_m / elem_sum_m
+        return out
+
+
     def _detection_block(self, input, channel, is_test=True, name=None):
         assert channel % 2 == 0, \
             "channel {} cannot be divided by 2 in detection block {}" \
@@ -126,6 +182,11 @@ class YOLOv3Head(object):
                 padding=1,
                 is_test=is_test,
                 name='{}.{}.1'.format(name, j))
+            if self.drop_block and j == 0 and channel != 512:
+                conv = self._drop_block(conv, is_test=is_test)
+
+        if self.drop_block and channel == 512:
+            conv = self._drop_block(conv, is_test=is_test)
         route = self._conv_bn(
             conv,
             channel,
