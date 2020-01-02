@@ -74,7 +74,7 @@ def ResizeImage(im, target_shape):
     im_scale_y = float(target_shape[0]) / float(origin_shape[0])
     im = cv2.resize(
         im, None, None, fx=im_scale_x, fy=im_scale_y, interpolation=2)
-    return im, (im_scale_x + im_scale_y) / 2.
+    return im, im_scale_x
 
 
 def NormalizeImage(im,
