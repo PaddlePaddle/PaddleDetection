@@ -1,19 +1,18 @@
 # demo for tensorrt_infer.py
 
-mode: fluid # trt_fp32, trt_int8, fluid
-metric: COCO # COCO, VOC
-arch: YOLO # YOLO, SSD, RCNN, RetinaNet
-min_subgraph_size: 3 # need 30 for RCNN arch
+mode: trt_fp32 # trt_fp32, trt_fp16, trt_int8, fluid
+arch: RCNN # YOLO, SSD, RCNN, RetinaNet
+min_subgraph_size: 20 # need 3 for YOLO arch
 use_python_inference: False # whether to use python inference
 
 # visulize the predicted image
+metric: COCO # COCO, VOC
 draw_threshold: 0.5
 
 Preprocess:
 - type: Resize
-  target_shape:
-  - 608
-  - 608
+  target_size: 640
+  max_size: 640
 - type: Normalize
   mean:
   - 0.485

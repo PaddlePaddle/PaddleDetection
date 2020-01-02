@@ -99,15 +99,28 @@ def get_extra_info(im, arch, shape, scale):
 
 
 class Resize(object):
-    def __init__(self, target_shape, interp=cv2.INTER_LINEAR):
+    def __init__(self, target_size, max_size=0, interp=cv2.INTER_LINEAR):
         super(Resize, self).__init__()
-        self.target_shape = target_shape
+        self.target_size = target_size
+        self.max_size = max_size
         self.interp = interp
 
     def __call__(self, im):
         origin_shape = im.shape[:2]
-        im_scale_x = float(self.target_shape[1]) / float(origin_shape[1])
-        im_scale_y = float(self.target_shape[0]) / float(origin_shape[0])
+        im_c = im.shape[2]
+        if self.max_size != 0:
+            im_size_min = np.min(origin_shape[0:2])
+            im_size_max = np.max(origin_shape[0:2])
+            im_scale = float(self.target_size) / float(im_size_min)
+            if np.round(im_scale * im_size_max) > self.max_size:
+                im_scale = float(self.max_size) / float(im_size_max)
+            im_scale_x = im_scale
+            im_scale_y = im_scale
+            resize_w = int(im_scale_x * float(origin_shape[1]))
+            resize_h = int(im_scale_y * float(origin_shape[0]))
+        else:
+            im_scale_x = float(self.target_size) / float(origin_shape[1])
+            im_scale_y = float(self.target_size) / float(origin_shape[0])
         im = cv2.resize(
             im,
             None,
@@ -115,6 +128,13 @@ class Resize(object):
             fx=im_scale_x,
             fy=im_scale_y,
             interpolation=self.interp)
+        # padding im
+        if self.max_size != 0:
+            padding_im = np.zeros(
+                (self.max_size, self.max_size, im_c), dtype=np.float32)
+            im_h, im_w = im.shape[:2]
+            padding_im[:im_h, :im_w, :] = im
+            im = padding_im
         return im, im_scale_x
 
 
