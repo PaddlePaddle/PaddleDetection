@@ -81,6 +81,7 @@ TrainReader:
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 8
   use_process: true
+  worker_num: 8
   shuffle: true
 
 EvalReader:

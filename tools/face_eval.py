@@ -249,7 +249,7 @@ def main():
 
     annotation_file = dataset.get_anno()
     dataset_dir = dataset.dataset_dir
-    image_dir = dataset.image_dir
+    image_dir = os.path.join(dataset_dir, dataset.image_dir)
 
     pred_dir = FLAGS.output_eval if FLAGS.output_eval else 'output/pred'
     face_eval_run(
