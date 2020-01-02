@@ -77,7 +77,7 @@ def main():
         except:
             pass
     # uncomment the following lines to print all student variables
-    # print("="*50+"student_model_vars"+"="*50)
+    # print("="*50 + "student_model_vars" + "="*50)
     # print(student_vars)
 
     eval_prog = fluid.Program()
@@ -125,7 +125,7 @@ def main():
         except:
             pass
     # uncomment the following lines to print all teacher variables
-    # print("="*50+"teacher_model_vars"+"="*50)
+    # print("="*50 + "teacher_model_vars" + "="*50)
     # print(teacher_vars)
 
     exe.run(teacher_startup_program)

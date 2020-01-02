@@ -150,11 +150,13 @@ python -u tools/infer.py -c configs/yolov3_mobilenet_v1_voc.yml \
 
 ### MobileNetV1-YOLO-V3-VOC
 
-| FLOPS |Box AP|
-|---|---|
-|baseline|76.2     |
-|蒸馏后|79.0（+2.8） |
+| FLOPS |输入尺寸|每张GPU图片个数|推理时间（fps）|Box AP|下载|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|baseline|608     |16|104.291|76.2|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|baseline|416 |16|-|76.7|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|baseline|320 |16|-|75.3|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|608 |16|106.914|79.0||
+|蒸馏后|416 |16|-|78.2||
+|蒸馏后|320 |16|-|75.5||
 
 > 蒸馏后的结果用ResNet34-YOLO-V3做teacher，4GPU总batch_size64训练90000 iter得到
-
-## FAQ
