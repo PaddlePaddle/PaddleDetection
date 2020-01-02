@@ -1,0 +1,28 @@
+# demo for tensorrt_infer.py
+
+mode: fluid # trt_fp32, trt_int8, fluid
+metric: COCO # COCO, VOC
+arch: YOLO # YOLO, SSD, RCNN, RetinaNet
+min_subgraph_size: 3 # need 30 for RCNN arch
+use_python_inference: False # whether to use python inference
+
+# visulize the predicted image
+draw_threshold: 0.5
+
+Preprocess:
+- type: Resize
+  target_shape:
+  - 608
+  - 608
+- type: Normalize
+  mean:
+  - 0.485
+  - 0.456
+  - 0.406
+  std:
+  - 0.229
+  - 0.224
+  - 0.225
+  is_scale: True
+- type: Permute
+  to_bgr: False
