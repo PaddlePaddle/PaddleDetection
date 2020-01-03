@@ -6,7 +6,7 @@
 
 ```bash
 export CUDA_VISIBLE_DEVICES=0
-python tools/cpp_infer.py --model_path=output/yolov3_mobilenet_v1/ --config_path=tools/cpp_demo.yml --infer_img=demo/000000570688.jpg --visualize
+python tools/cpp_infer.py --model_path=inference_model/faster_rcnn_r50_1x/ --config_path=tools/cpp_demo.yml --infer_img=demo/000000570688.jpg --visualize
 ```
 
 
@@ -18,7 +18,7 @@ python tools/cpp_infer.py --model_path=output/yolov3_mobilenet_v1/ --config_path
 4. visualize: 是否保存可视化结果，默认保存路径为```output/```。
 
 
-更多参数可在```tools/cpp_demo.yml```中查看
+更多参数可在```tools/cpp_demo.yml```中查看, **设置shape时必须保持与模型导出时shape大小一致**
 
 
 ## Paddle环境搭建
@@ -37,6 +37,6 @@ cmake .. -DWITH_MKL=ON \
 
 make -j20
 make install
+
+export LD_LIBRARY_PATH=${PATH_TO_TensorRT}:$LD_LIBRARY_PATH
 ```
-
-
