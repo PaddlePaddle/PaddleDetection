@@ -142,8 +142,7 @@ class YOLOv3Head(object):
 
         mask_flag = fluid.layers.pool2d(one_zero_m, pool_size=block_size, pool_type='max', pool_stride=1, pool_padding=block_size//2)
         
-        ones_like_m = fluid.layers.ones_like(one_zero_m)
-        mask = fluid.layers.elementwise_sub(ones_like_m, mask_flag)
+        mask = 1.0 - mask_flag
 
         elem_numel = fluid.layers.reduce_prod(input_shape)
         elem_numel = fluid.layers.cast(elem_numel, dtype="float32")
