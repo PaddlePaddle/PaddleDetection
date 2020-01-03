@@ -90,19 +90,21 @@ class DiouLoss(GiouLoss):
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
 
+        # DIOU term
+        dist_intersection = (cx - cxg) * (cx - cxg) + (cy - cyg) * (cy - cyg)
+        dist_union = (xc2 - xc1) * (xc2 - xc1) + (yc2 - yc1) * (yc2 - yc1)
+        diou_term = (dist_intersection + eps) / (dist_union + eps)
+
+        # CIOU term
         ciou_term = 0
         if self.use_complete_iou_loss:
-            dist_intersection = (cx - cxg) * (cx - cxg) + (cy - cyg) * (cy - cyg
-                                                                        )
-            dist_union = (xc2 - xc1) * (xc2 - xc1) + (yc2 - yc1) * (yc2 - yc1)
-            d = (dist_intersection + eps) / (dist_union + eps)
             ar_gt = wg / hg
             ar_pred = w / h
             arctan = fluid.layers.atan(ar_gt) - fluid.layers.atan(ar_pred)
             ar_loss = 4. / np.pi / np.pi * arctan * arctan
             alpha = ar_loss / (1 - iouk + ar_loss + eps)
             alpha.stop_gradient = True
-            ciou_term = d + alpha * ar_loss
+            ciou_term = alpha * ar_loss
 
         iou_weights = 1
         if inside_weight is not None and outside_weight is not None:
@@ -116,6 +118,6 @@ class DiouLoss(GiouLoss):
 
         class_weight = 2 if self.is_cls_agnostic else self.num_classes
         diou = fluid.layers.reduce_mean(
-            (1 - iouk + ciou_term) * iou_weights) * class_weight
+            (1 - iouk + ciou_term + diou_term) * iou_weights) * class_weight
 
         return diou * self.loss_weight

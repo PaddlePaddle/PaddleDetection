@@ -75,11 +75,13 @@ BBoxAssigner:
 
 BBoxHead:
   head: TwoFCHead
-  nms:
-    keep_top_k: 100
-    nms_threshold: 0.5
-    score_threshold: 0.05
+  nms: MultiClassDiouNMS
   bbox_loss: DiouLoss
+
+MultiClassDiouNMS:
+  keep_top_k: 100
+  nms_threshold: 0.5
+  score_threshold: 0.05
 
 DiouLoss:
   loss_weight: 10.0
