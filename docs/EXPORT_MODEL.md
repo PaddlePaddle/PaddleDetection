@@ -25,24 +25,24 @@ python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
 
 ## 设置导出模型的输入大小
 
-使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。可通过设置TestFeed的`image_shape`可以修改保存模型中的输入图片大小。示例如下:
+使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。可通过设置TestReader中`image_shape`可以修改保存模型中的输入图片大小。示例如下:
 
 ```bash
 # 导出FasterRCNN模型，输入是3x640x640
 python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
         --output_dir=./inference_model \
         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
-           FasterRCNNTestFeed.image_shape=[3,640,640]
+           TestReader.inputs_def.image_shape=[3,640,640]
 
 # 导出YOLOv3模型，输入是3x320x320
 python tools/export_model.py -c configs/yolov3_darknet.yml \
         --output_dir=./inference_model \
         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet.tar \
-           YoloTestFeed.image_shape=[3,320,320]
+           TestReader.inputs_def.image_shape=[3,320,320]
 
 # 导出SSD模型，输入是3x300x300
 python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
         --output_dir=./inference_model \
         -o weights= https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
-           SSDTestFeed.image_shape=[3,300,300]
+           TestReader.inputs_def.image_shape=[3,300,300]
 ```
