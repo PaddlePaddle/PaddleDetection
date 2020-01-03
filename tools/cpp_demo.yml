@@ -1,11 +1,11 @@
-# demo for tensorrt_infer.py
+# demo for cpp_infer.py
 
 mode: trt_fp32 # trt_fp32, trt_fp16, trt_int8, fluid
 arch: RCNN # YOLO, SSD, RCNN, RetinaNet
 min_subgraph_size: 20 # need 3 for YOLO arch
 use_python_inference: False # whether to use python inference
 
-# visulize the predicted image
+# visualize the predicted image
 metric: COCO # COCO, VOC
 draw_threshold: 0.5
 
