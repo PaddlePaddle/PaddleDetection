@@ -18,9 +18,12 @@ python tools/cpp_infer.py --model_path=inference_model/faster_rcnn_r50_1x/ --con
 4. visualize: 是否保存可视化结果，默认保存路径为```output/```。
 
 
-更多参数可在```tools/cpp_demo.yml```中查看, **设置shape时必须保持与模型导出时shape大小一致**
+更多参数可在```tools/cpp_demo.yml```中查看,
 
+**注意**
 
+1. 设置shape时必须保持与模型导出时shape大小一致
+2. ```min_subgraph_size```的设置与模型arch相关，对部分arch需要调大该参数，一般设置为40适用于所有模型。适当的调小```min_subgraph_size```会对预测有小幅加速效果。例如YOLO中该参数可设置为3
 ## Paddle环境搭建
 
 需要基于develop分支编译TensorRT版本Paddle, 在编译命令中指定TensorRT路径：
@@ -38,5 +41,5 @@ cmake .. -DWITH_MKL=ON \
 make -j20
 make install
 
-export LD_LIBRARY_PATH=${PATH_TO_TensorRT}:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${PATH_TO_TensorRT}/lib:$LD_LIBRARY_PATH
 ```
