@@ -49,6 +49,9 @@ class YOLOv3Head(object):
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  drop_block=False,
+                 gamma=None,
+                 block_size=3,
+                 keep_prob=0.9,
                  yolo_loss="YOLOv3Loss",
                  nms=MultiClassNMS(
                      score_threshold=0.01,
@@ -65,6 +68,9 @@ class YOLOv3Head(object):
         self.nms = nms
         self.prefix_name = weight_prefix_name
         self.drop_block = drop_block
+        self.gamma = gamma
+        self.block_size = block_size
+        self.keep_prob = keep_prob
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -105,7 +111,7 @@ class YOLOv3Head(object):
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
 
-    def _calculate_gamma(self, x, block_size=3, keep_prob=0.9):
+    def _calculate_gamma(self, x, block_size, keep_prob):
         input_shape = fluid.layers.shape(x)
         feat_shape_tmp = fluid.layers.slice(input_shape, [0], [3], [4])
         feat_shape_tmp = fluid.layers.cast(feat_shape_tmp, dtype="float32")
@@ -123,11 +129,11 @@ class YOLOv3Head(object):
         out = upper_t / bottom_t
         return out
 
-    def _drop_block(self, x, gamma=None, block_size=3, is_test=True):
+    def _drop_block(self, x, gamma, block_size, keep_prob, is_test=True):
         if is_test:
             return x
         if gamma is None:
-            gamma = self._calculate_gamma(x)
+            gamma = self._calculate_gamma(x, block_size=block_size, keep_prob=keep_prob)
         else:
             gamma = fluid.layers.fill_constant(shape=[1, 1, 1, 1], dtype='float32', value=gamma)
 
@@ -182,10 +188,10 @@ class YOLOv3Head(object):
                 is_test=is_test,
                 name='{}.{}.1'.format(name, j))
             if self.drop_block and j == 0 and channel != 512:
-                conv = self._drop_block(conv, is_test=is_test)
+                conv = self._drop_block(conv, gamma=self.gamma, block_size=self.block_size, keep_prob=self.keep_prob, is_test=is_test)
 
         if self.drop_block and channel == 512:
-            conv = self._drop_block(conv, is_test=is_test)
+            conv = self._drop_block(conv, gamma=self.gamma, block_size=self.block_size, keep_prob=self.keep_prob, is_test=is_test)
         route = self._conv_bn(
             conv,
             channel,
