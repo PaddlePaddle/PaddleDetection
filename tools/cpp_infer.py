@@ -13,6 +13,7 @@ import ppdet.utils.voc_eval as voc_eval
 import ppdet.utils.coco_eval as coco_eval
 import cv2
 import yaml
+import copy
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -170,7 +171,8 @@ def Preprocess(img_path, arch, config):
     orig_shape = img.shape
     scale = 1.
     data = []
-    for data_aug_conf in config:
+    data_config = copy.deepcopy(config)
+    for data_aug_conf in data_config:
         obj = data_aug_conf.pop('type')
         preprocess = eval(obj)(**data_aug_conf)
         if obj == 'Resize':
