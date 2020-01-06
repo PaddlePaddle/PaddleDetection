@@ -93,6 +93,14 @@ def add_gc_block(x,
                  pooling_type='att',
                  fusion_types=['channel_add'],
                  name=None):
+    '''
+    GCNet: Non-local Networks Meet Squeeze-Excitation Networks and Beyond, see https://arxiv.org/abs/1904.11492
+    Args:
+        ratio (float): channel reduction ratio
+        pooling_type (str): pooling type, support att and avg
+        fusion_types (list): fusion types, support channel_add and channel_mul
+        name (str): prefix name of gc block
+    '''
     assert pooling_type in ['avg', 'att']
     assert isinstance(fusion_types, (list, tuple))
     valid_fusion_types = ['channel_add', 'channel_mul']
