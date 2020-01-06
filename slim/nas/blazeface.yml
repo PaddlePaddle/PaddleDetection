@@ -53,16 +53,6 @@ TrainReader:
   - !ExpandImage
     max_ratio: 4
     prob: 0.5
-  - !CropImageWithDataAchorSampling
-    anchor_sampler:
-    - [1, 10, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.2, 0.0]
-    batch_sampler:
-    - [1, 50, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
-    target_size: 640
   - !RandomInterpImage
     target_size: 640
   - !RandomFlipImage

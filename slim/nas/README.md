@@ -9,7 +9,7 @@
 
 
 ## 定义搜索空间
-在BlazeFace模型的搜索实验中，我们采用了SANAS的方式进行搜索，本次实验会对网络模型中的通道数和卷积核尺寸进行调整。
+在BlazeFace模型的搜索实验中，我们采用了SANAS的方式进行搜索，本次实验会对网络模型中的通道数和卷积核尺寸进行搜索。
 所以我们定义了如下搜索空间：
 - 初始化通道模块`blaze_filter_num1`：定义了BlazeFace第一个模块中通道数变化区间，人为定义了较小的通道数区间；
 - 单blaze模块`blaze_filter_num2`: 定义了BlazeFace单blaze模块中通道数变化区间，人为定义了适中的通道数区间；
@@ -52,6 +52,10 @@ blaze_filters与double_blaze_filters字段请参考[blazenet.py](../../ppdet/mod
 cd slim/nas
 python -u train_nas.py -c blazeface.yml
 ```
+**注意:**
+
+搜索过程中为了加速，在`blazeface.yml`中去掉了数据预处理`CropImageWithDataAchorSampling`的操作。
+
 训练完成后会获得最佳tokens，以及对应的`BlazeFace-NAS`的网络结构：
 ```
 ------------->>> BlazeFace-NAS structure start: <<<----------------
