@@ -28,6 +28,7 @@ from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
 from .nonlocal_helper import add_space_nonlocal
+from .gc_block import add_gc_block
 from .name_adapter import NameAdapter
 
 __all__ = ['ResNet', 'ResNetC5']
@@ -48,6 +49,8 @@ class ResNet(object):
         feature_maps (list): index of stages whose feature maps are returned
         dcn_v2_stages (list): index of stages who select deformable conv v2
         nonlocal_stages (list): index of stages who select nonlocal networks
+        gcb_stages (list): index of stages who select gc blocks
+        gcb_params (dict): gc blocks config
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
@@ -61,7 +64,9 @@ class ResNet(object):
                  feature_maps=[2, 3, 4, 5],
                  dcn_v2_stages=[],
                  weight_prefix_name='',
-                 nonlocal_stages=[]):
+                 nonlocal_stages=[],
+                 gcb_stages=[],
+                 gcb_params=dict()):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -97,14 +102,17 @@ class ResNet(object):
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
         self.prefix_name = weight_prefix_name
-        
+
         self.nonlocal_stages = nonlocal_stages
         self.nonlocal_mod_cfg = {
-            50  : 2,
-            101 : 5,
-            152 : 8,
-            200 : 12,
+            50: 2,
+            101: 5,
+            152: 8,
+            200: 12,
         }
+
+        self.gcb_stages = gcb_stages
+        self.gcb_params = gcb_params
 
     def _conv_offset(self,
                      input,
@@ -257,7 +265,9 @@ class ResNet(object):
                    stride,
                    is_first,
                    name,
-                   dcn_v2=False):
+                   dcn_v2=False,
+                   gcb=False,
+                   gcb_name=None):
         if self.variant == 'a':
             stride1, stride2 = stride, 1
         else:
@@ -309,6 +319,8 @@ class ResNet(object):
         if callable(getattr(self, '_squeeze_excitation', None)):
             residual = self._squeeze_excitation(
                 input=residual, num_channels=num_filters, name='fc' + name)
+        if gcb:
+            residual = add_gc_block(residual, name=gcb_name, **self.gcb_params)
         return fluid.layers.elementwise_add(
             x=short, y=residual, act='relu', name=name + ".add.output.5")
 
@@ -318,8 +330,11 @@ class ResNet(object):
                    stride,
                    is_first,
                    name,
-                   dcn_v2=False):
+                   dcn_v2=False,
+                   gcb=False,
+                   gcb_name=None):
         assert dcn_v2 is False, "Not implemented yet."
+        assert gcb is False, "Not implemented yet."
         conv0 = self._conv_norm(
             input=input,
             num_filters=num_filters,
@@ -354,11 +369,12 @@ class ResNet(object):
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
         dcn_v2 = True if stage_num in self.dcn_v2_stages else False
-        
+
         nonlocal_mod = 1000
         if stage_num in self.nonlocal_stages:
-            nonlocal_mod = self.nonlocal_mod_cfg[self.depth] if stage_num==4 else 2
-        
+            nonlocal_mod = self.nonlocal_mod_cfg[
+                self.depth] if stage_num == 4 else 2
+
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
         conv = input
@@ -366,21 +382,26 @@ class ResNet(object):
             conv_name = self.na.fix_layer_warp_name(stage_num, count, i)
             if self.depth < 50:
                 is_first = True if i == 0 and stage_num == 2 else False
+
+            gcb = stage_num in self.gcb_stages
+            gcb_name = "gcb_res{}_b{}".format(stage_num, i)
             conv = block_func(
                 input=conv,
                 num_filters=ch_out,
                 stride=2 if i == 0 and stage_num != 2 else 1,
                 is_first=is_first,
                 name=conv_name,
-                dcn_v2=dcn_v2)
-            
+                dcn_v2=dcn_v2,
+                gcb=gcb,
+                gcb_name=gcb_name)
+
             # add non local model
             dim_in = conv.shape[1]
-            nonlocal_name = "nonlocal_conv{}".format( stage_num )
+            nonlocal_name = "nonlocal_conv{}".format(stage_num)
             if i % nonlocal_mod == nonlocal_mod - 1:
-                conv = add_space_nonlocal(
-                    conv, dim_in, dim_in,
-                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )
+                conv = add_space_nonlocal(conv, dim_in, dim_in,
+                                          nonlocal_name + '_{}'.format(i),
+                                          int(dim_in / 2))
         return conv
 
     def c1_stage(self, input):
