@@ -102,6 +102,9 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 ### IOU loss
 * GIOU loss and DIOU loss are included now. See more details in [IOU loss model zoo](../configs/iou_loss/README.md).
 
+### GCNet
+* See more details in [GCNet model zoo](../configs/gcnet/README.md).
+
 
 ### Group Normalization
 | Backbone             | Type           | Image/gpu | Lr schd | Box AP | Mask AP |                           Download                           |
