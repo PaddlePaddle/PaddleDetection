@@ -135,7 +135,10 @@ class YOLOv3(object):
             use_dataloader=True,
             iterable=False):
         inputs_def = self._inputs_def(image_shape, num_max_boxes)
-        if self.use_fine_grained_loss:
+        # if fields has im_size, this is in eval/infer mode, fine grained loss
+        # will be disabled for YOLOv3 architecture do not calculate loss in
+        # eval/infer mode.
+        if 'im_size' not in fields and self.use_fine_grained_loss:
             fields.extend(['target0', 'target1', 'target2'])
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
