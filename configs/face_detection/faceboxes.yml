@@ -43,6 +43,7 @@ OptimizerBuilder:
 TrainReader:
   batch_size: 8
   use_process: True
+  worker_num: 8
   shuffle: true
   inputs_def:
     image_shape: [3, 640, 640]

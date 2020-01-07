@@ -234,7 +234,7 @@ EvalReader:
   ...
   dataset:
     dataset_dir: dataset/fddb
-    annotation: FDDB-folds/fddb_annotFile.txt
+    anno_path: FDDB-folds/fddb_annotFile.txt
     ...
 ```
 Evaluate and generate results files:
