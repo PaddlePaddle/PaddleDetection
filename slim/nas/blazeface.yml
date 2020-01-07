@@ -9,7 +9,7 @@ save_dir: nas_checkpoint
 num_classes: 2
 
 # nas config
-reduce_rate: 0.3
+reduce_rate: 0.85
 init_temperature: 10.24
 is_server: true
 max_flops: 531558400
