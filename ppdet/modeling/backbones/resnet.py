@@ -50,7 +50,9 @@ class ResNet(object):
         dcn_v2_stages (list): index of stages who select deformable conv v2
         nonlocal_stages (list): index of stages who select nonlocal networks
         gcb_stages (list): index of stages who select gc blocks
-        gcb_params (dict): gc blocks config
+        gcb_params (dict): gc blocks config, includes ratio(default as 1.0/16),
+                           pooling_type(default as "att") and
+                           fusion_types(default as ['channel_add'])
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
