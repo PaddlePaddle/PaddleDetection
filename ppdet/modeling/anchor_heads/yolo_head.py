@@ -92,15 +92,15 @@ class YOLOv3Head(object):
             regularizer=L2Decay(self.norm_decay), name=bn_name + '.offset')
         out = fluid.layers.batch_norm(
             input=conv,
-            act=None,
+            act=None if act is None else 'relu',
             is_test=is_test,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
             moving_mean_name=bn_name + '.mean',
             moving_variance_name=bn_name + '.var')
 
-        if act == 'leaky':
-            out = fluid.layers.leaky_relu(x=out, alpha=0.1)
+        # if act == 'leaky':
+        #     out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
 
     def _detection_block(self, input, channel, is_test=True, name=None):
@@ -269,24 +269,24 @@ class YOLOv3Head(object):
 
         outputs = self._get_outputs(input, is_train=False)
 
-        boxes = []
-        scores = []
-        downsample = 32
-        for i, output in enumerate(outputs):
-            box, score = fluid.layers.yolo_box(
-                x=output,
-                img_size=im_size,
-                anchors=self.mask_anchors[i],
-                class_num=self.num_classes,
-                conf_thresh=self.nms.score_threshold,
-                downsample_ratio=downsample,
-                name=self.prefix_name + "yolo_box" + str(i))
-            boxes.append(box)
-            scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
-
-            downsample //= 2
-
-        yolo_boxes = fluid.layers.concat(boxes, axis=1)
-        yolo_scores = fluid.layers.concat(scores, axis=2)
-        pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
-        return {'bbox': pred}
+        # boxes = []
+        # scores = []
+        # downsample = 32
+        # for i, output in enumerate(outputs):
+        #     box, score = fluid.layers.yolo_box(
+        #         x=output,
+        #         img_size=im_size,
+        #         anchors=self.mask_anchors[i],
+        #         class_num=self.num_classes,
+        #         conf_thresh=self.nms.score_threshold,
+        #         downsample_ratio=downsample,
+        #         name=self.prefix_name + "yolo_box" + str(i))
+        #     boxes.append(box)
+        #     scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
+        #
+        #     downsample //= 2
+        #
+        # yolo_boxes = fluid.layers.concat(boxes, axis=1)
+        # yolo_scores = fluid.layers.concat(scores, axis=2)
+        # pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
+        return {'bbox': sum([fluid.layers.reduce_mean(out) for out in outputs])}
