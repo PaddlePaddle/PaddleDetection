@@ -132,8 +132,8 @@ def DropBlock(input, block_size, keep_prob, is_test):
 
         upper_t = feat_area * (1 - keep_prob)
         bottom_t = block_area * useful_area
-        out = upper_t / bottom_t
-        return out
+        output = upper_t / bottom_t
+        return output
 
     gamma = CalculateGamma(input, block_size=block_size, keep_prob=keep_prob)
     input_shape = fluid.layers.shape(input)
@@ -164,8 +164,8 @@ def DropBlock(input, block_size, keep_prob, is_test):
     elem_sum_tmp = fluid.layers.reshape(elem_sum_tmp, [1, 1, 1, 1])
     elem_sum_m = fluid.layers.expand_as(elem_sum_tmp, input)
 
-    out = input * mask * elem_numel_m / elem_sum_m
-    return out
+    output = input * mask * elem_numel_m / elem_sum_m
+    return output
 
 
 @register
