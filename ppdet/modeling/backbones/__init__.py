@@ -27,6 +27,7 @@ from . import cb_resnet
 from . import res2net
 from . import hrnet
 from . import hrfpn
+from . import hourglass
 
 from .resnet import *
 from .resnext import *
@@ -41,3 +42,4 @@ from .cb_resnet import *
 from .res2net import *
 from .hrnet import *
 from .hrfpn import *
+from .hourglass import *

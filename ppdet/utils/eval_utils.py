@@ -130,6 +130,7 @@ def eval_run(exe,
                 k: (np.array(v), v.recursive_sequence_lengths())
                 for k, v in zip(keys, outs)
             }
+            has_none_res = False
             multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
             mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
 
@@ -156,7 +157,10 @@ def eval_run(exe,
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
-            images_num += len(res['bbox'][1][0]) if has_bbox else 1
+            if len(res['bbox'][1]) == 0:
+                has_none_res = True
+            images_num += len(res['bbox'][1][
+                0]) if has_bbox and not has_none_res else 1
     except (StopIteration, fluid.core.EOFException):
         loader.reset()
     logger.info('Test finish iter {}'.format(iter_id))

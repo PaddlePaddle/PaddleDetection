@@ -41,7 +41,8 @@ from ppdet.core.workspace import serializable
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
-                        generate_sample_bbox_square, bbox_area_sampling)
+                        generate_sample_bbox_square, bbox_area_sampling,
+                        gaussian_radius, draw_gaussian)
 
 logger = logging.getLogger(__name__)
 
@@ -1107,15 +1108,17 @@ class ColorDistort(BaseOperator):
                  saturation=[0.5, 1.5, 0.5],
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
-                 random_apply=True):
+                 random_apply=True,
+                 corner_jitter=False):
         super(ColorDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
         self.brightness = brightness
         self.random_apply = random_apply
+        self.corner_jitter = corner_jitter
 
-    def apply_hue(self, img):
+    def apply_hue(self, img, img_gray=None):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1135,7 +1138,12 @@ class ColorDistort(BaseOperator):
         img = np.dot(img, t)
         return img
 
-    def apply_saturation(self, img):
+    def apply_saturation(self, img, img_gray=None):
+        if self.corner_jitter:
+            alpha = 1. + np.random.uniform(
+                low=-self.saturation, high=self.saturation)
+            self._blend(alpha, img, img_gray[:, :, None])
+            return img
         low, high, prob = self.saturation
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1149,7 +1157,13 @@ class ColorDistort(BaseOperator):
         img += gray
         return img
 
-    def apply_contrast(self, img):
+    def apply_contrast(self, img, img_gray=None):
+        if self.corner_jitter:
+            alpha = 1. + np.random.uniform(
+                low=-self.contrast, high=self.contrast)
+            img_mean = img_gray.mean()
+            self._blend(alpha, img, img_mean)
+            return img
         low, high, prob = self.contrast
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1159,7 +1173,12 @@ class ColorDistort(BaseOperator):
         img *= delta
         return img
 
-    def apply_brightness(self, img):
+    def apply_brightness(self, img, img_gray=None):
+        if self.corner_jitter:
+            alpha = 1 + np.random.uniform(
+                low=-self.brightness, high=self.brightness)
+            img *= alpha
+            return img
         low, high, prob = self.brightness
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1169,15 +1188,28 @@ class ColorDistort(BaseOperator):
         img += delta
         return img
 
+    def _blend(self, alpha, img, img_mean):
+        img *= alpha
+        img_mean *= (1 - alpha)
+        img += img_mean
+
     def __call__(self, sample, context=None):
         img = sample['image']
+        img_mean = None
         if self.random_apply:
-            distortions = np.random.permutation([
+            functions = [
                 self.apply_brightness, self.apply_contrast,
-                self.apply_saturation, self.apply_hue
-            ])
+                self.apply_saturation
+            ]
+            if not self.corner_jitter:
+                functions.append(self.apply_hue)
+            else:
+                img = img.astype(np.float32, copy=False)
+                img /= 255.
+                img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            distortions = np.random.permutation(functions)
             for func in distortions:
-                img = func(img)
+                img = func(img, img_gray)
             sample['image'] = img
             return sample
 
@@ -1460,4 +1492,229 @@ class BboxXYXY2XYWH(BaseOperator):
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class Lighting(BaseOperator):
+    def __init__(self, eigval, eigvec, alphastd=0.1):
+        """
+        """
+        super(Lighting, self).__init__()
+        self.alphastd = alphastd
+        self.eigval = np.array(eigval).astype('float32')
+        self.eigvec = np.array(eigvec).astype('float32')
+
+    def __call__(self, sample, context=None):
+        """"""
+        alpha = np.random.normal(scale=self.alphastd, size=(3, ))
+        sample['image'] += np.dot(self.eigvec, self.eigval * alpha)
+        return sample
+
+
+@register_op
+class CornerTarget(BaseOperator):
+    def __init__(self,
+                 output_size,
+                 num_classes,
+                 gaussian_bump=True,
+                 gaussian_rad=-1,
+                 gaussian_iou=0.3):
+        """
+        """
+        super(CornerTarget, self).__init__()
+        self.num_classes = num_classes
+        self.output_size = output_size
+        self.gaussian_bump = gaussian_bump
+        self.gaussian_rad = gaussian_rad
+        self.gaussian_iou = gaussian_iou
+
+    def __call__(self, sample, context=None):
+        """ """
+        tl_heatmaps = np.zeros(
+            (self.num_classes, self.output_size[0], self.output_size[1]),
+            dtype=np.float32)
+        br_heatmaps = np.zeros(
+            (self.num_classes, self.output_size[0], self.output_size[1]),
+            dtype=np.float32)
+
+        tl_regrs = []
+        br_regrs = []
+        tl_tags = []
+        br_tags = []
+        tag_nums = np.zeros((1), dtype=np.int32)
+        tag_lens = 0
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        keep_inds  = ((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & \
+                ((gt_bbox[:, 3] - gt_bbox[:, 1]) > 0)
+        gt_bbox = gt_bbox[keep_inds]
+        gt_class = gt_class[keep_inds]
+        sample['gt_bbox'] = gt_bbox
+        sample['gt_class'] = gt_class
+        width_ratio = self.output_size[1] / sample['w']
+        height_ratio = self.output_size[0] / sample['h']
+        for i in range(gt_bbox.shape[0]):
+            width = gt_bbox[i][2] - gt_bbox[i][0]
+            height = gt_bbox[i][3] - gt_bbox[i][1]
+
+            xtl, ytl = gt_bbox[i][0], gt_bbox[i][1]
+            xbr, ybr = gt_bbox[i][2], gt_bbox[i][3]
+
+            fxtl = (xtl * width_ratio)
+            fytl = (ytl * height_ratio)
+            fxbr = (xbr * width_ratio)
+            fybr = (ybr * height_ratio)
+
+            xtl = int(fxtl)
+            ytl = int(fytl)
+            xbr = int(fxbr)
+            ybr = int(fybr)
+            if self.gaussian_bump:
+                width = math.ceil(width * width_ratio)
+                height = math.ceil(height * height_ratio)
+                if self.gaussian_rad == -1:
+                    radius = gaussian_radius((height, width), self.gaussian_iou)
+                    radius = max(0, int(radius))
+                else:
+                    radius = self.gaussian_rad
+                draw_gaussian(tl_heatmaps[gt_class[i][0]], [xtl, ytl], radius)
+                draw_gaussian(br_heatmaps[gt_class[i][0]], [xbr, ybr], radius)
+            else:
+                tl_heatmaps[gt_class[i][0], ytl, xtl] = 1
+                br_heatmaps[gt_class[i][0], ybr, xbr] = 1
+
+            tag_lens += 1
+            tl_regrs.append([fxtl - xtl, fytl - ytl])
+            br_regrs.append([fxbr - xbr, fybr - ybr])
+            tl_tags.append(ytl * self.output_size[1] + xtl)
+            br_tags.append(ybr * self.output_size[1] + xbr)
+
+        tag_nums[0] = np.array(tag_lens, dtype=np.int32)
+
+        sample['tl_heatmaps'] = tl_heatmaps
+        sample['br_heatmaps'] = br_heatmaps
+        sample['tl_regrs'] = np.array(tl_regrs).astype('float32')
+        sample['br_regrs'] = np.array(br_regrs).astype('float32')
+        sample['tl_tags'] = np.array(tl_tags).astype('int64')
+        sample['br_tags'] = np.array(br_tags).astype('int64')
+        sample['tag_nums'] = tag_nums
+
+        return sample
+
+
+@register_op
+class CornerCrop(BaseOperator):
+    def __init__(self,
+                 random_scales=[0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3],
+                 border=128,
+                 is_train=True,
+                 input_size=511,
+                 max_attempt=50):
+        """
+        """
+        super(CornerCrop, self).__init__()
+        self.random_scales = random_scales
+        self.border = border
+        self.is_train = is_train
+        self.input_size = input_size
+        self.max_attempt = max_attempt
+
+    def __call__(self, sample, context=None):
+        """"""
+        im_h, im_w = int(sample['h']), int(sample['w'])
+        for i in range(self.max_attempt):
+            if self.is_train:
+                scale = np.random.choice(self.random_scales)
+                height = int(self.input_size * scale)
+                width = int(self.input_size * scale)
+
+                w_border = self._get_border(self.border, sample['w'])
+                h_border = self._get_border(self.border, sample['h'])
+
+                ctx = np.random.randint(
+                    low=w_border, high=sample['w'] - w_border)
+                cty = np.random.randint(
+                    low=h_border, high=sample['h'] - h_border)
+
+            else:
+                cty, ctx = im_h // 2, im_w // 2
+                height = im_h | 127
+                width = im_w | 127
+
+            cropped_image = np.zeros(
+                (height, width, 3), dtype=sample['image'].dtype)
+
+            x0, x1 = max(ctx - width // 2, 0), min(ctx + width // 2, im_w)
+            y0, y1 = max(cty - height // 2, 0), min(cty + height // 2, im_h)
+
+            left_w, right_w = ctx - x0, x1 - ctx
+            top_h, bottom_h = cty - y0, y1 - cty
+
+            # crop image
+            cropped_ctx, cropped_cty = width // 2, height // 2
+            x_slice = slice(
+                int(cropped_ctx - left_w), int(cropped_ctx + right_w))
+            y_slice = slice(
+                int(cropped_cty - top_h), int(cropped_cty + bottom_h))
+            cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:
+                                                                 x1, :].copy()
+
+            #sample['image'] = cropped_image
+            #sample['h'], sample['w'] = height, width
+
+            if self.is_train:
+                # crop detections
+                gt_bbox = sample['gt_bbox'].copy()
+                gt_bbox[:, 0:4:2] -= x0
+                gt_bbox[:, 1:4:2] -= y0
+                gt_bbox[:, 0:4:2] += cropped_ctx - left_w
+                gt_bbox[:, 1:4:2] += cropped_cty - top_h
+                keep_inds = np.where(((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & ((
+                    gt_bbox[:, 3] - gt_bbox[:, 1]) > 0) & (
+                        gt_bbox[:, 0] < width) & (gt_bbox[:, 2] > 0) & (
+                            gt_bbox[:, 1] < height) & (gt_bbox[:, 3] > 0))
+                if len(keep_inds[0]) > 0:
+                    sample['gt_bbox'] = gt_bbox
+                    sample['image'] = cropped_image
+                    sample['h'], sample['w'] = height, width
+                    break
+            else:
+                sample['borders'] = np.array(
+                    [
+                        cropped_cty - top_h, cropped_cty + bottom_h,
+                        cropped_ctx - left_w, cropped_ctx + right_w
+                    ],
+                    dtype=np.float32)
+                sample['image'] = cropped_image
+                sample['h'], sample['w'] = height, width
+                break
+
+        return sample
+
+    def _get_border(self, border, size):
+        i = 1
+        while size - border // i <= border // i:
+            i *= 2
+        return border // i
+
+
+@register_op
+class CornerRatio(BaseOperator):
+    def __init__(self, input_size=511, output_size=64):
+        """
+        """
+        super(CornerRatio, self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+
+    def __call__(self, sample, context=None):
+        """"""
+        scale = (self.input_size + 1) // self.output_size
+        out_height, out_width = (sample['h'] + 1) // scale, (
+            sample['w'] + 1) // scale
+        height_ratio = out_height / float(sample['h'])
+        width_ratio = out_width / float(sample['w'])
+        sample['ratios'] = np.array([height_ratio, width_ratio])
+
         return sample
