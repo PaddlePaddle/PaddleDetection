@@ -220,7 +220,7 @@ def infer():
     for i in range(10):
         if conf['use_python_inference']:
             outs = exe.run(infer_prog,
-                           feed=[data_dict],
+                           feed=data_dict,
                            fetch_list=fetch_targets,
                            return_numpy=False)
         else:
@@ -232,7 +232,7 @@ def infer():
     for i in range(cnt):
         if conf['use_python_inference']:
             outs = exe.run(infer_prog,
-                           feed=[data_dict],
+                           feed=data_dict,
                            fetch_list=fetch_targets,
                            return_numpy=False)
         else:
