@@ -217,7 +217,7 @@ EvalReader:
   ...
   dataset:
     dataset_dir: dataset/fddb
-    annotation: FDDB-folds/fddb_annotFile.txt
+    anno_path: FDDB-folds/fddb_annotFile.txt
     ...
 ```
 评估并生成结果文件：

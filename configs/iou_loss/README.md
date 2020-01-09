@@ -45,4 +45,4 @@
 | :---------------------- | :------------- | :---: | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
 | ResNet50-vd-FPN            | Faster         | GIOU |   10   |    2     |   1x    |     22.94     |  39.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_giou_loss_1x.tar) |
 | ResNet50-vd-FPN            | Faster         | DIOU |   12   |    2     |   1x    |     22.94     |  39.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_diou_loss_1x.tar) |
-| ResNet50-vd-FPN            | Faster         | CIOU |   12   |    2     |   1x    |     22.95     |  39.5  |   -   | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_ciou_loss_1x.tar) |
+| ResNet50-vd-FPN            | Faster         | CIOU |   12   |    2     |   1x    |     22.95     |  39.6  |   -   | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_ciou_loss_1x.tar) |
