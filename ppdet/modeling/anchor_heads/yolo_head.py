@@ -289,4 +289,9 @@ class YOLOv3Head(object):
         # yolo_boxes = fluid.layers.concat(boxes, axis=1)
         # yolo_scores = fluid.layers.concat(scores, axis=2)
         # pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
-        return {'bbox': sum([fluid.layers.reduce_mean(out) for out in outputs])}
+        # return {'bbox': sum([fluid.layers.reduce_mean(out) for out in outputs])}
+        return {
+            'output1': outputs[0],
+            'output2': outputs[1],
+            'output3': outputs[2]
+        }
