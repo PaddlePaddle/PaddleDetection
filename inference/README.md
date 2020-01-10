@@ -123,7 +123,10 @@ DEPLOY:
     RESIZE_MAX_SIZE: 1333
     # 输入的tensor数量。
     FEEDS_SIZE: 3
-
+    # 是否开启TensorRT
+    USE_TRT: 0
+    # 如果开启TensorRT, 使用的精度, 支持FP16, FP32, INT8三个值
+    TRT_MODE: FP16
 ```
 修改字段`MODEL_PATH`的值为你在**上一步**下载并解压的模型文件所放置的目录即可。更多配置文件字段介绍，请参考文档[预测部署方案配置文件说明](./docs/configuration.md)。
 
