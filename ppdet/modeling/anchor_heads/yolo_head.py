@@ -23,6 +23,7 @@ from paddle.fluid.regularizer import L2Decay
 from ppdet.modeling.ops import MultiClassNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
+from ppdet.modeling.ops import DropBlock
 
 __all__ = ['YOLOv3Head']
 
@@ -48,6 +49,9 @@ class YOLOv3Head(object):
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9,
                  yolo_loss="YOLOv3Loss",
                  nms=MultiClassNMS(
                      score_threshold=0.01,
@@ -63,6 +67,9 @@ class YOLOv3Head(object):
         self.yolo_loss = yolo_loss
         self.nms = nms
         self.prefix_name = weight_prefix_name
+        self.drop_block = drop_block
+        self.block_size = block_size
+        self.keep_prob = keep_prob
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
@@ -126,6 +133,19 @@ class YOLOv3Head(object):
                 padding=1,
                 is_test=is_test,
                 name='{}.{}.1'.format(name, j))
+            if self.drop_block and j == 0 and channel != 512:
+                conv = DropBlock(
+                    conv,
+                    block_size=self.block_size,
+                    keep_prob=self.keep_prob,
+                    is_test=is_test)
+
+        if self.drop_block and channel == 512:
+            conv = DropBlock(
+                conv,
+                block_size=self.block_size,
+                keep_prob=self.keep_prob,
+                is_test=is_test)
         route = self._conv_bn(
             conv,
             channel,
