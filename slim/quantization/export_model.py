@@ -88,8 +88,8 @@ def main():
     infer_prog = quant_aware(infer_prog, place, config, for_test=True)
 
     exe.run(startup_prog)
+    checkpoint.load_params(exe, infer_prog, cfg.weights)
 
-    fluid.io.load_persistables(exe, cfg.weights, infer_prog)
     infer_prog, int8_program = convert(
         infer_prog, place, config, save_int8=True)
 
