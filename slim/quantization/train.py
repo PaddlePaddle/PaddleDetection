@@ -105,24 +105,14 @@ def main():
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-            if FLAGS.fp16:
-                assert (getattr(model.backbone, 'norm_type', None)
-                        != 'affine_channel'), \
-                    '--fp16 currently does not support affine channel, ' \
-                    ' please modify backbone settings to use batch norm'
 
-            with mixed_precision_context(FLAGS.loss_scale, FLAGS.fp16) as ctx:
-                inputs_def = cfg['TrainReader']['inputs_def']
-                feed_vars, train_loader = model.build_inputs(**inputs_def)
-                train_fetches = model.train(feed_vars)
-                loss = train_fetches['loss']
-                if FLAGS.fp16:
-                    loss *= ctx.get_loss_scale_var()
-                lr = lr_builder()
-                optimizer = optim_builder(lr)
-                optimizer.minimize(loss)
-                if FLAGS.fp16:
-                    loss /= ctx.get_loss_scale_var()
+            inputs_def = cfg['TrainReader']['inputs_def']
+            feed_vars, train_loader = model.build_inputs(**inputs_def)
+            train_fetches = model.train(feed_vars)
+            loss = train_fetches['loss']
+            lr = lr_builder()
+            optimizer = optim_builder(lr)
+            optimizer.minimize(loss)
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -175,11 +165,14 @@ def main():
         exec_strategy.num_threads = 1
 
     exe.run(startup_prog)
+    not_quant_pattern = []
+    if FLAGS.not_quant_pattern:
+        not_quant_pattern = FLAGS.not_quant_pattern
     config = {
         'weight_quantize_type': 'channel_wise_abs_max',
         'activation_quantize_type': 'moving_average_abs_max',
         'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
-        'not_quant_pattern': ['yolo_output']
+        'not_quant_pattern': not_quant_pattern
     }
 
     ignore_params = cfg.finetune_exclude_pretrained_params \
@@ -234,13 +227,6 @@ def main():
     time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
-    # use tb-paddle to log data
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_loss_step = 0
-        tb_mAP_step = 0
-
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
@@ -250,13 +236,6 @@ def main():
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
-
-        # use tb-paddle to log loss
-        if FLAGS.use_tb:
-            if it % cfg.log_iter == 0:
-                for loss_name, loss_value in stats.items():
-                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
-                tb_loss_step += 1
 
         train_stats.update(stats)
         logs = train_stats.log()
@@ -282,11 +261,6 @@ def main():
                     is_bbox_normalized, FLAGS.output_eval, map_type,
                     cfg['EvalReader']['dataset'])
 
-                # use tb_paddle to log mAP
-                if FLAGS.use_tb:
-                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
-                    tb_mAP_step += 1
-
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
                     best_box_ap_list[1] = it
@@ -307,11 +281,6 @@ if __name__ == '__main__':
         type=str,
         help="Checkpoint path for resuming training.")
     parser.add_argument(
-        "--fp16",
-        action='store_true',
-        default=False,
-        help="Enable mixed precision training.")
-    parser.add_argument(
         "--loss_scale",
         default=8.,
         type=float,
@@ -327,14 +296,10 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
-        type=bool,
-        default=False,
-        help="whether to record the data to Tensorboard.")
-    parser.add_argument(
-        '--tb_log_dir',
+        "--not_quant_pattern",
+        nargs='+',
         type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
+        help="Layers which name_scope contains string in not_quant_pattern will not be quantized"
+    )
     FLAGS = parser.parse_args()
     main()

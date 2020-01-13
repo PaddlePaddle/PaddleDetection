@@ -24,36 +24,13 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.modeling.model_input import create_feed
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from tools.export_model import prune_feed_vars
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
 from paddleslim.quant import quant_aware, convert
-
-
-def prune_feed_vars(feeded_var_names, target_vars, prog):
-    """
-    Filter out feed variables which are not in program,
-    pruned feed variables are only used in post processing
-    on model output, which are not used in program, such
-    as im_id to identify image order, im_shape to clip bbox
-    in image.
-    """
-    exist_var_names = []
-    prog = prog.clone()
-    prog = prog._prune(targets=target_vars)
-    global_block = prog.global_block()
-    for name in feeded_var_names:
-        try:
-            v = global_block.var(name)
-            exist_var_names.append(str(v.name))
-        except Exception:
-            logger.info('save_inference_model pruned unused feed '
-                        'variables {}'.format(name))
-            pass
-    return exist_var_names
 
 
 def save_infer_model(save_dir, exe, feed_vars, test_fetches, infer_prog):
@@ -97,11 +74,15 @@ def main():
             feed_vars, _ = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
+
+    not_quant_pattern = []
+    if FLAGS.not_quant_pattern:
+        not_quant_pattern = FLAGS.not_quant_pattern
     config = {
         'weight_quantize_type': 'channel_wise_abs_max',
         'activation_quantize_type': 'moving_average_abs_max',
         'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
-        'not_quant_pattern': ['yolo_output']
+        'not_quant_pattern': not_quant_pattern
     }
 
     infer_prog = quant_aware(infer_prog, place, config, for_test=True)
@@ -128,5 +109,12 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output model files.")
+    parser.add_argument(
+        "--not_quant_pattern",
+        nargs='+',
+        type=str,
+        help="Layers which name_scope contains string in not_quant_pattern will not be quantized"
+    )
+
     FLAGS = parser.parse_args()
     main()

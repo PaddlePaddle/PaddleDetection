@@ -12,12 +12,12 @@
 
 
 ## 安装PaddleSlim
-可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim,或者下载[PaddleSlim Source Code](https://github.com/PaddlePaddle/PaddleSlim)并将PaddleSlim文件夹路径加到系统路径中。
+可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim。
 
 
 ## 训练
 
-根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py) 编写压缩脚本compress.py。脚本中量化的步骤如下。
+根据 [tools/train.py](../../tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
 
 ### 定义量化配置
 config = {
@@ -44,14 +44,15 @@ build_strategy.sync_batch_norm = False
 
 ### 开始训练
 
-您可以通过运行以下命令运行该示例。(该示例是在coco数据集上训练yolov3-mobilenetv1, 替换模型和数据集的方法和检测库类似，直接替换相应的配置文件即可)
+您可以通过运行以下命令运行该示例。(该示例是在COCO数据集上训练yolov3-mobilenetv1, 替换模型和数据集的方法和检测库类似，直接替换相应的配置文件即可)
 
 step1: 设置gpu卡
 ```
 export CUDA_VISIBLE_DEVICES=0
 ```
 step2: 开始训练
-使用PaddleDetection提供的配置文件进行训练：
+
+请在PaddleDetection根目录下运行。
 
 ```
 python slim/quantization/train.py \

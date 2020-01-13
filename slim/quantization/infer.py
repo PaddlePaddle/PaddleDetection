@@ -23,19 +23,6 @@ import sys
 import numpy as np
 from PIL import Image
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
@@ -47,54 +34,12 @@ from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
 from ppdet.data.reader import create_reader
-
+from tools.infer import get_test_images, get_save_image_name
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 from paddleslim.quant import quant_aware, convert
-
-
-def get_save_image_name(output_dir, image_path):
-    """
-    Get save image name from source image path.
-    """
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    image_name = os.path.split(image_path)[-1]
-    name, ext = os.path.splitext(image_name)
-    return os.path.join(output_dir, "{}".format(name)) + ext
-
-
-def get_test_images(infer_dir, infer_img):
-    """
-    Get image path list in TEST mode
-    """
-    assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
-    assert infer_img is None or os.path.isfile(infer_img), \
-            "{} is not a file".format(infer_img)
-    assert infer_dir is None or os.path.isdir(infer_dir), \
-            "{} is not a directory".format(infer_dir)
-    images = []
-
-    # infer_img has a higher priority
-    if infer_img and os.path.isfile(infer_img):
-        images.append(infer_img)
-        return images
-
-    infer_dir = os.path.abspath(infer_dir)
-    assert os.path.isdir(infer_dir), \
-        "infer_dir {} is not a directory".format(infer_dir)
-    exts = ['jpg', 'jpeg', 'png', 'bmp']
-    exts += [ext.upper() for ext in exts]
-    for ext in exts:
-        images.extend(glob.glob('{}/*.{}'.format(infer_dir, ext)))
-
-    assert len(images) > 0, "no image found in {}".format(infer_dir)
-    logger.info("Found {} inference images in total.".format(len(images)))
-
-    return images
 
 
 def main():
@@ -133,12 +78,14 @@ def main():
 
     reader = create_reader(cfg.TestReader)
     loader.set_sample_list_generator(reader, place)
-
+    not_quant_pattern = []
+    if FLAGS.not_quant_pattern:
+        not_quant_pattern = FLAGS.not_quant_pattern
     config = {
         'weight_quantize_type': 'channel_wise_abs_max',
         'activation_quantize_type': 'moving_average_abs_max',
         'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
-        'not_quant_pattern': ['yolo_output']
+        'not_quant_pattern': not_quant_pattern
     }
 
     infer_prog = quant_aware(infer_prog, place, config, for_test=True)
@@ -181,13 +128,6 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # use tb-paddle to log image
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_image_step = 0
-        tb_image_frame = 0  # each frame can display ten pictures at most. 
-
     imid2path = dataset.get_imid2path()
     iter_id = 0
     try:
@@ -214,32 +154,10 @@ def main():
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
 
-                # use tb-paddle to log original image           
-                if FLAGS.use_tb:
-                    original_image_np = np.array(image)
-                    tb_writer.add_image(
-                        "original/frame_{}".format(tb_image_frame),
-                        original_image_np,
-                        tb_image_step,
-                        dataformats='HWC')
-
                 image = visualize_results(image,
                                           int(im_id), catid2name,
                                           FLAGS.draw_threshold, bbox_results,
                                           mask_results)
-
-                # use tb-paddle to log image with bbox
-                if FLAGS.use_tb:
-                    infer_image_np = np.array(image)
-                    tb_writer.add_image(
-                        "bbox/frame_{}".format(tb_image_frame),
-                        infer_image_np,
-                        tb_image_step,
-                        dataformats='HWC')
-                    tb_image_step += 1
-                    if tb_image_step % 10 == 0:
-                        tb_image_step = 0
-                        tb_image_frame += 1
 
                 save_name = get_save_image_name(FLAGS.output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
@@ -272,14 +190,11 @@ if __name__ == '__main__':
         default=0.5,
         help="Threshold to reserve the result for visualization.")
     parser.add_argument(
-        "--use_tb",
-        type=bool,
-        default=False,
-        help="whether to record the data to Tensorboard.")
-    parser.add_argument(
-        '--tb_log_dir',
+        "--not_quant_pattern",
+        nargs='+',
         type=str,
-        default="tb_log_dir/image",
-        help='Tensorboard logging directory for image.')
+        help="Layers which name_scope contains string in not_quant_pattern will not be quantized"
+    )
+
     FLAGS = parser.parse_args()
     main()

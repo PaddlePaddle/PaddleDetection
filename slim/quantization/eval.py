@@ -19,19 +19,6 @@ from __future__ import print_function
 import os
 import sys
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
@@ -68,8 +55,6 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
-    multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
-
     # define executor
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -82,10 +67,7 @@ def main():
         with fluid.unique_name.guard():
             inputs_def = cfg['EvalReader']['inputs_def']
             test_feed_vars, loader = model.build_inputs(**inputs_def)
-            if multi_scale_test is None:
-                test_fetches = model.eval(test_feed_vars)
-            else:
-                test_fetches = model.eval(test_feed_vars, multi_scale_test)
+            test_fetches = model.eval(test_feed_vars)
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(cfg.EvalReader)
@@ -129,30 +111,15 @@ def main():
     sub_eval_prog = None
     sub_keys = None
     sub_values = None
-    # build sub-program
-    if 'Mask' in main_arch and multi_scale_test:
-        sub_eval_prog = fluid.Program()
-        with fluid.program_guard(sub_eval_prog, startup_prog):
-            with fluid.unique_name.guard():
-                inputs_def = cfg['EvalReader']['inputs_def']
-                inputs_def['mask_branch'] = True
-                feed_vars, eval_loader = model.build_inputs(**inputs_def)
-                sub_fetches = model.eval(
-                    feed_vars, multi_scale_test, mask_branch=True)
-                assert cfg.metric == 'COCO'
-                extra_keys = ['im_id', 'im_shape']
-        sub_keys, sub_values, _ = parse_fetches(sub_fetches, sub_eval_prog,
-                                                extra_keys)
-        sub_eval_prog = sub_eval_prog.clone(True)
 
-    #if 'weights' in cfg:
-    #    checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
-
+    not_quant_pattern = []
+    if FLAGS.not_quant_pattern:
+        not_quant_pattern = FLAGS.not_quant_pattern
     config = {
         'weight_quantize_type': 'channel_wise_abs_max',
         'activation_quantize_type': 'moving_average_abs_max',
         'quantize_op_types': ['depthwise_conv2d', 'mul', 'conv2d'],
-        'not_quant_pattern': ['yolo_output']
+        'not_quant_pattern': not_quant_pattern
     }
 
     eval_prog = quant_aware(eval_prog, place, config, for_test=True)
@@ -169,7 +136,6 @@ def main():
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)
 
-    #print(cfg['EvalReader']['dataset'].__dict__)
     # evaluation
     resolution = None
     if 'mask' in results[0]:
@@ -200,5 +166,12 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation file directory, default is current directory.")
+    parser.add_argument(
+        "--not_quant_pattern",
+        nargs='+',
+        type=str,
+        help="Layers which name_scope contains string in not_quant_pattern will not be quantized"
+    )
+
     FLAGS = parser.parse_args()
     main()
