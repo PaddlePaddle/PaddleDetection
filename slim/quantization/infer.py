@@ -94,7 +94,6 @@ def main():
 
     if cfg.weights:
         checkpoint.load_params(exe, infer_prog, cfg.weights)
-    #fluid.io.load_persistables(exe, cfg.weights, infer_prog)
     infer_prog = convert(infer_prog, place, config, save_int8=False)
 
     # parse infer fetches
