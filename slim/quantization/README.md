@@ -36,7 +36,8 @@ train_prog = quant_aware(train_prog, place, config, for_test=False)
 ```
 
 ### 关闭一些训练策略
-因为量化要对Program做修改，所以一些会修改Program的训练策略需要关闭。
+
+因为量化要对Program做修改，所以一些会修改Program的训练策略需要关闭。``sync_batch_norm`` 和量化多卡训练同时使用时会出错，原因暂不知，因此也需要将其关闭。
 ```
 build_strategy.fuse_all_reduce_ops = False
 build_strategy.sync_batch_norm = False
