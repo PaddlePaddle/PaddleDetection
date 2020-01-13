@@ -162,6 +162,5 @@ python slim/quantization/infer.py \
 
 ## 量化结果
 
-请参考[PaddleSlim model zoo doc](https://paddlepaddle.github.io/PaddleSlim/model_zoo/)。
 
 ## FAQ
