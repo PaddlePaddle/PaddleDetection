@@ -160,18 +160,8 @@ python slim/quantization/infer.py \
 导出模型步骤中导出的FP32模型可使用PaddleLite进行加载预测，可参见教程[Paddle-Lite如何加载运行量化模型](https://github.com/PaddlePaddle/Paddle-Lite/wiki/model_quantization)
 
 
-## 示例结果
+## 量化结果
 
->当前release的结果并非超参调优后的最好结果，仅做示例参考，后续我们会优化当前结果。
-
-### MobileNetV1-YOLO-V3
-
-| weight量化方式 | activation量化方式| Box ap |Paddle Fluid inference time(ms)| Paddle Lite inference time(ms)|
-|---|---|---|---|---|
-|baseline|- |76.2%|- |-|
-|abs_max|abs_max|- |- |-|
-|abs_max|moving_average_abs_max|- |- |-|
-|channel_wise_abs_max|abs_max|- |- |-|
-
+请参考[PaddleSlim model zoo doc](https://paddlepaddle.github.io/PaddleSlim/model_zoo/)。
 
 ## FAQ
