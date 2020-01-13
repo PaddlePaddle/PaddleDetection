@@ -127,7 +127,7 @@ def main():
     # load model
     exe.run(startup_prog)
     if 'weights' in cfg:
-        fluid.io.load_persistables(exe, cfg.weights, eval_prog)
+        checkpoint.load_params(exe, eval_prog, cfg.weights)
     eval_prog = convert(eval_prog, place, config, save_int8=False)
 
     compile_program = fluid.compiler.CompiledProgram(
