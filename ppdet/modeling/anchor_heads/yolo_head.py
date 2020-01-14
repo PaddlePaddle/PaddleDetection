@@ -221,20 +221,22 @@ class YOLOv3Head(object):
 
             # out channel number = mask_num * (5 + class_num)
             num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
-            block_out = fluid.layers.conv2d(
-                input=tip,
-                num_filters=num_filters,
-                filter_size=1,
-                stride=1,
-                padding=0,
-                act=None,
-                param_attr=ParamAttr(name=self.prefix_name +
-                                     "yolo_output.{}.conv.weights".format(i)),
-                bias_attr=ParamAttr(
-                    regularizer=L2Decay(0.),
-                    name=self.prefix_name +
-                    "yolo_output.{}.conv.bias".format(i)))
-            outputs.append(block_out)
+            with fluid.name_scope('yolo_output'):
+                block_out = fluid.layers.conv2d(
+                    input=tip,
+                    num_filters=num_filters,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    act=None,
+                    param_attr=ParamAttr(
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.weights".format(i)),
+                    bias_attr=ParamAttr(
+                        regularizer=L2Decay(0.),
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.bias".format(i)))
+                outputs.append(block_out)
 
             if i < len(blocks) - 1:
                 # do not perform upsample in the last detection_block
