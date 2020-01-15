@@ -1,0 +1,20 @@
+DEPLOY:
+    USE_GPU: 1
+    MODEL_PATH: "/root/projects/models/yolov3_mobilenet_v1/"
+    MODEL_FILENAME: "__model__"
+    PARAMS_FILENAME: "__params__"
+    EVAL_CROP_SIZE: (320, 320)
+    RESIZE_TYPE: "UNPADDING"
+    TARGET_SHORT_SIZE : 256
+    MEAN:  [0.4647, 0.4647, 0.4647]
+    STD: [0.0834, 0.0834, 0.0834]
+    IMAGE_TYPE: "rgb"
+    NUM_CLASSES: 1
+    CHANNELS : 3
+    PRE_PROCESSOR: "DetectionPreProcessor"
+    PREDICTOR_MODE: "ANALYSIS"
+    BATCH_SIZE : 3 
+    RESIZE_MAX_SIZE: -1
+    FEEDS_SIZE: 2
+    USE_TRT : 1 
+    TRT_MODE : "FP16"
