@@ -1543,7 +1543,9 @@ class CornerTarget(BaseOperator):
         tl_tags = []
         br_tags = []
         tag_nums = np.zeros((1), dtype=np.int32)
+        target_weight = np.zeros((1), dtype=np.float32)
         tag_lens = 0
+        has_bbox = 1 
         gt_bbox = sample['gt_bbox']
         gt_class = sample['gt_class']
         keep_inds  = ((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & \
@@ -1589,8 +1591,16 @@ class CornerTarget(BaseOperator):
             br_regrs.append([fxbr - xbr, fybr - ybr])
             tl_tags.append(ytl * self.output_size[1] + xtl)
             br_tags.append(ybr * self.output_size[1] + xbr)
+        if tag_lens == 0:
+            tl_regrs.append([0, 0])
+            br_regrs.append([0, 0])
+            tl_tags.append(0)
+            br_tags.append(0)
+            has_bbox = 0
+            tag_lens = 1
 
         tag_nums[0] = np.array(tag_lens, dtype=np.int32)
+        target_weight[0] = np.array(has_bbox, dtype=np.float32)
 
         sample['tl_heatmaps'] = tl_heatmaps
         sample['br_heatmaps'] = br_heatmaps
@@ -1599,6 +1609,7 @@ class CornerTarget(BaseOperator):
         sample['tl_tags'] = np.array(tl_tags).astype('int64')
         sample['br_tags'] = np.array(br_tags).astype('int64')
         sample['tag_nums'] = tag_nums
+        sample['target_weight'] = target_weight
 
         return sample
 
@@ -1609,8 +1620,7 @@ class CornerCrop(BaseOperator):
                  random_scales=[0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3],
                  border=128,
                  is_train=True,
-                 input_size=511,
-                 max_attempt=50):
+                 input_size=511):
         """
         """
         super(CornerCrop, self).__init__()
@@ -1618,77 +1628,63 @@ class CornerCrop(BaseOperator):
         self.border = border
         self.is_train = is_train
         self.input_size = input_size
-        self.max_attempt = max_attempt
 
     def __call__(self, sample, context=None):
         """"""
         im_h, im_w = int(sample['h']), int(sample['w'])
-        for i in range(self.max_attempt):
-            if self.is_train:
-                scale = np.random.choice(self.random_scales)
-                height = int(self.input_size * scale)
-                width = int(self.input_size * scale)
+        if self.is_train:
+            scale = np.random.choice(self.random_scales)
+            height = int(self.input_size * scale)
+            width = int(self.input_size * scale)
 
-                w_border = self._get_border(self.border, sample['w'])
-                h_border = self._get_border(self.border, sample['h'])
+            w_border = self._get_border(self.border, sample['w'])
+            h_border = self._get_border(self.border, sample['h'])
 
-                ctx = np.random.randint(
-                    low=w_border, high=sample['w'] - w_border)
-                cty = np.random.randint(
-                    low=h_border, high=sample['h'] - h_border)
+            ctx = np.random.randint(
+                low=w_border, high=sample['w'] - w_border)
+            cty = np.random.randint(
+                low=h_border, high=sample['h'] - h_border)
 
-            else:
-                cty, ctx = im_h // 2, im_w // 2
-                height = im_h | 127
-                width = im_w | 127
+        else:
+            cty, ctx = im_h // 2, im_w // 2
+            height = im_h | 127
+            width = im_w | 127
 
-            cropped_image = np.zeros(
-                (height, width, 3), dtype=sample['image'].dtype)
+        cropped_image = np.zeros(
+            (height, width, 3), dtype=sample['image'].dtype)
 
-            x0, x1 = max(ctx - width // 2, 0), min(ctx + width // 2, im_w)
-            y0, y1 = max(cty - height // 2, 0), min(cty + height // 2, im_h)
+        x0, x1 = max(ctx - width // 2, 0), min(ctx + width // 2, im_w)
+        y0, y1 = max(cty - height // 2, 0), min(cty + height // 2, im_h)
 
-            left_w, right_w = ctx - x0, x1 - ctx
-            top_h, bottom_h = cty - y0, y1 - cty
+        left_w, right_w = ctx - x0, x1 - ctx
+        top_h, bottom_h = cty - y0, y1 - cty
 
-            # crop image
-            cropped_ctx, cropped_cty = width // 2, height // 2
-            x_slice = slice(
-                int(cropped_ctx - left_w), int(cropped_ctx + right_w))
-            y_slice = slice(
-                int(cropped_cty - top_h), int(cropped_cty + bottom_h))
-            cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:
-                                                                 x1, :].copy()
+        # crop image
+        cropped_ctx, cropped_cty = width // 2, height // 2
+        x_slice = slice(
+            int(cropped_ctx - left_w), int(cropped_ctx + right_w))
+        y_slice = slice(
+            int(cropped_cty - top_h), int(cropped_cty + bottom_h))
+        cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:
+                                                             x1, :].copy()
 
-            #sample['image'] = cropped_image
-            #sample['h'], sample['w'] = height, width
+        sample['image'] = cropped_image
+        sample['h'], sample['w'] = height, width
 
-            if self.is_train:
-                # crop detections
-                gt_bbox = sample['gt_bbox'].copy()
-                gt_bbox[:, 0:4:2] -= x0
-                gt_bbox[:, 1:4:2] -= y0
-                gt_bbox[:, 0:4:2] += cropped_ctx - left_w
-                gt_bbox[:, 1:4:2] += cropped_cty - top_h
-                keep_inds = np.where(((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & ((
-                    gt_bbox[:, 3] - gt_bbox[:, 1]) > 0) & (
-                        gt_bbox[:, 0] < width) & (gt_bbox[:, 2] > 0) & (
-                            gt_bbox[:, 1] < height) & (gt_bbox[:, 3] > 0))
-                if len(keep_inds[0]) > 0:
-                    sample['gt_bbox'] = gt_bbox
-                    sample['image'] = cropped_image
-                    sample['h'], sample['w'] = height, width
-                    break
-            else:
-                sample['borders'] = np.array(
-                    [
-                        cropped_cty - top_h, cropped_cty + bottom_h,
-                        cropped_ctx - left_w, cropped_ctx + right_w
-                    ],
-                    dtype=np.float32)
-                sample['image'] = cropped_image
-                sample['h'], sample['w'] = height, width
-                break
+        if self.is_train:
+            # crop detections
+            gt_bbox = sample['gt_bbox'].copy()
+            gt_bbox[:, 0:4:2] -= x0
+            gt_bbox[:, 1:4:2] -= y0
+            gt_bbox[:, 0:4:2] += cropped_ctx - left_w
+            gt_bbox[:, 1:4:2] += cropped_cty - top_h
+        else:
+            sample['borders'] = np.array(
+                [
+                    cropped_cty - top_h, cropped_cty + bottom_h,
+                    cropped_ctx - left_w, cropped_ctx + right_w
+                ],
+                dtype=np.float32)
 
         return sample
 

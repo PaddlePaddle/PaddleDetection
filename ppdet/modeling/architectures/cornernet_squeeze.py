@@ -74,13 +74,12 @@ class CornerNetSqueeze(object):
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
-        fluid.layers.Print(feed_vars['tag_nums'])
         body_feats = self.backbone(im)
 
         if mode == 'train':
             target_vars = [
                 'tl_heatmaps', 'br_heatmaps', 'tag_nums', 'tl_regrs',
-                'br_regrs', 'tl_tags', 'br_tags'
+                'br_regrs', 'tl_tags', 'br_tags', 'target_weight'
             ]
             target = {key: feed_vars[key] for key in target_vars}
             self.corner_head.get_output(body_feats)
@@ -139,7 +138,8 @@ class CornerNetSqueeze(object):
             'br_regrs':     {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 1},
             'tl_tags':      {'shape': [None, 1], 'dtype': 'int64', 'lod_level': 1},
             'br_tags':      {'shape': [None, 1], 'dtype': 'int64', 'lod_level': 1},
-            'tag_nums':     {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1}
+            'tag_nums':     {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
+            'target_weight': {'shape': [None, 1], 'dtype': 'float32', 'lod_level': 0}
         }
         # yapf: enable
         return inputs_def

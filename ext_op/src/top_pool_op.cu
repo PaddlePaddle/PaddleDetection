@@ -53,7 +53,6 @@ public:
     
     memory::Copy(gpu_place, output_data, gpu_place, x_data,
                 sizeof(T) * x->numel(), dev_ctx.stream());
-    dev_ctx.Wait();
 
     int threads = kNumCUDAThreads;
     for (int ind = 1; ind < height; ind <<= 1) {
@@ -61,9 +60,7 @@ public:
       int blocks = NumBlocks(cur_num);
 
       MaxOut<T><<<blocks, threads>>>(ind, NC_num, height, width, 2, 0, height - ind, output_data);
-      dev_ctx.Wait();
     }
-    dev_ctx.Wait();
   }
 };
 
@@ -108,7 +105,6 @@ class TopPoolGradOpCUDAKernel : public framework::OpKernel<T> {
       UpdateMaxInfo<T><<<blocks, threads>>>(x->data<T>(), NC_num, height, width, 2, height - ind - 1, max_val_data, max_ind_data);
       ScatterAddOnAxis<T><<<blocks, threads>>>(out_grad->data<T>(), height - ind - 1, max_ind_data, NC_num, height, width, 2, in_grad_data); 
     }
-    dev_ctx.Wait();
   }
 };
 

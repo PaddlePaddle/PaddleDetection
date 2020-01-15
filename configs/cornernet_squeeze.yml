@@ -49,13 +49,13 @@ OptimizerBuilder:
 TrainReader:
   inputs_def:
     image_shape: [3, 511, 511]
-    fields: ['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_nums']
+    fields: ['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_nums', 'target_weight']
     output_size: 64 
   dataset:
     !COCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir:  dataset/coco 
     with_background: false
   sample_transforms:
   - !DecodeImage
@@ -94,6 +94,7 @@ TrainReader:
   bufsize: 1
   worker_num: 8
   use_process: false 
+  drop_empty: false
 
 EvalReader:
   inputs_def:
