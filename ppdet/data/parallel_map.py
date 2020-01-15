@@ -65,6 +65,10 @@ class ParallelMap(object):
         self._worker_num = worker_num
         self._bufsize = bufsize
         self._use_process = use_process
+        if self._use_process and sys.platform == "win32":
+            logger.info("Use multi-thread reader instead of "
+                        "multi-process reader on Windows.")
+            self._use_process = False
         if self._use_process and type(memsize) is str:
             assert memsize[-1].lower() == 'g', \
                 "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (memsize)
@@ -86,10 +90,6 @@ class ParallelMap(object):
     def _setup(self):
         """setup input/output queues and workers """
         use_process = self._use_process
-        if use_process and sys.platform == "win32":
-            logger.info("Use multi-thread reader instead of "
-                        "multi-process reader on Windows.")
-            use_process = False
 
         bufsize = self._bufsize
         if use_process:
