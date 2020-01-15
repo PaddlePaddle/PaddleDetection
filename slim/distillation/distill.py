@@ -140,8 +140,7 @@ def main():
         'gt_class': 'gt_class',
         'gt_score': 'gt_score'
     }
-    distill_prog = merge(teacher_program,
-                         fluid.default_main_program(), data_name_map, place)
+    merge(teacher_program, fluid.default_main_program(), data_name_map, place)
 
     distill_weight = 100
     distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
@@ -188,7 +187,8 @@ def main():
     # local execution scopes can be deleted after each iteration.
     exec_strategy.num_iteration_per_drop_scope = 1
 
-    parallel_main = fluid.CompiledProgram(distill_prog).with_data_parallel(
+    parallel_main = fluid.CompiledProgram(fluid.default_main_program(
+    )).with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
@@ -200,14 +200,18 @@ def main():
                  if 'finetune_exclude_pretrained_params' in cfg else []
     start_iter = 0
     if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe, distill_prog, FLAGS.resume_checkpoint)
+        checkpoint.load_checkpoint(exe,
+                                   fluid.default_main_program(),
+                                   FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
     elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe, distill_prog, cfg.pretrain_weights)
+        checkpoint.load_and_fusebn(exe,
+                                   fluid.default_main_program(),
+                                   cfg.pretrain_weights)
     elif cfg.pretrain_weights:
         checkpoint.load_params(
             exe,
-            distill_prog,
+            fluid.default_main_program(),
             cfg.pretrain_weights,
             ignore_params=ignore_params)
 
@@ -240,7 +244,8 @@ def main():
         if step_id % cfg.snapshot_iter == 0 and step_id != 0 or step_id == cfg.max_iters - 1:
             save_name = str(
                 step_id) if step_id != cfg.max_iters - 1 else "model_final"
-            checkpoint.save(exe, distill_prog,
+            checkpoint.save(exe,
+                            fluid.default_main_program(),
                             os.path.join(save_dir, save_name))
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
@@ -254,7 +259,8 @@ def main():
             if box_ap_stats[0] > best_box_ap_list[0]:
                 best_box_ap_list[0] = box_ap_stats[0]
                 best_box_ap_list[1] = step_id
-                checkpoint.save(exe, distill_prog,
+                checkpoint.save(exe,
+                                fluid.default_main_program(),
                                 os.path.join("./", "best_model"))
             logger.info("Best test box ap: {}, in step: {}".format(
                 best_box_ap_list[0], best_box_ap_list[1]))
