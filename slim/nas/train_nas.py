@@ -58,14 +58,20 @@ FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
+
 @register
 class Constraint(object):
     """
     Constraint for nas
     """
-    def __init__(self, ctype, max_constraint=None, min_constraint=None, table_file=None):
+
+    def __init__(self,
+                 ctype,
+                 max_constraint=None,
+                 min_constraint=None,
+                 table_file=None):
         super(Constraint, self).__init__()
-        self.ctype=ctype
+        self.ctype = ctype
         self.max_constraint = max_constraint
         self.min_constraint = min_constraint
         self.table_file = table_file
@@ -74,14 +80,17 @@ class Constraint(object):
         if self.ctype == 'flops':
             model_status = flops(program)
         elif self.ctype == 'latency':
-            assert os.path.exists(self.table_file), "latency constraint must have latency table, please check whether table file exist!"
+            assert os.path.exists(
+                self.table_file
+            ), "latency constraint must have latency table, please check whether table file exist!"
             model_latency = TableLatencyEvaluator(self.table_file)
             model_status = model_latency.latency(program, only_conv=True)
         else:
-            raise NotImplementedError("{} constraint is NOT support!!! Now PaddleSlim support flops constraint and latency constraint".format(self.ctype))
+            raise NotImplementedError(
+                "{} constraint is NOT support!!! Now PaddleSlim support flops constraint and latency constraint".
+                format(self.ctype))
 
-        return model_status     
-        
+        return model_status
 
 
 def get_bboxes_scores(result):
@@ -280,9 +289,13 @@ def main():
                         loss /= ctx.get_loss_scale_var()
 
         current_constraint = constraint.compute_constraint(train_prog)
-        logger.info('current steps: {}, constraint {}'.format(step, current_constraint))
-            
-        if (constraint.max_constraint != None and current_constraint > constraint.max_constraint) or (constraint.min_constraint != None and current_constraint < constraint.min_constraint):
+        logger.info('current steps: {}, constraint {}'.format(
+            step, current_constraint))
+
+        if (constraint.max_constraint != None and
+                current_constraint > constraint.max_constraint) or (
+                    constraint.min_constraint != None and
+                    current_constraint < constraint.min_constraint):
             continue
 
         # parse train fetches
