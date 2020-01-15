@@ -6,6 +6,7 @@
 
 我们选取人脸检测的BlazeFace模型作为神经网络搜索示例，该示例使用[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim)
 辅助完成神经网络搜索实验，具体技术细节，请您参考[神经网络搜索策略](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/docs/tutorials/nas_demo.md)。
+基于PaddleSlim进行搜索实验过程中，搜索限制条件可以选择是flops限制还是硬件延时限制，硬件延时限制需要提供延时表。本示例提供一份基于blazeface搜索空间的硬件延时表，名称是latency_855.txt(基于PaddleLite在骁龙855上测试的延时)，可以直接用该表进行blazeface的硬件延时搜索实验。
 
 
 ## 定义搜索空间
@@ -15,9 +16,9 @@
 - 单blaze模块`blaze_filter_num2`: 定义了BlazeFace单blaze模块中通道数变化区间，人为定义了适中的通道数区间；
 - 过渡blaze模块`mid_filter_num`：定义了BlazeFace由单blaze模块到双blaze模块的过渡区间；
 - 双blaze模块`double_filter_num`：定义了BlazeFace双blaze模块中通道数变化区间，人为定义了较大的通道数区间；
-- 卷积核尺寸`use_5x5kernel`：定义了BlazeFace中卷积和尺寸大小是3x3或者5x5。
+- 卷积核尺寸`use_5x5kernel`：定义了BlazeFace中卷积和尺寸大小是3x3或者5x5。由于提供的延时表中只统计了3x3卷积的延时，所以启动硬件延时搜索实验时，需要把卷积核尺寸固定为3x3。
 
-根据定义的搜索空间各个区间，我们的搜索空间tokens共9位，变化区间在([0, 0, 0, 0, 0, 0, 0, 0, 0], [7, 9, 12, 12, 6, 6, 6, 6, 2])范围内。  
+根据定义的搜索空间各个区间，我们的搜索空间tokens共9位，变化区间在([0, 0, 0, 0, 0, 0, 0, 0, 0], [7, 9, 12, 12, 6, 6, 6, 6, 2])范围内。硬件延时搜索实验时，token的变化区间在([0, 0, 0, 0, 0, 0, 0, 0, 0], [7, 9, 12, 12, 6, 6, 6, 6, 1])范围内。
 
 9位tokens分别表示：
 
