@@ -18,6 +18,7 @@ server_port: 8999
 search_space: BlazeFaceNasSpace
 
 Constraint:
+  # choice: flops, latency
   ctype: latency
   max_constraint: 57489
   min_constraint: 18000
