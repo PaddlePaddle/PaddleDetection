@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <paddle_inference_api.h>
 
 namespace PaddleSolution {
 
@@ -30,6 +31,7 @@ class PaddleModelConfigPaser {
         _channels(0),
         _use_gpu(0),
         _batch_size(1),
+        _enable_trt(false),
         _target_short_size(0),
         _model_file_name("__model__"),
         _param_file_name("__params__"),
@@ -58,6 +60,7 @@ class PaddleModelConfigPaser {
         _resize_max_size = 0;
         _feeds_size = 1;
          _coarsest_stride = 1;
+         _enable_trt = false;
     }
 
     std::string process_parenthesis(const std::string& str) {
@@ -214,6 +217,34 @@ class PaddleModelConfigPaser {
         if (config["DEPLOY"]["COARSEST_STRIDE"].IsDefined()) {
             _coarsest_stride = config["DEPLOY"]["COARSEST_STRIDE"].as<int>();
         }
+        // 20. enable_trt
+        if (config["DEPLOY"]["USE_TRT"].IsDefined()) {
+            _enable_trt = config["DEPLOY"]["USE_TRT"].as<int>();
+            _enable_trt &= _use_gpu;
+        } else {
+            _enable_trt = false;
+        }
+        if (_enable_trt) {
+            std::string trt_mode = "";
+            if (config["DEPLOY"]["TRT_MODE"].IsDefined()) {
+                trt_mode = config["DEPLOY"]["TRT_MODE"].as<std::string>();
+            } else {
+                trt_mode = "FP32";
+            }
+
+            if (trt_mode == "FP16") {
+                _trt_precision = paddle::AnalysisConfig::Precision::kHalf;
+            } else if (trt_mode == "FP32") {
+                _trt_precision = paddle::AnalysisConfig::Precision::kFloat32;
+            } else if (trt_mode == "INT8") {
+                _trt_precision = paddle::AnalysisConfig::Precision::kInt8;
+            } else {
+                _enable_trt = false;
+            }
+        }
+        if (_predictor_mode == "NATIVE") {
+            _enable_trt = false;
+        }
         return true;
     }
 
@@ -293,5 +324,9 @@ class PaddleModelConfigPaser {
     std::string _predictor_mode;
     // DEPLOY.BATCH_SIZE
     int _batch_size;
+    // bool enable_trt
+    bool _enable_trt;
+    // TRT Precision
+    paddle::AnalysisConfig::Precision _trt_precision;
 };
 }  // namespace PaddleSolution
