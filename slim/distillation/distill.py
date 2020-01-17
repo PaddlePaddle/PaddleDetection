@@ -36,6 +36,92 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
+def l2_distill(pairs, weight):
+    """
+    Add l2 distillation losses composed of multi pairs of feature maps,
+    each pair of feature maps is the input of teacher and student's
+    yolov3_loss respectively
+    """
+    loss = []
+    for pair in pairs:
+        loss.append(l2_loss(pair[0], pair[1]))
+    loss = fluid.layers.sum(loss)
+    weighted_loss = loss * weight
+    return weighted_loss
+
+
+def split_distill(split_output_names, weight):
+    """
+    Add fine grained distillation losses.
+    Each loss is composed by distill_reg_loss, distill_cls_loss and
+    distill_obj_loss
+    """
+    student_var = []
+    for name in split_output_names:
+        student_var.append(fluid.default_main_program().global_block().var(
+            name))
+    s_x0, s_y0, s_w0, s_h0, s_obj0, s_cls0 = student_var[0:6]
+    s_x1, s_y1, s_w1, s_h1, s_obj1, s_cls1 = student_var[6:12]
+    s_x2, s_y2, s_w2, s_h2, s_obj2, s_cls2 = student_var[12:18]
+    teacher_var = []
+    for name in split_output_names:
+        teacher_var.append(fluid.default_main_program().global_block().var(
+            'teacher_' + name))
+    t_x0, t_y0, t_w0, t_h0, t_obj0, t_cls0 = teacher_var[0:6]
+    t_x1, t_y1, t_w1, t_h1, t_obj1, t_cls1 = teacher_var[6:12]
+    t_x2, t_y2, t_w2, t_h2, t_obj2, t_cls2 = teacher_var[12:18]
+
+    def obj_weighted_reg(sx, sy, sw, sh, tx, ty, tw, th, tobj):
+        loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
+            sx, fluid.layers.sigmoid(tx))
+        loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
+            sy, fluid.layers.sigmoid(ty))
+        loss_w = fluid.layers.abs(sw - tw)
+        loss_h = fluid.layers.abs(sh - th)
+        loss = fluid.layers.sum([loss_x, loss_y, loss_w, loss_h])
+        weighted_loss = fluid.layers.reduce_mean(loss *
+                                                 fluid.layers.sigmoid(tobj))
+        return weighted_loss
+
+    def obj_weighted_cls(scls, tcls, tobj):
+        loss = fluid.layers.sigmoid_cross_entropy_with_logits(
+            scls, fluid.layers.sigmoid(tcls))
+        weighted_loss = fluid.layers.reduce_mean(
+            fluid.layers.elementwise_mul(
+                loss, fluid.layers.sigmoid(tobj), axis=0))
+        return weighted_loss
+
+    def obj_loss(sobj, tobj):
+        obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
+        obj_mask.stop_gradient = True
+        loss = fluid.layers.reduce_mean(
+            fluid.layers.sigmoid_cross_entropy_with_logits(sobj, obj_mask))
+        return loss
+
+    distill_reg_loss0 = obj_weighted_reg(s_x0, s_y0, s_w0, s_h0, t_x0, t_y0,
+                                         t_w0, t_h0, t_obj0)
+    distill_reg_loss1 = obj_weighted_reg(s_x1, s_y1, s_w1, s_h1, t_x1, t_y1,
+                                         t_w1, t_h1, t_obj1)
+    distill_reg_loss2 = obj_weighted_reg(s_x2, s_y2, s_w2, s_h2, t_x2, t_y2,
+                                         t_w2, t_h2, t_obj2)
+    distill_reg_loss = fluid.layers.sum(
+        [distill_reg_loss0, distill_reg_loss1, distill_reg_loss2])
+
+    distill_cls_loss0 = obj_weighted_cls(s_cls0, t_cls0, t_obj0)
+    distill_cls_loss1 = obj_weighted_cls(s_cls1, t_cls1, t_obj1)
+    distill_cls_loss2 = obj_weighted_cls(s_cls2, t_cls2, t_obj2)
+    distill_cls_loss = fluid.layers.sum(
+        [distill_cls_loss0, distill_cls_loss1, distill_cls_loss2])
+
+    distill_obj_loss0 = obj_loss(s_obj0, t_obj0)
+    distill_obj_loss1 = obj_loss(s_obj1, t_obj1)
+    distill_obj_loss2 = obj_loss(s_obj2, t_obj2)
+    distill_obj_loss = fluid.layers.sum(
+        [distill_obj_loss0, distill_obj_loss1, distill_obj_loss2])
+    loss = (distill_reg_loss + distill_cls_loss + distill_obj_loss) * weight
+    return loss
+
+
 def main():
     env = os.environ
     cfg = load_config(FLAGS.config)
@@ -182,88 +268,9 @@ def main():
         'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
     ]
 
-    def split_distill(split_output_names, weight):
-        student_var = []
-        for name in split_output_names:
-            student_var.append(fluid.default_main_program().global_block().var(
-                name))
-        s_x0, s_y0, s_w0, s_h0, s_obj0, s_cls0 = student_var[0:6]
-        s_x1, s_y1, s_w1, s_h1, s_obj1, s_cls1 = student_var[6:12]
-        s_x2, s_y2, s_w2, s_h2, s_obj2, s_cls2 = student_var[12:18]
-        teacher_var = []
-        for name in split_output_names:
-            teacher_var.append(fluid.default_main_program().global_block().var(
-                'teacher_' + name))
-        t_x0, t_y0, t_w0, t_h0, t_obj0, t_cls0 = teacher_var[0:6]
-        t_x1, t_y1, t_w1, t_h1, t_obj1, t_cls1 = teacher_var[6:12]
-        t_x2, t_y2, t_w2, t_h2, t_obj2, t_cls2 = teacher_var[12:18]
-
-        def obj_weighted_reg(sx, sy, sw, sh, tx, ty, tw, th, tobj):
-            loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
-                sx, fluid.layers.sigmoid(tx))
-            loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
-                sy, fluid.layers.sigmoid(ty))
-            loss_w = fluid.layers.abs(sw - tw)
-            loss_h = fluid.layers.abs(sh - th)
-            loss = fluid.layers.sum([loss_x, loss_y, loss_w, loss_h])
-            weighted_loss = fluid.layers.reduce_mean(loss *
-                                                     fluid.layers.sigmoid(tobj))
-            return weighted_loss
-
-        def obj_weighted_cls(scls, tcls, tobj):
-            loss = fluid.layers.sigmoid_cross_entropy_with_logits(
-                scls, fluid.layers.sigmoid(tcls))
-            weighted_loss = fluid.layers.reduce_mean(
-                fluid.layers.elementwise_mul(
-                    loss, fluid.layers.sigmoid(tobj), axis=0))
-            return weighted_loss
-
-        def obj_loss(sobj, tobj):
-            obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
-            obj_mask.stop_gradient = True
-            loss = fluid.layers.reduce_mean(
-                fluid.layers.sigmoid_cross_entropy_with_logits(sobj, obj_mask))
-            return loss
-
-        distill_reg_loss0 = obj_weighted_reg(s_x0, s_y0, s_w0, s_h0, t_x0, t_y0,
-                                             t_w0, t_h0, t_obj0)
-        distill_reg_loss1 = obj_weighted_reg(s_x1, s_y1, s_w1, s_h1, t_x1, t_y1,
-                                             t_w1, t_h1, t_obj1)
-        distill_reg_loss2 = obj_weighted_reg(s_x2, s_y2, s_w2, s_h2, t_x2, t_y2,
-                                             t_w2, t_h2, t_obj2)
-        distill_reg_loss = fluid.layers.sum(
-            [distill_reg_loss0, distill_reg_loss1, distill_reg_loss2])
-
-        distill_cls_loss0 = obj_weighted_cls(s_cls0, t_cls0, t_obj0)
-        distill_cls_loss1 = obj_weighted_cls(s_cls1, t_cls1, t_obj1)
-        distill_cls_loss2 = obj_weighted_cls(s_cls2, t_cls2, t_obj2)
-        distill_cls_loss = fluid.layers.sum(
-            [distill_cls_loss0, distill_cls_loss1, distill_cls_loss2])
-
-        distill_obj_loss0 = obj_loss(s_obj0, t_obj0)
-        distill_obj_loss1 = obj_loss(s_obj1, t_obj1)
-        distill_obj_loss2 = obj_loss(s_obj2, t_obj2)
-        distill_obj_loss = fluid.layers.sum(
-            [distill_obj_loss0, distill_obj_loss1, distill_obj_loss2])
-        loss = (distill_reg_loss + distill_cls_loss + distill_obj_loss) * weight
-        return loss
-
     distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
                      ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
                      ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
-
-    def l2_distill(pairs, weight):
-        """
-        Add l2 distillation losses composed of multi pairs of feature maps,
-        each pair of feature maps is the input of teacher and student's
-        yolov3_loss respectively
-        """
-        loss = []
-        for pair in pairs:
-            loss.append(l2_loss(pair[0], pair[1]))
-        loss = fluid.layers.sum(loss)
-        weighted_loss = loss * weight
-        return weighted_loss
 
     distill_loss = l2_distill(
         distill_pairs, 100) if not cfg.use_fine_grained_loss else split_distill(

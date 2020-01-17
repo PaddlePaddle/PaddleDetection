@@ -133,7 +133,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3
 python slim/distillation/distill.py \
     -c configs/yolov3_mobilenet_v1_voc.yml \
     -t configs/yolov3_r34_voc.yml \
-    -o YoloTrainFeed.batch_size=16 \
+    -o YOLOv3Loss.batch_size=16 \
     --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
 ```
 
@@ -143,7 +143,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3
 python slim/distillation/distill.py \
     -c configs/yolov3_mobilenet_v1.yml \
     -t configs/yolov3_r34.yml \
-    -o use_fine_grained_loss=true YoloTrainFeed.batch_size=16 \
+    -o use_fine_grained_loss=true YOLOv3Loss.batch_size=16 \
     --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar
 ```
 
