@@ -66,9 +66,9 @@ dist_loss_3 = l2_loss('teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1')
 
 这里以ResNet34-YOLOv3作为蒸馏训练的teacher网络, 对MobileNetV1-YOLOv3结构的student网络进行蒸馏。
 
-COCO数据集作为目标检测任务的训练目标难度更大，意味着teacher网络会预测出更多的背景bbox，如果直接用teacher的预测输出作为student学习的`soft label`会有严重的类别不均衡问题。为了有效解决这个问题，这里需要引入新的方法，详细背景请参考论文:[Object detection at 200 Frames Per Second](https://arxiv.org/abs/1805.06361)
+COCO数据集作为目标检测任务的训练目标难度更大，意味着teacher网络会预测出更多的背景bbox，如果直接用teacher的预测输出作为student学习的`soft label`会有严重的类别不均衡问题。解决这个问题需要引入新的方法，详细背景请参考论文:[Object detection at 200 Frames Per Second](https://arxiv.org/abs/1805.06361)
 
-为了确定蒸馏的对象，我们首先需要找到student和teacher网络得到的`x,y,w,h,cls.objness`等变量在PaddlePaddle框架中的实际名称(var.name), 进而根据名称取出这些变量，用teacher得到的结果指导student训练。找到的所有变量如下：
+为了确定蒸馏的对象，我们首先需要找到student和teacher网络得到的`x,y,w,h,cls.objness`等变量在PaddlePaddle框架中的实际名称(var.name)。进而根据名称取出这些变量，用teacher得到的结果指导student训练。找到的所有变量如下：
 
 ```python
 yolo_output_names = [
@@ -83,7 +83,7 @@ yolo_output_names = [
     ]
 ```
 
-然后，就可以根据论文<<Object detection at 200 Frames Per Second>>的方法为YOLOv3中分类、回归、objness三个不同的head适配不同的蒸馏损失函数，并对分类和回归的损失函数用objness的分值进行抑制，以解决前景背景类别不均衡问题。
+然后，就可以根据论文<<Object detection at 200 Frames Per Second>>的方法为YOLOv3中分类、回归、objness三个不同的head适配不同的蒸馏损失函数，并对分类和回归的损失函数用objness分值进行抑制，以解决前景背景类别不均衡问题。
 
 ## 训练
 

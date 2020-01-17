@@ -248,7 +248,6 @@ def main():
         loss = (distill_reg_loss + distill_cls_loss + distill_obj_loss) * weight
         return loss
 
-    distill_weight = 100
     distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
                      ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
                      ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
