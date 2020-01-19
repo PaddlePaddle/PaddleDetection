@@ -8,6 +8,8 @@
 
 该教程中所示操作，如无特殊说明，均在`PaddleDetection/slim/prune/`路径下执行。
 
+已发布裁剪模型见[裁剪模型库](./MODEL_ZOO.md)
+
 ## 1. 数据准备
 
 请参考检测库[数据下载](../../docs/INSTALL_cn.md)文档准备数据。
@@ -21,7 +23,7 @@
 通过`-o weights`指定模型的权重，可以指定url或本地文件系统的路径。如下所示：
 
 ```
--o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar 
+-o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
 ```
 
 或
@@ -38,7 +40,7 @@
 通过以下命令查看当前模型的所有参数：
 
 ```
-python prune.py \ 
+python prune.py \
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 --print_params
 ```
