@@ -80,7 +80,7 @@ class YOLOv3Loss(object):
             return {'loss': sum(losses)}
 
     def _get_fine_grained_loss(self, outputs, targets, gt_box, batch_size,
-                               num_classes, mask_anchors, ignore_thresh):
+                               num_classes, mask_anchors, ignore_thresh, loss_weight=2.5):
         """
         Calculate fine grained YOLOv3 loss
 
@@ -116,7 +116,7 @@ class YOLOv3Loss(object):
             x, y, w, h, obj, cls = self._split_output(output, an_num,
                                                       num_classes)
             tx, ty, tw, th, tscale, tobj, tcls = self._split_target(target)
-            loss_giou = self._GIoUloss(x, y, w, h, tx, ty, tw, th, anchors, downsample)
+            loss_giou = self._IoUloss(x, y, w, h, tx, ty, tw, th, anchors, downsample)
 
             tscale_tobj = tscale * tobj
 
@@ -131,7 +131,7 @@ class YOLOv3Loss(object):
             loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
             loss_h = fluid.layers.abs(h - th) * tscale_tobj
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
-            loss_giou = loss_giou * tscale_tobj * 2.5
+            loss_giou = loss_giou * tscale_tobj * loss_weight
             loss_giou = fluid.layers.reduce_sum(loss_giou, dim=[1, 2, 3])
 
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
@@ -389,8 +389,12 @@ class YOLOv3Loss(object):
 
         return x1, y1, x2, y2
 
-    def _GIoUloss(self, x, y, w, h, tx, ty, tw, th,
+    def _IoUloss(self, x, y, w, h, tx, ty, tw, th,
                  anchors, downsample_ratio):
+        '''
+        IoU loss referenced the paper https://arxiv.org/abs/1908.03851
+        Loss = 1.0 - iou * iou
+        '''
         eps = 1.e-10
         x1, y1, x2, y2 = self._bbox_transform(x, y, w, h, anchors, downsample_ratio, False)
         x1g, y1g, x2g, y2g = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio, True)
