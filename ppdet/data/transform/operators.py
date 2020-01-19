@@ -1519,7 +1519,8 @@ class CornerTarget(BaseOperator):
                  num_classes,
                  gaussian_bump=True,
                  gaussian_rad=-1,
-                 gaussian_iou=0.3):
+                 gaussian_iou=0.3,
+                 max_tag_len=128):
         """
         """
         super(CornerTarget, self).__init__()
@@ -1528,6 +1529,7 @@ class CornerTarget(BaseOperator):
         self.gaussian_bump = gaussian_bump
         self.gaussian_rad = gaussian_rad
         self.gaussian_iou = gaussian_iou
+        self.max_tag_len = max_tag_len
 
     def __call__(self, sample, context=None):
         """ """
@@ -1538,14 +1540,14 @@ class CornerTarget(BaseOperator):
             (self.num_classes, self.output_size[0], self.output_size[1]),
             dtype=np.float32)
 
-        tl_regrs = []
-        br_regrs = []
-        tl_tags = []
-        br_tags = []
+        tl_regrs = np.zeros((self.max_tag_len, 2), dtype=np.float32)
+        br_regrs = np.zeros((self.max_tag_len, 2), dtype=np.float32)
+        tl_tags = np.zeros((self.max_tag_len), dtype=np.int64)
+        br_tags = np.zeros((self.max_tag_len), dtype=np.int64)
+        tag_masks = np.zeros((self.max_tag_len), dtype=np.uint8)
+        tag_lens = np.zeros((), dtype=np.int32)
         tag_nums = np.zeros((1), dtype=np.int32)
-        target_weight = np.zeros((1), dtype=np.float32)
-        tag_lens = 0
-        has_bbox = 1 
+
         gt_bbox = sample['gt_bbox']
         gt_class = sample['gt_class']
         keep_inds  = ((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & \
@@ -1586,30 +1588,19 @@ class CornerTarget(BaseOperator):
                 tl_heatmaps[gt_class[i][0], ytl, xtl] = 1
                 br_heatmaps[gt_class[i][0], ybr, xbr] = 1
 
+            tl_regrs[i, :] = [fxtl - xtl, fytl - ytl]
+            br_regrs[i, :] = [fxbr - xbr, fybr - ybr]
+            tl_tags[tag_lens] = ytl * self.output_size[1] + xtl
+            br_tags[tag_lens] = ybr * self.output_size[1] + xbr
             tag_lens += 1
-            tl_regrs.append([fxtl - xtl, fytl - ytl])
-            br_regrs.append([fxbr - xbr, fybr - ybr])
-            tl_tags.append(ytl * self.output_size[1] + xtl)
-            br_tags.append(ybr * self.output_size[1] + xbr)
-        if tag_lens == 0:
-            tl_regrs.append([0, 0])
-            br_regrs.append([0, 0])
-            tl_tags.append(0)
-            br_tags.append(0)
-            has_bbox = 0
-            tag_lens = 1
-
-        tag_nums[0] = np.array(tag_lens, dtype=np.int32)
-        target_weight[0] = np.array(has_bbox, dtype=np.float32)
 
         sample['tl_heatmaps'] = tl_heatmaps
         sample['br_heatmaps'] = br_heatmaps
-        sample['tl_regrs'] = np.array(tl_regrs).astype('float32')
-        sample['br_regrs'] = np.array(br_regrs).astype('float32')
-        sample['tl_tags'] = np.array(tl_tags).astype('int64')
-        sample['br_tags'] = np.array(br_tags).astype('int64')
-        sample['tag_nums'] = tag_nums
-        sample['target_weight'] = target_weight
+        sample['tl_regrs'] = tl_regrs
+        sample['br_regrs'] = br_regrs
+        sample['tl_tags'] = tl_tags
+        sample['br_tags'] = br_tags
+        sample['tag_masks'] = tag_masks
 
         return sample
 
@@ -1640,10 +1631,8 @@ class CornerCrop(BaseOperator):
             w_border = self._get_border(self.border, sample['w'])
             h_border = self._get_border(self.border, sample['h'])
 
-            ctx = np.random.randint(
-                low=w_border, high=sample['w'] - w_border)
-            cty = np.random.randint(
-                low=h_border, high=sample['h'] - h_border)
+            ctx = np.random.randint(low=w_border, high=sample['w'] - w_border)
+            cty = np.random.randint(low=h_border, high=sample['h'] - h_border)
 
         else:
             cty, ctx = im_h // 2, im_w // 2
@@ -1661,10 +1650,8 @@ class CornerCrop(BaseOperator):
 
         # crop image
         cropped_ctx, cropped_cty = width // 2, height // 2
-        x_slice = slice(
-            int(cropped_ctx - left_w), int(cropped_ctx + right_w))
-        y_slice = slice(
-            int(cropped_cty - top_h), int(cropped_cty + bottom_h))
+        x_slice = slice(int(cropped_ctx - left_w), int(cropped_ctx + right_w))
+        y_slice = slice(int(cropped_cty - top_h), int(cropped_cty + bottom_h))
         cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:
                                                              x1, :].copy()
 
@@ -1678,6 +1665,7 @@ class CornerCrop(BaseOperator):
             gt_bbox[:, 1:4:2] -= y0
             gt_bbox[:, 0:4:2] += cropped_ctx - left_w
             gt_bbox[:, 1:4:2] += cropped_cty - top_h
+            sample['gt_bbox'] = gt_bbox
         else:
             sample['borders'] = np.array(
                 [

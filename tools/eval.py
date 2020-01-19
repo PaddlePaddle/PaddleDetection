@@ -144,9 +144,6 @@ def main():
                                                 extra_keys)
         sub_eval_prog = sub_eval_prog.clone(True)
 
-    #if 'weights' in cfg:
-    #    checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
-
     # load model
     exe.run(startup_prog)
     if 'weights' in cfg:
@@ -155,7 +152,6 @@ def main():
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)
 
-    #print(cfg['EvalReader']['dataset'].__dict__)
     # evaluation
     resolution = None
     if 'mask' in results[0]:

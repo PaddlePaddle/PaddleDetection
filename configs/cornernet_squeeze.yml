@@ -27,9 +27,10 @@ Hourglass: {}
 
 CornerHead:
   train_batch_size: 14
+  test_batch_size: 1
   ae_threshold: 0.5
   num_dets: 100
-  top_k: 20 
+  top_k: 20
 
 LearningRate:
   base_lr: 0.00025
@@ -42,20 +43,20 @@ LearningRate:
 OptimizerBuilder:
   optimizer:
     type: Adam
-  regularizer: 
+  regularizer:
     factor: 0.0
     type: L2
 
 TrainReader:
   inputs_def:
     image_shape: [3, 511, 511]
-    fields: ['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_nums', 'target_weight']
-    output_size: 64 
+    fields: ['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_masks']
+    output_size: 64
   dataset:
     !COCODataSet
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir:  dataset/coco 
+    dataset_dir:  dataset/coco
     with_background: false
   sample_transforms:
   - !DecodeImage
@@ -86,14 +87,12 @@ TrainReader:
   - !CornerTarget
     output_size: [64, 64]
     num_classes: 80
-  batch_transforms:
-  - !CornerBatchTarget {}
   batch_size: 14
   shuffle: true
   drop_last: true
-  bufsize: 1
+  bufsize: 2
   worker_num: 8
-  use_process: false 
+  use_process: true
   drop_empty: false
 
 EvalReader:
@@ -123,7 +122,7 @@ EvalReader:
     is_channel_first: True
   batch_size: 1
   drop_empty: false
-  
+
 TestReader:
   inputs_def:
     fields: ['image', 'im_id', 'ratios', 'borders']
@@ -147,4 +146,3 @@ TestReader:
     is_scale: True
     is_channel_first: True
   batch_size: 1
-      

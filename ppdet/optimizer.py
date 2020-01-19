@@ -128,9 +128,12 @@ class OptimizerBuilder():
         self.optimizer = optimizer
 
     def __call__(self, learning_rate):
-        reg_type = self.regularizer['type'] + 'Decay'
-        reg_factor = self.regularizer['factor']
-        regularization = getattr(regularizer, reg_type)(reg_factor)
+        if self.regularizer:
+            reg_type = self.regularizer['type'] + 'Decay'
+            reg_factor = self.regularizer['factor']
+            regularization = getattr(regularizer, reg_type)(reg_factor)
+        else:
+            regularization = None
 
         optim_args = self.optimizer.copy()
         optim_type = optim_args['type']

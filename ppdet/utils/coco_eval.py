@@ -205,7 +205,7 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
             continue
         lengths = t['bbox'][1][0]
         im_ids = np.array(t['im_id'][0]).flatten()
-        if bboxes.shape == (1, 1) or bboxes is None:
+        if bboxes.shape == (1, 1) or bboxes is None or len(bboxes) == 0:
             continue
 
         k = 0

@@ -78,8 +78,8 @@ class CornerNetSqueeze(object):
 
         if mode == 'train':
             target_vars = [
-                'tl_heatmaps', 'br_heatmaps', 'tag_nums', 'tl_regrs',
-                'br_regrs', 'tl_tags', 'br_tags', 'target_weight'
+                'tl_heatmaps', 'br_heatmaps', 'tag_masks', 'tl_regrs',
+                'br_regrs', 'tl_tags', 'br_tags'
             ]
             target = {key: feed_vars[key] for key in target_vars}
             self.corner_head.get_output(body_feats)
@@ -121,7 +121,7 @@ class CornerNetSqueeze(object):
 
             return {'bbox': total_res}
 
-    def _inputs_def(self, image_shape, output_size):
+    def _inputs_def(self, image_shape, output_size, max_tag_len):
         im_shape = [None] + image_shape
         C = self.num_classes
         # yapf: disable
@@ -134,12 +134,11 @@ class CornerNetSqueeze(object):
             'borders':      {'shape': [None, 4],  'dtype': 'float32', 'lod_level': 0},
             'tl_heatmaps':  {'shape': [None, C, output_size, output_size],  'dtype': 'float32', 'lod_level': 0},
             'br_heatmaps':  {'shape': [None, C, output_size, output_size],  'dtype': 'float32', 'lod_level': 0},
-            'tl_regrs':     {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 1},
-            'br_regrs':     {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 1},
-            'tl_tags':      {'shape': [None, 1], 'dtype': 'int64', 'lod_level': 1},
-            'br_tags':      {'shape': [None, 1], 'dtype': 'int64', 'lod_level': 1},
-            'tag_nums':     {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
-            'target_weight': {'shape': [None, 1], 'dtype': 'float32', 'lod_level': 0}
+            'tl_regrs':     {'shape': [None, max_tag_len, 2], 'dtype': 'float32', 'lod_level': 0},
+            'br_regrs':     {'shape': [None, max_tag_len, 2], 'dtype': 'float32', 'lod_level': 0},
+            'tl_tags':      {'shape': [None, max_tag_len], 'dtype': 'int64', 'lod_level': 0},
+            'br_tags':      {'shape': [None, max_tag_len], 'dtype': 'int64', 'lod_level': 0},
+            'tag_masks':     {'shape': [None, max_tag_len], 'dtype': 'int32', 'lod_level': 0},
         }
         # yapf: enable
         return inputs_def
@@ -150,12 +149,13 @@ class CornerNetSqueeze(object):
             fields=[
                 'image', 'im_id', 'gt_box', 'gt_class', 'tl_heatmaps',
                 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags',
-                'tag_nums'
+                'tag_masks'
             ],  # for train
             output_size=64,
+            max_tag_len=128,
             use_dataloader=True,
             iterable=False):
-        inputs_def = self._inputs_def(image_shape, output_size)
+        inputs_def = self._inputs_def(image_shape, output_size, max_tag_len)
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
