@@ -250,7 +250,6 @@ class Reader(object):
 
         self._pos = -1
         self._epoch = -1
-        self._drained = False
 
         # multi-process
         self._worker_num = worker_num
@@ -294,7 +293,6 @@ class Reader(object):
             self._epoch += 1
 
         self._pos = 0
-        self._drained = False
 
     def __next__(self):
         return self.next()

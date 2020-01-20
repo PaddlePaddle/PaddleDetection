@@ -1,6 +1,6 @@
 # 卷积层通道剪裁教程
 
-请确保已正确[安装PaddleDetection](../../docs/INSTALL_cn.md)及其依赖。
+请确保已正确[安装PaddleDetection](../../docs/tutorials/INSTALL_cn.md)及其依赖。
 
 该文档介绍如何使用[PaddleSlim](https://paddlepaddle.github.io/PaddleSlim)的卷积通道剪裁接口对检测库中的模型的卷积层的通道数进行剪裁。
 
@@ -10,7 +10,7 @@
 
 ## 1. 数据准备
 
-请参考检测库[数据下载](../../docs/INSTALL_cn.md)文档准备数据。
+请参考检测库[数据下载](../../docs/tutorials/INSTALL_cn.md)文档准备数据。
 
 ## 2. 模型选择
 
@@ -21,7 +21,7 @@
 通过`-o weights`指定模型的权重，可以指定url或本地文件系统的路径。如下所示：
 
 ```
--o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar 
+-o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
 ```
 
 或
@@ -38,7 +38,7 @@
 通过以下命令查看当前模型的所有参数：
 
 ```
-python prune.py \ 
+python prune.py \
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 --print_params
 ```
