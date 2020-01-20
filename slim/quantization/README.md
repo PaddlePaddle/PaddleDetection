@@ -10,6 +10,7 @@
 - [检测模型的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
 
+已发布量化模型见[压缩模型库](../MODEL_ZOO.md)
 
 ## 安装PaddleSlim
 可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim。
