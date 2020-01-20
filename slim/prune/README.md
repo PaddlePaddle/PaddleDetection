@@ -8,7 +8,7 @@
 
 该教程中所示操作，如无特殊说明，均在`PaddleDetection/slim/prune/`路径下执行。
 
-已发布裁剪模型见[裁剪模型库](./MODEL_ZOO.md)
+已发布裁剪模型见[压缩模型库](../MODEL_ZOO.md)
 
 ## 1. 数据准备
 
