@@ -1101,6 +1101,9 @@ class ColorDistort(BaseOperator):
             in [lower, upper, probability] format.
         random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
             order.
+        is_scale (bool): whether to scale the input image.
+        corner_jitter (bool): whether to apply corner_jitter.
+        apply_hue (bool): whether to apply hue distortion.
     """
 
     def __init__(self,
@@ -1109,14 +1112,18 @@ class ColorDistort(BaseOperator):
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
-                 corner_jitter=False):
+                 is_scale=False,
+                 corner_jitter=False,
+                 apply_hue=True):
         super(ColorDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
         self.brightness = brightness
         self.random_apply = random_apply
+        self.is_scale = is_scale
         self.corner_jitter = corner_jitter
+        self.apply_hue = apply_hue
 
     def apply_hue(self, img, img_gray=None):
         low, high, prob = self.hue
@@ -1195,18 +1202,18 @@ class ColorDistort(BaseOperator):
 
     def __call__(self, sample, context=None):
         img = sample['image']
-        img_mean = None
+        img_gray = None
         if self.random_apply:
             functions = [
                 self.apply_brightness, self.apply_contrast,
                 self.apply_saturation
             ]
-            if not self.corner_jitter:
+            if self.apply_hue:
                 functions.append(self.apply_hue)
-            else:
+            if self.is_scale:
                 img = img.astype(np.float32, copy=False)
                 img /= 255.
-                img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             distortions = np.random.permutation(functions)
             for func in distortions:
                 img = func(img, img_gray)
@@ -1497,16 +1504,21 @@ class BboxXYXY2XYWH(BaseOperator):
 
 @register_op
 class Lighting(BaseOperator):
+    """
+    Lighting the imagen by eigenvalues and eigenvectors
+    Args:
+        eigval (list): eigenvalues
+        eigvec (list): eigenvectors
+        alphastd (float): random weight of lighting, 0.1 by default
+    """
+
     def __init__(self, eigval, eigvec, alphastd=0.1):
-        """
-        """
         super(Lighting, self).__init__()
         self.alphastd = alphastd
         self.eigval = np.array(eigval).astype('float32')
         self.eigvec = np.array(eigvec).astype('float32')
 
     def __call__(self, sample, context=None):
-        """"""
         alpha = np.random.normal(scale=self.alphastd, size=(3, ))
         sample['image'] += np.dot(self.eigvec, self.eigval * alpha)
         return sample
@@ -1514,6 +1526,21 @@ class Lighting(BaseOperator):
 
 @register_op
 class CornerTarget(BaseOperator):
+    """
+    Generate targets for CornerNet by ground truth data. 
+    Args:
+        output_size (int): the size of output heatmaps.
+        num_classes (int): num of classes.
+        gaussian_bump (bool): whether to apply gaussian bump on gt targets.
+            True by default.
+        gaussian_rad (int): radius of gaussian bump. If it is set to -1, the 
+            radius will be calculated by iou. -1 by default.
+        gaussian_iou (float): the threshold iou of predicted bbox to gt bbox. 
+            If the iou is larger than threshold, the predicted bboox seems as
+            positive sample. 0.3 by default
+        max_tag_len (int): max num of gt box per image.
+    """
+
     def __init__(self,
                  output_size,
                  num_classes,
@@ -1521,8 +1548,6 @@ class CornerTarget(BaseOperator):
                  gaussian_rad=-1,
                  gaussian_iou=0.3,
                  max_tag_len=128):
-        """
-        """
         super(CornerTarget, self).__init__()
         self.num_classes = num_classes
         self.output_size = output_size
@@ -1532,7 +1557,6 @@ class CornerTarget(BaseOperator):
         self.max_tag_len = max_tag_len
 
     def __call__(self, sample, context=None):
-        """ """
         tl_heatmaps = np.zeros(
             (self.num_classes, self.output_size[0], self.output_size[1]),
             dtype=np.float32)
@@ -1594,6 +1618,8 @@ class CornerTarget(BaseOperator):
             br_tags[tag_lens] = ybr * self.output_size[1] + xbr
             tag_lens += 1
 
+        tag_masks[:tag_lens] = 1
+
         sample['tl_heatmaps'] = tl_heatmaps
         sample['br_heatmaps'] = br_heatmaps
         sample['tl_regrs'] = tl_regrs
@@ -1607,13 +1633,20 @@ class CornerTarget(BaseOperator):
 
 @register_op
 class CornerCrop(BaseOperator):
+    """
+    Random crop for CornerNet
+    Args:
+        random_scales (list): scales of output_size to input_size.
+        border (int): border of corp center
+        is_train (bool): train or test
+        input_size (int): size of input image
+    """
+
     def __init__(self,
                  random_scales=[0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3],
                  border=128,
                  is_train=True,
                  input_size=511):
-        """
-        """
         super(CornerCrop, self).__init__()
         self.random_scales = random_scales
         self.border = border
@@ -1621,18 +1654,17 @@ class CornerCrop(BaseOperator):
         self.input_size = input_size
 
     def __call__(self, sample, context=None):
-        """"""
         im_h, im_w = int(sample['h']), int(sample['w'])
         if self.is_train:
             scale = np.random.choice(self.random_scales)
             height = int(self.input_size * scale)
             width = int(self.input_size * scale)
 
-            w_border = self._get_border(self.border, sample['w'])
-            h_border = self._get_border(self.border, sample['h'])
+            w_border = self._get_border(self.border, im_w)
+            h_border = self._get_border(self.border, im_h)
 
-            ctx = np.random.randint(low=w_border, high=sample['w'] - w_border)
-            cty = np.random.randint(low=h_border, high=sample['h'] - h_border)
+            ctx = np.random.randint(low=w_border, high=im_w - w_border)
+            cty = np.random.randint(low=h_border, high=im_h - h_border)
 
         else:
             cty, ctx = im_h // 2, im_w // 2
@@ -1652,8 +1684,7 @@ class CornerCrop(BaseOperator):
         cropped_ctx, cropped_cty = width // 2, height // 2
         x_slice = slice(int(cropped_ctx - left_w), int(cropped_ctx + right_w))
         y_slice = slice(int(cropped_cty - top_h), int(cropped_cty + bottom_h))
-        cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:
-                                                             x1, :].copy()
+        cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:x1, :]
 
         sample['image'] = cropped_image
         sample['h'], sample['w'] = height, width
@@ -1685,15 +1716,19 @@ class CornerCrop(BaseOperator):
 
 @register_op
 class CornerRatio(BaseOperator):
+    """
+    Ratio of output size to image size
+    Args:
+        input_size (int): the size of input size
+        output_size (int): the size of heatmap
+    """
+
     def __init__(self, input_size=511, output_size=64):
-        """
-        """
         super(CornerRatio, self).__init__()
         self.input_size = input_size
         self.output_size = output_size
 
     def __call__(self, sample, context=None):
-        """"""
         scale = (self.input_size + 1) // self.output_size
         out_height, out_width = (sample['h'] + 1) // scale, (
             sample['w'] + 1) // scale

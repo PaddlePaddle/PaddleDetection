@@ -46,8 +46,6 @@ public:
     int width = x_dims[3];
     auto& dev_ctx = ctx.cuda_device_context();
 
-    //auto t = ctx.scope().FindVar("hg_pre_1_conv1_weight")->Get<framework::LoDTensor>();
-    //int id = boost::get<platform::CUDAPlace>(t.place()).device;
     T *output_data = output->mutable_data<T>(x_dims, dev_ctx.GetPlace());
     auto gpu_place = boost::get<platform::CUDAPlace>(dev_ctx.GetPlace());
     
@@ -83,7 +81,7 @@ class TopPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     int width = x_dims[3];
     int grad_num = in_grad->numel();
     int grad_block = NumBlocks(grad_num);
-    FillConstant<T><<<grad_block, threads>>>(in_grad_data, grad_num, 0);
+    cudaMemset(in_grad_data, 0, grad_num*sizeof(T));
 
     int num = grad_num / height;
     int blocks = NumBlocks(num);
@@ -96,7 +94,7 @@ class TopPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     // inital the max_ind by 0
     auto max_ind_ptr = memory::Alloc(gpu_place, num * sizeof(int));
     int* max_ind_data = reinterpret_cast<int*>(max_ind_ptr->ptr());
-    FillConstant<int><<<blocks, threads>>>(max_ind_data, num, height - 1);
+    cudaMemset(max_ind_data, height - 1, num*sizeof(int));
 
     // accumulate gradient on the location with maximum value
     ScatterAddOnAxis<T><<<blocks, threads>>>(out_grad->data<T>(), height - 1, max_ind_data, NC_num, height, width, 2, in_grad_data);

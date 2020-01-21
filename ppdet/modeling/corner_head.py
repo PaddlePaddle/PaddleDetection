@@ -207,6 +207,18 @@ def decode(tl_heat,
 @register
 class CornerHead(object):
     """
+    CornerNet head with corner_pooling
+
+    Args:
+        train_batch_size(int): batch_size in training process
+        test_batch_size(int): batch_size in test process, 1 by default
+        num_classes(int): num of classes, 80 by default
+        stack(int): stack of backbone, 2 by default
+        pull_weight(float): weight of pull_loss, 0.1 by default
+        push_weight(float): weight of push_loss, 0.1 by default
+        ae_threshold(float|int): threshold for valid distance of predicted tags, 1 by default
+        num_dets(int): num of detections, 1000 by default
+        top_k(int): choose top_k pair of corners in prediction, 100 by default 
     """
     __shared__ = ['num_classes', 'stack']
 

@@ -29,8 +29,8 @@ public:
 protected:
   framework::OpKernelType GetExpectedKernelType(
       const framework::ExecutionContext& ctx) const override {
-    auto input_data_type =  OperatorWithKernel::IndicateVarDataType(ctx, "X");
-    return framework::OpKernelType(input_data_type, ctx.GetPlace());
+    return framework::OpKernelType(ctx.Input<Tensor>("X")->type(), 
+                                   ctx.GetPlace());
   }
 };
 
@@ -39,10 +39,12 @@ public:
   void Make() override {
     AddInput("X",
              "Input with shape (batch, C, H, W)");
-    AddOutput("Output", "output with same shape as input(X)");
+    AddOutput("Output", "Output with same shape as input(X)");
     AddComment(
         R"Doc(
-        
+This operatio calculates the top pooling output based on the input.
+Scan the input from bottom to top for the vertical max-pooling.
+The output has the same shape with input.
         )Doc");
   }
 };
@@ -69,19 +71,20 @@ protected:
   }
 };
 
-class TopPoolGradDescMaker : public framework::SingleGradOpDescMaker {
-public:
-  using framework::SingleGradOpDescMaker::SingleGradOpDescMaker;
+template <typename T>
+class TopPoolGradDescMaker : public framework::SingleGradOpMaker<T> {
+ public:
+  using framework::SingleGradOpMaker<T>::SingleGradOpMaker;
 
-protected:
-  std::unique_ptr<framework::OpDesc> Apply() const override {
-    std::unique_ptr<framework::OpDesc> op(new framework::OpDesc());
+ protected:
+  std::unique_ptr<T> Apply() const override {
+    auto* op = new T();
     op->SetType("top_pool_grad");
-    op->SetInput("X", Input("X"));
-    op->SetInput(framework::GradVarName("Output"), OutputGrad("Output"));
-    op->SetOutput(framework::GradVarName("X"), InputGrad("X"));
-    op->SetAttrMap(Attrs());
-    return op;
+    op->SetInput("X", this->Input("X"));
+    op->SetInput(framework::GradVarName("Output"), this->OutputGrad("Output"));
+    op->SetOutput(framework::GradVarName("X"), this->InputGrad("X"));
+    op->SetAttrMap(this->Attrs());
+    return std::unique_ptr<T>(op);
   }
 };
 
@@ -92,5 +95,6 @@ namespace ops = paddle::operators;
 REGISTER_OPERATOR(top_pool,
                   ops::TopPoolOp,
                   ops::TopPoolOpMaker,
-                  ops::TopPoolGradDescMaker);
+                  ops::TopPoolGradDescMaker<paddle::framework::OpDesc>,
+                  ops::TopPoolGradDescMaker<paddle::imperative::OpBase>);
 REGISTER_OPERATOR(top_pool_grad, ops::TopPoolOpGrad);

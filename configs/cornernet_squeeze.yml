@@ -22,8 +22,11 @@ CornerNetSqueeze:
 MultiClassSoftNMS:
   keep_top_k: 100
   score_threshold: 0.001
+  background_label: -1.
 
-Hourglass: {}
+Hourglass:
+  dims: [256, 256, 384, 384, 512]
+  modules: [2, 2, 2, 2, 4]
 
 CornerHead:
   train_batch_size: 14
@@ -43,9 +46,7 @@ LearningRate:
 OptimizerBuilder:
   optimizer:
     type: Adam
-  regularizer:
-    factor: 0.0
-    type: L2
+  regularizer: NULL
 
 TrainReader:
   inputs_def:
@@ -56,7 +57,7 @@ TrainReader:
     !COCODataSet
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir:  dataset/coco
+    dataset_dir:  /paddle/wangguanzhong/data/coco
     with_background: false
   sample_transforms:
   - !DecodeImage
@@ -71,7 +72,9 @@ TrainReader:
     saturation: 0.4
     contrast: 0.4
     brightness: 0.4
+    is_scale: true
     corner_jitter: true
+    apply_hue: false
   - !Lighting
     eigval: [0.2141788, 0.01817699, 0.00341571]
     eigvec: [[-0.58752847, -0.69563484, 0.41340352],
@@ -103,7 +106,7 @@ EvalReader:
     !COCODataSet
       image_dir: val2017
       anno_path: annotations/instances_val2017.json
-      dataset_dir: dataset/coco
+      dataset_dir: /paddle/wangguanzhong/data/coco
       with_background: false
   sample_transforms:
   - !DecodeImage
@@ -130,6 +133,7 @@ TestReader:
   dataset:
     !ImageFolder
     anno_path: annotations/instances_val2017.json
+    with_background: false
   sample_transforms:
   - !DecodeImage
     to_rgb: false

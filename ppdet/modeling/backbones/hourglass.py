@@ -152,8 +152,8 @@ def make_fire_layer_revr(x, in_dim, out_dim, modules, name=None):
 
 
 def make_unpool_layer(x, dim, name=None):
-    pattr = ParamAttr(name=name + '_weight', initializer=kaiming_init(x, dim))
-    battr = ParamAttr(name=name + '_bias', initializer=kaiming_init(x, dim))
+    pattr = ParamAttr(name=name + '_weight', initializer=kaiming_init(x, 4))
+    battr = ParamAttr(name=name + '_bias', initializer=kaiming_init(x, 4))
     layer = fluid.layers.conv2d_transpose(
         input=x,
         num_filters=dim,
@@ -168,18 +168,37 @@ def make_unpool_layer(x, dim, name=None):
 @register
 class Hourglass(object):
     """
+    Hourglass Network, see https://arxiv.org/abs/1603.06937
+    Args:
+        stack (int): stack of hourglass, 2 by default
+        dims (list): dims of each level in hg_module
+        modules (list): num of fire modules in each level
     """
     __shared__ = ['stack']
 
-    def __init__(self, stack=2):
+    def __init__(self,
+                 stack=2,
+                 dims=[256, 256, 384, 384, 512],
+                 modules=[2, 2, 2, 2, 4]):
         super(Hourglass, self).__init__()
         self.stack = stack
+        assert len(dims) == len(modules), \
+            "Expected len of dims equal to len of modules, Receiced len of "\
+            "dims: {}, len of modules: {}".format(len(dims), len(modules))
+        self.dims = dims
+        self.modules = modules
+        self.num_level = len(dims) - 1
 
     def __call__(self, input, name='hg'):
         inter = self.pre(input, name + '_pre')
         cnvs = []
         for ind in range(self.stack):
-            hg = self.hg_module(inter, name=name + '_hgs_' + str(ind))
+            hg = self.hg_module(
+                inter,
+                self.num_level,
+                self.dims,
+                self.modules,
+                name=name + '_hgs_' + str(ind))
             cnv = _conv_norm(
                 hg, 3, 256, act='relu', pad=1, name=name + '_cnvs_' + str(ind))
             cnvs.append(cnv)

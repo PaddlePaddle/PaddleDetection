@@ -81,7 +81,7 @@ class LeftPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     int width = x_dims[3];
     int grad_num = in_grad->numel();
     int grad_block = NumBlocks(grad_num);
-    FillConstant<T><<<grad_block, threads>>>(in_grad_data, grad_num, 0);
+    cudaMemset(in_grad_data, 0, grad_num*sizeof(T));
 
     int num = grad_num / width;
     int blocks = NumBlocks(num);
@@ -94,7 +94,7 @@ class LeftPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     // inital the max_ind by 0
     auto max_ind_ptr = memory::Alloc(gpu_place, num * sizeof(int));
     int* max_ind_data = reinterpret_cast<int*>(max_ind_ptr->ptr());
-    FillConstant<int><<<blocks, threads>>>(max_ind_data, num, width - 1);
+    cudaMemset(max_ind_data, width - 1, num*sizeof(int));
 
     ScatterAddOnAxis<T><<<blocks, threads>>>(out_grad->data<T>(), width - 1, max_ind_data, NC_num, height, width, 3, in_grad_data);
 
