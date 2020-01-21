@@ -13,6 +13,7 @@ use_fine_grained_loss: true
 YOLOv3:
   backbone: ResNet
   yolo_head: YOLOv3Head
+  use_fine_grained_loss: true
 
 ResNet:
   norm_type: sync_bn
@@ -25,7 +26,6 @@ ResNet:
   dcn_v2_stages: [5]
 
 YOLOv3Head:
-  use_fine_grained_loss: true
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
   anchors: [[10, 13], [16, 30], [33, 23],
             [30, 61], [62, 45], [59, 119],
@@ -72,4 +72,4 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: 'yolov3_reader.yml'
+_READER_: '../yolov3_reader.yml'
