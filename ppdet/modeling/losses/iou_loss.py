@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,8 +29,7 @@ __all__ = ['IouLoss']
 @serializable
 class IouLoss(object):
     """
-    Combined loss for YOLOv3 network
-
+    IoU loss, see https://arxiv.org/abs/1908.03851
     Args:
         loss_weight (float): iou loss weight, default is 2.5
         max_height (int): max height of input to support random shape input
@@ -47,7 +46,6 @@ class IouLoss(object):
     def __call__(self, x, y, w, h, tx, ty, tw, th,
                  anchors, downsample_ratio, batch_size, eps=1.e-10):
         '''
-        IoU loss referenced the paper https://arxiv.org/abs/1908.03851
         loss = 1.0 - iou * iou
         Args:
             x  | y | w | h  ([Variables]): the output of yolov3 for encoded x|y|w|h
@@ -143,11 +141,9 @@ class IouLoss(object):
         exp_dw = fluid.layers.exp(dw)
         exp_dh = fluid.layers.exp(dh)
         pw = fluid.layers.elementwise_mul(exp_dw, anchor_w) / \
-            (fluid.layers.cast(shape_fmp[3], dtype="float32")
-            * downsample_ratio)
+            (grid_x_act * downsample_ratio)
         ph = fluid.layers.elementwise_mul(exp_dh, anchor_h) / \
-            (fluid.layers.cast(shape_fmp[2], dtype="float32")
-            * downsample_ratio)
+            (grid_y_act * downsample_ratio)
         if is_gt:
             exp_dw.stop_gradient = True
             exp_dh.stop_gradient = True
