@@ -155,14 +155,12 @@ def DropBlock(input, block_size, keep_prob, is_test):
     mask = 1.0 - mask_flag
 
     elem_numel = fluid.layers.reduce_prod(input_shape)
-    elem_numel = fluid.layers.cast(elem_numel, dtype="float32")
-    elem_numel_tmp = fluid.layers.reshape(elem_numel, [1, 1, 1, 1])
-    elem_numel_m = fluid.layers.expand_as(elem_numel_tmp, input)
+    elem_numel_m = fluid.layers.cast(elem_numel, dtype="float32")
+    elem_numel_m.stop_gradient = True
 
     elem_sum = fluid.layers.reduce_sum(mask)
-    elem_sum_tmp = fluid.layers.cast(elem_sum, dtype="float32")
-    elem_sum_tmp = fluid.layers.reshape(elem_sum_tmp, [1, 1, 1, 1])
-    elem_sum_m = fluid.layers.expand_as(elem_sum_tmp, input)
+    elem_sum_m = fluid.layers.cast(elem_sum, dtype="float32")
+    elem_sum_m.stop_gradient = True
 
     output = input * mask * elem_numel_m / elem_sum_m
     return output
