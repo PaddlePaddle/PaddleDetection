@@ -45,8 +45,6 @@ public:
     int width = x_dims[3];
     auto& dev_ctx = ctx.cuda_device_context();
 
-    //auto t = ctx.scope().FindVar("hg_pre_1_conv1_weight")->Get<framework::LoDTensor>();
-    //int id = boost::get<platform::CUDAPlace>(t.place()).device;
     T *output_data = output->mutable_data<T>(x_dims, dev_ctx.GetPlace());
     auto gpu_place = boost::get<platform::CUDAPlace>(dev_ctx.GetPlace());
     
@@ -54,13 +52,8 @@ public:
                 sizeof(T) * x->numel(), dev_ctx.stream());
 
     int threads = kNumCUDAThreads;
-    for (int ind = 1; ind < width; ind <<= 1) {
-      int cur_num = NC_num * height * (width - ind);
-      int blocks = NumBlocks(cur_num);
-
-      MaxOut<T><<<blocks, threads>>>(0, NC_num, height, width, 3, ind, width, output_data);
-      
-    }
+    int blocks = NumBlocks(NC_num * width * height);
+    CornerMaxOut<T><<<blocks, threads>>>(NC_num, height, width, 3, false, output_data);
   }
 };
 

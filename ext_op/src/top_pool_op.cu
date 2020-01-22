@@ -53,12 +53,8 @@ public:
                 sizeof(T) * x->numel(), dev_ctx.stream());
 
     int threads = kNumCUDAThreads;
-    for (int ind = 1; ind < height; ind <<= 1) {
-      int cur_num = NC_num * width * (height - ind);
-      int blocks = NumBlocks(cur_num);
-
-      MaxOut<T><<<blocks, threads>>>(ind, NC_num, height, width, 2, 0, height - ind, output_data);
-    }
+    int blocks = NumBlocks(NC_num * width * height);
+    CornerMaxOut<T><<<blocks, threads>>>(NC_num, height, width, 2, true, output_data);
   }
 };
 
@@ -94,7 +90,7 @@ class TopPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     // inital the max_ind by 0
     auto max_ind_ptr = memory::Alloc(gpu_place, num * sizeof(int));
     int* max_ind_data = reinterpret_cast<int*>(max_ind_ptr->ptr());
-    cudaMemset(max_ind_data, height - 1, num*sizeof(int));
+    FillConstant<int><<<blocks, threads>>>(max_ind_data, num, height - 1);
 
     // accumulate gradient on the location with maximum value
     ScatterAddOnAxis<T><<<blocks, threads>>>(out_grad->data<T>(), height - 1, max_ind_data, NC_num, height, width, 2, in_grad_data);

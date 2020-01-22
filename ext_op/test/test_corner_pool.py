@@ -78,19 +78,24 @@ class TestRightPoolOp(unittest.TestCase):
         x_shape = (2, 3, 6, 6)
         x_type = "float64"
 
-        x = fluid.layers.data(
-            name=self.name,
-            shape=x_shape,
-            dtype=x_type,
-            append_batch_size=False)
-        y = self.func_map[self.name][0](x)
+        sp = fluid.Program()
+        tp = fluid.Program()
+
+        with fluid.program_guard(tp, sp):
+            x = fluid.layers.data(
+                name=self.name,
+                shape=x_shape,
+                dtype=x_type,
+                append_batch_size=False)
+            y = self.func_map[self.name][0](x)
+
         np.random.seed(0)
         x_np = np.random.uniform(-10, 10, x_shape).astype(x_type)
         out_np = self.func_map[self.name][1](x_np)
 
         place = fluid.CUDAPlace(0)
         exe = fluid.Executor(place)
-        outs, = exe.run(feed={self.name: x_np}, fetch_list=[y])
+        outs, = exe.run(tp, feed={self.name: x_np}, fetch_list=[y])
 
         self.assertTrue(np.allclose(outs, out_np))
 

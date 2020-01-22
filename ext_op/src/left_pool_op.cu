@@ -52,13 +52,8 @@ public:
                 sizeof(T) * x->numel(), dev_ctx.stream());
 
     int threads = kNumCUDAThreads;
-    for (int ind = 1; ind < width; ind <<= 1) {
-
-      int cur_num = NC_num * height * (width - ind);    
-      int blocks = NumBlocks(cur_num);
-
-      MaxOut<T><<<blocks, threads>>>(ind, NC_num, height, width, 3, 0, width - ind, output_data);
-    }
+    int blocks = NumBlocks(NC_num * width * height);
+    CornerMaxOut<T><<<blocks, threads>>>(NC_num, height, width, 3, true, output_data);
   }
 };
 
@@ -94,7 +89,7 @@ class LeftPoolGradOpCUDAKernel : public framework::OpKernel<T> {
     // inital the max_ind by 0
     auto max_ind_ptr = memory::Alloc(gpu_place, num * sizeof(int));
     int* max_ind_data = reinterpret_cast<int*>(max_ind_ptr->ptr());
-    cudaMemset(max_ind_data, width - 1, num*sizeof(int));
+    FillConstant<int><<<blocks, threads>>>(max_ind_data, num, width - 1);
 
     ScatterAddOnAxis<T><<<blocks, threads>>>(out_grad->data<T>(), width - 1, max_ind_data, NC_num, height, width, 3, in_grad_data);
 

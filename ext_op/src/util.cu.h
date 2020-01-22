@@ -25,6 +25,12 @@ using framework::Tensor;
   for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < (n); \
        i += blockDim.x * gridDim.x)
 
+template <typename T>
+__global__ void FillConstant(T* x, int num, int fill_num) {
+  CUDA_1D_KERNEL_LOOP(i, num) {
+    x[i] = static_cast<T>(fill_num);
+  }
+}
 
 template <typename T>
 __global__ void SliceOnAxis(const T* x, const int NC_num, const int H, const int W,
@@ -50,35 +56,41 @@ __global__ void SliceOnAxis(const T* x, const int NC_num, const int H, const int
 
 
 template <typename T>
-__global__  void MaxOut(const int next_ind, const int NC_num,
-                        const int H, const int W, const int axis, 
-                        const int start, const int end, T* output) {
+__global__  void CornerMaxOut(const int NC_num, const int H, const int W,
+                              const int axis, bool start_with_zero,
+                              T* output) {
   int HW_num = H * W;
-  int length = axis == 2 ? W : H; 
+  int len = axis == 2 ? W : H;
+  int len_var = axis == 3 ? W : H;
   T cur = static_cast<T>(0.);
   T next = static_cast<T>(0.);
   T max_v = static_cast<T>(0.);
-  int sliced_len = end - start;
-  int cur_HW_num = length * sliced_len;
-  // compare cur and next and assign max values to output
-  CUDA_1D_KERNEL_LOOP(i, NC_num * cur_HW_num) {
-    int NC_id = i / cur_HW_num;
-    int HW_id = i % cur_HW_num;
-   
-    if (axis == 2){
-      cur = output[NC_id * HW_num + start * W + HW_id];
-      next = output[NC_id * HW_num + next_ind * W + HW_id];
-      max_v = cur > next ? cur : next; 
-      output[NC_id * HW_num + start * W + HW_id] = max_v;
-    } else if (axis == 3) {
-      int col = HW_id % sliced_len;
-      int row = HW_id / sliced_len;
-      cur = output[NC_id * HW_num + row * W + start + col];
-      next = output[NC_id * HW_num + row * W + next_ind + col];
-      max_v = cur > next ? cur : next;
-      output[NC_id * HW_num + row * W + start + col] = max_v;
+  for (int ind = 1; ind < len_var; ind <<= 1) {
+    int cur_num = NC_num * len * (len_var - ind);
+    int start = start_with_zero ? 0 : ind;
+    int end = start_with_zero ? len_var - ind : len_var;
+    int sliced_len = end - start;
+    int cur_HW_num = len * sliced_len;
+    // compare cur and next and assign max values to output
+    CUDA_1D_KERNEL_LOOP(i, NC_num * cur_HW_num) {
+      int NC_id = i / cur_HW_num;
+      int HW_id = i % cur_HW_num;
+      
+      if (axis == 2){
+        cur = output[NC_id * HW_num + start * W + HW_id];
+        next = output[NC_id * HW_num + (ind - start) * W + HW_id];
+        max_v = cur > next ? cur : next;
+        output[NC_id * HW_num + start * W + HW_id] = max_v;
+      } else if (axis == 3) {
+        int col = HW_id % sliced_len;
+        int row = HW_id / sliced_len;
+        cur = output[NC_id * HW_num + row * W + start + col];
+        next = output[NC_id * HW_num + row * W + (ind - start) + col];
+        max_v = cur > next ? cur : next;
+        output[NC_id * HW_num + row * W + start + col] = max_v;
+      }
+      __syncthreads();
     }
-    __syncthreads();
   }
 }
 
