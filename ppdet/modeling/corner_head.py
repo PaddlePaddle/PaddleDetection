@@ -77,6 +77,7 @@ def gather_feat(feat, ind, batch_size=1):
     for bind in range(batch_size):
         feat_b = feat[bind]
         ind_b = ind[bind]
+        ind_b.stop_gradient = True
         feat_bg = fluid.layers.gather(feat_b, ind_b)
         feats.append(fluid.layers.unsqueeze(feat_bg, axes=[0]))
     feat_g = fluid.layers.concat(feats, axis=0)

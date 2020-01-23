@@ -48,12 +48,22 @@ public:
     T *output_data = output->mutable_data<T>(x_dims, dev_ctx.GetPlace());
     auto gpu_place = boost::get<platform::CUDAPlace>(dev_ctx.GetPlace());
     
+    auto input_val_ptr = memory::Alloc(gpu_place, x->numel() * sizeof(T));
+    T* input_val_data = reinterpret_cast<T*>(input_val_ptr->ptr());
+    memory::Copy(gpu_place, input_val_data, gpu_place, x_data,
+                sizeof(T) * x->numel(), dev_ctx.stream());
+   
     memory::Copy(gpu_place, output_data, gpu_place, x_data,
                 sizeof(T) * x->numel(), dev_ctx.stream());
 
     int threads = kNumCUDAThreads;
-    int blocks = NumBlocks(NC_num * width * height);
-    CornerMaxOut<T><<<blocks, threads>>>(NC_num, height, width, 3, false, output_data);
+    for (int ind = 1; ind < width; ind <<= 1) {
+      int cur_num = NC_num * height * (width - ind);
+      int blocks = NumBlocks(cur_num);
+      MaxOut<T><<<blocks, threads>>>(input_val_data, 0, NC_num, height, width, 3, ind, width, output_data);
+      memory::Copy(gpu_place, input_val_data, gpu_place, output_data,
+                  sizeof(T) * x->numel(), dev_ctx.stream());
+    }
   }
 };
 
