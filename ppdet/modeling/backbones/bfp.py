@@ -53,7 +53,7 @@ class BFP(object):
                  refine_type="nonlocal",
                  nonlocal_reduction=1,
                  with_bias=True,
-                 with_scale=True):
+                 with_scale=False):
         if isinstance(base_neck, dict):
             self.base_neck = FPN(**base_neck)
         self.refine_level = refine_level
@@ -119,7 +119,7 @@ class BFP(object):
                 bsf.shape[1],
                 nonlocal_name,
                 int(bsf.shape[1] / self.nonlocal_reduction),
-                with_bias=self.with_scale,
+                with_bias=self.with_bias,
                 with_scale=self.with_scale)
 
         # step 3: scatter refined features to multi-levels by a residual path
