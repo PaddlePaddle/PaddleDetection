@@ -29,7 +29,8 @@ __all__ = ['IouLoss']
 @serializable
 class IouLoss(object):
     """
-    IoU loss, see https://arxiv.org/abs/1908.03851
+    iou loss, see https://arxiv.org/abs/1908.03851
+    loss = 1.0 - iou * iou
     Args:
         loss_weight (float): iou loss weight, default is 2.5
         max_height (int): max height of input to support random shape input
@@ -46,7 +47,6 @@ class IouLoss(object):
     def __call__(self, x, y, w, h, tx, ty, tw, th,
                  anchors, downsample_ratio, batch_size, eps=1.e-10):
         '''
-        loss = 1.0 - iou * iou
         Args:
             x  | y | w | h  ([Variables]): the output of yolov3 for encoded x|y|w|h
             tx |ty |tw |th  ([Variables]): the target of yolov3 for encoded x|y|w|h
@@ -113,15 +113,13 @@ class IouLoss(object):
         if is_gt:
             cx = fluid.layers.elementwise_add(dcx, gi) / grid_x_act
             cx.gradient = True
-            cy = fluid.layers.elementwise_add(dcy, gi) / grid_y_act
+            cy = fluid.layers.elementwise_add(dcy, gj) / grid_y_act
             cy.gradient = True
         else:
             dcx_sig = fluid.layers.sigmoid(dcx)
-            cx_rel = fluid.layers.elementwise_add(dcx_sig, gi)
+            cx = fluid.layers.elementwise_add(dcx_sig, gi) / grid_x_act
             dcy_sig = fluid.layers.sigmoid(dcy)
-            cy_rel = fluid.layers.elementwise_add(dcy_sig, gj)
-            cx = cx_rel / grid_x_act
-            cy = cy_rel / grid_y_act
+            cy = fluid.layers.elementwise_add(dcy_sig, gj) / grid_y_act
 
         anchor_w_ = [anchors[i] for i in range(0, len(anchors)) if i % 2 == 0]
         anchor_w_np = np.array(anchor_w_)
@@ -150,15 +148,11 @@ class IouLoss(object):
             pw.stop_gradient = True
             ph.stop_gradient = True
         
-        pred_ctr_x = cx
-        pred_ctr_y = cy
-        pred_w = pw
-        pred_h = ph
 
-        x1 = pred_ctr_x - 0.5 * pred_w
-        y1 = pred_ctr_y - 0.5 * pred_h
-        x2 = pred_ctr_x + 0.5 * pred_w
-        y2 = pred_ctr_y + 0.5 * pred_h
+        x1 = cx - 0.5 * pw
+        y1 = cy - 0.5 * ph
+        x2 = cx + 0.5 * pw
+        y2 = cy + 0.5 * ph
         if is_gt:
             x1.stop_gradient = True
             y1.stop_gradient = True
