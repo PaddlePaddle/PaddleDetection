@@ -40,7 +40,7 @@ import sys
 
 sys.path.append("../../")
 from ppdet.experimental import mixed_precision_context
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config, create, register
 from ppdet.data.reader import create_reader
 
 from ppdet.utils import dist_utils
@@ -49,7 +49,7 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version
 import ppdet.utils.checkpoint as checkpoint
-from paddleslim.analysis import flops
+from paddleslim.analysis import flops, TableLatencyEvaluator
 from paddleslim.nas import SANAS
 import search_space
 
@@ -57,6 +57,40 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+
+@register
+class Constraint(object):
+    """
+    Constraint for nas
+    """
+
+    def __init__(self,
+                 ctype,
+                 max_constraint=None,
+                 min_constraint=None,
+                 table_file=None):
+        super(Constraint, self).__init__()
+        self.ctype = ctype
+        self.max_constraint = max_constraint
+        self.min_constraint = min_constraint
+        self.table_file = table_file
+
+    def compute_constraint(self, program):
+        if self.ctype == 'flops':
+            model_status = flops(program)
+        elif self.ctype == 'latency':
+            assert os.path.exists(
+                self.table_file
+            ), "latency constraint must have latency table, please check whether table file exist!"
+            model_latency = TableLatencyEvaluator(self.table_file)
+            model_status = model_latency.latency(program, only_conv=True)
+        else:
+            raise NotImplementedError(
+                "{} constraint is NOT support!!! Now PaddleSlim support flops constraint and latency constraint".
+                format(self.ctype))
+
+        return model_status
 
 
 def get_bboxes_scores(result):
@@ -223,6 +257,7 @@ def main():
                                  devices_num, cfg)
     eval_reader = create_reader(cfg.EvalReader)
 
+    constraint = create('Constraint')
     for step in range(cfg.search_steps):
         logger.info('----->>> search step: {} <<<------'.format(step))
         archs = sa_nas.next_archs()[0]
@@ -252,9 +287,15 @@ def main():
                     optimizer.minimize(loss)
                     if FLAGS.fp16:
                         loss /= ctx.get_loss_scale_var()
-        current_flops = flops(train_prog)
-        logger.info('current steps: {}, flops {}'.format(step, current_flops))
-        if current_flops > cfg.max_flops:
+
+        current_constraint = constraint.compute_constraint(train_prog)
+        logger.info('current steps: {}, constraint {}'.format(
+            step, current_constraint))
+
+        if (constraint.max_constraint != None and
+                current_constraint > constraint.max_constraint) or (
+                    constraint.min_constraint != None and
+                    current_constraint < constraint.min_constraint):
             continue
 
         # parse train fetches
