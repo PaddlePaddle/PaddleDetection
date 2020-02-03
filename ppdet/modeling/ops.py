@@ -25,7 +25,7 @@ __all__ = [
     'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
     'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
     'MultiBoxHead', 'SSDOutputDecoder', 'RetinaTargetAssign',
-    'RetinaOutputDecoder', 'ConvNorm', 'MultiClassSoftNMS', 'BBoxAssignerLibra'
+    'RetinaOutputDecoder', 'ConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
 ]
 
 
@@ -550,7 +550,7 @@ class BBoxAssigner(object):
 
 
 @register
-class BBoxAssignerLibra(object):
+class LibraBBoxAssigner(object):
     def __init__(self,
                  batch_size_per_im=512,
                  fg_fraction=.25,
@@ -562,7 +562,7 @@ class BBoxAssignerLibra(object):
                  shuffle_before_sample=True,
                  is_cls_agnostic=False,
                  num_bins=3):
-        super(BBoxAssignerLibra, self).__init__()
+        super(LibraBBoxAssigner, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
         self.fg_thresh = fg_thresh

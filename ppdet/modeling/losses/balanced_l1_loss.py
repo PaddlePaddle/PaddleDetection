@@ -27,7 +27,14 @@ __all__ = ['BalancedL1Loss']
 @register
 @serializable
 class BalancedL1Loss(object):
-    """ Balanced L1 Loss Loss """
+    """
+    Balanced L1 Loss, see https://arxiv.org/abs/1904.02701
+    Args:
+        alpha (float): hyper parameter of BalancedL1Loss, see more details in the paper
+        gamma (float): hyper parameter of BalancedL1Loss, see more details in the paper
+        beta  (float): hyper parameter of BalancedL1Loss, see more details in the paper
+        loss_weights (float): loss weight
+    """
 
     def __init__(self, alpha=0.5, gamma=1.5, beta=1.0, loss_weight=1.0):
         super(BalancedL1Loss, self).__init__()

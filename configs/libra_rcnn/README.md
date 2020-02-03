@@ -19,5 +19,5 @@
 
 | Backbone                | Type     | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| ResNet50-vd-BFP         | Faster     |     2     |   1x    |     18.247     |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r50_vd_fpn_1x/.tar) |
-| ResNet101-vd-BFP         | Faster     |     2     |   1x    |     14.865     |  42.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r101_vd_fpn_1x/.tar) |
+| ResNet50-vd-BFP         | Faster     |     2     |   1x    |     18.247     |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r50_vd_fpn_1x.tar) |
+| ResNet101-vd-BFP         | Faster     |     2     |   1x    |     14.865     |  42.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r101_vd_fpn_1x.tar) |

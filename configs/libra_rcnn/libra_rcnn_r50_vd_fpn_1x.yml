@@ -15,7 +15,7 @@ FasterRCNN:
   rpn_head: FPNRPNHead
   roi_extractor: FPNRoIAlign
   bbox_head: BBoxHead
-  bbox_assigner: BBoxAssignerLibra
+  bbox_assigner: LibraBBoxAssigner
 
 ResNet:
   depth: 50
@@ -69,7 +69,7 @@ FPNRoIAlign:
   box_resolution: 7
   sampling_ratio: 2
 
-BBoxAssignerLibra:
+LibraBBoxAssigner:
   batch_size_per_im: 512
   bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
   bg_thresh_hi: 0.5

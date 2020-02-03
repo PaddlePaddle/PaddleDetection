@@ -38,7 +38,7 @@ class BFP(object):
     """
     Libra R-CNN, see https://arxiv.org/abs/1904.02701
     Args:
-        base_neck (dict): basic neck before bfp
+        base_neck (dict): basic neck before balanced feature pyramid (bfp)
         refine_level (int): index of integration and refine level of bfp
         refine_type (str): refine type, None, conv or nonlocal
         nonlocal_reduction (float): channel reduction level if refine_type is nonlocal
@@ -93,7 +93,7 @@ class BFP(object):
                     pool_stride=pool_stride,
                     ceil_mode=True, )
             else:
-                gathered = self.resize_input_tensor(
+                gathered = self._resize_input_tensor(
                     body_dict[curr_fpn_name], body_dict[refine_level_name],
                     1.0 / pool_stride)
             feats.append(gathered)
@@ -129,7 +129,7 @@ class BFP(object):
             curr_fpn_name = body_name_list[i]
             pool_stride = 2**(self.refine_level - i)
             if i >= self.refine_level:
-                residual = self.resize_input_tensor(
+                residual = self._resize_input_tensor(
                     bsf, body_dict[curr_fpn_name], 1.0 / pool_stride)
             else:
                 residual = fluid.layers.pool2d(
@@ -145,7 +145,7 @@ class BFP(object):
         res_dict = OrderedDict([(k, fpn_dict[k]) for k in fpn_name_list])
         return res_dict
 
-    def resize_input_tensor(self, body_input, ref_output, scale):
+    def _resize_input_tensor(self, body_input, ref_output, scale):
         shape = fluid.layers.shape(ref_output)
         shape_hw = fluid.layers.slice(shape, axes=[0], starts=[2], ends=[4])
         out_shape_ = shape_hw
