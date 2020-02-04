@@ -58,7 +58,19 @@ python prune.py \
 --pruned_ratios="0.2 0.3 0.4"
 ```
 
-## 5. 扩展模型
+## 5. 评估剪裁模型
+
+训练剪裁任务完成后，可通过`eval.py`评估剪裁模型精度，通过`--pruned_params`和`--pruned_ratios`指定裁剪的参数名称列表和各参数裁剪比例。
+
+```
+python eval.py \
+-c ../../configs/yolov3_mobilenet_v1_voc.yml \
+--pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
+--pruned_ratios="0.2 0.3 0.4" \
+-o weights=output/yolov3_mobilenet_v1_voc/model_final
+```
+
+## 6. 扩展模型
 
 如果需要对自己的模型进行修改，可以参考`prune.py`中对`paddleslim.prune.Pruner`接口的调用方式，基于自己的模型训练脚本进行修改。
 本节我们介绍的剪裁示例，需要用户根据先验知识指定每层的剪裁率，除此之外，PaddleSlim还提供了敏感度分析等功能，协助用户选择合适的剪裁率。更多详情请参考：[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)

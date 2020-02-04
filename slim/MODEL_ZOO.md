@@ -37,6 +37,10 @@
 | 骨架网络         |  裁剪策略 | 输入尺寸 | Box AP  |                           下载                          |
 | :----------------| :-------: | :------: |:------: | :-----------------------------------------------------: |
 | ResNet50-vd-dcn  |  sensity  |   320    |  39.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune1x.tar) |
+| ResNet50-vd-dcn  |  sensity  |   320    |  38.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune578.tar) |
+| MobileNetV1      |  sensity  |   608    |  30.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
+| MobileNetV1      |  sensity  |   416    |  29.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
+| MobileNetV1      |  sensity  |   320    |  27.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
 | MobileNetV1      |   r578    |   608    |  27.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
 | MobileNetV1      |   r578    |   416    |  26.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
 | MobileNetV1      |   r578    |   320    |  24.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
