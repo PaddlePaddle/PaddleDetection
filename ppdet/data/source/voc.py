@@ -20,6 +20,8 @@ import xml.etree.ElementTree as ET
 from ppdet.core.workspace import register, serializable
 
 from .dataset import DataSet
+import logging
+logger = logging.getLogger(__name__)
 
 
 @register
@@ -66,8 +68,9 @@ class VOCDataSet(DataSet):
         #     'w': im_w, # width
         #     'is_crowd': is_crowd,
         #     'gt_class': gt_class,
+        #     'gt_score': gt_score,
         #     'gt_bbox': gt_bbox,
-        #     'gt_poly': gt_poly,
+        #     'difficult': difficult
         # }
         self.roidbs = None
         # 'cname2id' is a dict to map category name to class id
@@ -147,7 +150,6 @@ class VOCDataSet(DataSet):
                     'gt_class': gt_class,
                     'gt_score': gt_score,
                     'gt_bbox': gt_bbox,
-                    'gt_poly': [],
                     'difficult': difficult
                 }
                 if len(objs) != 0:
@@ -158,6 +160,7 @@ class VOCDataSet(DataSet):
                     break
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
+        logger.info('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
 
 

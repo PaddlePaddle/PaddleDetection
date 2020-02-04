@@ -145,7 +145,6 @@ class COCODataSet(DataSet):
                 'gt_bbox': gt_bbox,
                 'gt_score': gt_score,
                 'gt_poly': gt_poly,
-                'difficult': difficult
             }
 
             logger.debug('Load file: {}, im_id: {}, h: {}, w: {}.'.format(
