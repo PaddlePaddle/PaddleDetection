@@ -1,6 +1,6 @@
 >运行该示例前请安装Paddle1.6或更高版本和PaddleSlim
 
-# 检测模型量化压缩示例
+# 模型量化压缩教程
 
 ## 概述
 
@@ -18,7 +18,7 @@
 
 ## 训练
 
-根据 [tools/train.py](../../tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
+根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
 
 ### 定义量化配置
 config = {

@@ -83,35 +83,38 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 | CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) |
 
-#### 注意事项:
+**注意事项:**  
+
 - Deformable卷积网络v2(dcn_v2)参考自论文[Deformable ConvNets v2](https://arxiv.org/abs/1811.11168).
 - `c3-c5`意思是在resnet模块的3到5阶段增加`dcn`.
-- 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn)
+- 详细的配置文件在[configs/dcn](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/dcn)
 
 
 ### HRNet
-* 详情见[HRNet模型库](../configs/hrnet/README.md)。
+* 详情见[HRNet模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/hrnet/)。
 
 
 ### Res2Net
-* 详情见[Res2Net模型库](../configs/res2net/README.md)。
+* 详情见[Res2Net模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/res2net/)。
 
 ### IOU loss
-* 目前模型库中包括GIOU loss和DIOU loss，详情加[IOU loss模型库](../configs/iou_loss/README.md).
+* 目前模型库中包括GIOU loss和DIOU loss，详情加[IOU loss模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master//configs/iou_loss/).
 
 ### GCNet
-* 详情见[GCNet模型库](../configs/gcnet/README.md).
+* 详情见[GCNet模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/gcnet/).
 
 
 ### Group Normalization
+
 | 骨架网络             | 网络类型           | 每张GPU图片个数 | 学习率策略 | Box AP | Mask AP |                           下载                           |
 | :------------------- | :------------- |:--------: | :-----: | :----: | :-----: | :----------------------------------------------------------: |
 | ResNet50-FPN         | Faster         |    2      |   2x    |  39.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_fpn_gn_2x.tar) |
 | ResNet50-FPN         | Mask           |    1      |   2x    |  40.1  |   35.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_gn_2x.tar) |
 
-#### 注意事项:
+**注意事项:**
+
 - Group Normalization参考论文[Group Normalization](https://arxiv.org/abs/1803.08494).
-- 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gn)
+- 详细的配置文件在[configs/gn](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/gn)
 
 ### YOLO v3
 
@@ -146,7 +149,8 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet34     | 416  |    8    |   270e  |      -        |  81.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 | ResNet34     | 320  |    8    |   270e  |      -        |  80.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar) |
 
-#### 注意事项:
+**注意事项:**
+
 - 上表中也提供了原论文[YOLOv3](https://arxiv.org/abs/1804.02767)中YOLOv3-DarkNet53的精度，我们的实现版本主要从在bounding box的宽度和高度回归上使用了L1损失，图像mixup和label smooth等方法优化了其精度。
 - YOLO v3在8卡，总batch size为64下训练270轮。数据增强包括：mixup, 随机颜色失真，随机剪裁，随机扩张，随机插值法，随机翻转。YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型测试不同尺寸图片，我们分别提供了尺寸为608/416/320大小的测试结果。deformable卷积作用在骨架网络5阶段。
 
@@ -179,11 +183,11 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 **注意事项:** MobileNet-SSD在2卡，总batch size为64下训练120周期。VGG-SSD在总batch size为32下训练240周期。数据增强包括：随机颜色失真，随机剪裁，随机扩张，随机翻转。
 
-## 人脸检测
+### 人脸检测
 
-详细请参考[人脸检测模型](../configs/face_detection)。
+详细请参考[人脸检测模型](featured_model/FACE_DETECTION.md)。
 
 
-## 基于Open Images V5数据集的物体检测
+### 基于Open Images V5数据集的物体检测
 
-详细请参考[Open Images V5数据集基线模型](OIDV5_BASELINE_MODEL.md)。
+详细请参考[Open Images V5数据集基线模型](featured_model/OIDV5_BASELINE_MODEL.md)。

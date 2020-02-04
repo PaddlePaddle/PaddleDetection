@@ -37,7 +37,7 @@ EvalReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
     # for voc
-    #fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+    #fields: ['image', 'im_info', 'im_id',  'im_shape', 'gt_bbox', 'gt_class', 'is_difficult']
   dataset:
     !COCODataSet
     image_dir: val2017

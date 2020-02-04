@@ -58,7 +58,9 @@ coverage.xml
 
 *.json
 *.tar
+*.pyc
 
+.idea/
 
 dataset/coco/annotations
 dataset/coco/train2017
