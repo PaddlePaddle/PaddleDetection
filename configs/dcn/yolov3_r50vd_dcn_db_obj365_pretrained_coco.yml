@@ -39,18 +39,13 @@ YOLOv3Head:
     nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
+  drop_block: true
 
 YOLOv3Loss:
   batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
   use_fine_grained_loss: true
-  iou_loss: IouLoss
-
-IouLoss:
-  loss_weight: 2.5
-  max_height: 608
-  max_width: 608
 
 LearningRate:
   base_lr: 0.001
