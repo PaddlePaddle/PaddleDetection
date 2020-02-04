@@ -73,4 +73,4 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: '../yolov3_reader.yml'
+_READER_: 'yolov3_enhance_reader.yml'
