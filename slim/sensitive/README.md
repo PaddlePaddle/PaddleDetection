@@ -10,7 +10,7 @@
 
 ## 数据准备
 
-请参考检测库[数据模块](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/docs/DATA_cn.md)文档准备数据。
+请参考检测库[数据模块](../../docs/advanced_tutorials/READER.md)文档准备数据。
 
 ## 模型选择
 
@@ -19,7 +19,7 @@
 通过`-o weights`指定模型的权重，可以指定url或本地文件系统的路径。如下所示：
 
 ```
--o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar 
+-o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
 ```
 
 或
@@ -28,14 +28,14 @@
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
 
-官方已发布的模型请参考: [模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/docs/MODEL_ZOO_cn.md)
+官方已发布的模型请参考: [模型库](../../docs/MODEL_ZOO_cn.md)
 
 ## 确定待分析参数
 
 在计算敏感度之前，需要查出待分析的卷积层的参数的名称。通过以下命令查看当前模型的所有参数：
 
 ```
-python sensitive.py \ 
+python sensitive.py \
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 --print_params
 ```
@@ -92,5 +92,3 @@ nohup python sensitive.py \
 ```
 
 待以上两个进程执行完毕，通过[paddleslim.prune.merge_sensitive](https://paddlepaddle.github.io/PaddleSlim/api/prune_api/#merge_sensitive)将`demo.data.1`和`demo.data.2`两个文件合并分析。
-
-

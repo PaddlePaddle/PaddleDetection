@@ -115,11 +115,13 @@ def main():
     train_values.append(lr)
 
     if FLAGS.print_params:
-        print("-------------------------All parameters in current graph----------------------")
+        param_delimit_str = '-' * 20 + "All parameters in current graph" + '-' * 20
+        print(param_delimit_str)
         for block in train_prog.blocks:
             for param in block.all_parameters():
-                print("parameter name: {}\tshape: {}".format(param.name, param.shape))
-        print("------------------------------------------------------------------------------")
+                print("parameter name: {}\tshape: {}".format(param.name,
+                                                             param.shape))
+        print('-' * len(param_delimit_str))
         return
 
     if FLAGS.eval:
@@ -174,19 +176,20 @@ def main():
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
         start_iter = checkpoint.global_step()
     elif cfg.pretrain_weights:
-        checkpoint.load_params(
-            exe, train_prog, cfg.pretrain_weights)
-
+        checkpoint.load_params(exe, train_prog, cfg.pretrain_weights)
 
     pruned_params = FLAGS.pruned_params
-    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    assert FLAGS.pruned_params is not None, \
+        "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
     pruned_params = FLAGS.pruned_params.strip().split(",")
     logger.info("pruned params: {}".format(pruned_params))
-    pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
+    pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
-    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
-    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
-    
+    assert len(pruned_params) == len(pruned_ratios), \
+        "The length of pruned params and pruned ratios should be equal."
+    assert (pruned_ratios > [0] * len(pruned_ratios) and
+            pruned_ratios < [1] * len(pruned_ratios)
+            ), "The elements of pruned ratios should be in range (0, 1)."
 
     pruner = Pruner()
     train_prog = pruner.prune(
@@ -213,10 +216,10 @@ def main():
             place=place,
             only_graph=True)[0]
         pruned_flops = flops(eval_prog)
-        logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
+        logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(
+            float(base_flops - pruned_flops) / base_flops, base_flops,
+            pruned_flops))
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
-
-
 
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
@@ -248,12 +251,10 @@ def main():
         tb_loss_step = 0
         tb_mAP_step = 0
 
-
-
     if FLAGS.eval:
         # evaluation
-        results = eval_run(exe, compiled_eval_prog, eval_loader,
-                           eval_keys, eval_values, eval_cls)
+        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
+                           eval_values, eval_cls)
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
@@ -267,8 +268,6 @@ def main():
             FLAGS.output_eval,
             map_type,
             dataset=dataset)
-
-
 
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
@@ -373,9 +372,10 @@ if __name__ == '__main__':
         help="The parameters to be pruned when calculating sensitivities.")
     parser.add_argument(
         "--pruned_ratios",
-        default="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9",
+        default=None,
         type=str,
-        help="The ratios pruned iteratively for each parameter when calculating sensitivities.")
+        help="The ratios pruned iteratively for each parameter when calculating sensitivities."
+    )
     parser.add_argument(
         "-P",
         "--print_params",

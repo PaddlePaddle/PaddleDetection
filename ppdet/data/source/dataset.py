@@ -82,9 +82,6 @@ class DataSet(object):
     def get_imid2path(self):
         return self._imid2path
 
-    def get_cname2cid(self):
-        return self.cname2cid
-
 
 def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
     return f.lower().endswith(extensions)
