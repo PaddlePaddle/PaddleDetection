@@ -8,3 +8,4 @@
    QUANTIZATION.md
    NAS.md
    prune/index
+   MODEL_ZOO.md
