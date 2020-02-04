@@ -24,7 +24,6 @@ import sphinx_rtd_theme
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
-
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("../../"))
 DEPLOY = os.environ.get("READTHEDOCS") == "True"
@@ -77,7 +76,7 @@ release = u'0.1'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None  #'zh_CN'
+language = 'zh_CN'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -167,7 +166,7 @@ def url_resolver(url):
         return "https://github.com/PaddlePaddle/PaddleDetection/tree/master" + url
     else:
         if DEPLOY:
-            return "http://PaddleDetection.readthedocs.io/" + url
+            return "http://paddledetection.readthedocs.io/" + url
         else:
             return "/" + url
 

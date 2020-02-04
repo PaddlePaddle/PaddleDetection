@@ -60,7 +60,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
-- [训练、评估流程](docs/tutorials/GETTING_STARTED_cn.md)
+- [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
 
 ### 进阶教程
 - [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)

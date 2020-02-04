@@ -39,9 +39,9 @@ PaddleDetection的数据处理模块是一个Python模块，所有代码逻辑�
   │   ├── x2coco.py       # 将其他数据集转换为COCO数据集格式
   ├── transform  # 数据预处理模块
   │   ├── batch_operators.py  # 定义各类基于批量数据的预处理算子
-  │   ├── op_helper.py    # 预处理算子的辅助工具类
+  │   ├── op_helper.py    # 预处理算子的辅助函数
   │   ├── operators.py    # 定义各类基于单张图片的预处理算子
-  ├── parallel_map.py     # 在多进程模式中对数据预处理操作进行加速
+  ├── parallel_map.py     # 在多进程/多线程模式中对数据预处理操作进行加速
   ```
 
 ![](../images/reader_figure.png)
@@ -64,12 +64,13 @@ PaddleDetection目前支持[COCO](http://cocodataset.org)、[Pascal VOC](http://
 | 方法                        | 输入   | 输出           |  备注                   |
 | :------------------------: | :----: | :------------: | :--------------: |
 | load_roidb_and_cname2cid() | 无     | 无     |加载`DataSet`中Roidb数据源list, 类别名到id的映射dict |
-| get_roidb()                | 无     | list, Roidb数据源  | 获取数据源 |
+| get_roidb()                | 无     | list[dict], Roidb数据源  | 获取数据源 |
 | get_cname2cid()            | 无     | dict，类别名到id的映射  |  获取标签ID |
 | get_anno()                 | 无     | str, 标注文件路径  | 获取标注文件路径 |
 | get_imid2path()            | 无     | dict, 图片路径  | 获取图片路径 |
 
 **几点解释：**
+- `load_roidb_and_cname2cid()`在Dataset基类中并没有做实际的操作，需要在子类中重写实际操作。
 - `roidbs`:  
 代表数据源列表。`load_roidb_and_cname2cid`方法中根据数据集标注文件(anno_path)，将每张标注好的图片解析为字典`coco_rec`和`voc_rec`等：
 ```python
@@ -93,6 +94,13 @@ xxx_rec = {
   - COCO数据集中：会根据[COCO API](https://github.com/cocodataset/cocoapi)自动加载cname2cid。
   - VOC数据集中：如果在yaml配置文件中设置`use_default_label=False`，将从`label_list.txt`中读取类别列表，
 反之则可以没有`label_list.txt`文件，PaddleDetection会使用`source/voc.py`里的默认类别字典。
+`label_list.txt`的格式如下所示，每一行文本表示一个类别：
+```bash
+aeroplane
+bicycle
+bird
+...
+```
 
 #### COCO数据源
 
@@ -209,31 +217,31 @@ from .xxx import *
 #### 数据增强算子
 PaddleDetection中支持了种类丰富的数据增强算子，有单图像数据增强算子与批数据增强算子两种方式，您可选取合适的算子组合使用，已支持的单图像数据增强算子详见下表：
 
-| 名称                     | 输入与输出 |  作用                   |
-| :---------------------: | :------: | :--------------: |
-| DecodeImage             | sample  | 读取加载图像为numpy格式 |
-| ResizeImage             | sample  | 根据特定的插值方式调整图像大小 |
-| RandomFlipImage         | sample  | 随机水平翻转图像 |
-| NormalizeImage          | sample  | 对图像像素值进行归一化 |
-| RandomDistort           | sample  | 随机扰动图片亮度、对比度、饱和度和色相 |
-| ExpandImage             | sample  | 将原始图片放入用像素均值填充(随后会在减均值操作中减掉)的扩张图中，对此图进行裁剪、缩放和翻转 |
-| CropImage               | sample  | 根据缩放比例、长宽比例生成若干候选框，再依据这些候选框和标注框的面积交并比(IoU)挑选出符合要求的裁剪结果 |
-| CropImageWithDataAchorSampling | sample  | 基于CropImage，在人脸检测中，随机将图片尺度变换到一定范围的尺度，大大增强人脸的尺度变化 |
-| NormalizeBox            | sample  | 对bounding box进行归一化 |
-| Permute                 | sample  | 对图像的通道进行排列并转为BGR格式 |
-| MixupImage              | sample  | 按比例叠加两张图像 |
-| RandomInterpImage       | sample  | 使用随机的插值方式调整图像大小 |
-| Resize                  | sample  | 根据特定的插值方式同时调整图像与bounding box的大小|
-| MultiscaleTestResize    | sample  | 将图像重新缩放为多尺度list的每个尺寸 |
-| ColorDistort            | sample  | 根据特定的亮度、对比度、饱和度和色相为图像增加噪声 |
-| NormalizePermute        | sample  | 归一化图像并改变图像通道顺序|
-| RandomExpand            | sample  | 原理同ExpandImage，以随机比例与角度对图像进行裁剪、缩放和翻转 |
-| RandomCrop              | sample  | 原理同CropImage，以随机比例与IoU阈值进行处理 |
-| PadBox                  | sample  | 如果bounding box的数量少于num_max_boxes，则将零填充到bbox |
-| BboxXYXY2XYWH           | sample  | 将bounding box从(xmin,ymin,xmax,ymin)形式转换为(xmin,ymin,width,height)格式 |
+| 名称                     |  作用                   |
+| :---------------------: | :--------------: |
+| DecodeImage             | 从图像文件或内存buffer中加载图像，格式为BGR、HWC格式，如果设置to_rgb=True，则转换为RGB格式。|
+| ResizeImage             | 根据特定的插值方式调整图像大小 |
+| RandomFlipImage         | 随机水平翻转图像 |
+| NormalizeImage          | 对图像像素值进行归一化，如果设置is_scale=True，则先将像素值除以255.0，像素值缩放到到[0-1]区间。 |
+| RandomDistort           | 随机扰动图片亮度、对比度、饱和度和色相 |
+| ExpandImage             | 将原始图片放入用像素均值填充(随后会在减均值操作中减掉)的扩张图中，对此图进行裁剪、缩放和翻转 |
+| CropImage               | 根据缩放比例、长宽比例生成若干候选框，再依据这些候选框和标注框的面积交并比(IoU)挑选出符合要求的裁剪结果 |
+| CropImageWithDataAchorSampling | 基于CropImage，在人脸检测中，随机将图片尺度变换到一定范围的尺度，大大增强人脸的尺度变化 |
+| NormalizeBox            | 对bounding box进行归一化 |
+| Permute                 | 对图像的通道进行排列并转为BGR格式。假如输入是HWC顺序，通道C上是RGB格式，设置channel_first=True，将变成CHW，设置to_bgr=True，通道C上变成BGR格式。 |
+| MixupImage              | 按比例叠加两张图像 |
+| RandomInterpImage       | 使用随机的插值方式调整图像大小 |
+| Resize                  | 根据特定的插值方式同时调整图像与bounding box的大小|
+| MultiscaleTestResize    | 将图像重新缩放为多尺度list的每个尺寸 |
+| ColorDistort            | 根据特定的亮度、对比度、饱和度和色相为图像增加噪声 |
+| NormalizePermute        | 归一化图像并改变图像通道顺序|
+| RandomExpand            | 原理同ExpandImage，以随机比例与角度对图像进行裁剪、缩放和翻转 |
+| RandomCrop              | 原理同CropImage，以随机比例与IoU阈值进行处理 |
+| PadBox                  | 如果bounding box的数量少于num_max_boxes，则将零填充到bbox |
+| BboxXYXY2XYWH           | 将bounding box从(xmin,ymin,xmax,ymin)形式转换为(xmin,ymin,width,height)格式 |
 
 **几点说明：**
-- 数据增强算子的输入与输出都是`sample`，`sample`是由{'image':xx, 'im_info': xxx, ...}组成，来自于上文提到的`roidbs`中的字典信息。
+- 上表中的数据增强算子的输入与输出都是单张图片`sample`，`sample`是由{'image':xx, 'im_info': xxx, ...}组成，来自于上文提到的`roidbs`中的字典信息。
 - 数据增强算子注册后即可生效，在配置yaml文件中添加即可，配置文件中配置方法见下文。
 - Mixup的操作可参考[论文](https://arxiv.org/pdf/1710.09412.pdf)。
 
@@ -246,6 +254,7 @@ PaddleDetection中支持了种类丰富的数据增强算子，有单图像数�
 | Gt2YoloTarget           | samples  | 通过gt数据生成YOLOv3目标，此OP仅在拆分后的YOLOv3损失模式下使用  |
 
 - 批数据增强算子的输入输出都是批数据`samples`，是一个`sample`的list。
+- 需要批数据增强算子的原因: CNN计算时需要一个batch内的图像大小相同，而一些数据增强算子，比如随机大小缩放，会随机选择一个缩放尺寸，为了使得一个batch内的图像大小相同，先组成batch，再做随机大小缩放的数据增强。
 
 #### 自定义数据增强算子
 假如我们定义一个新的单图像数据增强算子`XXXImage`。
@@ -269,6 +278,7 @@ class XXXImage(BaseOperator):
 自定义批量数据增强算子方法同上，在`transform/batch_operators.py`中定义即可。
 
 ### 组建Reader迭代器
+如上面提到，Reader预处理流程为: 单张图像处理 -> 组batch -> batch图像处理。用户一般不需要关注这些方法。
 在`reader.py`中构建了Reader迭代器类，其中包含如下方法：
 
 | 方法           | 输入   | 输出       |  备注              |
@@ -294,7 +304,7 @@ Reader迭代器的创建使用`reader.py`中的`create_reader`方法，在create
 | class_aware_sampling |bool  | 是否使用class-aware数据增强方法，默认False |
 | worker_num | int | 数据读取中使用多进程的数量 |
 | use_process | bool | 数据读取中是否使用多进程 |
-| bufsize | int | 多进程中每个batch的缓冲区buffer大小 |
+| bufsize | int | 多进程/多线程缓冲队列的大小，队列中每个元素为一个batch的数据 |
 | memsize | str | 多进程下共享存储队列的大小，默认3G |
 | inputs_def | dict | 用在网络输入定义中获取输入字段，该字段用于确定返回数据的顺序。 |
 
@@ -386,7 +396,7 @@ TestReader:
 
 **几点说明：**
 - `推理-数据处理`模块的名称统一为`TestReader`；
-- 在推理配置中`dataset`的数据源一般都设置为`ImageFolder`数据源。
+- 在推理配置中`dataset`的数据源一般都设置为`ImageFolder`数据源。ImageFolder可以指定图片的文件夹地址，将读取该文件夹下的所有图片。
 
 到此就完成了yml配置文件中的`TrainReader`、`EvalReader`和`TestReader`的编写，您也可以将Reader部分封装到单独的yml文件`xxx_reader.yml`中，利用如下命令进行加载即可：
 ```yaml
@@ -429,8 +439,8 @@ loader.set_sample_list_generator(reader, place)
 
 ## FAQ
 
-- 运行报错：`not enough space for reason[failed to malloc 601 pages...`
+**Q:** 在配置文件中设置use_process=True，并且运行报错：`not enough space for reason[failed to malloc 601 pages...`
 
-解决方法：当前Reader的共享存储队列空间不足，请增大配置文件`xxx.yml`中的`memsize`,如`memsize: 3G`->`memsize: 6G`。
+**A:** 当前Reader的共享存储队列空间不足，请增大配置文件`xxx.yml`中的`memsize`,如`memsize: 3G`->`memsize: 6G`。或者配置文件中设置`use_process=False`。
 
 > 关于数据处理模块，如您有其他问题或建议，请给我们提issue，我们非常欢迎您的反馈。

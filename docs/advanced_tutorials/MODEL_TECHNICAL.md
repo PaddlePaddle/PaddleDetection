@@ -1,6 +1,6 @@
-# 模型技术
+# 新增模型算法
 为了让用户更好的使用PaddleDetection，本文档中，我们将介绍PaddleDetection的主要模型技术细节及应用，
-包括：如何搭建模型，如何定义API函数和模型配置与运行。
+包括：如何搭建模型，如何定义检测组件和模型配置与运行。
 
 ## 简介
 PaddleDetection的网络模型模块所有代码逻辑在`ppdet/modeling/`中，所有网络模型是以组件的形式进行定义与组合，网络模型模块的主要构成如下架构所示：
@@ -27,8 +27,8 @@ PaddleDetection的网络模型模块所有代码逻辑在`ppdet/modeling/`中，
   │   ├── mask_head.py   # Mask-Rcnn系列检测头
   ├── tests  # 单元测试模块
   │   ├── test_architectures.py  # 对网络结构进行单元测试
-  ├── ops.py  # 封装及注册各类PaddlePaddle物体检测相关API函数
-  ├── target_assigners.py # 封装bbox/mask等最终结果的API函数
+  ├── ops.py  # 封装及注册各类PaddlePaddle物体检测相关公共检测组件/算子
+  ├── target_assigners.py # 封装bbox/mask等最终结果的公共检测组件
 ```
 
 ![](../images/models_figure.png)
@@ -111,11 +111,11 @@ from . import yolo_head
 from .yolo_head import *
 ```
 **几点说明：**
-- `__inject__`表示引入封装好了的API函数列表，此处`yolo_loss`与`nms`变量指向外部定义好的API函数；
+- `__inject__`表示引入封装好了的检测组件/算子列表，此处`yolo_loss`与`nms`变量指向外部定义好的检测组件/算子；
 - anchor的检测头实现中类函数需有输出loss接口`get_loss`与预测框或建议框输出接口`get_prediction`；
 - 两阶段检测器在anchor的检测头里定义的是候选框输出接口`get_proposals`，之后还会在`roi_extractors`与`roi_heads`中进行后续计算，定义方法与如下一致。
 - YOLOv3算法的loss函数比较复杂，所以我们将loss函数进行拆分，具体实现在`losses/yolo_loss.py`中，也需要注册；
-- nms算法是封装paddlepaddle中现有API函数，如何定义与注册详见[定义API函数](#定义API函数)部分。
+- nms算法是封装paddlepaddle中现有检测组件/算子，如何定义与注册详见[定义公共检测组件/算子](#定义公共检测组件/算子)部分。
 
 2.配置编写：
 在yaml文件中以注册好了的`YOLOv3Head`类名为标题，可选择性的对`__init__`函数中的参数进行更新，不在配置文件中配置的参数会保持`__init__`函数中的初始化值：
@@ -140,7 +140,7 @@ YOLOv3Loss:
   ignore_thresh: 0.7
   label_smooth: false
 ```
-如上配置文件中的`YOLOv3Loss`是注册好API函数接口，所以需要在配置文件中也对`YOLOv3Loss`进行参数设置。
+如上配置文件中的`YOLOv3Loss`是注册好检测组件接口，所以需要在配置文件中也对`YOLOv3Loss`进行参数设置。
 
 ### 模型组网
 本步骤中，我们需要将编写好的Backbone、各个检测组件进行整合拼接，搭建一个完整的物体检测网络能够提供给训练、评估和测试程序去运行。
@@ -220,8 +220,8 @@ EvalReader:
 2.`loader`是调用[fluid.io.DataLoader](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api_cn/io_cn/DataLoader_cn.html#dataloader)
 根据`feed_vars`来完成DataLoader的组建。
 
-## 定义API函数
-为了使PaddleDetection代码规范化，检测模型相关API函数都定义在`ppdet/modeling/ops.py`中。
+## 定义公共检测组件/算子
+为了更好的复用一些公共检测组件/算子，以及可以在yaml配置文件中配置化，检测模型相关检测组件/算子都在`ppdet/modeling/ops.py`中定义并注册。这部分是选做部分，不是必需的。
 
 （1）基于现有的PaddlePaddle物体检测相关OP进行二次封装注册：
 
@@ -249,7 +249,7 @@ class MultiClassNMS(object):
 ```
 **注意：** 我们是对`fluid.layers.multiclass_nms`这个OP进行二次封装，在`__init__`方法中添加所需的可选参数即可，保持默认的参数可以不添加进来。
 
-（2）从零开始定义API函数：
+（2）从零开始定义检测组件/算子：
 
 在`ops.py`中定义`xxx`函数，然后在相应位置添加`from ppdet.modeling.ops import xxx`即可调用，无需注册与序列化。
 
@@ -270,7 +270,10 @@ LearningRate:
     start_factor: 0.
     steps: 4000
 ```
-`PiecewiseDecay`与`LinearWarmup`策略在`ppdet/optimizer.py`中都已注册。
+**几点说明：**
+-  `PiecewiseDecay`与`LinearWarmup`策略在`ppdet/optimizer.py`中都已注册。
+- 除了这两个优化器之外，您还可以使用paddlepaddle中所有的优化器[paddlepaddle官网文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api_guides/low_level/optimizer.html)。
+
 - Optimizer优化器配置：
 ```yaml
 OptimizerBuilder:
