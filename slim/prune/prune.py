@@ -115,16 +115,13 @@ def main():
     train_values.append(lr)
 
     if FLAGS.print_params:
-        print(
-            "-------------------------All parameters in current graph----------------------"
-        )
+        param_delimit_str = '-' * 20 + "All parameters in current graph" + '-' * 20
+        print(param_delimit_str)
         for block in train_prog.blocks:
             for param in block.all_parameters():
                 print("parameter name: {}\tshape: {}".format(param.name,
                                                              param.shape))
-        print(
-            "------------------------------------------------------------------------------"
-        )
+        print('-' * len(param_delimit_str))
         return
 
     if FLAGS.eval:
@@ -182,15 +179,14 @@ def main():
         checkpoint.load_params(exe, train_prog, cfg.pretrain_weights)
 
     pruned_params = FLAGS.pruned_params
-    assert (
-        FLAGS.pruned_params is not None
-    ), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    assert FLAGS.pruned_params is not None, \
+        "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
     pruned_params = FLAGS.pruned_params.strip().split(",")
     logger.info("pruned params: {}".format(pruned_params))
     pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
-    assert (len(pruned_params) == len(pruned_ratios)
-            ), "The length of pruned params and pruned ratios should be equal."
+    assert len(pruned_params) == len(pruned_ratios), \
+        "The length of pruned params and pruned ratios should be equal."
     assert (pruned_ratios > [0] * len(pruned_ratios) and
             pruned_ratios < [1] * len(pruned_ratios)
             ), "The elements of pruned ratios should be in range (0, 1)."
