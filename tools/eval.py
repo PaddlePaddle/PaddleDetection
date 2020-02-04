@@ -87,6 +87,8 @@ def main():
     reader = create_reader(cfg.EvalReader)
     loader.set_sample_list_generator(reader, place)
 
+    dataset = cfg['EvalReader']['dataset']
+
     # eval already exists json file
     if FLAGS.json_eval:
         logger.info(
@@ -122,8 +124,6 @@ def main():
     if hasattr(model, 'is_bbox_normalized') and \
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
-
-    dataset = cfg['EvalReader']['dataset']
 
     sub_eval_prog = None
     sub_keys = None
