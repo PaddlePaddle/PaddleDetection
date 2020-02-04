@@ -21,7 +21,7 @@
 ## 简介
 PaddleDetection的数据处理模块是一个Python模块，所有代码逻辑在`ppdet/data/`中，数据处理模块用于加载数据并将其转换成适用于物体检测模型的训练、评估、推理所需要的格式。
 数据处理模块的主要构成如下架构所示：
-```
+```bash
   ppdet/data/
   ├── reader.py     # 数据处理模块的总接口
   ├── shared_queue  # 共享内存管理模块
@@ -162,7 +162,7 @@ bird
 #### 自定义数据源
 ##### 方式一：将数据集转换为COCO格式
 在`./tools/`中提供了`x2coco.py`用于将labelme标注的数据集或cityscape数据集转换为COCO数据集:
-```
+```bash
 python ./ppdet/data/tools/x2coco.py \
                 --dataset_type labelme \
                 --json_input_dir ./labelme_annos/ \

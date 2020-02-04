@@ -101,7 +101,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 * 目前模型库中包括GIOU loss和DIOU loss，详情加[IOU loss模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master//configs/iou_loss/).
 
 ### GCNet
-* 详情见[GCNet模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master//configs/gcnet/).
+* 详情见[GCNet模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/gcnet/).
 
 
 ### Group Normalization
@@ -185,7 +185,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### 人脸检测
 
-详细请参考[人脸检测模型](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/face_detection)。
+详细请参考[人脸检测模型](featured_model/FACE_DETECTION.md)。
 
 
 ### 基于Open Images V5数据集的物体检测

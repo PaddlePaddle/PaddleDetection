@@ -43,10 +43,10 @@ extensions = [
     'sphinx.ext.viewcode',
     'recommonmark',
     'sphinx_markdown_tables',
-    'sphinx.ext.autosectionlabel',
+    # 'sphinx.ext.autosectionlabel',
 ]
 
-autosectionlabel_prefix_document = True
+# autosectionlabel_prefix_document = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -76,19 +76,18 @@ release = u'0.1'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = 'zh_CN'
+# language = None
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-default_role = None
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+# pygments_style = 'sphinx'
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+# todo_include_todos = False
 
 # -- Options for HTML output ----------------------------------------------
 
@@ -96,7 +95,7 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+# html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -171,16 +170,16 @@ def url_resolver(url):
             return "/" + url
 
 
-def setup(app):
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "url_resolver": url_resolver,
-            "auto_toc_tree_section": "Contents",
-            "enable_math": True,
-            "enable_inline_math": True,
-            "enable_eval_rst": True,
-            'enable_auto_doc_ref': True,
-        },
-        True, )
-    app.add_transform(AutoStructify)
+#def setup(app):
+#    app.add_config_value(
+#        "recommonmark_config",
+#        {
+#            "url_resolver": url_resolver,
+#            "auto_toc_tree_section": "Contents",
+#            "enable_math": True,
+#            "enable_inline_math": True,
+#            "enable_eval_rst": True,
+#            'enable_auto_doc_ref': True,
+#        },
+#        True, )
+#    app.add_transform(AutoStructify)
