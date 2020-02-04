@@ -1,12 +1,12 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 55000
+max_iters: 85000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_pretrained_coco.yml.tar
-weights: output/yolov3_r50vd_dcn_iouloss_obj365_pretrained_coco/model_final
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar
+weights: output/yolov3_r50vd_dcn_db_obj365_pretrained_coco/model_final
 num_classes: 80
 use_fine_grained_loss: true
 
@@ -53,8 +53,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 40000
-    - 50000
+    - 55000
+    - 75000
   - !LinearWarmup
     start_factor: 0.
     steps: 4000
