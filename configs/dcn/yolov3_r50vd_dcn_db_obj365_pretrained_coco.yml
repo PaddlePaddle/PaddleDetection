@@ -39,6 +39,7 @@ YOLOv3Head:
     nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
+  drop_block: true
 
 YOLOv3Loss:
   batch_size: 8
