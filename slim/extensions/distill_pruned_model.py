@@ -144,26 +144,7 @@ def main():
     train_fetches = model.train(train_feed_vars)
     loss = train_fetches['loss']
 
-    fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
-    ignore_params = cfg.finetune_exclude_pretrained_params \
-                 if 'finetune_exclude_pretrained_params' in cfg else []
     start_iter = 0
-    if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe,
-                                   fluid.default_main_program(),
-                                   FLAGS.resume_checkpoint)
-        start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe,
-                                   fluid.default_main_program(),
-                                   cfg.pretrain_weights)
-    elif cfg.pretrain_weights:
-        checkpoint.load_params(
-            exe,
-            fluid.default_main_program(),
-            cfg.pretrain_weights,
-            ignore_params=ignore_params)
-
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
     train_loader.set_sample_list_generator(train_reader, place)
@@ -179,15 +160,6 @@ def main():
 
     eval_reader = create_reader(cfg.EvalReader)
     eval_loader.set_sample_list_generator(eval_reader, place)
-
-    # parse eval fetches
-    extra_keys = []
-    if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
-        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
-    eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
-                                                     extra_keys)
 
     teacher_cfg = load_config(FLAGS.teacher_config)
     merge_config(FLAGS.opt)
@@ -233,13 +205,6 @@ def main():
         'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
     ]
 
-    # distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
-    #                  ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
-    #                  ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
-    #
-    # distill_loss = l2_distill(
-    #     distill_pairs, 100) if not cfg.use_fine_grained_loss else split_distill(
-    #         yolo_output_names, 1000)
     distill_loss = split_distill(yolo_output_names, 1000)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
@@ -249,8 +214,34 @@ def main():
     opt.minimize(loss)
 
     exe.run(fluid.default_startup_program())
-    # checkpoint.load_params(exe,
-    #                        fluid.default_main_program(), cfg.pretrain_weights)
+
+    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    pruned_params = FLAGS.pruned_params.strip().split(",")
+    logger.info("pruned params: {}".format(pruned_params))
+    pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
+    logger.info("pruned ratios: {}".format(pruned_ratios))
+    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
+    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
+
+    pruner = Pruner()
+    distill_prog = pruner.prune(
+        fluid.default_main_program(),
+        fluid.global_scope(),
+        params=pruned_params,
+        ratios=pruned_ratios,
+        place=place,
+        only_graph=False)[0]
+
+    base_flops = flops(eval_prog)
+    eval_prog = pruner.prune(
+        eval_prog,
+        fluid.global_scope(),
+        params=pruned_params,
+        ratios=pruned_ratios,
+        place=place,
+        only_graph=True)[0]
+    pruned_flops = flops(eval_prog)
+    logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
 
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_reduce_ops = False
@@ -267,62 +258,22 @@ def main():
     # local execution scopes can be deleted after each iteration.
     exec_strategy.num_iteration_per_drop_scope = 1
 
-    FLAGS.pruned_params = ["yolo_block.0.0.0.conv.weights",                                                                          
-                     "yolo_block.0.0.1.conv.weights",                                                                          
-                     "yolo_block.0.1.0.conv.weights",                                                                          
-                     "yolo_block.0.1.1.conv.weights",                                                                          
-                     "yolo_block.0.2.conv.weights",                                                                            
-                     "yolo_block.0.tip.conv.weights",                                                                          
-                     "yolo_block.1.0.0.conv.weights",                                                                          
-                     "yolo_block.1.0.1.conv.weights",                                                                          
-                     "yolo_block.1.1.0.conv.weights",                                                                          
-                     "yolo_block.1.1.1.conv.weights",                                                                          
-                     "yolo_block.1.2.conv.weights",                                                                            
-                     "yolo_block.1.tip.conv.weights",                                                                          
-                     "yolo_block.2.0.0.conv.weights",                                                                          
-                     "yolo_block.2.0.1.conv.weights",                                                                          
-                     "yolo_block.2.1.0.conv.weights",                                                                          
-                     "yolo_block.2.1.1.conv.weights",                                                                          
-                     "yolo_block.2.2.conv.weights",                                                                            
-                     "yolo_block.2.tip.conv.weights"]
-    FLAGS.pruned_ratios = [0.5] * 6 + [0.7] * 6 + [0.8] * 6
-
-    pruned_params = FLAGS.pruned_params
-    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
-    # pruned_params = FLAGS.pruned_params.strip().split(",")
-    logger.info("pruned params: {}".format(pruned_params))
-    # pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
-    pruned_ratios = FLAGS.pruned_ratios
-    logger.info("pruned ratios: {}".format(pruned_ratios))
-    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
-    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
-    
-
-    pruner = Pruner()
-    distill_prog = pruner.prune(
-        fluid.default_main_program(),
-        fluid.global_scope(),
-        params=pruned_params,
-        ratios=pruned_ratios,
-        place=place,
-        only_graph=False)[0]
-
     parallel_main = fluid.CompiledProgram(distill_prog).with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
-
-    base_flops = flops(eval_prog)
-    eval_prog = pruner.prune(
-        eval_prog,
-        fluid.global_scope(),
-        params=pruned_params,
-        ratios=pruned_ratios,
-        place=place,
-        only_graph=True)[0]
-    pruned_flops = flops(eval_prog)
-    logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
     compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+
+    checkpoint.load_params(exe, distill_prog, cfg.pretrain_weights)
+
+    # parse eval fetches
+    extra_keys = []
+    if cfg.metric == 'COCO':
+        extra_keys = ['im_info', 'im_id', 'im_shape']
+    if cfg.metric == 'VOC':
+        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
+    eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
+                                                     extra_keys)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
@@ -376,12 +327,6 @@ def main():
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
-        "-r",
-        "--resume_checkpoint",
-        default=None,
-        type=str,
-        help="Checkpoint path for resuming training.")
-    parser.add_argument(
         "-t",
         "--teacher_config",
         default=None,
@@ -397,5 +342,18 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation directory, default is current directory.")
+
+    parser.add_argument(
+        "-p",
+        "--pruned_params",
+        default=None,
+        type=str,
+        help="The parameters to be pruned when calculating sensitivities.")
+    parser.add_argument(
+        "--pruned_ratios",
+        default=None,
+        type=str,
+        help="The ratios pruned iteratively for each parameter when calculating sensitivities."
+    )
     FLAGS = parser.parse_args()
     main()

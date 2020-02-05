@@ -35,9 +35,9 @@
 ### YOLOv3 on COCO
 
 | 骨架网络         |  裁剪策略 | 输入尺寸 | Box AP  |                           下载                          |
-| :----------------| :-------: | :------: |:------: | :-----------------------------------------------------: |
-| ResNet50-vd-dcn  |  sensity  |   320    |  39.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune1x.tar) |
-| ResNet50-vd-dcn  |  sensity  |   320    |  38.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune578.tar) |
+| :----------------| :-------: | :------: | :-----: | :-----------------------------------------------------: |
+| ResNet50-vd-dcn  |  sensity  |   608    |  39.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune1x.tar) |
+| ResNet50-vd-dcn  |   r578    |   608    |  38.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune578.tar) |
 | MobileNetV1      |  sensity  |   608    |  30.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
 | MobileNetV1      |  sensity  |   416    |  29.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
 | MobileNetV1      |  sensity  |   320    |  27.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune1x.tar) |
@@ -48,10 +48,22 @@
 ### YOLOv3 on Pascal VOC
 
 | 骨架网络         |  裁剪策略 | 输入尺寸 | Box AP  |                           下载                          |
-| :----------------| :-------: | :------: |:------: | :-----------------------------------------------------: |
+| :----------------| :-------: | :------: | :-----: | :-----------------------------------------------------: |
 | MobileNetV1      |   r578    |   608    |  77.6   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578.tar) |
 | MobileNetV1      |   r578    |   416    |  77.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578.tar) |
 | MobileNetV1      |   r578    |   320    |  75.5   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578.tar) |
+
+### 蒸馏裁剪模型
+
+可通过高精度模型蒸馏裁剪后模型的方式，训练方法及相关示例见[蒸馏通道裁剪模型](./extensions/distill_pruned_model.ipynb)。
+COCO数据集上蒸馏裁剪模型库如下。
+
+| 骨架网络         |  裁剪策略 | 输入尺寸 |      teacher模型       | Box AP  |                           下载                          |
+| :----------------| :-------: | :------: | :--------------------- | :-----: | :-----------------------------------------------------: |
+| ResNet50-vd-dcn  |   r578    |   608    | YOLOv3-ResNet50-vd-dcn |  39.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50_dcn_prune578_distill.tar) |
+| MobileNetV1      |   r578    |   608    | YOLOv3-ResNet34        |  29.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578_distillby_r34.tar) |
+| MobileNetV1      |   r578    |   416    | YOLOv3-ResNet34        |  28.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578_distillby_r34.tar) |
+| MobileNetV1      |   r578    |   320    | YOLOv3-ResNet34        |  25.1   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578_distillby_r34.tar) |
 
 
 ## 蒸馏模型库
