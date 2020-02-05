@@ -20,8 +20,6 @@ import os
 import numpy as np
 from collections import OrderedDict
 from paddleslim.dist.single_distiller import merge, l2_loss
-from paddleslim.prune import Pruner
-from paddleslim.analysis import flops
 
 from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
@@ -36,6 +34,20 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+
+def l2_distill(pairs, weight):
+    """
+    Add l2 distillation losses composed of multi pairs of feature maps,
+    each pair of feature maps is the input of teacher and student's
+    yolov3_loss respectively
+    """
+    loss = []
+    for pair in pairs:
+        loss.append(l2_loss(pair[0], pair[1]))
+    loss = fluid.layers.sum(loss)
+    weighted_loss = loss * weight
+    return weighted_loss
 
 
 def split_distill(split_output_names, weight):
@@ -168,6 +180,17 @@ def main():
                                  devices_num, cfg)
     train_loader.set_sample_list_generator(train_reader, place)
 
+    # get all student variables
+    student_vars = []
+    for v in fluid.default_main_program().list_vars():
+        try:
+            student_vars.append((v.name, v.shape))
+        except:
+            pass
+    # uncomment the following lines to print all student variables
+    # print("="*50 + "student_model_vars" + "="*50)
+    # print(student_vars)
+
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, fluid.default_startup_program()):
         with fluid.unique_name.guard():
@@ -206,11 +229,23 @@ def main():
             train_fetches = model.train(teacher_feed_vars)
             teacher_loss = train_fetches['loss']
 
+    # get all teacher variables
+    teacher_vars = []
+    for v in teacher_program.list_vars():
+        try:
+            teacher_vars.append((v.name, v.shape))
+        except:
+            pass
+    # uncomment the following lines to print all teacher variables
+    # print("="*50 + "teacher_model_vars" + "="*50)
+    # print(teacher_vars)
+
     exe.run(teacher_startup_program)
     assert FLAGS.teacher_pretrained, "teacher_pretrained should be set"
     checkpoint.load_params(exe, teacher_program, FLAGS.teacher_pretrained)
     teacher_program = teacher_program.clone(for_test=True)
 
+    cfg = load_config(FLAGS.config)
     data_name_map = {
         'target0': 'target0',
         'target1': 'target1',
@@ -233,14 +268,13 @@ def main():
         'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
     ]
 
-    # distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
-    #                  ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
-    #                  ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
-    #
-    # distill_loss = l2_distill(
-    #     distill_pairs, 100) if not cfg.use_fine_grained_loss else split_distill(
-    #         yolo_output_names, 1000)
-    distill_loss = split_distill(yolo_output_names, 1000)
+    distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
+                     ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
+                     ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
+
+    distill_loss = l2_distill(
+        distill_pairs, 100) if not cfg.use_fine_grained_loss else split_distill(
+            yolo_output_names, 1000)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
     optim_builder = create('OptimizerBuilder')
@@ -249,8 +283,6 @@ def main():
     opt.minimize(loss)
 
     exe.run(fluid.default_startup_program())
-    # checkpoint.load_params(exe,
-    #                        fluid.default_main_program(), cfg.pretrain_weights)
 
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_reduce_ops = False
@@ -267,61 +299,12 @@ def main():
     # local execution scopes can be deleted after each iteration.
     exec_strategy.num_iteration_per_drop_scope = 1
 
-    FLAGS.pruned_params = ["yolo_block.0.0.0.conv.weights",                                                                          
-                     "yolo_block.0.0.1.conv.weights",                                                                          
-                     "yolo_block.0.1.0.conv.weights",                                                                          
-                     "yolo_block.0.1.1.conv.weights",                                                                          
-                     "yolo_block.0.2.conv.weights",                                                                            
-                     "yolo_block.0.tip.conv.weights",                                                                          
-                     "yolo_block.1.0.0.conv.weights",                                                                          
-                     "yolo_block.1.0.1.conv.weights",                                                                          
-                     "yolo_block.1.1.0.conv.weights",                                                                          
-                     "yolo_block.1.1.1.conv.weights",                                                                          
-                     "yolo_block.1.2.conv.weights",                                                                            
-                     "yolo_block.1.tip.conv.weights",                                                                          
-                     "yolo_block.2.0.0.conv.weights",                                                                          
-                     "yolo_block.2.0.1.conv.weights",                                                                          
-                     "yolo_block.2.1.0.conv.weights",                                                                          
-                     "yolo_block.2.1.1.conv.weights",                                                                          
-                     "yolo_block.2.2.conv.weights",                                                                            
-                     "yolo_block.2.tip.conv.weights"]
-    FLAGS.pruned_ratios = [0.5] * 6 + [0.7] * 6 + [0.8] * 6
-
-    pruned_params = FLAGS.pruned_params
-    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
-    # pruned_params = FLAGS.pruned_params.strip().split(",")
-    logger.info("pruned params: {}".format(pruned_params))
-    # pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
-    pruned_ratios = FLAGS.pruned_ratios
-    logger.info("pruned ratios: {}".format(pruned_ratios))
-    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
-    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
-    
-
-    pruner = Pruner()
-    distill_prog = pruner.prune(
-        fluid.default_main_program(),
-        fluid.global_scope(),
-        params=pruned_params,
-        ratios=pruned_ratios,
-        place=place,
-        only_graph=False)[0]
-
-    parallel_main = fluid.CompiledProgram(distill_prog).with_data_parallel(
+    parallel_main = fluid.CompiledProgram(fluid.default_main_program(
+    )).with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
 
-    base_flops = flops(eval_prog)
-    eval_prog = pruner.prune(
-        eval_prog,
-        fluid.global_scope(),
-        params=pruned_params,
-        ratios=pruned_ratios,
-        place=place,
-        only_graph=True)[0]
-    pruned_flops = flops(eval_prog)
-    logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
     compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
     # whether output bbox is normalized in model output layer
@@ -351,7 +334,7 @@ def main():
             save_name = str(
                 step_id) if step_id != cfg.max_iters - 1 else "model_final"
             checkpoint.save(exe,
-                            distill_prog,
+                            fluid.default_main_program(),
                             os.path.join(save_dir, save_name))
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
@@ -366,7 +349,7 @@ def main():
                 best_box_ap_list[0] = box_ap_stats[0]
                 best_box_ap_list[1] = step_id
                 checkpoint.save(exe,
-                                distill_prog,
+                                fluid.default_main_program(),
                                 os.path.join("./", "best_model"))
             logger.info("Best test box ap: {}, in step: {}".format(
                 best_box_ap_list[0], best_box_ap_list[1]))
