@@ -205,6 +205,8 @@ def main():
         'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
     ]
 
+    assert cfg.use_fine_grained_loss, \
+        "Only support use_fine_grained_loss=True, Please set it in config file or '-o use_fine_grained_loss=true'"
     distill_loss = split_distill(yolo_output_names, 1000)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
@@ -215,13 +217,16 @@ def main():
 
     exe.run(fluid.default_startup_program())
 
-    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    assert FLAGS.pruned_params is not None, \
+        "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
     pruned_params = FLAGS.pruned_params.strip().split(",")
     logger.info("pruned params: {}".format(pruned_params))
     pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
-    assert(len(pruned_params) == len(pruned_ratios)), "The length of pruned params and pruned ratios should be equal."
-    assert(pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios)), "The elements of pruned ratios should be in range (0, 1)."
+    assert len(pruned_params) == len(pruned_ratios), \
+        "The length of pruned params and pruned ratios should be equal."
+    assert pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios), \
+        "The elements of pruned ratios should be in range (0, 1)."
 
     pruner = Pruner()
     distill_prog = pruner.prune(
@@ -241,7 +246,9 @@ def main():
         place=place,
         only_graph=True)[0]
     pruned_flops = flops(eval_prog)
-    logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(float(base_flops - pruned_flops)/base_flops, base_flops, pruned_flops))
+    logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(
+        float(base_flops - pruned_flops) / base_flops, base_flops,
+        pruned_flops))
 
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_reduce_ops = False
@@ -301,8 +308,7 @@ def main():
         if step_id % cfg.snapshot_iter == 0 and step_id != 0 or step_id == cfg.max_iters - 1:
             save_name = str(
                 step_id) if step_id != cfg.max_iters - 1 else "model_final"
-            checkpoint.save(exe,
-                            distill_prog,
+            checkpoint.save(exe, distill_prog,
                             os.path.join(save_dir, save_name))
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
@@ -316,8 +322,7 @@ def main():
             if box_ap_stats[0] > best_box_ap_list[0]:
                 best_box_ap_list[0] = box_ap_stats[0]
                 best_box_ap_list[1] = step_id
-                checkpoint.save(exe,
-                                distill_prog,
+                checkpoint.save(exe, distill_prog,
                                 os.path.join("./", "best_model"))
             logger.info("Best test box ap: {}, in step: {}".format(
                 best_box_ap_list[0], best_box_ap_list[1]))
