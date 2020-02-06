@@ -1,2 +1,3 @@
 # add python requirements for unittests here, note install Cython
 # and pycocotools directly is not supported in travis ci.
+tqdm
