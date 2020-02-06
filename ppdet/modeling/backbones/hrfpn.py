@@ -40,35 +40,36 @@ class HRFPN(object):
         spatial_scale (list): feature map scaling factor
     """
 
-    def __init__(self,
-                 num_chan=256,
-                 pooling_type="avg",
-                 share_conv=False,
-                 spatial_scale=[1./64, 1./32, 1./16, 1./8, 1./4],
-                 ):
+    def __init__(
+            self,
+            num_chan=256,
+            pooling_type="avg",
+            share_conv=False,
+            spatial_scale=[1. / 64, 1. / 32, 1. / 16, 1. / 8, 1. / 4], ):
         self.num_chan = num_chan
         self.pooling_type = pooling_type
         self.share_conv = share_conv
         self.spatial_scale = spatial_scale
         return
-    
+
     def get_output(self, body_dict):
         num_out = len(self.spatial_scale)
         body_name_list = list(body_dict.keys())
-        
+
         num_backbone_stages = len(body_name_list)
-        
+
         outs = []
         outs.append(body_dict[body_name_list[0]])
-        
+
         # resize
         for i in range(1, len(body_dict)):
-            resized = self.resize_input_tensor(body_dict[body_name_list[i]], outs[0], 2**i)
-            outs.append( resized )
-        
+            resized = self.resize_input_tensor(body_dict[body_name_list[i]],
+                                               outs[0], 2**i)
+            outs.append(resized)
+
         # concat
-        out = fluid.layers.concat( outs, axis=1 )
-        
+        out = fluid.layers.concat(outs, axis=1)
+
         # reduction
         out = fluid.layers.conv2d(
             input=out,
@@ -78,34 +79,40 @@ class HRFPN(object):
             padding=0,
             param_attr=ParamAttr(name='hrfpn_reduction_weights'),
             bias_attr=False)
-        
+
         # conv
         outs = [out]
         for i in range(1, num_out):
-            outs.append(self.pooling(out, size=2**i, stride=2**i, pooling_type=self.pooling_type))
+            outs.append(
+                self.pooling(
+                    out, size=2**i, stride=2**i,
+                    pooling_type=self.pooling_type))
         outputs = []
-        
+
         for i in range(num_out):
-            conv_name = "shared_fpn_conv" if self.share_conv else "shared_fpn_conv_"+str(i)
+            conv_name = "shared_fpn_conv" if self.share_conv else "shared_fpn_conv_" + str(
+                i)
             conv = fluid.layers.conv2d(
-                    input=outs[i],
-                    num_filters=self.num_chan,
-                    filter_size=3,
-                    stride=1,
-                    padding=1,
-                    param_attr=ParamAttr(name=conv_name+"_weights"),
-                    bias_attr=False)
-            outputs.append( conv )
-        
-        for idx in range(0, num_out-len(body_name_list)):
-            body_name_list.append("fpn_res5_sum_subsampled_{}x".format( 2**(idx+1) ))
-        
+                input=outs[i],
+                num_filters=self.num_chan,
+                filter_size=3,
+                stride=1,
+                padding=1,
+                param_attr=ParamAttr(name=conv_name + "_weights"),
+                bias_attr=False)
+            outputs.append(conv)
+
+        for idx in range(0, num_out - len(body_name_list)):
+            body_name_list.append("fpn_res5_sum_subsampled_{}x".format(2**(idx +
+                                                                           1)))
+
         outputs = outputs[::-1]
         body_name_list = body_name_list[::-1]
-        
-        res_dict = OrderedDict([(body_name_list[k], outputs[k]) for k in range(len(body_name_list))])
+
+        res_dict = OrderedDict([(body_name_list[k], outputs[k])
+                                for k in range(len(body_name_list))])
         return res_dict, self.spatial_scale
-    
+
     def resize_input_tensor(self, body_input, ref_output, scale):
         shape = fluid.layers.shape(ref_output)
         shape_hw = fluid.layers.slice(shape, axes=[0], starts=[2], ends=[4])
@@ -115,12 +122,11 @@ class HRFPN(object):
         body_output = fluid.layers.resize_bilinear(
             body_input, scale=scale, actual_shape=out_shape)
         return body_output
-    
+
     def pooling(self, input, size, stride, pooling_type):
-        pool = fluid.layers.pool2d(input=input,
+        pool = fluid.layers.pool2d(
+            input=input,
             pool_size=size,
             pool_stride=stride,
             pool_type=pooling_type)
         return pool
-
-    
