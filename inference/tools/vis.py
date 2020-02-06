@@ -85,8 +85,8 @@ if __name__ == "__main__":
                 for box in detection_result.detection_boxes:
                     if box.score >= Flags.threshold:
                         box_class = getattr(box, 'class')
-                        text_class_score_str = "%s %.2f" % (class2LabelMap.get(
-                            str(box_class)), box.score)
+                        text_class_score_str = "%s %.2f" % (
+                            class2LabelMap.get(str(box_class)), box.score)
                         text_point = (int(box.left_top_x), int(box.left_top_y))
 
                         ptLeftTop = (int(box.left_top_x), int(box.left_top_y))
@@ -106,8 +106,8 @@ if __name__ == "__main__":
 
                         text_box_left_top = (text_point[0],
                                              text_point[1] - text_size[0][1])
-                        text_box_right_bottom = (text_point[0] +
-                                                 text_size[0][0], text_point[1])
+                        text_box_right_bottom = (
+                            text_point[0] + text_size[0][0], text_point[1])
 
                         cv2.rectangle(img, text_box_left_top,
                                       text_box_right_bottom, color, -1, 8)

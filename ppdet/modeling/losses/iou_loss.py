@@ -36,16 +36,25 @@ class IouLoss(object):
         max_height (int): max height of input to support random shape input
         max_width (int): max width of input to support random shape input
     """
-    def __init__(self,
-                 loss_weight=2.5,
-                 max_height=608,
-                 max_width=608):
+
+    def __init__(self, loss_weight=2.5, max_height=608, max_width=608):
         self._loss_weight = loss_weight
         self._MAX_HI = max_height
         self._MAX_WI = max_width
 
-    def __call__(self, x, y, w, h, tx, ty, tw, th,
-                 anchors, downsample_ratio, batch_size, eps=1.e-10):
+    def __call__(self,
+                 x,
+                 y,
+                 w,
+                 h,
+                 tx,
+                 ty,
+                 tw,
+                 th,
+                 anchors,
+                 downsample_ratio,
+                 batch_size,
+                 eps=1.e-10):
         '''
         Args:
             x  | y | w | h  ([Variables]): the output of yolov3 for encoded x|y|w|h
@@ -55,10 +64,10 @@ class IouLoss(object):
             batch_size (int): training batch size
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
-        x1, y1, x2, y2 = self._bbox_transform(x, y, w, h, anchors,
-            downsample_ratio, batch_size, False)
-        x1g, y1g, x2g, y2g = self._bbox_transform(tx, ty, tw, th,
-            anchors, downsample_ratio, batch_size, True)
+        x1, y1, x2, y2 = self._bbox_transform(
+            x, y, w, h, anchors, downsample_ratio, batch_size, False)
+        x1g, y1g, x2g, y2g = self._bbox_transform(
+            tx, ty, tw, th, anchors, downsample_ratio, batch_size, True)
 
         x2 = fluid.layers.elementwise_max(x1, x2)
         y2 = fluid.layers.elementwise_max(y1, y2)
@@ -76,14 +85,16 @@ class IouLoss(object):
         intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
         intsctk = intsctk * fluid.layers.greater_than(
             xkis2, xkis1) * fluid.layers.greater_than(ykis2, ykis1)
-        unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g) - intsctk + eps
+        unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
+                                                        ) - intsctk + eps
         iouk = intsctk / unionk
         loss_iou = 1. - iouk * iouk
         loss_iou = loss_iou * self._loss_weight
 
         return loss_iou
 
-    def _bbox_transform(self, dcx, dcy, dw, dh, anchors, downsample_ratio, batch_size, is_gt):
+    def _bbox_transform(self, dcx, dcy, dw, dh, anchors, downsample_ratio,
+                        batch_size, is_gt):
         grid_x = int(self._MAX_WI / downsample_ratio)
         grid_y = int(self._MAX_HI / downsample_ratio)
         an_num = len(anchors) // 2
@@ -125,14 +136,16 @@ class IouLoss(object):
         anchor_w_np = np.array(anchor_w_)
         anchor_w_np = np.reshape(anchor_w_np, newshape=[1, an_num, 1, 1])
         anchor_w_np = np.tile(anchor_w_np, reps=[batch_size, 1, grid_y, grid_x])
-        anchor_w_max = self._create_tensor_from_numpy(anchor_w_np.astype(np.float32))
+        anchor_w_max = self._create_tensor_from_numpy(
+            anchor_w_np.astype(np.float32))
         anchor_w = fluid.layers.crop(x=anchor_w_max, shape=dcx)
         anchor_w.stop_gradient = True
         anchor_h_ = [anchors[i] for i in range(0, len(anchors)) if i % 2 == 1]
         anchor_h_np = np.array(anchor_h_)
         anchor_h_np = np.reshape(anchor_h_np, newshape=[1, an_num, 1, 1])
         anchor_h_np = np.tile(anchor_h_np, reps=[batch_size, 1, grid_y, grid_x])
-        anchor_h_max = self._create_tensor_from_numpy(anchor_h_np.astype(np.float32))
+        anchor_h_max = self._create_tensor_from_numpy(
+            anchor_h_np.astype(np.float32))
         anchor_h = fluid.layers.crop(x=anchor_h_max, shape=dcx)
         anchor_h.stop_gradient = True
         # e^tw e^th
@@ -147,7 +160,6 @@ class IouLoss(object):
             exp_dh.stop_gradient = True
             pw.stop_gradient = True
             ph.stop_gradient = True
-        
 
         x1 = cx - 0.5 * pw
         y1 = cy - 0.5 * ph
@@ -169,4 +181,3 @@ class IouLoss(object):
             default_initializer=NumpyArrayInitializer(numpy_array))
         paddle_array.stop_gradient = True
         return paddle_array
-

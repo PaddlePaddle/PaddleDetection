@@ -134,8 +134,7 @@ _DETECTIONBOX = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=43,
-    serialized_end=175,
-)
+    serialized_end=175)
 
 _DETECTIONRESULT = _descriptor.Descriptor(
     name='DetectionResult',
@@ -186,8 +185,7 @@ _DETECTIONRESULT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=177,
-    serialized_end=267,
-)
+    serialized_end=267)
 
 _DETECTIONRESULT.fields_by_name['detection_boxes'].message_type = _DETECTIONBOX
 DESCRIPTOR.message_types_by_name['DetectionBox'] = _DETECTIONBOX
@@ -195,20 +193,22 @@ DESCRIPTOR.message_types_by_name['DetectionResult'] = _DETECTIONRESULT
 
 DetectionBox = _reflection.GeneratedProtocolMessageType(
     'DetectionBox',
-    (_message.Message,),
-    dict(DESCRIPTOR=_DETECTIONBOX,
-         __module__='detection_result_pb2'
-         # @@protoc_insertion_point(class_scope:PaddleSolution.DetectionBox)
-        ))
+    (_message.Message, ),
+    dict(
+        DESCRIPTOR=_DETECTIONBOX,
+        __module__='detection_result_pb2'
+        # @@protoc_insertion_point(class_scope:PaddleSolution.DetectionBox)
+    ))
 _sym_db.RegisterMessage(DetectionBox)
 
 DetectionResult = _reflection.GeneratedProtocolMessageType(
     'DetectionResult',
-    (_message.Message,),
-    dict(DESCRIPTOR=_DETECTIONRESULT,
-         __module__='detection_result_pb2'
-         # @@protoc_insertion_point(class_scope:PaddleSolution.DetectionResult)
-        ))
+    (_message.Message, ),
+    dict(
+        DESCRIPTOR=_DETECTIONRESULT,
+        __module__='detection_result_pb2'
+        # @@protoc_insertion_point(class_scope:PaddleSolution.DetectionResult)
+    ))
 _sym_db.RegisterMessage(DetectionResult)
 
 # @@protoc_insertion_point(module_scope)

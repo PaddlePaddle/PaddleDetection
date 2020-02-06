@@ -64,8 +64,8 @@ class CBResNet(object):
                  variant='b',
                  feature_maps=[2, 3, 4, 5],
                  dcn_v2_stages=[],
-                 nonlocal_stages = [],
-                 repeat_num = 2):
+                 nonlocal_stages=[],
+                 repeat_num=2):
         super(CBResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -102,19 +102,26 @@ class CBResNet(object):
 
         self.nonlocal_stages = nonlocal_stages
         self.nonlocal_mod_cfg = {
-            50  : 2,
-            101 : 5,
-            152 : 8,
-            200 : 12,
+            50: 2,
+            101: 5,
+            152: 8,
+            200: 12,
         }
 
         self.stage_filters = [64, 128, 256, 512]
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
 
-    def _conv_offset(self, input, filter_size, stride, padding, act=None, name=None):
+    def _conv_offset(self,
+                     input,
+                     filter_size,
+                     stride,
+                     padding,
+                     act=None,
+                     name=None):
         out_channel = filter_size * filter_size * 3
-        out = fluid.layers.conv2d(input,
+        out = fluid.layers.conv2d(
+            input,
             num_filters=out_channel,
             filter_size=filter_size,
             stride=stride,
@@ -145,7 +152,8 @@ class CBResNet(object):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 act=None,
-                param_attr=ParamAttr(name=name + "_weights_"+str(self.curr_level)),
+                param_attr=ParamAttr(
+                    name=name + "_weights_" + str(self.curr_level)),
                 bias_attr=False)
         else:
             offset_mask = self._conv_offset(
@@ -155,8 +163,8 @@ class CBResNet(object):
                 padding=(filter_size - 1) // 2,
                 act=None,
                 name=name + "_conv_offset_" + str(self.curr_level))
-            offset_channel = filter_size ** 2 * 2
-            mask_channel = filter_size ** 2
+            offset_channel = filter_size**2 * 2
+            mask_channel = filter_size**2
             offset, mask = fluid.layers.split(
                 input=offset_mask,
                 num_or_sections=[offset_channel, mask_channel],
@@ -173,7 +181,8 @@ class CBResNet(object):
                 groups=groups,
                 deformable_groups=1,
                 im2col_step=1,
-                param_attr=ParamAttr(name=name + "_weights_"+str(self.curr_level)),
+                param_attr=ParamAttr(
+                    name=name + "_weights_" + str(self.curr_level)),
                 bias_attr=False)
 
         bn_name = self.na.fix_conv_norm_name(name)
@@ -181,11 +190,11 @@ class CBResNet(object):
         norm_lr = 0. if self.freeze_norm else 1.
         norm_decay = self.norm_decay
         pattr = ParamAttr(
-            name=bn_name + '_scale_'+str(self.curr_level),
+            name=bn_name + '_scale_' + str(self.curr_level),
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay))
         battr = ParamAttr(
-            name=bn_name + '_offset_'+str(self.curr_level),
+            name=bn_name + '_offset_' + str(self.curr_level),
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay))
 
@@ -194,11 +203,12 @@ class CBResNet(object):
             out = fluid.layers.batch_norm(
                 input=conv,
                 act=act,
-                name=bn_name + '.output.1_'+str(self.curr_level),
+                name=bn_name + '.output.1_' + str(self.curr_level),
                 param_attr=pattr,
                 bias_attr=battr,
-                moving_mean_name=bn_name + '_mean_'+str(self.curr_level),
-                moving_variance_name=bn_name + '_variance_'+str(self.curr_level),
+                moving_mean_name=bn_name + '_mean_' + str(self.curr_level),
+                moving_variance_name=bn_name + '_variance_' +
+                str(self.curr_level),
                 use_global_stats=global_stats)
             scale = fluid.framework._get_var(pattr.name)
             bias = fluid.framework._get_var(battr.name)
@@ -262,7 +272,7 @@ class CBResNet(object):
                 act=act,
                 groups=g,
                 name=_name,
-                dcn=(i==1 and dcn))
+                dcn=(i == 1 and dcn))
         short = self._shortcut(
             input,
             num_filters * expand,
@@ -273,8 +283,7 @@ class CBResNet(object):
         if callable(getattr(self, '_squeeze_excitation', None)):
             residual = self._squeeze_excitation(
                 input=residual, num_channels=num_filters, name='fc' + name)
-        return fluid.layers.elementwise_add(
-            x=short, y=residual, act='relu')
+        return fluid.layers.elementwise_add(x=short, y=residual, act='relu')
 
     def basicblock(self, input, num_filters, stride, is_first, name, dcn=False):
         assert dcn is False, "Not implemented yet."
@@ -313,10 +322,10 @@ class CBResNet(object):
         is_first = False if stage_num != 2 else True
         dcn = True if stage_num in self.dcn_v2_stages else False
 
-
         nonlocal_mod = 1000
         if stage_num in self.nonlocal_stages:
-            nonlocal_mod = self.nonlocal_mod_cfg[self.depth] if stage_num==4 else 2
+            nonlocal_mod = self.nonlocal_mod_cfg[
+                self.depth] if stage_num == 4 else 2
 
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
@@ -335,11 +344,12 @@ class CBResNet(object):
 
             # add non local model
             dim_in = conv.shape[1]
-            nonlocal_name = "nonlocal_conv{}_lvl{}".format( stage_num, self.curr_level )
+            nonlocal_name = "nonlocal_conv{}_lvl{}".format(stage_num,
+                                                           self.curr_level)
             if i % nonlocal_mod == nonlocal_mod - 1:
-                conv = add_space_nonlocal(
-                    conv, dim_in, dim_in,
-                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )
+                conv = add_space_nonlocal(conv, dim_in, dim_in,
+                                          nonlocal_name + '_{}'.format(i),
+                                          int(dim_in / 2))
 
         return conv
 
@@ -349,9 +359,9 @@ class CBResNet(object):
         conv1_name = self.na.fix_c1_stage_name()
 
         if self.variant in ['c', 'd']:
-            conv1_1_name= "conv1_1"
-            conv1_2_name= "conv1_2"
-            conv1_3_name= "conv1_3"
+            conv1_1_name = "conv1_1"
+            conv1_2_name = "conv1_2"
+            conv1_3_name = "conv1_3"
             conv_def = [
                 [out_chan // 2, 3, 2, conv1_1_name],
                 [out_chan // 2, 3, 1, conv1_2_name],
@@ -377,14 +387,15 @@ class CBResNet(object):
             pool_type='max')
         return output
 
-    def connect( self, left, right, name ):
+    def connect(self, left, right, name):
         ch_right = right.shape[1]
-        conv = self._conv_norm( left,
-                   num_filters=ch_right,
-                   filter_size=1,
-                   stride=1,
-                   act="relu",
-                   name=name+"_connect")
+        conv = self._conv_norm(
+            left,
+            num_filters=ch_right,
+            filter_size=1,
+            stride=1,
+            act="relu",
+            name=name + "_connect")
         shape = fluid.layers.shape(right)
         shape_hw = fluid.layers.slice(shape, axes=[0], starts=[2], ends=[4])
         out_shape_ = shape_hw
@@ -414,11 +425,11 @@ class CBResNet(object):
         for num in range(1, self.repeat_num):
             self.curr_level = num
             res = self.c1_stage(input)
-            for i in range( len(res_endpoints) ):
-                res = self.connect( res_endpoints[i], res, "test_c"+str(i+1) )
-                res = self.layer_warp(res, i+2)
+            for i in range(len(res_endpoints)):
+                res = self.connect(res_endpoints[i], res, "test_c" + str(i + 1))
+                res = self.layer_warp(res, i + 2)
                 res_endpoints[i] = res
-                if self.freeze_at >= i+2:
+                if self.freeze_at >= i + 2:
                     res.stop_gradient = True
 
         return OrderedDict([('res{}_sum'.format(self.feature_maps[idx]), feat)
