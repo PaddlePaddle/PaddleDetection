@@ -18,9 +18,9 @@ unittest(){
 trap 'abort' 0
 set -e
 
-# install python dependencies
-if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
+# install travis python dependencies
+if [ -f ".travis/requirements.txt" ]; then
+    pip install -r .travis/requirements.txt
 fi
 export PYTHONPATH=`pwd`:$PYTHONPATH
 
