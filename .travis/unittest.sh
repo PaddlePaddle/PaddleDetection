@@ -3,6 +3,8 @@
 abort(){
     echo "Run unittest failed" 1>&2
     echo "Please check your code" 1>&2
+    echo "  1. you can run unit tests by 'bash .travis/unittest.sh' locally" 1>&2
+    echo "  2. you can add python requirements in .travis/requirements.txt if you use new requirements in unit tests" 1>&2
     exit 1
 }
 
@@ -18,10 +20,11 @@ unittest(){
 trap 'abort' 0
 set -e
 
-# install python dependencies
-if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
+# install travis python dependencies
+if [ -f ".travis/requirements.txt" ]; then
+    pip install -r .travis/requirements.txt
 fi
+
 export PYTHONPATH=`pwd`:$PYTHONPATH
 
 unittest .
