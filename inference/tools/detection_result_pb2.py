@@ -134,7 +134,7 @@ _DETECTIONBOX = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=43,
-    serialized_end=175, )
+    serialized_end=175)
 
 _DETECTIONRESULT = _descriptor.Descriptor(
     name='DetectionResult',
@@ -185,7 +185,7 @@ _DETECTIONRESULT = _descriptor.Descriptor(
     extension_ranges=[],
     oneofs=[],
     serialized_start=177,
-    serialized_end=267, )
+    serialized_end=267)
 
 _DETECTIONRESULT.fields_by_name['detection_boxes'].message_type = _DETECTIONBOX
 DESCRIPTOR.message_types_by_name['DetectionBox'] = _DETECTIONBOX
