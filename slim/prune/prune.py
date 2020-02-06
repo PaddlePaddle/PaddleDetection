@@ -305,8 +305,14 @@ def main():
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
                 box_ap_stats = eval_results(
-                    results, eval_feed, cfg.metric, cfg.num_classes, resolution,
-                    is_bbox_normalized, FLAGS.output_eval, map_type)
+                    results,
+                    cfg.metric,
+                    cfg.num_classes,
+                    resolution,
+                    is_bbox_normalized,
+                    FLAGS.output_eval,
+                    map_type,
+                    dataset=dataset)
 
                 # use tb_paddle to log mAP
                 if FLAGS.use_tb:
