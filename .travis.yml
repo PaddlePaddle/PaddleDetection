@@ -24,7 +24,7 @@ before_install:
 script:
   - exit_code=0
   - .travis/precommit.sh || exit_code=$(( exit_code | $? ))
-  - docker run -i --rm -v "$PWD:/py_unittest" paddlepaddle/paddle:latest /bin/bash -c
+  - docker run -i --rm -v "$PWD:/py_unittest" paddlepaddle/paddle:latest-dev /bin/bash -c
     'cd /py_unittest; sh .travis/unittest.sh' || exit_code=$(( exit_code | $? ))
   - if [ $exit_code -eq 0  ]; then true; else exit 1; fi;
 

@@ -12,7 +12,7 @@ unittest(){
     if [ $? != 0 ]; then
         exit 1
     fi
-    find "./ppdet/modeling" -name 'tests' -type d -print0 | \
+    find "./ppdet" -name 'tests' -type d -print0 | \
         xargs -0 -I{} -n1 bash -c \
         'python -m unittest discover -v -s {}'
 }
@@ -24,6 +24,13 @@ set -e
 if [ -f ".travis/requirements.txt" ]; then
     pip install -r .travis/requirements.txt
 fi
+
+git clone https://github.com/cocodataset/cocoapi.git
+cd cocoapi/PythonAPI
+make install
+python setup.py install --user
+cd ../..
+rm -rf cocoapi
 
 export PYTHONPATH=`pwd`:$PYTHONPATH
 
