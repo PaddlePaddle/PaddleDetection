@@ -20,10 +20,10 @@
 
 对于剪裁任务，原模型的权重不一定对剪裁后的模型训练的重训练有贡献，所以加载原模型的权重不是必需的步骤。
 
-通过`-o weights`指定模型的权重，可以指定url或本地文件系统的路径。如下所示：
+通过`-o pretrain_weights`指定模型的预训练权重，可以指定url或本地文件系统的路径。如下所示：
 
 ```
--o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
+-o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar
 ```
 
 或
@@ -55,7 +55,7 @@ python prune.py \
 python prune.py \
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 --pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
---pruned_ratios="0.2 0.3 0.4"
+--pruned_ratios="0.2,0.3,0.4"
 ```
 
 ## 5. 评估剪裁模型
@@ -66,7 +66,7 @@ python prune.py \
 python eval.py \
 -c ../../configs/yolov3_mobilenet_v1_voc.yml \
 --pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
---pruned_ratios="0.2 0.3 0.4" \
+--pruned_ratios="0.2,0.3,0.4" \
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
 
