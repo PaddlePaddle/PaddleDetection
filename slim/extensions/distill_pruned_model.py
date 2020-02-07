@@ -216,6 +216,9 @@ def main():
     opt.minimize(loss)
 
     exe.run(fluid.default_startup_program())
+    checkpoint.load_params(exe,
+                           fluid.default_main_program(), cfg.pretrain_weights)
+
 
     assert FLAGS.pruned_params is not None, \
         "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
@@ -270,8 +273,6 @@ def main():
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
     compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
-
-    checkpoint.load_params(exe, distill_prog, cfg.pretrain_weights)
 
     # parse eval fetches
     extra_keys = []
