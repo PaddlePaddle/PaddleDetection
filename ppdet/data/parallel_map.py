@@ -70,10 +70,11 @@ class ParallelMap(object):
                         "multi-process reader on Windows.")
             self._use_process = False
         if self._use_process and type(memsize) is str:
-            assert memsize[-1].lower() == 'g', \
-                "invalid param for memsize[%s], should be ended with 'G' or 'g'" % (memsize)
+            assert memsize[-1].lower() in ['g', 'm'], \
+                "invalid param for memsize[%s], should be ended with 'G' or 'g' or 'M' or 'm'" % (memsize)
             gb = memsize[:-1]
-            self._memsize = int(gb) * 1024**3
+            self._memsize = int(gb) * 1024**3 if memsize[-1].lower(
+            ) == 'g' else int(gb) * 1024**2
         self._started = False
         self._source = source
         self._worker = worker
