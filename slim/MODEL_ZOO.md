@@ -12,7 +12,7 @@
 
 ### 训练策略
 
-- 剪裁模型训练时使用[PaddleDetection模型库](../../docs/MODEL_ZOO_cn.md)发布的模型权重作为预训练权重。
+- 剪裁模型训练时使用[PaddleDetection模型库](../docs/MODEL_ZOO_cn.md)发布的模型权重作为预训练权重。
 - 剪裁训练使用模型默认配置，即除`pretrained_weights`外配置不变。
 - 剪裁模型全部为基于敏感度的卷积通道剪裁。
 - YOLOv3模型主要剪裁`yolo_head`部分，即剪裁参数如下。
@@ -58,7 +58,7 @@
 
 ### 蒸馏通道剪裁模型
 
-可通过高精度模型蒸馏通道剪裁后模型的方式，训练方法及相关示例见[蒸馏通道剪裁模型](./extensions/distill_pruned_model/distill_pruned_model.ipynb)。
+可通过高精度模型蒸馏通道剪裁后模型的方式，训练方法及相关示例见[蒸馏通道剪裁模型](./extensions/distill_pruned_model/distill_pruned_model_demo.ipynb)。
 
 COCO数据集上蒸馏通道剪裁模型库如下。
 
@@ -82,7 +82,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 
 ### 训练策略
 
-- 蒸馏模型训练时teacher模型使用[PaddleDetection模型库](../../docs/MODEL_ZOO_cn.md)发布的模型权重作为预训练权重。
+- 蒸馏模型训练时teacher模型使用[PaddleDetection模型库](../docs/MODEL_ZOO_cn.md)发布的模型权重作为预训练权重。
 - 蒸馏模型训练时student模型使用backbone的预训练权重
 
 ### YOLOv3 on COCO
