@@ -10,9 +10,9 @@
 - [检测库模型通道剪裁文档](../../prune/README.md)
 - [检测库模型蒸馏文档](../../distillation/README.md)
 
-请确保已正确[安装PaddleDetection](../../docs/tutorials/INSTALL_cn.md)及其依赖。
+请确保已正确[安装PaddleDetection](../../../docs/tutorials/INSTALL_cn.md)及其依赖。
 
-已发布蒸馏通道剪裁模型见[压缩模型库](../MODEL_ZOO.md)
+已发布蒸馏通道剪裁模型见[压缩模型库](../../MODEL_ZOO.md)
 
 蒸馏通道剪裁模型示例见[Ipython notebook示例](./distill_pruned_model_demo.ipynb)
 
