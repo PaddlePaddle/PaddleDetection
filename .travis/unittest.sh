@@ -26,7 +26,7 @@ if [ -f ".travis/requirements.txt" ]; then
 fi
 
 # install pycocotools
-if [ -n `pip list | grep pycocotools` ]; then
+if [ `pip list | grep pycocotools | wc -l` -eq 0 ]; then
   # install git if needed
   if [ -n  `which git` ]; then
     apt-get update
