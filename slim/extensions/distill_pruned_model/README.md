@@ -41,7 +41,9 @@
 ## 4. 启动蒸馏剪裁任务
 
 使用`distill_pruned_model.py`启动蒸馏剪裁任务时，通过`--pruned_params`选项指定待剪裁的参数名称列表，参数名之间用空格分隔，通过`--pruned_ratios`选项指定各个参数被裁掉的比例。 获取待裁剪模型参数名称方法可参考[通道剪裁模教程](../../prune/README.md)。
+
 通过`-t`参数指定teacher模型配置文件，`--teacher_pretrained`指定teacher模型权重，更多关于蒸馏模型设置可参考[模型蒸馏文档](../../distillation/README.md)。
+
 蒸馏通道检测模型脚本目前只支持使用YOLOv3细粒度损失训练，即训练过程中须指定`-o use_fine_grained_loss=true`。
 
 ```
