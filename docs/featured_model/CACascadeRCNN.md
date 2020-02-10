@@ -38,7 +38,7 @@ python tools/train.py -c configs/obj365/cascade_rcnn_dcnv2_se154_vd_fpn_gn.yml
 
 |        模型         | 验证集 mAP |                           下载链接                           |
 | :-----------------: | :--------: | :----------------------------------------------------------: |
-| CACascadeRCNN SE154 |    31.7    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas_obj365.tar) |
+| CACascadeRCNN SE154 |    31.6    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas_obj365.tar) |
 
 ## 模型效果
 
