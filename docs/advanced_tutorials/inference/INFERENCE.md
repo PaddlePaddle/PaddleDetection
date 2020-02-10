@@ -23,7 +23,7 @@ python tools/cpp_infer.py --model_path=inference_model/faster_rcnn_r50_1x/ --con
 **注意**
 
 1. 设置shape时必须保持与模型导出时shape大小一致；
-2. `min_subgraph_size`的设置与模型arch相关，对部分arch需要调大该参数，一般设置为40适用于所有模型。适当的调小`min_subgraph_size`会对预测有小幅加速效果，例如YOLO中该参数可设置为3。
+2. `min_subgraph_size`的设置与模型arch相关，对部分arch需要调大该参数，一般设置为40适用于所有模型。适当的调小`min_subgraph_size`会对预测有加速效果，例如YOLO中该参数可设置为3。
 
 ## Paddle环境搭建
 
