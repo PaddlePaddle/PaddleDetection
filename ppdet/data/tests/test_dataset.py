@@ -109,7 +109,7 @@ class TestDataset(unittest.TestCase):
             return 2 * sample
 
         test_worker = ParallelMap(
-            mem_sc, _worker, worker_num=2, use_process=True)
+            mem_sc, _worker, worker_num=2, use_process=True, memsize='2M')
 
         ct = 0
         for i, d in enumerate(test_worker):
@@ -131,7 +131,7 @@ class TestDataset(unittest.TestCase):
             return 2 * sample
 
         test_worker = ParallelMap(
-            mem_sc, _worker, worker_num=2, use_process=True)
+            mem_sc, _worker, worker_num=2, use_process=True, memsize='2M')
 
         ct = 0
         for i, d in enumerate(test_worker):
