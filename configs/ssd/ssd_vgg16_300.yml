@@ -100,7 +100,7 @@ TrainReader:
 EvalReader:
   inputs_def:
     image_shape: [3, 300, 300]
-    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id', 'is_difficult']
+    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id']
   dataset:
     !COCODataSet
     image_dir: val2017
