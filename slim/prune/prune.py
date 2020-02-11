@@ -171,10 +171,7 @@ def main():
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
     start_iter = 0
-    if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
-        start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights:
+    if cfg.pretrain_weights:
         checkpoint.load_params(exe, train_prog, cfg.pretrain_weights)
 
     pruned_params = FLAGS.pruned_params
@@ -219,6 +216,10 @@ def main():
             float(base_flops - pruned_flops) / base_flops, base_flops,
             pruned_flops))
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+
+    if FLAGS.resume_checkpoint:
+        checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
+        start_iter = checkpoint.global_step()
 
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
