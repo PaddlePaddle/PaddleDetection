@@ -8,7 +8,7 @@ save_dir: output
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_coco_pretrained.tar
 weights: output/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas/model_final
 metric: COCO
-num_classes: 501
+num_classes: 366
 
 CascadeRCNN:
   backbone: SENet
