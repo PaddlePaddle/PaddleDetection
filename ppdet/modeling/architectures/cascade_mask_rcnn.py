@@ -411,7 +411,7 @@ class CascadeMaskRCNN(object):
                         'lod_level': 1
                     }
                 fields += box_fields
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],

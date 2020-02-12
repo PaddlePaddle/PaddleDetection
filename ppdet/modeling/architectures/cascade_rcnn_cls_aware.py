@@ -195,7 +195,7 @@ class CascadeRCNNClsAware(object):
                      use_dataloader=True,
                      iterable=False):
         inputs_def = self._inputs_def(image_shape)
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],
