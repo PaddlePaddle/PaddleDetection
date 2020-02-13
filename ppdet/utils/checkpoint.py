@@ -116,8 +116,8 @@ def load_params(exe, prog, path, ignore_params=[]):
     if ignore_params:
         all_var_names = [var.name for var in prog.list_vars()]
         ignore_list = filter(
-            lambda var: any([re.match(name, var)
-                             for name in ignore_params]), all_var_names)
+            lambda var: any([re.match(name, var) for name in ignore_params]),
+            all_var_names)
         ignore_list = list(ignore_list)
 
     if os.path.isdir(path):
@@ -228,8 +228,8 @@ def load_and_fusebn(exe, prog, path):
         if state:
             return v in state and m in state
         else:
-            return (os.path.exists(os.path.join(path, m))
-                    and os.path.exists(os.path.join(path, v)))
+            return (os.path.exists(os.path.join(path, m)) and
+                    os.path.exists(os.path.join(path, v)))
 
     has_mean_bias = True
 
