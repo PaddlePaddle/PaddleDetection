@@ -312,7 +312,7 @@ class CascadeRCNN(object):
             fields += ms_fields
             self.im_info_names = ['image', 'im_info'] + ms_fields
 
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],
