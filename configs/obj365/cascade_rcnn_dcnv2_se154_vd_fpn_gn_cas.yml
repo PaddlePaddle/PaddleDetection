@@ -8,10 +8,10 @@ save_dir: output
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_coco_pretrained.tar
 weights: output/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas/model_final
 metric: COCO
-num_classes: 501
+num_classes: 366
 
 CascadeRCNN:
-  backbone: ResNet
+  backbone: SENet
   fpn: FPN
   rpn_head: FPNRPNHead
   roi_extractor: FPNRoIAlign
@@ -122,7 +122,7 @@ TrainReader:
     image_dir: train
   sample_transforms:
   - !DecodeImage
-    to_rgb: False
+    to_rgb: True
   - !RandomFlipImage
     is_mask_flip: true
     is_normalized: false
@@ -197,7 +197,7 @@ EvalReader:
     image_dir: val
   sample_transforms:
   - !DecodeImage
-    to_rgb: False
+    to_rgb: True
   - !NormalizeImage
     is_channel_first: false
     is_scale: False
@@ -230,7 +230,7 @@ TestReader:
     anno_path: dataset/obj365/annotations/val.json
   sample_transforms:
   - !DecodeImage
-    to_rgb: False
+    to_rgb: True
   - !NormalizeImage
     is_channel_first: false
     is_scale: False

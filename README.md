@@ -7,7 +7,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 **目前检测库下模型均要求使用PaddlePaddle 1.6及以上版本或适当的develop版本。**
 
 <div align="center">
-  <img src="demo/output/000000570688.jpg" />
+  <img src="docs/images/000000570688.jpg" />
 </div>
 
 
@@ -52,87 +52,49 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 **注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
 
+## 文档教程
 
-## 使用教程
+**最新动态：** 已发布文档教程：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
 
-- [安装说明](docs/INSTALL_cn.md)
-- [快速开始](docs/QUICK_STARTED_cn.md)
-- [训练、评估流程](docs/GETTING_STARTED_cn.md)
-- [数据预处理及自定义数据集](docs/DATA_cn.md)
-- [配置模块设计和介绍](docs/CONFIG_cn.md)
-- [详细的配置信息和参数说明示例](docs/config_example/)
+### 入门教程
+
+- [安装说明](docs/tutorials/INSTALL_cn.md)
+- [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
+- [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
+
+### 进阶教程
+- [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
+- [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
+- [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
-- [迁移学习教程](docs/TRANSFER_LEARNING_cn.md)
+- [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
+- [模型压缩](slim)
+    - [量化训练压缩示例](slim/quantization)
+    - [剪枝压缩示例](slim/prune)
+    - [蒸馏压缩示例](slim/distillation)
+    - [神经网络搜索示例](slim/nas)
+- [推理部署](inference)
+    - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
+    - [模型预测](docs/advanced_tutorials/inference/INFERENCE.md)
+    - [C++推理部署](inference/README.md)
+    - [推理Benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
 
 ## 模型库
 
 - [模型库](docs/MODEL_ZOO_cn.md)
 - [人脸检测模型](configs/face_detection/README.md)
 - [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
-- [YOLOv3增强模型](docs/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
-- [Objects365 2019 Challenge夺冠模型](docs/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
-- [Open Images V5和Objects365数据集模型](docs/OIDV5_BASELINE_MODEL.md)
+- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到41.4%，原论文精度为33.0%，同时预测速度也得到提升
+- [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
+- [Open Images V5和Objects365数据集模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
 
 
-## 模型压缩
-- [量化训练压缩示例](slim/quantization)
-- [剪枝压缩示例](slim/prune)
-
-## 推理部署
-
-- [模型导出教程](docs/EXPORT_MODEL.md)
-- [C++推理部署](inference/README.md)
-
-## Benchmark
-
-- [推理Benchmark](docs/BENCHMARK_INFER_cn.md)
-
-
+## 许可证书
+本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-
-### 12/2019
-- 增加Res2Net模型。
-- 增加HRNet模型。
-- 增加GIOU loss和DIOU loss。
-
-
-### 21/11/2019
-- 增加CascadeClsAware RCNN模型。
-- 增加CBNet，ResNet200和Non-local模型。
-- 增加SoftNMS。
-- 增加Open Image V5数据集和Objects365数据集模型。
-
-### 10/2019
-- 增加增强版YOLOv3模型，精度高达41.4%。
-- 增加人脸检测模型BlazeFace、Faceboxes。
-- 丰富基于COCO的模型，精度高达51.9%。
-- 增加Objects365 2019 Challenge上夺冠的最佳单模型之一CACascade-RCNN。
-- 增加行人检测和车辆检测预训练模型。
-- 支持FP16训练。
-- 增加跨平台的C++推理部署方案。
-- 增加模型压缩示例。
-
-
-### 2/9/2019
-- 增加GroupNorm模型。
-- 增加CascadeRCNN+Mask模型。
-
-#### 5/8/2019
-- 增加Modulated Deformable Convolution系列模型。
-
-#### 29/7/2019
-
-- 增加检测库中文文档
-- 修复R-CNN系列模型训练同时进行评估的问题
-- 新增ResNext101-vd + Mask R-CNN + FPN模型
-- 新增基于VOC数据集的YOLOv3模型
-
-#### 3/7/2019
-
-- 首次发布PaddleDetection检测库和检测模型库
-- 模型包括：Faster R-CNN, Mask R-CNN, Faster R-CNN+FPN, Mask
-  R-CNN+FPN, Cascade-Faster-RCNN+FPN, RetinaNet, YOLOv3, 和SSD.
+v0.2.0版本已经在`01/2020`发布，增加多个模型，升级数据处理模块，拆分YOLOv3的loss，修复已知诸多bug等，
+详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
 

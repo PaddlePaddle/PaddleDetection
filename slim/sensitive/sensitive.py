@@ -35,7 +35,6 @@ set_paddle_flags(
     FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
 )
 
-
 from paddle import fluid
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
@@ -85,11 +84,16 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     if FLAGS.print_params:
-        print("-------------------------All parameters in current graph----------------------")
+        print(
+            "-------------------------All parameters in current graph----------------------"
+        )
         for block in eval_prog.blocks:
             for param in block.all_parameters():
-                print("parameter name: {}\tshape: {}".format(param.name, param.shape))
-        print("------------------------------------------------------------------------------")
+                print("parameter name: {}\tshape: {}".format(param.name,
+                                                             param.shape))
+        print(
+            "------------------------------------------------------------------------------"
+        )
         return
 
     eval_reader = create_reader(cfg.EvalReader)
@@ -104,7 +108,7 @@ def main():
     if cfg.metric == 'WIDERFACE':
         extra_keys = ['im_id', 'im_shape', 'gt_box']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
-                                                         extra_keys)
+                                                     extra_keys)
 
     exe.run(startup_prog)
 
@@ -133,16 +137,16 @@ def main():
 
         compiled_eval_prog = fluid.compiler.CompiledProgram(program)
 
-        results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
+        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
+                           eval_values, eval_cls)
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
-            results, 
-            cfg.metric, 
-            cfg.num_classes, 
+            results,
+            cfg.metric,
+            cfg.num_classes,
             resolution,
             is_bbox_normalized,
             FLAGS.output_eval,
@@ -151,18 +155,21 @@ def main():
         return box_ap_stats[0]
 
     pruned_params = FLAGS.pruned_params
-    
-    assert (FLAGS.pruned_params is not None), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+
+    assert (
+        FLAGS.pruned_params is not None
+    ), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
     pruned_params = FLAGS.pruned_params.strip().split(",")
     logger.info("pruned params: {}".format(pruned_params))
     pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(" ")]
     logger.info("pruned ratios: {}".format(pruned_ratios))
-    sensitivity(eval_prog,
-                place,
-                pruned_params,
-                test,
-                sensitivities_file=FLAGS.sensitivities_file,
-                pruned_ratios=pruned_ratios)
+    sensitivity(
+        eval_prog,
+        place,
+        pruned_params,
+        test,
+        sensitivities_file=FLAGS.sensitivities_file,
+        pruned_ratios=pruned_ratios)
 
 
 if __name__ == '__main__':
@@ -195,7 +202,8 @@ if __name__ == '__main__':
         "--pruned_ratios",
         default="0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9",
         type=str,
-        help="The ratios pruned iteratively for each parameter when calculating sensitivities.")
+        help="The ratios pruned iteratively for each parameter when calculating sensitivities."
+    )
     parser.add_argument(
         "-P",
         "--print_params",

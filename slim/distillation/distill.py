@@ -36,6 +36,92 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
+def l2_distill(pairs, weight):
+    """
+    Add l2 distillation losses composed of multi pairs of feature maps,
+    each pair of feature maps is the input of teacher and student's
+    yolov3_loss respectively
+    """
+    loss = []
+    for pair in pairs:
+        loss.append(l2_loss(pair[0], pair[1]))
+    loss = fluid.layers.sum(loss)
+    weighted_loss = loss * weight
+    return weighted_loss
+
+
+def split_distill(split_output_names, weight):
+    """
+    Add fine grained distillation losses.
+    Each loss is composed by distill_reg_loss, distill_cls_loss and
+    distill_obj_loss
+    """
+    student_var = []
+    for name in split_output_names:
+        student_var.append(fluid.default_main_program().global_block().var(
+            name))
+    s_x0, s_y0, s_w0, s_h0, s_obj0, s_cls0 = student_var[0:6]
+    s_x1, s_y1, s_w1, s_h1, s_obj1, s_cls1 = student_var[6:12]
+    s_x2, s_y2, s_w2, s_h2, s_obj2, s_cls2 = student_var[12:18]
+    teacher_var = []
+    for name in split_output_names:
+        teacher_var.append(fluid.default_main_program().global_block().var(
+            'teacher_' + name))
+    t_x0, t_y0, t_w0, t_h0, t_obj0, t_cls0 = teacher_var[0:6]
+    t_x1, t_y1, t_w1, t_h1, t_obj1, t_cls1 = teacher_var[6:12]
+    t_x2, t_y2, t_w2, t_h2, t_obj2, t_cls2 = teacher_var[12:18]
+
+    def obj_weighted_reg(sx, sy, sw, sh, tx, ty, tw, th, tobj):
+        loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
+            sx, fluid.layers.sigmoid(tx))
+        loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
+            sy, fluid.layers.sigmoid(ty))
+        loss_w = fluid.layers.abs(sw - tw)
+        loss_h = fluid.layers.abs(sh - th)
+        loss = fluid.layers.sum([loss_x, loss_y, loss_w, loss_h])
+        weighted_loss = fluid.layers.reduce_mean(loss *
+                                                 fluid.layers.sigmoid(tobj))
+        return weighted_loss
+
+    def obj_weighted_cls(scls, tcls, tobj):
+        loss = fluid.layers.sigmoid_cross_entropy_with_logits(
+            scls, fluid.layers.sigmoid(tcls))
+        weighted_loss = fluid.layers.reduce_mean(
+            fluid.layers.elementwise_mul(
+                loss, fluid.layers.sigmoid(tobj), axis=0))
+        return weighted_loss
+
+    def obj_loss(sobj, tobj):
+        obj_mask = fluid.layers.cast(tobj > 0., dtype="float32")
+        obj_mask.stop_gradient = True
+        loss = fluid.layers.reduce_mean(
+            fluid.layers.sigmoid_cross_entropy_with_logits(sobj, obj_mask))
+        return loss
+
+    distill_reg_loss0 = obj_weighted_reg(s_x0, s_y0, s_w0, s_h0, t_x0, t_y0,
+                                         t_w0, t_h0, t_obj0)
+    distill_reg_loss1 = obj_weighted_reg(s_x1, s_y1, s_w1, s_h1, t_x1, t_y1,
+                                         t_w1, t_h1, t_obj1)
+    distill_reg_loss2 = obj_weighted_reg(s_x2, s_y2, s_w2, s_h2, t_x2, t_y2,
+                                         t_w2, t_h2, t_obj2)
+    distill_reg_loss = fluid.layers.sum(
+        [distill_reg_loss0, distill_reg_loss1, distill_reg_loss2])
+
+    distill_cls_loss0 = obj_weighted_cls(s_cls0, t_cls0, t_obj0)
+    distill_cls_loss1 = obj_weighted_cls(s_cls1, t_cls1, t_obj1)
+    distill_cls_loss2 = obj_weighted_cls(s_cls2, t_cls2, t_obj2)
+    distill_cls_loss = fluid.layers.sum(
+        [distill_cls_loss0, distill_cls_loss1, distill_cls_loss2])
+
+    distill_obj_loss0 = obj_loss(s_obj0, t_obj0)
+    distill_obj_loss1 = obj_loss(s_obj1, t_obj1)
+    distill_obj_loss2 = obj_loss(s_obj2, t_obj2)
+    distill_obj_loss = fluid.layers.sum(
+        [distill_obj_loss0, distill_obj_loss1, distill_obj_loss2])
+    loss = (distill_reg_loss + distill_cls_loss + distill_obj_loss) * weight
+    return loss
+
+
 def main():
     env = os.environ
     cfg = load_config(FLAGS.config)
@@ -69,6 +155,12 @@ def main():
     train_feed_vars, train_loader = model.build_inputs(**inputs_def)
     train_fetches = model.train(train_feed_vars)
     loss = train_fetches['loss']
+
+    start_iter = 0
+    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
+                                 devices_num, cfg)
+    train_loader.set_sample_list_generator(train_reader, place)
+
     # get all student variables
     student_vars = []
     for v in fluid.default_main_program().list_vars():
@@ -102,6 +194,7 @@ def main():
                                                      extra_keys)
 
     teacher_cfg = load_config(FLAGS.teacher_config)
+    merge_config(FLAGS.opt)
     teacher_arch = teacher_cfg.architecture
     teacher_program = fluid.Program()
     teacher_startup_program = fluid.Program()
@@ -135,33 +228,34 @@ def main():
 
     cfg = load_config(FLAGS.config)
     data_name_map = {
+        'target0': 'target0',
+        'target1': 'target1',
+        'target2': 'target2',
         'image': 'image',
         'gt_bbox': 'gt_bbox',
         'gt_class': 'gt_class',
         'gt_score': 'gt_score'
     }
-    distill_prog = merge(teacher_program,
-                         fluid.default_main_program(), data_name_map, place)
+    merge(teacher_program, fluid.default_main_program(), data_name_map, place)
 
-    distill_weight = 100
+    yolo_output_names = [
+        'strided_slice_0.tmp_0', 'strided_slice_1.tmp_0',
+        'strided_slice_2.tmp_0', 'strided_slice_3.tmp_0',
+        'strided_slice_4.tmp_0', 'transpose_0.tmp_0', 'strided_slice_5.tmp_0',
+        'strided_slice_6.tmp_0', 'strided_slice_7.tmp_0',
+        'strided_slice_8.tmp_0', 'strided_slice_9.tmp_0', 'transpose_2.tmp_0',
+        'strided_slice_10.tmp_0', 'strided_slice_11.tmp_0',
+        'strided_slice_12.tmp_0', 'strided_slice_13.tmp_0',
+        'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
+    ]
+
     distill_pairs = [['teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1'],
                      ['teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1'],
                      ['teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1']]
 
-    def l2_distill(pairs, weight):
-        """
-        Add l2 distillation losses composed of multi pairs of feature maps,
-        each pair of feature maps is the input of teacher and student's
-        yolov3_loss respectively
-        """
-        loss = []
-        for pair in pairs:
-            loss.append(l2_loss(pair[0], pair[1]))
-        loss = fluid.layers.sum(loss)
-        weighted_loss = loss * weight
-        return weighted_loss
-
-    distill_loss = l2_distill(distill_pairs, distill_weight)
+    distill_loss = l2_distill(
+        distill_pairs, 100) if not cfg.use_fine_grained_loss else split_distill(
+            yolo_output_names, 1000)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
     optim_builder = create('OptimizerBuilder')
@@ -170,13 +264,28 @@ def main():
     opt.minimize(loss)
 
     exe.run(fluid.default_startup_program())
-    checkpoint.load_params(exe,
-                           fluid.default_main_program(), cfg.pretrain_weights)
+    fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
+    ignore_params = cfg.finetune_exclude_pretrained_params \
+                 if 'finetune_exclude_pretrained_params' in cfg else []
+    if FLAGS.resume_checkpoint:
+        checkpoint.load_checkpoint(exe,
+                                   fluid.default_main_program(),
+                                   FLAGS.resume_checkpoint)
+        start_iter = checkpoint.global_step()
+    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
+        checkpoint.load_and_fusebn(exe,
+                                   fluid.default_main_program(),
+                                   cfg.pretrain_weights)
+    elif cfg.pretrain_weights:
+        checkpoint.load_params(
+            exe,
+            fluid.default_main_program(),
+            cfg.pretrain_weights,
+            ignore_params=ignore_params)
 
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_reduce_ops = False
     build_strategy.fuse_all_optimizer_ops = False
-    build_strategy.fuse_elewise_add_act_ops = True
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
@@ -188,32 +297,14 @@ def main():
     # local execution scopes can be deleted after each iteration.
     exec_strategy.num_iteration_per_drop_scope = 1
 
-    parallel_main = fluid.CompiledProgram(distill_prog).with_data_parallel(
+    parallel_main = fluid.CompiledProgram(fluid.default_main_program(
+    )).with_data_parallel(
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
 
     compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
-    fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
-    ignore_params = cfg.finetune_exclude_pretrained_params \
-                 if 'finetune_exclude_pretrained_params' in cfg else []
-    start_iter = 0
-    if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe, distill_prog, FLAGS.resume_checkpoint)
-        start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe, distill_prog, cfg.pretrain_weights)
-    elif cfg.pretrain_weights:
-        checkpoint.load_params(
-            exe,
-            distill_prog,
-            cfg.pretrain_weights,
-            ignore_params=ignore_params)
-
-    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
-                                 devices_num, cfg)
-    train_loader.set_sample_list_generator(train_reader, place)
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
     if hasattr(model, 'is_bbox_normalized') and \
@@ -240,7 +331,8 @@ def main():
         if step_id % cfg.snapshot_iter == 0 and step_id != 0 or step_id == cfg.max_iters - 1:
             save_name = str(
                 step_id) if step_id != cfg.max_iters - 1 else "model_final"
-            checkpoint.save(exe, distill_prog,
+            checkpoint.save(exe,
+                            fluid.default_main_program(),
                             os.path.join(save_dir, save_name))
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
@@ -254,7 +346,8 @@ def main():
             if box_ap_stats[0] > best_box_ap_list[0]:
                 best_box_ap_list[0] = box_ap_stats[0]
                 best_box_ap_list[1] = step_id
-                checkpoint.save(exe, distill_prog,
+                checkpoint.save(exe,
+                                fluid.default_main_program(),
                                 os.path.join("./", "best_model"))
             logger.info("Best test box ap: {}, in step: {}".format(
                 best_box_ap_list[0], best_box_ap_list[1]))

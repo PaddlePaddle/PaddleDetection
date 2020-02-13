@@ -219,29 +219,33 @@ class CascadeBBoxHead(object):
             return {'bbox': box_out, 'score': boxes_cls_prob_mean}
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
-    
-    def get_prediction_cls_aware(self,
-                       im_info,
-                       im_shape,
-                       cascade_cls_prob,
-                       cascade_decoded_box,
-                       cascade_bbox_reg_weights):
+
+    def get_prediction_cls_aware(self, im_info, im_shape, cascade_cls_prob,
+                                 cascade_decoded_box, cascade_bbox_reg_weights):
         '''
         get_prediction_cls_aware: predict bbox for each class
         '''
         cascade_num_stage = 3
         cascade_eval_weight = [0.2, 0.3, 0.5]
         # merge 3 stages results
-        sum_cascade_cls_prob = sum([ prob*cascade_eval_weight[idx] for idx, prob in enumerate(cascade_cls_prob) ])
-        sum_cascade_decoded_box = sum([ bbox*cascade_eval_weight[idx] for idx, bbox in enumerate(cascade_decoded_box) ])
+        sum_cascade_cls_prob = sum([
+            prob * cascade_eval_weight[idx]
+            for idx, prob in enumerate(cascade_cls_prob)
+        ])
+        sum_cascade_decoded_box = sum([
+            bbox * cascade_eval_weight[idx]
+            for idx, bbox in enumerate(cascade_decoded_box)
+        ])
         self.im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
-        im_scale_lod = fluid.layers.sequence_expand(self.im_scale, sum_cascade_decoded_box)
-        
+        im_scale_lod = fluid.layers.sequence_expand(self.im_scale,
+                                                    sum_cascade_decoded_box)
+
         sum_cascade_decoded_box = sum_cascade_decoded_box / im_scale_lod
-        
+
         decoded_bbox = sum_cascade_decoded_box
-        decoded_bbox = fluid.layers.reshape(decoded_bbox, shape=(-1, self.num_classes, 4) )
-        
+        decoded_bbox = fluid.layers.reshape(
+            decoded_bbox, shape=(-1, self.num_classes, 4))
+
         box_out = fluid.layers.box_clip(input=decoded_bbox, im_info=im_shape)
         pred_result = self.nms(bboxes=box_out, scores=sum_cascade_cls_prob)
         return {"bbox": pred_result}

@@ -1,6 +1,6 @@
 >运行该示例前请安装Paddle1.6或更高版本和PaddleSlim
 
-# 检测模型量化压缩示例
+# 模型量化压缩教程
 
 ## 概述
 
@@ -10,6 +10,7 @@
 - [检测模型的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
 
+已发布量化模型见[压缩模型库](../MODEL_ZOO.md)
 
 ## 安装PaddleSlim
 可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim。
@@ -17,7 +18,7 @@
 
 ## 训练
 
-根据 [tools/train.py](../../tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
+根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
 
 ### 定义量化配置
 config = {
@@ -56,7 +57,7 @@ step2: 开始训练
 请在PaddleDetection根目录下运行。
 
 ```
-python slim/quantization/train.py \
+python slim/quantization/train.py --not_quant_pattern yolo_output \
     --eval \
     -c ./configs/yolov3_mobilenet_v1.yml \
     -o max_iters=30000 \
@@ -123,7 +124,7 @@ checkpoint.save(exe, eval_prog, os.path.join(save_dir, save_name))
 评估命令：
 
 ```
-python slim/quantization/eval.py -c ./configs/yolov3_mobilenet_v1.yml \
+python slim/quantization/eval.py --not_quant_pattern yolo_output  -c ./configs/yolov3_mobilenet_v1.yml \
 -o weights=./output/mobilenetv1/yolov3_mobilenet_v1/best_model
 ```
 
@@ -138,7 +139,7 @@ python slim/quantization/eval.py -c ./configs/yolov3_mobilenet_v1.yml \
 导出模型命令：
 
 ```
- python slim/quantization/export_model.py -c ./configs/yolov3_mobilenet_v1.yml --output_dir ${save path} \
+ python slim/quantization/export_model.py --not_quant_pattern yolo_output  -c ./configs/yolov3_mobilenet_v1.yml --output_dir ${save path} \
 -o weights=./output/mobilenetv1/yolov3_mobilenet_v1/best_model
 ```
 ## 预测
@@ -149,7 +150,7 @@ python slim/quantization/eval.py -c ./configs/yolov3_mobilenet_v1.yml \
 
 运行命令示例:
 ```
-python slim/quantization/infer.py \
+python slim/quantization/infer.py --not_quant_pattern yolo_output \
 -c ./configs/yolov3_mobilenet_v1.yml \
 --infer_dir ./demo \
 -o weights=./output/mobilenetv1/yolov3_mobilenet_v1/best_model
@@ -160,7 +161,28 @@ python slim/quantization/infer.py \
 导出模型步骤中导出的FP32模型可使用PaddleLite进行加载预测，可参见教程[Paddle-Lite如何加载运行量化模型](https://github.com/PaddlePaddle/Paddle-Lite/wiki/model_quantization)
 
 
-## 量化结果
+## 量化模型
 
+### 训练策略
+
+- 量化策略`post`为使用离线量化得到的模型，`aware`为在线量化训练得到的模型。
+
+### YOLOv3 on COCO
+
+| 骨架网络         | 预训练权重 | 量化策略 | 输入尺寸 | Box AP  |                           下载                          |
+| :----------------| :--------: | :------: | :------: |:------: | :-----------------------------------------------------: |
+| MobileNetV1      |  ImageNet  |   post   |   608    |  27.9   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
+| MobileNetV1      |  ImageNet  |   post   |   416    |  28.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
+| MobileNetV1      |  ImageNet  |   post   |   320    |  26.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   608    |  28.1   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   416    |  28.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   320    |  25.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
+| ResNet34         |  ImageNet  |   post   |   608    |  35.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_post.tar) |
+| ResNet34         |  ImageNet  |  aware   |   608    |  35.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_aware.tar) |
+| ResNet34         |  ImageNet  |  aware   |   416    |  33.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_aware.tar) |
+| ResNet34         |  ImageNet  |  aware   |   320    |  30.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_aware.tar) |
+| R50vd-dcn        | object365  |  aware   |   608    |  40.6   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r50vd_dcn_obj365_pretrained_coco_quant_aware.tar) |
+| R50vd-dcn        | object365  |  aware   |   416    |  37.5   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r50vd_dcn_obj365_pretrained_coco_quant_aware.tar) |
+| R50vd-dcn        | object365  |  aware   |   320    |  34.1   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r50vd_dcn_obj365_pretrained_coco_quant_aware.tar) |
 
 ## FAQ

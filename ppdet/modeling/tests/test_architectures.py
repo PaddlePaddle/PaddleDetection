@@ -23,7 +23,6 @@ import paddle.fluid as fluid
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
 
 
 class TestFasterRCNN(unittest.TestCase):
