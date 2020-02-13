@@ -40,6 +40,7 @@ optimized network structure.
 | BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
 | BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
 | BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
+| BlazeFace    | NAS1     | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar)
 | FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
 | FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
 
@@ -275,6 +276,7 @@ regression parameters of a bounding box as a weighted mean between the overlappi
 - Lite: Replace 5x5 conv with 3x3 conv, fewer network layers and conv channels.
 - NAS: use `Neural Architecture Search` algorithm to optimized network structure,
 less network layer and conv channel number than `Lite`.
+- NAS1: this version of model architecture searched based on blazeface-NAS by the SANAS in PaddleSlim, the average precision is 3% higher than blazeface-NAS, the latency is only 5% higher than blazeface-NAS on chip 855.
 
 ### FaceBoxes
 **Introduction:**  
