@@ -79,6 +79,19 @@ def _get_weight_path(path):
     return path
 
 
+def _load_state(path):
+    if os.path.exists(path + '.pdopt'):
+        # XXX another hack to ignore the optimizer state
+        tmp = tempfile.mkdtemp()
+        dst = os.path.join(tmp, os.path.basename(os.path.normpath(path)))
+        shutil.copy(path + '.pdparams', dst + '.pdparams')
+        state = fluid.io.load_program_state(dst)
+        shutil.rmtree(tmp)
+    else:
+        state = fluid.io.load_program_state(path)
+    return state
+
+
 def load_params(exe, prog, path, ignore_params=[]):
     """
     Load model from the given path.
@@ -120,15 +133,7 @@ def load_params(exe, prog, path, ignore_params=[]):
         shutil.rmtree(tmp)
         return
 
-    if os.path.exists(path + '.pdopt'):
-        # XXX another hack to ignore the optimizer state
-        tmp = tempfile.mkdtemp()
-        dst = os.path.join(tmp, os.path.basename(os.path.normpath(path)))
-        shutil.copy(path + '.pdparams', dst + '.pdparams')
-        state = fluid.io.load_program_state(dst)
-        shutil.rmtree(tmp)
-    else:
-        state = fluid.io.load_program_state(path)
+    state = _load_state(path)
 
     if ignore_list:
         for k in ignore_list:
@@ -213,12 +218,25 @@ def load_and_fusebn(exe, prog, path):
     mean_variances = set()
     bn_vars = []
 
-    bn_in_path = True
+    state = None
+    if os.path.exists(path + '.pdparams'):
+        state = _load_state(path)
+
+    def check_mean_and_bias(prefix):
+        m = prefix + 'mean'
+        v = prefix + 'variance'
+        if state:
+            return v in state and m in state
+        else:
+            return (os.path.exists(os.path.join(path, m))
+                    and os.path.exists(os.path.join(path, v)))
+
+    has_mean_bias = True
 
     with fluid.program_guard(prog, fluid.Program()):
         for block in prog.blocks:
             ops = list(block.ops)
-            if not bn_in_path:
+            if not has_mean_bias:
                 break
             for op in ops:
                 if op.type == 'affine_channel':
@@ -228,12 +246,8 @@ def load_and_fusebn(exe, prog, path):
                     prefix = scale_name[:-5]
                     mean_name = prefix + 'mean'
                     variance_name = prefix + 'variance'
-
-                    if not os.path.exists(os.path.join(path, mean_name)):
-                        bn_in_path = False
-                        break
-                    if not os.path.exists(os.path.join(path, variance_name)):
-                        bn_in_path = False
+                    if not check_mean_and_bias(prefix):
+                        has_mean_bias = False
                         break
 
                     bias = block.var(bias_name)
@@ -255,9 +269,12 @@ def load_and_fusebn(exe, prog, path):
                     bn_vars.append(
                         [scale_name, bias_name, mean_name, variance_name])
 
-    load_params(exe, prog, path)
+    if state:
+        fluid.io.set_program_state(prog, state)
+    else:
+        load_params(exe, prog, path)
 
-    if not bn_in_path:
+    if not has_mean_bias:
         logger.warning(
             "There is no paramters of batch norm in model {}. "
             "Skip to fuse batch norm. And load paramters done.".format(path))
