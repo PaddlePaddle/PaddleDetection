@@ -28,11 +28,11 @@ import numpy as np
 __all__ = ['CornerHead']
 
 
-def corner_pool(x, dim, pool1, pool2, name=None):
+def corner_pool(x, dim, pool1, pool2, is_test=False, name=None):
     p1_conv1 = _conv_norm(x, 3, 128, pad=1, act='relu', name=name + '_p1_conv1')
-    pool1 = pool1(p1_conv1, name=name + '_pool1')
+    pool1 = pool1(p1_conv1, is_test, name=name + '_pool1')
     p2_conv1 = _conv_norm(x, 3, 128, pad=1, act='relu', name=name + '_p2_conv1')
-    pool2 = pool2(p2_conv1, name=name + '_pool2')
+    pool2 = pool2(p2_conv1, is_test, name=name + '_pool2')
 
     p_conv1 = fluid.layers.conv2d(
         pool1 + pool2,
@@ -452,12 +452,14 @@ class CornerHead(object):
             256,
             cornerpool_lib.top_pool,
             cornerpool_lib.left_pool,
+            True,
             name='tl_modules_' + str(ind))
         br_modules = corner_pool(
             input,
             256,
             cornerpool_lib.bottom_pool,
             cornerpool_lib.right_pool,
+            True,
             name='br_modules_' + str(ind))
 
         tl_heat = self.pred_mod(
