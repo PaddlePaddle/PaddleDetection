@@ -119,4 +119,5 @@ YoloTestFeed:
   image_shape: [3, 608, 608]
   dataset:
     dataset_dir: dataset/fruit
+    annotation: label_list.txt
     use_default_label: false

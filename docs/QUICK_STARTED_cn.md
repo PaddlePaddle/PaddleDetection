@@ -4,20 +4,19 @@
 
 为了使得用户能够在很短的时间内快速产出模型，掌握PaddleDetection的使用方式，这篇教程通过一个预训练检测模型对小数据集进行finetune。在P40上单卡大约20min即可产出一个效果不错的模型。
 
+- **注：在开始前，对于Linux用户, 运行如下命令设置PYTHONPATH，如果有GPU设备，指定GPU设备号。对于Windows用户，同样需要将PaddleDetection的根目录设置到PYTHONPATH中。**
+
+```bash
+export PYTHONPATH=$PYTHONPATH:.
+export CUDA_VISIBLE_DEVICES=0
+```
+
 ## 数据准备
 
 数据集参考[Kaggle数据集](https://www.kaggle.com/mbkinaci/fruit-images-for-object-detection)，其中训练数据集240张图片，测试数据集60张图片，数据类别为3类：苹果，橘子，香蕉。[下载链接](https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar)。数据下载后分别解压即可, 数据准备脚本位于[download_fruit.py](../dataset/fruit/download_fruit.py)。下载数据方式如下：
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/fruit/download_fruit.py
-```
-
-- **注：在开始前，运行如下命令并指定GPU**
-
-```bash
-export PYTHONPATH=$PYTHONPATH:.
-export CUDA_VISIBLE_DEVICES=0
 ```
 
 训练命令如下：
