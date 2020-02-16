@@ -128,5 +128,6 @@ TestReader:
   batch_size: 1
   dataset:
     !ImageFolder
+    anno_path: dataset/fruit/label_list.txt
     use_default_label: false
     with_background: false
