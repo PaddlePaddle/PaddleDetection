@@ -241,6 +241,9 @@ class MaskRCNN(object):
             persistable=False,
             name=mask_name)
 
+        def noop():
+            fluid.layers.assign(input=bbox_pred, output=mask_pred)
+
         def process_boxes():
             bbox = fluid.layers.slice(bbox_pred, [1], starts=[2], ends=[6])
 
@@ -259,10 +262,7 @@ class MaskRCNN(object):
             mask_out = self.mask_head.get_prediction(mask_feat, bbox)
             fluid.layers.assign(input=mask_out, output=mask_pred)
 
-        fluid.layers.cond(cond,
-                          lambda: fluid.layers.assign(input=bbox_pred,
-                                                      output=mask_pred),
-                          process_boxes)
+        fluid.layers.cond(cond, noop, process_boxes)
         return mask_pred, bbox_pred
 
     def _input_check(self, require_fields, feed_vars):
