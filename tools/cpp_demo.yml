@@ -25,3 +25,5 @@ Preprocess:
   is_scale: True
 - type: Permute
   to_bgr: False
+- type: PadStride
+  stride: 0 # set 32 on FPN and 128 on RetinaNet
