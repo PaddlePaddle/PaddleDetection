@@ -321,26 +321,28 @@ class CascadeMaskRCNN(object):
             dtype='float32',
             persistable=False,
             name=mask_name)
-        with fluid.layers.control_flow.Switch() as switch:
-            with switch.case(cond):
-                fluid.layers.assign(input=bbox_pred, output=mask_pred)
-            with switch.default():
-                bbox = fluid.layers.slice(bbox_pred, [1], starts=[2], ends=[6])
 
-                im_scale = fluid.layers.slice(
-                    im_info, [1], starts=[2], ends=[3])
-                im_scale = fluid.layers.sequence_expand(im_scale, bbox)
+        def noop():
+            fluid.layers.assign(input=bbox_pred, output=mask_pred)
 
-                mask_rois = bbox * im_scale
-                if self.fpn is None:
-                    mask_feat = self.roi_extractor(last_feat, mask_rois)
-                    mask_feat = self.bbox_head.get_head_feat(mask_feat)
-                else:
-                    mask_feat = self.roi_extractor(
-                        body_feats, mask_rois, spatial_scale, is_mask=True)
+        def process_boxes():
+            bbox = fluid.layers.slice(bbox_pred, [1], starts=[2], ends=[6])
 
-                mask_out = self.mask_head.get_prediction(mask_feat, bbox)
-                fluid.layers.assign(input=mask_out, output=mask_pred)
+            im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+            im_scale = fluid.layers.sequence_expand(im_scale, bbox)
+
+            mask_rois = bbox * im_scale
+            if self.fpn is None:
+                mask_feat = self.roi_extractor(last_feat, mask_rois)
+                mask_feat = self.bbox_head.get_head_feat(mask_feat)
+            else:
+                mask_feat = self.roi_extractor(
+                    body_feats, mask_rois, spatial_scale, is_mask=True)
+
+            mask_out = self.mask_head.get_prediction(mask_feat, bbox)
+            fluid.layers.assign(input=mask_out, output=mask_pred)
+
+        fluid.layers.cond(cond, noop, process_boxes)
         return mask_pred, bbox_pred
 
     def _input_check(self, require_fields, feed_vars):
