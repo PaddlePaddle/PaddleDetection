@@ -36,6 +36,7 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 | BlazeFace    | 原始版本 | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
 | BlazeFace    | Lite版本    | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
 | BlazeFace    | NAS版本    | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
+| BlazeFace    | NAS_V2版本 | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar)
 | FaceBoxes    | 原始版本 | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
 | FaceBoxes    | Lite版本   | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
 
@@ -254,6 +255,7 @@ cd dataset/fddb/evaluation
 - 原始版本: 参考原始论文复现；
 - Lite版本: 使用3x3卷积替换5x5卷积，更少的网络层数和通道数；
 - NAS版本: 使用神经网络搜索算法构建网络结构，相比于`Lite`版本，NAS版本需要更少的网络层数和通道数。
+- NAS_V2版本1: 基于PaddleSlim中SANAS算法在blazeface-NAS的基础上搜索出来的结构，相比`NAS`版本，NAS_V2版本的精度平均高出3个点，在855芯片上的硬件延时相对`NAS`版本仅增加5%。
 
 ### FaceBoxes
 **简介:**  
