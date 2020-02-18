@@ -100,20 +100,21 @@ class VOCDataSet(DataSet):
                     logger.warn("No json file {}".format(anno_file))
                     continue
                 anno = json.load(open(anno_file))
-                if not anno['labeled']:
-                    logging.warn("{} not labeld".format(image))
+                # if not anno['labeled']:
+                #     logging.warn("{} not labeld".format(image))
 
                 rec = {}
                 rec['im_file'] = image
                 # use for test_reader.py
                 # rec['im_file'] = image.replace('npy', 'png')
                 rec['im_id'] = ct
-                rec['h'] = anno['size']['height']
-                rec['w'] = anno['size']['width']
+                if 'size' in anno:
+                    rec['h'] = anno['size']['height']
+                    rec['w'] = anno['size']['width']
 
-                objs = anno['outputs']['object']
+                objs = anno['object']
                 # uncomment this if not filter out 0 object sample
-                if len(objs) == 0:
+                if not objs or len(objs) == 0:
                     continue
 
                 gt_bbox = np.zeros((len(objs), 4), dtype=np.float32)
@@ -122,7 +123,15 @@ class VOCDataSet(DataSet):
                 is_crowd = np.zeros((len(objs), 1), dtype=np.int32)
                 difficult = np.zeros((len(objs), 1), dtype=np.int32)
                 for i, obj in enumerate(objs):
-                    gt_bbox[i, :] = poly2xyxy(obj['polygon'])
+                    if 'bbox' in obj:
+                        gt_bbox[i, :] = [
+                            float(obj['bbox']['xmin']),
+                            float(obj['bbox']['ymin']),
+                            float(obj['bbox']['xmax']),
+                            float(obj['bbox']['ymax'])
+                        ]
+                    else:
+                        gt_bbox[i, :] = poly2xyxy(obj['polygon'])
                     gt_class[i][0] = int(self.with_background)
                     is_crowd[i][0] = 0
                     difficult[i][0] = 0
