@@ -13,9 +13,11 @@
 # limitations under the License.
 
 from . import coco
-from . import voc
+# from . import voc
+from . import ncp
 from . import widerface
 
 from .coco import *
-from .voc import *
+# from .voc import *
+from .ncp import *
 from .widerface import *

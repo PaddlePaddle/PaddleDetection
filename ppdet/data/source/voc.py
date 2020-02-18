@@ -24,8 +24,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@register
-@serializable
+# @register
+# @serializable
 class VOCDataSet(DataSet):
     """
     Load dataset with PascalVOC format.

@@ -11,10 +11,10 @@ TrainReader:
   sample_transforms:
     - !DecodeImage
       to_rgb: True
-      with_mixup: True
-    - !MixupImage
-      alpha: 1.5
-      beta: 1.5
+      with_mixup: False
+    # - !MixupImage
+    #   alpha: 1.5
+    #   beta: 1.5
     - !ColorDistort {}
     - !RandomExpand
       fill_value: [123.675, 116.28, 103.53]

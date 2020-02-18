@@ -105,21 +105,29 @@ class DecodeImage(BaseOperator):
 
     def __call__(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
-        if 'image' not in sample:
-            with open(sample['im_file'], 'rb') as f:
-                sample['image'] = f.read()
-
-        im = sample['image']
-        data = np.frombuffer(im, dtype='uint8')
-        im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-        if self.to_rgb:
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        sample['image'] = im
-
-        if 'h' not in sample:
+        if sample['im_file'].find('npy') >= 0:
+            im = np.load(sample['im_file'])
             sample['h'] = im.shape[0]
-        if 'w' not in sample:
             sample['w'] = im.shape[1]
+            im = np.tile(im.reshape((sample['h'], sample['w'], 1)), (1, 1, 3))
+            sample['image'] = im
+        else:
+            if 'image' not in sample:
+                with open(sample['im_file'], 'rb') as f:
+                    sample['image'] = f.read()
+
+            im = sample['image']
+            data = np.frombuffer(im, dtype='uint8')
+            im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+            if self.to_rgb:
+                im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+            sample['image'] = im
+
+            if 'h' not in sample:
+                sample['h'] = im.shape[0]
+            if 'w' not in sample:
+                sample['w'] = im.shape[1]
+
         # make default im_info with [h, w, 1]
         sample['im_info'] = np.array(
             [im.shape[0], im.shape[1], 1.], dtype=np.float32)
