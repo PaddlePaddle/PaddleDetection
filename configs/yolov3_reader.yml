@@ -30,8 +30,10 @@ TrainReader:
   #   sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
   #   random_inter: True
   - !NormalizeImage
-    mean: [0.485, 0.456, 0.406]
-    std: [0.229, 0.224, 0.225]
+    # mean: [0.485, 0.456, 0.406]
+    # std: [0.229, 0.224, 0.225]
+    mean: [0.485]
+    std: [0.229]
     is_scale: True
     is_channel_first: false
   - !Permute
@@ -88,7 +90,7 @@ EvalReader:
 
 TestReader:
   inputs_def:
-    image_shape: [3, 608, 608]
+    image_shape: [1, 608, 608]
     fields: ['image', 'im_size', 'im_id']
   dataset:
     !ImageFolder

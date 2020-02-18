@@ -129,7 +129,7 @@ class YOLOv3(object):
 
     def build_inputs(
             self,
-            image_shape=[3, None, None],
+            image_shape=[1, None, None],
             fields=['image', 'gt_bbox', 'gt_class', 'gt_score'],  # for train
             num_max_boxes=50,
             use_dataloader=True,

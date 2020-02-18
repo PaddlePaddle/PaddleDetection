@@ -109,7 +109,7 @@ class DecodeImage(BaseOperator):
             im = np.load(sample['im_file'])
             sample['h'] = im.shape[0]
             sample['w'] = im.shape[1]
-            im = np.tile(im.reshape((sample['h'], sample['w'], 1)), (1, 1, 3))
+            im = im.reshape((sample['h'], sample['w'], 1))
             sample['image'] = im
         else:
             if 'image' not in sample:
