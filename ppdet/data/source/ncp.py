@@ -105,6 +105,8 @@ class VOCDataSet(DataSet):
 
                 rec = {}
                 rec['im_file'] = image
+                # use for test_reader.py
+                # rec['im_file'] = image.replace('npy', 'png')
                 rec['im_id'] = ct
                 rec['h'] = anno['size']['height']
                 rec['w'] = anno['size']['width']
