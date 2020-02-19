@@ -2,6 +2,21 @@
 
 训练得到一个满足要求的模型后，如果想要将该模型接入到C++预测库或者Serving服务，需要通过`tools/export_model.py`导出该模型。
 
+**说明：**
+
+- 导出模型输入为网络输入图像，即原始图片经过预处理后的图像，具体预处理方式可参考配置文件中TestReader部分。各类检测模型的输入格式分别为：
+
+| 模型系列名称 | 输入图像预处理方式 | 其他输入信息 |
+| :---------: | ----------- | ---------- |
+|  YOLO | 缩放至指定大小，归一化 | im\_size: 格式为[origin\_H, origin\_W], origin为原始图像 |
+| SSD | 缩放至指定大小，归一化 | im\_shape: 格式为[origin\_H, origin\_W], origin为原始图像 |
+| RCNN | 归一化，等比例缩放 | 1. im\_info： 格式为[input\_H, input\_W, scale]，input为输入图像，scale为```输入图像大小/原始图像大小```<br>  2. im\_shape：格式为[origin\_H, origin\_W, 1.], origin为原始图像 |
+| RCNN+FPN | 归一化，等比例缩放，对图像填充0使得长宽均为32的倍数 | 1. im\_info： 格式为[input\_H, input\_W, scale]，input为输入图像，scale为```输入图像大小/原始图像大小```<br>  2. im\_shape：格式为[origin\_H, origin\_W, 1.], origin为原始图像 |
+| RetinaNet | 归一化，等比例缩放，对图像填充0使得长宽均为128的倍数 | 1. im\_info： 格式为[input\_H, input\_W, scale]，input为输入图像，scale为```输入图像大小/原始图像大小```<br>  2. im\_shape：格式为[origin\_H, origin\_W, 1.], origin为原始图像 |
+
+- 导出模型输出统一为NMS的输出，形状为[N, 6], 其中N为预测框的个数，6为[class_id, score, x1, y1, x2, y2].
+
+
 ## 启动参数说明
 
 |      FLAG      |      用途      |    默认值    |                 备注                      |
