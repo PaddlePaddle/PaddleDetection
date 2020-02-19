@@ -169,6 +169,24 @@ class Permute(object):
         return im
 
 
+class PadStride(object):
+    def __init__(self, stride=0):
+        assert stride >= 0, "Unsupported stride: {}, the stride in PadStride must be greater or equal to 0".format(
+            stride)
+        self.coarsest_stride = stride
+
+    def __call__(self, im):
+        coarsest_stride = self.coarsest_stride
+        if coarsest_stride == 0:
+            return im
+        im_c, im_h, im_w = im.shape
+        pad_h = int(np.ceil(float(im_h) / coarsest_stride) * coarsest_stride)
+        pad_w = int(np.ceil(float(im_w) / coarsest_stride) * coarsest_stride)
+        padding_im = np.zeros((im_c, pad_h, pad_w), dtype=np.float32)
+        padding_im[:, :im_h, :im_w] = im
+        return padding_im
+
+
 def Preprocess(img_path, arch, config):
     img = DecodeImage(img_path)
     orig_shape = img.shape

@@ -25,6 +25,7 @@ python tools/cpp_infer.py --model_path=inference_model/faster_rcnn_r50_1x/ --con
 1. 设置shape时必须保持与模型导出时shape大小一致；
 2. `min_subgraph_size`的设置与模型arch相关，对部分arch需要调大该参数，一般设置为40适用于所有模型。适当的调小`min_subgraph_size`会对预测有加速效果，例如YOLO中该参数可设置为3。
 
+3. 预处理中`PadStride`为输入图片右下角填充0，默认设置stride为0，即不对输入图片做padding操作。模型中包含FPN结构时，stride应设置为32。模型为RetinaNet系列模型时，stride应设置为128.
 ## Paddle环境搭建
 
 需要基于develop分支编译TensorRT版本Paddle, 在编译命令中指定TensorRT路径：
