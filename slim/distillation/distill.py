@@ -227,6 +227,7 @@ def main():
     teacher_program = teacher_program.clone(for_test=True)
 
     cfg = load_config(FLAGS.config)
+    merge_config(FLAGS.opt)
     data_name_map = {
         'target0': 'target0',
         'target1': 'target1',
