@@ -116,6 +116,8 @@ class VOCDataSet(DataSet):
                 # uncomment this if not filter out 0 object sample
                 if not objs or len(objs) == 0:
                     continue
+                if objs is None:
+                    objs = []
 
                 gt_bbox = np.zeros((len(objs), 4), dtype=np.float32)
                 gt_class = np.zeros((len(objs), 1), dtype=np.int32)

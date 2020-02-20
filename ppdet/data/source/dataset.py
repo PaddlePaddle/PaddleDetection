@@ -83,7 +83,7 @@ class DataSet(object):
         return self._imid2path
 
 
-def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
+def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp', 'npy')):
     return f.lower().endswith(extensions)
 
 

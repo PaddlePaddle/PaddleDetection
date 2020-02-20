@@ -109,7 +109,7 @@ class DecodeImage(BaseOperator):
             im = np.load(sample['im_file'])
             sample['h'] = im.shape[0]
             sample['w'] = im.shape[1]
-            im = im.reshape((sample['h'], sample['w'], 1))
+            im = np.tile(im.reshape((sample['h'], sample['w'], 1)), (1, 1, 3))
             sample['image'] = im
         else:
             if 'image' not in sample:
@@ -338,6 +338,8 @@ class ResizeImage(BaseOperator):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
 
+        if len(im.shape) == 2:
+            im = im[:, :, np.newaxis]
         sample['image'] = im
         return sample
 
@@ -491,7 +493,8 @@ class NormalizeImage(BaseOperator):
                         mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
                         std = np.array(self.std)[np.newaxis, np.newaxis, :]
                     if self.is_scale:
-                        im = im / 255.0
+                        # im = im / 255.0
+                        im = im / 1000.
                     im -= mean
                     im /= std
                     sample[k] = im
