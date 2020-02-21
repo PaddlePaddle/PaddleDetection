@@ -8,7 +8,7 @@
 
 该教程中所示操作，如无特殊说明，均在`PaddleDetection/slim/prune/`路径下执行。
 
-已发布裁剪模型见[压缩模型库](../MODEL_ZOO.md)
+已发布裁剪模型见[压缩模型库](../README.md)
 
 ## 1. 数据准备
 
@@ -32,7 +32,7 @@
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
 
-官方已发布的模型请参考: [模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/docs/MODEL_ZOO_cn.md)
+官方已发布的模型请参考: [模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.1/docs/README.md)
 
 ## 3. 确定待分析参数
 

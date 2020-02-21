@@ -39,19 +39,29 @@ multi-GPU training.
 
 Supported Architectures:
 
-|                     | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG  | HRNet | Res2Net |
-| ------------------- | :----: | ----------------------------: | :--------: | :---: | :-------: | :-----: | :--: | :--:  | :--:    |
-| Faster R-CNN        |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
-| Faster R-CNN + FPN  |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |  ✓    |  ✓      |
-| Mask R-CNN          |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
-| Mask R-CNN + FPN    |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✓      |
-| Cascade Faster-RCNN |   ✓    |                             ✓ |     ✓      |   ✗   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
-| Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
-| RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |    ✗    |  ✗   |  ✗    |  ✗      |
-| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✓    |  ✗   |  ✗    |  ✗      |
-| SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |    ✗    |  ✓   |  ✗    |  ✗      |
+|                     | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet |  HRNet | Res2Net |
+| ------------------- | :----: | ----------------------------: | :--------: | :---: | :-------: |:------:|:-----:  |
+| Faster R-CNN        |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |   ✗    |  ✗      |
+| Faster R-CNN + FPN  |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |   ✓    |  ✓      |
+| Mask R-CNN          |   ✓    |                             ✓ |     x      |   ✓   |     ✗     |   ✗    |  ✗      |
+| Mask R-CNN + FPN    |   ✓    |                             ✓ |     ✓      |   ✓   |     ✗     |   ✗    |  ✓      |
+| Cascade Faster-RCNN |   ✓    |                             ✓ |     ✓      |   ✗   |     ✗     |   ✗    |  ✗      |
+| Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |   ✗    |  ✗      |
+| Libra R-CNN         |   ✗    |                             ✓ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
+| RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
+| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
+| SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
+| BlazeFace           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
+| Faceboxes           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
+
+More Backbones:
+
+- DarkNet
+- VGG
+- GCNet
+- CBNet
 
 Advanced Features:
 
