@@ -76,7 +76,7 @@ python slim/quantization/train.py --not_quant_pattern yolo_output \
 
 
 通过`python slim/quantization/train.py --help`查看可配置参数。
-通过`python .tools/configure.py ${option_name} help`查看如何通过命令行覆盖配置文件中的参数。
+通过`python ./tools/configure.py help ${option_name}`查看如何通过命令行覆盖配置文件中的参数。
 
 
 

@@ -21,7 +21,6 @@ import sys
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
 from tools.export_model import prune_feed_vars

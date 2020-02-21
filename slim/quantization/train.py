@@ -166,14 +166,15 @@ def main():
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
-    if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
-        start_iter = checkpoint.global_step()
-    elif cfg.pretrain_weights and fuse_bn and not ignore_params:
-        checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
-    elif cfg.pretrain_weights:
-        checkpoint.load_params(
-            exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
+    if not FLAGS.resume_checkpoint:
+        if cfg.pretrain_weights and fuse_bn and not ignore_params:
+            checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
+        elif cfg.pretrain_weights:
+            checkpoint.load_params(
+                exe,
+                train_prog,
+                cfg.pretrain_weights,
+                ignore_params=ignore_params)
     # insert quantize op in train_prog, return type is CompiledProgram
     train_prog = quant_aware(train_prog, place, config, for_test=False)
 
@@ -189,6 +190,9 @@ def main():
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
     start_iter = 0
+    if FLAGS.resume_checkpoint:
+        checkpoint.load_checkpoint(exe, eval_prog, FLAGS.resume_checkpoint)
+        start_iter = checkpoint.global_step()
 
     train_reader = create_reader(cfg.TrainReader,
                                  (cfg.max_iters - start_iter) * devices_num)
