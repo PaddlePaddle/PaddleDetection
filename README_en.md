@@ -69,6 +69,7 @@ Advanced Features:
 - [x] **Group Norm**
 - [x] **Modulated Deformable Convolution**
 - [x] **Deformable PSRoI Pooling**
+- [x] **Non-local and GCNet**
 
 **NOTE:** Synchronized batch normalization can only be used on multiple GPU devices, can not be used on CPU devices or single GPU device.
 
