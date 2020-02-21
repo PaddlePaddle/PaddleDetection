@@ -145,7 +145,9 @@ class DetectionMAP(object):
         valid_cnt = 0
         for score_pos, count in zip(self.class_score_poss,
                                     self.class_gt_counts):
-            if count == 0 or len(score_pos) == 0:
+            if count == 0: continue
+            if len(score_pos) == 0:
+                valid_cnt += 1
                 continue
 
             accum_tp_list, accum_fp_list = \
