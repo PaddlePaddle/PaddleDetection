@@ -40,6 +40,7 @@ YOLOv3Head:
     normalized: false
     score_threshold: 0.01
   drop_block: true
+  keep_prob: 0.94
 
 YOLOv3Loss:
   batch_size: 8
