@@ -1,1 +1,1 @@
-../../../slim/MODEL_ZOO.md
+slim/README.md

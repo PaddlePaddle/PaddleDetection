@@ -1,9 +1,9 @@
 # demo for cpp_infer.py
 
-mode: trt_fp32 # trt_fp32, trt_fp16, trt_int8, fluid
+use_python_inference: true # whether to use python inference
+mode: fluid # trt_fp32, trt_fp16, trt_int8, fluid
 arch: RCNN # YOLO, SSD, RCNN, RetinaNet
 min_subgraph_size: 40 # need 3 for YOLO arch
-use_python_inference: False # whether to use python inference
 
 # visualize the predicted image
 metric: COCO # COCO, VOC

@@ -10,7 +10,7 @@
 - [检测库的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim蒸馏API文档](https://paddlepaddle.github.io/PaddleSlim/api/single_distiller_api/)
 
-已发布蒸馏模型见[压缩模型库](../MODEL_ZOO.md)
+已发布蒸馏模型见[压缩模型库](../README.md)
 
 ## 安装PaddleSlim
 可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim
