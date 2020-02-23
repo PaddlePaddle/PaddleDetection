@@ -1,5 +1,32 @@
 # 版本更新信息
 
+### v0.2.0(02/2020)
+  - 新增模型:
+    - 新增基于CBResNet模型。
+    - 新增LibraRCNN模型。
+    - 进一步提升YOLOv3模型精度，基于COCO数据精度达到43.2%，相比上个版本提升1.4%。
+  - 新增基础模块:
+    - 主干网络: 新增CBResNet。
+    - loss模块: YOLOv3的loss支持细粒度op组合。
+    - 正则模块: 新增DropBlock模块。
+  - 功能优化和改进:
+    - 加速YOLOv3数据预处理，整体训练提速40%。
+    - 优化数据预处理逻辑，提升易用性。
+    - 增加人脸检测预测benchmark数据。
+    - 增加C++预测引擎Python API预测示例。
+  - 检测模型压缩 :
+    - 裁剪: 发布MobileNet-YOLOv3裁剪方案和模型，基于VOC数据FLOPs - 69.6%, mAP + 1.4%，基于COCO数据FLOPS-28.8%, mAP + 0.9%; 发布ResNet50vd-dcn-YOLOv3裁剪方案和模型，基于COCO数据集FLOPS - 18.4%, mAP + 0.8%。
+    - 蒸馏: 发布MobileNet-YOLOv3蒸馏方案和模型，基于VOC数据mAP + 2.8%，基于COCO数据mAP + 2.1%。
+    - 量化: 发布YOLOv3-MobileNet和BlazeFace的量化模型。
+    - 裁剪+蒸馏: 发布MobileNet-YOLOv3裁剪+蒸馏方案和模型，基于COCO数据FLOPS - 69.6%，基于TensorRT预测加速64.5%，mAP - 0.3 %; 发布ResNet50vd-dcn-YOLOv3裁剪+蒸馏方案和模型，基于COCO数据FLOPS - 43.7%，基于TensorRT预测加速24.0%，mAP + 0.6 %。
+    - 搜索: 开源BlazeFace-Nas的完成搜索方案。
+  - 预测部署:
+    - 集成 TensorRT，支持FP16、FP32、INT8量化推理加速。
+  - 文档:
+    - 增加详细的数据预处理模块介绍文档以及实现自定义数据Reader文档。
+    - 增加如何新增算法模型的文档。
+    - 文档部署到网站: https://paddledetection.readthedocs.io/zh/latest/
+
 ### 12/2019
 - 增加Res2Net模型。
 - 增加HRNet模型。

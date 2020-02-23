@@ -1,3 +1,14 @@
+# 简介
+
+在PaddleDetection, 提供了基于PaddleSlim进行模型压缩的完整教程和实验结果。详细教程请参考：
+
+- [量化](quantization)
+- [裁剪](prune)
+- [蒸馏](distillation)
+- [搜索](nas)
+
+下面给出压缩的benchmark实验结果。
+
 # 压缩模型库
 
 ## 测试环境

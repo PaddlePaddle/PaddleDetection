@@ -29,19 +29,29 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 
 支持的模型结构：
 
-|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet | DarkNet | VGG | HRNet | Res2Net |
-|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:-------:|:---:|:-----:| :--:    |
-| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   | ✗    |  ✗       |
-| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   | ✓    |  ✓       |
-| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         | ✗       | ✗   | ✗    |  ✗       |
-| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         | ✗       | ✗   | ✗    |  ✓       |
-| Cascade Faster-RCNN | ✓      |                             ✓ | ✓          | ✗     | ✗         | ✗       | ✗  | ✗    |  ✗       |
-| Cascade Mask-RCNN  | ✓      |                             ✗ | ✗          | ✓     | ✗         | ✗       | ✗   | ✗    |  ✗       |
-| RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         | ✗       | ✗   | ✗    |  ✗       |
-| YOLOv3             | ✓      |                             ✗ | ✗          | ✗     | ✓         | ✓       | ✗   | ✗    |  ✗       |
-| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         | ✗       | ✓   | ✗    |  ✗       |
+|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet |  HRNet | Res2Net |
+|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:------:| :--:    |
+| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         |  ✗     |  ✗      |
+| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         |  ✓     |  ✓      |
+| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         |  ✗     |  ✗      |
+| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         |  ✗     |  ✓      |
+| Cascade Faster-RCNN | ✓     |                             ✓ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
+| Cascade Mask-RCNN  | ✓      |                             ✗ | ✗          | ✓     | ✗         |  ✗     |  ✗      |
+| Libra R-CNN        | ✗      |                             ✓ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
+| RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
+| YOLOv3             | ✓      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
+| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
+| BlazeFace          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
+| Faceboxes          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型提供了较大的精度提高和较少的性能损失。
+
+更多的Backone：
+
+- DarkNet
+- VGG
+- GCNet
+- CBNet
 
 扩展特性：
 
@@ -49,6 +59,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [x] **Group Norm**
 - [x] **Modulated Deformable Convolution**
 - [x] **Deformable PSRoI Pooling**
+- [x] **Non-local和GCNet**
 
 **注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
 
@@ -69,13 +80,14 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - [模型压缩](slim)
-    - [量化训练压缩示例](slim/quantization)
-    - [剪枝压缩示例](slim/prune)
-    - [蒸馏压缩示例](slim/distillation)
-    - [神经网络搜索示例](slim/nas)
+    - [量化](slim/quantization)
+    - [剪枝](slim/prune)
+    - [蒸馏](slim/distillation)
+    - [神经网络搜索](slim/nas)
+    - [压缩benchmark](slim)
 - [推理部署](inference)
     - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
-    - [模型预测](docs/advanced_tutorials/inference/INFERENCE.md)
+    - [预测引擎Python API使用示例](docs/advanced_tutorials/inference/INFERENCE.md)
     - [C++推理部署](inference/README.md)
     - [推理Benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
 
