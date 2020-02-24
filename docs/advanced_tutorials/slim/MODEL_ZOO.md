@@ -1,1 +1,1 @@
-slim/README.md
+../../../slim/README.md

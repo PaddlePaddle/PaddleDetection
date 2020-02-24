@@ -1,8 +1,7 @@
-模型剪枝
+神经网络搜索
 ===========================================
 
 .. toctree::
    :maxdepth: 2
 
-   PRUNE.md
-   SENSITIVE.md
+   NAS.md
