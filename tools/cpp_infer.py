@@ -60,6 +60,8 @@ def offset_to_lengths(lod):
 
 
 def DecodeImage(im_path):
+    assert os.path.exists(im_path), "Image path {} can not be found".format(
+        im_path)
     with open(im_path, 'rb') as f:
         im = f.read()
     data = np.frombuffer(im, dtype='uint8')
@@ -143,27 +145,39 @@ class Resize(object):
 
 
 class Normalize(object):
-    def __init__(self, mean, std, is_scale=True):
+    def __init__(self, mean, std, is_scale=True, is_channel_first=False):
         super(Normalize, self).__init__()
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
+        if is_channel_first:
+            print('WARNING: Normalize is before Permute for all models'
+                  ' in cpp_infer, and is_channel_first is set to False')
+        self.is_channel_first = False
 
     def __call__(self, im):
         im = im.astype(np.float32, copy=False)
+        if self.is_channel_first:
+            mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
+            std = np.array(self.std)[:, np.newaxis, np.newaxis]
+        else:
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
         if self.is_scale:
             im = im / 255.0
-        im -= self.mean
-        im /= self.std
+        im -= mean
+        im /= std
         return im
 
 
 class Permute(object):
-    def __init__(self, to_bgr=False):
+    def __init__(self, to_bgr=False, channel_first=True):
         self.to_bgr = to_bgr
+        self.channel_first = channel_first
 
     def __call__(self, im):
-        im = im.transpose((2, 0, 1)).copy()
+        if self.channel_first:
+            im = im.transpose((2, 0, 1)).copy()
         if self.to_bgr:
             im = im[[2, 1, 0], :, :]
         return im

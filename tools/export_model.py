@@ -30,6 +30,62 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
+def parse_cpp_config(config):
+    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
+    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
+    cpp_cfg = {
+        'use_python_inference': False,
+        'mode': 'fluid',
+        'draw_threshold': 0.5,
+        'metric': config['metric']
+    }
+    cpp_arch_list = {'YOLO': 3, 'SSD': 40, 'RCNN': 40, 'RetinaNet': 40}
+    arch = config['architecture']
+
+    for cpp_arch, min_subgraph_size in cpp_arch_list.items():
+        if cpp_arch in arch:
+            cpp_cfg['arch'] = cpp_arch
+            cpp_cfg['min_subgraph_size'] = min_subgraph_size
+            break
+    preprocess_list = [{
+        'type': 'Resize'
+    }, {
+        'type': 'Normalize'
+    }, {
+        'type': 'Permute'
+    }]
+
+    image_shape = config['TestReader']['inputs_def']['image_shape']
+    scale_set = {'RCNN', 'RetinaNet'}
+    preprocess_list[0]['target_size'] = image_shape[1]
+    if cpp_cfg['arch'] in scale_set:
+        preprocess_list[0]['max_size'] = image_shape[1]
+
+    sample_transforms = config['TestReader']['sample_transforms']
+    for p in preprocess_list[1:]:
+        for st in sample_transforms:
+            method = st.__class__.__name__
+            if p['type'] in method:
+                params = st.__dict__
+                params.pop('_id')
+                p.update(params)
+                break
+    batch_transforms = config['TestReader'].get('batch_transforms', None)
+    if batch_transforms:
+        methods = [bt.__class__.__name__ for bt in batch_transforms]
+        for bt in batch_transforms:
+            method = bt.__class__.__name__
+            if method == 'PadBatch':
+                preprocess_list.append({'type': 'PadStride'})
+                params = bt.__dict__
+                preprocess_list[-1].update({'stride': params['pad_to_stride']})
+                break
+
+    cpp_cfg['Preprocess'] = preprocess_list
+    import yaml
+    yaml.dump(cpp_cfg, open(os.path.join(save_dir, 'cpp_infer.yml'), 'w'))
+
+
 def prune_feed_vars(feeded_var_names, target_vars, prog):
     """
     Filter out feed variables which are not in program,
@@ -101,6 +157,7 @@ def main():
     checkpoint.load_params(exe, infer_prog, cfg.weights)
 
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
+    parse_cpp_config(cfg)
 
 
 if __name__ == '__main__':
