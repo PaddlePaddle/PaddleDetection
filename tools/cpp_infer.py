@@ -153,20 +153,13 @@ class Normalize(object):
         if is_channel_first:
             print('WARNING: Normalize is before Permute for all models'
                   ' in cpp_infer, and is_channel_first is set to False')
-        self.is_channel_first = False
 
     def __call__(self, im):
         im = im.astype(np.float32, copy=False)
-        if self.is_channel_first:
-            mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
-            std = np.array(self.std)[:, np.newaxis, np.newaxis]
-        else:
-            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-            std = np.array(self.std)[np.newaxis, np.newaxis, :]
         if self.is_scale:
             im = im / 255.0
-        im -= mean
-        im /= std
+        im -= self.mean
+        im /= self.std
         return im
 
 
