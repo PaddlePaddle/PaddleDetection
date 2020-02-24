@@ -1,8 +1,7 @@
-模型剪枝
+模型蒸馏
 ===========================================
 
 .. toctree::
    :maxdepth: 2
 
-   PRUNE.md
-   SENSITIVE.md
+   DISTILLATION.md

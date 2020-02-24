@@ -80,11 +80,11 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - [模型压缩](slim)
+    - [压缩benchmark](slim)
     - [量化](slim/quantization)
     - [剪枝](slim/prune)
     - [蒸馏](slim/distillation)
     - [神经网络搜索](slim/nas)
-    - [压缩benchmark](slim)
 - [推理部署](inference)
     - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
     - [预测引擎Python API使用示例](docs/advanced_tutorials/inference/INFERENCE.md)
@@ -105,7 +105,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.2.0版本已经在`01/2020`发布，增加多个模型，升级数据处理模块，拆分YOLOv3的loss，修复已知诸多bug等，
+v0.2.0版本已经在`02/2020`发布，增加多个模型，升级数据处理模块，拆分YOLOv3的loss，修复已知诸多bug等，
 详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
