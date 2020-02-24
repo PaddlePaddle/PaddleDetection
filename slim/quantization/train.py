@@ -36,7 +36,6 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version
 import ppdet.utils.checkpoint as checkpoint
-sys.path.append('/cv/workspace/PaddleSlim/')
 from paddleslim.quant import quant_aware, convert
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
