@@ -1,8 +1,7 @@
-模型剪枝
+模型量化
 ===========================================
 
 .. toctree::
    :maxdepth: 2
 
-   PRUNE.md
-   SENSITIVE.md
+   QUANTIZATION.md

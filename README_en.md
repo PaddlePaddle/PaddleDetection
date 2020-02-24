@@ -91,10 +91,11 @@ Advanced Features:
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
 - [Model compression](slim)
-    - [Quantization-aware training example](slim/quantization)
-    - [Model pruning example](slim/prune)
-    - [Model distillation example](slim/distillation)
-    - [Neural Architecture Search example](slim/nas)
+    - [Model compression benchmark](slim)
+    - [Quantization](slim/quantization)
+    - [Model pruning](slim/prune)
+    - [Model distillation](slim/distillation)
+    - [Neural Architecture Search](slim/nas)
 - [Deployment](inference)
     - [Export model for inference](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
     - [Model inference](docs/advanced_tutorials/inference/INFERENCE.md)
@@ -115,7 +116,7 @@ Advanced Features:
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.2.0 was released at `01/2020`, add some models，Upgrade data processing module, Split YOLOv3's loss, fix many known bugs, etc.
+v0.2.0 was released at `02/2020`, add some models，Upgrade data processing module, Split YOLOv3's loss, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing
