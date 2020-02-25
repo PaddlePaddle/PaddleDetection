@@ -86,6 +86,30 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      |   r578    |   69.57%    |     67.00%     |   416    | YOLOv3-ResNet34        |  78.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578_distillby_r34.tar) |
 | MobileNetV1      |   r578    |   69.57%    |     67.00%     |   320    | YOLOv3-ResNet34        |  76.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578_distillby_r34.tar) |
 
+### YOLOv3通道剪裁模型推理时延
+
+- 时延单位均为`ms/images`
+- Tesla P4时延为单卡并开启TensorRT推理时延
+- 高通835/高通855/麒麟970时延为使用PaddleLite部署，使用`arm8`架构并使用4线程(4 Threads)推理时延
+
+| 骨架网络         | 数据集 | 剪裁策略 | FLOPs剪裁率 | 模型体积剪裁率 | 输入尺寸 | Tesla P4 | 麒麟970 | 高通835 | 高通855 |
+| :--------------- | :----: | :------: | :---------: | :------------: | :------: | :------: | :-----: | :-----: | :-----: |
+| MobileNetV1      |  VOC   | baseline |      -      |       -        |   608    |  16.556  | 748.404 | 734.970 | 289.878 |
+| MobileNetV1      |  VOC   | baseline |      -      |       -        |   416    |   9.031  | 371.214 | 349.065 | 140.877 |
+| MobileNetV1      |  VOC   | baseline |      -      |       -        |   320    |   6.235  | 221.705 | 200.498 |  80.515 |
+| MobileNetV1      |  VOC   |   r578   |   69.57%    |     67.00%     |   608    |  10.064  | 314.531 | 323.537 | 123.414 |
+| MobileNetV1      |  VOC   |   r578   |   69.57%    |     67.00%     |   416    |   5.478  | 151.562 | 146.014 |  56.420 |
+| MobileNetV1      |  VOC   |   r578   |   69.57%    |     67.00%     |   320    |   3.880  |  91.132 |  87.440 |  31.470 |
+| ResNet50-vd-dcn  |  COCO  | baseline |      -      |       -        |   608    |  36.127  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  | baseline |      -      |       -        |   416    |  20.437  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  | baseline |      -      |       -        |   320    |  14.037  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  | sensity  |   18.41%    |     15.46%     |   608    |  33.245  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  | sensity  |   18.41%    |     15.46%     |   416    |  19.246  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  | sensity  |   18.41%    |     15.46%     |   320    |  13.656  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  |   r578   |   43.69%    |     36.61%     |   608    |  29.138  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  |   r578   |   43.69%    |     36.61%     |   416    |  16.439  |    -    |    -    |    -    |
+| ResNet50-vd-dcn  |  COCO  |   r578   |   43.69%    |     36.61%     |   320    |  11.339  |    -    |    -    |    -    |
+
 
 ## 蒸馏模型库
 
