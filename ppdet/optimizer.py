@@ -16,12 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import math
 import logging
 
 from paddle import fluid
 
 import paddle.fluid.optimizer as optimizer
 import paddle.fluid.regularizer as regularizer
+from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
+from paddle.fluid.layers.ops import cos
 
 from ppdet.core.workspace import register, serializable
 
@@ -75,6 +78,50 @@ class CosineDecay(object):
     def __call__(self, base_lr=None, learning_rate=None):
         assert base_lr is not None, "either base LR or values should be provided"
         lr = fluid.layers.cosine_decay(base_lr, 1, self.max_iters)
+
+
+@serializable
+class CosineDecayWithSkip(object):
+    """
+    Cosine decay, with explicit support for warm up
+
+    Args:
+        total_steps (int): total steps over which to apply the decay
+        skip_steps (int): skip some steps at the beginning, e.g., warm up
+    """
+
+    def __init__(self, total_steps, skip_steps=None):
+        super(CosineDecayWithSkip, self).__init__()
+        assert (not skip_steps or skip_steps > 0), \
+            "skip steps must be greater than zero"
+        assert total_steps > 0, "total step must be greater than zero"
+        assert (not skip_steps or skip_steps < total_steps), \
+            "skip steps must be smaller than total steps"
+        self.total_steps = total_steps
+        self.skip_steps = skip_steps
+
+    def __call__(self, base_lr=None, learning_rate=None):
+        steps = _decay_step_counter()
+        total = self.total_steps
+        if self.skip_steps is not None:
+            total -= self.skip_steps
+
+        lr = fluid.layers.tensor.create_global_var(
+            shape=[1],
+            value=base_lr,
+            dtype='float32',
+            persistable=True,
+            name="learning_rate")
+
+        def decay():
+            cos_lr = base_lr * .5 * (cos(steps * (math.pi / total)) + 1)
+            fluid.layers.tensor.assign(input=cos_lr, output=lr)
+
+        if self.skip_steps is None:
+            decay()
+        else:
+            skipped = steps >= self.skip_steps
+            fluid.layers.cond(skipped, decay)
         return lr
 
 
@@ -140,10 +187,12 @@ class OptimizerBuilder():
     __category__ = 'optim'
 
     def __init__(self,
+                 clip_grad_by_norm=None,
                  regularizer={'type': 'L2',
                               'factor': .0001},
                  optimizer={'type': 'Momentum',
                             'momentum': .9}):
+        self.clip_grad_by_norm = clip_grad_by_norm
         self.regularizer = regularizer
         self.optimizer = optimizer
 

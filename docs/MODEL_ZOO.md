@@ -181,6 +181,14 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 
 **Notes:** In RetinaNet, the base LR is changed to 0.01 for minibatch size 16.
 
+### EfficientDet
+
+| Scale             | Image/gpu | Lr schd   | Box AP | Download                                                                              |
+| :---------------: | :-----:   | :-----:   | :----: | :-------:                                                                             |
+| EfficientDet-D0   | 16        | 300 epochs | 33.8   | [model](https://paddlemodels.bj.bcebos.com/object_detection/efficientdet_d0.pdparams) |
+
+**Notes:** base LR is 0.16 for minibatch size 128 (8x16).
+
 ### SSDLite
 
 | Backbone | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           | Configs |
