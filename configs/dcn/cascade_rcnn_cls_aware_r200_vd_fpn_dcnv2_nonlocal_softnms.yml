@@ -185,7 +185,6 @@ EvalReader:
 
 TestReader:
   inputs_def:
-    image_shape: [3,800,1333]
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
