@@ -20,6 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
 __all__ = ['MobileNet']
@@ -104,6 +105,7 @@ class MobileNet(object):
                             stride,
                             scale,
                             name=None):
+        mixed_precision_enabled = mixed_precision_global_state() is not None
         depthwise_conv = self._conv_norm(
             input=input,
             filter_size=3,
@@ -111,7 +113,7 @@ class MobileNet(object):
             stride=stride,
             padding=1,
             num_groups=int(num_groups * scale),
-            use_cudnn=False,
+            use_cudnn=mixed_precision_enabled,
             name=name + "_dw")
 
         pointwise_conv = self._conv_norm(
