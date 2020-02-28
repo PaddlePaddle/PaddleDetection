@@ -7,7 +7,7 @@ log_smooth_window: 20
 log_iter: 20
 metric: WIDERFACE
 save_dir: output
-weights: output/blazeface_nas/model_final/
+weights: output/blazeface_nas/model_final
 # 1(label_class) + 1(background)
 num_classes: 2
 

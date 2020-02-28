@@ -5,7 +5,7 @@ use_gpu: true
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/cascade_mask_rcnn_r50_fpn_gn_2x/model_final/
+weights: output/cascade_mask_rcnn_r50_fpn_gn_2x/model_final
 metric: COCO
 num_classes: 81
 
