@@ -7,7 +7,7 @@ log_smooth_window: 1
 metric: VOC
 map_type: 11point
 save_dir: output
-weights: output/ssd_mobilenet_v1_voc/model_final/
+weights: output/ssd_mobilenet_v1_voc/model_final
 # 20(label_class) + 1(background)
 num_classes: 21
 

@@ -8,7 +8,7 @@ metric: VOC
 map_type: 11point
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
 save_dir: output
-weights: output/ssd_vgg16_512_voc/model_final/
+weights: output/ssd_vgg16_512_voc/model_final
 # 20(label_class) + 1(background)
 num_classes: 21
 
