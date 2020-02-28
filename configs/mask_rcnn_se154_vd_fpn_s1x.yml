@@ -5,7 +5,7 @@ use_gpu: true
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/SENet154_vd_pretrained.tar
-weights: output/mask_rcnn_se154_vd_fpn_s1x/model_final/
+weights: output/mask_rcnn_se154_vd_fpn_s1x/model_final
 metric: COCO
 num_classes: 81
 

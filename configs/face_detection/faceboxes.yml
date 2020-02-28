@@ -7,7 +7,7 @@ log_smooth_window: 20
 log_iter: 20
 metric: WIDERFACE
 save_dir: output
-weights: output/faceboxes/model_final/
+weights: output/faceboxes/model_final
 # 1(label_class) + 1(background)
 num_classes: 2
 

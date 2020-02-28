@@ -6,7 +6,7 @@ log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
 metric: COCO
-weights: output/mask_rcnn_r50_vd_fpn_gcb_mul_r16_2x/model_final/
+weights: output/mask_rcnn_r50_vd_fpn_gcb_mul_r16_2x/model_final
 num_classes: 81
 
 MaskRCNN:
