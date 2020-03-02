@@ -13,7 +13,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 ## Data Preparation
 
-Dataset refers to [Kaggle](https://www.kaggle.com/mbkinaci/fruit-images-for-object-detection), which contains 240 images in train dataset and 60 images in test dataset. Data categories are apple, orange and banana. Download [here](https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar) and uncompress the dataset after download, script for data preparation is located at [download_fruit.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/dataset/fruit/download_fruit.py). Command is as follows:
+Dataset refers to [Kaggle](https://www.kaggle.com/mbkinaci/fruit-images-for-object-detection), which contains 240 images in train dataset and 60 images in test dataset. Data categories are apple, orange and banana. Download [here](https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar) and uncompress the dataset after download, script for data preparation is located at [download_fruit.py](../../dataset/fruit/download_fruit.py). Command is as follows:
 
 ```bash
 python dataset/fruit/download_fruit.py
