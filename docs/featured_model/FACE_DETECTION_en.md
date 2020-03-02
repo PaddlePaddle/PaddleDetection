@@ -172,7 +172,7 @@ Default is `False`, it will select `single-scale` evaluation.
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
-       -o weights=output/blazeface/model_final/ \
+       -o weights=output/blazeface/model_final \
        --eval_mode=widerface
 ```
 After the evaluation is completed, the test result in txt format will be generated in `output/pred`.
@@ -239,7 +239,7 @@ EvalReader:
 Evaluate and generate results files:
 ```
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
-       -o weights=output/blazeface/model_final/ \
+       -o weights=output/blazeface/model_final \
        --eval_mode=fddb
 ```
 After the evaluation is completed, the test result in txt format will be generated in `output/pred/pred_fddb_res.txt`.  

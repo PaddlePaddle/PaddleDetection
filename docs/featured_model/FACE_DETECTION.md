@@ -157,7 +157,7 @@ cd dataset/wider_face && ./download.sh
 export CUDA_VISIBLE_DEVICES=0
 export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
-       -o weights=output/blazeface/model_final/ \
+       -o weights=output/blazeface/model_final \
        --eval_mode=widerface
 ```
 评估完成后，将在`output/pred`中生成txt格式的测试结果。
@@ -222,7 +222,7 @@ EvalReader:
 评估并生成结果文件：
 ```
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
-       -o weights=output/blazeface/model_final/ \
+       -o weights=output/blazeface/model_final \
        --eval_mode=fddb
 ```
 评估完成后，将在`output/pred/pred_fddb_res.txt`中生成txt格式的测试结果。  
