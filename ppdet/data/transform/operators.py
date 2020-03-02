@@ -35,6 +35,7 @@ import numpy as np
 
 import cv2
 from PIL import Image, ImageEnhance
+import pycocotools.mask as mask_util
 
 from ppdet.core.workspace import serializable
 
@@ -360,9 +361,9 @@ class RandomFlipImage(BaseOperator):
 
         def _flip_rle(rle, height, width):
             if 'counts' in rle and type(rle['counts']) == list:
-                rle = mask_util.frPyObjects([rle], height, width)
+                rle = mask_util.frPyObjects(rle, height, width)
             mask = mask_util.decode(rle)
-            mask = mask[:, ::-1, :]
+            mask = mask[:, ::-1]
             rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
             return rle
 
@@ -378,7 +379,6 @@ class RandomFlipImage(BaseOperator):
                 flipped_segms.append([_flip_poly(poly, width) for poly in segm])
             else:
                 # RLE format
-                import pycocotools.mask as mask_util
                 flipped_segms.append(_flip_rle(segm, height, width))
         return flipped_segms
 
@@ -1248,9 +1248,61 @@ class RandomExpand(BaseOperator):
             fill_value = tuple(fill_value)
         self.fill_value = fill_value
 
+    def expand_segms(self, segms, x, y, height, width, ratio):
+        def _expand_poly(polys, x, y, height, width, ratio):
+            rles = mask_util.frPyObjects(polys, height, width)
+            rle = mask_util.merge(rles)
+            mask = mask_util.decode(rle)
+            expanded_mask = np.full((int(height * ratio), int(width * ratio)),
+                                    0).astype(mask.dtype)
+            expanded_mask[y:y + height, x:x + width] = mask
+            if cv2.__version__ >= '3.2':
+                contours, hierarchy = cv2.findContours(
+                    (expanded_mask).astype(np.uint8), cv2.RETR_TREE,
+                    cv2.CHAIN_APPROX_SIMPLE)
+            else:
+                contours, hierarchy = cv2.findContours(
+                    (expanded_mask).astype(np.uint8), cv2.RETR_TREE,
+                    cv2.CHAIN_APPROX_SIMPLE)
+            expanded_poly = list()
+            for contour in contours:
+                contour = contour.flatten().tolist()
+                if len(contour) > 4:
+                    expanded_poly.append(contour)
+            return expanded_poly
+
+        def _expand_rle(rle, x, y, height, width, ratio):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, height, width)
+            mask = mask_util.decode(rle)
+            expanded_mask = np.full((int(height * ratio), int(width * ratio)),
+                                    0).astype(mask.dtype)
+            expanded_mask[y:y + height, x:x + width] = mask
+            rle = mask_util.encode(
+                np.array(
+                    expanded_mask, order='F', dtype=np.uint8))
+            return rle
+
+        def is_poly(segm):
+            assert isinstance(segm, (list, dict)), \
+                "Invalid segm type: {}".format(type(segm))
+            return isinstance(segm, list)
+
+        expanded_segms = []
+        for segm in segms:
+            if is_poly(segm):
+                # Polygon format
+                expanded_segms.append(
+                    _expand_poly(segm, x, y, height, width, ratio))
+            else:
+                # RLE format
+                expanded_segms.append(
+                    _expand_rle(segm, x, y, height, width, ratio))
+        return expanded_segms
+
     def __call__(self, sample, context=None):
-        if np.random.uniform(0., 1.) < self.prob:
-            return sample
+        #if np.random.uniform(0., 1.) < self.prob:
+        #    return sample
 
         img = sample['image']
         height = int(sample['h'])
@@ -1272,7 +1324,9 @@ class RandomExpand(BaseOperator):
         sample['image'] = canvas
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
-
+        if len(sample['gt_poly']) != 0 and None not in sample['gt_poly']:
+            sample['gt_poly'] = self.expand_segms(sample['gt_poly'], x, y,
+                                                  height, width, expand_ratio)
         return sample
 
 
@@ -1305,6 +1359,51 @@ class RandomCrop(BaseOperator):
         self.num_attempts = num_attempts
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
+
+    def crop_segms(self, segms, valid_ids, crop, height, width):
+        def _crop_poly(polys, crop, height, width):
+            rles = mask_util.frPyObjects(polys, height, width)
+            rle = mask_util.merge(rles)
+            mask = mask_util.decode(rle)
+            mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
+            if cv2.__version__ >= '3.2':
+                contours, hierarchy = cv2.findContours((mask).astype(np.uint8),
+                                                       cv2.RETR_TREE,
+                                                       cv2.CHAIN_APPROX_SIMPLE)
+            else:
+                contours, hierarchy = cv2.findContours((mask).astype(np.uint8),
+                                                       cv2.RETR_TREE,
+                                                       cv2.CHAIN_APPROX_SIMPLE)
+            crop_poly = list()
+            for contour in contours:
+                contour = contour.flatten().tolist()
+                if len(contour) > 4:
+                    crop_poly.append(contour)
+            return crop_poly
+
+        def _crop_rle(rle, crop, height, width):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, height, width)
+            mask = mask_util.decode(rle)
+            mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
+            rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
+            return rle
+
+        def is_poly(segm):
+            assert isinstance(segm, (list, dict)), \
+                "Invalid segm type: {}".format(type(segm))
+            return isinstance(segm, list)
+
+        crop_segms = []
+        for id in valid_ids:
+            segm = segms[id]
+            if is_poly(segm):
+                # Polygon format
+                crop_segms.append(_crop_poly(segm, crop, height, width))
+            else:
+                # RLE format
+                crop_segms.append(_crop_rle(segm, crop, height, width))
+        return crop_segms
 
     def __call__(self, sample, context=None):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
@@ -1368,6 +1467,19 @@ class RandomCrop(BaseOperator):
                 if 'gt_score' in sample:
                     sample['gt_score'] = np.take(
                         sample['gt_score'], valid_ids, axis=0)
+
+                if len(sample['gt_poly']) != 0 and None not in sample[
+                        'gt_poly']:
+                    sample['gt_poly'] = self.crop_segms(
+                        sample['gt_poly'],
+                        valid_ids,
+                        np.array(
+                            crop_box, dtype=np.int64),
+                        h,
+                        w)
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = np.take(
+                        sample['is_crowd'], valid_ids, axis=0)
                 return sample
 
         return sample
