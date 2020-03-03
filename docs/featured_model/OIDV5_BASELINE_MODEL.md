@@ -33,7 +33,7 @@ COCO和Objects365 Dataset数据格式相同，目前只支持预测和评估。
 
 ## 使用方法
 
-OIDV5数据集格式与COCO不同，目前仅支持单张图片的预测。OIDV5的模型评估方法可以参考[文档](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/challenge_evaluation.md.md)
+OIDV5数据集格式与COCO不同，目前仅支持单张图片的预测。OIDV5的模型评估方法可以参考[文档](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/challenge_evaluation.md)
 
 1. 下载模型并解压。
 
