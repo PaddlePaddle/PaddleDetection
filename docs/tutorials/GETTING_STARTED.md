@@ -29,7 +29,7 @@ list below can be viewed by `--help`
 
 |         FLAG             |  script supported  |    description    |     default     |      remark      |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  Select config file  |  None  |  **The whole description of configure can refer to [config_example](config_example)** |
+|          -c              |      ALL       |  Select config file  |  None  |  **The description of configure can refer to [CONFIG.md](../advanced_tutorials/CONFIG.md)** |
 |          -o              |      ALL       |  Set parameters in configure file  |  None  |  `-o` has higher priority to file configured by `-c`. Such as `-o use_gpu=False max_iter=10000`  |  
 |   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |
@@ -70,7 +70,7 @@ list below can be viewed by `--help`
   ```bash
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                           -o pretrain_weights=output/faster_rcnn_r50_1x/model_final/ \
+                           -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
                               finetune_exclude_pretrained_params = ['cls_score','bbox_pred']
   ```
 
@@ -120,7 +120,6 @@ Also, please note mixed precision training currently requires changing `norm_typ
   export CUDA_VISIBLE_DEVICES=0
   python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
                           -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
-                          -d dataset/coco
   ```
 
   The path of model to be evaluted can be both local path and link in [MODEL_ZOO](../MODEL_ZOO_cn.md).
