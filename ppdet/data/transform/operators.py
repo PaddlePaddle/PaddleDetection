@@ -1256,14 +1256,16 @@ class RandomExpand(BaseOperator):
             expanded_mask = np.full((int(height * ratio), int(width * ratio)),
                                     0).astype(mask.dtype)
             expanded_mask[y:y + height, x:x + width] = mask
-            if cv2.__version__ >= '3.2':
+            if cv2.__version__ >= '4.0':
+                expanded_mask = (expanded_mask).astype(np.uint8)
+                expanded_mask = expanded_mask.copy()
                 contours, hierarchy = cv2.findContours(
-                    (expanded_mask).astype(np.uint8), cv2.RETR_TREE,
-                    cv2.CHAIN_APPROX_SIMPLE)
+                    expanded_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             else:
-                contours, hierarchy = cv2.findContours(
-                    (expanded_mask).astype(np.uint8), cv2.RETR_TREE,
-                    cv2.CHAIN_APPROX_SIMPLE)
+                expanded_mask = (expanded_mask).astype(np.uint8)
+                expanded_mask = expanded_mask.copy()
+                modified_mask, contours, hierarchy = cv2.findContours(
+                    expanded_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             expanded_poly = list()
             for contour in contours:
                 contour = contour.flatten().tolist()
@@ -1366,14 +1368,16 @@ class RandomCrop(BaseOperator):
             rle = mask_util.merge(rles)
             mask = mask_util.decode(rle)
             mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
-            if cv2.__version__ >= '3.2':
-                contours, hierarchy = cv2.findContours((mask).astype(np.uint8),
-                                                       cv2.RETR_TREE,
+            if cv2.__version__ >= '4.0':
+                mask = (mask).astype(np.uint8)
+                mask = mask.copy()
+                contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE,
                                                        cv2.CHAIN_APPROX_SIMPLE)
             else:
-                contours, hierarchy = cv2.findContours((mask).astype(np.uint8),
-                                                       cv2.RETR_TREE,
-                                                       cv2.CHAIN_APPROX_SIMPLE)
+                mask = (mask).astype(np.uint8)
+                mask = mask.copy()
+                modified_mask, contours, hierarchy = cv2.findContours(
+                    mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             crop_poly = list()
             for contour in contours:
                 contour = contour.flatten().tolist()
