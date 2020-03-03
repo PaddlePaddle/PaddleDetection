@@ -26,7 +26,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 |         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  指定配置文件  |  None  |  **完整配置说明请参考[配置案例](config_example)** |
+|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../advanced_tutorials/CONFIG_cn.md)** |
 |          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
 |   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  是否边训练边测试  |  False  |    |
@@ -50,7 +50,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
   ```bash
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval -d dataset/coco
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
   ```
 
   在训练中交替执行评估, 评估在每个snapshot\_iter时开始。每次评估后还会评出最佳mAP模型保存到`best_model`文件夹下。
@@ -68,7 +68,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
   ```bash
   export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final/ \
+                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
                             finetune_exclude_pretrained_params=['cls_score','bbox_pred']
   ```
 
@@ -118,10 +118,9 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
   export CUDA_VISIBLE_DEVICES=0
   python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
-                        -d dataset/coco
   ```
 
-  评估模型可以为本地路径，例如`output/faster_rcnn_r50_1x/model_final/`, 也可以是[MODEL_ZOO](../MODEL_ZOO_cn.md)中给出的模型链接。
+  评估模型可以为本地路径，例如`output/faster_rcnn_r50_1x/model_final`, 也可以是[MODEL_ZOO](../MODEL_ZOO_cn.md)中给出的模型链接。
 
 - 通过json文件评估
 
@@ -180,6 +179,5 @@ batch size可以达到每GPU 4 (Tesla V100 16GB)。
 **A:**  可在配置文件中设置 `sample_transform`。注意需要在配置文件中加入**完整预处理**
 例如RCNN模型中`DecodeImage`, `NormalizeImage` and `Permute`。
 
-
-**Q:** affine_channel和batch norm是什么关系?
-**A:** 在RCNN系列模型加载预训练模型初始化，有时候会固定住batch norm的参数, 使用预训练模型中的全局均值和方式，并且batch norm的scale和bias参数不更新，已发布的大多ResNet系列的RCNN模型采用这种方式。这种情况下可以在config中设置norm_type为bn或affine_channel, freeze_norm为true (默认为true)，两种方式等价。affne_channel的计算方式为`scale * x + bias`。只不过设置affine_channel时，内部对batch norm的参数自动做了融合。如果训练使用的affine_channel，用保存的模型做初始化，训练其他任务时，即可使用affine_channel, 也可使用batch norm, 参数均可正确加载。
+**Q:** affine_channel和batch norm是什么关系? </br>
+**A:** 在RCNN系列模型加载预训练模型初始化，有时候会固定住batch norm的参数, 使用预训练模型中的全局均值和方式，并且batch norm的scale和bias参数不更新，已发布的大多ResNet系列的RCNN模型采用这种方式。这种情况下可以在config中设置norm_type为bn或affine_channel, freeze_norm为true (默认为true)，两种方式等价。affne_channel的计算方式为`scale * x + bias`。只不过设置affine_channel时，内部对batch norm的参数自动做了融合。如果训练使用的affine_channel，用保存的模型做初始化，训练其他任务时，既可使用affine_channel, 也可使用batch norm, 参数均可正确加载。
