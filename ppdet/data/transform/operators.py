@@ -1303,8 +1303,8 @@ class RandomExpand(BaseOperator):
         return expanded_segms
 
     def __call__(self, sample, context=None):
-        #if np.random.uniform(0., 1.) < self.prob:
-        #    return sample
+        if np.random.uniform(0., 1.) < self.prob:
+            return sample
 
         img = sample['image']
         height = int(sample['h'])
