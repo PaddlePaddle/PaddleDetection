@@ -16,13 +16,15 @@ export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                         -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
-                           finetune_exclude_pretrained_params=['cls_score','bbox_pred']
+                           finetune_exclude_pretrained_params=['cls_score','bbox_pred'] \
+                           finetune_match=True
 ```
 
 * 说明：
 
 1. pretrain\_weights的路径为COCO数据集上开源的faster RCNN模型链接，完整模型链接可参考[MODEL_ZOO](../MODEL_ZOO_cn.md)
-2. finetune\_exclude\_pretrained\_params中设置参数字段，如果参数名能够匹配以上参数字段（通配符匹配方式），则在模型加载时忽略该参数。
+2. finetune\_match设置为True时，能够自动将模型权重和加载权重进行匹配，如果出现形状不匹配自动忽略。该参数优先级高于finetune\_exclude\_pretrained\_params.
+3. finetune\_exclude\_pretrained\_params中设置参数字段，如果参数名能够匹配以上参数字段（通配符匹配方式），则在模型加载时忽略该参数。
 
 如果用户需要利用自己的数据进行finetune，模型结构不变，只需要忽略与类别数相关的参数。PaddleDetection给出了不同模型类型所对应的忽略参数字段。如下表所示：</br>
 

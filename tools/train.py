@@ -191,7 +191,11 @@ def main():
         checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
     elif cfg.pretrain_weights:
         checkpoint.load_params(
-            exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
+            exe,
+            train_prog,
+            cfg.pretrain_weights,
+            ignore_params=ignore_params,
+            finetune=cfg.finetune_match)
 
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
