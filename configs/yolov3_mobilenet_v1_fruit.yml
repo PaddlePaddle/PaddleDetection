@@ -11,8 +11,6 @@ weights: output/yolov3_mobilenet_v1_fruit/best_model
 num_classes: 3
 finetune_exclude_pretrained_params: ['yolo_output']
 use_fine_grained_loss: false
-# no need for `finetune_exclude_pretrained_params` if set `finetune_exclude_mismatch_shape` to true.
-finetune_exclude_mismatch_shape: true
 
 YOLOv3:
   backbone: MobileNet
