@@ -92,7 +92,7 @@ def _load_state(path):
     return state
 
 
-def load_params(exe, prog, path, ignore_params=[], finetune_match=False):
+def load_params(exe, prog, path, ignore_params=[], exclude_mismatch=False):
     """
     Load model from the given path.
     Args:
@@ -102,7 +102,7 @@ def load_params(exe, prog, path, ignore_params=[], finetune_match=False):
         ignore_params (list): ignore variable to load when finetuning.
             It can be specified by finetune_exclude_pretrained_params 
             and the usage can refer to docs/advanced_tutorials/TRANSFER_LEARNING.md
-        finetune (bool): whether finetune the model by pretrain_models.
+        exclude_mismatch (bool): whether finetune the model by pretrain_models.
             If it is true then the parameters with mismatched shape will not be
             loaded automatically. And it has higher priority than ignore_params.  
     """
@@ -116,38 +116,25 @@ def load_params(exe, prog, path, ignore_params=[], finetune_match=False):
     logger.info('Loading parameters from {}...'.format(path))
 
     ignore_list = None
+    state = _load_state(path)
 
-    if finetune_match:
-        all_var_shape = {}
-        for block in prog.blocks:
-            for param in block.all_parameters():
-                all_var_shape[param.name] = param.shape
-        state = _load_state(path)
-        state = {k: v for k, v in state.items() if v.shape == all_var_shape[k]}
-        fluid.io.set_program_state(prog, state)
-        return
-
-    if ignore_params:
+    if ignore_params and not exclude_mismatch:
         all_var_names = [var.name for var in prog.list_vars()]
         ignore_list = filter(
             lambda var: any([re.match(name, var) for name in ignore_params]),
             all_var_names)
         ignore_list = list(ignore_list)
 
-    if os.path.isdir(path):
-        if not ignore_list:
-            fluid.load(prog, path, executor=exe)
-            return
+    if exclude_mismatch:
+        all_var_shape = {}
+        for block in prog.blocks:
+            for param in block.all_parameters():
+                all_var_shape[param.name] = param.shape
+        ignore_list = [
+            name for name, shape in all_var_shape.items()
+            if shape != state[name].shape
+        ]
 
-        # XXX this is hackish, but seems to be the least contrived way...
-        tmp = tempfile.mkdtemp()
-        dst = os.path.join(tmp, os.path.basename(os.path.normpath(path)))
-        shutil.copytree(path, dst, ignore=shutil.ignore_patterns(*ignore_list))
-        fluid.load(prog, dst, executor=exe)
-        shutil.rmtree(tmp)
-        return
-
-    state = _load_state(path)
     if ignore_list:
         for k in ignore_list:
             if k in state:

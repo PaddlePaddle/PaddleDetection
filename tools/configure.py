@@ -54,7 +54,7 @@ MISC_CONFIG = {
     "log_iter": 20,
     "use_gpu": True,
     "finetune_exclude_pretrained_params": "<value>",
-    "finetune_match": False,
+    "finetune_exclude_mismatch_shape": False,
 }
 
 

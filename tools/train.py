@@ -182,6 +182,7 @@ def main():
 
     ignore_params = cfg.finetune_exclude_pretrained_params \
                  if 'finetune_exclude_pretrained_params' in cfg else []
+    exclude_mismatch = getattr(cfg, 'finetune_exclude_mismatch_shape', False)
 
     start_iter = 0
     if FLAGS.resume_checkpoint:
@@ -195,7 +196,7 @@ def main():
             train_prog,
             cfg.pretrain_weights,
             ignore_params=ignore_params,
-            finetune=cfg.finetune_match)
+            exclude_mismatch=exclude_mismatch)
 
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
