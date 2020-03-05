@@ -171,10 +171,6 @@ class CascadeRCNNClsAware(object):
             return pred
 
     def build_multi_scale(self, feed_vars):
-        #         im = feed_vars['image']
-        #         im_info = feed_vars['im_info']
-        #         im_shape = feed_vars['im_shape']
-
         required_fields = ['image', 'im_shape', 'im_info']
         self._input_check(required_fields, feed_vars)
 
