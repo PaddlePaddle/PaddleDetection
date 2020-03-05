@@ -6,22 +6,26 @@
 
 ## PaddleDetection进行迁移学习
 
-在迁移学习中，对预训练模型进行选择性加载，PaddleDetection自动忽略模型和预训练模型中对应参数形状不同的参数。例如：
+在迁移学习中，对预训练模型进行选择性加载，PaddleDetection支持如下两种迁移学习方式：
+
+#### 直接加载预训练权重（**推荐方式**）
+
+模型中和预训练模型中对应参数形状不同的参数将自动被忽略，例如：
 
 ```python
 export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-# 如果模型和预训练模型中对应的参数形状不同，
-# 则自动不加载这类参数
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar
+                           -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar
 
 ```
 
-另外，可以显示的指定训练过程中忽略参数的名字，可通过如下两种方式实现：
+#### 使用`finetune_exclude_pretrained_params`参数控制忽略参数名
 
-1. 在 YMAL 配置文件中通过设置`finetune_exclude_pretrained_params`或`finetune_exclude_mismatch_shape`字段。可参考[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_mobilenet_v1_fruit.yml#L15)
-2. 在 train.py的启动参数中设置`finetune_exclude_pretrained_params`或`finetune_exclude_mismatch_shape`。例如：
+可以显示的指定训练过程中忽略参数的名字，任何参数名均可加入`finetune_exclude_pretrained_params`中，为实现这一目的，可通过如下方式实现：
+
+1. 在 YMAL 配置文件中通过设置`finetune_exclude_pretrained_params`字段。可参考[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_mobilenet_v1_fruit.yml#L15)
+2. 在 train.py的启动参数中设置`finetune_exclude_pretrained_params`。例如：
 
 ```python
 export PYTHONPATH=$PYTHONPATH:.
