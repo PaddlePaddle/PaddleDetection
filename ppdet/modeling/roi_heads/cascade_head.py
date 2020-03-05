@@ -220,8 +220,13 @@ class CascadeBBoxHead(object):
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
 
-    def get_prediction_cls_aware(self, im_info, im_shape, cascade_cls_prob,
-                                 cascade_decoded_box, cascade_bbox_reg_weights):
+    def get_prediction_cls_aware(self,
+                                 im_info,
+                                 im_shape,
+                                 cascade_cls_prob,
+                                 cascade_decoded_box,
+                                 cascade_bbox_reg_weights,
+                                 return_box_score=False):
         '''
         get_prediction_cls_aware: predict bbox for each class
         '''
@@ -247,6 +252,8 @@ class CascadeBBoxHead(object):
             decoded_bbox, shape=(-1, self.num_classes, 4))
 
         box_out = fluid.layers.box_clip(input=decoded_bbox, im_info=im_shape)
+        if return_box_score:
+            return {'bbox': box_out, 'score': sum_cascade_cls_prob}
         pred_result = self.nms(bboxes=box_out, scores=sum_cascade_cls_prob)
         return {"bbox": pred_result}
 
