@@ -23,8 +23,8 @@ from collections import OrderedDict
 import copy
 
 import paddle.fluid as fluid
-
 from ppdet.core.workspace import register
+from .input_helper import multiscale_def
 
 __all__ = ['CascadeRCNNClsAware']
 
@@ -170,6 +170,94 @@ class CascadeRCNNClsAware(object):
                 self.cascade_decoded_box, self.cascade_bbox_reg_weights)
             return pred
 
+    def build_multi_scale(self, feed_vars):
+        required_fields = ['image', 'im_shape', 'im_info']
+        self._input_check(required_fields, feed_vars)
+
+        result = {}
+        im_shape = feed_vars['im_shape']
+        result['im_shape'] = im_shape
+
+        for i in range(len(self.im_info_names) // 2):
+            im = feed_vars[self.im_info_names[2 * i]]
+            im_info = feed_vars[self.im_info_names[2 * i + 1]]
+
+            # backbone
+            body_feats = self.backbone(im)
+            result.update(body_feats)
+            # FPN
+            if self.fpn is not None:
+                body_feats, spatial_scale = self.fpn.get_output(body_feats)
+
+            # rpn proposals
+            rpn_rois = self.rpn_head.get_proposals(
+                body_feats, im_info, mode="test")
+
+            proposal_list = []
+            roi_feat_list = []
+            rcnn_pred_list = []
+            rcnn_target_list = []
+
+            bbox_pred = None
+
+            self.cascade_var_v = []
+            for stage in range(3):
+                var_v = np.array(
+                    self.cascade_bbox_reg_weights[stage], dtype="float32")
+                prior_box_var = fluid.layers.create_tensor(dtype="float32")
+                fluid.layers.assign(input=var_v, output=prior_box_var)
+                self.cascade_var_v.append(prior_box_var)
+
+            self.cascade_decoded_box = []
+            self.cascade_cls_prob = []
+
+            for stage in range(3):
+                if stage > 0:
+                    pool_rois = decoded_assign_box
+                else:
+                    pool_rois = rpn_rois
+
+                # extract roi features
+                roi_feat = self.roi_extractor(body_feats, pool_rois,
+                                              spatial_scale)
+                roi_feat_list.append(roi_feat)
+
+                # bbox head
+                cls_score, bbox_pred = self.bbox_head.get_output(
+                    roi_feat,
+                    cls_agnostic_bbox_reg=self.bbox_head.num_classes,
+                    wb_scalar=1.0 / self.cascade_rcnn_loss_weight[stage],
+                    name='_' + str(stage + 1))
+
+                cls_prob = fluid.layers.softmax(cls_score, use_cudnn=False)
+
+                decoded_box, decoded_assign_box = fluid.layers.box_decoder_and_assign(
+                    pool_rois, self.cascade_var_v[stage], bbox_pred, cls_prob,
+                    self.bbox_clip)
+
+                self.cascade_cls_prob.append(cls_prob)
+                self.cascade_decoded_box.append(decoded_box)
+
+                rcnn_pred_list.append((cls_score, bbox_pred))
+
+            pred = self.bbox_head.get_prediction_cls_aware(
+                im_info,
+                im_shape,
+                self.cascade_cls_prob,
+                self.cascade_decoded_box,
+                self.cascade_bbox_reg_weights,
+                return_box_score=True)
+
+            bbox_name = 'bbox_' + str(i)
+            score_name = 'score_' + str(i)
+            if 'flip' in im.name:
+                bbox_name += '_flip'
+                score_name += '_flip'
+            result[bbox_name] = pred['bbox']
+            result[score_name] = pred['score']
+
+        return result
+
     def _inputs_def(self, image_shape):
         im_shape = [None] + image_shape
         # yapf: disable
@@ -192,9 +280,20 @@ class CascadeRCNNClsAware(object):
                          'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
                          'is_crowd', 'gt_mask'
                      ],
+                     multi_scale=False,
+                     num_scales=-1,
+                     use_flip=None,
                      use_dataloader=True,
                      iterable=False):
         inputs_def = self._inputs_def(image_shape)
+        fields = copy.deepcopy(fields)
+        if multi_scale:
+            ms_def, ms_fields = multiscale_def(image_shape, num_scales,
+                                               use_flip)
+            inputs_def.update(ms_def)
+            fields += ms_fields
+            self.im_info_names = ['image', 'im_info'] + ms_fields
+
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
@@ -207,10 +306,17 @@ class CascadeRCNNClsAware(object):
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader
 
+    def _input_check(self, require_fields, feed_vars):
+        for var in require_fields:
+            assert var in feed_vars, \
+                "{} has no {} field".format(feed_vars, var)
+
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
-    def eval(self, feed_vars):
+    def eval(self, feed_vars, multi_scale=None):
+        if multi_scale:
+            return self.build_multi_scale(feed_vars)
         return self.build(feed_vars, 'test')
 
     def test(self, feed_vars):
