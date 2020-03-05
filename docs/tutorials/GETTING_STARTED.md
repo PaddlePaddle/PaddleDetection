@@ -62,7 +62,18 @@ list below can be viewed by `--help`
 
 - Fine-tune other task
 
-  When using pre-trained model to fine-tune other task, two methods can be used:
+  When using pre-trained model to fine-tune other task, pretrain\_weights can be used directly. The parameters with different shape will be ignored automatically. For example:
+
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  # If the shape of parameters in program is different from pretrain_weights,
+  # then PaddleDetection will not use such parameters.
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
+                           -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
+  ```
+
+  Besides, the name of parameters which need to ignore can be specified explicitly as well. Two methods can be used:
 
   1. The excluded pre-trained parameters can be set by `finetune_exclude_pretrained_params` in YAML config
   2. Set -o finetune\_exclude\_pretrained_params in the arguments.

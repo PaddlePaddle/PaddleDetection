@@ -60,7 +60,15 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 - Fine-tune其他任务
 
-  使用预训练模型fine-tune其他任务时，可采用如下两种方式：
+  使用预训练模型fine-tune其他任务时，可以直接加载预训练模型，形状不匹配的参数将自动忽略，例如：
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
+                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
+  ```
+
+  也可以显示的指定忽略参数名，可采用如下两种方式：
 
   1. 在YAML配置文件中设置`finetune_exclude_pretrained_params`
   2. 在命令行中添加-o finetune\_exclude\_pretrained_params对预训练模型进行选择性加载。
@@ -93,7 +101,6 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 - 若本地未找到数据集，将自动下载数据集并保存在`~/.cache/paddle/dataset`中。
 - 预训练模型自动下载并保存在`〜/.cache/paddle/weights`中。
 - 模型checkpoints默认保存在`output`中，可通过修改配置文件中save_dir进行配置。
-- RCNN系列模型CPU训练在PaddlePaddle 1.5.1及以下版本暂不支持。
 
 ### 混合精度训练
 
