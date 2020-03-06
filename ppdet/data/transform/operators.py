@@ -451,7 +451,7 @@ class AutoAugmentImage(BaseOperator):
 
     def __call__(self, sample, context=None):
         """
-        Learning Data Augmentation Strategies for Object Detection, see https://arxiv.org/abs/1904.11492
+        Learning Data Augmentation Strategies for Object Detection, see https://arxiv.org/abs/1906.11172
         """
         samples = sample
         batch_input = True
