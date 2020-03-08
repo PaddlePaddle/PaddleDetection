@@ -84,11 +84,11 @@ TwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.02
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
+    milestones: [180000, 240000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
