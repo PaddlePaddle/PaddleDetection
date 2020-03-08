@@ -58,7 +58,7 @@
 | MobileNetV1      |   r578    |  2.93(-69.64%) |  31.30(-66.90%) |   416    | 26.8(-2.5) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
 | MobileNetV1      |   r578    |  1.74(-69.64%) |  31.30(-66.90%) |   320    | 24.0(-3.1) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`sensity`剪裁策略下，`YOLOv3-ResNet50-vd-dcn`和`YOLOv3-MobileNetV1`分别减少了`16.06%`和`34.27%`的FLOPs，输入图像尺寸为608时精度分别提高`0.7`和`0.9`
 - 在使用`r578`剪裁策略下，`YOLOv3-ResNet50-vd-dcn`和`YOLOv3-MobileNetV1`分别减少了`32.98%`和`69.64%`的FLOPs，输入图像尺寸为608时精度分别降低`0.8`和`1.5`
 
@@ -76,7 +76,7 @@
 | MobileNetV1      |   r578    |  2.88(-69.57%) |  30.81(-67.00%) |   416    | 77.7(+1.0) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578.tar) |
 | MobileNetV1      |   r578    |  1.70(-69.57%) |  30.81(-67.00%) |   320    | 75.5(+0.2) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`sensity`和`r578`剪裁策略下，`YOLOv3-MobileNetV1`分别减少了`34.55%`和`69.57%`的FLOPs，输入图像尺寸为608时精度分别提高`2.2`和`1.4`
 
 ### 蒸馏通道剪裁模型
@@ -96,7 +96,7 @@ COCO数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      |   r578    |  2.93(-69.64%) |  31.30(-66.90%) |   416    | YOLOv3-ResNet34(34.3)        | 28.0(-1.3) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578_distillby_r34.tar) |
 | MobileNetV1      |   r578    |  1.74(-69.64%) |  31.30(-66.90%) |   320    | YOLOv3-ResNet34(31.4)        | 25.1(-2.0) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578_distillby_r34.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`r578`剪裁策略并使用`YOLOv3-ResNet50-vd-dcn`作为teacher模型蒸馏，`YOLOv3-ResNet50-vd-dcn`模型减少了`32.94%`的FLOPs，输入图像尺寸为608时精度提高`0.6`
 - 在使用`r578`剪裁策略并使用`YOLOv3-ResNet34`作为teacher模型蒸馏下，`YOLOv3-MobileNetV1`模型减少了`69.64%`的FLOPs，输入图像尺寸为608时精度降低`0.3`
 
@@ -111,7 +111,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      |   r578    |  2.88(-69.57%) |  30.81(-67.00%) |   416    | YOLOv3-ResNet34(81.9)  | 78.7(+2.0) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578_distillby_r34.tar) |
 | MobileNetV1      |   r578    |  1.70(-69.57%) |  30.81(-67.00%) |   320    | YOLOv3-ResNet34(80.1)  | 76.3(+2.0) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_voc_prune578_distillby_r34.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`r578`剪裁策略并使用`YOLOv3-ResNet34`作为teacher模型蒸馏下，`YOLOv3-MobileNetV1`模型减少了`69.57%`的FLOPs，输入图像尺寸为608时精度提高`2.6`
 
 ### YOLOv3通道剪裁模型推理时延
@@ -155,7 +155,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      | split_distiil |   416    | YOLOv3-ResNet34(34.3)  | 30.0(+0.7)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_distilled.tar) |
 | MobileNetV1      | split_distiil |   320    | YOLOv3-ResNet34(31.4)  | 27.1(+0.0)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_distilled.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`YOLOv3-ResNet34`模型通过`split_distiil`策略蒸馏下，输入图像尺寸为608时`YOLOv3-MobileNetV1`模型精度提高`2.1`
 
 ### YOLOv3 on Pascal VOC
@@ -169,7 +169,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      |  l2_distiil   |   416    | YOLOv3-ResNet34(81.9)  | 78.2(+1.5) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_voc_distilled.tar) |
 | MobileNetV1      |  l2_distiil   |   320    | YOLOv3-ResNet34(80.1)  | 75.5(+0.2) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_voc_distilled.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中`YOLOv3-MobileNetV1`提供了在`608/416/320`三种不同尺寸下的精度结果
 - 在使用`YOLOv3-ResNet34`模型通过`l2_distiil`策略蒸馏下，输入图像尺寸为608时`YOLOv3-MobileNetV1`模型精度提高`2.8`
 
 ## 量化模型库
@@ -203,7 +203,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | R50vd-dcn        | object365  |  aware   |   416    | 37.5(-)      | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r50vd_dcn_obj365_pretrained_coco_quant_aware.tar) |
 | R50vd-dcn        | object365  |  aware   |   320    | 34.1(-)      | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r50vd_dcn_obj365_pretrained_coco_quant_aware.tar) |
 
-- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中部分模型提供了在608/416/320三种不同尺寸下的精度结果
+- YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型权重不同尺寸图片，表中部分模型提供了在`608/416/320`三种不同尺寸下的精度结果
 - `YOLOv3-MobileNetV1`使用离线(post)和在线(aware)两种量化方式，输入图像尺寸为608时精度分别降低`1.4`和`1.2`
 - `YOLOv3-ResNet34`使用离线(post)和在线(aware)两种量化方式，输入图像尺寸为608时精度分别降低`0.5`和`1.1`
 - `YOLOv3-R50vd-dcn`使用在线(aware)量化方式，输入图像尺寸为608时精度降低`0.8`
@@ -223,6 +223,6 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | BlazeFace-NAS    |  aware   |   640    | 83.1(-0.6) | 79.7(-1.0) | 64.2(-1.6) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/blazeface_nas_quant_aware.tar) |
 
 - `BlazeFace`系列模型中在线(aware)量化性能明显优于离线(post)量化
-- `BlazeFace`模型使用在线(aware)量化方式，在Easy/Medium/Hard数据集上精度分别降低`1.0`, `1.3`和`2.1`
-- `BlazeFace-Lite`模型使用在线(aware)量化方式，在Easy/Medium/Hard数据集上精度分别降低`1.2`, `1.2`和`1.1`
-- `BlazeFace-NAS`模型使用在线(aware)量化方式，在Easy/Medium/Hard数据集上精度分别降低`0.6`, `1.0`和`1.6`
+- `BlazeFace`模型使用在线(aware)量化方式，在`Easy/Medium/Hard`数据集上精度分别降低`1.0`, `1.3`和`2.1`
+- `BlazeFace-Lite`模型使用在线(aware)量化方式，在`Easy/Medium/Hard`数据集上精度分别降低`1.2`, `1.2`和`1.1`
+- `BlazeFace-NAS`模型使用在线(aware)量化方式，在`Easy/Medium/Hard`数据集上精度分别降低`0.6`, `1.0`和`1.6`
