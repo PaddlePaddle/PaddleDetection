@@ -19,4 +19,5 @@
 
 | Backbone                | Type     | AutoAug policy | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           |
 | :---------------------- | :-------------:| :-------: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
-| ResNet50-vd-FPN         | Faster     |   v1 |  2     |   3x    |     22.80     |  39.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_aa_3x.tar) |
+| ResNet50-vd-FPN         | Faster     |   v1 |  2     |   3x    |     22.800     |  39.9  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_aa_3x.tar) |
+| ResNet101-vd-FPN         | Faster     |   v1 |  2     |   3x    |     17.652     |  42.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r101_vd_fpn_aa_3x.tar) |
