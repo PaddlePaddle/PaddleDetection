@@ -86,7 +86,7 @@
 COCO数据集上蒸馏通道剪裁模型库如下。
 
 | 骨架网络         |  剪裁策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 |         teacher模型          |   Box AP   |                           下载                          |
-| :----------------| :-------: | :------------: | :-------------: | :------: | :--------------------------- | :--------: | :-----------------------------------------------------: |
+| :----------------| :-------: | :------------: | :-------------: | :------: | :--------------------------: | :--------: | :-----------------------------------------------------: |
 | ResNet50-vd-dcn  |  baseline | 44.71          | 176.82          |   608    |              -               | 39.1       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn.tar) |
 | ResNet50-vd-dcn  |   r578    | 29.98(-32.94%) | 112.08(-36.61%) |   608    | YOLOv3-ResNet50-vd-dcn(39.1) | 39.7(+0.6) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_r50vd_dcn_prune578_distill.tar) |
 | MobileNetV1      |  baseline | 20.64          |  94.60          |   608    |              -               | 29.3       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
@@ -103,7 +103,7 @@ COCO数据集上蒸馏通道剪裁模型库如下。
 Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 
 | 骨架网络         |  剪裁策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 |       teacher模型      |   Box AP   |                           下载                          |
-| :----------------| :-------: | :------------: | :-------------: | :------: | :--------------------- | :--------: | :-----------------------------------------------------: |
+| :----------------| :-------: | :------------: | :-------------: | :------: | :--------------------: | :--------: | :-----------------------------------------------------: |
 | MobileNetV1      |  baseline | 20.20          |  93.37          |   608    |           -            | 76.2       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
 | MobileNetV1      |  baseline |  9.46          |  93.37          |   416    |           -            | 76.7       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
 | MobileNetV1      |  baseline |  5.60          |  93.37          |   320    |           -            | 75.3       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
@@ -147,7 +147,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 ### YOLOv3 on COCO
 
 | 骨架网络         |    蒸馏策略   | 输入尺寸 |       teacher模型      |    Box AP    |                           下载                          |
-| :----------------| :-----------: | :------: | :--------------------- | :----------: | :-----------------------------------------------------: |
+| :----------------| :-----------: | :------: | :--------------------: | :----------: | :-----------------------------------------------------: |
 | MobileNetV1      |    baseline   |   608    |           -            | 29.3         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNetV1      |    baseline   |   416    |           -            | 29.3         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNetV1      |    baseline   |   320    |           -            | 27.1         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
@@ -161,7 +161,7 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 ### YOLOv3 on Pascal VOC
 
 | 骨架网络         |    蒸馏策略   | 输入尺寸 |       teacher模型      |   Box AP   |                           下载                          |
-| :----------------| :-----------: | :------: | :--------------------- | :--------: | :-----------------------------------------------------: |
+| :----------------| :-----------: | :------: | :--------------------: | :--------: | :-----------------------------------------------------: |
 | MobileNetV1      |    baseline   |   608    |           -            | 76.2       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
 | MobileNetV1      |    baseline   |   416    |           -            | 76.7       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
 | MobileNetV1      |    baseline   |   320    |           -            | 75.3       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) |
