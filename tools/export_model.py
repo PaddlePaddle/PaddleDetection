@@ -30,6 +30,42 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
+def parse_reader(reader_cfg):
+    preprocess_list = []
+
+    image_shape = getattr(reader_cfg['inputs_def'], 'image_shape', [None])
+    has_shape_def = not None in image_shape
+    scale_set = {'RCNN', 'RetinaNet'}
+
+    dataset = reader_cfg['dataset']
+    with_background = dataset.__dict__['with_background']
+
+    sample_transforms = reader_cfg['sample_transforms']
+    for st in sample_transforms[1:]:
+        method = st.__class__.__name__
+        p = {'type': method.replace('Image', '')}
+        params = st.__dict__
+        params.pop('_id')
+        if p['type'] == 'Resize' and has_shape_def:
+            params['target_size'] = image_shape[1]
+            params['max_size'] = image_shape[2] if infer_cfg[
+                'arch'] in scale_set else 0
+
+        p.update(params)
+        preprocess_list.append(p)
+    batch_transforms = reader_cfg.get('batch_transforms', None)
+    if batch_transforms:
+        methods = [bt.__class__.__name__ for bt in batch_transforms]
+        for bt in batch_transforms:
+            method = bt.__class__.__name__
+            if method == 'PadBatch':
+                preprocess_list.append({'type': 'PadStride'})
+                params = bt.__dict__
+                preprocess_list[-1].update({'stride': params['pad_to_stride']})
+                break
+    return preprocess_list, with_background
+
+
 def dump_infer_config(config):
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
@@ -47,41 +83,9 @@ def dump_infer_config(config):
             infer_cfg['arch'] = arch
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             break
-    preprocess_list = [{
-        'type': 'Resize'
-    }, {
-        'type': 'Normalize'
-    }, {
-        'type': 'Permute'
-    }]
 
-    image_shape = config['TestReader']['inputs_def']['image_shape']
-    scale_set = {'RCNN', 'RetinaNet'}
-    preprocess_list[0]['target_size'] = image_shape[1]
-    if infer_cfg['arch'] in scale_set:
-        preprocess_list[0]['max_size'] = image_shape[1]
-
-    sample_transforms = config['TestReader']['sample_transforms']
-    for p in preprocess_list[1:]:
-        for st in sample_transforms:
-            method = st.__class__.__name__
-            if p['type'] in method:
-                params = st.__dict__
-                params.pop('_id')
-                p.update(params)
-                break
-    batch_transforms = config['TestReader'].get('batch_transforms', None)
-    if batch_transforms:
-        methods = [bt.__class__.__name__ for bt in batch_transforms]
-        for bt in batch_transforms:
-            method = bt.__class__.__name__
-            if method == 'PadBatch':
-                preprocess_list.append({'type': 'PadStride'})
-                params = bt.__dict__
-                preprocess_list[-1].update({'stride': params['pad_to_stride']})
-                break
-
-    infer_cfg['Preprocess'] = preprocess_list
+    infer_cfg['Preprocess'], infer_cfg['with_background'] = parse_reader(config[
+        'TestReader'])
     import yaml
     yaml.dump(infer_cfg, open(os.path.join(save_dir, 'infer_cfg.yml'), 'w'))
     logger.info("Export inference config file to {}".format(

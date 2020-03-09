@@ -2,15 +2,11 @@ import os
 import time
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 import paddle.fluid as fluid
 
 import argparse
-from ppdet.utils.visualizer import visualize_results, draw_bbox
-from ppdet.utils.eval_utils import eval_results
-import ppdet.utils.voc_eval as voc_eval
-import ppdet.utils.coco_eval as coco_eval
 import cv2
 import yaml
 import copy
@@ -19,8 +15,6 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
-eval_clses = {'COCO': coco_eval, 'VOC': voc_eval}
 
 precision_map = {
     'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
@@ -104,17 +98,21 @@ def get_extra_info(im, arch, shape, scale):
 
 
 class Resize(object):
-    def __init__(self, target_size, max_size=0, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 max_size=0,
+                 interp=cv2.INTER_LINEAR,
+                 use_cv2=True):
         super(Resize, self).__init__()
         self.target_size = target_size
         self.max_size = max_size
         self.interp = interp
+        self.use_cv2 = use_cv2
 
-    def __call__(self, im, arch):
+    def __call__(self, im, use_trt=False):
         origin_shape = im.shape[:2]
         im_c = im.shape[2]
-        scale_set = {'RCNN', 'RetinaNet'}
-        if self.max_size != 0 and arch in scale_set:
+        if self.max_size != 0:
             im_size_min = np.min(origin_shape[0:2])
             im_size_max = np.max(origin_shape[0:2])
             im_scale = float(self.target_size) / float(im_size_min)
@@ -127,15 +125,30 @@ class Resize(object):
         else:
             im_scale_x = float(self.target_size) / float(origin_shape[1])
             im_scale_y = float(self.target_size) / float(origin_shape[0])
-        im = cv2.resize(
-            im,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
+            resize_w = self.target_size
+            resize_h = self.target_size
+        if self.use_cv2:
+            im = cv2.resize(
+                im,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+        else:
+            if self.max_size != 0:
+                raise TypeError(
+                    'If you set max_size to cap the maximum size of image,'
+                    'please set use_cv2 to True to resize the image.')
+            im = im.astype('uint8')
+            im = Image.fromarray(im)
+            im = im.resize((int(resize_w), int(resize_h)), self.interp)
+            im = np.array(im)
         # padding im
-        if self.max_size != 0 and arch in scale_set:
+        if self.max_size != 0 and use_trt:
+            logger.warning('Due to the limitation of tensorRT, padding the'
+                           'image shape to {} * {}'.format(self.max_size,
+                                                           self.max_size))
             padding_im = np.zeros(
                 (self.max_size, self.max_size, im_c), dtype=np.float32)
             im_h, im_w = im.shape[:2]
@@ -150,16 +163,20 @@ class Normalize(object):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
-        if is_channel_first:
-            print('WARNING: Normalize is before Permute for all models'
-                  ' in cpp_infer, and is_channel_first is set to False')
+        self.is_channel_first = is_channel_first
 
     def __call__(self, im):
         im = im.astype(np.float32, copy=False)
+        if self.is_channel_first:
+            mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
+            std = np.array(self.std)[:, np.newaxis, np.newaxis]
+        else:
+            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+            std = np.array(self.std)[np.newaxis, np.newaxis, :]
         if self.is_scale:
             im = im / 255.0
-        im -= self.mean
-        im /= self.std
+        im -= mean
+        im /= std
         return im
 
 
@@ -213,6 +230,466 @@ def Preprocess(img_path, arch, config):
     extra_info = get_extra_info(img, arch, orig_shape, scale)
     data += extra_info
     return data
+
+
+def default_category_info(metric, with_background):
+    logger.info('Use default label from {} dataset'.format(metric))
+    voc_map = {
+        0: 'background',
+        1: 'aeroplane',
+        2: 'bicycle',
+        3: 'bird',
+        4: 'boat',
+        5: 'bottle',
+        6: 'bus',
+        7: 'car',
+        8: 'cat',
+        9: 'chair',
+        10: 'cow',
+        11: 'diningtable',
+        12: 'dog',
+        13: 'horse',
+        14: 'motorbike',
+        15: 'person',
+        16: 'pottedplant',
+        17: 'sheep',
+        18: 'sofa',
+        19: 'train',
+        20: 'tvmonitor'
+    }
+
+    clsid2catid = {
+        1: 1,
+        2: 2,
+        3: 3,
+        4: 4,
+        5: 5,
+        6: 6,
+        7: 7,
+        8: 8,
+        9: 9,
+        10: 10,
+        11: 11,
+        12: 13,
+        13: 14,
+        14: 15,
+        15: 16,
+        16: 17,
+        17: 18,
+        18: 19,
+        19: 20,
+        20: 21,
+        21: 22,
+        22: 23,
+        23: 24,
+        24: 25,
+        25: 27,
+        26: 28,
+        27: 31,
+        28: 32,
+        29: 33,
+        30: 34,
+        31: 35,
+        32: 36,
+        33: 37,
+        34: 38,
+        35: 39,
+        36: 40,
+        37: 41,
+        38: 42,
+        39: 43,
+        40: 44,
+        41: 46,
+        42: 47,
+        43: 48,
+        44: 49,
+        45: 50,
+        46: 51,
+        47: 52,
+        48: 53,
+        49: 54,
+        50: 55,
+        51: 56,
+        52: 57,
+        53: 58,
+        54: 59,
+        55: 60,
+        56: 61,
+        57: 62,
+        58: 63,
+        59: 64,
+        60: 65,
+        61: 67,
+        62: 70,
+        63: 72,
+        64: 73,
+        65: 74,
+        66: 75,
+        67: 76,
+        68: 77,
+        69: 78,
+        70: 79,
+        71: 80,
+        72: 81,
+        73: 82,
+        74: 84,
+        75: 85,
+        76: 86,
+        77: 87,
+        78: 88,
+        79: 89,
+        80: 90
+    }
+
+    coco_map = {
+        0: 'background',
+        1: 'person',
+        2: 'bicycle',
+        3: 'car',
+        4: 'motorcycle',
+        5: 'airplane',
+        6: 'bus',
+        7: 'train',
+        8: 'truck',
+        9: 'boat',
+        10: 'traffic light',
+        11: 'fire hydrant',
+        13: 'stop sign',
+        14: 'parking meter',
+        15: 'bench',
+        16: 'bird',
+        17: 'cat',
+        18: 'dog',
+        19: 'horse',
+        20: 'sheep',
+        21: 'cow',
+        22: 'elephant',
+        23: 'bear',
+        24: 'zebra',
+        25: 'giraffe',
+        27: 'backpack',
+        28: 'umbrella',
+        31: 'handbag',
+        32: 'tie',
+        33: 'suitcase',
+        34: 'frisbee',
+        35: 'skis',
+        36: 'snowboard',
+        37: 'sports ball',
+        38: 'kite',
+        39: 'baseball bat',
+        40: 'baseball glove',
+        41: 'skateboard',
+        42: 'surfboard',
+        43: 'tennis racket',
+        44: 'bottle',
+        46: 'wine glass',
+        47: 'cup',
+        48: 'fork',
+        49: 'knife',
+        50: 'spoon',
+        51: 'bowl',
+        52: 'banana',
+        53: 'apple',
+        54: 'sandwich',
+        55: 'orange',
+        56: 'broccoli',
+        57: 'carrot',
+        58: 'hot dog',
+        59: 'pizza',
+        60: 'donut',
+        61: 'cake',
+        62: 'chair',
+        63: 'couch',
+        64: 'potted plant',
+        65: 'bed',
+        67: 'dining table',
+        70: 'toilet',
+        72: 'tv',
+        73: 'laptop',
+        74: 'mouse',
+        75: 'remote',
+        76: 'keyboard',
+        77: 'cell phone',
+        78: 'microwave',
+        79: 'oven',
+        80: 'toaster',
+        81: 'sink',
+        82: 'refrigerator',
+        84: 'book',
+        85: 'clock',
+        86: 'vase',
+        87: 'scissors',
+        88: 'teddy bear',
+        89: 'hair drier',
+        90: 'toothbrush'
+    }
+    catid2name = coco_map if metric == 'COCO' else voc_map
+    if metric == 'VOC':
+        offset = 0 if with_background else 1
+        clsid2catid = {i: i + offset for i in range(len(voc_map) - offset)}
+    elif not with_background:
+        clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+
+    return clsid2catid, catid2name
+
+
+def get_category_info(with_background=True, metric='COCO', label_list=None):
+    if label_list is None:
+        return default_category_info(metric, with_background)
+    logger.info("Load categories from {}".format(label_list))
+    cats = []
+    with open(label_list) as f:
+        for line in f.readlines():
+            cats.append(line.strip())
+
+    if cats[0] != 'background' and with_background:
+        cats.insert(0, 'background')
+    if cats[0] == 'background' and not with_background:
+        cats = cats[1:]
+    clsid2catid = {i: i for i in range(len(cats))}
+    catid2name = {i: name for i, name in enumerate(cats)}
+    return clsid2catid, catid2name
+
+
+def bbox2out(results, clsid2catid, is_bbox_normalized=False):
+    """
+    Args:
+        results: request a dict, should include: `bbox`, `im_id`,
+                 if is_bbox_normalized=True, also need `im_shape`.
+        clsid2catid: class id to category id map of COCO2017 dataset.
+        is_bbox_normalized: whether or not bbox is normalized.
+    """
+    xywh_res = []
+    for t in results:
+        bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
+        im_ids = np.array(t['im_id'][0]).flatten()
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+
+        k = 0
+        for i in range(len(lengths)):
+            num = lengths[i]
+            im_id = int(im_ids[i])
+            for j in range(num):
+                dt = bboxes[k]
+                clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
+                catid = (clsid2catid[int(clsid)])
+
+                if is_bbox_normalized:
+                    xmin, ymin, xmax, ymax = \
+                            clip_bbox([xmin, ymin, xmax, ymax])
+                    w = xmax - xmin
+                    h = ymax - ymin
+                    im_shape = t['im_shape'][0][i].tolist()
+                    im_height, im_width = int(im_shape[0]), int(im_shape[1])
+                    xmin *= im_width
+                    ymin *= im_height
+                    w *= im_width
+                    h *= im_height
+                else:
+                    w = xmax - xmin + 1
+                    h = ymax - ymin + 1
+
+                bbox = [xmin, ymin, w, h]
+                coco_res = {
+                    'image_id': im_id,
+                    'category_id': catid,
+                    'bbox': bbox,
+                    'score': score
+                }
+                xywh_res.append(coco_res)
+                k += 1
+    return xywh_res
+
+
+def draw_bbox(image, im_id, catid2name, bboxes, threshold):
+    """
+    draw bbox on image
+    """
+    draw = ImageDraw.Draw(image)
+
+    catid2color = {}
+    color_list = np.array([
+        0.000,
+        0.447,
+        0.741,
+        0.850,
+        0.325,
+        0.098,
+        0.929,
+        0.694,
+        0.125,
+        0.494,
+        0.184,
+        0.556,
+        0.466,
+        0.674,
+        0.188,
+        0.301,
+        0.745,
+        0.933,
+        0.635,
+        0.078,
+        0.184,
+        0.300,
+        0.300,
+        0.300,
+        0.600,
+        0.600,
+        0.600,
+        1.000,
+        0.000,
+        0.000,
+        1.000,
+        0.500,
+        0.000,
+        0.749,
+        0.749,
+        0.000,
+        0.000,
+        1.000,
+        0.000,
+        0.000,
+        0.000,
+        1.000,
+        0.667,
+        0.000,
+        1.000,
+        0.333,
+        0.333,
+        0.000,
+        0.333,
+        0.667,
+        0.000,
+        0.333,
+        1.000,
+        0.000,
+        0.667,
+        0.333,
+        0.000,
+        0.667,
+        0.667,
+        0.000,
+        0.667,
+        1.000,
+        0.000,
+        1.000,
+        0.333,
+        0.000,
+        1.000,
+        0.667,
+        0.000,
+        1.000,
+        1.000,
+        0.000,
+        0.000,
+        0.333,
+        0.500,
+        0.000,
+        0.667,
+        0.500,
+        0.000,
+        1.000,
+        0.500,
+        0.333,
+        0.000,
+        0.500,
+        0.333,
+        0.333,
+        0.500,
+        0.333,
+        0.667,
+        0.500,
+        0.333,
+        1.000,
+        0.500,
+        0.667,
+        0.000,
+        0.500,
+        0.667,
+        0.333,
+        0.500,
+        0.667,
+        0.667,
+        0.500,
+        0.667,
+        1.000,
+        0.500,
+        1.000,
+        0.000,
+        0.500,
+        1.000,
+        0.333,
+        0.500,
+        1.000,
+        0.667,
+        0.500,
+        1.000,
+        1.000,
+        0.500,
+        0.000,
+        0.333,
+        1.000,
+    ]).astype(np.float32).reshape((-1, 3)) * 255
+    for dt in np.array(bboxes):
+        if im_id != dt['image_id']:
+            continue
+        catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
+        if score < threshold:
+            continue
+
+        xmin, ymin, w, h = bbox
+        xmax = xmin + w
+        ymax = ymin + h
+
+        if catid not in catid2color:
+            idx = np.random.randint(len(color_list))
+            catid2color[catid] = color_list[idx]
+        color = tuple(catid2color[catid])
+
+        # draw bbox
+        draw.line(
+            [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+             (xmin, ymin)],
+            width=2,
+            fill=color)
+
+        # draw label
+        text = "{} {:.2f}".format(catid2name[catid], score)
+        tw, th = draw.textsize(text)
+        draw.rectangle(
+            [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
+        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+
+    return image
+
+
+def get_bbox_result(outputs, result, conf, clsid2catid):
+    is_bbox_normalized = True if 'SSD' in conf['arch'] else False
+
+    out = outputs[-1]
+    lod = out.lod() if conf['use_python_inference'] else out.lod
+    lengths = offset_to_lengths(lod)
+    np_data = np.array(out) if conf['use_python_inference'] else out.as_ndarray(
+    )
+    result['bbox'] = (np_data, lengths)
+    result['im_id'] = np.array([[0]])
+
+    bbox_results = bbox2out([result], clsid2catid, is_bbox_normalized)
+    return bbox_results
+
+
+def visualize(bbox_results, catid2name):
+    image = Image.open(FLAGS.infer_img).convert('RGB')
+    image = draw_bbox(image, 0, catid2name, bbox_results, 0.5)
+    image_path = os.path.split(FLAGS.infer_img)[-1]
+    if not os.path.exists(FLAGS.output_dir):
+        os.makedirs(FLAGS.output_dir)
+    out_path = os.path.join(FLAGS.output_dir, image_path)
+    image.save(out_path, quality=95)
+    logger.info('Save visualize result to {}'.format(out_path))
 
 
 def infer():
@@ -275,33 +752,18 @@ def infer():
 
     print("Inference: {} ms per batch image".format(ms))
 
+    clsid2catid, catid2name = get_category_info(
+        conf['with_background'], conf['metric'], FLAGS.label_list)
+    bbox_result = get_bbox_result(outs, res, conf, clsid2catid)
     if FLAGS.visualize:
-        eval_cls = eval_clses[conf['metric']]
+        visualize(bbox_result, catid2name)
 
-        with_background = conf['arch'] != 'YOLO'
-        clsid2catid, catid2name = eval_cls.get_category_info(
-            None, with_background, True)
-
-        is_bbox_normalized = True if 'SSD' in conf['arch'] else False
-
-        out = outs[-1]
-        lod = out.lod() if conf['use_python_inference'] else out.lod
-        lengths = offset_to_lengths(lod)
-        np_data = np.array(out) if conf[
-            'use_python_inference'] else out.as_ndarray()
-
-        res['bbox'] = (np_data, lengths)
-        res['im_id'] = np.array([[0]])
-
-        bbox_results = eval_cls.bbox2out([res], clsid2catid, is_bbox_normalized)
-
-        image = Image.open(FLAGS.infer_img).convert('RGB')
-        image = draw_bbox(image, 0, catid2name, bbox_results, 0.5)
-        image_path = os.path.split(FLAGS.infer_img)[-1]
-        if not os.path.exists(FLAGS.output_dir):
-            os.makedirs(FLAGS.output_dir)
-        out_path = os.path.join(FLAGS.output_dir, image_path)
-        image.save(out_path, quality=95)
+    if FLAGS.dump_box:
+        import json
+        outfile = os.path.join(FLAGS.output_dir, 'bbox.json')
+        logger.info('dump bbox to {}'.format(outfile))
+        with open(outfile, 'w') as f:
+            json.dump(bbox_result, f)
 
 
 if __name__ == '__main__':
@@ -322,5 +784,15 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output visualization files.")
+    parser.add_argument(
+        "--label_list",
+        type=str,
+        default=None,
+        help="Directory for label files.")
+    parser.add_argument(
+        "--dump_box",
+        action='store_true',
+        default=False,
+        help="Whether to dump box")
     FLAGS = parser.parse_args()
     infer()
