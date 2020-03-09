@@ -22,9 +22,11 @@ python tools/cpp_infer.py --model_path=inference_model/faster_rcnn_r50_1x/ --con
 -  config_path: 参数配置、数据预处理配置文件，注意不是训练时的配置文件
 -  infer_img:   待预测图片
 -  visualize:   是否保存可视化结果，默认保存路径为```output/```
+-  dump_box:    是否保存预测结果，保存格式为json文件，默认保存路径为```output/```
+-  label_list:  自定义标签文件，None时根据metric加载默认数据集标签，格式为txt文件，默认值为None
 
 
-更多参数可在```tools/cpp_demo.yml```中查看，主要参数：
+更多参数可在```demo/infer_cfg.yml```中查看，主要参数：
 
 
 - use_python_inference:

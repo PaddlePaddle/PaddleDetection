@@ -1,0 +1,27 @@
+Preprocess:
+- interp: 2
+  max_size: 0
+  target_size: 608
+  type: Resize
+  use_cv2: true
+- is_channel_first: false
+  is_scale: true
+  mean:
+  - 0.485
+  - 0.456
+  - 0.406
+  std:
+  - 0.229
+  - 0.224
+  - 0.225
+  type: Normalize
+- channel_first: true
+  to_bgr: false
+  type: Permute
+arch: YOLO
+draw_threshold: 0.5
+metric: COCO
+min_subgraph_size: 3
+mode: fluid
+use_python_inference: false
+with_background: false
