@@ -153,6 +153,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 - 上表中也提供了原论文[YOLOv3](https://arxiv.org/abs/1804.02767)中YOLOv3-DarkNet53的精度，我们的实现版本主要从在bounding box的宽度和高度回归上使用了L1损失，图像mixup和label smooth等方法优化了其精度。
 - YOLO v3在8卡，总batch size为64下训练270轮。数据增强包括：mixup, 随机颜色失真，随机剪裁，随机扩张，随机插值法，随机翻转。YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型测试不同尺寸图片，我们分别提供了尺寸为608/416/320大小的测试结果。deformable卷积作用在骨架网络5阶段。
+- YOLO v3增强版模型通过引入可变形卷积，dropblock和IoU loss，将精度进一步提升至43.2， 详情见[YOLOv3增强模型](./featured_model/YOLOv3_ENHANCEMENT.md)
 
 ### RetinaNet
 
