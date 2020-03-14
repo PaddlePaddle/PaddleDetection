@@ -161,6 +161,7 @@ improved performance mainly by using L1 loss in bounding box width and height re
 randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. YOLO v3 used randomly
 reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
 results of image size 608/416/320 above. Deformable conv is added on stage 5 of backbone.
+- YOLO v3 enhanced model improves the precision to 43.2 involved with deformable conv, dropblock and IoU loss. See more details in [YOLOv3_ENHANCEMENT](./featured_model/YOLOv3_ENHANCEMENT.md)
 
 ### RetinaNet
 
