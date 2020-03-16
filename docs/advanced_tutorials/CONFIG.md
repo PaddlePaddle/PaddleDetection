@@ -184,7 +184,7 @@ A small utility (`tools/configure.py`) is included to simplify the configuration
 4.  `generate`: Generate a configuration template for a given list of modules. By default it generates a complete configuration file, which can be quite verbose; if a `--minimal` flag is given, it generates a template that only contain non optional settings. For example, to generate a configuration for Faster R-CNN architecture with `ResNet` backbone and `FPN`, run:
 
     ```shell
-    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead FasterRCNNTrainFeed FasterRCNNTestFeed LearningRate OptimizerBuilder
+    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead LearningRate OptimizerBuilder
     ```
 
     For a minimal version, run:

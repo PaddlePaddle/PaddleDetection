@@ -2,7 +2,7 @@
 
 本篇教程使用Python API对[导出模型](EXPORT_MODEL.md)保存的inference_model进行预测。
 
-在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法，代码走不通的分支，两者都可以进行预测。在入门教程的训练/评估/预测流程中介绍的预测流程，即tools/infer.py是使用训练引擎分支的预测流程。保存的inference_model，可以通过`fluid.io.load_inference_model`接口，走训练引擎分支预测。本文档也同时介绍通过预测引擎的Python API进行预测，一般而言这种方式的速度优于前者。
+在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法，代码走不同的分支，两者都可以进行预测。在入门教程的训练/评估/预测流程中介绍的预测流程，即tools/infer.py是使用训练引擎分支的预测流程。保存的inference_model，可以通过`fluid.io.load_inference_model`接口，走训练引擎分支预测。本文档也同时介绍通过预测引擎的Python API进行预测，一般而言这种方式的速度优于前者。
 
 
 这篇教程介绍的Python API预测示例，除了可视化部分依赖PaddleDetection外，预处理、模型结构、执行流程均不依赖PaddleDetection。
