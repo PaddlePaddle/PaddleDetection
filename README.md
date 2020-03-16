@@ -82,7 +82,6 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [模型压缩](slim)
     - [压缩benchmark](slim)
     - [量化](slim/quantization)
-    - [敏感度分析](slim/sensitive)
     - [剪枝](slim/prune)
     - [蒸馏](slim/distillation)
     - [神经网络搜索](slim/nas)
