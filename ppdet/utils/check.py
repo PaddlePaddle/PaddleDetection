@@ -55,7 +55,7 @@ def check_version():
           "Please make sure the version is good with your code." \
 
     try:
-        fluid.require_version('1.6.0')
+        fluid.require_version('1.7.0')
     except Exception as e:
         logger.error(err)
         sys.exit(1)

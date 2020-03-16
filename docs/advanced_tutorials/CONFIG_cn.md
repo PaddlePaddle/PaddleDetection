@@ -174,7 +174,7 @@ pip install typeguard http://github.com/willthefrog/docstring_parser/tarball/mas
 4.  `generate`: 根据给出的模块列表生成配置文件，默认生成完整配置，如果指定 `--minimal` ，生成最小配置，即省略所有默认配置项。例如，执行下列命令可以生成Faster R-CNN (`ResNet` backbone + `FPN`) 架构的配置文件:
 
     ```shell
-    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead FasterRCNNTrainFeed FasterRCNNTestFeed LearningRate OptimizerBuilder
+    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead LearningRate OptimizerBuilder
     ```
 
     如需最小配置，运行：
