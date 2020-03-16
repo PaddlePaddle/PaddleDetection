@@ -93,7 +93,6 @@ Advanced Features:
 - [Model compression](slim)
     - [Model compression benchmark](slim)
     - [Quantization](slim/quantization)
-    - [Sensitive analysis](slim/sensitive)
     - [Model pruning](slim/prune)
     - [Model distillation](slim/distillation)
     - [Neural Architecture Search](slim/nas)
