@@ -40,7 +40,7 @@ YOLOv3Head:
 YOLOv3Loss:
   batch_size: 8
   ignore_thresh: 0.7
-  label_smooth: false
+  label_smooth: true
 
 LearningRate:
   base_lr: 0.001
