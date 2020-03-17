@@ -294,135 +294,24 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
     return xywh_res
 
 
-def draw_bbox(image, im_id, catid2name, bboxes, threshold):
+def draw_bbox(image, im_id, catid2name, bboxes, threshold, num_classes):
     """
     draw bbox on image
     """
     draw = ImageDraw.Draw(image)
 
-    catid2color = {}
-    color_list = np.array([
-        0.000,
-        0.447,
-        0.741,
-        0.850,
-        0.325,
-        0.098,
-        0.929,
-        0.694,
-        0.125,
-        0.494,
-        0.184,
-        0.556,
-        0.466,
-        0.674,
-        0.188,
-        0.301,
-        0.745,
-        0.933,
-        0.635,
-        0.078,
-        0.184,
-        0.300,
-        0.300,
-        0.300,
-        0.600,
-        0.600,
-        0.600,
-        1.000,
-        0.000,
-        0.000,
-        1.000,
-        0.500,
-        0.000,
-        0.749,
-        0.749,
-        0.000,
-        0.000,
-        1.000,
-        0.000,
-        0.000,
-        0.000,
-        1.000,
-        0.667,
-        0.000,
-        1.000,
-        0.333,
-        0.333,
-        0.000,
-        0.333,
-        0.667,
-        0.000,
-        0.333,
-        1.000,
-        0.000,
-        0.667,
-        0.333,
-        0.000,
-        0.667,
-        0.667,
-        0.000,
-        0.667,
-        1.000,
-        0.000,
-        1.000,
-        0.333,
-        0.000,
-        1.000,
-        0.667,
-        0.000,
-        1.000,
-        1.000,
-        0.000,
-        0.000,
-        0.333,
-        0.500,
-        0.000,
-        0.667,
-        0.500,
-        0.000,
-        1.000,
-        0.500,
-        0.333,
-        0.000,
-        0.500,
-        0.333,
-        0.333,
-        0.500,
-        0.333,
-        0.667,
-        0.500,
-        0.333,
-        1.000,
-        0.500,
-        0.667,
-        0.000,
-        0.500,
-        0.667,
-        0.333,
-        0.500,
-        0.667,
-        0.667,
-        0.500,
-        0.667,
-        1.000,
-        0.500,
-        1.000,
-        0.000,
-        0.500,
-        1.000,
-        0.333,
-        0.500,
-        1.000,
-        0.667,
-        0.500,
-        1.000,
-        1.000,
-        0.500,
-        0.000,
-        0.333,
-        1.000,
-    ]).astype(np.float32).reshape((-1, 3)) * 255
+    color_list = num_classes * [0, 0, 0]
+    for i in range(0, num_classes):
+        j = 0
+        lab = i
+        while lab:
+            color_list[i * 3] |= (((lab >> 0) & 1) << (7 - j))
+            color_list[i * 3 + 1] |= (((lab >> 1) & 1) << (7 - j))
+            color_list[i * 3 + 2] |= (((lab >> 2) & 1) << (7 - j))
+            j += 1
+            lab >>= 3
+    color_list = np.array(color_list).reshape(-1, 3)
+
     for dt in np.array(bboxes):
         if im_id != dt['image_id']:
             continue
@@ -434,10 +323,11 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         xmax = xmin + w
         ymax = ymin + h
 
-        if catid not in catid2color:
-            idx = np.random.randint(len(color_list))
-            catid2color[catid] = color_list[idx]
-        color = tuple(catid2color[catid])
+        #if catid not in catid2color:
+        #    idx = np.random.randint(len(color_list))
+        #    catid2color[catid] = color_list[idx]
+        #color = tuple(catid2color[catid])
+        color = tuple(color_list[catid])
 
         # draw bbox
         draw.line(
@@ -471,9 +361,9 @@ def get_bbox_result(outputs, result, conf, clsid2catid):
     return bbox_results
 
 
-def visualize(bbox_results, catid2name):
+def visualize(bbox_results, catid2name, num_classes):
     image = Image.open(FLAGS.infer_img).convert('RGB')
-    image = draw_bbox(image, 0, catid2name, bbox_results, 0.5)
+    image = draw_bbox(image, 0, catid2name, bbox_results, 0.5, num_classes)
     image_path = os.path.split(FLAGS.infer_img)[-1]
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
@@ -546,7 +436,7 @@ def infer():
                                                 conf['label_list'])
     bbox_result = get_bbox_result(outs, res, conf, clsid2catid)
     if FLAGS.visualize:
-        visualize(bbox_result, catid2name)
+        visualize(bbox_result, catid2name, len(conf['label_list']))
 
     if FLAGS.dump_box:
         import json
