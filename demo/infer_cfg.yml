@@ -1,3 +1,10 @@
+draw_threshold: 0.5
+use_python_inference: false
+mode: fluid
+metric: VOC
+arch: YOLO
+min_subgraph_size: 3
+with_background: false
 Preprocess:
 - interp: 2
   max_size: 0
@@ -18,10 +25,24 @@ Preprocess:
 - channel_first: true
   to_bgr: false
   type: Permute
-arch: YOLO
-draw_threshold: 0.5
-metric: COCO
-min_subgraph_size: 3
-mode: fluid
-use_python_inference: false
-with_background: false
+label_list:
+- aeroplane
+- bicycle
+- bird
+- boat
+- bottle
+- bus
+- car
+- cat
+- chair
+- cow
+- diningtable
+- dog
+- horse
+- motorbike
+- person
+- pottedplant
+- sheep
+- sofa
+- train
+- tvmonitor

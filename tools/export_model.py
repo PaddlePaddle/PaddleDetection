@@ -23,22 +23,33 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-
+import yaml
 import logging
+from collections import OrderedDict
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-def parse_reader(reader_cfg):
+def parse_reader(reader_cfg, metric, arch):
     preprocess_list = []
 
-    image_shape = getattr(reader_cfg['inputs_def'], 'image_shape', [None])
+    image_shape = reader_cfg['inputs_def'].get('image_shape', [None])
     has_shape_def = not None in image_shape
     scale_set = {'RCNN', 'RetinaNet'}
 
     dataset = reader_cfg['dataset']
-    with_background = dataset.__dict__['with_background']
+    anno_file = dataset.get_anno()
+    with_background = dataset.with_background
+    use_default_label = dataset.use_default_label
+
+    if metric == 'COCO':
+        from ppdet.utils.coco_eval import get_category_info
+    if metric == "VOC":
+        from ppdet.utils.voc_eval import get_category_info
+    clsid2catid, catid2name = get_category_info(anno_file, with_background,
+                                                use_default_label)
+    label_list = [str(cat) for cat in catid2name.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
     for st in sample_transforms[1:]:
@@ -48,8 +59,7 @@ def parse_reader(reader_cfg):
         params.pop('_id')
         if p['type'] == 'Resize' and has_shape_def:
             params['target_size'] = image_shape[1]
-            params['max_size'] = image_shape[2] if infer_cfg[
-                'arch'] in scale_set else 0
+            params['max_size'] = image_shape[2] if arch in scale_set else 0
 
         p.update(params)
         preprocess_list.append(p)
@@ -63,18 +73,21 @@ def parse_reader(reader_cfg):
                 params = bt.__dict__
                 preprocess_list[-1].update({'stride': params['pad_to_stride']})
                 break
-    return preprocess_list, with_background
+
+    return with_background, preprocess_list, label_list
 
 
 def dump_infer_config(config):
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
-    infer_cfg = {
+    from ppdet.core.config.yaml_helpers import setup_orderdict
+    setup_orderdict()
+    infer_cfg = OrderedDict({
         'use_python_inference': False,
         'mode': 'fluid',
         'draw_threshold': 0.5,
         'metric': config['metric']
-    }
+    })
     trt_min_subgraph = {'YOLO': 3, 'SSD': 40, 'RCNN': 40, 'RetinaNet': 40}
     infer_arch = config['architecture']
 
@@ -84,9 +97,9 @@ def dump_infer_config(config):
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             break
 
-    infer_cfg['Preprocess'], infer_cfg['with_background'] = parse_reader(config[
-        'TestReader'])
-    import yaml
+    infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
+        'label_list'] = parse_reader(config['TestReader'], config['metric'],
+                                     infer_cfg['arch'])
     yaml.dump(infer_cfg, open(os.path.join(save_dir, 'infer_cfg.yml'), 'w'))
     logger.info("Export inference config file to {}".format(
         os.path.join(save_dir, 'infer_cfg.yml')))
@@ -173,5 +186,6 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output model files.")
+
     FLAGS = parser.parse_args()
     main()
