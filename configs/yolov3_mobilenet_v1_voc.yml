@@ -37,6 +37,10 @@ YOLOv3Head:
     score_threshold: 0.01
 
 YOLOv3Loss:
+  # batch_size here is only used for fine grained loss, not used
+  # for training batch_size setting, training batch_size setting
+  # is in configs/yolov3_reader.yml TrainReader.batch_size, batch
+  # size here should be set as same value as TrainReader.batch_size
   batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
