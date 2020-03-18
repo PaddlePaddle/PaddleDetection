@@ -28,6 +28,8 @@ def create_config(model_path, mode='fluid', batch_size=1, min_subgraph_size=3):
     params_file = os.path.join(model_path, '__params__')
     config = fluid.core.AnalysisConfig(model_file, params_file)
     config.enable_use_gpu(100, 0)
+    config.switch_use_feed_fetch_ops(False)
+    config.switch_specify_input_names(True)
     logger.info('min_subgraph_size = %d.' % (min_subgraph_size))
 
     if mode in precision_map.keys():
@@ -195,8 +197,9 @@ class Permute(object):
 
 class PadStride(object):
     def __init__(self, stride=0):
-        assert stride >= 0, "Unsupported stride: {}, the stride in PadStride must be greater or equal to 0".format(
-            stride)
+        assert stride >= 0, "Unsupported stride: {},"
+        " the stride in PadStride must be greater "
+        "or equal to 0".format(stride)
         self.coarsest_stride = stride
 
     def __call__(self, im):
@@ -323,10 +326,6 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold, num_classes):
         xmax = xmin + w
         ymax = ymin + h
 
-        #if catid not in catid2color:
-        #    idx = np.random.randint(len(color_list))
-        #    catid2color[catid] = color_list[idx]
-        #color = tuple(catid2color[catid])
         color = tuple(color_list[catid])
 
         # draw bbox
@@ -346,14 +345,12 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold, num_classes):
     return image
 
 
-def get_bbox_result(outputs, result, conf, clsid2catid):
+def get_bbox_result(output, result, conf, clsid2catid):
     is_bbox_normalized = True if 'SSD' in conf['arch'] else False
-
-    out = outputs[-1]
-    lod = out.lod() if conf['use_python_inference'] else out.lod
-    lengths = offset_to_lengths(lod)
-    np_data = np.array(out) if conf['use_python_inference'] else out.as_ndarray(
-    )
+    if conf['use_python_inference']: output = output[-1]
+    lengths = offset_to_lengths(output.lod())
+    np_data = np.array(output) if conf[
+        'use_python_inference'] else output.copy_to_cpu()
     result['bbox'] = (np_data, lengths)
     result['im_id'] = np.array([[0]])
 
@@ -398,12 +395,15 @@ def infer():
             params_filename='__params__')
         data_dict = {k: v for k, v in zip(feed_var_names, img_data)}
     else:
-        inputs = [fluid.core.PaddleTensor(d.copy()) for d in img_data]
         config = create_config(
             model_path,
             mode=conf['mode'],
             min_subgraph_size=conf['min_subgraph_size'])
         predict = fluid.core.create_paddle_predictor(config)
+        input_names = predict.get_input_names()
+        for ind, d in enumerate(img_data):
+            input_tensor = predict.get_input_tensor(input_names[ind])
+            input_tensor.copy_from_cpu(d.copy())
 
     logger.info('warmup...')
     for i in range(10):
@@ -413,7 +413,7 @@ def infer():
                            fetch_list=fetch_targets,
                            return_numpy=False)
         else:
-            outs = predict.run(inputs)
+            predict.zero_copy_run()
 
     cnt = 100
     logger.info('run benchmark...')
@@ -425,7 +425,9 @@ def infer():
                            fetch_list=fetch_targets,
                            return_numpy=False)
         else:
-            outs = predict.run(inputs)
+            predict.zero_copy_run()
+            output_names = predict.get_output_names()
+            outs = predict.get_output_tensor(output_names[0])
     t2 = time.time()
 
     ms = (t2 - t1) * 1000.0 / float(cnt)
