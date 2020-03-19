@@ -97,6 +97,8 @@ def dump_infer_config(config):
             infer_cfg['min_subgraph_size'] = min_subgraph_size
             break
 
+    if 'Mask' in config['architecture']:
+        infer_cfg['mask_resolution'] = config['MaskHead']['resolution']
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
         'label_list'] = parse_reader(config['TestReader'], config['metric'],
                                      infer_cfg['arch'])
