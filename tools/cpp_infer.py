@@ -471,7 +471,7 @@ def get_bbox_result(output, result, conf, clsid2catid):
 
 def get_mask_result(output, result, conf, clsid2catid):
     resolution = conf['mask_resolution']
-    mask_out, bbox_out = output
+    bbox_out, mask_out = output
     lengths = offset_to_lengths(bbox_out.lod())
     bbox = np.array(bbox_out) if conf[
         'use_python_inference'] else bbox_out.copy_to_cpu()
@@ -566,7 +566,7 @@ def infer():
 
     clsid2catid, catid2name = get_category_info(conf['with_background'],
                                                 conf['label_list'])
-    bbox_result = get_bbox_result(outs[-1], res, conf, clsid2catid)
+    bbox_result = get_bbox_result(outs[0], res, conf, clsid2catid)
 
     mask_result = None
     if 'mask_resolution' in conf:
