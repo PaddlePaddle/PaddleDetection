@@ -148,7 +148,7 @@ class Resize(object):
             im = np.array(im)
         # padding im
         if self.max_size != 0 and use_trt:
-            logger.warning('Due to the limitation of tensorRT, padding the'
+            logger.warning('Due to the limitation of tensorRT, padding the '
                            'image shape to {} * {}'.format(self.max_size,
                                                            self.max_size))
             padding_im = np.zeros(
@@ -214,7 +214,7 @@ class PadStride(object):
         return padding_im
 
 
-def Preprocess(img_path, arch, config):
+def Preprocess(img_path, arch, config, use_trt):
     img = DecodeImage(img_path)
     orig_shape = img.shape
     scale = 1.
@@ -224,7 +224,7 @@ def Preprocess(img_path, arch, config):
         obj = data_aug_conf.pop('type')
         preprocess = eval(obj)(**data_aug_conf)
         if obj == 'Resize':
-            img, scale = preprocess(img, arch)
+            img, scale = preprocess(img, use_trt)
         else:
             img = preprocess(img)
 
@@ -508,7 +508,8 @@ def infer():
     with open(config_path) as f:
         conf = yaml.safe_load(f)
 
-    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'])
+    use_trt = not conf['use_python_inference'] and 'trt' in conf['mode']
+    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'], use_trt)
     if 'SSD' in conf['arch']:
         img_data, res['im_shape'] = img_data
         img_data = [img_data]
