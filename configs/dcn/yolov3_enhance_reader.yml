@@ -44,7 +44,7 @@ TrainReader:
   shuffle: true
   drop_last: true
   worker_num: 8
-  bufsize: 32
+  bufsize: 2
   use_process: true
 
 EvalReader:
@@ -76,7 +76,7 @@ EvalReader:
   batch_size: 8
   drop_empty: false
   worker_num: 8
-  bufsize: 32
+  bufsize: 2
 
 TestReader:
   inputs_def:

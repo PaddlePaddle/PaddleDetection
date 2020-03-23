@@ -51,7 +51,7 @@ TrainReader:
   mixup_epoch: 250
   drop_last: true
   worker_num: 8
-  bufsize: 32
+  bufsize: 2
   use_process: true
 
 
@@ -63,7 +63,7 @@ EvalReader:
     !COCODataSet
       image_dir: val2017
       anno_path: annotations/instances_val2017.json
-      dataset_dir: dataset/coco
+      dataset_dir: dataset/coco 
       with_background: false
   sample_transforms:
     - !DecodeImage

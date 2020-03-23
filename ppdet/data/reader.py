@@ -195,7 +195,7 @@ class Reader(object):
                  use_process=False,
                  use_fine_grained_loss=False,
                  num_classes=80,
-                 bufsize=100,
+                 bufsize=2,
                  memsize='3G',
                  inputs_def=None):
         self._dataset = dataset

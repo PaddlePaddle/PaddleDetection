@@ -129,7 +129,7 @@ class TestReader(unittest.TestCase):
             drop_empty=True,
             worker_num=2,
             use_process=False,
-            bufsize=8,
+            bufsize=2,
             inputs_def=inputs_def)()
         for i in range(2):
             for samples in data_loader:

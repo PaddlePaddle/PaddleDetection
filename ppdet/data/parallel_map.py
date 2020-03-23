@@ -60,7 +60,7 @@ class ParallelMap(object):
                  source,
                  worker,
                  worker_num,
-                 bufsize=100,
+                 bufsize=2,
                  use_process=False,
                  memsize='3G'):
         self._worker_num = worker_num
