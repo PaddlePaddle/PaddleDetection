@@ -67,3 +67,15 @@ python ../../prune/eval.py \
 --pruned_ratios="0.2,0.3,0.4" \
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
+
+## 6. 模型导出
+
+如果想要将剪裁模型接入到C++预测库或者Serving服务，可通过`../../prune/export_model.py`导出该模型。
+
+```
+python ../../prune/export_model.py \
+-c ../../../configs/yolov3_mobilenet_v1_voc.yml \
+--pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
+--pruned_ratios="0.2,0.3,0.4" \
+-o weights=output/yolov3_mobilenet_v1_voc/model_final
+```
