@@ -89,7 +89,6 @@ TrainReader:
   shuffle: true
   drop_last: true
   worker_num: 8
-  bufsize: 16
   use_process: true
 
 EvalReader:
@@ -116,7 +115,6 @@ EvalReader:
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 32
   worker_num: 8
-  bufsize: 32
   use_process: false
 
 TestReader:
