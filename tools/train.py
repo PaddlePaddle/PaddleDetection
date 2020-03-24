@@ -144,7 +144,7 @@ def main():
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(cfg.EvalReader)
+        eval_reader = create_reader(cfg.EvalReader, devices_num=1)
         eval_loader.set_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -200,8 +200,10 @@ def main():
         checkpoint.load_params(
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
-    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
-                                 devices_num, cfg)
+    train_reader = create_reader(
+        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
+        cfg,
+        devices_num=devices_num)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer
