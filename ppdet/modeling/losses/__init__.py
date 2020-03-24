@@ -20,7 +20,6 @@ from . import giou_loss
 from . import diou_loss
 from . import iou_loss
 from . import balanced_l1_loss
-from . import diou_loss_yolo
 
 from .yolo_loss import *
 from .smooth_l1_loss import *
@@ -28,4 +27,3 @@ from .giou_loss import *
 from .diou_loss import *
 from .iou_loss import *
 from .balanced_l1_loss import *
-from .diou_loss_yolo import *
