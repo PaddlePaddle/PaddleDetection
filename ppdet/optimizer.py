@@ -59,6 +59,26 @@ class PiecewiseDecay(object):
 
 
 @serializable
+class CosineDecay(object):
+    """
+    Cosine learning rate decay
+
+    Args:
+        max_iters (float): max iterations for the training process.
+            if you commbine cosine decay with warmup, it is recommended that
+            the max_iter is much larger than the warmup iter
+    """
+
+    def __init__(self, max_iters=180000):
+        self.max_iters = max_iters
+
+    def __call__(self, base_lr=None, learning_rate=None):
+        assert base_lr is not None, "either base LR or values should be provided"
+        lr = fluid.layers.cosine_decay(base_lr, 1, self.max_iters)
+        return lr
+
+
+@serializable
 class LinearWarmup(object):
     """
     Warm up learning rate linearly
