@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -24,13 +23,21 @@ from paddle import fluid
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['GiouLoss']
+
+
 @register
 @serializable
 class GiouLoss(object):
 
     __shared__ = ['num_classes']
 
-    def __init__(self, loss_weight=10., is_cls_agnostic=False, num_classes=81, max_height=608, max_width=608,use_xiou_loss_yolo=False):
+    def __init__(self,
+                 loss_weight=10.,
+                 is_cls_agnostic=False,
+                 num_classes=81,
+                 max_height=608,
+                 max_width=608,
+                 use_xiou_loss_yolo=False):
         super(GiouLoss, self).__init__()
         self.loss_weight = loss_weight
         self.is_cls_agnostic = is_cls_agnostic
@@ -38,17 +45,30 @@ class GiouLoss(object):
         self._MAX_HI = max_height
         self._MAX_WI = max_width
         self._use_xiou_loss_yolo = use_xiou_loss_yolo
-    
+
     def __call__(self, *args, **kwargs):
         if self._use_xiou_loss_yolo:
-            _x, _y, _w, _h, _tx, _ty, _tw, _th, _anchors, _downsample_ratio, _batch_size = args[0], args[1],args[2],args[3],args[4],args[5], args[6],args[7],args[8],args[9],args[10]
-            return self._giou_loss_yolo(_x,_y,_w,_h,_tx,_ty,_tw,_th,_anchors,_downsample_ratio,_batch_size,self.loss_weight,self._MAX_HI,self._MAX_WI)
+            _x, _y, _w, _h, _tx, _ty, _tw, _th, _anchors, _downsample_ratio, _batch_size = args[
+                0], args[1], args[2], args[3], args[4], args[5], args[6], args[
+                    7], args[8], args[9], args[10]
+            return self._giou_loss_yolo(
+                _x, _y, _w, _h, _tx, _ty, _tw, _th, _anchors, _downsample_ratio,
+                _batch_size, self.loss_weight, self._MAX_HI, self._MAX_WI)
         else:
-            x, y, inside_weight, outside_weight = kwargs['x'], kwargs['y'],kwargs['inside_weight'],kwargs['outside_weight']
-            return self.giou_loss(x, y, inside_weight, outside_weight,self.loss_weight,self.is_cls_agnostic,self.num_classes,bbox_reg_weight=[0.1, 0.1, 0.2, 0.2])
+            x, y, inside_weight, outside_weight = kwargs['x'], kwargs[
+                'y'], kwargs['inside_weight'], kwargs['outside_weight']
+            return self.giou_loss(
+                x,
+                y,
+                inside_weight,
+                outside_weight,
+                self.loss_weight,
+                self.is_cls_agnostic,
+                self.num_classes,
+                bbox_reg_weight=[0.1, 0.1, 0.2, 0.2])
 
-
-    def giou_loss(self,x, y, inside_weight, outside_weight,loss_weight,is_cls_agnostic,num_classes,bbox_reg_weight):
+    def giou_loss(self, x, y, inside_weight, outside_weight, loss_weight,
+                  is_cls_agnostic, num_classes, bbox_reg_weight):
         eps = 1.e-10
         x1, y1, x2, y2 = self.bbox_transform(x, bbox_reg_weight)
         x1g, y1g, x2g, y2g = self.bbox_transform(y, bbox_reg_weight)
@@ -124,7 +144,9 @@ class GiouLoss(object):
 
         return x1, y1, x2, y2
 
-    def _giou_loss_yolo(self, x, y, w, h, tx, ty, tw, th, anchors, downsample_ratio, batch_size, loss_weight,MAX_HI, MAX_WI):
+    def _giou_loss_yolo(self, x, y, w, h, tx, ty, tw, th, anchors,
+                        downsample_ratio, batch_size, loss_weight, MAX_HI,
+                        MAX_WI):
         eps = 1.e-10
         x1, y1, x2, y2 = self._bbox_transform(
             x, y, w, h, anchors, downsample_ratio, batch_size, False)
@@ -244,4 +266,3 @@ class GiouLoss(object):
             default_initializer=NumpyArrayInitializer(numpy_array))
         paddle_array.stop_gradient = True
         return paddle_array
-
