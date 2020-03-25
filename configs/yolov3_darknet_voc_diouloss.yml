@@ -39,11 +39,10 @@ YOLOv3Loss:
   batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
-  iou_loss: DiouLoss
+  iou_loss: DiouLossYolo
 
-DiouLoss:
+DiouLossYolo:
   loss_weight: 5
-  use_xiou_loss_yolo: true
 
 LearningRate:
   base_lr: 0.001
