@@ -80,7 +80,7 @@ class FCOSHead(object):
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
-    def _fcos_head(self, features, fpn_stride, is_training=False):
+    def _fcos_head(self, features, fpn_stride, fpn_scale, is_training=False):
         """
         Args:
             features (Variables): feature map from FPN

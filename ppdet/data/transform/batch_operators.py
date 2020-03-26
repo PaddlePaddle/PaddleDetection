@@ -351,9 +351,9 @@ class Gt2FCOSTarget(BaseOperator):
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
             gt_score = sample['gt_score']
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) /
+            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) / \
                 np.floor(im_info[1] / im_info[2])
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) /
+            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) / \
                 np.floor(im_info[0] / im_info[2])
             # calculate the locations
             h, w = sample['image'].shape[1:3]
@@ -401,9 +401,9 @@ class Gt2FCOSTarget(BaseOperator):
             labels = gt_class[points2min_area_ind]
             labels[points2min_area == self.INF] = 0
             reg_targets = reg_targets[range(xs.shape[0]), points2min_area_ind]
-            ctn_targets = np.sqrt((reg_targets[:, [0, 2]].min(axis=1) /
-                                  reg_targets[:, [0, 2]].max(axis=1)) *
-                                  (reg_targets[:, [1, 3]].min(axis=1) /
+            ctn_targets = np.sqrt((reg_targets[:, [0, 2]].min(axis=1) / \
+                                  reg_targets[:, [0, 2]].max(axis=1)) * \
+                                  (reg_targets[:, [1, 3]].min(axis=1) / \
                                    reg_targets[:, [1, 3]].max(axis=1))).astype(np.float32)
             ctn_targets = np.reshape(ctn_targets, newshape=[ctn_targets.shape[0], 1])
             ctn_targets[labels <= 0] = 0
@@ -424,7 +424,7 @@ class Gt2FCOSTarget(BaseOperator):
                 if self.norm_reg_targets:
                     sample['reg_target{}'.format(lvl)] = \
                         np.reshape(
-                            reg_targets_by_level[lvl] /
+                            reg_targets_by_level[lvl] / \
                             self.downsample_ratios[lvl],
                             newshape=[grid_h, grid_w, 4])
                 else:

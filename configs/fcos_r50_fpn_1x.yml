@@ -42,7 +42,7 @@ FCOSHead:
   nms: MultiClassNMS
 
 MultiClassNMS:
-  score_threshold: 0.01
+  score_threshold: 0.025
   nms_top_k: 1000
   keep_top_k: 100
   nms_threshold: 0.6
