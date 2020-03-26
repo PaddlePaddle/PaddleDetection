@@ -31,6 +31,14 @@ __all__ = ['FCOSLoss']
 @register
 @serializable
 class FCOSLoss(object):
+    """
+    FCOSLoss
+    Args:
+        loss_alpha (float): alpha in focal loss 
+        loss_gamma (float): gamma in focal loss
+        iou_loss_type(str): location loss type, IoU/GIoU/LINEAR_IoU
+        reg_weights(float): weight for location loss
+    """
     def __init__(self,
                  loss_alpha=0.25,
                  loss_gamma=2.0,
@@ -42,24 +50,33 @@ class FCOSLoss(object):
         self.reg_weights = reg_weights
 
     def __flatten_tensor(self, input, channel_first=False):
+        """
+        Flatten a Tensor
+        Args:
+            input   (Variables): Input Tensor
+            channel_first(bool): if true the dimension order of
+                Tensor is [N, C, H, W], otherwise is [N, H, W, C]
+        Return:
+            input_channel_last (Variables): The flattened Tensor in channel_last style
+        """
         if channel_first:
-            # input = input * 0 + 1.0
             input_channel_last = fluid.layers.transpose(input, perm=[0, 2, 3, 1])
         else:
             input_channel_last = input
         input_channel_last = fluid.layers.flatten(input_channel_last, axis=3)
-     #   input_channel_last = fluid.layers.Print(input_channel_last, summarize=-1, message="wxx")
-        print("XXXXXXXXXDEBUG HOLY SHIT BB ", input_channel_last.shape)
-        return input_channel_last
-
-    def __flatten_target(self, input):
-        print("XXXXXXXXXDEBUG HOLY SHIT ", input.shape)
-        input_channel_last = fluid.layers.flatten(input, axis=3)
-        # input_channel_last = fluid.layers.reshape(input, shape=(-1, input.shape[-1]))
-        print("XXXXXXXXXDEBUG HOLY SHIT AA ", input_channel_last.shape)
         return input_channel_last
 
     def __iou_loss(self, pred, targets, positive_mask, weights=None):
+        """
+        Calculate the loss for location prediction
+        Args:
+            pred          (Variables): bounding boxes prediction
+            targets       (Variables): targets for positive samples
+            positive_mask (Variables): mask of positive samples
+            weights       (Variables): weights for each positive samples
+        Return:
+            loss (Varialbes): location loss
+        """
         plw = pred[:, 0] * positive_mask
         pth = pred[:, 1] * positive_mask
         prw = pred[:, 2] * positive_mask
@@ -85,7 +102,6 @@ class FCOSLoss(object):
         area_inter = (ilw + irw) * (ith + ibh)
         ious = (area_inter + 1.0) / (area_predict + area_target - area_inter + 1.0)
         ious = ious * positive_mask
-        # fluid.layers.Print(fluid.layers.reduce_max(ious))
         if self.iou_loss_type.lower() == "linear_iou":
             loss = 1.0 - ious
         elif self.iou_loss_type.lower() == "giou":
@@ -103,16 +119,31 @@ class FCOSLoss(object):
 
     def __call__(self, cls_logits, bboxes_reg, centerness,
                  tag_labels, tag_bboxes, tag_center):
+        """
+        Calculate the loss for classification, location and centerness
+        Args:
+            cls_logits (list): list of Variables, which is predicted
+                score for all anchor points with shape [N, M, C]
+            bboxes_reg (list): list of Variables, which is predicted
+                offsets for all anchor points with shape [N, M, 4]
+            centerness (list): list of Variables, which is predicted
+                centerness for all anchor points with shape [N, M, 1]
+            tag_labels (list): list of Variables, which is category
+                targets for each anchor point
+            tag_bboxes (list): list of Variables, which is bounding
+                boxes targets for positive samples
+            tag_center (list): list of Variables, which is centerness
+                targets for positive samples
+        Return:
+            loss (dict): loss composed by classification loss, bounding box
+        """
         cls_logits_flatten_list = []
         bboxes_reg_flatten_list = []
         centerness_flatten_list = []
         tag_labels_flatten_list = []
         tag_bboxes_flatten_list = []
-        # tag_scores_flatten = []
         tag_center_flatten_list = []
         num_lvl = len(cls_logits)
-        # fluid.layers.Print(cls_logits[-1])
-        # fluid.layers.Print(fluid.layers.reduce_mean(cls_logits[-1]))
         for lvl in range(num_lvl):
             cls_logits_flatten_list.append(self.__flatten_tensor(cls_logits[num_lvl -1 - lvl], True))
             bboxes_reg_flatten_list.append(self.__flatten_tensor(bboxes_reg[num_lvl -1 - lvl], True))
@@ -121,43 +152,19 @@ class FCOSLoss(object):
             tag_bboxes_flatten_list.append(self.__flatten_tensor(tag_bboxes[lvl], False))
             tag_center_flatten_list.append(self.__flatten_tensor(tag_center[lvl], False))
 
-            # tag_labels_flatten.append(self.__flatten_target(tag_labels[lvl]))
-            # tag_bboxes_flatten.append(self.__flatten_target(tag_bboxes[lvl]))
-            # # tag_scores_flatten.append(self.__flatten_tensor(tag_scores[lvl]))
-            # tag_center_flatten.append(self.__flatten_target(tag_center[lvl]))
-
-            # tag_labels_flatten.append(tag_labels[lvl])
-            # tag_bboxes_flatten.append(tag_bboxes[lvl])
-            # tag_center_flatten.append(tag_center[lvl])
-
         cls_logits_flatten = fluid.layers.concat(cls_logits_flatten_list, axis=0)
         bboxes_reg_flatten = fluid.layers.concat(bboxes_reg_flatten_list, axis=0)
         centerness_flatten = fluid.layers.concat(centerness_flatten_list, axis=0)
         tag_labels_flatten = fluid.layers.concat(tag_labels_flatten_list, axis=0)
         tag_bboxes_flatten = fluid.layers.concat(tag_bboxes_flatten_list, axis=0)
         tag_center_flatten = fluid.layers.concat(tag_center_flatten_list, axis=0)
-        print("XXXXXXXXXXXXXXXGWDEBUG ", cls_logits_flatten)
-        print("XXXXXXXXXXXXXXXGWDEBUG ", bboxes_reg_flatten)
-        print("XXXXXXXXXXXXXXXGWDEBUG ", centerness_flatten)
-        print("XXXXXXXXXXXXXXXGWDEBUG ", tag_bboxes_flatten)
-        print("XXXXXXXXXXXXXXXGWDEBUG ", tag_labels_flatten)
-        # tag_scores_flatten = fluid.layers.concat(tag_scores_flatten, axis=0)
-        #for xx in tag_center_flatten:
         tag_labels_flatten.stop_gradient = True
         tag_bboxes_flatten.stop_gradient = True
         tag_center_flatten.stop_gradient = True
-        print("XXXXXXXXXXXXXXXDEBUG ", tag_labels_flatten.shape)
-        print("XXXXXXXXXXXXXXXDEBUG tag_bboxes_flatten ", tag_bboxes_flatten.shape)
-        print("XXXXXXXXXXXXXXXDEBUG bboxes_reg_flatten ", bboxes_reg_flatten.shape)
-        print("XXXXXXXXXXXXXXXDEBUG tag_center_flatten ", tag_center_flatten.shape)
 
         mask_positive = tag_labels_flatten > 0
-        # fluid.layers.Print(mask_positive)
-        n0_index = fluid.layers.where(mask_positive)
-        # fluid.layers.Print(n0_index)
         mask_positive.stop_gradient = True
         mask_positive_float = fluid.layers.cast(mask_positive, dtype="float32")
-        # fluid.layers.Print(mask_positive_float)
         mask_positive_float.stop_gradient = True
         num_positive_fp32 = fluid.layers.reduce_sum(mask_positive_float)
         num_positive_int32 = fluid.layers.cast(num_positive_fp32, dtype="int32")
@@ -168,56 +175,17 @@ class FCOSLoss(object):
         normalize_sum.stop_gradient = True
         normalize_sum = fluid.layers.reduce_sum(mask_positive_float * normalize_sum)
         normalize_sum.stop_gradient = True
-        # fluid.layers.Print(fluid.layers.shape(cls_logits_flatten))
-        # fluid.layers.Print(fluid.layers.shape(tag_labels_flatten))
-        # fluid.layers.Print(fluid.layers.shape(centerness_flatten))
-        # fluid.layers.Print(fluid.layers.shape(tag_center_flatten))
-        # fluid.layers.Print(fluid.layers.shape(bboxes_reg_flatten))
-        # fluid.layers.Print(fluid.layers.shape(tag_bboxes_flatten))
-        # fluid.layers.Print(cls_logits_flatten)
-        # fluid.layers.Print(tag_labels_flatten)
-        # fluid.layers.Print(centerness_flatten)
-        # fluid.layers.Print(tag_center_flatten)
-        # fluid.layers.Print(bboxes_reg_flatten)
-        # fluid.layers.Print(tag_bboxes_flatten)
-        cls_loss = fluid.layers.sigmoid_focal_loss(cls_logits_flatten, tag_labels_flatten, num_positive_int32) / num_positive_fp32
-        # cls_loss = fluid.layers.sigmoid_focal_loss(cls_logits_flatten, tag_labels_flatten, num_positive_int32)
-        # fluid.layers.Print(num_positive_fp32)
-        # fluid.layers.Print(cls_loss)
-        # fluid.layers.Print(fluid.layers.reduce_sum(cls_loss))
-        # fluid.layers.Print(fluid.layers.reduce_max(cls_loss))
-        # fluid.layers.Print(fluid.layers.reduce_mean(cls_loss))
-        # fluid.layers.Print(cls_loss)
-        # fluid.layers.Print(centerness_flatten)
-        # fluid.layers.Print(tag_center_flatten)
-        # fluid.layers.Print(normalize_sum)
-        # reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten, tag_center_flatten)
-        # mask_positive_reg = fluid.layers.expand_as(mask_positive_float, bboxes_reg_flatten)
-        # mask_positive_reg.stop_gradient = True
-        # reg_loss = self.__iou_loss(bboxes_reg_flatten * mask_positive_reg, tag_bboxes_flatten * mask_positive_reg, tag_center_flatten * mask_positive_reg) * mask_positive_float / normalize_sum
-        reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten, mask_positive_float, tag_center_flatten) * mask_positive_float / normalize_sum
-        # reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten, tag_center_flatten) * mask_positive_float / normalize_sum
-        # fluid.layers.Print(fluid.layers.gather_nd(bboxes_reg_flatten * mask_positive_float, index_n0))
-        # centerness_flatten_sigmoid = fluid.layers.sigmoid(centerness_flatten)
-        # index_n0 = fluid.layers.where(tag_center_flatten != 0)
-        # tag_reg_value_0 = fluid.layers.gather_nd(tag_bboxes_flatten * mask_positive_float, index_n0)
-        # ctn_value_0 = fluid.layers.gather_nd(tag_center_flatten, index_n0)
-        # fluid.layers.Print(tag_reg_value_0)
-        # fluid.layers.Print(tag_value_0)
-        # fluid.layers.Print(ctn_value_0)
-        # fluid.layers.Print(fluid.layers.shape(index_n0))
-        # fluid.layers.Print(fluid.layers.gather_nd(bboxes_reg_flatten * mask_positive_float, index_n0))
-        # fluid.layers.Print(fluid.layers.gather_nd(tag_bboxes_flatten * mask_positive_float, index_n0), summarize=-1)
-        # fluid.layers.Print(fluid.layers.gather_nd(tag_center_flatten * mask_positive_float, index_n0), summarize=-1)
-        # fluid.layers.Print(fluid.layers.gather_nd(tag_labels_flatten * mask_positive_float, index_n0), summarize=-1)
-        # fluid.layers.Print(fluid.layers.gather_nd(reg_loss * mask_positive_float, index_n0))
+        cls_loss = fluid.layers.sigmoid_focal_loss(
+            cls_logits_flatten,
+            tag_labels_flatten, num_positive_int32) / num_positive_fp32
+        reg_loss = self.__iou_loss(
+            bboxes_reg_flatten,
+            tag_bboxes_flatten,
+            mask_positive_float,
+            tag_center_flatten) * mask_positive_float / normalize_sum
         ctn_loss = fluid.layers.sigmoid_cross_entropy_with_logits(
             x=centerness_flatten,
-#            input=centerness_flatten,
             label=tag_center_flatten) * mask_positive_float / num_positive_fp32
-#            soft_label=True) * mask_positive_float / num_positive_int32
-#            soft_label=True) * mask_positive_float / num_positive_int32
-        # fluid.layers.Print(fluid.layers.reduce_mean(ctn_loss))
         loss_all = {
             "loss_centerness": fluid.layers.reduce_sum(ctn_loss),
             "loss_cls": fluid.layers.reduce_sum(cls_loss),

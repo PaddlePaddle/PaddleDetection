@@ -266,7 +266,8 @@ class Gt2FCOSTarget(BaseOperator):
         object_sizes_of_interest = []
         for i in range(len(self.object_sizes_boundary) - 1):
             object_sizes_of_interest.append(
-                [self.object_sizes_boundary[i], self.object_sizes_boundary[i+1]])
+                [self.object_sizes_boundary[i],
+                 self.object_sizes_boundary[i+1]])
         self.object_sizes_of_interest = object_sizes_of_interest
         self.norm_reg_targets = norm_reg_targets
 
@@ -281,10 +282,7 @@ class Gt2FCOSTarget(BaseOperator):
         for stride in self.downsample_ratios:
             shift_x = np.arange(0, w, stride).astype(np.float32)
             shift_y = np.arange(0, h, stride).astype(np.float32)
-            # print("XXXXXXXXXXXXXDEBUG SHIFT X Y (x: %d, y: %d, stride: %d, w: %d, h: %d)" %
-            #     (shift_x.shape[0], shift_y.shape[0], stride, w, h))
             shift_x, shift_y = np.meshgrid(shift_x, shift_y)
-            # print("XXXXXXXXXXXXXXXXDEBUG shift_y ", shift_y, shift_y.shape)
             shift_x = shift_x.flatten()
             shift_y = shift_y.flatten()
             location = np.stack([shift_x, shift_y], axis=1) + stride // 2
@@ -322,20 +320,18 @@ class Gt2FCOSTarget(BaseOperator):
         ct_y = (bboxes[:, :, 1] + bboxes[:, :, 3]) / 2
         beg = 0
         clipped_box = bboxes.copy()
-        # print("XXXXXXXXXXDEBUG ct_x ", ct_x.shape, ct_x[0, :])
-        # print("XXXXXXXXXXDEBUG ct_y ", ct_y.shape, ct_y[0, :])
-        # print("XXXXXXXXXXDEBUG bboxes ", bboxes.shape, bboxes[0, :, :])
         for lvl, stride in enumerate(self.downsample_ratios):
             end = beg + num_points_each_level[lvl]
             stride_exp = self.center_sampling_radius * stride
-            # print("XXXXXXXXXDEBUG stride_exp ", stride_exp)
-            clipped_box[beg:end, :, 0] = np.maximum(bboxes[beg:end, :, 0], ct_x[beg:end, :] - stride_exp)
-            clipped_box[beg:end, :, 1] = np.maximum(bboxes[beg:end, :, 1], ct_y[beg:end, :] - stride_exp)
-            clipped_box[beg:end, :, 2] = np.minimum(bboxes[beg:end, :, 2], ct_x[beg:end, :] + stride_exp)
-            clipped_box[beg:end, :, 3] = np.minimum(bboxes[beg:end, :, 3], ct_y[beg:end, :] + stride_exp)
+            clipped_box[beg:end, :, 0] = np.maximum(
+                bboxes[beg:end, :, 0], ct_x[beg:end, :] - stride_exp)
+            clipped_box[beg:end, :, 1] = np.maximum(
+                bboxes[beg:end, :, 1], ct_y[beg:end, :] - stride_exp)
+            clipped_box[beg:end, :, 2] = np.minimum(
+                bboxes[beg:end, :, 2], ct_x[beg:end, :] + stride_exp)
+            clipped_box[beg:end, :, 3] = np.minimum(
+                bboxes[beg:end, :, 3], ct_y[beg:end, :] + stride_exp)
             beg = end
-        # print("XXXXXXXXXXDEBUG clipped_box ", clipped_box.shape, clipped_box[0, :, :])
-        # print("XXXXXXXXXXDEBUG xs ", xs.shape, xs[0])
         l_res = xs - clipped_box[:, :, 0]
         r_res = clipped_box[:, :, 2] - xs
         t_res = ys - clipped_box[:, :, 1]
@@ -355,8 +351,10 @@ class Gt2FCOSTarget(BaseOperator):
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
             gt_score = sample['gt_score']
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) / np.floor(im_info[1] / im_info[2])
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) / np.floor(im_info[0] / im_info[2])
+            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) /
+                np.floor(im_info[1] / im_info[2])
+            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) /
+                np.floor(im_info[0] / im_info[2])
             # calculate the locations
             h, w = sample['image'].shape[1:3]
             points, num_points_each_level = self._compute_points(w, h)
@@ -367,11 +365,7 @@ class Gt2FCOSTarget(BaseOperator):
                     reps=[num_pts, 1]))
             object_scale_exp = np.concatenate(object_scale_exp, axis=0)
 
-            # bboxes = self._convert_xywh2xyxy(gt_bbox, 1, 1)
             gt_area = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
-            # print("XXXXXXXXXXXXXXXDEBUG bboxes ", bboxes)
-            # print("XXXXXXXXXXXXXXXDEBUG size im_info ", im_info)
-            # print("XXXXXXXXXXXXXXXDEBUG sample['gt_bbox'] ", sample['gt_bbox'])
             xs, ys = points[:, 0], points[:, 1]
             xs = np.reshape(xs, newshape=[xs.shape[0], 1])
             xs = np.tile(xs, reps=[1, bboxes.shape[0]])
@@ -382,14 +376,10 @@ class Gt2FCOSTarget(BaseOperator):
             r_res = bboxes[:, 2] - xs
             t_res = ys - bboxes[:, 1]
             b_res = bboxes[:, 3] - ys
-            # print("XXXXXXXXXXXXXXXXDEBUG l_res", xs)
-            # print("XXXXXXXXXXXXXXXXDEBUG l_res", l_res)
-            # print("XXXXXXXXXXXXXXXXDEBUG t_res", t_res)
-            # print("XXXXXXXXXXXXXXXXDEBUG r_res", r_res)
-            # print("XXXXXXXXXXXXXXXXDEBUG b_res", b_res)
             reg_targets = np.stack([l_res, t_res, r_res, b_res], axis=2)
             if self.center_sampling_radius > 0:
-                is_inside_box = self._check_inside_boxes_limited(bboxes, xs, ys, num_points_each_level)
+                is_inside_box = self._check_inside_boxes_limited(
+                    bboxes, xs, ys, num_points_each_level)
             else:
                 is_inside_box = np.min(reg_targets, axis=2) > 0
             # check if the targets is inside the corresponding level
@@ -403,23 +393,13 @@ class Gt2FCOSTarget(BaseOperator):
             is_match_current_level = \
                 (max_reg_targets > lower_bound) & \
                 (max_reg_targets < high_bound)
-            # print("XXXXXXXXXXXDEBUG is_match_current_level SUM", np.sum(is_match_current_level))
-            # print("XXXXXXXXXXXDEBUG is_inside_box SUM", np.sum(is_inside_box))
             points2gtarea = np.tile(np.expand_dims(gt_area, axis=0), reps=[xs.shape[0], 1])
             points2gtarea[is_inside_box == 0] = self.INF
             points2gtarea[is_match_current_level == 0] = self.INF
             points2min_area = points2gtarea.min(axis=1)
             points2min_area_ind = points2gtarea.argmin(axis=1)
-            # print("XXXXXXXXXXXXXXXDEBUG gt_class ", gt_class)
             labels = gt_class[points2min_area_ind]
-            # print("XXXXXXXXXXXXDEBUG gt_class ", gt_class)
-            # scores = gt_score[points2min_area_ind]
             labels[points2min_area == self.INF] = 0
-            # t1 = time.time()
-            # print("XXXXXXXXXXXXXXXDEBUG INF SUM IS ", np.sum(points2min_area != self.INF), t1)
-            print("XXXXXXXXXXXXXXXDEBUG INF LABELS IS ", np.sum(labels > 0), w, h, t1)
-            # print("XXXXXXXXXXXXXXXDEBUG INF LABELS IS ", points2min_area_ind.shape, points2min_area.shape, t1)
-            # print("XXXXXXXXXXXXXXXDEBUG INF LABELS IS ", gt_class, t1)
             reg_targets = reg_targets[range(xs.shape[0]), points2min_area_ind]
             ctn_targets = np.sqrt((reg_targets[:, [0, 2]].min(axis=1) /
                                   reg_targets[:, [0, 2]].max(axis=1)) *
@@ -429,10 +409,6 @@ class Gt2FCOSTarget(BaseOperator):
             ctn_targets[labels <= 0] = 0
             pos_ind = np.nonzero(labels != 0)
             reg_targets_pos = reg_targets[pos_ind[0], :]
-            # print("XXXXXXXXXXXXXXXXDEBUG reg_targets_pos ", reg_targets_pos)
-            # print("XXXXXXXXXXXDEBUG points2min_area_ind", points2min_area_ind, points2min_area_ind.shape, points2gtarea.shape)
-            # print("XXXXXXXXXXXXDEBUG points2min_area ", points2min_area)
-            # scores[points2min_area == self.INF] = 0
             split_sections = []
             beg = 0
             for lvl in range(len(num_points_each_level)):
@@ -442,38 +418,23 @@ class Gt2FCOSTarget(BaseOperator):
             labels_by_level = np.split(labels, split_sections, axis=0)
             reg_targets_by_level = np.split(reg_targets, split_sections, axis=0)
             ctn_targets_by_level = np.split(ctn_targets, split_sections, axis=0)
-            # scores_by_level = np.split(scores, axis=0)
-            # print("XXXXXXXXXXXDEBUG TRANSFORM IS ", self.num_points_each_level)
-            # print("XXXXXXXXXXXDEBUG TRANSFORM IS split_sections ", split_sections)
-            # print("XXXXXXXXXXXDEBUG TRANSFORM IS ", labels.shape)
-            # print("XXXXXXXXXXXDEBUG TRANSFORM IS ", reg_targets.shape)
-            # print("XXXXXXXXXXXDEBUG TRANSFORM IS ", ctn_targets.shape)
             for lvl in range(len(self.downsample_ratios)):
                 grid_w = int(np.ceil(w / self.downsample_ratios[lvl]))
                 grid_h = int(np.ceil(h / self.downsample_ratios[lvl]))
-                # print("XXXXXXXXXXXXDEBUG W H STRIDE", w, h, self.downsample_ratios[lvl], num_points_each_level[lvl])
                 if self.norm_reg_targets:
                     sample['reg_target{}'.format(lvl)] = \
-                        np.reshape(reg_targets_by_level[lvl] / self.downsample_ratios[lvl], newshape=[grid_h, grid_w, 4])
-#                        np.expand_dims(reg_targets_by_level[lvl] / self.downsample_ratios[lvl], axis=1)
-#                        reg_targets_by_level[lvl] / self.downsample_ratios[lvl]
+                        np.reshape(
+                            reg_targets_by_level[lvl] /
+                            self.downsample_ratios[lvl],
+                            newshape=[grid_h, grid_w, 4])
                 else:
-                    sample['reg_target{}'.format(lvl)] = np.reshape(reg_targets_by_level[lvl], newshape=[grid_h, grid_w, 4])
-#                    sample['reg_target{}'.format(lvl)] = reg_targets_by_level[lvl]
-#                    sample['reg_target{}'.format(lvl)] = np.expand_dims(reg_targets_by_level[lvl], axis=1)
-#                sample['labels{}'.format(lvl)] = labels_by_level[lvl]
-                sample['labels{}'.format(lvl)] = np.reshape(labels_by_level[lvl], newshape=[grid_h, grid_w, 1])
-                # print("XXXXXXXXXDEBUG labels_by_level[%d] " % lvl, sample['labels{}'.format(lvl)][sample['labels{}'.format(lvl)] != 0], sample['labels{}'.format(lvl)].shape)
-                # print("XXXXXXXXXDEBUG labels_by_level[%d] " % lvl, labels_by_level[lvl][labels_by_level[lvl] != 0], labels_by_level[lvl].shape)
-                # pos_ind = np.nonzero(labels_by_level[lvl] != 0)
-                # print("XXXXXXXXXDEBUG reg_targets_by_level[%d] " % lvl, reg_targets_by_level[lvl][pos_ind[0], :] / self.downsample_ratios[lvl])
-#                sample['labels{}'.format(lvl)] = np.expand_dims(labels_by_level[lvl], axis=1)
-                # sample['scores{}'.format(lvl)] = scores_by_level[lvl]
-#                sample['centerness{}'.format(lvl)] = ctn_targets_by_level[lvl]
-                sample['centerness{}'.format(lvl)] = np.reshape(ctn_targets_by_level[lvl], newshape=[grid_h, grid_w, 1])
-#                sample['centerness{}'.format(lvl)] = np.expand_dims(ctn_targets_by_level[lvl], axis=1)
-                # print("XXXXXXXXXXXDEBUG sample['reg_target{}'.format(lvl)] TRANSFORM IS ", sample['reg_target{}'.format(lvl)].shape)
-                # print("XXXXXXXXXXXDEBUG sample['labels{}'.format(lvl)] TRANSFORM IS ", sample['labels{}'.format(lvl)].shape)
-                # print("XXXXXXXXXXXDEBUG sample['centerness{}'.format(lvl)] TRANSFORM IS ", sample['centerness{}'.format(lvl)].shape)
-        # sys.stdout.flush()
+                    sample['reg_target{}'.format(lvl)] = np.reshape(
+                        reg_targets_by_level[lvl],
+                        newshape=[grid_h, grid_w, 4])
+                sample['labels{}'.format(lvl)] = np.reshape(
+                    labels_by_level[lvl],
+                    newshape=[grid_h, grid_w, 1])
+                sample['centerness{}'.format(lvl)] = np.reshape(
+                    ctn_targets_by_level[lvl],
+                    newshape=[grid_h, grid_w, 1])
         return samples

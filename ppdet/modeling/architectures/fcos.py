@@ -29,12 +29,12 @@ __all__ = ['FCOS']
 @register
 class FCOS(object):
     """
-    RetinaNet architecture, see https://arxiv.org/abs/1708.02002
+    FCOS architecture, see https://arxiv.org/abs/1904.01355
 
     Args:
         backbone (object): backbone instance
         fpn (object): feature pyramid network instance
-        retina_head (object): `RetinaHead` instance
+        fcos_head (object): `FCOSHead` instance
     """
 
     __category__ = 'architecture'
@@ -48,6 +48,7 @@ class FCOS(object):
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
+        im_info = feed_vars['im_info']
         if mode is not 'train':
             im_shape = feed_vars['im_shape']
 
@@ -66,7 +67,6 @@ class FCOS(object):
 
         # FPN
         body_feats, spatial_scale = self.fpn.get_output(body_feats)
-        print("XXXXXXXXXXXXXXXXXDEBUG spatial_scale ", len(body_feats))
 
         # fcosnet head
         if mode == 'train':
@@ -90,7 +90,7 @@ class FCOS(object):
             loss.update({'loss': total_loss})
             return loss
         else:
-            pred = self.fcos_head.get_prediction(body_feats, im_shape)
+            pred = self.fcos_head.get_prediction(body_feats, im_info)
             return pred
 
     def _inputs_def(self, image_shape, fields):

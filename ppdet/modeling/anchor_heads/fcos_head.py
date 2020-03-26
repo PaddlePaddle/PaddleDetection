@@ -34,6 +34,18 @@ __all__ = ['FCOSHead']
 @register
 class FCOSHead(object):
     """
+    FCOSHead
+    Args:
+        num_classes       (int): Number of classes
+        fpn_stride       (list): The stride of each FPN Layer
+        prior_prob      (float): Used to set the bias init for the class prediction layer
+        num_convs         (int): The layer number in fcos head
+        norm_type         (str): Normalization type, 'bn'/'sync_bn'/'affine_channel'
+        fcos_loss      (object): Instance of 'FCOSLoss'
+        norm_reg_targets (bool): Normalization the regression target if true
+        centerness_on_reg(bool): The prediction of centerness on regression or clssification branch
+        use_dcn_in_tower (bool): Ues deformable conv on FCOSHead if true
+        nms            (object): Instance of 'MultiClassNMS'
     """
     __inject__ = ['fcos_loss', 'nms']
     __shared__ = ['num_classes']
@@ -42,17 +54,12 @@ class FCOSHead(object):
                  num_classes=81,
                  fpn_stride=[8, 16, 32, 64, 128],
                  prior_prob=0.01,
-                 inference_th=0.05,
-                 nms_th=0.5,
-                 pre_nms_top_n=1000,
                  num_convs=4,
-                 batch_size=8,
                  norm_type="gn",
                  fcos_loss=None,
                  norm_reg_targets=False,
                  centerness_on_reg=False,
                  use_dcn_in_tower=False,
-                 prior_prob_bias=0.01,
                  nms=MultiClassNMS(
                      score_threshold=0.01,
                      nms_top_k=1000,
@@ -60,39 +67,28 @@ class FCOSHead(object):
                      nms_threshold=0.45,
                      background_label=-1).__dict__):
         self.num_classes = num_classes - 1
-        # self.fpn_stride = fpn_stride
         self.fpn_stride = fpn_stride[::-1]
         self.prior_prob = prior_prob
-        self.inference_th = inference_th
-        self.nms_th = nms_th
-        self.pre_nms_top_n = pre_nms_top_n
         self.num_convs = num_convs
         self.norm_reg_targets = norm_reg_targets
         self.centerness_on_reg = centerness_on_reg
         self.use_dcn_in_tower = use_dcn_in_tower
         self.norm_type = norm_type
         self.fcos_loss = fcos_loss
-        self.batch_size = batch_size
-        self.prior_prob_bias = prior_prob_bias
+        self.batch_size = 8
         self.nms = nms
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
 
-    def _fcos_head(self, features, fpn_stride, fpn_scale, is_training=False):
+    def _fcos_head(self, features, fpn_stride, is_training=False):
         """
-        Get class predictions of all level FPN level.
-
         Args:
-            fpn_dict(dict): A dictionary represents the output of FPN with
-                their name.
-            spatial_scale(list): A list of multiplicative spatial scale factor.
-
-        Returns:
-            cls_pred_input(list): Class prediction of all input fpn levels.
+            features (Variables): feature map from FPN
+            fpn_stride     (int): the stride of current feature map
+            is_training   (bool): whether is train or test mode
         """
         subnet_blob_cls = features
         subnet_blob_reg = features
-        # fluid.layers.Print(subnet_blob_reg)
         in_channles = features.shape[1]
         for lvl in range(0, self.num_convs):
             conv_cls_name = 'fcos_head_cls_tower_conv_{}'.format(lvl)
@@ -120,7 +116,7 @@ class FCOSHead(object):
                 norm_name=conv_reg_name + "_norm",
                 name=conv_reg_name)
         conv_cls_name = "fcos_head_cls"
-        bias_init_value = -math.log((1 - self.prior_prob_bias) / self.prior_prob_bias)
+        bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
         cls_logits = fluid.layers.conv2d(
                 input=subnet_blob_cls,
                 num_filters=self.num_classes,
@@ -150,7 +146,6 @@ class FCOSHead(object):
                 name=conv_reg_name)
         bbox_reg = bbox_reg * fpn_scale
         if self.norm_reg_targets:
-            print("XXXXXXXXXXXXDEBUG RELU THE REG")
             bbox_reg = fluid.layers.relu(bbox_reg)
             if not is_training:
                 bbox_reg = bbox_reg * fpn_stride
@@ -178,6 +173,15 @@ class FCOSHead(object):
         return cls_logits, bbox_reg, centerness
 
     def _get_output(self, body_feats, is_training=False):
+        """
+        Args:
+            body_feates (list): the list of fpn feature maps
+            is_training (bool): whether is train or test mode
+        Return:
+            cls_logits (Variables): prediction for classification
+            bboxes_reg (Variables): prediction for bounding box
+            centerness (Variables): prediction for ceterness
+        """
         cls_logits = []
         bboxes_reg = []
         centerness = []
@@ -190,24 +194,19 @@ class FCOSHead(object):
                 dtype="float32",
                 name="%s_scale_on_reg" % fpn_name,
                 default_initializer=fluid.initializer.Constant(1.))
-            print("XXXXXXXXXXXXXXXDEBUG fpn_stride ", fpn_stride)
-            print("XXXXXXXXXXXXXXXDEBUG features ", features.shape)
             cls_pred, bbox_pred, ctn_pred = self._fcos_head(features, fpn_stride, scale, is_training=is_training)
             cls_logits.append(cls_pred)
             bboxes_reg.append(bbox_pred)
             centerness.append(ctn_pred)
         return cls_logits, bboxes_reg, centerness
 
-    def _create_tensor_from_numpy(self, numpy_array):
-        paddle_array = fluid.layers.create_parameter(
-            attr=ParamAttr(),
-            shape=numpy_array.shape,
-            dtype=numpy_array.dtype,
-            default_initializer=NumpyArrayInitializer(numpy_array))
-        paddle_array.stop_gradient = True
-        return paddle_array
-
     def _compute_locations(self, features):
+        """
+        Args:
+            features (list): List of Variables for FPN feature maps
+        Return:
+            Anchor points for each feature map pixel
+        """
         locations = []
         for lvl, fpn_name in enumerate(features):
             feature = features[fpn_name]
@@ -228,16 +227,17 @@ class FCOSHead(object):
             shift_y = fluid.layers.reshape(shift_y, shape=[-1])
             location = fluid.layers.stack([shift_x, shift_y], axis=-1) + fpn_stride // 2
             location.stop_gradient = True
-            # fluid.layers.Print(location)
             locations.append(location)
         return locations
 
-    def __flatten_tensor(self, input):
-        input_channel_last = fluid.layers.transpose(input, perm=[0, 2, 3, 1])
-        input_channel_last = fluid.layers.flatten(input_channel_last, axis=3)
-        return input_channel_last
-
     def __merge_hw(self, input, ch_type="channel_first"):
+        """
+        Args:
+            input (Variables): Feature map whose H and W will be merged into one dimension
+            ch_type     (str): channel_first / channel_last
+        Return:
+            new_shape (Variables): The new shape after h and w merged into one dimension
+        """
         shape_ = fluid.layers.shape(input)
         bs = shape_[0]
         ch = shape_[1]
@@ -254,8 +254,20 @@ class FCOSHead(object):
         new_shape.stop_gradient = True
         return new_shape
 
-    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn, im_shape):
-        # box_cls_ch_last = fluid.layers.transpose(box_cls, perm=[0, 2, 3, 1])
+    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn, im_info):
+        """
+        Args:
+            locations (Variables): anchor points for current layer
+            box_cls   (Variables): categories prediction
+            box_reg   (Variables): bounding box prediction
+            box_ctn   (Variables): centerness prediction
+            im_info   (Variables): [h, w, scale] for input images
+        Return:
+            box_cls_ch_last  (Variables): score for each category, in [N, C, M]
+                C is the number of classes and M is the number of anchor points
+            box_reg_decoding (Variables): decoded bounding box, in [N, M, 4]
+                last dimension is [x1, y1, x2, y2]
+        """
         act_shape_cls = self.__merge_hw(box_cls)
         box_cls_ch_last = fluid.layers.reshape(
             x=box_cls,
@@ -268,14 +280,12 @@ class FCOSHead(object):
             x=box_reg_ch_last,
             shape=[self.batch_size, -1, 4],
             actual_shape=act_shape_reg)
-        # box_ctn_ch_last = fluid.layers.transpose(box_ctn, perm=[0, 2, 3, 1])
         act_shape_ctn = self.__merge_hw(box_ctn)
         box_ctn_ch_last = fluid.layers.reshape(
             x=box_ctn,
             shape=[self.batch_size, 1, -1],
             actual_shape=act_shape_ctn)
         box_ctn_ch_last = fluid.layers.sigmoid(box_ctn_ch_last)
-        # box_ctn_ch_last = fluid.layers.expand_as(box_ctn_ch_last, box_cls_ch_last)
 
         box_reg_decoding = fluid.layers.stack(
             [locations[:, 0] - box_reg_ch_last[:, :, 0],
@@ -284,14 +294,41 @@ class FCOSHead(object):
              locations[:, 1] + box_reg_ch_last[:, :, 3]],
             axis=1)
         box_reg_decoding = fluid.layers.transpose(box_reg_decoding, perm=[0, 2, 1])
+        # recover the location to original image
+        im_scale = im_info[:, 2]
+        box_reg_decoding = box_reg_decoding / im_scale
+        im_h = im_info[:, 0] / im_info[:, 2] - 1.0
+        im_w = im_info[:, 1] / im_info[:, 2] - 1.0
+        im_h = fluid.layers.unsqueeze(im_h, axes=[1])
+        im_w = fluid.layers.unsqueeze(im_w, axes=[1])
+        zeros_tensor = fluid.layers.zeros(shape=(1,), dtype="float32")
+        x1 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 0], zeros_tensor)
+        y1 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 1], zeros_tensor)
+        x2 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 2], zeros_tensor)
+        y2 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 3], zeros_tensor)
+        x1 = fluid.layers.elementwise_min(x1, im_w)
+        y1 = fluid.layers.elementwise_min(y1, im_h)
+        x2 = fluid.layers.elementwise_min(x2, im_w)
+        y2 = fluid.layers.elementwise_min(y2, im_h)
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
 
-    def _post_processing(self, locations, cls_logits, bboxes_reg, centerness, im_shape):
+    def _post_processing(self, locations, cls_logits, bboxes_reg, centerness, im_info):
+        """
+        Args:
+            locations   (list): List of Variables composed by center of each anchor point
+            cls_logits  (list): List of Variables for class prediction
+            bboxes_reg  (list): List of Variables for bounding box prediction
+            centerness  (list): List of Variables for centerness prediction
+            im_info(Variables): [h, w, scale] for input images
+        Return:
+            pred (LoDTensor): predicted bounding box after nms,
+                the shape is n x 6, last dimension is [label, score, xmin, ymin, xmax, ymax]
+        """
         pred_boxes_ = []
         pred_scores_ = []
         for _, (pts, cls, box, ctn) in enumerate(zip(locations, cls_logits, bboxes_reg, centerness)):
-            pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(pts, cls, box, ctn, im_shape)
+            pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(pts, cls, box, ctn, im_info)
             pred_boxes_.append(pred_boxes_lvl)
             pred_scores_.append(pred_scores_lvl)
         pred_boxes = fluid.layers.concat(pred_boxes_, axis=1)
@@ -300,18 +337,33 @@ class FCOSHead(object):
         return pred
 
     def get_loss(self, input, tag_labels, tag_bboxes, tag_centerness):
+        """
+        Calculate the loss for FCOS
+        Args:
+            input           (list): List of Variables for feature maps from FPN layers
+            tag_labels     (Variables): category targets for each anchor point
+            tag_bboxes     (Variables): bounding boxes  targets for positive samples
+            tag_centerness (Variables): centerness targets for positive samples
+        Return:
+            loss (dict): loss composed by classification loss, bounding box
+                regression loss and centerness regression loss
+        """
         cls_logits, bboxes_reg, centerness = self._get_output(input, is_training=True)
-        # fluid.layers.Print(bboxes_reg[3])
-        # fluid.layers.Print(tag_bboxes[3])
         loss = self.fcos_loss(cls_logits, bboxes_reg, centerness,
                               tag_labels, tag_bboxes, tag_centerness)
         return loss
 
-    def get_prediction(self, input, im_shape):
-        # fluid.layers.Print(im_shape)
+    def get_prediction(self, input, im_info):
+        """
+        Decode the prediction
+        Args:
+            input           (list): List of Variables for feature maps from FPN layers
+            im_info(Variables): [h, w, scale] for input images
+        Return:
+            the bounding box prediction
+        """
         cls_logits, bboxes_reg, centerness = self._get_output(input, is_training=False)
         locations = self._compute_locations(input)
-        pred = self._post_processing(locations, cls_logits, bboxes_reg, centerness, im_shape)
-        # fluid.layers.Print(pred, summarize=-1)
+        pred = self._post_processing(locations, cls_logits, bboxes_reg, centerness, im_info)
         return {"bbox": pred}
 
