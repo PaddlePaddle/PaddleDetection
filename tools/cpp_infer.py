@@ -509,7 +509,8 @@ def infer():
         conf = yaml.safe_load(f)
 
     use_trt = not conf['use_python_inference'] and 'trt' in conf['mode']
-    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'], use_trt)
+    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'],
+                          use_trt)
     if 'SSD' in conf['arch']:
         img_data, res['im_shape'] = img_data
         img_data = [img_data]
