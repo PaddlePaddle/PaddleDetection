@@ -51,7 +51,8 @@ class FPN(object):
                  spatial_scale=[1. / 32., 1. / 16., 1. / 8., 1. / 4.],
                  has_extra_convs=False,
                  norm_type=None,
-                 freeze_norm=False):
+                 freeze_norm=False,
+                 use_c5=True):
         self.freeze_norm = freeze_norm
         self.num_chan = num_chan
         self.min_level = min_level
@@ -59,6 +60,7 @@ class FPN(object):
         self.spatial_scale = spatial_scale
         self.has_extra_convs = has_extra_convs
         self.norm_type = norm_type
+        self.use_c5 = use_c5
 
     def _add_topdown_lateral(self, body_name, body_input, upper_output):
         lateral_name = 'fpn_inner_' + body_name + '_lateral'
@@ -189,7 +191,10 @@ class FPN(object):
         # Coarser FPN levels introduced for RetinaNet
         highest_backbone_level = self.min_level + len(spatial_scale) - 1
         if self.has_extra_convs and self.max_level > highest_backbone_level:
-            fpn_blob = body_dict[body_name_list[0]]
+            if self.use_c5:
+                fpn_blob = body_dict[body_name_list[0]]
+            else:
+                fpn_blob = fpn_dict[fpn_name_list[0]]
             for i in range(highest_backbone_level + 1, self.max_level + 1):
                 fpn_blob_in = fpn_blob
                 fpn_name = 'fpn_' + str(i)

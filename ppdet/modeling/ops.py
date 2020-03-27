@@ -43,8 +43,16 @@ def ConvNorm(input,
              act=None,
              norm_name=None,
              initializer=None,
+             bias_attr=False,
              name=None):
     fan = num_filters
+    if bias_attr:
+        bias_para = ParamAttr(
+            name=name + "_bias",
+            initializer=fluid.initializer.Constant(value=0),
+            learning_rate=lr_scale * 2)
+    else:
+        bias_para = False
     conv = fluid.layers.conv2d(
         input=input,
         num_filters=num_filters,
@@ -58,7 +66,7 @@ def ConvNorm(input,
             name=name + "_weights",
             initializer=initializer,
             learning_rate=lr_scale),
-        bias_attr=False,
+        bias_attr=bias_para,
         name=name + '.conv2d.output.1')
 
     norm_lr = 0. if freeze_norm else 1.
@@ -165,6 +173,16 @@ def DropBlock(input, block_size, keep_prob, is_test):
 
     output = input * mask * elem_numel_m / elem_sum_m
     return output
+
+
+def CreateTensorFromNumpy(numpy_array):
+        paddle_array = fluid.layers.create_parameter(
+            attr=ParamAttr(),
+            shape=numpy_array.shape,
+            dtype=numpy_array.dtype,
+            default_initializer=NumpyArrayInitializer(numpy_array))
+        paddle_array.stop_gradient = True
+        return paddle_array
 
 
 @register
