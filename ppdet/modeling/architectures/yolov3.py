@@ -121,7 +121,7 @@ class YOLOv3(object):
                     -2] // downsample if image_shape[-2] else None
                 targets_def[k]['shape'][4] = image_shape[
                     -1] // downsample if image_shape[-1] else None
-                downsample // 2
+                downsample //= 2
 
             inputs_def.update(targets_def)
 
