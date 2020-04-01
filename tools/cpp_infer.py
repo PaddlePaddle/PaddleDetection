@@ -111,7 +111,7 @@ class Resize(object):
         self.interp = interp
         self.use_cv2 = use_cv2
 
-    def __call__(self, im, use_trt=False):
+    def __call__(self, im, image_shape=None):
         origin_shape = im.shape[:2]
         im_c = im.shape[2]
         if self.max_size != 0:
@@ -147,10 +147,7 @@ class Resize(object):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
         # padding im
-        if self.max_size != 0 and use_trt:
-            logger.warning('Due to the limitation of tensorRT, padding the '
-                           'image shape to {} * {}'.format(self.max_size,
-                                                           self.max_size))
+        if self.max_size != 0 and image_shape is not None:
             padding_im = np.zeros(
                 (self.max_size, self.max_size, im_c), dtype=np.float32)
             im_h, im_w = im.shape[:2]
@@ -214,7 +211,7 @@ class PadStride(object):
         return padding_im
 
 
-def Preprocess(img_path, arch, config, use_trt):
+def Preprocess(img_path, arch, config, use_trt, image_shape):
     img = DecodeImage(img_path)
     orig_shape = img.shape
     scale = 1.
@@ -224,7 +221,10 @@ def Preprocess(img_path, arch, config, use_trt):
         obj = data_aug_conf.pop('type')
         preprocess = eval(obj)(**data_aug_conf)
         if obj == 'Resize':
-            img, scale = preprocess(img, use_trt)
+            assert not (
+                use_trt and image_shape is None
+            ), "Due to the limitation of tensorRT, the image shape needs to set in export_model"
+            img, scale = preprocess(img, image_shape)
         else:
             img = preprocess(img)
 
@@ -509,8 +509,9 @@ def infer():
         conf = yaml.safe_load(f)
 
     use_trt = not conf['use_python_inference'] and 'trt' in conf['mode']
+    image_shape = conf.get('image_shape', None)
     img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'],
-                          use_trt)
+                          use_trt, image_shape)
     if 'SSD' in conf['arch']:
         img_data, res['im_shape'] = img_data
         img_data = [img_data]
