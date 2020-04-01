@@ -360,9 +360,9 @@ class RandomFlipImage(BaseOperator):
 
         def _flip_rle(rle, height, width):
             if 'counts' in rle and type(rle['counts']) == list:
-                rle = mask_util.frPyObjects([rle], height, width)
+                rle = mask_util.frPyObjects(rle, height, width)
             mask = mask_util.decode(rle)
-            mask = mask[:, ::-1, :]
+            mask = mask[:, ::-1]
             rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
             return rle
 
@@ -1317,6 +1317,43 @@ class RandomExpand(BaseOperator):
             fill_value = tuple(fill_value)
         self.fill_value = fill_value
 
+    def expand_segms(self, segms, x, y, height, width, ratio):
+        def _expand_poly(poly, x, y):
+            expanded_poly = np.array(poly)
+            expanded_poly[0::2] += x
+            expanded_poly[1::2] += y
+            return expanded_poly.tolist()
+
+        def _expand_rle(rle, x, y, height, width, ratio):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, height, width)
+            mask = mask_util.decode(rle)
+            expanded_mask = np.full((int(height * ratio), int(width * ratio)),
+                                    0).astype(mask.dtype)
+            expanded_mask[y:y + height, x:x + width] = mask
+            rle = mask_util.encode(
+                np.array(
+                    expanded_mask, order='F', dtype=np.uint8))
+            return rle
+
+        def is_poly(segm):
+            assert isinstance(segm, (list, dict)), \
+                "Invalid segm type: {}".format(type(segm))
+            return isinstance(segm, list)
+
+        expanded_segms = []
+        for segm in segms:
+            if is_poly(segm):
+                # Polygon format
+                expanded_segms.append(
+                    [_expand_poly(poly, x, y) for poly in segm])
+            else:
+                # RLE format
+                import pycocotools.mask as mask_util
+                expanded_segms.append(
+                    _expand_rle(segm, x, y, height, width, ratio))
+        return expanded_segms
+
     def __call__(self, sample, context=None):
         if np.random.uniform(0., 1.) < self.prob:
             return sample
@@ -1341,7 +1378,9 @@ class RandomExpand(BaseOperator):
         sample['image'] = canvas
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
-
+        if len(sample['gt_poly']) != 0 and None not in sample['gt_poly']:
+            sample['gt_poly'] = self.expand_segms(sample['gt_poly'], x, y,
+                                                  height, width, expand_ratio)
         return sample
 
 
@@ -1374,6 +1413,80 @@ class RandomCrop(BaseOperator):
         self.num_attempts = num_attempts
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
+
+    def crop_segms(self, segms, valid_ids, crop, height, width):
+        def _crop_poly(segm, crop):
+            xmin, ymin, xmax, ymax = crop
+            crop_coord = [xmin, ymin, xmin, ymax, xmax, ymax, xmax, ymin]
+            crop_p = np.array(crop_coord).reshape(4, 2)
+            crop_p = Polygon(crop_p)
+
+            crop_segm = list()
+            for poly in segm:
+                poly = np.array(poly).reshape(len(poly) // 2, 2)
+                polygon = Polygon(poly)
+                if not polygon.is_valid:
+                    exterior = polygon.exterior
+                    multi_lines = exterior.intersection(exterior)
+                    polygons = shapely.ops.polygonize(multi_lines)
+                    polygon = MultiPolygon(polygons)
+                multi_polygon = list()
+                if isinstance(polygon, MultiPolygon):
+                    multi_polygon = copy.deepcopy(polygon)
+                else:
+                    multi_polygon.append(copy.deepcopy(polygon))
+                for per_polygon in multi_polygon:
+                    inter = per_polygon.intersection(crop_p)
+                    if not inter:
+                        continue
+                    if isinstance(inter, (MultiPolygon, GeometryCollection)):
+                        for part in inter:
+                            if not isinstance(part, Polygon):
+                                continue
+                            part = np.squeeze(
+                                np.array(part.exterior.coords[:-1]).reshape(1,
+                                                                            -1))
+                            part[0::2] -= xmin
+                            part[1::2] -= ymin
+                            crop_segm.append(part.tolist())
+                    elif isinstance(inter, Polygon):
+                        crop_poly = np.squeeze(
+                            np.array(inter.exterior.coords[:-1]).reshape(1, -1))
+                        crop_poly[0::2] -= xmin
+                        crop_poly[1::2] -= ymin
+                        crop_segm.append(crop_poly.tolist())
+                    else:
+                        continue
+            return crop_segm
+
+        def _crop_rle(rle, crop, height, width):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, height, width)
+            mask = mask_util.decode(rle)
+            mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
+            rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
+            return rle
+
+        def is_poly(segm):
+            assert isinstance(segm, (list, dict)), \
+                "Invalid segm type: {}".format(type(segm))
+            return isinstance(segm, list)
+
+        crop_segms = []
+        for id in valid_ids:
+            segm = segms[id]
+            if is_poly(segm):
+                import copy
+                import shapely.ops
+                from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+                logging.getLogger("shapely").setLevel(logging.WARNING)
+                # Polygon format
+                crop_segms.append(_crop_poly(segm, crop))
+            else:
+                # RLE format
+                import pycocotools.mask as mask_util
+                crop_segms.append(_crop_rle(segm, crop, height, width))
+        return crop_segms
 
     def __call__(self, sample, context=None):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
@@ -1428,6 +1541,25 @@ class RandomCrop(BaseOperator):
                     break
 
             if found:
+                if len(sample['gt_poly']) != 0 and None not in sample[
+                        'gt_poly']:
+                    crop_polys = self.crop_segms(
+                        sample['gt_poly'],
+                        valid_ids,
+                        np.array(
+                            crop_box, dtype=np.int64),
+                        h,
+                        w)
+                    if [] in crop_polys:
+                        delete_id = list()
+                        for id, valid_poly in enumerate(crop_polys):
+                            if valid_poly == []:
+                                delete_id.append(id)
+                        crop_polys.remove([])
+                        valid_ids = np.delete(valid_ids, delete_id)
+                    if len(crop_polys) == 0:
+                        return sample
+                    sample['gt_poly'] = crop_polys
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
@@ -1437,6 +1569,10 @@ class RandomCrop(BaseOperator):
                 if 'gt_score' in sample:
                     sample['gt_score'] = np.take(
                         sample['gt_score'], valid_ids, axis=0)
+
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = np.take(
+                        sample['is_crowd'], valid_ids, axis=0)
                 return sample
 
         return sample
