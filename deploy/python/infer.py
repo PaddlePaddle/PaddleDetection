@@ -206,28 +206,25 @@ def create_inputs(im, im_info, model_arch='YOLO'):
         im_info (dict): info of image
         model_arch (str): model type
     Returns:
-        inputs (list): input of model
+        inputs (dict): input of model
     """
-    inputs = []
-    inputs.append(im)
+    inputs = {} 
+    inputs['image'] = im
     origin_shape = list(im_info['origin_shape'])
     resize_shape = list(im_info['resize_shape'])
     scale = im_info['scale']
-    info = []
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
-        info.append(im_size)
+        inputs['im_size'] = im_size
     elif 'RetinaNet' in model_arch:
         im_info = np.array([resize_shape + [scale]]).astype('float32')
-        info.append(im_info)
+        inputs['im_info'] = im_info
     elif 'RCNN' in model_arch:
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         im_shape = np.array([origin_shape + [1.]]).astype('float32')
-        info.append(im_info)
-        info.append(im_shape)
-    inputs += info
+        inputs['im_info'] = im_info
+        inputs['im_shape'] = im_shape
     return inputs
-
 
 class Config():
     """set config of preprocess, postprocess and visualize
@@ -243,11 +240,12 @@ class Config():
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
         self.arch = yml_conf['arch']
-        # preprocess info
         self.preprocess_infos = yml_conf['Preprocess']
-
+        self.use_python_inference = yml_conf['use_python_inference']
+        self.run_mode = yml_conf['mode']
+        self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        if 'YOLO' in self.arch:
+        if not yml_conf['with_background']:
             self.labels = self.labels[1:]
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
@@ -266,14 +264,29 @@ class Config():
                 yml_conf['arch']))
 
 
-def load_model(model_dir, use_gpu=False):
+def load_predictor(model_dir,
+                   run_mode='fluid',
+                   batch_size=1,
+                   use_gpu=False,
+                   min_subgraph_size=3):
     """set AnalysisConfig，generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
+    Raises:
+        ValueError: predict by TensorRT need use_gpu == True 
     """
+    if not use_gpu and run_mode == 'fluid':
+        raise ValueError(
+            "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
+            .format(run_mode, use_gpu))
+    precision_map = {
+        'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
+        'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
+        'trt_fp16': fluid.core.AnalysisConfig.Precision.Half
+    }
     config = fluid.core.AnalysisConfig(os.path.join(model_dir, '__model__'),
                                        os.path.join(model_dir, '__params__'))
     if use_gpu:
@@ -283,6 +296,14 @@ def load_model(model_dir, use_gpu=False):
         config.switch_ir_optim(True)
     else:
         config.disable_gpu()
+
+    if run_mode in precision_map.keys():
+        config.enable_tensorrt_engine(workspace_size=1 << 30,
+                                      max_batch_size=batch_size,
+                                      min_subgraph_size=min_subgraph_size,
+                                      precision_mode=precision_map[run_mode],
+                                      use_static=False,
+                                      use_calib_mode=run_mode == 'trt_int8')
 
     # disable print log when predict
     config.disable_glog_info()
@@ -294,6 +315,20 @@ def load_model(model_dir, use_gpu=False):
     return predictor
 
 
+def load_executor(model_dir, use_gpu=False):
+    if use_gpu:
+        place = fluid.CUDAPlace(0)
+    else:
+        place = fluid.CPUPlace()
+    exe = fluid.Executor(place)
+    program, feed_names, fetch_targets = fluid.io.load_inference_model(
+        dirname=model_dir,
+        executor=exe,
+        model_filename='__model__',
+        params_filename='__params__')
+    return exe, program, fetch_targets
+
+
 class Detector():
     """
     Args:
@@ -302,7 +337,15 @@ class Detector():
     """
     def __init__(self, model_dir, use_gpu=False, threshold=0.5):
         self.config = Config(model_dir)
-        self.predictor = load_model(model_dir, use_gpu=use_gpu)
+        if self.config.use_python_inference:
+            self.executor, self.program, self.fecth_targets = load_executor(
+                model_dir, use_gpu=use_gpu)
+        else:
+            self.predictor = load_predictor(
+                model_dir,
+                run_mode=self.config.run_mode,
+                min_subgraph_size=self.config.min_subgraph_size,
+                use_gpu=use_gpu)
         self.preprocess_ops = []
         for op_info in self.config.preprocess_infos:
             op_type = op_info.pop('type')
@@ -324,13 +367,9 @@ class Detector():
         inputs = create_inputs(im, im_info, self.config.arch)
         return inputs, im_info
 
-    def postprocess(self, im_info, threshold=0.5):
+    def postprocess(self, np_boxes, np_masks, im_info, threshold=0.5):
         # postprocess output of predictor
         results = {}
-        output_names = self.predictor.get_output_names()
-        boxes_tensor = self.predictor.get_output_tensor(output_names[0])
-        np_boxes = boxes_tensor.copy_to_cpu()
-
         if 'SSD' in self.config.arch:
             w, h = im_info['origin_shape']
             np_boxes[:, 2] *= h
@@ -345,10 +384,7 @@ class Detector():
                   ' right_bottom:[{:.2f},{:.2f}]'.format(
                       int(box[0]), box[1], box[2], box[3], box[4], box[5]))
         results['boxes'] = np_boxes
-
-        if self.config.mask_resolution is not None:
-            masks_tensor = self.predictor.get_output_tensor(output_names[1])
-            np_masks = masks_tensor.copy_to_cpu()
+        if np_masks is not None:
             np_masks = np_masks[expect_boxes, :, :, :]
             results['masks'] = np_masks
         return results
@@ -365,34 +401,61 @@ class Detector():
                             shape:[N, class_num, mask_resolution, mask_resolution]  
         '''
         inputs, im_info = self.preprocess(image_file)
-        input_names = self.predictor.get_input_names()
-        for i in range(len(inputs)):
-            input_tensor = self.predictor.get_input_tensor(input_names[i])
-            input_tensor.copy_from_cpu(inputs[i])
-        self.predictor.zero_copy_run()
-        results = self.postprocess(im_info, threshold)
+        np_boxes, np_masks = None, None
+        print(inputs)
+        if self.config.use_python_inference:
+            outs = self.executor.run(self.program,
+                                     feed=inputs,
+                                     fetch_list=self.fecth_targets, 
+                                     return_numpy=False)
+            np_boxes = np.array(outs[0])
+            if self.config.mask_resolution is not None:
+                np_masks = np.arrya(outs[1])
+        else:
+            input_names = self.predictor.get_input_names()
+            for i in range(len(inputs)):
+                input_tensor = self.predictor.get_input_tensor(input_names[i])
+                input_tensor.copy_from_cpu(inputs[input_names[i]])
+            self.predictor.zero_copy_run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_tensor(output_names[0])
+            np_boxes = boxes_tensor.copy_to_cpu()
+            if self.config.mask_resolution is not None:
+                masks_tensor = self.predictor.get_output_tensor(output_names[1])
+                np_masks = masks_tensor.copy_to_cpu()
+        results = self.postprocess(np_boxes,
+                                   np_masks,
+                                   im_info,
+                                   threshold=threshold)
         return results
 
-    def visualize(self, image_file, results, output_dir):
-        # visualize the predict result
-        im = visualize_box_mask(image_file,
-                                results,
-                                self.config.labels,
-                                mask_resolution=self.config.mask_resolution)
-        img_name = os.path.split(image_file)[-1]
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        out_path = os.path.join(output_dir, img_name)
-        im.save(out_path, quality=95)
-        print("save result to: " + out_path)
+def visualize(image_file,
+              results,
+              labels,
+              mask_resolution=14,
+              output_dir='output/'):
+    # visualize the predict result
+    im = visualize_box_mask(image_file,
+                            results,
+                            labels,
+                            mask_resolution=mask_resolution)
+    img_name = os.path.split(image_file)[-1]
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    out_path = os.path.join(output_dir, img_name)
+    im.save(out_path, quality=95)
+    print("save result to: " + out_path)
 
 
 def main():
     detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu)
     results = detector.predict(FLAGS.image_file, FLAGS.threshold)
+    visualize(FLAGS.image_file,
+              results,
+              detector.config.labels,
+              mask_resolution=detector.config.mask_resolution,
+              output_dir=FLAGS.output_dir)
 
-    if FLAGS.visualize:
-        detector.visualize(FLAGS.image_file, results, FLAGS.output_dir)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
@@ -414,9 +477,6 @@ if __name__ == '__main__':
                         type=float,
                         default=0.5,
                         help="Threshold of score.")
-    parser.add_argument("--visualize",
-                        default=False,
-                        help="Whether to visualize detection output.")
     parser.add_argument("--output_dir",
                         type=str,
                         default="output",
