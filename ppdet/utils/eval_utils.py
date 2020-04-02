@@ -103,7 +103,8 @@ def eval_run(exe,
              cfg=None,
              sub_prog=None,
              sub_keys=None,
-             sub_values=None):
+             sub_values=None,
+             resolution=None):
     """
     Run evaluation program, return program outputs.
     """
@@ -152,6 +153,9 @@ def eval_run(exe,
             if multi_scale_test:
                 res = clean_res(
                     res, ['im_info', 'bbox', 'im_id', 'im_shape', 'mask'])
+            if 'mask' in res:
+                from ppdet.utils.post_process import mask_encode
+                res['mask'] = mask_encode(res, resolution)
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
