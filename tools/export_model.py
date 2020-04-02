@@ -62,6 +62,7 @@ def parse_reader(reader_cfg, metric, arch):
                 1:]) if arch in scale_set else image_shape[1]
             params['max_size'] = max(image_shape[
                 1:]) if arch in scale_set else 0
+            params['image_shape'] = image_shape[1:]
         p.update(params)
         preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
@@ -75,7 +76,7 @@ def parse_reader(reader_cfg, metric, arch):
                 preprocess_list[-1].update({'stride': params['pad_to_stride']})
                 break
 
-    return with_background, preprocess_list, label_list, image_shape
+    return with_background, preprocess_list, label_list
 
 
 def dump_infer_config(config):
@@ -100,12 +101,9 @@ def dump_infer_config(config):
 
     if 'Mask' in config['architecture']:
         infer_cfg['mask_resolution'] = config['MaskHead']['resolution']
-    infer_cfg['with_background'], infer_cfg[
-        'Preprocess'], label_list, image_shape = parse_reader(
-            config['TestReader'], config['metric'], infer_cfg['arch'])
-    if not None in image_shape:
-        infer_cfg['image_shape'] = image_shape[1:]
-    infer_cfg['label_list'] = label_list
+    infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
+        'label_list'] = parse_reader(config['TestReader'], config['metric'],
+                                     infer_cfg['arch'])
 
     yaml.dump(infer_cfg, open(os.path.join(save_dir, 'infer_cfg.yml'), 'w'))
     logger.info("Export inference config file to {}".format(

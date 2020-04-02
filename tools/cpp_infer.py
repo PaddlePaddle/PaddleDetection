@@ -104,14 +104,16 @@ class Resize(object):
                  target_size,
                  max_size=0,
                  interp=cv2.INTER_LINEAR,
-                 use_cv2=True):
+                 use_cv2=True,
+                 image_shape=None):
         super(Resize, self).__init__()
         self.target_size = target_size
         self.max_size = max_size
         self.interp = interp
         self.use_cv2 = use_cv2
+        self.image_shape = image_shape
 
-    def __call__(self, im, image_shape=None):
+    def __call__(self, im):
         origin_shape = im.shape[:2]
         im_c = im.shape[2]
         if self.max_size != 0:
@@ -147,7 +149,7 @@ class Resize(object):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
         # padding im
-        if self.max_size != 0 and image_shape is not None:
+        if self.max_size != 0 and self.image_shape is not None:
             padding_im = np.zeros(
                 (self.max_size, self.max_size, im_c), dtype=np.float32)
             im_h, im_w = im.shape[:2]
@@ -186,10 +188,10 @@ class Permute(object):
 
     def __call__(self, im):
         if self.channel_first:
-            im = im.transpose((2, 0, 1)).copy()
+            im = im.transpose((2, 0, 1))
         if self.to_bgr:
             im = im[[2, 1, 0], :, :]
-        return im
+        return im.copy()
 
 
 class PadStride(object):
@@ -211,7 +213,7 @@ class PadStride(object):
         return padding_im
 
 
-def Preprocess(img_path, arch, config, use_trt, image_shape):
+def Preprocess(img_path, arch, config):
     img = DecodeImage(img_path)
     orig_shape = img.shape
     scale = 1.
@@ -221,10 +223,7 @@ def Preprocess(img_path, arch, config, use_trt, image_shape):
         obj = data_aug_conf.pop('type')
         preprocess = eval(obj)(**data_aug_conf)
         if obj == 'Resize':
-            assert not (
-                use_trt and image_shape is None
-            ), "Due to the limitation of tensorRT, the image shape needs to set in export_model"
-            img, scale = preprocess(img, image_shape)
+            img, scale = preprocess(img)
         else:
             img = preprocess(img)
 
@@ -509,9 +508,11 @@ def infer():
         conf = yaml.safe_load(f)
 
     use_trt = not conf['use_python_inference'] and 'trt' in conf['mode']
-    image_shape = conf.get('image_shape', None)
-    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'],
-                          use_trt, image_shape)
+    if use_trt:
+        logger.warning(
+            "Due to the limitation of tensorRT, the image shape needs to set in export_model"
+        )
+    img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'])
     if 'SSD' in conf['arch']:
         img_data, res['im_shape'] = img_data
         img_data = [img_data]
