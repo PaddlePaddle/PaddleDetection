@@ -187,7 +187,6 @@ class CascadeRCNN(object):
             # backbone
             body_feats = self.backbone(im)
             result.update(body_feats)
-            body_feat_names = list(body_feats.keys())
 
             # FPN
             if self.fpn is not None:

@@ -1,0 +1,48 @@
+draw_threshold: 0.5
+use_python_inference: false
+mode: fluid
+metric: VOC
+arch: YOLO
+min_subgraph_size: 3
+with_background: false
+Preprocess:
+- interp: 2
+  max_size: 0
+  target_size: 608
+  type: Resize
+  use_cv2: true
+- is_channel_first: false
+  is_scale: true
+  mean:
+  - 0.485
+  - 0.456
+  - 0.406
+  std:
+  - 0.229
+  - 0.224
+  - 0.225
+  type: Normalize
+- channel_first: true
+  to_bgr: false
+  type: Permute
+label_list:
+- aeroplane
+- bicycle
+- bird
+- boat
+- bottle
+- bus
+- car
+- cat
+- chair
+- cow
+- diningtable
+- dog
+- horse
+- motorbike
+- person
+- pottedplant
+- sheep
+- sofa
+- train
+- tvmonitor

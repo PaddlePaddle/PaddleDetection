@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,91 +23,13 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-import yaml
+from paddleslim.prune import Pruner
+from paddleslim.analysis import flops
+
 import logging
-from collections import OrderedDict
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
-
-def parse_reader(reader_cfg, metric, arch):
-    preprocess_list = []
-
-    image_shape = reader_cfg['inputs_def'].get('image_shape', [3, None, None])
-    has_shape_def = not None in image_shape
-    scale_set = {'RCNN', 'RetinaNet'}
-
-    dataset = reader_cfg['dataset']
-    anno_file = dataset.get_anno()
-    with_background = dataset.with_background
-    use_default_label = dataset.use_default_label
-
-    if metric == 'COCO':
-        from ppdet.utils.coco_eval import get_category_info
-    if metric == "VOC":
-        from ppdet.utils.voc_eval import get_category_info
-    clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                use_default_label)
-    label_list = [str(cat) for cat in catid2name.values()]
-
-    sample_transforms = reader_cfg['sample_transforms']
-    for st in sample_transforms[1:]:
-        method = st.__class__.__name__
-        p = {'type': method.replace('Image', '')}
-        params = st.__dict__
-        params.pop('_id')
-        if p['type'] == 'Resize' and has_shape_def:
-            params['target_size'] = min(image_shape[
-                1:]) if arch in scale_set else image_shape[1]
-            params['max_size'] = max(image_shape[
-                1:]) if arch in scale_set else 0
-            params['image_shape'] = image_shape[1:]
-        p.update(params)
-        preprocess_list.append(p)
-    batch_transforms = reader_cfg.get('batch_transforms', None)
-    if batch_transforms:
-        methods = [bt.__class__.__name__ for bt in batch_transforms]
-        for bt in batch_transforms:
-            method = bt.__class__.__name__
-            if method == 'PadBatch':
-                preprocess_list.append({'type': 'PadStride'})
-                params = bt.__dict__
-                preprocess_list[-1].update({'stride': params['pad_to_stride']})
-                break
-
-    return with_background, preprocess_list, label_list
-
-
-def dump_infer_config(config):
-    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
-    from ppdet.core.config.yaml_helpers import setup_orderdict
-    setup_orderdict()
-    infer_cfg = OrderedDict({
-        'use_python_inference': False,
-        'mode': 'fluid',
-        'draw_threshold': 0.5,
-        'metric': config['metric']
-    })
-    trt_min_subgraph = {'YOLO': 3, 'SSD': 40, 'RCNN': 40, 'RetinaNet': 40}
-    infer_arch = config['architecture']
-
-    for arch, min_subgraph_size in trt_min_subgraph.items():
-        if arch in infer_arch:
-            infer_cfg['arch'] = arch
-            infer_cfg['min_subgraph_size'] = min_subgraph_size
-            break
-
-    if 'Mask' in config['architecture']:
-        infer_cfg['mask_resolution'] = config['MaskHead']['resolution']
-    infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
-        'label_list'] = parse_reader(config['TestReader'], config['metric'],
-                                     infer_cfg['arch'])
-
-    yaml.dump(infer_cfg, open(os.path.join(save_dir, 'infer_cfg.yml'), 'w'))
-    logger.info("Export inference config file to {}".format(
-        os.path.join(save_dir, 'infer_cfg.yml')))
 
 
 def prune_feed_vars(feeded_var_names, target_vars, prog):
@@ -137,8 +59,7 @@ def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
     feed_var_names = [var.name for var in feed_vars.values()]
-    fetch_list = sorted(test_fetches.items(), key=lambda i: i[0])
-    target_vars = [var[1] for var in fetch_list]
+    target_vars = list(test_fetches.values())
     feed_var_names = prune_feed_vars(feed_var_names, target_vars, infer_prog)
     logger.info("Export inference model to {}, input: {}, output: "
                 "{}...".format(save_dir, feed_var_names,
@@ -178,11 +99,37 @@ def main():
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
+    pruned_params = FLAGS.pruned_params
+    assert (
+        FLAGS.pruned_params is not None
+    ), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    pruned_params = FLAGS.pruned_params.strip().split(",")
+    logger.info("pruned params: {}".format(pruned_params))
+    pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
+    logger.info("pruned ratios: {}".format(pruned_ratios))
+    assert (len(pruned_params) == len(pruned_ratios)
+            ), "The length of pruned params and pruned ratios should be equal."
+    assert (pruned_ratios > [0] * len(pruned_ratios) and
+            pruned_ratios < [1] * len(pruned_ratios)
+            ), "The elements of pruned ratios should be in range (0, 1)."
+
+    base_flops = flops(infer_prog)
+    pruner = Pruner()
+    infer_prog, _, _ = pruner.prune(
+        infer_prog,
+        fluid.global_scope(),
+        params=pruned_params,
+        ratios=pruned_ratios,
+        place=place,
+        only_graph=True)
+    pruned_flops = flops(infer_prog)
+    logger.info("pruned FLOPS: {}".format(
+        float(base_flops - pruned_flops) / base_flops))
+
     exe.run(startup_prog)
-    checkpoint.load_params(exe, infer_prog, cfg.weights)
+    checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
 
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
-    dump_infer_config(cfg)
 
 
 if __name__ == '__main__':
@@ -192,6 +139,19 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output model files.")
+
+    parser.add_argument(
+        "-p",
+        "--pruned_params",
+        default=None,
+        type=str,
+        help="The parameters to be pruned when calculating sensitivities.")
+    parser.add_argument(
+        "--pruned_ratios",
+        default=None,
+        type=str,
+        help="The ratios pruned iteratively for each parameter when calculating sensitivities."
+    )
 
     FLAGS = parser.parse_args()
     main()

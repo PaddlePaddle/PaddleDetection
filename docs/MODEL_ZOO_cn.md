@@ -62,7 +62,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | SENet154-vd-FPN      | Faster         |    1    |  1.44x  |     3.408      |  42.9  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_se154_vd_fpn_s1x.tar) |
 | SENet154-vd-FPN      | Mask           |    1    |  1.44x  |     3.233      |  44.0  |  38.7   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_se154_vd_fpn_s1x.tar) |
 | ResNet101-vd-FPN            | CascadeClsAware Faster   |     2     |   1x    |     -     |  44.7(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r101_vd_fpn_1x_softnms.tar) |
-
+| ResNet101-vd-FPN            | CascadeClsAware Faster   |     2     |   1x    |     -     |  46.5(multi-scale test)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r101_vd_fpn_1x_softnms.tar) |
 
 ### Deformable 卷积网络v2
 

@@ -86,6 +86,7 @@ def main():
                 fetches = model.eval(feed_vars, multi_scale_test)
     eval_prog = eval_prog.clone(True)
 
+    exe.run(startup_prog)
     reader = create_reader(cfg.EvalReader)
     loader.set_sample_list_generator(reader, place)
 
@@ -123,7 +124,7 @@ def main():
         params=pruned_params,
         ratios=pruned_ratios,
         place=place,
-        only_graph=True)
+        only_graph=False)
     pruned_flops = flops(eval_prog)
     logger.info("pruned FLOPS: {}".format(
         float(base_flops - pruned_flops) / base_flops))
@@ -174,9 +175,8 @@ def main():
         sub_eval_prog = sub_eval_prog.clone(True)
 
     # load model
-    exe.run(startup_prog)
     if 'weights' in cfg:
-        checkpoint.load_params(exe, eval_prog, cfg.weights)
+        checkpoint.load_checkpoint(exe, eval_prog, cfg.weights)
 
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)

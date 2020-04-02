@@ -1,7 +1,6 @@
 # 模型导出
 
-训练得到一个满足要求的模型后，如果想要将该模型接入到C++预测库或者Serving服务，需要通过`tools/export_model.py`导出该模型。
-
+训练得到一个满足要求的模型后，如果想要将该模型接入到C++预测库或者Serving服务，需要通过`tools/export_model.py`导出该模型。同时，会导出预测时使用的配置文件，路径与模型保存路径相同, 配置文件名为`infer_cfg.yml`。
 **说明：**
 
 - 导出模型输入为网络输入图像，即原始图片经过预处理后的图像，具体预处理方式可参考配置文件中TestReader部分。各类检测模型的输入格式分别为：
@@ -57,6 +56,6 @@ python tools/export_model.py -c configs/yolov3_darknet.yml \
 # 导出SSD模型，输入是3x300x300
 python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
         --output_dir=./inference_model \
-        -o weights= https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
+        -o weights=https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
            TestReader.inputs_def.image_shape=[3,300,300]
 ```
