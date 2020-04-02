@@ -136,6 +136,7 @@ class CascadeRCNN(object):
                     curr_stage=i - 1, )
             else:
                 refined_bbox = rpn_rois
+            refined_bbox.stop_gradient = True
 
             if mode == 'train':
                 outs = self.bbox_assigner(

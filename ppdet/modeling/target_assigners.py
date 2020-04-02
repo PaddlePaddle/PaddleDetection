@@ -19,9 +19,12 @@ from __future__ import print_function
 from paddle import fluid
 
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import BBoxAssigner, MaskAssigner
+from ppdet.modeling.ops import BBoxAssigner, MaskAssigner, LibraBBoxAssigner
 
-__all__ = ['BBoxAssigner', 'MaskAssigner', 'CascadeBBoxAssigner']
+__all__ = [
+    'BBoxAssigner', 'MaskAssigner', 'CascadeBBoxAssigner',
+    'CascadeLibraBBoxAssigner'
+]
 
 
 @register
@@ -73,4 +76,59 @@ class CascadeBBoxAssigner(object):
             is_cls_agnostic=not self.class_aware,
             is_cascade_rcnn=True
             if curr_stage > 0 and not self.class_aware else False)
+        return outs
+
+
+@register
+class CascadeLibraBBoxAssigner(LibraBBoxAssigner):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 batch_size_per_im=512,
+                 fg_fraction=.25,
+                 fg_thresh=[0.5, 0.6, 0.7],
+                 bg_thresh_hi=[0.5, 0.6, 0.7],
+                 bg_thresh_lo=[0., 0., 0.],
+                 bbox_reg_weights=[10, 20, 30],
+                 shuffle_before_sample=True,
+                 num_classes=81,
+                 is_cls_agnostic=True,
+                 num_bins=3):
+        super(CascadeLibraBBoxAssigner, self).__init__(
+            batch_size_per_im=batch_size_per_im,
+            fg_fraction=fg_fraction,
+            fg_thresh=fg_thresh,
+            bg_thresh_hi=bg_thresh_hi,
+            bg_thresh_lo=bg_thresh_lo,
+            bbox_reg_weights=bbox_reg_weights,
+            num_classes=num_classes,
+            shuffle_before_sample=shuffle_before_sample,
+            is_cls_agnostic=is_cls_agnostic,
+            num_bins=num_bins)
+
+    def __call__(self, input_rois, feed_vars, curr_stage):
+
+        curr_bbox_reg_w = [
+            1. / self.bbox_reg_weights[curr_stage],
+            1. / self.bbox_reg_weights[curr_stage],
+            2. / self.bbox_reg_weights[curr_stage],
+            2. / self.bbox_reg_weights[curr_stage],
+        ]
+
+        outs = self.generate_proposal_label_libra(
+            rpn_rois=input_rois,
+            gt_classes=feed_vars['gt_class'],
+            is_crowd=feed_vars['is_crowd'],
+            gt_boxes=feed_vars['gt_bbox'],
+            im_info=feed_vars['im_info'],
+            batch_size_per_im=self.batch_size_per_im,
+            fg_fraction=self.batch_size_per_im,
+            fg_thresh=self.fg_thresh[curr_stage],
+            bg_thresh_hi=self.bg_thresh_hi[curr_stage],
+            bg_thresh_lo=self.bg_thresh_lo[curr_stage],
+            bbox_reg_weights=curr_bbox_reg_w,
+            use_random=self.use_random,
+            class_nums=self.class_nums,
+            is_cls_agnostic=self.is_cls_agnostic,
+            is_cascade_rcnn=True if curr_stage > 0 else False)
         return outs
