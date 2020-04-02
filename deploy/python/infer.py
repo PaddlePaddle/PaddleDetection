@@ -15,7 +15,7 @@
 import os
 import argparse
 import yaml
-
+from PIL import Image
 import cv2
 import numpy as np
 import paddle.fluid as fluid
@@ -85,6 +85,8 @@ class Resize(object):
                         fy=im_scale_y,
                         interpolation=self.interp)
         else:
+            resize_w = int(im_scale_x * float(im.shape[1]))
+            resize_h = int(im_scale_y * float(im.shape[0]))
             if self.max_size != 0:
                 raise TypeError(
                     'If you set max_size to cap the maximum size of image,'
@@ -94,7 +96,7 @@ class Resize(object):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
 
-        # padding im
+        # padding im when image_shape fixed by infer_cfg.yml
         if self.max_size != 0 and self.image_shape is not None:
             padding_im = np.zeros(
                 (self.max_size, self.max_size, im_channel), dtype=np.float32)
