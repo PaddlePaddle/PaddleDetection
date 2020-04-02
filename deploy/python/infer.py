@@ -48,18 +48,22 @@ class Resize(object):
         target_size (int): the target size of image
         max_size (int): the max size of image
         use_cv2 (bool): whether us cv2
+		image_shape (list): input shape of model
         interp (int): method of resize
     """
     def __init__(self,
                  arch,
                  target_size,
-                 max_size=0,
+                 max_size,
                  use_cv2=True,
+                 image_shape=None,
                  interp=cv2.INTER_LINEAR):
         self.target_size = target_size
         self.max_size = max_size
-        self.interp = interp
+        self.image_shape=image_shape,
         self.arch = arch
+        self.use_cv2 = use_cv2
+        self.interp = interp
         self.scale_set = {'RCNN', 'RetinaNet'}
 
     def __call__(self, im, im_info):
@@ -71,13 +75,33 @@ class Resize(object):
             im (np.ndarray):  processed image (np.ndarray)
             im_info (dict): info of processed image
         """
+        im_channel = im.shape[2]
         im_scale_x, im_scale_y = self.generate_scale(im)
-        im = cv2.resize(im,
+        if self.use_cv2:
+            im = cv2.resize(im,
                         None,
                         None,
                         fx=im_scale_x,
                         fy=im_scale_y,
                         interpolation=self.interp)
+        else:
+            if self.max_size != 0:
+                raise TypeError(
+                    'If you set max_size to cap the maximum size of image,'
+                    'please set use_cv2 to True to resize the image.')
+            im = im.astype('uint8')
+            im = Image.fromarray(im)
+            im = im.resize((int(resize_w), int(resize_h)), self.interp)
+            im = np.array(im)
+
+        # padding im
+        if self.max_size != 0 and self.image_shape is not None:
+            padding_im = np.zeros(
+                (self.max_size, self.max_size, im_channel), dtype=np.float32)
+            im_h, im_w = im.shape[:2]
+            padding_im[:im_h, :im_w, :] = im
+            im = padding_im
+
         if self.arch in self.scale_set:
             im_info['scale'] = im_scale_x
         im_info['resize_shape'] = im.shape[:2]
