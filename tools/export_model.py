@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 def parse_reader(reader_cfg, metric, arch):
     preprocess_list = []
 
-    image_shape = reader_cfg['inputs_def'].get('image_shape', [None])
+    image_shape = reader_cfg['inputs_def'].get('image_shape', [3, None, None])
     has_shape_def = not None in image_shape
     scale_set = {'RCNN', 'RetinaNet'}
 
@@ -58,9 +58,11 @@ def parse_reader(reader_cfg, metric, arch):
         params = st.__dict__
         params.pop('_id')
         if p['type'] == 'Resize' and has_shape_def:
-            params['target_size'] = image_shape[1]
-            params['max_size'] = image_shape[2] if arch in scale_set else 0
-
+            params['target_size'] = min(image_shape[
+                1:]) if arch in scale_set else image_shape[1]
+            params['max_size'] = max(image_shape[
+                1:]) if arch in scale_set else 0
+            params['image_shape'] = image_shape[1:]
         p.update(params)
         preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
@@ -102,6 +104,7 @@ def dump_infer_config(config):
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
         'label_list'] = parse_reader(config['TestReader'], config['metric'],
                                      infer_cfg['arch'])
+
     yaml.dump(infer_cfg, open(os.path.join(save_dir, 'infer_cfg.yml'), 'w'))
     logger.info("Export inference config file to {}".format(
         os.path.join(save_dir, 'infer_cfg.yml')))
