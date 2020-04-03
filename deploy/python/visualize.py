@@ -18,10 +18,10 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 
-def visualize_box_mask(image_file, results, labels, mask_resolution=14):
+def visualize_box_mask(im, results, labels, mask_resolution=14):
     """ 
     Args:
-        image_file (str): path of image
+        im (str/np.ndarray): path of image/np.ndarray read by cv2
         results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
                         matix element:[class, score, x_min, y_min, x_max, y_max]
                         MaskRCNN's results include 'masks': np.ndarray: 
@@ -31,7 +31,10 @@ def visualize_box_mask(image_file, results, labels, mask_resolution=14):
     Returns:
         im (PIL.Image.Image): visualized image  
     """
-    im = Image.open(image_file).convert('RGB')
+    if im is str:
+        im = Image.open(im).convert('RGB')
+    else:
+        im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results:
         im = draw_mask(im,
                        results['boxes'],
@@ -152,6 +155,7 @@ def draw_box(im, np_boxes, labels):
     Returns:
         im (PIL.Image.Image): visualized image  
     """
+    draw_thickness = min(im.size)/320
     draw = ImageDraw.Draw(im)
     clsid2color = {}
     color_list = get_color_map_list(len(labels))
@@ -168,7 +172,7 @@ def draw_box(im, np_boxes, labels):
         # draw bbox
         draw.line([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
                    (xmin, ymin)],
-                  width=2,
+                  width=draw_thickness,
                   fill=color)
 
         # draw label

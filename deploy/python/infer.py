@@ -22,22 +22,27 @@ import paddle.fluid as fluid
 from visualize import visualize_box_mask
 
 
-def decode_image(im_path, im_info):
+def decode_image(im_file, im_info):
     """read rgb image
     Args:
-        im_path (str): path of image
+        im_file (str/np.ndarray): path of image/ np.ndarray read by cv2
         im_info (dict): info of image
     Returns:
         im (np.ndarray):  processed image (np.ndarray)
         im_info (dict): info of processed image
     """
-    with open(im_path, 'rb') as f:
-        im = f.read()
-    data = np.frombuffer(im, dtype='uint8')
-    im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-    im_info['origin_shape'] = im.shape[:2]
-    im_info['resize_shape'] = im.shape[:2]
+    if isinstance(im_file, str):
+        with open(im_file, 'rb') as f:
+            im_read = f.read()
+        data = np.frombuffer(im_read, dtype='uint8')
+        im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        im_info['origin_shape'] = im.shape[:2]
+        im_info['resize_shape'] = im.shape[:2]
+    else:
+        im = im_file
+        im_info['origin_shape'] = im.shape[:2]
+        im_info['resize_shape'] = im.shape[:2]
     return im, im_info
 
 
@@ -48,7 +53,7 @@ class Resize(object):
         target_size (int): the target size of image
         max_size (int): the max size of image
         use_cv2 (bool): whether us cv2
-		image_shape (list): input shape of model
+        image_shape (list): input shape of model
         interp (int): method of resize
     """
     def __init__(self,
@@ -354,6 +359,22 @@ def load_executor(model_dir, use_gpu=False):
         params_filename='__params__')
     return exe, program, fetch_targets
 
+def visualize(image_file,
+              results,
+              labels,
+              mask_resolution=14,
+              output_dir='output/'):
+    # visualize the predict result
+    im = visualize_box_mask(image_file,
+                            results,
+                            labels,
+                            mask_resolution=mask_resolution)
+    img_name = os.path.split(image_file)[-1]
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    out_path = os.path.join(output_dir, img_name)
+    im.save(out_path, quality=95)
+    print("save result to: " + out_path)
 
 class Detector():
     """
@@ -415,10 +436,10 @@ class Detector():
             results['masks'] = np_masks
         return results
 
-    def predict(self, image_file, threshold=0.5):
+    def predict(self, image, threshold=0.5):
         '''
         Args:
-            image_file (str): path of image
+            image (str/np.ndarray): path of image/ np.ndarray read by cv2
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
@@ -426,9 +447,8 @@ class Detector():
                             MaskRCNN's results include 'masks': np.ndarray: 
                             shape:[N, class_num, mask_resolution, mask_resolution]  
         '''
-        inputs, im_info = self.preprocess(image_file)
+        inputs, im_info = self.preprocess(image)
         np_boxes, np_masks = None, None
-        print(inputs)
         if self.config.use_python_inference:
             outs = self.executor.run(self.program,
                                      feed=inputs,
@@ -455,32 +475,42 @@ class Detector():
                                    threshold=threshold)
         return results
 
-def visualize(image_file,
-              results,
-              labels,
-              mask_resolution=14,
-              output_dir='output/'):
-    # visualize the predict result
-    im = visualize_box_mask(image_file,
-                            results,
-                            labels,
-                            mask_resolution=mask_resolution)
-    img_name = os.path.split(image_file)[-1]
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    out_path = os.path.join(output_dir, img_name)
-    im.save(out_path, quality=95)
-    print("save result to: " + out_path)
-
-
-def main():
+def predict_image():
     detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu)
     results = detector.predict(FLAGS.image_file, FLAGS.threshold)
-    visualize(FLAGS.image_file,
-              results,
-              detector.config.labels,
-              mask_resolution=detector.config.mask_resolution,
-              output_dir=FLAGS.output_dir)
+   # visualize(FLAGS.image_file,
+   #           results,
+   #           detector.config.labels,
+   #           mask_resolution=detector.config.mask_resolution,
+   #           output_dir=FLAGS.output_dir)
+
+def predict_video():
+    detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu)
+    capture = cv2.VideoCapture(FLAGS.video_file)
+    fps = 30
+    width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video_name = os.path.split(FLAGS.video_file)[-1]
+    if not os.path.exists(FLAGS.output_dir):
+        os.makedirs(FLAGES.output_dir)
+    out_path = os.path.join(FLAGS.output_dir, video_name)
+    writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    index = 1
+    while (1):
+        ret, frame = capture.read()
+        if not ret:
+            break
+        print('detect frame:%d' % (index))
+        index += 1
+        results = detector.predict(frame, FLAGS.threshold)
+        im = visualize_box_mask(frame,
+                            results,
+                            detector.config.labels,
+                            mask_resolution=detector.config.mask_resolution)
+        im = np.array(im)
+        writer.write(im)
+    writer.release()
 
 
 if __name__ == '__main__':
@@ -493,9 +523,12 @@ if __name__ == '__main__':
                         required=True)
     parser.add_argument("--image_file",
                         type=str,
-                        default=None,
-                        help="Path of image file.",
-                        required=True)
+                        default='',
+                        help="Path of image file.")
+    parser.add_argument("--video_file",
+                        type=str,
+                        default='',
+                        help="Path of video file.")
     parser.add_argument("--use_gpu",
                         default=False,
                         help="Whether to predict with GPU.")
@@ -507,5 +540,11 @@ if __name__ == '__main__':
                         type=str,
                         default="output",
                         help="Directory of output visualization files.")
+
     FLAGS = parser.parse_args()
-    main()
+    if FLAGS.image_file != '' and FLAGS.video_file != '':
+        assert "Cannot predict image and video at the same time"
+    if FLAGS.image_file != '':
+        predict_image()
+    if FLAGS.video_file != '':
+        predict_video()
