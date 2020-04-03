@@ -160,6 +160,8 @@ def eval_run(exe,
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
+            if len(res['bbox'][1]) == 0:
+                has_bbox = False
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
         loader.reset()

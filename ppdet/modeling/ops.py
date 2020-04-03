@@ -266,21 +266,24 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MultiClassSoftNMS(object):
-    def __init__(
-            self,
-            score_threshold=0.01,
-            keep_top_k=300,
-            softnms_sigma=0.5,
-            normalized=False,
-            background_label=0, ):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 score_threshold=0.01,
+                 keep_top_k=300,
+                 softnms_sigma=0.5,
+                 normalized=False,
+                 background_label=0,
+                 num_classes=80):
         super(MultiClassSoftNMS, self).__init__()
         self.score_threshold = score_threshold
         self.keep_top_k = keep_top_k
         self.softnms_sigma = softnms_sigma
         self.normalized = normalized
         self.background_label = background_label
+        self.num_classes = num_classes
 
-    def __call__(self, bboxes, scores):
+    def __call__(self, bboxes, scores, labels=None):
         def create_tmp_var(program, name, dtype, shape, lod_level):
             return program.current_block().create_var(
                 name=name, dtype=dtype, shape=shape, lod_level=lod_level)
@@ -317,23 +320,28 @@ class MultiClassSoftNMS(object):
             dets_final = np.array(dets_final).reshape(-1, 5)
             return dets_final
 
-        def _soft_nms(bboxes, scores):
+        def _soft_nms(bboxes, scores, labels=None):
+            has_labels = labels is not None
             bboxes = np.array(bboxes)
             scores = np.array(scores)
-            class_nums = scores.shape[-1]
+            class_nums = self.num_classes
 
             softnms_thres = self.score_threshold
             softnms_sigma = self.softnms_sigma
             keep_top_k = self.keep_top_k
+
+            if has_labels:
+                labels = np.array(labels)
 
             cls_boxes = [[] for _ in range(class_nums)]
             cls_ids = [[] for _ in range(class_nums)]
 
             start_idx = 1 if self.background_label == 0 else 0
             for j in range(start_idx, class_nums):
-                inds = np.where(scores[:, j] >= softnms_thres)[0]
-                scores_j = scores[inds, j]
-                rois_j = bboxes[inds, j, :]
+                inds = np.where(labels == j)[0] if has_labels else np.where(
+                    scores[:, j] >= softnms_thres)[0]
+                scores_j = scores[inds] if has_labels else scores[inds, j]
+                rois_j = bboxes[inds, :] if has_labels else bboxes[inds, j, :]
                 dets_j = np.hstack((scores_j[:, np.newaxis], rois_j)).astype(
                     np.float32, copy=False)
                 cls_rank = np.argsort(-dets_j[:, 0])
@@ -367,10 +375,10 @@ class MultiClassSoftNMS(object):
             fluid.default_main_program(),
             name='softnms_pred_result',
             dtype='float32',
-            shape=[6],
+            shape=[-1, 6],
             lod_level=1)
         fluid.layers.py_func(
-            func=_soft_nms, x=[bboxes, scores], out=pred_result)
+            func=_soft_nms, x=[bboxes, scores, labels], out=pred_result)
         return pred_result
 
 
