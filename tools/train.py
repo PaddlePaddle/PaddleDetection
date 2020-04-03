@@ -262,11 +262,17 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
                 resolution = None
-                if 'mask' in results[0]:
+                if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type,
