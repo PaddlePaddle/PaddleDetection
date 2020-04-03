@@ -1552,14 +1552,18 @@ class RandomCrop(BaseOperator):
                         w)
                     if [] in crop_polys:
                         delete_id = list()
-                        for id, valid_poly in enumerate(crop_polys):
-                            if valid_poly == []:
+                        valid_polys = list()
+                        for id, crop_poly in enumerate(crop_polys):
+                            if crop_poly == []:
                                 delete_id.append(id)
-                        crop_polys.remove([])
+                            else:
+                                valid_polys.append(crop_poly)
                         valid_ids = np.delete(valid_ids, delete_id)
-                    if len(crop_polys) == 0:
-                        return sample
-                    sample['gt_poly'] = crop_polys
+                        if len(valid_polys) == 0:
+                            return sample
+                        sample['gt_poly'] = valid_polys
+                    else:
+                        sample['gt_poly'] = crop_polys
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
