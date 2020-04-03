@@ -296,19 +296,6 @@ class FCOSHead(object):
         # recover the location to original image
         im_scale = im_info[:, 2]
         box_reg_decoding = box_reg_decoding / im_scale
-        im_h = im_info[:, 0] / im_info[:, 2] - 1.0
-        im_w = im_info[:, 1] / im_info[:, 2] - 1.0
-        im_h = fluid.layers.unsqueeze(im_h, axes=[1])
-        im_w = fluid.layers.unsqueeze(im_w, axes=[1])
-        zeros_tensor = fluid.layers.zeros(shape=(1,), dtype="float32")
-        x1 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 0], zeros_tensor)
-        y1 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 1], zeros_tensor)
-        x2 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 2], zeros_tensor)
-        y2 = fluid.layers.elementwise_max(box_reg_decoding[:, :, 3], zeros_tensor)
-        x1 = fluid.layers.elementwise_min(x1, im_w)
-        y1 = fluid.layers.elementwise_min(y1, im_h)
-        x2 = fluid.layers.elementwise_min(x2, im_w)
-        y2 = fluid.layers.elementwise_min(y2, im_h)
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
 
