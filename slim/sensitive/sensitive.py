@@ -38,7 +38,6 @@ set_paddle_flags(
 from paddle import fluid
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
-#from ppdet.data.data_feed import create_reader
 
 from ppdet.data.reader import create_reader
 
@@ -49,7 +48,6 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.modeling.model_input import create_feed
 from paddleslim.prune import sensitivity
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
