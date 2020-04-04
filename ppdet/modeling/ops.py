@@ -14,6 +14,8 @@
 
 import numpy as np
 from numbers import Integral
+import math
+import six
 
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
@@ -24,8 +26,9 @@ from ppdet.utils.bbox_utils import bbox_overlaps, box_to_delta
 __all__ = [
     'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
     'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
-    'MultiBoxHead', 'SSDOutputDecoder', 'RetinaTargetAssign',
-    'RetinaOutputDecoder', 'ConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'MultiBoxHead', 'SSDLiteMultiBoxHead', 'SSDOutputDecoder',
+    'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
+    'MultiClassSoftNMS', 'LibraBBoxAssigner'
 ]
 
 
@@ -1062,6 +1065,155 @@ class MultiBoxHead(object):
         self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
         self.kernel_size = kernel_size
         self.pad = pad
+
+
+@register
+@serializable
+class SSDLiteMultiBoxHead(object):
+    def __init__(self,
+                 min_ratio=20,
+                 max_ratio=90,
+                 base_size=300,
+                 min_sizes=None,
+                 max_sizes=None,
+                 aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.],
+                                [2., 3.]],
+                 steps=None,
+                 offset=0.5,
+                 flip=True,
+                 clip=False,
+                 pad=0,
+                 conv_decay=0.0):
+        super(SSDLiteMultiBoxHead, self).__init__()
+        self.min_ratio = min_ratio
+        self.max_ratio = max_ratio
+        self.base_size = base_size
+        self.min_sizes = min_sizes
+        self.max_sizes = max_sizes
+        self.aspect_ratios = aspect_ratios
+        self.steps = steps
+        self.offset = offset
+        self.flip = flip
+        self.pad = pad
+        self.clip = clip
+        self.conv_decay = conv_decay
+
+    def _separable_conv(self, input, num_filters, name):
+        dwconv_param_attr = ParamAttr(
+            name=name + 'dw_weights', regularizer=L2Decay(self.conv_decay))
+        num_filter1 = input.shape[1]
+        depthwise_conv = fluid.layers.conv2d(
+            input=input,
+            num_filters=num_filter1,
+            filter_size=3,
+            stride=1,
+            padding="SAME",
+            groups=int(num_filter1),
+            act=None,
+            use_cudnn=False,
+            param_attr=dwconv_param_attr,
+            bias_attr=False)
+        bn_name = name + '_bn'
+        bn_param_attr = ParamAttr(
+            name=bn_name + "_scale", regularizer=L2Decay(0.0))
+        bn_bias_attr = ParamAttr(
+            name=bn_name + "_offset", regularizer=L2Decay(0.0))
+        bn = fluid.layers.batch_norm(
+            input=depthwise_conv,
+            param_attr=bn_param_attr,
+            bias_attr=bn_bias_attr,
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance')
+        bn = fluid.layers.relu6(bn)
+        pwconv_param_attr = ParamAttr(
+            name=name + 'pw_weights', regularizer=L2Decay(self.conv_decay))
+        pointwise_conv = fluid.layers.conv2d(
+            input=bn,
+            num_filters=num_filters,
+            filter_size=1,
+            stride=1,
+            act=None,
+            use_cudnn=True,
+            param_attr=pwconv_param_attr,
+            bias_attr=False)
+        return pointwise_conv
+
+    def __call__(self, inputs, image, num_classes):
+        def _permute_and_reshape(input, last_dim):
+            trans = fluid.layers.transpose(input, perm=[0, 2, 3, 1])
+            compile_shape = [0, -1, last_dim]
+            return fluid.layers.reshape(trans, shape=compile_shape)
+
+        def _is_list_or_tuple_(data):
+            return (isinstance(data, list) or isinstance(data, tuple))
+
+        if self.min_sizes is None and self.max_sizes is None:
+            num_layer = len(inputs)
+            self.min_sizes = []
+            self.max_sizes = []
+            step = int(
+                math.floor(((self.max_ratio - self.min_ratio)) / (num_layer - 2
+                                                                  )))
+            for ratio in six.moves.range(self.min_ratio, self.max_ratio + 1,
+                                         step):
+                self.min_sizes.append(self.base_size * ratio / 100.)
+                self.max_sizes.append(self.base_size * (ratio + step) / 100.)
+            self.min_sizes = [self.base_size * .10] + self.min_sizes
+            self.max_sizes = [self.base_size * .20] + self.max_sizes
+
+        locs, confs = [], []
+        boxes, mvars = [], []
+
+        for i, input in enumerate(inputs):
+            min_size = self.min_sizes[i]
+            max_size = self.max_sizes[i]
+            if not _is_list_or_tuple_(min_size):
+                min_size = [min_size]
+            if not _is_list_or_tuple_(max_size):
+                max_size = [max_size]
+            step = [
+                self.steps[i] if self.steps else 0.0, self.steps[i]
+                if self.steps else 0.0
+            ]
+            box, var = fluid.layers.prior_box(
+                input,
+                image,
+                min_sizes=min_size,
+                max_sizes=max_size,
+                steps=step,
+                aspect_ratios=self.aspect_ratios[i],
+                variance=[0.1, 0.1, 0.2, 0.2],
+                clip=self.clip,
+                flip=self.flip,
+                offset=0.5)
+
+            num_boxes = box.shape[2]
+            box = fluid.layers.reshape(box, shape=[-1, 4])
+            var = fluid.layers.reshape(var, shape=[-1, 4])
+            num_loc_output = num_boxes * 4
+            num_conf_output = num_boxes * num_classes
+            # get loc
+            mbox_loc = self._separable_conv(input, num_loc_output,
+                                            "loc_{}".format(i + 1))
+            loc = _permute_and_reshape(mbox_loc, 4)
+            # get conf
+            mbox_conf = self._separable_conv(input, num_conf_output,
+                                             "conf_{}".format(i + 1))
+            conf = _permute_and_reshape(mbox_conf, num_classes)
+
+            locs.append(loc)
+            confs.append(conf)
+            boxes.append(box)
+            mvars.append(var)
+
+        ssd_mbox_loc = fluid.layers.concat(locs, axis=1)
+        ssd_mbox_conf = fluid.layers.concat(confs, axis=1)
+        prior_boxes = fluid.layers.concat(boxes)
+        box_vars = fluid.layers.concat(mvars)
+
+        prior_boxes.stop_gradient = True
+        box_vars.stop_gradient = True
+        return ssd_mbox_loc, ssd_mbox_conf, prior_boxes, box_vars
 
 
 @register
