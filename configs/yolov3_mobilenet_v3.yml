@@ -32,7 +32,7 @@ YOLOv3Head:
     background_label: -1
     keep_top_k: 100
     nms_threshold: 0.45
-    nms_top_k: 400
+    nms_top_k: 1000
     normalized: false
     score_threshold: 0.01
 

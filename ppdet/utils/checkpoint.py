@@ -93,9 +93,10 @@ def _load_state(path):
 
 
 def _strip_postfix(path):
-    return path.rstrip('.pdparmas') \
-               .rstrip('.pdopt') \
-               .rstrip('.pdmodel')
+    path, ext = os.path.splitext(path)
+    assert ext in ['', '.pdparams', '.pdopt', '.pdmodel'], \
+            "Unknown postfix {} from weights".format(ext)
+    return path
 
 
 def load_params(exe, prog, path, ignore_params=[]):
