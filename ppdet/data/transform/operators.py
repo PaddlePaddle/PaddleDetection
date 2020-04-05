@@ -1336,14 +1336,14 @@ class RandomExpand(BaseOperator):
                     expanded_mask, order='F', dtype=np.uint8))
             return rle
 
-        def is_poly(segm):
+        def _is_poly(segm):
             assert isinstance(segm, (list, dict)), \
                 "Invalid segm type: {}".format(type(segm))
             return isinstance(segm, list)
 
         expanded_segms = []
         for segm in segms:
-            if is_poly(segm):
+            if _is_poly(segm):
                 # Polygon format
                 expanded_segms.append(
                     [_expand_poly(poly, x, y) for poly in segm])
@@ -1467,7 +1467,7 @@ class RandomCrop(BaseOperator):
             rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
             return rle
 
-        def is_poly(segm):
+        def _is_poly(segm):
             assert isinstance(segm, (list, dict)), \
                 "Invalid segm type: {}".format(type(segm))
             return isinstance(segm, list)
@@ -1475,7 +1475,7 @@ class RandomCrop(BaseOperator):
         crop_segms = []
         for id in valid_ids:
             segm = segms[id]
-            if is_poly(segm):
+            if _is_poly(segm):
                 import copy
                 import shapely.ops
                 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
