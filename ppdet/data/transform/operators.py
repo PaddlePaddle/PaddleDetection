@@ -32,9 +32,10 @@ import logging
 import random
 import math
 import numpy as np
+import os
 
 import cv2
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
 
@@ -382,6 +383,16 @@ class RandomFlipImage(BaseOperator):
                 flipped_segms.append(_flip_rle(segm, height, width))
         return flipped_segms
 
+    def flip_keypoint(self, gt_keypoint, width):
+        for i in range(gt_keypoint.shape[1]):
+            if i % 2 == 0:
+                old_x = gt_keypoint[:, i].copy()
+                if self.is_normalized:
+                    gt_keypoint[:, i] = 1 - old_x
+                else:
+                    gt_keypoint[:, i] = width - old_x - 1
+        return gt_keypoint
+
     def __call__(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -429,6 +440,9 @@ class RandomFlipImage(BaseOperator):
                 if self.is_mask_flip and len(sample['gt_poly']) != 0:
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = self.flip_keypoint(
+                        sample['gt_keypoint'], width)
                 sample['flipped'] = True
                 sample['image'] = im
         sample = samples if batch_input else samples[0]
@@ -723,8 +737,17 @@ class ExpandImage(BaseOperator):
                 im = Image.fromarray(im)
                 expand_im.paste(im, (int(w_off), int(h_off)))
                 expand_im = np.asarray(expand_im)
-                gt_bbox, gt_class, _ = filter_and_process(expand_bbox, gt_bbox,
-                                                          gt_class)
+                if 'gt_keypoint' in sample.keys(
+                ) and 'keypoint_ignore' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    gt_bbox, gt_class, _, gt_keypoints = filter_and_process(
+                        expand_bbox, gt_bbox, gt_class, keypoints=keypoints)
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
+                else:
+                    gt_bbox, gt_class, _ = filter_and_process(expand_bbox,
+                                                              gt_bbox, gt_class)
                 sample['image'] = expand_im
                 sample['gt_bbox'] = gt_bbox
                 sample['gt_class'] = gt_class
@@ -798,7 +821,7 @@ class CropImage(BaseOperator):
             sample_bbox = sampled_bbox.pop(idx)
             sample_bbox = clip_bbox(sample_bbox)
             crop_bbox, crop_class, crop_score = \
-                filter_and_process(sample_bbox, gt_bbox, gt_class, gt_score)
+                filter_and_process(sample_bbox, gt_bbox, gt_class, scores=gt_score)
             if self.avoid_no_bbox:
                 if len(crop_bbox) < 1:
                     continue
@@ -901,8 +924,16 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 idx = int(np.random.uniform(0, len(sampled_bbox)))
                 sample_bbox = sampled_bbox.pop(idx)
 
-                crop_bbox, crop_class, crop_score = filter_and_process(
-                    sample_bbox, gt_bbox, gt_class, gt_score)
+                if 'gt_keypoint' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    crop_bbox, crop_class, crop_score, gt_keypoints = \
+                        filter_and_process(sample_bbox, gt_bbox, gt_class,
+                                scores=gt_score,
+                                keypoints=keypoints)
+                else:
+                    crop_bbox, crop_class, crop_score = filter_and_process(
+                        sample_bbox, gt_bbox, gt_class, scores=gt_score)
                 crop_bbox, crop_class, crop_score = bbox_area_sampling(
                     crop_bbox, crop_class, crop_score, self.target_size,
                     self.min_size)
@@ -916,6 +947,10 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
                 sample['gt_score'] = crop_score
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
+                #print(sample)
                 return sample
             return sample
 
@@ -937,8 +972,16 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample_bbox = sampled_bbox.pop(idx)
                 sample_bbox = clip_bbox(sample_bbox)
 
-                crop_bbox, crop_class, crop_score = filter_and_process(
-                    sample_bbox, gt_bbox, gt_class, gt_score)
+                if 'gt_keypoint' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    crop_bbox, crop_class, crop_score, gt_keypoints = \
+                        filter_and_process(sample_bbox, gt_bbox, gt_class,
+                                scores=gt_score,
+                                keypoints=keypoints)
+                else:
+                    crop_bbox, crop_class, crop_score = filter_and_process(
+                        sample_bbox, gt_bbox, gt_class, scores=gt_score)
                 # sampling bbox according the bbox area
                 crop_bbox, crop_class, crop_score = bbox_area_sampling(
                     crop_bbox, crop_class, crop_score, self.target_size,
@@ -956,6 +999,10 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
                 sample['gt_score'] = crop_score
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
+                #print(sample)
                 return sample
             return sample
 
@@ -977,6 +1024,17 @@ class NormalizeBox(BaseOperator):
             gt_bbox[i][2] = gt_bbox[i][2] / width
             gt_bbox[i][3] = gt_bbox[i][3] / height
         sample['gt_bbox'] = gt_bbox
+
+        if 'gt_keypoint' in sample.keys():
+            gt_keypoint = sample['gt_keypoint']
+
+            for i in range(gt_keypoint.shape[1]):
+                if i % 2:
+                    gt_keypoint[:, i] = gt_keypoint[:, i] / height
+                else:
+                    gt_keypoint[:, i] = gt_keypoint[:, i] / width
+            sample['gt_keypoint'] = gt_keypoint
+
         return sample
 
 
@@ -1529,4 +1587,70 @@ class BboxXYXY2XYWH(BaseOperator):
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class DebugVisibleImage(BaseOperator):
+    """
+    In debug mode, visualize images according to `gt_box`.
+    (Currently only supported when not cropping and flipping image.)
+    """
+
+    def __init__(self, output_dir='output/debug', is_normalized=False):
+        super(DebugVisibleImage, self).__init__()
+        self.is_normalized = is_normalized
+        self.output_dir = output_dir
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        if not isinstance(self.is_normalized, bool):
+            raise TypeError("{}: input type is invalid.".format(self))
+
+    def __call__(self, sample, context=None):
+        image = Image.open(sample['im_file']).convert('RGB')
+        out_file_name = sample['im_file'].split('/')[-1]
+        width = sample['w']
+        height = sample['h']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        draw = ImageDraw.Draw(image)
+        for i in range(gt_bbox.shape[0]):
+            if self.is_normalized:
+                gt_bbox[i][0] = gt_bbox[i][0] * width
+                gt_bbox[i][1] = gt_bbox[i][1] * height
+                gt_bbox[i][2] = gt_bbox[i][2] * width
+                gt_bbox[i][3] = gt_bbox[i][3] * height
+
+            xmin, ymin, xmax, ymax = gt_bbox[i]
+            draw.line(
+                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                 (xmin, ymin)],
+                width=2,
+                fill='green')
+            # draw label
+            text = str(gt_class[i][0])
+            tw, th = draw.textsize(text)
+            draw.rectangle(
+                [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
+            draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+
+        if 'gt_keypoint' in sample.keys():
+            gt_keypoint = sample['gt_keypoint']
+            if self.is_normalized:
+                for i in range(gt_keypoint.shape[1]):
+                    if i % 2:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] * height
+                    else:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] * width
+            for i in range(gt_keypoint.shape[0]):
+                keypoint = gt_keypoint[i]
+                for j in range(int(keypoint.shape[0] / 2)):
+                    x1 = round(keypoint[2 * j]).astype(np.int32)
+                    y1 = round(keypoint[2 * j + 1]).astype(np.int32)
+                    draw.ellipse(
+                        (x1, y1, x1 + 5, y1i + 5),
+                        fill='green',
+                        outline='green')
+        save_path = os.path.join(self.output_dir, out_file_name)
+        image.save(save_path, quality=95)
         return sample

@@ -25,6 +25,7 @@ from paddle.fluid.regularizer import L2Decay
 
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import SSDOutputDecoder
+from ppdet.modeling.losses import SSDWithLmkLoss
 
 __all__ = ['BlazeFace']
 
@@ -59,24 +60,29 @@ class BlazeFace(object):
                  steps=[8., 16.],
                  num_classes=2,
                  use_density_prior_box=False,
-                 densities=[[2, 2], [2, 1, 1, 1, 1, 1]]):
+                 densities=[[2, 2], [2, 1, 1, 1, 1, 1]],
+                 with_lmk=False,
+                 lmk_loss=SSDWithLmkLoss().__dict__):
         super(BlazeFace, self).__init__()
         self.backbone = backbone
         self.num_classes = num_classes
+        self.with_lmk = with_lmk
         self.output_decoder = output_decoder
         if isinstance(output_decoder, dict):
+            if self.with_lmk:
+                output_decoder['return_index'] = True
             self.output_decoder = SSDOutputDecoder(**output_decoder)
         self.min_sizes = min_sizes
         self.max_sizes = max_sizes
         self.steps = steps
         self.use_density_prior_box = use_density_prior_box
         self.densities = densities
+        self.landmark = None
+        if self.with_lmk and isinstance(lmk_loss, dict):
+            self.lmk_loss = SSDWithLmkLoss(**lmk_loss)
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
-        if mode == 'train':
-            gt_bbox = feed_vars['gt_bbox']
-            gt_class = feed_vars['gt_class']
 
         body_feats = self.backbone(im)
         locs, confs, box, box_var = self._multi_box_head(
@@ -86,21 +92,41 @@ class BlazeFace(object):
             use_density_prior_box=self.use_density_prior_box)
 
         if mode == 'train':
-            loss = fluid.layers.ssd_loss(
-                locs,
-                confs,
-                gt_bbox,
-                gt_class,
-                box,
-                box_var,
-                overlap_threshold=0.35,
-                neg_overlap=0.35)
+            gt_bbox = feed_vars['gt_bbox']
+            gt_class = feed_vars['gt_class']
+            if self.with_lmk:
+                lmk_labels = feed_vars['gt_keypoint']
+                lmk_ignore_flag = feed_vars["keypoint_ignore"]
+                loss = self.lmk_loss(locs, confs, gt_bbox, gt_class,
+                                     self.landmark, lmk_labels, lmk_ignore_flag,
+                                     box, box_var)
+            else:
+                loss = fluid.layers.ssd_loss(
+                    locs,
+                    confs,
+                    gt_bbox,
+                    gt_class,
+                    box,
+                    box_var,
+                    overlap_threshold=0.35,
+                    neg_overlap=0.35)
+
             loss = fluid.layers.reduce_sum(loss)
             loss.persistable = True
             return {'loss': loss}
         else:
-            pred = self.output_decoder(locs, confs, box, box_var)
-            return {'bbox': pred}
+            if self.with_lmk:
+                pred, face_index = self.output_decoder(locs, confs, box,
+                                                       box_var)
+                return {
+                    'bbox': pred,
+                    'face_index': face_index,
+                    'prior_boxes': box,
+                    'landmark': self.landmark
+                }
+            else:
+                pred = self.output_decoder(locs, confs, box, box_var)
+                return {'bbox': pred}
 
     def _multi_box_head(self,
                         inputs,
@@ -112,11 +138,9 @@ class BlazeFace(object):
             compile_shape = [0, -1, last_dim]
             return fluid.layers.reshape(trans, shape=compile_shape)
 
-        def _is_list_or_tuple_(data):
-            return (isinstance(data, list) or isinstance(data, tuple))
-
         locs, confs = [], []
         boxes, vars = [], []
+        lmk_locs = []
         b_attr = ParamAttr(learning_rate=2., regularizer=L2Decay(0.))
 
         for i, input in enumerate(inputs):
@@ -158,7 +182,21 @@ class BlazeFace(object):
             # get conf
             mbox_conf = fluid.layers.conv2d(
                 input, num_conf_output, 3, 1, 1, bias_attr=b_attr)
-            conf = permute_and_reshape(mbox_conf, 2)
+            conf = permute_and_reshape(mbox_conf, num_classes)
+
+            if self.with_lmk:
+                # get landmark
+                lmk_loc_output = num_boxes * 10
+                lmk_box_loc = fluid.layers.conv2d(
+                    input,
+                    lmk_loc_output,
+                    3,
+                    1,
+                    1,
+                    param_attr=ParamAttr(name='lmk' + str(i) + '_weights'),
+                    bias_attr=False)
+                lmk_loc = permute_and_reshape(lmk_box_loc, 10)
+                lmk_locs.append(lmk_loc)
 
             locs.append(loc)
             confs.append(conf)
@@ -169,6 +207,8 @@ class BlazeFace(object):
         face_mbox_conf = fluid.layers.concat(confs, axis=1)
         prior_boxes = fluid.layers.concat(boxes)
         box_vars = fluid.layers.concat(vars)
+        if self.with_lmk:
+            self.landmark = fluid.layers.concat(lmk_locs, axis=1)
         return face_mbox_loc, face_mbox_conf, prior_boxes, box_vars
 
     def _inputs_def(self, image_shape):
@@ -180,6 +220,8 @@ class BlazeFace(object):
             'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'im_shape': {'shape': [None, 3], 'dtype': 'int32',   'lod_level': 0},
+            'gt_keypoint':  {'shape': [None, 10], 'dtype': 'float32', 'lod_level': 1},
+            'keypoint_ignore': {'shape': [None, 1], 'dtype': 'float32',   'lod_level': 1},
         }
         # yapf: enable
         return inputs_def

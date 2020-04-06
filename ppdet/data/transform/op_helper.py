@@ -61,10 +61,13 @@ def is_overlap(object_bbox, sample_bbox):
         return True
 
 
-def filter_and_process(sample_bbox, bboxes, labels, scores=None):
+def filter_and_process(sample_bbox, bboxes, labels, scores=None,
+                       keypoints=None):
     new_bboxes = []
     new_labels = []
     new_scores = []
+    new_keypoints = []
+    new_kp_ignore = []
     for i in range(len(bboxes)):
         new_bbox = [0, 0, 0, 0]
         obj_bbox = [bboxes[i][0], bboxes[i][1], bboxes[i][2], bboxes[i][3]]
@@ -84,9 +87,24 @@ def filter_and_process(sample_bbox, bboxes, labels, scores=None):
             new_labels.append([labels[i][0]])
             if scores is not None:
                 new_scores.append([scores[i][0]])
+            if keypoints is not None:
+                sample_keypoint = keypoints[0][i]
+                for j in range(len(sample_keypoint)):
+                    kp_len = sample_height if j % 2 else sample_width
+                    sample_coord = sample_bbox[1] if j % 2 else sample_bbox[0]
+                    sample_keypoint[j] = (
+                        sample_keypoint[j] - sample_coord) / kp_len
+                    sample_keypoint[j] = max(min(sample_keypoint[j], 1.0), 0.0)
+                new_keypoints.append(sample_keypoint)
+                new_kp_ignore.append(keypoints[1][i])
+
     bboxes = np.array(new_bboxes)
     labels = np.array(new_labels)
     scores = np.array(new_scores)
+    if keypoints is not None:
+        keypoints = np.array(new_keypoints)
+        new_kp_ignore = np.array(new_kp_ignore)
+        return bboxes, labels, scores, (keypoints, new_kp_ignore)
     return bboxes, labels, scores
 
 
