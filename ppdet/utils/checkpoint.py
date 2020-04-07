@@ -92,6 +92,13 @@ def _load_state(path):
     return state
 
 
+def _strip_postfix(path):
+    path, ext = os.path.splitext(path)
+    assert ext in ['', '.pdparams', '.pdopt', '.pdmodel'], \
+            "Unknown postfix {} from weights".format(ext)
+    return path
+
+
 def load_params(exe, prog, path, ignore_params=[]):
     """
     Load model from the given path.
@@ -106,6 +113,8 @@ def load_params(exe, prog, path, ignore_params=[]):
 
     if is_url(path):
         path = _get_weight_path(path)
+
+    path = _strip_postfix(path)
     if not (os.path.isdir(path) or os.path.exists(path + '.pdparams')):
         raise ValueError("Model pretrain path {} does not "
                          "exists.".format(path))
@@ -151,6 +160,8 @@ def load_checkpoint(exe, prog, path):
     """
     if is_url(path):
         path = _get_weight_path(path)
+
+    path = _strip_postfix(path)
     if not (os.path.isdir(path) or os.path.exists(path + '.pdparams')):
         raise ValueError("Model pretrain path {} does not "
                          "exists.".format(path))
