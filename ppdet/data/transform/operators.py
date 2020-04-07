@@ -1378,7 +1378,7 @@ class RandomExpand(BaseOperator):
         sample['image'] = canvas
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
-        if len(sample['gt_poly']) != 0 and None not in sample['gt_poly']:
+        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.expand_segms(sample['gt_poly'], x, y,
                                                   height, width, expand_ratio)
         return sample
@@ -1541,8 +1541,7 @@ class RandomCrop(BaseOperator):
                     break
 
             if found:
-                if len(sample['gt_poly']) != 0 and None not in sample[
-                        'gt_poly']:
+                if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
                     crop_polys = self.crop_segms(
                         sample['gt_poly'],
                         valid_ids,
