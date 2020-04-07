@@ -5,7 +5,7 @@ use_gpu: true
 log_smooth_window: 20
 log_iter: 20
 save_dir: output
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_82.39_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
 weights: output/faster_rcnn_dcn_r50_vd_fpn_3x_server_side/model_final
 metric: COCO
 num_classes: 81
