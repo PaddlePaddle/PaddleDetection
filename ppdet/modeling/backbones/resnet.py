@@ -53,6 +53,9 @@ class ResNet(object):
         gcb_params (dict): gc blocks config, includes ratio(default as 1.0/16),
                            pooling_type(default as "att") and
                            fusion_types(default as ['channel_add'])
+        lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                             lower learning rate ratio is need for pretrained model 
+                             got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
