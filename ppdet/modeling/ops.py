@@ -552,6 +552,8 @@ class BBoxAssigner(object):
 
 @register
 class LibraBBoxAssigner(object):
+    __shared__ = ['num_classes']
+
     def __init__(self,
                  batch_size_per_im=512,
                  fg_fraction=.25,
@@ -797,6 +799,7 @@ class LibraBBoxAssigner(object):
                 hs = boxes[:, 3] - boxes[:, 1] + 1
                 keep = np.where((ws > 0) & (hs > 0))[0]
                 boxes = boxes[keep]
+                max_overlaps = max_overlaps[keep]
                 fg_inds = np.where(max_overlaps >= fg_thresh)[0]
                 bg_inds = np.where((max_overlaps < bg_thresh_hi) & (
                     max_overlaps >= bg_thresh_lo))[0]
