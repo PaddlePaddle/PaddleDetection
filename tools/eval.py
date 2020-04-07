@@ -84,7 +84,7 @@ def main():
                 fetches = model.eval(feed_vars, multi_scale_test)
     eval_prog = eval_prog.clone(True)
 
-    reader = create_reader(cfg.EvalReader)
+    reader = create_reader(cfg.EvalReader, devices_num=1)
     loader.set_sample_list_generator(reader, place)
 
     dataset = cfg['EvalReader']['dataset']
