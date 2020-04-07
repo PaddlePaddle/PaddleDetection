@@ -51,6 +51,7 @@ TrainReader:
   mixup_epoch: 250
   drop_last: true
   worker_num: 8
+  bufsize: 16
   use_process: true
 
 
@@ -83,6 +84,7 @@ EvalReader:
   batch_size: 8
   drop_empty: false
   worker_num: 8
+  bufsize: 16
 
 TestReader:
   inputs_def:
