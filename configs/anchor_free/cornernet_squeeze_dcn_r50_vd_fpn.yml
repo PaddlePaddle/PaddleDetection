@@ -9,8 +9,8 @@ log_iter: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
-weights: output/cornernet_squeeze_r50_fpn/model_final
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar
+weights: output/cornernet_squeeze_dcn_r50_vd_fpn/model_final
 num_classes: 80
 stack: 1
 
@@ -21,11 +21,12 @@ CornerNetSqueeze:
   nms: MultiClassSoftNMS
 
 ResNet:
-  norm_type: affine_channel
+  norm_type: bn
   depth: 50
   feature_maps: [3, 4, 5]
   freeze_at: 2
   variant: d
+  dcn_v2_stages: [3, 4, 5]
 
 FPN:
   min_level: 3
@@ -46,17 +47,24 @@ CornerHead:
   top_k: 20
 
 LearningRate:
-  base_lr: 0.00025
+  base_lr: 0.0005
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
+    - 400000
     - 450000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
 
 OptimizerBuilder:
   optimizer:
-    type: Adam
-  regularizer: NULL
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
 
 TrainReader:
   inputs_def:
@@ -104,7 +112,7 @@ TrainReader:
   shuffle: true
   drop_last: true
   bufsize: 2
-  worker_num: 8
+  worker_num: 2
   use_process: true
   drop_empty: false
 

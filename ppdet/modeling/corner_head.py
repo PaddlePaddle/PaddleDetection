@@ -22,8 +22,11 @@ from paddle.fluid.initializer import Constant
 
 from .backbones.hourglass import _conv_norm, kaiming_init
 from ppdet.core.workspace import register
-import cornerpool_lib
 import numpy as np
+try:
+    import cornerpool_lib
+except:
+    print("warning: cornerpool_lib found, compile in ext_op at first if needed")
 
 __all__ = ['CornerHead']
 

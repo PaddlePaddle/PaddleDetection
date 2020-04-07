@@ -27,24 +27,12 @@ import numpy as np
 __all__ = ['CornerNetSqueeze']
 
 
-def rescale_bboxes(bboxes, ratios, borders, im):
-    shape = fluid.layers.cast(fluid.layers.shape(im), 'float32')
+def rescale_bboxes(bboxes, ratios, borders):
     x1, y1, x2, y2 = fluid.layers.split(bboxes, 4)
     x1 = x1 / ratios[:, 1] - borders[:, 2]
-    zero = fluid.layers.assign(np.array([0], dtype='float32'))
-    x1 = fluid.layers.elementwise_max(x1, zero)
-    x1 = fluid.layers.elementwise_min(x1, shape[3])
     x2 = x2 / ratios[:, 1] - borders[:, 2]
-    x2 = fluid.layers.elementwise_max(x2, zero)
-    x2 = fluid.layers.elementwise_min(x2, shape[3])
-
     y1 = y1 / ratios[:, 0] - borders[:, 0]
-    y1 = fluid.layers.elementwise_max(y1, zero)
-    y1 = fluid.layers.elementwise_min(y1, shape[2])
     y2 = y2 / ratios[:, 0] - borders[:, 0]
-    y2 = fluid.layers.elementwise_max(y2, zero)
-    y2 = fluid.layers.elementwise_min(y2, shape[2])
-
     return fluid.layers.concat([x1, y1, x2, y2], axis=2)
 
 
@@ -92,7 +80,7 @@ class CornerNetSqueeze(object):
             borders = feed_vars['borders']
             bboxes, scores, tl_scores, br_scores, clses = self.corner_head.get_prediction(
                 body_feats[-1])
-            bboxes = rescale_bboxes(bboxes, ratios, borders, im)
+            bboxes = rescale_bboxes(bboxes, ratios, borders)
             detections = fluid.layers.concat(
                 [bboxes, scores, tl_scores, br_scores, clses], axis=2)
             scores = fluid.layers.squeeze(scores, axes=[0, 2])
