@@ -15,7 +15,8 @@ class MobileNetV3():
                  model_name='small',
                  with_extra_blocks=False,
                  conv_decay=0.0,
-                 bn_decay=0.0,
+                 norm_type='bn',
+                 norm_decay=0.0,
                  extra_block_filters=[[256, 512], [128, 256], [128, 256],
                                       [64, 128]]):
         self.scale = scale
@@ -23,7 +24,7 @@ class MobileNetV3():
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
         self.conv_decay = conv_decay
-        self.bn_decay = bn_decay
+        self.norm_decay = norm_decay
         self.inplanes = 16
         self.end_points = []
         self.block_stride = 1
@@ -90,9 +91,9 @@ class MobileNetV3():
             bias_attr=False)
         bn_name = name + '_bn'
         bn_param_attr = ParamAttr(
-            name=bn_name + "_scale", regularizer=L2Decay(self.bn_decay))
+            name=bn_name + "_scale", regularizer=L2Decay(self.norm_decay))
         bn_bias_attr = ParamAttr(
-            name=bn_name + "_offset", regularizer=L2Decay(self.bn_decay))
+            name=bn_name + "_offset", regularizer=L2Decay(self.norm_decay))
         bn = fluid.layers.batch_norm(
             input=conv,
             param_attr=bn_param_attr,
@@ -238,6 +239,8 @@ class MobileNetV3():
         i = 0
         for layer_cfg in cfg:
             self.block_stride *= layer_cfg[5]
+            if layer_cfg[5] == 2:
+                blocks.append(conv)
             conv = self._residual_unit(
                 input=conv,
                 num_in_filter=inplanes,
@@ -250,9 +253,10 @@ class MobileNetV3():
                 name='conv' + str(i + 2))
             inplanes = int(scale * layer_cfg[2])
             i += 1
+        blocks.append(conv)
 
         if not self.with_extra_blocks:
-            return conv
+            return blocks
 
         # extra block
         conv_extra = self._conv_bn_layer(
