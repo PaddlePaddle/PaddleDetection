@@ -30,7 +30,8 @@ def visualize_results(image,
                       catid2name,
                       threshold=0.5,
                       bbox_results=None,
-                      mask_results=None):
+                      mask_results=None,
+                      lmk_results=None):
     """
     Visualize bbox and mask results
     """
@@ -38,6 +39,8 @@ def visualize_results(image,
         image = draw_mask(image, im_id, mask_results, threshold)
     if bbox_results:
         image = draw_bbox(image, im_id, catid2name, bbox_results, threshold)
+    if lmk_results:
+        image = draw_lmk(image, im_id, lmk_results, threshold)
     return image
 
 
@@ -105,4 +108,22 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
 
+    return image
+
+
+def draw_lmk(image, im_id, lmk_results, threshold):
+    draw = ImageDraw.Draw(image)
+    catid2color = {}
+    color_list = colormap(rgb=True)[:40]
+    for dt in np.array(lmk_results):
+        lmk_decode, score = dt['landmark'], dt['score']
+        if im_id != dt['image_id']:
+            continue
+        if score < threshold:
+            continue
+        for j in range(5):
+            x1 = round(lmk_decode[2 * j]).astype(np.int32)
+            y1 = round(lmk_decode[2 * j + 1]).astype(np.int32)
+            draw.ellipse(
+                (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
     return image

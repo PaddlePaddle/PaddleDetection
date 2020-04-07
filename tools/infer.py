@@ -155,7 +155,7 @@ def main():
     if cfg.metric == "VOC":
         from ppdet.utils.voc_eval import bbox2out, get_category_info
     if cfg.metric == "WIDERFACE":
-        from ppdet.utils.widerface_eval_utils import bbox2out, get_category_info
+        from ppdet.utils.widerface_eval_utils import bbox2out, lmk2out, get_category_info
 
     anno_file = dataset.get_anno()
     with_background = dataset.with_background
@@ -191,11 +191,14 @@ def main():
 
         bbox_results = None
         mask_results = None
+        lmk_results = None
         if 'bbox' in res:
             bbox_results = bbox2out([res], clsid2catid, is_bbox_normalized)
         if 'mask' in res:
             mask_results = mask2out([res], clsid2catid,
                                     model.mask_head.resolution)
+        if 'landmark' in res:
+            lmk_results = lmk2out([res], is_bbox_normalized)
 
         # visualize result
         im_ids = res['im_id'][0]
@@ -215,7 +218,7 @@ def main():
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
-                                      mask_results)
+                                      mask_results, lmk_results)
 
             # use tb-paddle to log image with bbox
             if FLAGS.use_tb:

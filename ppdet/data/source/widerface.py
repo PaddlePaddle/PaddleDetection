@@ -55,7 +55,6 @@ class WIDERFaceDataSet(DataSet):
         self.roidbs = None
         self.cname2cid = None
         self.with_lmk = with_lmk
-        print("WIDERFaceDataSet:with_lmk:{}".format(with_lmk))
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
