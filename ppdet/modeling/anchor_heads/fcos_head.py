@@ -98,7 +98,8 @@ class FCOSHead(object):
                 stride=1,
                 norm_type=self.norm_type,
                 act='relu',
-                initializer=Normal(loc=0., scale=0.01),
+                initializer=Normal(
+                    loc=0., scale=0.01),
                 bias_attr=True,
                 norm_name=conv_cls_name + "_norm",
                 name=conv_cls_name)
@@ -110,39 +111,41 @@ class FCOSHead(object):
                 stride=1,
                 norm_type=self.norm_type,
                 act='relu',
-                initializer=Normal(loc=0., scale=0.01),
+                initializer=Normal(
+                    loc=0., scale=0.01),
                 bias_attr=True,
                 norm_name=conv_reg_name + "_norm",
                 name=conv_reg_name)
         conv_cls_name = "fcos_head_cls"
         bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
         cls_logits = fluid.layers.conv2d(
-                input=subnet_blob_cls,
-                num_filters=self.num_classes,
-                filter_size=3,
-                stride=1,
-                padding=1,
-                param_attr=ParamAttr(
-                    name=conv_cls_name + "_weights",
-                    initializer=Normal(loc=0., scale=0.01)),
-                bias_attr=ParamAttr(
-                    name=conv_cls_name + "_bias",
-                    initializer=Constant(value=bias_init_value)),
-                name=conv_cls_name)
+            input=subnet_blob_cls,
+            num_filters=self.num_classes,
+            filter_size=3,
+            stride=1,
+            padding=1,
+            param_attr=ParamAttr(
+                name=conv_cls_name + "_weights",
+                initializer=Normal(
+                    loc=0., scale=0.01)),
+            bias_attr=ParamAttr(
+                name=conv_cls_name + "_bias",
+                initializer=Constant(value=bias_init_value)),
+            name=conv_cls_name)
         conv_reg_name = "fcos_head_reg"
         bbox_reg = fluid.layers.conv2d(
-                input=subnet_blob_reg,
-                num_filters=4,
-                filter_size=3,
-                stride=1,
-                padding=1,
-                param_attr=ParamAttr(
-                    name=conv_reg_name + "_weights",
-                    initializer=Normal(loc=0., scale=0.01)),
-                bias_attr=ParamAttr(
-                    name=conv_reg_name + "_bias",
-                    initializer=Constant(value=0)),
-                name=conv_reg_name)
+            input=subnet_blob_reg,
+            num_filters=4,
+            filter_size=3,
+            stride=1,
+            padding=1,
+            param_attr=ParamAttr(
+                name=conv_reg_name + "_weights",
+                initializer=Normal(
+                    loc=0., scale=0.01)),
+            bias_attr=ParamAttr(
+                name=conv_reg_name + "_bias", initializer=Constant(value=0)),
+            name=conv_reg_name)
         bbox_reg = bbox_reg * fpn_scale
         if self.norm_reg_targets:
             bbox_reg = fluid.layers.relu(bbox_reg)
@@ -150,25 +153,26 @@ class FCOSHead(object):
                 bbox_reg = bbox_reg * fpn_stride
         else:
             bbox_reg = fluid.layers.exp(bbox_reg)
-        
+
         conv_centerness_name = "fcos_head_centerness"
         if self.centerness_on_reg:
             subnet_blob_ctn = subnet_blob_reg
         else:
             subnet_blob_ctn = subnet_blob_cls
         centerness = fluid.layers.conv2d(
-                input=subnet_blob_ctn,
-                num_filters=1,
-                filter_size=3,
-                stride=1,
-                padding=1,
-                param_attr=ParamAttr(
-                    name=conv_centerness_name + "_weights",
-                    initializer=Normal(loc=0., scale=0.01)),
-                bias_attr=ParamAttr(
-                    name=conv_centerness_name + "_bias",
-                    initializer=Constant(value=0)),
-                name=conv_centerness_name)
+            input=subnet_blob_ctn,
+            num_filters=1,
+            filter_size=3,
+            stride=1,
+            padding=1,
+            param_attr=ParamAttr(
+                name=conv_centerness_name + "_weights",
+                initializer=Normal(
+                    loc=0., scale=0.01)),
+            bias_attr=ParamAttr(
+                name=conv_centerness_name + "_bias",
+                initializer=Constant(value=0)),
+            name=conv_centerness_name)
         return cls_logits, bbox_reg, centerness
 
     def _get_output(self, body_feats, is_training=False):
@@ -189,11 +193,12 @@ class FCOSHead(object):
         for fpn_name, fpn_stride in zip(body_feats, self.fpn_stride):
             features = body_feats[fpn_name]
             scale = fluid.layers.create_parameter(
-                shape=[1,],
+                shape=[1, ],
                 dtype="float32",
                 name="%s_scale_on_reg" % fpn_name,
                 default_initializer=fluid.initializer.Constant(1.))
-            cls_pred, bbox_pred, ctn_pred = self._fcos_head(features, fpn_stride, scale, is_training=is_training)
+            cls_pred, bbox_pred, ctn_pred = self._fcos_head(
+                features, fpn_stride, scale, is_training=is_training)
             cls_logits.append(cls_pred)
             bboxes_reg.append(bbox_pred)
             centerness.append(ctn_pred)
@@ -214,17 +219,22 @@ class FCOSHead(object):
             h = shape_fm[2]
             w = shape_fm[3]
             fpn_stride = self.fpn_stride[lvl]
-            shift_x = fluid.layers.range(0, w * fpn_stride, fpn_stride, dtype='float32')
-            shift_y = fluid.layers.range(0, h * fpn_stride, fpn_stride, dtype='float32')
+            shift_x = fluid.layers.range(
+                0, w * fpn_stride, fpn_stride, dtype='float32')
+            shift_y = fluid.layers.range(
+                0, h * fpn_stride, fpn_stride, dtype='float32')
             shift_x = fluid.layers.unsqueeze(shift_x, axes=[0])
             shift_y = fluid.layers.unsqueeze(shift_y, axes=[1])
-            shift_x = fluid.layers.expand_as(shift_x, target_tensor=feature[0, 0, :, :])
-            shift_y = fluid.layers.expand_as(shift_y, target_tensor=feature[0, 0, :, :])
+            shift_x = fluid.layers.expand_as(
+                shift_x, target_tensor=feature[0, 0, :, :])
+            shift_y = fluid.layers.expand_as(
+                shift_y, target_tensor=feature[0, 0, :, :])
             shift_x.stop_gradient = True
             shift_y.stop_gradient = True
             shift_x = fluid.layers.reshape(shift_x, shape=[-1])
             shift_y = fluid.layers.reshape(shift_y, shape=[-1])
-            location = fluid.layers.stack([shift_x, shift_y], axis=-1) + fpn_stride // 2
+            location = fluid.layers.stack(
+                [shift_x, shift_y], axis=-1) + fpn_stride // 2
             location.stop_gradient = True
             locations.append(location)
         return locations
@@ -253,7 +263,8 @@ class FCOSHead(object):
         new_shape.stop_gradient = True
         return new_shape
 
-    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn, im_info):
+    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn,
+                                 im_info):
         """
         Args:
             locations (Variables): anchor points for current layer
@@ -287,19 +298,23 @@ class FCOSHead(object):
         box_ctn_ch_last = fluid.layers.sigmoid(box_ctn_ch_last)
 
         box_reg_decoding = fluid.layers.stack(
-            [locations[:, 0] - box_reg_ch_last[:, :, 0],
-             locations[:, 1] - box_reg_ch_last[:, :, 1],
-             locations[:, 0] + box_reg_ch_last[:, :, 2],
-             locations[:, 1] + box_reg_ch_last[:, :, 3]],
+            [
+                locations[:, 0] - box_reg_ch_last[:, :, 0],
+                locations[:, 1] - box_reg_ch_last[:, :, 1],
+                locations[:, 0] + box_reg_ch_last[:, :, 2],
+                locations[:, 1] + box_reg_ch_last[:, :, 3]
+            ],
             axis=1)
-        box_reg_decoding = fluid.layers.transpose(box_reg_decoding, perm=[0, 2, 1])
+        box_reg_decoding = fluid.layers.transpose(
+            box_reg_decoding, perm=[0, 2, 1])
         # recover the location to original image
         im_scale = im_info[:, 2]
         box_reg_decoding = box_reg_decoding / im_scale
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
 
-    def _post_processing(self, locations, cls_logits, bboxes_reg, centerness, im_info):
+    def _post_processing(self, locations, cls_logits, bboxes_reg, centerness,
+                         im_info):
         """
         Args:
             locations   (list): List of Variables composed by center of each anchor point
@@ -313,8 +328,11 @@ class FCOSHead(object):
         """
         pred_boxes_ = []
         pred_scores_ = []
-        for _, (pts, cls, box, ctn) in enumerate(zip(locations, cls_logits, bboxes_reg, centerness)):
-            pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(pts, cls, box, ctn, im_info)
+        for _, (
+                pts, cls, box, ctn
+        ) in enumerate(zip(locations, cls_logits, bboxes_reg, centerness)):
+            pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(
+                pts, cls, box, ctn, im_info)
             pred_boxes_.append(pred_boxes_lvl)
             pred_scores_.append(pred_scores_lvl)
         pred_boxes = fluid.layers.concat(pred_boxes_, axis=1)
@@ -334,9 +352,10 @@ class FCOSHead(object):
             loss (dict): loss composed by classification loss, bounding box
                 regression loss and centerness regression loss
         """
-        cls_logits, bboxes_reg, centerness = self._get_output(input, is_training=True)
-        loss = self.fcos_loss(cls_logits, bboxes_reg, centerness,
-                              tag_labels, tag_bboxes, tag_centerness)
+        cls_logits, bboxes_reg, centerness = self._get_output(
+            input, is_training=True)
+        loss = self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels,
+                              tag_bboxes, tag_centerness)
         return loss
 
     def get_prediction(self, input, im_info):
@@ -348,8 +367,9 @@ class FCOSHead(object):
         Return:
             the bounding box prediction
         """
-        cls_logits, bboxes_reg, centerness = self._get_output(input, is_training=False)
+        cls_logits, bboxes_reg, centerness = self._get_output(
+            input, is_training=False)
         locations = self._compute_locations(input)
-        pred = self._post_processing(locations, cls_logits, bboxes_reg, centerness, im_info)
+        pred = self._post_processing(locations, cls_logits, bboxes_reg,
+                                     centerness, im_info)
         return {"bbox": pred}
-

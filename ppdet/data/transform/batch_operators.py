@@ -30,7 +30,10 @@ from .op_helper import jaccard_overlap
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['PadBatch', 'RandomShape', 'PadMultiScaleTest', 'Gt2YoloTarget', 'Gt2FCOSTarget']
+__all__ = [
+    'PadBatch', 'RandomShape', 'PadMultiScaleTest', 'Gt2YoloTarget',
+    'Gt2FCOSTarget'
+]
 
 
 @register_op
@@ -265,9 +268,9 @@ class Gt2FCOSTarget(BaseOperator):
         self.object_sizes_boundary = [-1] + object_sizes_boundary + [self.INF]
         object_sizes_of_interest = []
         for i in range(len(self.object_sizes_boundary) - 1):
-            object_sizes_of_interest.append(
-                [self.object_sizes_boundary[i],
-                 self.object_sizes_boundary[i+1]])
+            object_sizes_of_interest.append([
+                self.object_sizes_boundary[i], self.object_sizes_boundary[i + 1]
+            ])
         self.object_sizes_of_interest = object_sizes_of_interest
         self.norm_reg_targets = norm_reg_targets
 
@@ -306,7 +309,8 @@ class Gt2FCOSTarget(BaseOperator):
         bboxes[:, 3] = bboxes[:, 1] + bboxes[:, 3]
         return bboxes
 
-    def _check_inside_boxes_limited(self, gt_bbox, xs, ys, num_points_each_level):
+    def _check_inside_boxes_limited(self, gt_bbox, xs, ys,
+                                    num_points_each_level):
         """
         check if points is within the clipped boxes
         :param gt_bbox: bounding boxes
@@ -314,7 +318,8 @@ class Gt2FCOSTarget(BaseOperator):
         :param ys: vertical coordinate of points
         :return: the mask of points is within gt_box or not
         """
-        bboxes = np.reshape(gt_bbox, newshape=[1, gt_bbox.shape[0], gt_bbox.shape[1]])
+        bboxes = np.reshape(
+            gt_bbox, newshape=[1, gt_bbox.shape[0], gt_bbox.shape[1]])
         bboxes = np.tile(bboxes, reps=[xs.shape[0], 1, 1])
         ct_x = (bboxes[:, :, 0] + bboxes[:, :, 2]) / 2
         ct_y = (bboxes[:, :, 1] + bboxes[:, :, 3]) / 2
@@ -360,12 +365,14 @@ class Gt2FCOSTarget(BaseOperator):
             points, num_points_each_level = self._compute_points(w, h)
             object_scale_exp = []
             for i, num_pts in enumerate(num_points_each_level):
-                object_scale_exp.append(np.tile(
-                    np.array([self.object_sizes_of_interest[i]]),
-                    reps=[num_pts, 1]))
+                object_scale_exp.append(
+                    np.tile(
+                        np.array([self.object_sizes_of_interest[i]]),
+                        reps=[num_pts, 1]))
             object_scale_exp = np.concatenate(object_scale_exp, axis=0)
 
-            gt_area = (bboxes[:, 2] - bboxes[:, 0]) * (bboxes[:, 3] - bboxes[:, 1])
+            gt_area = (bboxes[:, 2] - bboxes[:, 0]) * (
+                bboxes[:, 3] - bboxes[:, 1])
             xs, ys = points[:, 0], points[:, 1]
             xs = np.reshape(xs, newshape=[xs.shape[0], 1])
             xs = np.tile(xs, reps=[1, bboxes.shape[0]])
@@ -385,15 +392,19 @@ class Gt2FCOSTarget(BaseOperator):
             # check if the targets is inside the corresponding level
             max_reg_targets = np.max(reg_targets, axis=2)
             lower_bound = np.tile(
-                np.expand_dims(object_scale_exp[:, 0], axis=1),
+                np.expand_dims(
+                    object_scale_exp[:, 0], axis=1),
                 reps=[1, max_reg_targets.shape[1]])
             high_bound = np.tile(
-                np.expand_dims(object_scale_exp[:, 1], axis=1),
+                np.expand_dims(
+                    object_scale_exp[:, 1], axis=1),
                 reps=[1, max_reg_targets.shape[1]])
             is_match_current_level = \
                 (max_reg_targets > lower_bound) & \
                 (max_reg_targets < high_bound)
-            points2gtarea = np.tile(np.expand_dims(gt_area, axis=0), reps=[xs.shape[0], 1])
+            points2gtarea = np.tile(
+                np.expand_dims(
+                    gt_area, axis=0), reps=[xs.shape[0], 1])
             points2gtarea[is_inside_box == 0] = self.INF
             points2gtarea[is_match_current_level == 0] = self.INF
             points2min_area = points2gtarea.min(axis=1)
@@ -405,7 +416,8 @@ class Gt2FCOSTarget(BaseOperator):
                                   reg_targets[:, [0, 2]].max(axis=1)) * \
                                   (reg_targets[:, [1, 3]].min(axis=1) / \
                                    reg_targets[:, [1, 3]].max(axis=1))).astype(np.float32)
-            ctn_targets = np.reshape(ctn_targets, newshape=[ctn_targets.shape[0], 1])
+            ctn_targets = np.reshape(
+                ctn_targets, newshape=[ctn_targets.shape[0], 1])
             ctn_targets[labels <= 0] = 0
             pos_ind = np.nonzero(labels != 0)
             reg_targets_pos = reg_targets[pos_ind[0], :]
@@ -432,9 +444,7 @@ class Gt2FCOSTarget(BaseOperator):
                         reg_targets_by_level[lvl],
                         newshape=[grid_h, grid_w, 4])
                 sample['labels{}'.format(lvl)] = np.reshape(
-                    labels_by_level[lvl],
-                    newshape=[grid_h, grid_w, 1])
+                    labels_by_level[lvl], newshape=[grid_h, grid_w, 1])
                 sample['centerness{}'.format(lvl)] = np.reshape(
-                    ctn_targets_by_level[lvl],
-                    newshape=[grid_h, grid_w, 1])
+                    ctn_targets_by_level[lvl], newshape=[grid_h, grid_w, 1])
         return samples

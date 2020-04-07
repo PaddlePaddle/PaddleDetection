@@ -176,13 +176,13 @@ def DropBlock(input, block_size, keep_prob, is_test):
 
 
 def CreateTensorFromNumpy(numpy_array):
-        paddle_array = fluid.layers.create_parameter(
-            attr=ParamAttr(),
-            shape=numpy_array.shape,
-            dtype=numpy_array.dtype,
-            default_initializer=NumpyArrayInitializer(numpy_array))
-        paddle_array.stop_gradient = True
-        return paddle_array
+    paddle_array = fluid.layers.create_parameter(
+        attr=ParamAttr(),
+        shape=numpy_array.shape,
+        dtype=numpy_array.dtype,
+        default_initializer=NumpyArrayInitializer(numpy_array))
+    paddle_array.stop_gradient = True
+    return paddle_array
 
 
 @register

@@ -83,7 +83,8 @@ class FCOS(object):
                 if k_ctn in feed_vars:
                     tag_centerness.append(feed_vars[k_ctn])
             # tag_labels, tag_bboxes, tag_centerness
-            loss = self.fcos_head.get_loss(body_feats, tag_labels, tag_bboxes, tag_centerness)
+            loss = self.fcos_head.get_loss(body_feats, tag_labels, tag_bboxes,
+                                           tag_centerness)
             total_loss = fluid.layers.sum(list(loss.values()))
             loss.update({'loss': total_loss})
             return loss
@@ -159,7 +160,8 @@ class FCOS(object):
         inputs_def = self._inputs_def(image_shape, fields)
         if "gt_bbox" in fields:
             for i in range(len(self.fcos_head.fpn_stride)):
-                fields.extend(['labels%d' % i, 'reg_target%d' % i, 'centerness%d' % i])
+                fields.extend(
+                    ['labels%d' % i, 'reg_target%d' % i, 'centerness%d' % i])
         feed_vars = OrderedDict([(key, fluid.layers.data(
             name=key,
             shape=inputs_def[key]['shape'],
@@ -180,4 +182,3 @@ class FCOS(object):
 
     def test(self, feed_vars):
         return self.build(feed_vars, 'test')
-
