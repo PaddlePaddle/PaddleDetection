@@ -41,7 +41,8 @@ from ppdet.core.workspace import serializable
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
-                        generate_sample_bbox_square, bbox_area_sampling)
+                        generate_sample_bbox_square, bbox_area_sampling,
+                        is_poly)
 
 logger = logging.getLogger(__name__)
 
@@ -365,11 +366,6 @@ class RandomFlipImage(BaseOperator):
             mask = mask[:, ::-1]
             rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
             return rle
-
-        def is_poly(segm):
-            assert isinstance(segm, (list, dict)), \
-                "Invalid segm type: {}".format(type(segm))
-            return isinstance(segm, list)
 
         flipped_segms = []
         for segm in segms:
@@ -1336,14 +1332,9 @@ class RandomExpand(BaseOperator):
                     expanded_mask, order='F', dtype=np.uint8))
             return rle
 
-        def _is_poly(segm):
-            assert isinstance(segm, (list, dict)), \
-                "Invalid segm type: {}".format(type(segm))
-            return isinstance(segm, list)
-
         expanded_segms = []
         for segm in segms:
-            if _is_poly(segm):
+            if is_poly(segm):
                 # Polygon format
                 expanded_segms.append(
                     [_expand_poly(poly, x, y) for poly in segm])
@@ -1467,15 +1458,10 @@ class RandomCrop(BaseOperator):
             rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
             return rle
 
-        def _is_poly(segm):
-            assert isinstance(segm, (list, dict)), \
-                "Invalid segm type: {}".format(type(segm))
-            return isinstance(segm, list)
-
         crop_segms = []
         for id in valid_ids:
             segm = segms[id]
-            if _is_poly(segm):
+            if is_poly(segm):
                 import copy
                 import shapely.ops
                 from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
