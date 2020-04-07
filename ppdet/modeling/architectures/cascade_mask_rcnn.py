@@ -421,7 +421,7 @@ class CascadeMaskRCNN(object):
         use_dataloader = use_dataloader and not mask_branch
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
-            capacity=64,
+            capacity=16,
             use_double_buffer=True,
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader
