@@ -24,6 +24,7 @@ from ppdet.modeling.ops import MultiClassNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
+from .iou_aware import get_iou_aware_score
 
 __all__ = ['YOLOv3Head']
 
@@ -283,67 +284,6 @@ class YOLOv3Head(object):
                               self.mask_anchors, self.num_classes,
                               self.prefix_name)
 
-    def _split_ioup(self, output, an_num, num_classes):
-        """
-        Split new output feature map to output, predicted iou
-        along channel dimension
-        """
-        ioup = fluid.layers.slice(output, axes=[1], starts=[0], ends=[an_num])
-        ioup = fluid.layers.sigmoid(ioup)
-
-        oriout = fluid.layers.slice(
-            output,
-            axes=[1],
-            starts=[an_num],
-            ends=[an_num * (num_classes + 6)])
-
-        return (ioup, oriout)
-
-    def _de_sigmoid(self, x, eps=1e-7):
-        x = fluid.layers.clip(x, eps, 1 / eps)
-        x = fluid.layers.clip((1 / x - 1.0), eps, 1 / eps)
-        x = -fluid.layers.log(x)
-        return x
-
-    def _postprocess_output(self, ioup, output, an_num, num_classes):
-        """
-        post process output objectness score
-        """
-        tensors = []
-        stride = output.shape[1] // an_num
-        for m in range(an_num):
-            tensors.append(
-                fluid.layers.slice(
-                    output,
-                    axes=[1],
-                    starts=[stride * m + 0],
-                    ends=[stride * m + 4]))
-            obj = fluid.layers.slice(
-                output,
-                axes=[1],
-                starts=[stride * m + 4],
-                ends=[stride * m + 5])
-            obj = fluid.layers.sigmoid(obj)
-            ip = fluid.layers.slice(ioup, axes=[1], starts=[m], ends=[m + 1])
-
-            new_obj = fluid.layers.pow(obj, (
-                1 - self.iou_aware_factor)) * fluid.layers.pow(
-                    ip, self.iou_aware_factor)
-            new_obj = self._de_sigmoid(new_obj)
-
-            tensors.append(new_obj)
-
-            tensors.append(
-                fluid.layers.slice(
-                    output,
-                    axes=[1],
-                    starts=[stride * m + 5],
-                    ends=[stride * m + 5 + num_classes]))
-
-        output = fluid.layers.concat(tensors, axis=1)
-
-        return output
-
     def get_prediction(self, input, im_size):
         """
         Get prediction result of YOLOv3 network
@@ -364,12 +304,10 @@ class YOLOv3Head(object):
         downsample = 32
         for i, output in enumerate(outputs):
             if self.iou_aware:
-                ioup, output = self._split_ioup(output,
-                                                len(self.anchor_masks[i]),
-                                                self.num_classes)
-                output = self._postprocess_output(ioup, output,
-                                                  len(self.anchor_masks[i]),
-                                                  self.num_classes)
+                output = get_iou_aware_score(output,
+                                             len(self.anchor_masks[i]),
+                                             self.num_classes,
+                                             self.iou_aware_factor)
             box, score = fluid.layers.yolo_box(
                 x=output,
                 img_size=im_size,
