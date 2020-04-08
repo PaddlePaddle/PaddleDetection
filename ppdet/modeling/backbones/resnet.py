@@ -53,6 +53,9 @@ class ResNet(object):
         gcb_params (dict): gc blocks config, includes ratio(default as 1.0/16),
                            pooling_type(default as "att") and
                            fusion_types(default as ['channel_add'])
+        lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                             lower learning rate ratio is need for pretrained model 
+                             got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
@@ -68,7 +71,8 @@ class ResNet(object):
                  weight_prefix_name='',
                  nonlocal_stages=[],
                  gcb_stages=[],
-                 gcb_params=dict()):
+                 gcb_params=dict(),
+                 lr_mult_list=[1., 1., 1., 1.]):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -82,6 +86,9 @@ class ResNet(object):
         assert norm_type in ['bn', 'sync_bn', 'affine_channel']
         assert not (len(nonlocal_stages)>0 and depth<50), \
                     "non-local is not supported for resnet18 or resnet34"
+        assert len(lr_mult_list
+                   ) == 4, "lr_mult_list length must be 4 but got {}".format(
+                       len(lr_mult_list))
 
         self.depth = depth
         self.freeze_at = freeze_at
@@ -116,6 +123,10 @@ class ResNet(object):
         self.gcb_stages = gcb_stages
         self.gcb_params = gcb_params
 
+        self.lr_mult_list = lr_mult_list
+        # var denoting curr stage
+        self.stage_num = -1
+
     def _conv_offset(self,
                      input,
                      filter_size,
@@ -148,6 +159,13 @@ class ResNet(object):
                    name=None,
                    dcn_v2=False):
         _name = self.prefix_name + name if self.prefix_name != '' else name
+
+        # need fine lr for distilled model, default as 1.0
+        lr_mult = 1.0
+        mult_idx = max(self.stage_num - 2, 0)
+        mult_idx = min(self.stage_num - 2, 3)
+        lr_mult = self.lr_mult_list[mult_idx]
+
         if not dcn_v2:
             conv = fluid.layers.conv2d(
                 input=input,
@@ -157,7 +175,8 @@ class ResNet(object):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 act=None,
-                param_attr=ParamAttr(name=_name + "_weights"),
+                param_attr=ParamAttr(
+                    name=_name + "_weights", learning_rate=lr_mult),
                 bias_attr=False,
                 name=_name + '.conv2d.output.1')
         else:
@@ -187,14 +206,15 @@ class ResNet(object):
                 groups=groups,
                 deformable_groups=1,
                 im2col_step=1,
-                param_attr=ParamAttr(name=_name + "_weights"),
+                param_attr=ParamAttr(
+                    name=_name + "_weights", learning_rate=lr_mult),
                 bias_attr=False,
                 name=_name + ".conv2d.output.1")
 
         bn_name = self.na.fix_conv_norm_name(name)
         bn_name = self.prefix_name + bn_name if self.prefix_name != '' else bn_name
 
-        norm_lr = 0. if self.freeze_norm else 1.
+        norm_lr = 0. if self.freeze_norm else lr_mult
         norm_decay = self.norm_decay
         pattr = ParamAttr(
             name=bn_name + '_scale',
@@ -364,6 +384,8 @@ class ResNet(object):
             The last variable in endpoint-th stage.
         """
         assert stage_num in [2, 3, 4, 5]
+
+        self.stage_num = stage_num
 
         stages, block_func = self.depth_cfg[self.depth]
         count = stages[stage_num - 2]
