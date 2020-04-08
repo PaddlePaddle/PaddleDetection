@@ -195,7 +195,12 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
             fullpath = osp.join(osp.split(fullpath)[0], v)
 
     exist_flag = False
-    if osp.exists(fullpath) and check_exist:
+    model_path = fullpath + '.pdmodel'
+    param_path = fullpath + '.pdparams'
+    if osp.exists(model_path) and osp.exists(param_path) and check_exist:
+        exist_flag = True
+        logger.info("Found {}".format(fullpath))
+    elif osp.exists(fullpath) and check_exist:
         exist_flag = True
         logger.info("Found {}".format(fullpath))
     else:
@@ -256,7 +261,6 @@ def _download(url, path, md5sum=None):
     fname = osp.split(url)[-1]
     fullname = osp.join(path, fname)
     retry_cnt = 0
-
     while not (osp.exists(fullname) and _md5check(fullname, md5sum)):
         if retry_cnt < DOWNLOAD_RETRY_LIMIT:
             retry_cnt += 1
