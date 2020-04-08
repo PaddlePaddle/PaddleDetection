@@ -20,7 +20,6 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, NumpyArrayInitializer
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.ops import CreateTensorFromNumpy
 
 INF = 1e8
 __all__ = ['FCOSLoss']
