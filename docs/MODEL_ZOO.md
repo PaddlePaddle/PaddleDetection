@@ -183,7 +183,7 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 | MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) |
 | MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) |
 
-**Notes:** MobileNet_v3-SSDLite is trained in 8 GPU with total batch size as 512 and ues cosine decay strategy to train.
+**Notes:** MobileNet_v3-SSDLite is trained in 8 GPU with total batch size as 512 and uses cosine decay strategy to train.
 
 ### SSD
 

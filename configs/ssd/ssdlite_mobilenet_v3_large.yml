@@ -95,9 +95,9 @@ TrainReader:
   batch_size: 64
   shuffle: true
   drop_last: true
-  worker_num: 16
-  memsize: 20G
-  bufsize: 256
+  worker_num: 8
+  memsize: 8G
+  bufsize: 128
   use_process: true
 
 

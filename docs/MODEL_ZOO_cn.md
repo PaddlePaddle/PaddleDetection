@@ -175,7 +175,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) |
 | MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) |
 
-**Notes:** MobileNet_v3-SSDLite 使用学习率余弦衰减策略在8卡GPU下总batch size为512。
+**注意事项:** MobileNet_v3-SSDLite 使用学习率余弦衰减策略在8卡GPU下总batch size为512。
 
 ### SSD
 
