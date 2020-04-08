@@ -1064,10 +1064,16 @@ class MixupImage(BaseOperator):
         gt_score2 = sample['mixup']['gt_score']
         gt_score = np.concatenate(
             (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
+
+        is_crowd1 = sample['is_crowd']
+        is_crowd2 = sample['mixup']['is_crowd']
+        is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
+
         sample['image'] = im
         sample['gt_bbox'] = gt_bbox
         sample['gt_score'] = gt_score
         sample['gt_class'] = gt_class
+        sample['is_crowd'] = is_crowd
         sample['h'] = im.shape[0]
         sample['w'] = im.shape[1]
         sample.pop('mixup')
@@ -1298,9 +1304,14 @@ class RandomExpand(BaseOperator):
         ratio (float): maximum expansion ratio.
         prob (float): probability to expand.
         fill_value (list): color value used to fill the canvas. in RGB order.
+        is_mask_expand(bool): whether expand the segmentation.
     """
 
-    def __init__(self, ratio=4., prob=0.5, fill_value=(127.5, ) * 3):
+    def __init__(self,
+                 ratio=4.,
+                 prob=0.5,
+                 fill_value=(127.5, ) * 3,
+                 is_mask_expand=False):
         super(RandomExpand, self).__init__()
         assert ratio > 1.01, "expand ratio must be larger than 1.01"
         self.ratio = ratio
@@ -1312,6 +1323,7 @@ class RandomExpand(BaseOperator):
         if not isinstance(fill_value, tuple):
             fill_value = tuple(fill_value)
         self.fill_value = fill_value
+        self.is_mask_expand = is_mask_expand
 
     def expand_segms(self, segms, x, y, height, width, ratio):
         def _expand_poly(poly, x, y):
@@ -1369,7 +1381,8 @@ class RandomExpand(BaseOperator):
         sample['image'] = canvas
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] += np.array([x, y] * 2, dtype=np.float32)
-        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+        if self.is_mask_expand and 'gt_poly' in sample and len(sample[
+                'gt_poly']) > 0:
             sample['gt_poly'] = self.expand_segms(sample['gt_poly'], x, y,
                                                   height, width, expand_ratio)
         return sample
@@ -1388,6 +1401,7 @@ class RandomCrop(BaseOperator):
         num_attempts (int): number of tries before giving up.
         allow_no_crop (bool): allow return without actually cropping them.
         cover_all_box (bool): ensure all bboxes are covered in the final crop.
+        is_mask_crop(bool): whether crop the segmentation.
     """
 
     def __init__(self,
@@ -1396,7 +1410,8 @@ class RandomCrop(BaseOperator):
                  scaling=[.3, 1.],
                  num_attempts=50,
                  allow_no_crop=True,
-                 cover_all_box=False):
+                 cover_all_box=False,
+                 is_mask_crop=False):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1404,6 +1419,7 @@ class RandomCrop(BaseOperator):
         self.num_attempts = num_attempts
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
+        self.is_mask_crop = is_mask_crop
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1527,7 +1543,8 @@ class RandomCrop(BaseOperator):
                     break
 
             if found:
-                if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+                if self.is_mask_crop and 'gt_poly' in sample and len(sample[
+                        'gt_poly']) > 0:
                     crop_polys = self.crop_segms(
                         sample['gt_poly'],
                         valid_ids,
