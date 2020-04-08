@@ -27,8 +27,8 @@
 | CornerNet-Squeeze    | Hourglass104 | 14  |    无    | 34.5  | 35.5 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cornernet_squeeze_hg104.tar)  |
 | CornerNet-Squeeze    | ResNet50-vd    | 14  |    [faster\_rcnn\_r50\_vd\_fpn\_2x](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar)    | 32.7     | 42.45      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cornernet_squeeze_r50_vd_fpn.tar) |
 | CornerNet-Squeeze-dcn    | ResNet50-vd    | 14  |    [faster\_rcnn\_dcn\_r50\_vd\_fpn\_2x](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar)    | 34.9    | 40.05      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cornernet_squeeze_dcn_r50_vd_fpn.tar) |
-| FCOS    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 39.8 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_1x.tar) |
-| FCOS+multiscale_train    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 42.0 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_multiscale_2x.tar) |
+| FCOS    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 39.8 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_1x.pdparams) |
+| FCOS+multiscale_train    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 42.0 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_multiscale_2x.pdparams) |
 
 **注意:**
 

@@ -26,7 +26,9 @@ import numpy as np
 try:
     import cornerpool_lib
 except:
-    print("warning: cornerpool_lib found, compile in ext_op at first if needed")
+    print(
+        "warning: cornerpool_lib not found, compile in ext_op at first if needed"
+    )
 
 __all__ = ['CornerHead']
 
