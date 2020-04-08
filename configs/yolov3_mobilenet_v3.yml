@@ -5,19 +5,20 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
-weights: output/yolov3_mobilenet_v1/model_final
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x1_0_pretrained.tar
+weights: output/yolov3_mobilenet_v3/model_final
 num_classes: 80
 use_fine_grained_loss: false
 
 YOLOv3:
-  backbone: MobileNet
+  backbone: MobileNetV3
   yolo_head: YOLOv3Head
 
-MobileNet:
+MobileNetV3:
   norm_type: sync_bn
   norm_decay: 0.
-  conv_group_scale: 1
+  model_name: large
+  scale: 1.
   with_extra_blocks: false
 
 YOLOv3Head:
@@ -42,7 +43,7 @@ YOLOv3Loss:
   # size here should be set as same value as TrainReader.batch_size
   batch_size: 8
   ignore_thresh: 0.7
-  label_smooth: true
+  label_smooth: false
 
 LearningRate:
   base_lr: 0.001

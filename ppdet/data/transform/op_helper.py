@@ -389,6 +389,12 @@ def crop_image_sampling(img, sample_bbox, image_width, image_height,
     return sample_img
 
 
+def is_poly(segm):
+    assert isinstance(segm, (list, dict)), \
+        "Invalid segm type: {}".format(type(segm))
+    return isinstance(segm, list)
+
+
 def gaussian_radius(bbox_size, min_overlap):
     height, width = bbox_size
 

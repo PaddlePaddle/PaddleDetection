@@ -21,7 +21,11 @@ from paddle import fluid
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import BBoxAssigner, MaskAssigner
 
-__all__ = ['BBoxAssigner', 'MaskAssigner', 'CascadeBBoxAssigner']
+__all__ = [
+    'BBoxAssigner',
+    'MaskAssigner',
+    'CascadeBBoxAssigner',
+]
 
 
 @register

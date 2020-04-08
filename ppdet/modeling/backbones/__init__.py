@@ -18,6 +18,7 @@ from . import resnet
 from . import resnext
 from . import darknet
 from . import mobilenet
+from . import mobilenet_v3
 from . import senet
 from . import fpn
 from . import vgg
@@ -34,6 +35,7 @@ from .resnet import *
 from .resnext import *
 from .darknet import *
 from .mobilenet import *
+from .mobilenet_v3 import *
 from .senet import *
 from .fpn import *
 from .vgg import *
