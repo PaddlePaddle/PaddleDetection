@@ -129,9 +129,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | MobileNet-V1        | ImageNet | 608  |  否    |    8    |   270e  |    78.302     |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNet-V1        | ImageNet | 416  |  否    |    8    |   270e  |      -        |  29.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNet-V1        | ImageNet | 320  |  否    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNet-V1        | ImageNet | 608  |  否    |    8    |   270e  |      -        |  31.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
-| MobileNet-V1        | ImageNet | 416  |  否    |    8    |   270e  |      -        |  29.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
-| MobileNet-V1        | ImageNet | 320  |  否    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
+| MobileNet-V3        | ImageNet | 608  |  否    |    8    |   270e  |      -        |  31.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
+| MobileNet-V3        | ImageNet | 416  |  否    |    8    |   270e  |      -        |  29.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
+| MobileNet-V3        | ImageNet | 320  |  否    |    8    |   270e  |      -        |  27.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
 | ResNet34            | ImageNet | 608  |  否    |    8    |   270e  |    63.356     |  36.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34            | ImageNet | 416  |  否    |    8    |   270e  |      -        |  34.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34            | ImageNet | 320  |  否    |    8    |   270e  |      -        |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
@@ -167,6 +167,15 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNeXt101-vd-FPN |    1    |   1x    |  40.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) |
 
 **注意事项:** RetinaNet系列模型中，在总batch size为16下情况下，初始学习率改为0.01。
+
+### SSDLite
+
+|  骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略|推理时间(fps) | Box AP | 下载 |
+| :----------: | :--: | :-----: | :-----: |:------------: |:----: | :-------: |
+| MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) |
+| MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) |
+
+**Notes:** MobileNet_v3-SSDLite 使用学习率余弦衰减策略在8卡GPU下总batch size为512。
 
 ### SSD
 
