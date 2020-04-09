@@ -77,11 +77,6 @@ class IouLoss(object):
         xkis2 = fluid.layers.elementwise_min(x2, x2g)
         ykis2 = fluid.layers.elementwise_min(y2, y2g)
 
-        xc1 = fluid.layers.elementwise_min(x1, x1g)
-        yc1 = fluid.layers.elementwise_min(y1, y1g)
-        xc2 = fluid.layers.elementwise_max(x2, x2g)
-        yc2 = fluid.layers.elementwise_max(y2, y2g)
-
         intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
         intsctk = intsctk * fluid.layers.greater_than(
             xkis2, xkis1) * fluid.layers.greater_than(ykis2, ykis1)
