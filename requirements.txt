@@ -5,3 +5,4 @@ tb-paddle
 tensorboard >= 1.15
 cython
 pycocotools
+shapely
