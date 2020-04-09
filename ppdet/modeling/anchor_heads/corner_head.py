@@ -20,7 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Constant
 
-from .backbones.hourglass import _conv_norm, kaiming_init
+from ..backbones.hourglass import _conv_norm, kaiming_init
 from ppdet.core.workspace import register
 import numpy as np
 try:
@@ -69,14 +69,17 @@ def corner_output(x, pool1, pool2, dim, name=None):
         name=name + '_bn1')
 
     relu1 = fluid.layers.relu(p_bn1 + bn1)
-    conv2 = _conv_norm(relu1, 3, dim, pad=1, act='relu', name=name + '_conv2')
+    conv2 = _conv_norm(
+        relu1, 3, dim, pad=1, bn_act='relu', name=name + '_conv2')
     return conv2
 
 
 def corner_pool(x, dim, pool1, pool2, is_test=False, name=None):
-    p1_conv1 = _conv_norm(x, 3, 128, pad=1, act='relu', name=name + '_p1_conv1')
+    p1_conv1 = _conv_norm(
+        x, 3, 128, pad=1, bn_act='relu', name=name + '_p1_conv1')
     pool1 = pool1(p1_conv1, is_test=is_test, name=name + '_pool1')
-    p2_conv1 = _conv_norm(x, 3, 128, pad=1, act='relu', name=name + '_p2_conv1')
+    p2_conv1 = _conv_norm(
+        x, 3, 128, pad=1, bn_act='relu', name=name + '_p2_conv1')
     pool2 = pool2(p2_conv1, is_test=is_test, name=name + '_pool2')
 
     conv2 = corner_output(x, pool1, pool2, dim, name)
@@ -282,7 +285,7 @@ class CornerHead(object):
 
     def pred_mod(self, x, dim, name=None):
         conv0 = _conv_norm(
-            x, 1, 256, with_bn=False, act='relu', name=name + '_0')
+            x, 1, 256, with_bn=False, bn_act='relu', name=name + '_0')
         conv1 = fluid.layers.conv2d(
             input=conv0,
             filter_size=1,

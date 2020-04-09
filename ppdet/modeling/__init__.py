@@ -22,7 +22,6 @@ from . import roi_extractors
 from . import roi_heads
 from . import ops
 from . import target_assigners
-from . import corner_head
 
 from .anchor_heads import *
 from .architectures import *
@@ -31,4 +30,3 @@ from .roi_extractors import *
 from .roi_heads import *
 from .ops import *
 from .target_assigners import *
-from .corner_head import *

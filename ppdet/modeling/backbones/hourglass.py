@@ -41,7 +41,7 @@ def _conv_norm(x,
                pad=0,
                groups=None,
                with_bn=True,
-               act=None,
+               bn_act=None,
                ind=None,
                name=None):
     conv_name = "_conv" if ind is None else "_conv" + str(ind)
@@ -65,7 +65,7 @@ def _conv_norm(x,
         battr = ParamAttr(name=name + bn_name + '_bias')
         out = fluid.layers.batch_norm(
             input=conv,
-            act=act,
+            act=bn_act,
             name=name + '_bn_output',
             param_attr=pattr,
             bias_attr=battr,
@@ -80,7 +80,7 @@ def _conv_norm(x,
 def residual_block(x, out_dim, k=3, stride=1, name=None):
     p = (k - 1) // 2
     conv1 = _conv_norm(
-        x, k, out_dim, pad=p, stride=stride, act='relu', ind=1, name=name)
+        x, k, out_dim, pad=p, stride=stride, bn_act='relu', ind=1, name=name)
     conv2 = _conv_norm(conv1, k, out_dim, pad=p, ind=2, name=name)
 
     skip = _conv_norm(
@@ -206,7 +206,12 @@ class Hourglass(object):
                 self.modules,
                 name=name + '_hgs_' + str(ind))
             cnv = _conv_norm(
-                hg, 3, 256, act='relu', pad=1, name=name + '_cnvs_' + str(ind))
+                hg,
+                3,
+                256,
+                bn_act='relu',
+                pad=1,
+                name=name + '_cnvs_' + str(ind))
             cnvs.append(cnv)
 
             if ind < self.stack - 1:
@@ -221,7 +226,7 @@ class Hourglass(object):
 
     def pre(self, x, name=None):
         conv = _conv_norm(
-            x, 7, 128, stride=2, pad=3, act='relu', name=name + '_0')
+            x, 7, 128, stride=2, pad=3, bn_act='relu', name=name + '_0')
         res1 = residual_block(conv, 256, stride=2, name=name + '_1')
         res2 = residual_block(res1, 256, stride=2, name=name + '_2')
         return res2
