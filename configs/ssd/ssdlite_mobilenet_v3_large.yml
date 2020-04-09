@@ -95,9 +95,13 @@ TrainReader:
   batch_size: 64
   shuffle: true
   drop_last: true
+  # Number of working threads/processes. To speed up, can be set to 16 or 32 etc.
   worker_num: 8
+  # Size of shared memory used in result queue. After increasing `worker_num`, need expand `memsize`.
   memsize: 8G
-  bufsize: 128
+  # Buffer size for multi threads/processes.one instance in buffer is one batch data.
+  # To speed up, can be set to 64 or 128 etc.
+  bufsize: 32
   use_process: true
 
 
@@ -128,7 +132,7 @@ EvalReader:
     channel_first: True
   batch_size: 8
   worker_num: 8
-  bufsize: 108
+  bufsize: 32
   use_process: false
 
 TestReader:
