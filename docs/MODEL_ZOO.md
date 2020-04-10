@@ -205,3 +205,7 @@ Please refer [face detection models](https://github.com/PaddlePaddle/PaddleDetec
 ### Object Detection in Open Images Dataset V5
 
 Please refer [Open Images Dataset V5 Baseline model](featured_model/OIDV5_BASELINE_MODEL.md) for details.
+
+### Anchor Free Models
+
+Please refer [Anchor Free Models](featured_model/ANCHOR_FREE_DETECTION.md) for details.
