@@ -82,13 +82,20 @@ Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetec
 pip install -r requirements.txt
 ```
 
+**指定当前Python路径：**
+
+```shell
+# 在Linux/Mac系统下运行:
+export PYTHONPATH=$PYTHONPATH:.
+# 在windows系统下运行:
+set PYTHONPATH=%PYTHONPATH%;.
+```
+
 **确认测试通过：**
 
 ```
-export PYTHONPATH=`pwd`:$PYTHONPATH
 python ppdet/modeling/tests/test_architectures.py
 ```
-
 
 ## 数据集
 
