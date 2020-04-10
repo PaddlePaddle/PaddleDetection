@@ -106,37 +106,40 @@ std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {
   return resize_scale;
 }
 
-void Preprocessor::Init(const YAML::Node& config_node,
-                        const std::string& arch) {
-  arch_ = arch;
-  for (const auto& item : config_node) {
-    auto op_type = item["type"].as<std::string>();
-    if (op_type == "Resize") {
-      int max_size = item["max_size"].as<int>();
-      int target_size = item["target_size"].as<int>();
-      int interp = item["interp"].as<int>();
-      auto img_shape = item["image_shape"].as<std::vector<int>>();
-      op_resize_.Init(arch, max_size, target_size, interp, img_shape);
-    } else if (op_type == "Normalize") {
-      bool is_channel_first = item["is_channel_first"].as<bool>();
-      bool is_scale = item["is_scale"].as<bool>();
-      auto mean = item["mean"].as<std::vector<float>>();
-      auto scale = item["std"].as<std::vector<float>>();
-      auto op = std::make_shared<Normalize>();
-      op_normalize_.Init(is_channel_first, is_scale, mean, scale);
-    } else if (op_type == "Permute") {
-      bool to_bgr = item["to_bgr"].as<bool>();
-      bool is_channel_first = item["channel_first"].as<bool>();
-      auto op = std::make_shared<Permute>();
-      op_permute_.Init(to_bgr, is_channel_first);
-    }
+void PadStride::Run(cv::Mat* im, ImageBlob* data) {
+  if (stride_ <= 0) {
+    return;
   }
+  int rc = im->channels();
+  int rh = im->rows;
+  int rw = im->cols;
+  int nh = (rh / stride_) * stride_ + (rh % stride_ != 0) * stride_;
+  int nw = (rw / stride_) * stride_ + (rw % stride_ != 0) * stride_;
+  cv::copyMakeBorder(
+    *im,
+    *im,
+    0,
+    nh - rh,
+    0,
+    nw - rw,
+    cv::BORDER_CONSTANT,
+    cv::Scalar(0));
+  (data->eval_im_size_f_)[0] = static_cast<float>(im->rows);
+  (data->eval_im_size_f_)[1] = static_cast<float>(im->cols);
 }
 
+
+// Preprocessor op running order
+const std::vector<std::string> Preprocessor::RUN_ORDER = {
+  "Resize", "Normalize", "PadStride", "Permute"
+};
+
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
-  op_resize_.Run(im, data);
-  op_normalize_.Run(im, data);
-  op_permute_.Run(im, data);
+  for (const auto& name : RUN_ORDER) {
+    if (ops_.find(name) != ops_.end()) {
+      ops_[name]->Run(im, data);
+    }
+  }
 }
 
 }  // namespace PaddleDetection
