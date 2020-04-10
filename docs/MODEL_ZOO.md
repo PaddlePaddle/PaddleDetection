@@ -133,6 +133,9 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 | MobileNet-V1      | ImageNet | 608  |  False    |    8    |   270e  |    78.302     |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNet-V1      | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
 | MobileNet-V1      | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
+| MobileNet-V3      | ImageNet | 608  |  False    |    8    |   270e  |      -        |  31.6  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
+| MobileNet-V3      | ImageNet | 416  |  False    |    8    |   270e  |      -        |  29.9  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
+| MobileNet-V3      | ImageNet | 320  |  False    |    8    |   270e  |      -        |  27.1  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) |
 | ResNet34          | ImageNet | 608  |  False    |    8    |   270e  |    63.356     |  36.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34          | ImageNet | 416  |  False    |    8    |   270e  |      -        |  34.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34          | ImageNet | 320  |  False    |    8    |   270e  |      -        |  31.4  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |

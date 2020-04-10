@@ -179,6 +179,7 @@ class Reader(object):
             use_process is true. Default 3G.
         inputs_def (dict): network input definition use to get input fields,
             which is used to determine the order of returned data.
+        devices_num (int): number of devices.
     """
 
     def __init__(self,
@@ -195,9 +196,10 @@ class Reader(object):
                  use_process=False,
                  use_fine_grained_loss=False,
                  num_classes=80,
-                 bufsize=100,
+                 bufsize=-1,
                  memsize='3G',
-                 inputs_def=None):
+                 inputs_def=None,
+                 devices_num=1):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
         self._fields = copy.deepcopy(inputs_def[
@@ -256,6 +258,7 @@ class Reader(object):
         self._parallel = None
         if self._worker_num > -1:
             task = functools.partial(self.worker, self._drop_empty)
+            bufsize = devices_num * 2 if bufsize == -1 else bufsize
             self._parallel = ParallelMap(self, task, worker_num, bufsize,
                                          use_process, memsize)
 
@@ -388,7 +391,7 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, max_iter=0, global_cfg=None):
+def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
     """
     Return iterable data reader.
 
@@ -403,6 +406,7 @@ def create_reader(cfg, max_iter=0, global_cfg=None):
         cfg['use_fine_grained_loss'] = getattr(global_cfg,
                                                'use_fine_grained_loss', False)
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
+    cfg['devices_num'] = devices_num
     reader = Reader(**cfg)()
 
     def _reader():

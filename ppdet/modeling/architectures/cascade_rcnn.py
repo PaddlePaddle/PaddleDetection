@@ -318,7 +318,7 @@ class CascadeRCNN(object):
             lod_level=inputs_def[key]['lod_level'])) for key in fields])
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
-            capacity=64,
+            capacity=16,
             use_double_buffer=True,
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader
