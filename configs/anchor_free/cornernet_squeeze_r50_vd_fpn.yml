@@ -103,8 +103,7 @@ TrainReader:
   batch_size: 14
   shuffle: true
   drop_last: true
-  bufsize: 2
-  worker_num: 8
+  worker_num: 2
   use_process: true
   drop_empty: false
 
@@ -133,9 +132,10 @@ EvalReader:
     std: [0.28863828, 0.27408164, 0.2780983]
     is_scale: True
     is_channel_first: True
-  use_process: false
+  use_process: true
   batch_size: 1
   drop_empty: false
+  worker_num: 2
 
 TestReader:
   inputs_def:
