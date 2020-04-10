@@ -35,9 +35,59 @@ void ObjectDetector::LoadModel(const std::string& model_dir, bool use_gpu) {
 }
 
 // Visualiztion MaskDetector results
-void VisualizeResult(const cv::Mat& img,
-                     const std::vector<ObjectResult>& results,
-                     cv::Mat* vis_img) {
+cv::Mat VisualizeResult(const cv::Mat& img,
+                        const std::vector<ObjectResult>& results,
+                        const std::vector<std::string>& lable_list,
+                        const std::vector<int>& colormap) {
+  cv::Mat vis_img = img.clone();
+  for (int i = 0; i < results.size(); ++i) {
+    int w = results[i].rect[1] - results[i].rect[0];
+    int h = results[i].rect[3] - results[i].rect[2];
+    cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[2], w, h);
+
+    // Configure color and text size
+    std::string text = lable_list[results[i].class_id];
+    int c1 = colormap[3 * results[i].class_id + 0];
+    int c2 = colormap[3 * results[i].class_id + 1];
+    int c3 = colormap[3 * results[i].class_id + 2];
+    cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
+    text += std::to_string(static_cast<int>(results[i].confidence * 100)) + "%";
+    int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
+    double font_scale = 0.5f;
+    float thickness = 0.5;
+    cv::Size text_size = cv::getTextSize(text,
+                                         font_face,
+                                         font_scale,
+                                         thickness,
+                                         nullptr);
+    float new_font_scale = roi.width * font_scale / text_size.width;
+    text_size = cv::getTextSize(text,
+                               font_face,
+                               new_font_scale,
+                               thickness,
+                               nullptr);
+    cv::Point origin;
+    origin.x = roi.x;
+    origin.y = roi.y;
+
+    // Configure text background
+    cv::Rect text_back = cv::Rect(results[i].rect[0],
+                                  results[i].rect[2] - text_size.height,
+                                  text_size.width,
+                                  text_size.height);
+
+    // Draw roi object, text, and background
+    cv::rectangle(vis_img, roi, roi_color, 2);
+    cv::rectangle(vis_img, text_back, roi_color, -1);
+    cv::putText(vis_img,
+                text,
+                origin,
+                font_face,
+                new_font_scale,
+                cv::Scalar(255, 255, 255),
+                thickness);
+  }
+  return vis_img;
 }
 
 void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
@@ -76,8 +126,6 @@ void ObjectDetector::Postprocess(
       result_item.class_id = class_id;
       result_item.confidence = score;
       result->push_back(result_item);
-      printf("class_id=%d, confidence=%.4f, rect=[%d, %d, %d, %d]\n",
-          class_id, score, xmin, xmax, ymin, ymax);
     }
   }
 }
@@ -121,6 +169,22 @@ void ObjectDetector::Predict(const cv::Mat& im,
   out_tensor->copy_to_cpu(output_data_.data());
   // Postprocessing result
   Postprocess(im,  result);
+}
+
+std::vector<int> GenerateColorMap(int num_class) {
+  auto colormap = std::vector<int>(3 * num_class, 0);
+  for (int i = 0; i < num_class; ++i) {
+    int j = 0;
+    int lab = i;
+    while (lab) {
+      colormap[i * 3] |= (((lab >> 0) & 1) << (7 - j));
+      colormap[i * 3 + 1] |= (((lab >> 1) & 1) << (7 - j));
+      colormap[i * 3 + 2] |= (((lab >> 2) & 1) << (7 - j));
+      ++j;
+      lab >>= 3;
+    }
+  }
+  return colormap;
 }
 
 }  // namespace PaddleDetection

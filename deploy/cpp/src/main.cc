@@ -42,5 +42,21 @@ int main(int argc, char** argv) {
   // Store all detected result
   std::vector<PaddleDetection::ObjectResult> result;
   det.Predict(im, &result);
+  for (const auto& item : result) {
+    printf("class=%d confidence=%.2f rect=[%d %d %d %d]\n",
+        item.class_id,
+        item.confidence,
+        item.rect[0],
+        item.rect[1],
+        item.rect[2],
+        item.rect[3]);
+  }
+  // Visualization result
+  auto labels = det.GetLabelList();
+  auto colormap = PaddleDetection::GenerateColorMap(labels.size());
+  cv::Mat vis_img = PaddleDetection::VisualizeResult(
+      im, result, labels, colormap);
+  cv::imwrite("result.jpeg", vis_img);
+  printf("Visualized output saved as result.jpeg\n");
   return 0;
 }

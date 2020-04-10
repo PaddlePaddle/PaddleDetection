@@ -41,10 +41,15 @@ struct ObjectResult {
 };
 
 
+// Generate visualization colormap for each class
+std::vector<int> GenerateColorMap(int num_class);
+
+
 // Visualiztion Detection Result
-void VisualizeResult(const cv::Mat& img,
+cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
-                     cv::Mat* vis_img);
+                     const std::vector<std::string>& lable_list,
+                     const std::vector<int>& colormap);
 
 
 class ObjectDetector {
@@ -65,6 +70,11 @@ class ObjectDetector {
   void Predict(
       const cv::Mat& img,
       std::vector<ObjectResult>* result);
+
+  // Get Model Label list
+  const std::vector<std::string>& GetLabelList() const {
+    return config_.label_list_;
+  }
 
  private:
   // Preprocess image and copy data to input buffer
