@@ -20,5 +20,3 @@ yolov3_darknet # 模型目录
 ## 预测部署
 - [1. Python预测(支持 Linux 和 Windows)](./python/)
 - [2. C++预测(支持 Linux 和 Windows)](./cpp/)
-
-
