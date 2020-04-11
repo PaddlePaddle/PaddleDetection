@@ -86,13 +86,20 @@ Required python packages are specified in [requirements.txt](https://github.com/
 pip install -r requirements.txt
 ```
 
+**Specify the current Python path:**
+
+```shell
+# In Linux/Mac
+export PYTHONPATH=$PYTHONPATH:.
+# In windows
+set PYTHONPATH=%PYTHONPATH%;.
+```
+
 **Make sure the tests pass:**
 
-```
-export PYTHONPATH=`pwd`:$PYTHONPATH
+```shell
 python ppdet/modeling/tests/test_architectures.py
 ```
-
 
 ## Datasets
 
