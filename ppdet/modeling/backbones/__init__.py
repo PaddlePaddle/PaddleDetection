@@ -29,6 +29,7 @@ from . import res2net
 from . import hrnet
 from . import hrfpn
 from . import bfp
+from . import mobilenet_v3_rcnn
 
 from .resnet import *
 from .resnext import *
@@ -45,3 +46,4 @@ from .res2net import *
 from .hrnet import *
 from .hrfpn import *
 from .bfp import *
+from .mobilenet_v3_rcnn import MobileNetV3RCNN
