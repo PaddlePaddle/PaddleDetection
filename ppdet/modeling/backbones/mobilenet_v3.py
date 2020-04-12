@@ -140,6 +140,8 @@ class MobileNetV3(object):
                 bn = fluid.layers.relu(bn)
             elif act == 'hard_swish':
                 bn = self._hard_swish(bn)
+            elif act == 'relu6':
+                bn = fluid.layers.relu6(bn)
         return bn
 
     def _bn(self, input, act=None, bn_name=None):

@@ -46,4 +46,4 @@ from .res2net import *
 from .hrnet import *
 from .hrfpn import *
 from .bfp import *
-from .mobilenet_v3_rcnn import MobileNetV3RCNN
+from .mobilenet_v3_rcnn import *
