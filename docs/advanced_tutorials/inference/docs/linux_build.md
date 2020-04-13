@@ -1,4 +1,4 @@
-# Linux平台 编译指南
+# Linux平台编译指南
 
 ## 说明
 本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_usage/deploy/inference/build_and_install_lib_cn.html#id15)。
@@ -12,23 +12,14 @@
 
 ### Step1: 下载代码
 
-1. `git clone https://github.com/PaddlePaddle/PaddleDetection.git`
+ `git clone https://github.com/PaddlePaddle/PaddleDetection.git`
 
-`C++`预测代码在`/root/projects/PaddleDetection/inference` 目录，该目录不依赖任何`PaddleDetection`下其他目录。
+**说明**：其中`C++`预测代码在`/root/projects/PaddleDetection/deploy/cpp` 目录，该目录不依赖任何`PaddleDetection`下其他目录。
 
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库主要分为CPU版本和GPU版本。其中，针对不同的CUDA版本，GPU版本预测库又分为两个版本预测库：CUDA 9.0和CUDA 10.0版本预测库。以下为各版本C++预测库的下载链接：
-
-|  版本   | 链接  |
-|  ----  | ----  |
-| CPU版本  | [fluid_inference.tgz](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_inference_linux_cpu_1.6.1.tgz) |
-| CUDA 9.0版本  | [fluid_inference.tgz](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_inference_linux_cuda97_1.6.1.tgz) |
-| CUDA 10.0版本  | [fluid_inference.tgz](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_inference_linux_cuda10_1.6.1.tgz) |
-
-
-针对不同的CPU类型、不同的指令集，官方提供更多可用的预测库版本，目前已经推出1.6版本的预测库。其余版本具体请参考以下链接:[C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_usage/deploy/inference/build_and_install_lib_cn.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_usage/deploy/inference/build_and_install_lib_cn.html)
 
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
@@ -41,60 +32,71 @@ fluid_inference
 └── version.txt # 版本和编译信息
 ```
 
-### Step3: 安装配置OpenCV
+**注意:** 预编译版本除`nv-jetson-cuda10-cudnn7.5-trt5` 以外其它包都是基于`GCC 4.8.5`编译，使用高版本`GCC`可能存在 `ABI`兼容性问题，建议降级或[自行编译预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
 
-```shell
-# 0. 切换到/root/projects目录
-cd /root/projects
-# 1. 下载OpenCV3.4.6版本源代码
-wget -c https://paddleseg.bj.bcebos.com/inference/opencv-3.4.6.zip
-# 2. 解压
-unzip opencv-3.4.6.zip && cd opencv-3.4.6
-# 3. 创建build目录并编译, 这里安装到/usr/local/opencv3目录
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/root/projects/opencv3 -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DWITH_IPP=OFF -DBUILD_IPP_IW=OFF -DWITH_LAPACK=OFF -DWITH_EIGEN=OFF -DCMAKE_INSTALL_LIBDIR=lib64 -DWITH_ZLIB=ON -DBUILD_ZLIB=ON -DWITH_JPEG=ON -DBUILD_JPEG=ON -DWITH_PNG=ON -DBUILD_PNG=ON -DWITH_TIFF=ON -DBUILD_TIFF=ON
-make -j4
-make install
-```
-
-**注意：** 上述操作完成后，`opencv` 被安装在 `/root/projects/opencv3` 目录。
 
 ### Step4: 编译
 
-`CMake`编译时，涉及到四个编译参数用于指定核心依赖库的路径, 他们的定义如下:（带*表示仅在使用**GPU版本**预测库时指定，其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1版本CUDA库**）
+编译`cmake`的命令在`scripts/build.sh`中，请根据实际情况修改主要参数，其主要内容说明如下：
+```
+# 是否使用GPU(即是否使用 CUDA)
+WITH_GPU=ON
+# 是否集成 TensorRT(仅WITH_GPU=ON 有效)
+WITH_TENSORRT=OFF
+# 上一步下载的 Paddle 预测库路径
+PADDLE_DIR=/root/projects/deps/fluid_inference/
+# OPENCV 路径, 如果使用自带预编译版本可不设置
+OPENCV_DIR=$(pwd)/deps/opencv346/
+# CUDA 的 lib 路径
+CUDA_LIB=/usr/local/cuda/lib64/
 
-|  参数名   | 含义  |
-|  ----  | ----  |
-| * CUDA_LIB  | CUDA的库路径 |
-| * CUDNN_LIB | cudnn的库路径|
-| OPENCV_DIR  | OpenCV的安装路径 |
-| PADDLE_DIR | Paddle预测库的路径 |
+# 以下无需改动
 
-在使用**GPU版本**预测库进行编译时，可执行下列操作。**注意**把对应的参数改为你的上述依赖库实际路径：
-
-```shell
-cd /root/projects/PaddleDetection/inference
-mkdir build && cd build
-cmake .. -DWITH_GPU=ON  -DPADDLE_DIR=/root/projects/fluid_inference -DCUDA_LIB=/usr/local/cuda/lib64/ -DOPENCV_DIR=/root/projects/opencv3/ -DCUDNN_LIB=/usr/local/cuda/lib64/ -DWITH_STATIC_LIB=OFF
+sh $(pwd)/scripts/bootstrap.sh
+rm -rf build
+mkdir -p build
+cd build
+cmake .. \
+    -DWITH_GPU=OFF \
+    -DWITH_TENSORRT=OFF \
+    -DPADDLE_DIR=${PADDLE_DIR} \
+    -DCUDA_LIB=${CUDA_LIB} \
+    -DOPENCV_DIR=${OPENCV_DIR}
 make
+
 ```
 
-在使用**CPU版本**预测库进行编译时，可执行下列操作：
+修改脚本设置好主要参数后，执行`build`脚本：
+ ```shell
+ sh ./scripts/build.sh
+ ```
 
-```shell
-cd /root/projects/PaddleDetection/inference
-
-mkdir build && cd build
-cmake .. -DWITH_GPU=OFF  -DPADDLE_DIR=/root/projects/fluid_inference -DOPENCV_DIR=/root/projects/opencv3/ -DWITH_STATIC_LIB=OFF
-make
-```
 
 ### Step5: 预测及可视化
+编译成功后，预测入口程序为`build/main`其主要命令参数说明如下：
+|  参数   | 说明  |
+|  ----  | ----  |
+| model_dir  | 导出的预测模型所在路径 |
+| image_path  | 要预测的图片文件路径 |
+| video_path  | 要预测的视频文件路径 |
+| use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 
-执行命令：
+**注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
 
+
+`样例一`：
+```shell
+#不使用`GPU`测试图片 `/root/projects/images/test.jpeg`  
+./build/main --model_dir=/root/projects/models/yolov3_darknet --image_path=/root/projects/images/test.jpeg
 ```
-./detection_demo --conf=/path/to/your/conf --input_dir=/path/to/your/input/data/directory
-```
 
-更详细说明请参考ReadMe文档： [预测和可视化部分](../README.md)
+图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+
+
+`样例二`:
+```shell
+#使用 `GPU`预测视频`/root/projects/videos/test.avi`
+./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.avi --use_gpu=1
+```
+视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
+
