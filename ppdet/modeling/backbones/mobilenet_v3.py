@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
@@ -10,6 +24,19 @@ __all__ = ['MobileNetV3']
 
 @register
 class MobileNetV3():
+    """
+    MobileNet v3, see https://arxiv.org/abs/1905.02244
+    Args:
+	scale (float): scaling factor for convolution groups proportion of mobilenet_v3.
+        model_name (str): There are two modes, small and large.
+        norm_type (str): normalization type, 'bn' and 'sync_bn' are supported.
+        norm_decay (float): weight decay for normalization layer weights.
+        conv_decay (float): weight decay for convolution layer weights.
+        with_extra_blocks (bool): if extra blocks should be added.
+        extra_block_filters (list): number of filter for each extra block.
+    """
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  scale=1.0,
                  model_name='small',
