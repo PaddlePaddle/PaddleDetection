@@ -16,10 +16,13 @@ import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.core.workspace import register
 import math
+import numpy as np
+from collections import OrderedDict
 
-__all__ = ['MobileNetV3']
+from ppdet.core.workspace import register
+
+__all__ = ['MobileNetV3', 'MobileNetV3RCNN']
 
 
 @register
@@ -38,7 +41,9 @@ class MobileNetV3(object):
                              is need for pretrained model got using distillation(default as 
                              [1.0, 1.0, 1.0, 1.0, 1.0]).
         freeze_norm (bool): freeze normalization layers
+        feature_maps (list): feature maps used in two-stage rcnn models(default as None).
     """
+    __shared__ = ['norm_type']
 
     def __init__(self,
                  scale=1.0,
@@ -50,7 +55,8 @@ class MobileNetV3(object):
                  extra_block_filters=[[256, 512], [128, 256], [128, 256],
                                       [64, 128]],
                  lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
-                 freeze_norm=False):
+                 freeze_norm=False,
+                 feature_maps=None):
         self.scale = scale
         self.model_name = model_name
         self.with_extra_blocks = with_extra_blocks
@@ -63,6 +69,7 @@ class MobileNetV3(object):
         self.lr_mult_list = lr_mult_list
         self.freeze_norm = freeze_norm
         self.norm_type = norm_type
+        self.feature_maps = feature_maps
         if model_name == "large":
             self.cfg = [
                 # kernel_size, expand, channel, se_block, act_mode, stride
@@ -255,8 +262,15 @@ class MobileNetV3(object):
             if_act=True,
             act=act,
             name=name + '_expand')
-        if self.block_stride == 16 and stride == 2:
-            self.end_points.append(conv0)
+        # for RCNN models
+        if self.feature_maps is not None:
+            feature_level = int(np.log2(self.block_stride))
+            if feature_level in self.feature_maps and stride == 2:
+                self.end_points.append(conv0)
+        # for SSD
+        else:
+            if self.block_stride == 16 and stride == 2:
+                self.end_points.append(conv0)
         conv1 = self._conv_bn_layer(
             input=conv0,
             filter_size=filter_size,
@@ -389,3 +403,82 @@ class MobileNetV3(object):
             i += 1
 
         return self.end_points
+
+
+@register
+class MobileNetV3RCNN(MobileNetV3):
+    def __init__(
+            self,
+            scale=1.0,
+            model_name='large',
+            with_extra_blocks=False,
+            conv_decay=0.0,
+            norm_type='bn',
+            norm_decay=0.0,
+            freeze_norm=True,
+            feature_maps=[2, 3, 4, 5],
+            lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0], ):
+        super(MobileNetV3RCNN, self).__init__(
+            scale=scale,
+            model_name=model_name,
+            with_extra_blocks=with_extra_blocks,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            lr_mult_list=lr_mult_list,
+            feature_maps=feature_maps)
+        self.curr_stage = 0
+
+    def __call__(self, input):
+        scale = self.scale
+        inplanes = self.inplanes
+        cfg = self.cfg
+        cls_ch_squeeze = self.cls_ch_squeeze
+        cls_ch_expand = self.cls_ch_expand
+        #conv1
+        conv = self._conv_bn_layer(
+            input,
+            filter_size=3,
+            num_filters=self._make_divisible(inplanes * scale),
+            stride=2,
+            padding=1,
+            num_groups=1,
+            if_act=True,
+            act='hard_swish',
+            name='conv1')
+        i = 0
+        inplanes = self._make_divisible(inplanes * scale)
+        for layer_cfg in cfg:
+            self.block_stride *= layer_cfg[5]
+            conv = self._residual_unit(
+                input=conv,
+                num_in_filter=inplanes,
+                num_mid_filter=self._make_divisible(scale * layer_cfg[1]),
+                num_out_filter=self._make_divisible(scale * layer_cfg[2]),
+                act=layer_cfg[4],
+                stride=layer_cfg[5],
+                filter_size=layer_cfg[0],
+                use_se=layer_cfg[3],
+                name='conv' + str(i + 2))
+            inplanes = self._make_divisible(scale * layer_cfg[2])
+            i += 1
+            self.curr_stage += 1
+
+        if np.max(self.feature_maps) >= 5:
+            conv = self._conv_bn_layer(
+                input=conv,
+                filter_size=1,
+                num_filters=self._make_divisible(scale * cls_ch_squeeze),
+                stride=1,
+                padding=0,
+                num_groups=1,
+                if_act=True,
+                act='hard_swish',
+                name='conv_last')
+            self.end_points.append(conv)
+            i += 1
+
+        res = OrderedDict(
+            [('res{}_sum'.format(self.feature_maps[idx]), self.end_points[idx])
+             for idx, feat_idx in enumerate(self.feature_maps)])
+        return res
