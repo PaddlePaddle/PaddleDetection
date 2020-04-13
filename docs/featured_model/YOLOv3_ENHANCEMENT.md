@@ -24,7 +24,9 @@ PaddleDetection实现版本中使用了 [Bag of Freebies for Training Object Det
 
 4.Yolo v3作为一阶段检测网络，在定位精度上相比Faster RCNN，Cascade RCNN等网络结构有着其天然的劣势，增加[IoU Loss](https://arxiv.org/abs/1908.03851)分支，可以一定程度上提高BBox定位精度，缩小一阶段和两阶段检测网络的差距。
 
-5.使用[Object365数据集](https://www.objects365.org/download.html)训练得到的模型作为coco数据集上的预训练模型，Object365数据集包含约60万张图片以及365种类别，相比coco数据集进行预训练可以进一步提高YOLOv3的精度。
+5.增加[IoU Aware](https://arxiv.org/abs/1912.05992)分支，预测输出BBox和真实BBox的IoU，修正用于NMS的评分，可进一步提高YOLOV3的预测性能。
+
+6.使用[Object365数据集](https://www.objects365.org/download.html)训练得到的模型作为coco数据集上的预训练模型，Object365数据集包含约60万张图片以及365种类别，相比coco数据集进行预训练可以进一步提高YOLOv3的精度。
 
 ## 使用方法
 
@@ -46,3 +48,4 @@ python tools/train.py -c configs/dcn/yolov3_r50vd_dcn_iouloss_obj365_pretrained_
 |          YOLOv3 ResNet50_vd DCN          | [Object365 pretrain](https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar) |    42.5    | 原生：74.4ms<br>tensorRT-FP32: 35.2ms  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_v2.tar) |
 |     YOLOv3 ResNet50_vd DCN DropBlock     | [Object365 pretrain](https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar) |    42.8    | 原生：74.4ms<br/>tensorRT-FP32: 35.2ms | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_dropblock.tar) |
 | YOLOv3 ResNet50_vd DCN DropBlock IoULoss | [Object365 pretrain](https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar) |    43.2    | 原生：74.4ms<br/>tensorRT-FP32: 35.2ms | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_obj365_dropblock_iouloss.tar) |
+| YOLOv3 ResNet50_vd DCN DropBlock IoU-Aware | [Object365 pretrain](https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar) |    43.6    | 原生：74.4ms<br/>tensorRT-FP32: 35.2ms | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r50vd_dcn_db_iouaware_obj365_pretrained_coco.pdparams) |

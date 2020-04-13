@@ -24,6 +24,7 @@ from ppdet.modeling.ops import MultiClassNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
+from .iou_aware import get_iou_aware_score
 
 __all__ = ['YOLOv3Head']
 
@@ -50,6 +51,8 @@ class YOLOv3Head(object):
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  drop_block=False,
+                 iou_aware=False,
+                 iou_aware_factor=0.4,
                  block_size=3,
                  keep_prob=0.9,
                  yolo_loss="YOLOv3Loss",
@@ -68,6 +71,8 @@ class YOLOv3Head(object):
         self.nms = nms
         self.prefix_name = weight_prefix_name
         self.drop_block = drop_block
+        self.iou_aware = iou_aware
+        self.iou_aware_factor = iou_aware_factor
         self.block_size = block_size
         self.keep_prob = keep_prob
         if isinstance(nms, dict):
@@ -220,7 +225,10 @@ class YOLOv3Head(object):
                 name=self.prefix_name + "yolo_block.{}".format(i))
 
             # out channel number = mask_num * (5 + class_num)
-            num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
+            if self.iou_aware:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 6)
+            else:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
             with fluid.name_scope('yolo_output'):
                 block_out = fluid.layers.conv2d(
                     input=tip,
@@ -295,6 +303,11 @@ class YOLOv3Head(object):
         scores = []
         downsample = 32
         for i, output in enumerate(outputs):
+            if self.iou_aware:
+                output = get_iou_aware_score(output,
+                                             len(self.anchor_masks[i]),
+                                             self.num_classes,
+                                             self.iou_aware_factor)
             box, score = fluid.layers.yolo_box(
                 x=output,
                 img_size=im_size,
