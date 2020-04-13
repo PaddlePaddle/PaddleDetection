@@ -12,3 +12,6 @@
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: |
 | MobileNetV3-vd-FPN         | Cascade Faster     |     2     |   5.6x(CosineDecay)    |     8.13     |  25.0  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_320.tar) |
 | MobileNetV3-vd-FPN         | Cascade Faster     |     2     |   5.6x(CosineDecay)    |     2.66     |  30.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_640.tar) |
+
+**note**
+* `5.6x` means the model is trained with `50000` minibatches 8 GPU cards(batch size=2 for each card).
