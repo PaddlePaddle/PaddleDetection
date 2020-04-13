@@ -54,6 +54,7 @@ class IouLoss(object):
                  anchors,
                  downsample_ratio,
                  batch_size,
+                 ioup=None,
                  eps=1.e-10):
         '''
         Args:
@@ -64,6 +65,28 @@ class IouLoss(object):
             batch_size (int): training batch size
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
+
+        iouk = self._iou(x, y, w, h, tx, ty, tw, th, anchors, downsample_ratio,
+                         batch_size, ioup, eps)
+        loss_iou = 1. - iouk * iouk
+        loss_iou = loss_iou * self._loss_weight
+
+        return loss_iou
+
+    def _iou(self,
+             x,
+             y,
+             w,
+             h,
+             tx,
+             ty,
+             tw,
+             th,
+             anchors,
+             downsample_ratio,
+             batch_size,
+             ioup=None,
+             eps=1.e-10):
         x1, y1, x2, y2 = self._bbox_transform(
             x, y, w, h, anchors, downsample_ratio, batch_size, False)
         x1g, y1g, x2g, y2g = self._bbox_transform(
@@ -83,10 +106,7 @@ class IouLoss(object):
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
-        loss_iou = 1. - iouk * iouk
-        loss_iou = loss_iou * self._loss_weight
-
-        return loss_iou
+        return iouk
 
     def _bbox_transform(self, dcx, dcy, dw, dh, anchors, downsample_ratio,
                         batch_size, is_gt):
