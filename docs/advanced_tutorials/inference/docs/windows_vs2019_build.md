@@ -1,8 +1,7 @@
 # Visual Studio 2019 Community CMake 编译指南
 
-Windows 平台下，我们使用`Visual Studio 2015` 和 `Visual Studio 2019 Community` 进行了测试。微软从`Visual Studio 2017`开始即支持直接管理`CMake`跨平台编译项目，但是直到`2019`才提供了稳定和完全的支持，所以如果你想使用CMake管理项目编译构建，我们推荐你使用`Visual Studio 2019`环境下构建。
+Windows 平台下，我们使用`Visual Studio 2019 Community` 进行了测试。微软从`Visual Studio 2017`开始即支持直接管理`CMake`跨平台编译项目，但是直到`2019`才提供了稳定和完全的支持，所以如果你想使用CMake管理项目编译构建，我们推荐你使用`Visual Studio 2019`环境下构建。
 
-你也可以使用和`VS2015`一样，通过把`CMake`项目转化成`VS`项目来编译，其中**有差别的部分**在文档中我们有说明，请参考：[使用Visual Studio 2015 编译指南](./windows_vs2015_build.md)
 
 ## 前置条件
 * Visual Studio 2019
@@ -15,21 +14,17 @@ Windows 平台下，我们使用`Visual Studio 2015` 和 `Visual Studio 2019 Com
 
 ### Step1: 下载代码
 
-1. 点击下载源代码：[下载地址](https://github.com/PaddlePaddle/PaddleDetection/archive/master.zip)
-2. 解压，解压后目录重命名为`PaddleDetection`
+下载源代码
+```shell
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+```
 
-以下代码目录路径为`D:\projects\PaddleDetection` 为例。
+**说明**：其中`C++`预测代码在`PaddleDetection/deploy/cpp` 目录，该目录不依赖任何`PaddleDetection`下其他目录。
 
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库主要分为两大版本：CPU版本和GPU版本。其中，针对不同的CUDA版本，GPU版本预测库又分为三个版本预测库：CUDA 9.0和CUDA 10.0版本预测库。根据Windows环境，下载相应版本的PaddlePaddle预测库，并解压到`D:\projects\`目录。以下为各版本C++预测库的下载链接：
-
-|  版本   | 链接  |
-|  ----  | ----  |
-| CPU版本  | [fluid_inference_install_dir.zip](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_install_dir_win_cpu_1.6.zip) |
-| CUDA 9.0版本  | [fluid_inference_install_dir.zip](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_inference_install_dir_win_cuda9_1.6.1.zip) |
-| CUDA 10.0版本  | [fluid_inference_install_dir.zip](https://bj.bcebos.com/paddlehub/paddle_inference_lib/fluid_inference_install_dir_win_cuda10_1.6.1.zip) |
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/windows_cpp_inference.html)
 
 解压后`D:\projects\fluid_inference`目录包含内容为：
 ```
@@ -46,8 +41,8 @@ fluid_inference
 1. 在OpenCV官网下载适用于Windows平台的3.4.6版本， [下载地址](https://sourceforge.net/projects/opencvlibrary/files/3.4.6/opencv-3.4.6-vc14_vc15.exe/download)  
 2. 运行下载的可执行文件，将OpenCV解压至指定目录，如`D:\projects\opencv`
 3. 配置环境变量，如下流程所示  
-    - 我的电脑->属性->高级系统设置->环境变量  
-    - 在系统变量中找到Path（如没有，自行创建），并双击编辑  
+    - 我的电脑->属性->高级系统设置->环境变量
+    - 在系统变量中找到Path（如没有，自行创建），并双击编辑
     - 新建，将opencv路径填入并保存，如`D:\projects\opencv\build\x64\vc14\bin`
 
 ### Step4: 使用Visual Studio 2019直接编译CMake
@@ -92,11 +87,31 @@ fluid_inference
 ```
 cd D:\projects\PaddleDetection\inference\out\build\x64-Release
 ```
+可执行文件`main`即为样例的预测程序，其主要的命令行参数如下：
 
-之后执行命令：
+|  参数   | 说明  |
+|  ----  | ----  |
+| model_dir  | 导出的预测模型所在路径 |
+| image_path  | 要预测的图片文件路径 |
+| video_path  | 要预测的视频文件路径 |
+| use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 
+**注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
+
+
+`样例一`：
+```shell
+#不使用`GPU`测试图片 `D:\\images\\test.jpeg`  
+.\main --model_dir=D:\\models\\yolov3_darknet --image_path=D:\\images\\test.jpeg
 ```
-detection_demo.exe --conf=/path/to/your/conf --input_dir=/path/to/your/input/data/directory
+
+图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+
+
+`样例二`:
+```shell
+#使用`GPU`测试视频 `D:\\videos\\test.avi`  
+.\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.jpeg --use_gpu=1
 ```
 
-更详细说明请参考ReadMe文档： [预测和可视化部分](../README.md)
+视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
