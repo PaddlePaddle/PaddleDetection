@@ -99,4 +99,3 @@ make
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.avi --use_gpu=1
 ```
 视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
-
