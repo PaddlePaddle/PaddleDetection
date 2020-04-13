@@ -52,6 +52,16 @@ deploy/cpp
 ### 3.1 导出模型
 请确认您已经基于`PaddleDetection`的[export_model.py](../../tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)。
 
+模型导出后, 目录结构如下(以`yolov3_darknet`为例):
+```
+yolov3_darknet # 模型目录
+├── infer_cfg.yml # 模型配置信息
+├── __model__     # 模型文件
+└── __params__    # 参数文件
+```
+
+预测时，该目录所在的路径会作为程序的输入参数。
+
 ### 3.2 编译
 
 仅支持在`Windows`和`Linux`平台编译和使用
