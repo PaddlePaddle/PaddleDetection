@@ -105,7 +105,36 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     coco_gt = COCO(anno_file)
     clsid2catid = {i + 1: v for i, v in enumerate(coco_gt.getCatIds())}
 
-    segm_results = mask2out(results, clsid2catid, resolution, thresh_binarize)
+    segm_results = []
+    for t in results:
+        im_ids = np.array(t['im_id'][0])
+        bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
+        masks = t['mask']
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+        if len(bboxes.tolist()) == 0:
+            continue
+        s = 0
+        for i in range(len(lengths)):
+            num = lengths[i]
+            im_id = int(im_ids[i][0])
+            clsid_scores = bboxes[s:s + num][:, 0:2]
+            mask = masks[s:s + num]
+            s += num
+            for j in range(num):
+                clsid, score = clsid_scores[j].tolist()
+                catid = int(clsid2catid[clsid])
+                segm = mask[j]
+                segm['counts'] = segm['counts'].decode('utf8')
+                coco_res = {
+                    'image_id': im_id,
+                    'category_id': int(catid),
+                    'segmentation': segm,
+                    'score': score
+                }
+                segm_results.append(coco_res)
+
     if len(segm_results) == 0:
         logger.warning("The number of valid mask detected is zero.\n \
             Please use reasonable model and check input data.")
