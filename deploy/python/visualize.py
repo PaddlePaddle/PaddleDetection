@@ -36,11 +36,12 @@ def visualize_box_mask(im, results, labels, mask_resolution=14):
     else:
         im = Image.fromarray(im)
     if 'masks' in results and 'boxes' in results:
-        im = draw_mask(im,
-                       results['boxes'],
-                       results['masks'],
-                       labels,
-                       resolution=mask_resolution)
+        im = draw_mask(
+            im,
+            results['boxes'],
+            results['masks'],
+            labels,
+            resolution=mask_resolution)
     if 'boxes' in results:
         im = draw_box(im, results['boxes'], labels)
     return im
@@ -131,8 +132,8 @@ def draw_mask(im, np_boxes, np_masks, labels, resolution=14, threshold=0.5):
         y0 = min(max(ymin, 0), im_h)
         y1 = min(max(ymax + 1, 0), im_h)
         im_mask = np.zeros((im_h, im_w), dtype=np.uint8)
-        im_mask[y0:y1, x0:x1] = resized_mask[(y0 - ymin):(y1 - ymin),
-                                             (x0 - xmin):(x1 - xmin)]
+        im_mask[y0:y1, x0:x1] = resized_mask[(y0 - ymin):(y1 - ymin), (
+            x0 - xmin):(x1 - xmin)]
         if clsid not in clsid2color:
             clsid2color[clsid] = color_list[clsid]
         color_mask = clsid2color[clsid]
@@ -155,7 +156,7 @@ def draw_box(im, np_boxes, labels):
     Returns:
         im (PIL.Image.Image): visualized image  
     """
-    draw_thickness = min(im.size)/320
+    draw_thickness = min(im.size) / 320
     draw = ImageDraw.Draw(im)
     clsid2color = {}
     color_list = get_color_map_list(len(labels))
@@ -170,15 +171,16 @@ def draw_box(im, np_boxes, labels):
         color = tuple(clsid2color[clsid])
 
         # draw bbox
-        draw.line([(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
-                   (xmin, ymin)],
-                  width=draw_thickness,
-                  fill=color)
+        draw.line(
+            [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+             (xmin, ymin)],
+            width=draw_thickness,
+            fill=color)
 
         # draw label
         text = "{} {:.2f}".format(labels[clsid], score)
         tw, th = draw.textsize(text)
-        draw.rectangle([(xmin + 1, ymin - th), (xmin + tw + 1, ymin)],
-                       fill=color)
+        draw.rectangle(
+            [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
     return im

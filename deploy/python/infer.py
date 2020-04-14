@@ -56,6 +56,7 @@ class Resize(object):
         image_shape (list): input shape of model
         interp (int): method of resize
     """
+
     def __init__(self,
                  arch,
                  target_size,
@@ -65,7 +66,7 @@ class Resize(object):
                  interp=cv2.INTER_LINEAR):
         self.target_size = target_size
         self.max_size = max_size
-        self.image_shape=image_shape,
+        self.image_shape = image_shape,
         self.arch = arch
         self.use_cv2 = use_cv2
         self.interp = interp
@@ -83,12 +84,13 @@ class Resize(object):
         im_channel = im.shape[2]
         im_scale_x, im_scale_y = self.generate_scale(im)
         if self.use_cv2:
-            im = cv2.resize(im,
-                        None,
-                        None,
-                        fx=im_scale_x,
-                        fy=im_scale_y,
-                        interpolation=self.interp)
+            im = cv2.resize(
+                im,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
         else:
             resize_w = int(im_scale_x * float(im.shape[1]))
             resize_h = int(im_scale_y * float(im.shape[0]))
@@ -146,6 +148,7 @@ class Normalize(object):
         is_scale (bool): whether need im / 255
         is_channel_first (bool): if True: image shape is CHW, else: HWC
     """
+
     def __init__(self, mean, std, is_scale=True, is_channel_first=False):
         self.mean = mean
         self.std = std
@@ -181,6 +184,7 @@ class Permute(object):
         to_bgr (bool): whether convert RGB to BGR 
         channel_first (bool): whether convert HWC to CHW
     """
+
     def __init__(self, to_bgr=False, channel_first=True):
         self.to_bgr = to_bgr
         self.channel_first = channel_first
@@ -206,6 +210,7 @@ class PadStride(object):
     Args:
         stride (bool): model with FPN need image shape % stride == 0 
     """
+
     def __init__(self, stride=0):
         self.coarsest_stride = stride
 
@@ -239,7 +244,7 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     Returns:
         inputs (dict): input of model
     """
-    inputs = {} 
+    inputs = {}
     inputs['image'] = im
     origin_shape = list(im_info['origin_shape'])
     resize_shape = list(im_info['resize_shape'])
@@ -256,6 +261,7 @@ def create_inputs(im, im_info, model_arch='YOLO'):
         inputs['im_info'] = im_info
         inputs['im_shape'] = im_shape
     return inputs
+
 
 class Config():
     """set config of preprocess, postprocess and visualize
@@ -318,8 +324,9 @@ def load_predictor(model_dir,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
         'trt_fp16': fluid.core.AnalysisConfig.Precision.Half
     }
-    config = fluid.core.AnalysisConfig(os.path.join(model_dir, '__model__'),
-                                       os.path.join(model_dir, '__params__'))
+    config = fluid.core.AnalysisConfig(
+        os.path.join(model_dir, '__model__'),
+        os.path.join(model_dir, '__params__'))
     if use_gpu:
         # initial GPU memory(M), device ID
         config.enable_use_gpu(100, 0)
@@ -329,12 +336,13 @@ def load_predictor(model_dir,
         config.disable_gpu()
 
     if run_mode in precision_map.keys():
-        config.enable_tensorrt_engine(workspace_size=1 << 30,
-                                      max_batch_size=batch_size,
-                                      min_subgraph_size=min_subgraph_size,
-                                      precision_mode=precision_map[run_mode],
-                                      use_static=False,
-                                      use_calib_mode=run_mode == 'trt_int8')
+        config.enable_tensorrt_engine(
+            workspace_size=1 << 30,
+            max_batch_size=batch_size,
+            min_subgraph_size=min_subgraph_size,
+            precision_mode=precision_map[run_mode],
+            use_static=False,
+            use_calib_mode=run_mode == 'trt_int8')
 
     # disable print log when predict
     config.disable_glog_info()
@@ -359,16 +367,15 @@ def load_executor(model_dir, use_gpu=False):
         params_filename='__params__')
     return exe, program, fetch_targets
 
+
 def visualize(image_file,
               results,
               labels,
               mask_resolution=14,
               output_dir='output/'):
     # visualize the predict result
-    im = visualize_box_mask(image_file,
-                            results,
-                            labels,
-                            mask_resolution=mask_resolution)
+    im = visualize_box_mask(
+        image_file, results, labels, mask_resolution=mask_resolution)
     img_name = os.path.split(image_file)[-1]
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -376,12 +383,14 @@ def visualize(image_file,
     im.save(out_path, quality=95)
     print("save result to: " + out_path)
 
+
 class Detector():
     """
     Args:
         model_dir (str): root path of __model__, __params__ and infer_cfg.yml
         use_gpu (bool): whether use gpu
     """
+
     def __init__(self, model_dir, use_gpu=False, threshold=0.5):
         self.config = Config(model_dir)
         if self.config.use_python_inference:
@@ -452,7 +461,7 @@ class Detector():
         if self.config.use_python_inference:
             outs = self.executor.run(self.program,
                                      feed=inputs,
-                                     fetch_list=self.fecth_targets, 
+                                     fetch_list=self.fecth_targets,
                                      return_numpy=False)
             np_boxes = np.array(outs[0])
             if self.config.mask_resolution is not None:
@@ -469,20 +478,21 @@ class Detector():
             if self.config.mask_resolution is not None:
                 masks_tensor = self.predictor.get_output_tensor(output_names[1])
                 np_masks = masks_tensor.copy_to_cpu()
-        results = self.postprocess(np_boxes,
-                                   np_masks,
-                                   im_info,
-                                   threshold=threshold)
+        results = self.postprocess(
+            np_boxes, np_masks, im_info, threshold=threshold)
         return results
+
 
 def predict_image():
     detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu)
     results = detector.predict(FLAGS.image_file, FLAGS.threshold)
-   # visualize(FLAGS.image_file,
-   #           results,
-   #           detector.config.labels,
-   #           mask_resolution=detector.config.mask_resolution,
-   #           output_dir=FLAGS.output_dir)
+    visualize(
+        FLAGS.image_file,
+        results,
+        detector.config.labels,
+        mask_resolution=detector.config.mask_resolution,
+        output_dir=FLAGS.output_dir)
+
 
 def predict_video():
     detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu)
@@ -504,10 +514,11 @@ def predict_video():
         print('detect frame:%d' % (index))
         index += 1
         results = detector.predict(frame, FLAGS.threshold)
-        im = visualize_box_mask(frame,
-                            results,
-                            detector.config.labels,
-                            mask_resolution=detector.config.mask_resolution)
+        im = visualize_box_mask(
+            frame,
+            results,
+            detector.config.labels,
+            mask_resolution=detector.config.mask_resolution)
         im = np.array(im)
         writer.write(im)
     writer.release()
@@ -515,31 +526,26 @@ def predict_video():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--model_dir",
-                        type=str,
-                        default=None,
-                        help=("Directory include:'__model__', '__params__', "
-                              "'infer_cfg.yml', created by export_model."),
-                        required=True)
-    parser.add_argument("--image_file",
-                        type=str,
-                        default='',
-                        help="Path of image file.")
-    parser.add_argument("--video_file",
-                        type=str,
-                        default='',
-                        help="Path of video file.")
-    parser.add_argument("--use_gpu",
-                        default=False,
-                        help="Whether to predict with GPU.")
-    parser.add_argument("--threshold",
-                        type=float,
-                        default=0.5,
-                        help="Threshold of score.")
-    parser.add_argument("--output_dir",
-                        type=str,
-                        default="output",
-                        help="Directory of output visualization files.")
+    parser.add_argument(
+        "--model_dir",
+        type=str,
+        default=None,
+        help=("Directory include:'__model__', '__params__', "
+              "'infer_cfg.yml', created by export_model."),
+        required=True)
+    parser.add_argument(
+        "--image_file", type=str, default='', help="Path of image file.")
+    parser.add_argument(
+        "--video_file", type=str, default='', help="Path of video file.")
+    parser.add_argument(
+        "--use_gpu", default=False, help="Whether to predict with GPU.")
+    parser.add_argument(
+        "--threshold", type=float, default=0.5, help="Threshold of score.")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="output",
+        help="Directory of output visualization files.")
 
     FLAGS = parser.parse_args()
     if FLAGS.image_file != '' and FLAGS.video_file != '':
