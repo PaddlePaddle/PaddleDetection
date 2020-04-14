@@ -108,7 +108,7 @@ Advanced Features:
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
 - [Face detection models](configs/face_detection/README.md) BlazeFace series model with the highest precision of 91.5% on Wider-Face dataset and outstanding inference performance.
 - [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios.
-- [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6% and inference speed is improved as well
+- [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.2% and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
 - [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
 
