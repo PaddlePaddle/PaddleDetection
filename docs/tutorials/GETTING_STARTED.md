@@ -89,7 +89,7 @@ list below can be viewed by `--help`
 
 ##### NOTES
 
-- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](#faq)
+- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](./FAQ.md)
 - Dataset will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
 - Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
 - Checkpoints are saved in `output` by default, and can be revised from save_dir in configure files.
@@ -170,29 +170,3 @@ moment, but it is a planned feature
   ```
 
   Save inference model `tools/export_model.py`, which can be loaded by PaddlePaddle predict library.
-
-## FAQ
-
-**Q:**  Why do I get `NaN` loss values during single GPU training? </br>
-**A:**  The default learning rate is tuned to multi-GPU training (8x GPUs), it must
-be adapted for single GPU training accordingly (e.g., divide by 8).
-The calculation rules are as follows，they are equivalent: </br>
-
-
-| GPU number  | Learning rate  | Max_iters | Milestones       |
-| :---------: | :------------: | :-------: | :--------------: |
-| 2           | 0.0025         | 720000    | [480000, 640000] |
-| 4           | 0.005          | 360000    | [240000, 320000] |
-| 8           | 0.01           | 180000    | [120000, 160000] |
-
-
-**Q:**  How to reduce GPU memory usage? </br>
-**A:**  Setting environment variable FLAGS_conv_workspace_size_limit to a smaller
-number can reduce GPU memory footprint without affecting training speed.
-Take Mask-RCNN (R50) as example, by setting `export FLAGS_conv_workspace_size_limit=512`,
-batch size could reach 4 per GPU (Tesla V100 16GB).
-
-
-**Q:**  How to change data preprocessing? </br>
-**A:**  Set `sample_transform` in configuration. Note that **the whole transforms** need to be added in configuration.
-For example, `DecodeImage`, `NormalizeImage` and `Permute` in RCNN models.
