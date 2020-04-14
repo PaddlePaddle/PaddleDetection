@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -137,9 +137,7 @@ def decode(tl_heat,
            ae_threshold=1,
            num_dets=1000,
            K=100,
-           batch_size=1,
-           ct_heat=None,
-           ct_off=None):
+           batch_size=1):
     shape = fluid.layers.shape(tl_heat)
     H, W = shape[2], shape[3]
 
@@ -171,19 +169,6 @@ def decode(tl_heat,
     tl_ys = tl_ys + tl_regr[:, :, :, 1]
     br_xs = br_xs + br_regr[:, :, :, 0]
     br_ys = br_ys + br_regr[:, :, :, 1]
-
-    if ct_heat is not None:
-        ct_heat_nms = nms(ct_heat)
-        ct_scores, ct_inds, ct_clses, ct_ys, ct_xs = _topk(ct_heat_nms,
-                                                           batch_size, H, W, K)
-        ct_ys = fluid.layers.expand(
-            fluid.layers.reshape(ct_ys, [-1, 1, K]), [1, K, 1])
-        ct_xs = fluid.layers.expand(
-            fluid.layers.reshape(ct_xs, [-1, 1, K]), [1, K, 1])
-        ct_regr = mask_feat(ct_off, ct_inds, batch_size)
-        ct_regr = fluid.layers.reshape(ct_regr, [-1, K, 1, 2])
-        ct_xs = ct_xs + ct_regr[:, :, :, 0]
-        ct_ys = ct_ys + ct_regr[:, :, :, 1]
 
     bboxes = fluid.layers.stack([tl_xs, tl_ys, br_xs, br_ys], axis=-1)
 
@@ -231,11 +216,6 @@ def decode(tl_heat,
 
     bboxes = fluid.layers.cast(bboxes, 'float32')
     clses = fluid.layers.cast(clses, 'float32')
-    if ct_heat is not None:
-        ct_xs = ct_xs[:, 0, :]
-        ct_ys = ct_ys[:, 0, :]
-
-        return bboxes, scores, tl_scores, br_scores, clses, ct_xs, ct_ys, ct_clses, ct_scores
     return bboxes, scores, tl_scores, br_scores, clses
 
 

@@ -1181,21 +1181,15 @@ class ColorDistort(BaseOperator):
                  saturation=[0.5, 1.5, 0.5],
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
-                 random_apply=True,
-                 is_scale=False,
-                 corner_jitter=False,
-                 apply_hue=True):
+                 random_apply=True):
         super(ColorDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
         self.brightness = brightness
         self.random_apply = random_apply
-        self.is_scale = is_scale
-        self.corner_jitter = corner_jitter
-        self.apply_hue = apply_hue
 
-    def apply_hue(self, img, img_gray=None):
+    def apply_hue(self, img):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1215,12 +1209,7 @@ class ColorDistort(BaseOperator):
         img = np.dot(img, t)
         return img
 
-    def apply_saturation(self, img, img_gray=None):
-        if self.corner_jitter:
-            alpha = 1. + np.random.uniform(
-                low=-self.saturation, high=self.saturation)
-            self._blend(alpha, img, img_gray[:, :, None])
-            return img
+    def apply_saturation(self, img):
         low, high, prob = self.saturation
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1234,13 +1223,7 @@ class ColorDistort(BaseOperator):
         img += gray
         return img
 
-    def apply_contrast(self, img, img_gray=None):
-        if self.corner_jitter:
-            alpha = 1. + np.random.uniform(
-                low=-self.contrast, high=self.contrast)
-            img_mean = img_gray.mean()
-            self._blend(alpha, img, img_mean)
-            return img
+    def apply_contrast(self, img):
         low, high, prob = self.contrast
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1250,12 +1233,7 @@ class ColorDistort(BaseOperator):
         img *= delta
         return img
 
-    def apply_brightness(self, img, img_gray=None):
-        if self.corner_jitter:
-            alpha = 1 + np.random.uniform(
-                low=-self.brightness, high=self.brightness)
-            img *= alpha
-            return img
+    def apply_brightness(self, img):
         low, high, prob = self.brightness
         if np.random.uniform(0., 1.) < prob:
             return img
@@ -1265,28 +1243,18 @@ class ColorDistort(BaseOperator):
         img += delta
         return img
 
-    def _blend(self, alpha, img, img_mean):
-        img *= alpha
-        img_mean *= (1 - alpha)
-        img += img_mean
-
     def __call__(self, sample, context=None):
         img = sample['image']
-        img_gray = None
         if self.random_apply:
             functions = [
-                self.apply_brightness, self.apply_contrast,
-                self.apply_saturation
+                self.apply_brightness,
+                self.apply_contrast,
+                self.apply_saturation,
+                self.apply_hue,
             ]
-            if self.apply_hue:
-                functions.append(self.apply_hue)
-            if self.is_scale:
-                img = img.astype(np.float32, copy=False)
-                img /= 255.
-            img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             distortions = np.random.permutation(functions)
             for func in distortions:
-                img = func(img, img_gray)
+                img = func(img)
             sample['image'] = img
             return sample
 
@@ -1300,6 +1268,66 @@ class ColorDistort(BaseOperator):
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
             img = self.apply_contrast(img)
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class ColorJitter(ColorDistort):
+    """Random color jitter.
+    Args:
+        saturation (float): saturation settings.
+        contrast (float): contrast settings.
+        brightness (float): brightness settings.
+        is_scale (bool): whether to scale the input image.
+    """
+
+    def __init__(self,
+                 saturation=0.4,
+                 contrast=0.4,
+                 brightness=0.4,
+                 is_scale=True):
+        super(ColorJitter, self).__init__(
+            saturation=saturation, contrast=contrast, brightness=brightness)
+        self.is_scale = is_scale
+
+    def apply_saturation(self, img, img_gray):
+        alpha = 1. + np.random.uniform(
+            low=-self.saturation, high=self.saturation)
+        self._blend(alpha, img, img_gray[:, :, None])
+        return img
+
+    def apply_contrast(self, img, img_gray):
+        alpha = 1. + np.random.uniform(low=-self.contrast, high=self.contrast)
+        img_mean = img_gray.mean()
+        self._blend(alpha, img, img_mean)
+        return img
+
+    def apply_brightness(self, img, img_gray):
+        alpha = 1 + np.random.uniform(
+            low=-self.brightness, high=self.brightness)
+        img *= alpha
+        return img
+
+    def _blend(self, alpha, img, img_mean):
+        img *= alpha
+        img_mean *= (1 - alpha)
+        img += img_mean
+
+    def __call__(self, sample, context=None):
+        img = sample['image']
+        if self.is_scale:
+            img = img.astype(np.float32, copy=False)
+            img /= 255.
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        functions = [
+            self.apply_brightness,
+            self.apply_contrast,
+            self.apply_saturation,
+        ]
+        distortions = np.random.permutation(functions)
+        for func in distortions:
+            img = func(img, img_gray)
         sample['image'] = img
         return sample
 

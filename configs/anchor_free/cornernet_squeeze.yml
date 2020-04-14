@@ -1,7 +1,4 @@
 architecture: CornerNetSqueeze
-train_feed: CornerNetTrainFeed
-eval_feed: CornerNetEvalFeed
-test_feed: CornerNetTestFeed
 use_gpu: true
 max_iters: 500000
 log_smooth_window: 20
@@ -68,13 +65,10 @@ TrainReader:
     target_dim: 511
   - !RandomFlipImage
     prob: 0.5
-  - !ColorDistort
+  - !ColorJitter
     saturation: 0.4
     contrast: 0.4
     brightness: 0.4
-    is_scale: true
-    corner_jitter: true
-    apply_hue: false
   - !Lighting
     eigval: [0.2141788, 0.01817699, 0.00341571]
     eigvec: [[-0.58752847, -0.69563484, 0.41340352],

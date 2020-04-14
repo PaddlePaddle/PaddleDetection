@@ -1,7 +1,4 @@
 architecture: CornerNetSqueeze
-train_feed: CornerNetTrainFeed
-eval_feed: CornerNetEvalFeed
-test_feed: CornerNetTestFeed
 use_gpu: true
 max_iters: 500000
 log_smooth_window: 20
@@ -9,10 +6,9 @@ log_iter: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar
 weights: output/cornernet_squeeze_r50_vd_fpn/model_final
 num_classes: 80
-stack: 1
 
 CornerNetSqueeze:
   backbone: ResNet
@@ -78,13 +74,10 @@ TrainReader:
     target_dim: 511
   - !RandomFlipImage
     prob: 0.5
-  - !ColorDistort
+  - !ColorJitter
     saturation: 0.4
     contrast: 0.4
     brightness: 0.4
-    is_scale: true
-    corner_jitter: true
-    apply_hue: false
   - !Lighting
     eigval: [0.2141788, 0.01817699, 0.00341571]
     eigvec: [[-0.58752847, -0.69563484, 0.41340352],
