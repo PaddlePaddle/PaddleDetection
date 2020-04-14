@@ -268,7 +268,7 @@ class Config():
     Args:
         model_dir (str): root path of model.yml
     """
-    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN']
+    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face']
 
     def __init__(self, model_dir):
         # parsing Yaml config for Preprocess
@@ -297,8 +297,8 @@ class Config():
             if support_model in yml_conf['arch']:
                 return True
         raise ValueError(
-            "Unsupported arch: {}, expect SSD, YOLO, RetinaNet and RCNN".format(
-                yml_conf['arch']))
+            "Unsupported arch: {}, expect SSD, YOLO, RetinaNet, RCNN and Face".
+            format(yml_conf['arch']))
 
 
 def load_predictor(model_dir,
@@ -426,7 +426,7 @@ class Detector():
     def postprocess(self, np_boxes, np_masks, im_info, threshold=0.5):
         # postprocess output of predictor
         results = {}
-        if 'SSD' in self.config.arch:
+        if self.config.arch in ['SSD', 'Face']:
             w, h = im_info['origin_shape']
             np_boxes[:, 2] *= h
             np_boxes[:, 3] *= w
