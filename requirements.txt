@@ -7,3 +7,4 @@ cython
 pycocotools
 opencv-python
 PyYAML
+shapely

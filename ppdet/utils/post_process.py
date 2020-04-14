@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import logging
 import numpy as np
-
+import cv2
 import paddle.fluid as fluid
 
 __all__ = ['nms']
@@ -210,3 +210,64 @@ def mstest_mask_post_process(result, cfg):
 
     mask_pred = np.mean(mask_list, axis=0)
     return {'mask': (mask_pred, [[len(mask_pred)]])}
+
+
+def mask_encode(results, resolution, thresh_binarize=0.5):
+    import pycocotools.mask as mask_util
+    from ppdet.utils.coco_eval import expand_boxes
+    scale = (resolution + 2.0) / resolution
+    bboxes = results['bbox'][0]
+    masks = results['mask'][0]
+    lengths = results['mask'][1][0]
+    im_shapes = results['im_shape'][0]
+    segms = []
+    if bboxes.shape == (1, 1) or bboxes is None:
+        return segms
+    if len(bboxes.tolist()) == 0:
+        return segms
+
+    s = 0
+    # for each sample
+    for i in range(len(lengths)):
+        num = lengths[i]
+        im_shape = im_shapes[i]
+
+        bbox = bboxes[s:s + num][:, 2:]
+        clsid_scores = bboxes[s:s + num][:, 0:2]
+        mask = masks[s:s + num]
+        s += num
+
+        im_h = int(im_shape[0])
+        im_w = int(im_shape[1])
+        expand_bbox = expand_boxes(bbox, scale)
+        expand_bbox = expand_bbox.astype(np.int32)
+        padded_mask = np.zeros(
+            (resolution + 2, resolution + 2), dtype=np.float32)
+
+        for j in range(num):
+            xmin, ymin, xmax, ymax = expand_bbox[j].tolist()
+            clsid, score = clsid_scores[j].tolist()
+            clsid = int(clsid)
+            padded_mask[1:-1, 1:-1] = mask[j, clsid, :, :]
+
+            w = xmax - xmin + 1
+            h = ymax - ymin + 1
+            w = np.maximum(w, 1)
+            h = np.maximum(h, 1)
+            resized_mask = cv2.resize(padded_mask, (w, h))
+            resized_mask = np.array(
+                resized_mask > thresh_binarize, dtype=np.uint8)
+            im_mask = np.zeros((im_h, im_w), dtype=np.uint8)
+
+            x0 = min(max(xmin, 0), im_w)
+            x1 = min(max(xmax + 1, 0), im_w)
+            y0 = min(max(ymin, 0), im_h)
+            y1 = min(max(ymax + 1, 0), im_h)
+
+            im_mask[y0:y1, x0:x1] = resized_mask[(y0 - ymin):(y1 - ymin), (
+                x0 - xmin):(x1 - xmin)]
+            segm = mask_util.encode(
+                np.array(
+                    im_mask[:, :, np.newaxis], order='F'))[0]
+            segms.append(segm)
+    return segms

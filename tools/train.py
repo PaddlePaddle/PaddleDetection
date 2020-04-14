@@ -22,6 +22,7 @@ import numpy as np
 import random
 import datetime
 from collections import deque
+from paddle.fluid import profiler
 
 
 def set_paddle_flags(**kwargs):
@@ -144,7 +145,7 @@ def main():
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(cfg.EvalReader)
+        eval_reader = create_reader(cfg.EvalReader, devices_num=1)
         eval_loader.set_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -200,8 +201,10 @@ def main():
         checkpoint.load_params(
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
-    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
-                                 devices_num, cfg)
+    train_reader = create_reader(
+        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
+        cfg,
+        devices_num=devices_num)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer
@@ -254,6 +257,13 @@ def main():
                 it, np.mean(outs[-1]), logs, time_cost, eta)
             logger.info(strs)
 
+        # NOTE : profiler tools, used for benchmark
+        if FLAGS.is_profiler and it == 5:
+            profiler.start_profiler("All")
+        elif FLAGS.is_profiler and it == 10:
+            profiler.stop_profiler("total", FLAGS.profiler_path)
+            return
+
 
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
@@ -262,11 +272,17 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
                 resolution = None
-                if 'mask' in results[0]:
+                if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type,
@@ -332,5 +348,17 @@ if __name__ == '__main__':
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
+
+    #NOTE:args for profiler tools, used for benchmark
+    parser.add_argument(
+        '--is_profiler',
+        type=int,
+        default=0,
+        help='The switch of profiler tools. (used for benchmark)')
+    parser.add_argument(
+        '--profiler_path',
+        type=str,
+        default="./detection.profiler",
+        help='The profiler output file path. (used for benchmark)')
     FLAGS = parser.parse_args()
     main()

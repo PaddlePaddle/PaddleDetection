@@ -121,7 +121,7 @@ class YOLOv3(object):
                     -2] // downsample if image_shape[-2] else None
                 targets_def[k]['shape'][4] = image_shape[
                     -1] // downsample if image_shape[-1] else None
-                downsample // 2
+                downsample //= 2
 
             inputs_def.update(targets_def)
 
@@ -147,7 +147,7 @@ class YOLOv3(object):
             lod_level=inputs_def[key]['lod_level'])) for key in fields])
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
-            capacity=64,
+            capacity=16,
             use_double_buffer=True,
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader
