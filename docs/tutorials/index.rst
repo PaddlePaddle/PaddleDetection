@@ -7,3 +7,4 @@
    INSTALL_cn.md
    QUICK_STARTED_cn.md
    GETTING_STARTED_cn.md
+   FAQ.md
