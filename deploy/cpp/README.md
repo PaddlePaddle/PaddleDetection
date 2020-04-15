@@ -42,6 +42,8 @@ deploy/cpp
 ├── build.sh # 编译命令脚本
 │
 ├── CMakeList.txt # cmake编译入口文件
+|
+├── CMakeSettings.json # Visual Studio 2019 CMake项目编译设置
 │
 └── cmake # 依赖的外部项目cmake（目前仅有yaml-cpp）
 
@@ -66,4 +68,4 @@ yolov3_darknet # 模型目录
 
 仅支持在`Windows`和`Linux`平台编译和使用
 - [Linux 编译指南](../../docs/advanced_tutorials/inference/docs/linux_build.md)
-- [Windows编译指南(使用Visual Studio 2015)](../../docs/advanced_tutorials/inference/docs/windows_vs2019_build.md)
+- [Windows编译指南(使用Visual Studio 2019)](../../docs/advanced_tutorials/inference/docs/windows_vs2019_build.md)
