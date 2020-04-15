@@ -3,7 +3,7 @@ project(PaddleObjectDetector CXX C)
 
 option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."          ON)
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
-option(WITH_STATIC_LIB "Compile demo with static/shared library, default use static."   OFF)
+option(WITH_STATIC_LIB "Compile demo with static/shared library, default use static."   ON)
 option(WITH_TENSORRT "Compile demo with TensorRT."   OFF)
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
@@ -107,7 +107,7 @@ if (WITH_GPU)
             message(FATAL_ERROR "please set CUDNN_LIB with -DCUDNN_LIB=/path/cudnn_v7.4/cuda/lib64")
         endif()
     endif(NOT WIN32)
-endif() 
+endif()
 
 
 if (NOT WIN32)
@@ -171,7 +171,7 @@ endif()
 if (NOT WIN32)
     set(DEPS ${DEPS}
         ${MATH_LIB} ${MKLDNN_LIB} 
-        glog gflags protobuf z xxhash
+        glog gflags protobuf z xxhash yaml-cpp
         )
     if(EXISTS "${PADDLE_DIR}/third_party/install/snappystream/lib")
         set(DEPS ${DEPS} snappystream)
@@ -182,7 +182,7 @@ if (NOT WIN32)
 else()
     set(DEPS ${DEPS}
         ${MATH_LIB} ${MKLDNN_LIB}
-        opencv_world346 glog gflags_static libprotobuf zlibstatic xxhash)
+        opencv_world346 glog gflags_static libprotobuf zlibstatic xxhash libyaml-cppmt)
     set(DEPS ${DEPS} libcmt shlwapi)
     if (EXISTS "${PADDLE_DIR}/third_party/install/snappy/lib")
         set(DEPS ${DEPS} snappy)
@@ -212,12 +212,12 @@ if (NOT WIN32)
     set(DEPS ${DEPS} ${EXTERNAL_LIB} ${OpenCV_LIBS})
 endif()
 
-set(DEPS ${DEPS} yaml-cpp) 
+set(DEPS ${DEPS}) 
 add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
 ADD_DEPENDENCIES(main ext-yaml-cpp)
 target_link_libraries(main ${DEPS})
 
-if (WIN32)
+if (WIN32 AND WITH_MKL)
     add_custom_command(TARGET main POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./libiomp5md.dll
