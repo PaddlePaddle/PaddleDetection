@@ -45,9 +45,9 @@ def parse_reader(reader_cfg, metric, arch):
 
     if metric == 'COCO':
         from ppdet.utils.coco_eval import get_category_info
-    if metric == "VOC":
+    elif metric == "VOC":
         from ppdet.utils.voc_eval import get_category_info
-    if metric == "WIDERFACE":
+    elif metric == "WIDERFACE":
         from ppdet.utils.widerface_eval_utils import get_category_info
     else:
         raise ValueError(
