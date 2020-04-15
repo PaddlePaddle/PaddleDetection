@@ -25,12 +25,12 @@ batch size可以达到每GPU 4 (Tesla V100 16GB)。
 **Q:** affine_channel和batch norm是什么关系? </br>
 **A:** 在RCNN系列模型加载预训练模型初始化，有时候会固定住batch norm的参数, 使用预训练模型中的全局均值和方式，并且batch norm的scale和bias参数不更新，已发布的大多ResNet系列的RCNN模型采用这种方式。这种情况下可以在config中设置norm_type为bn或affine_channel, freeze_norm为true (默认为true)，两种方式等价。affne_channel的计算方式为`scale * x + bias`。只不过设置affine_channel时，内部对batch norm的参数自动做了融合。如果训练使用的affine_channel，用保存的模型做初始化，训练其他任务时，既可使用affine_channel, 也可使用batch norm, 参数均可正确加载。
 
-**Q:** 某些配置项会在多个模块中用到(如 `num_classes`)，如何避免在配置文件中多次重复设置？
+**Q:** 某些配置项会在多个模块中用到(如 `num_classes`)，如何避免在配置文件中多次重复设置？ </br>
 **A:** 框架提供了 `__shared__` 标记来实现配置的共享，用户可以标记参数，如 `__shared__ = ['num_classes']` ，配置数值作用规则如下：
 
 1.  如果模块配置中提供了 `num_classes` ，会优先使用其数值。
 2.  如果模块配置中未提供 `num_classes` ，但配置文件中存在全局键值，那么会使用全局键值。
 3.  两者均为配置的情况下，将使用默认值(`81`)。
 
-**Q:** 在配置文件中设置use_process=True，并且运行报错：`not enough space for reason[failed to malloc 601 pages...`
+**Q:** 在配置文件中设置use_process=True，并且运行报错：`not enough space for reason[failed to malloc 601 pages...` </br>
 **A:** 当前Reader的共享存储队列空间不足，请增大配置文件`xxx.yml`中的`memsize`,如`memsize: 3G`->`memsize: 6G`。或者配置文件中设置`use_process=False`。
