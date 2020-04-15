@@ -49,6 +49,8 @@ PADDLE_DIR=/root/projects/deps/fluid_inference/
 OPENCV_DIR=$(pwd)/deps/opencv346/
 # CUDA 的 lib 路径
 CUDA_LIB=/usr/local/cuda/lib64/
+# CUDNN 的 lib 路径
+CUDNN_LIB=/usr/local/cuda/lib64/
 
 # 以下无需改动
 
@@ -57,10 +59,11 @@ rm -rf build
 mkdir -p build
 cd build
 cmake .. \
-    -DWITH_GPU=OFF \
-    -DWITH_TENSORRT=OFF \
+    -DWITH_GPU=${WITH_GPU} \
+    -DWITH_TENSORRT=${WITH_TENSORRT} \
     -DPADDLE_DIR=${PADDLE_DIR} \
     -DCUDA_LIB=${CUDA_LIB} \
+    -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR}
 make
 
