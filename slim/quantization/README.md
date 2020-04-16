@@ -67,6 +67,8 @@ python slim/quantization/train.py --not_quant_pattern yolo_output \
     pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
 ```
 
+**注意：** 目前量化训练中只支持边训练边评估，所以训练时必需携带`--eval`参数，否则无法训练与保存模型。这个量化中的问题未来会持续改进。
+
 >通过命令行覆设置max_iters选项，因为量化的训练轮次比正常训练小很多，所以需要修改此选项。
 如果要调整训练卡数，可根据需要调整配置文件`yolov3_mobilenet_v1_voc.yml`中的以下参数：
 

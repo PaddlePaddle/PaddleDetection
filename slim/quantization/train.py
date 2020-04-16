@@ -59,6 +59,10 @@ def load_global_step(exe, prog, path):
 
 
 def main():
+    if FLAGS.eval is False:
+        raise ValueError(
+            "Currently only supports `--eval==True` while training in `quantization`."
+        )
     env = os.environ
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
     if FLAGS.dist:
@@ -202,7 +206,6 @@ def main():
     if FLAGS.eval:
         # insert quantize op in eval_prog
         eval_prog = quant_aware(eval_prog, place, config, for_test=True)
-
         compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
 
     start_iter = 0

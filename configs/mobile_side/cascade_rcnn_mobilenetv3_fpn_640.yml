@@ -25,7 +25,6 @@ MobileNetV3RCNN:
   conv_decay: 0.00001
   lr_mult_list: [1.0, 1.0, 1.0, 1.0, 1.0]
   scale: 1.0
-  with_extra_blocks: false
   model_name: large
 
 FPN:
