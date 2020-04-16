@@ -20,12 +20,18 @@ from . import giou_loss
 from . import diou_loss
 from . import iou_loss
 from . import balanced_l1_loss
+from . import fcos_loss
+from . import diou_loss_yolo
+from . import iou_aware_loss
 from . import ssd_with_lmk_loss
 
+from .iou_aware_loss import *
 from .yolo_loss import *
 from .smooth_l1_loss import *
 from .giou_loss import *
 from .diou_loss import *
 from .iou_loss import *
 from .balanced_l1_loss import *
+from .fcos_loss import *
+from .diou_loss_yolo import *
 from .ssd_with_lmk_loss import *

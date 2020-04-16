@@ -121,6 +121,7 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
             im_id = int(im_ids[i][0])
             clsid_scores = bboxes[s:s + num][:, 0:2]
             mask = masks[s:s + num]
+            s += num
             for j in range(num):
                 clsid, score = clsid_scores[j].tolist()
                 catid = int(clsid2catid[clsid])

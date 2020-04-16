@@ -201,7 +201,11 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
     else:
         exist_flag = False
         fullname = _download(url, root_dir, md5sum)
-        _decompress(fullname)
+
+        # new weights format which postfix is 'pdparams' not
+        # need to decompress
+        if osp.splitext(fullname)[-1] != '.pdparams':
+            _decompress(fullname)
 
     return fullpath, exist_flag
 

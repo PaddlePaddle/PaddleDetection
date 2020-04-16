@@ -130,7 +130,7 @@ def main():
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
-    reader = create_reader(cfg.TestReader)
+    reader = create_reader(cfg.TestReader, devices_num=1)
     loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)

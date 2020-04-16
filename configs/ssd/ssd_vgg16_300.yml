@@ -93,7 +93,7 @@ TrainReader:
   batch_size: 8
   shuffle: true
   worker_num: 8
-  bufsize: 32
+  bufsize: 16
   use_process: true
   drop_empty: true
 
@@ -123,7 +123,7 @@ EvalReader:
     std: [1, 1, 1]
   batch_size: 16
   worker_num: 8
-  bufsize: 32
+  bufsize: 16
 
 TestReader:
   inputs_def:

@@ -1,32 +1,69 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+from collections import OrderedDict
+
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.core.workspace import register
-import math
+from numbers import Integral
 
 __all__ = ['MobileNetV3']
 
 
 @register
 class MobileNetV3():
+    """
+    MobileNet v3, see https://arxiv.org/abs/1905.02244
+    Args:
+	scale (float): scaling factor for convolution groups proportion of mobilenet_v3.
+        model_name (str): There are two modes, small and large.
+        norm_type (str): normalization type, 'bn' and 'sync_bn' are supported.
+        norm_decay (float): weight decay for normalization layer weights.
+        conv_decay (float): weight decay for convolution layer weights.
+        feature_maps (list): index of stages whose feature maps are returned.
+        extra_block_filters (list): number of filter for each extra block.
+    """
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  scale=1.0,
                  model_name='small',
-                 with_extra_blocks=False,
+                 feature_maps=[5, 6, 7, 8, 9, 10],
                  conv_decay=0.0,
-                 bn_decay=0.0,
+                 norm_type='bn',
+                 norm_decay=0.0,
                  extra_block_filters=[[256, 512], [128, 256], [128, 256],
                                       [64, 128]]):
+        if isinstance(feature_maps, Integral):
+            feature_maps = [feature_maps]
+
         self.scale = scale
         self.model_name = model_name
-        self.with_extra_blocks = with_extra_blocks
+        self.feature_maps = feature_maps
         self.extra_block_filters = extra_block_filters
         self.conv_decay = conv_decay
-        self.bn_decay = bn_decay
+        self.norm_decay = norm_decay
         self.inplanes = 16
         self.end_points = []
-        self.block_stride = 1
+        self.block_stride = 0
         if model_name == "large":
             self.cfg = [
                 # kernel_size, expand, channel, se_block, act_mode, stride
@@ -90,9 +127,9 @@ class MobileNetV3():
             bias_attr=False)
         bn_name = name + '_bn'
         bn_param_attr = ParamAttr(
-            name=bn_name + "_scale", regularizer=L2Decay(self.bn_decay))
+            name=bn_name + "_scale", regularizer=L2Decay(self.norm_decay))
         bn_bias_attr = ParamAttr(
-            name=bn_name + "_offset", regularizer=L2Decay(self.bn_decay))
+            name=bn_name + "_offset", regularizer=L2Decay(self.norm_decay))
         bn = fluid.layers.batch_norm(
             input=conv,
             param_attr=bn_param_attr,
@@ -153,8 +190,11 @@ class MobileNetV3():
             if_act=True,
             act=act,
             name=name + '_expand')
-        if self.block_stride == 16 and stride == 2:
-            self.end_points.append(conv0)
+        if self.block_stride == 4 and stride == 2:
+            self.block_stride += 1
+            if self.block_stride in self.feature_maps:
+                self.end_points.append(conv0)
+
         conv1 = self._conv_bn_layer(
             input=conv0,
             filter_size=filter_size,
@@ -237,7 +277,11 @@ class MobileNetV3():
             name='conv1')
         i = 0
         for layer_cfg in cfg:
-            self.block_stride *= layer_cfg[5]
+            if layer_cfg[5] == 2:
+                self.block_stride += 1
+                if self.block_stride in self.feature_maps:
+                    self.end_points.append(conv)
+
             conv = self._residual_unit(
                 input=conv,
                 num_in_filter=inplanes,
@@ -250,9 +294,9 @@ class MobileNetV3():
                 name='conv' + str(i + 2))
             inplanes = int(scale * layer_cfg[2])
             i += 1
-
-        if not self.with_extra_blocks:
-            return conv
+        self.block_stride += 1
+        if self.block_stride in self.feature_maps:
+            self.end_points.append(conv)
 
         # extra block
         conv_extra = self._conv_bn_layer(
@@ -265,13 +309,18 @@ class MobileNetV3():
             if_act=True,
             act='hard_swish',
             name='conv' + str(i + 2))
-        self.end_points.append(conv_extra)
+        self.block_stride += 1
+        if self.block_stride in self.feature_maps:
+            self.end_points.append(conv_extra)
         i += 1
         for block_filter in self.extra_block_filters:
             conv_extra = self._extra_block_dw(conv_extra, block_filter[0],
                                               block_filter[1], 2,
                                               'conv' + str(i + 2))
-            self.end_points.append(conv_extra)
+            self.block_stride += 1
+            if self.block_stride in self.feature_maps:
+                self.end_points.append(conv_extra)
             i += 1
 
-        return self.end_points
+        return OrderedDict([('mbv3_{}'.format(idx), feat)
+                            for idx, feat in enumerate(self.end_points)])

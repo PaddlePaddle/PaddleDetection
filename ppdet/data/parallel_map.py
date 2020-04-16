@@ -35,6 +35,9 @@ import traceback
 
 logger = logging.getLogger(__name__)
 
+main_pid = os.getpid()
+worker_set = set()
+
 
 class EndSignal(object):
     """ signal used to notify worker to exit
@@ -120,6 +123,7 @@ class ParallelMap(object):
 
         self._consumers = []
         self._consumer_endsig = {}
+        global worker_set
         for i in range(consumer_num):
             consumer_id = 'consumer-' + id + '-' + str(i)
             p = Worker(
@@ -128,6 +132,8 @@ class ParallelMap(object):
             self._consumers.append(p)
             p.daemon = True
             setattr(p, 'id', consumer_id)
+            if use_process:
+                worker_set.add(p)
 
         self._epoch = -1
         self._feeding_ev = Event()
@@ -279,16 +285,27 @@ class ParallelMap(object):
         self._feeding_ev.set()
 
 
-# FIXME(dengkaipeng): fix me if you have better impliment
+# FIXME: fix me if you have better impliment
 # handle terminate reader process, do not print stack frame
 signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
 
 
-def _term_group(sig_num, frame):
-    pid = os.getpid()
-    pg = os.getpgid(os.getpid())
-    logger.info("main proc {} exit, kill process group " "{}".format(pid, pg))
-    os.killpg(pg, signal.SIGKILL)
+# FIXME(dkp): KeyboardInterrupt should be handled inside ParallelMap
+# and do such as: 1. exit workers 2. close queues 3. release shared
+# memory, HACK KeyboardInterrupt with global signal.SIGINT handler
+# here, should be refined later
+def _term_workers(sig_num, frame):
+    global worker_set, main_pid
+    # only do subporcess killing in main process
+    if os.getpid() != main_pid:
+        return
+
+    logger.info("KeyboardInterrupt: main proc {} exit, kill subprocess {}" \
+                .format(os.getpid(), [w.pid for w in worker_set]))
+    for w in worker_set:
+        if w.pid is not None:
+            os.kill(w.pid, signal.SIGINT)
+    sys.exit()
 
 
-signal.signal(signal.SIGINT, _term_group)
+signal.signal(signal.SIGINT, _term_workers)

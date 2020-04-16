@@ -1,9 +1,9 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 500200
+max_iters: 500000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 2000
+snapshot_iter: 10000
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 weights: output/yolov3_r34/model_final

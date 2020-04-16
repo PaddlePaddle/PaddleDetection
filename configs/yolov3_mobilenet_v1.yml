@@ -1,9 +1,9 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 500200
+max_iters: 500000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 2000
+snapshot_iter: 10000
 metric: COCO
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
 weights: output/yolov3_mobilenet_v1/model_final
