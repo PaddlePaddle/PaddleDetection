@@ -414,7 +414,6 @@ class MobileNetV3(object):
             if self.block_stride in self.feature_maps:
                 self.end_points.append(conv_extra)
             i += 1
-
         return OrderedDict([('mbv3_{}'.format(idx), feat)
                             for idx, feat in enumerate(self.end_points)])
 
