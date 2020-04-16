@@ -41,23 +41,19 @@ class CornerNetSqueeze(object):
     """
     """
     __category__ = 'architecture'
-    __inject__ = ['backbone', 'corner_head', 'nms', 'fpn']
+    __inject__ = ['backbone', 'corner_head', 'fpn']
     __shared__ = ['num_classes']
 
     def __init__(self,
                  backbone,
-                 nms=MultiClassSoftNMS().__dict__,
                  corner_head='CornerHead',
                  num_classes=80,
                  fpn=None):
         super(CornerNetSqueeze, self).__init__()
         self.backbone = backbone
         self.corner_head = corner_head
-        self.nms = nms
         self.num_classes = num_classes
         self.fpn = fpn
-        if isinstance(nms, dict):
-            self.nms = MultiClassSoftNMS(**nms)
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
@@ -81,34 +77,10 @@ class CornerNetSqueeze(object):
             bboxes, scores, tl_scores, br_scores, clses = self.corner_head.get_prediction(
                 body_feats[-1])
             bboxes = rescale_bboxes(bboxes, ratios, borders)
-            detections = fluid.layers.concat(
-                [bboxes, scores, tl_scores, br_scores, clses], axis=2)
-            scores = fluid.layers.squeeze(scores, axes=[0, 2])
+            detections = fluid.layers.concat([clses, scores, bboxes], axis=2)
+
             detections = detections[0]
-
-            keep_inds = fluid.layers.squeeze(
-                fluid.layers.where(scores > -1), axes=[-1])
-            inds_shape = fluid.layers.shape(keep_inds)
-            inds_size = fluid.layers.reduce_prod(inds_shape)
-            size = fluid.layers.fill_constant([1], value=1, dtype='int32')
-            cond = inds_size < size
-            total_res = fluid.layers.create_global_var(
-                shape=[1],
-                value=0.0,
-                dtype='float32',
-                persistable=False,
-                name='total_res')
-            with fluid.layers.control_flow.Switch() as switch:
-                with switch.case(cond):
-                    fluid.layers.assign(
-                        input=np.array([]).astype('float32'), output=total_res)
-                with switch.default():
-                    detections = fluid.layers.gather(detections, keep_inds)
-                    total_out = self.nms(detections[:, :4], detections[:, 4],
-                                         detections[:, -1])
-                    fluid.layers.assign(input=total_out, output=total_res)
-
-            return {'bbox': total_res}
+            return {'bbox': detections}
 
     def _inputs_def(self, image_shape, output_size, max_tag_len):
         im_shape = [None] + image_shape

@@ -9,12 +9,18 @@ metric: COCO
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar
 weights: output/cornernet_squeeze_dcn_r50_vd_fpn/model_final
 num_classes: 80
+stack: 1
 
 CornerNetSqueeze:
   backbone: ResNet
   fpn: FPN
   corner_head: CornerHead
-  nms: MultiClassSoftNMS
+
+PostProcess:
+  use_soft_nms: true
+  detections_per_im: 100
+  nms_thresh: 0.001
+  sigma: 0.5
 
 ResNet:
   norm_type: bn

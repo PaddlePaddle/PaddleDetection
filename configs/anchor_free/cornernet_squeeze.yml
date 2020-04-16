@@ -14,12 +14,12 @@ stack: 2
 CornerNetSqueeze:
   backbone: Hourglass
   corner_head: CornerHead
-  nms: MultiClassSoftNMS
 
-MultiClassSoftNMS:
-  keep_top_k: 100
-  score_threshold: 0.001
-  background_label: -1.
+PostProcess:
+  use_soft_nms: true
+  detections_per_im: 100
+  nms_thresh: 0.001
+  sigma: 0.5
 
 Hourglass:
   dims: [256, 256, 384, 384, 512]

@@ -135,7 +135,8 @@ def eval_run(exe,
             mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
 
             if multi_scale_test:
-                post_res = mstest_box_post_process(res, cfg)
+                post_res = mstest_box_post_process(res, multi_scale_test,
+                                                   cfg.num_classes)
                 res.update(post_res)
             if mask_multi_scale_test:
                 place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
@@ -156,6 +157,10 @@ def eval_run(exe,
             if 'mask' in res:
                 from ppdet.utils.post_process import mask_encode
                 res['mask'] = mask_encode(res, resolution)
+            post_config = getattr(cfg, 'PostProcess', None)
+            if 'Corner' in cfg.architecture and post_config is not None:
+                from ppdet.utils.post_process import corner_post_process
+                corner_post_process(res, post_config, cfg.num_classes)
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
