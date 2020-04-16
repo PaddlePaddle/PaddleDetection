@@ -15,7 +15,10 @@
 import sys
 import os.path as osp
 import logging
-
+from osp import dirname, abspath
+parent_path = dirname(dirname(dirname(abspath(__file__))))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 from ppdet.utils.download import download_dataset
 
 logging.basicConfig(level=logging.INFO)

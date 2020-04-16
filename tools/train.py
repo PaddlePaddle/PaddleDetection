@@ -23,6 +23,11 @@ import random
 import datetime
 from collections import deque
 from paddle.fluid import profiler
+import sys
+from os.path import dirname, abspath
+parent_path = dirname(dirname(abspath(__file__)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 
 def set_paddle_flags(**kwargs):

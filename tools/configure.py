@@ -14,8 +14,14 @@
 
 from __future__ import print_function
 
+import os
 import sys
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
+import sys
+from os.path import dirname, abspath
+parent_path = dirname(dirname(abspath(__file__)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 import yaml
 
