@@ -75,7 +75,7 @@ def get_extra_info(im, arch, shape, scale):
         im_size = np.array([shape[:2]]).astype('int32')
         logger.info('Extra info: im_size')
         info.append(im_size)
-    elif 'SSD' in arch:
+    elif arch in ['SSD', 'Face']:
         im_shape = np.array([shape[:2]]).astype('int32')
         logger.info('Extra info: im_shape')
         info.append([im_shape])
@@ -94,8 +94,8 @@ def get_extra_info(im, arch, shape, scale):
         info.append(im_shape)
     else:
         logger.error(
-            "Unsupported arch: {}, expect YOLO, SSD, RetinaNet and RCNN".format(
-                arch))
+            "Unsupported arch: {}, expect YOLO, SSD, RetinaNet, RCNN and Face".
+            format(arch))
     return info
 
 
@@ -242,6 +242,14 @@ def get_category_info(with_background, label_list):
     clsid2catid = {i: i for i in range(len(label_list))}
     catid2name = {i: name for i, name in enumerate(label_list)}
     return clsid2catid, catid2name
+
+
+def clip_bbox(bbox):
+    xmin = max(min(bbox[0], 1.), 0.)
+    ymin = max(min(bbox[1], 1.), 0.)
+    xmax = max(min(bbox[2], 1.), 0.)
+    ymax = max(min(bbox[3], 1.), 0.)
+    return xmin, ymin, xmax, ymax
 
 
 def bbox2out(results, clsid2catid, is_bbox_normalized=False):
@@ -457,7 +465,7 @@ def draw_mask(image, masks, threshold, color_list, alpha=0.7):
 
 
 def get_bbox_result(output, result, conf, clsid2catid):
-    is_bbox_normalized = True if 'SSD' in conf['arch'] else False
+    is_bbox_normalized = True if conf['arch'] in ['SSD', 'Face'] else False
     lengths = offset_to_lengths(output.lod())
     np_data = np.array(output) if conf[
         'use_python_inference'] else output.copy_to_cpu()
@@ -513,7 +521,7 @@ def infer():
             "Due to the limitation of tensorRT, the image shape needs to set in export_model"
         )
     img_data = Preprocess(FLAGS.infer_img, conf['arch'], conf['Preprocess'])
-    if 'SSD' in conf['arch']:
+    if conf['arch'] in ['SSD', 'Face']:
         img_data, res['im_shape'] = img_data
         img_data = [img_data]
 

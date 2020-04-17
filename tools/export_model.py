@@ -45,8 +45,14 @@ def parse_reader(reader_cfg, metric, arch):
 
     if metric == 'COCO':
         from ppdet.utils.coco_eval import get_category_info
-    if metric == "VOC":
+    elif metric == "VOC":
         from ppdet.utils.voc_eval import get_category_info
+    elif metric == "WIDERFACE":
+        from ppdet.utils.widerface_eval_utils import get_category_info
+    else:
+        raise ValueError(
+            "metric only supports COCO, VOC, WIDERFACE, but received {}".format(
+                metric))
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
     label_list = [str(cat) for cat in catid2name.values()]
@@ -90,7 +96,13 @@ def dump_infer_config(config):
         'draw_threshold': 0.5,
         'metric': config['metric']
     })
-    trt_min_subgraph = {'YOLO': 3, 'SSD': 40, 'RCNN': 40, 'RetinaNet': 40}
+    trt_min_subgraph = {
+        'YOLO': 3,
+        'SSD': 3,
+        'RCNN': 40,
+        'RetinaNet': 40,
+        'Face': 3,
+    }
     infer_arch = config['architecture']
 
     for arch, min_subgraph_size in trt_min_subgraph.items():
