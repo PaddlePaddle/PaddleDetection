@@ -10,14 +10,14 @@ metric: COCO
 num_classes: 81
 
 CascadeRCNN:
-  backbone: MobileNetV3RCNN
+  backbone: MobileNetV3
   fpn: FPN
   rpn_head: FPNRPNHead
   roi_extractor: FPNRoIAlign
   bbox_head: CascadeBBoxHead
   bbox_assigner: CascadeBBoxAssigner
 
-MobileNetV3RCNN:
+MobileNetV3:
   norm_type: bn
   freeze_norm: true
   norm_decay: 0.0
@@ -26,6 +26,7 @@ MobileNetV3RCNN:
   lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
   scale: 1.0
   model_name: large
+  is_rcnn_arch: True
 
 FPN:
   min_level: 2
