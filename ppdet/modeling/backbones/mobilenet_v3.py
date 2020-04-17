@@ -102,8 +102,6 @@ class MobileNetV3(object):
                 [5, 960, 160, True, 'hard_swish', 1],
                 [5, 960, 160, True, 'hard_swish', 1],
             ]
-            self.cls_ch_squeeze = 960
-            self.cls_ch_expand = 1280
         elif model_name == "small":
             self.cfg = [
                 # kernel_size, expand, channel, se_block, act_mode, stride
@@ -119,8 +117,6 @@ class MobileNetV3(object):
                 [5, 576, 96, True, 'hard_swish', 1],
                 [5, 576, 96, True, 'hard_swish', 1],
             ]
-            self.cls_ch_squeeze = 576
-            self.cls_ch_expand = 1280
         else:
             raise NotImplementedError
 
