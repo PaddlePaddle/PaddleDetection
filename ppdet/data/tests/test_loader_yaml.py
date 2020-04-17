@@ -16,6 +16,11 @@ import unittest
 import os
 import yaml
 import logging
+from os.path import dirname, abspath
+import sys
+parent_path = os.path.join(dirname(abspath(__file__)), '../../../')
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.utils.download import get_path
 from ppdet.utils.download import DATASET_HOME

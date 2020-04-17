@@ -19,6 +19,10 @@ import logging
 import random
 import copy
 
+from os.path import dirname, abspath
+parent_path = os.path.join(dirname(abspath(__file__)), '../../../')
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 from ppdet.data.parallel_map import ParallelMap
 
 

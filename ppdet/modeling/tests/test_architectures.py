@@ -20,6 +20,12 @@ import unittest
 import numpy as np
 
 import paddle.fluid as fluid
+import os
+from os.path import dirname, abspath
+import sys
+parent_path = os.path.join(dirname(abspath(__file__)), '../../../')
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
