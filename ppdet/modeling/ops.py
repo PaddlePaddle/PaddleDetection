@@ -48,7 +48,6 @@ def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
         name=name)
     return out
 
-
 def DeformConvNorm(input,
                    num_filters,
                    filter_size,
