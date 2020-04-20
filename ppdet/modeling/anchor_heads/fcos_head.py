@@ -377,4 +377,3 @@ class FCOSHead(object):
         pred = self._post_processing(locations, cls_logits, bboxes_reg,
                                      centerness, im_info)
         return {"bbox": pred}
-    
