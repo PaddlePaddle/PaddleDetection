@@ -231,7 +231,9 @@ def main():
     assert pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios), \
         "The elements of pruned ratios should be in range (0, 1)."
 
-    pruner = Pruner()
+    assert FLAGS.prune_criterion in ['l1_norm', 'geometry_median'], \
+            "unsupported prune criterion {}".format(FLAGS.prune_criterion)
+    pruner = Pruner(criterion=FLAGS.prune_criterion)
     distill_prog = pruner.prune(
         fluid.default_main_program(),
         fluid.global_scope(),
@@ -361,5 +363,11 @@ if __name__ == '__main__':
         type=str,
         help="The ratios pruned iteratively for each parameter when calculating sensitivities."
     )
+    parser.add_argument(
+        "--prune_criterion",
+        default='l1_norm',
+        type=str,
+        help="criterion function type for channels sorting in pruning, can be set " \
+             "as 'l1_norm' or 'geometry_median' currently, default 'l1_norm'")
     FLAGS = parser.parse_args()
     main()
