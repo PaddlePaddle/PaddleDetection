@@ -15,10 +15,11 @@
 import sys
 import os.path as osp
 import logging
-from osp import dirname, abspath
-parent_path = dirname(dirname(dirname(abspath(__file__))))
+# add python path of PadleDetection to sys.path
+parent_path = osp.abspath(osp.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
+
 from ppdet.utils.download import create_voc_list
 
 logging.basicConfig(level=logging.INFO)

@@ -16,13 +16,11 @@ import unittest
 import os
 import yaml
 import logging
-from os.path import dirname, abspath
 import sys
-current_path = abspath(__file__)
-for level in range(4):
-    current_path = dirname(current_path)
-if current_path not in sys.path:
-    sys.path.append(current_path)
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.utils.download import get_path
 from ppdet.utils.download import DATASET_HOME

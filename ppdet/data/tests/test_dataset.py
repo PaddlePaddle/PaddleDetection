@@ -18,13 +18,11 @@ import sys
 import logging
 import random
 import copy
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
-from os.path import dirname, abspath
-current_path = abspath(__file__)
-for level in range(4):
-    current_path = dirname(current_path)
-if current_path not in sys.path:
-    sys.path.append(current_path)
 from ppdet.data.parallel_map import ParallelMap
 
 
