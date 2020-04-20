@@ -20,6 +20,7 @@ import gflags
 import numpy as np
 import json
 from PIL import Image, ImageDraw, ImageFont
+import io
 
 Flags = gflags.FLAGS
 gflags.DEFINE_string('img_path', 'abc', 'image path')
@@ -80,7 +81,7 @@ if __name__ == "__main__":
             img = cv2.imread(Flags.img_path)
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             class2LabelMap = dict()
-            with open(Flags.c2l_path, "r", encoding="utf-8") as json_f:
+            with io.open(Flags.c2l_path, "r", encoding="utf-8") as json_f:
                 class2LabelMap = json.load(json_f)
                 for box in detection_result.detection_boxes:
                     if box.score >= Flags.threshold:
