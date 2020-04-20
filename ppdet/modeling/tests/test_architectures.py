@@ -23,9 +23,11 @@ import paddle.fluid as fluid
 import os
 from os.path import dirname, abspath
 import sys
-parent_path = os.path.join(dirname(abspath(__file__)), '../../../')
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
+current_path = abspath(__file__)
+for level in range(4):
+    current_path = dirname(current_path)
+if current_path not in sys.path:
+    sys.path.append(current_path)
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create

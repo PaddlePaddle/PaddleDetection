@@ -18,9 +18,11 @@ import yaml
 import logging
 from os.path import dirname, abspath
 import sys
-parent_path = os.path.join(dirname(abspath(__file__)), '../../../')
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
+current_path = abspath(__file__)
+for level in range(4):
+    current_path = dirname(current_path)
+if current_path not in sys.path:
+    sys.path.append(current_path)
 
 from ppdet.utils.download import get_path
 from ppdet.utils.download import DATASET_HOME
