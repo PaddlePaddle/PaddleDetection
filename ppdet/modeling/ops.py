@@ -67,6 +67,7 @@ def DeformConvNorm(input,
                    initializer=None,
                    bias_attr=False,
                    name=None):
+    assert norm_type in ['bn', 'sync_bn', 'affine_channel']
     if bias_attr:
         bias_para = ParamAttr(
             name=name + "_bias",
@@ -116,7 +117,7 @@ def DeformConvNorm(input,
         name=norm_name + '_offset',
         learning_rate=norm_lr * lr_scale,
         regularizer=L2Decay(norm_decay))
-
+    
     if norm_type in ['bn', 'sync_bn']:
         global_stats = True if freeze_norm else False
         out = fluid.layers.batch_norm(
