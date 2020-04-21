@@ -16,12 +16,6 @@ CornerNetSqueeze:
   fpn: FPN
   corner_head: CornerHead
 
-PostProcess:
-  use_soft_nms: true
-  detections_per_im: 100
-  nms_thresh: 0.001
-  sigma: 0.5
-
 ResNet:
   norm_type: bn
   depth: 50
@@ -36,17 +30,18 @@ FPN:
   num_chan: 256
   spatial_scale: [0.03125, 0.0625, 0.125]
 
-MultiClassSoftNMS:
-  keep_top_k: 100
-  score_threshold: 0.001
-  background_label: -1.
-
 CornerHead:
   train_batch_size: 14
   test_batch_size: 1
   ae_threshold: 0.5
   num_dets: 100
   top_k: 20
+
+PostProcess:
+  use_soft_nms: true
+  detections_per_im: 100
+  nms_thresh: 0.001
+  sigma: 0.5
 
 LearningRate:
   base_lr: 0.005
@@ -90,7 +85,7 @@ TrainReader:
     target_dim: 511
   - !RandomFlipImage
     prob: 0.5
-  - !ColorJitter
+  - !CornerRandColor
     saturation: 0.4
     contrast: 0.4
     brightness: 0.4

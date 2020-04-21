@@ -15,12 +15,6 @@ CornerNetSqueeze:
   backbone: Hourglass
   corner_head: CornerHead
 
-PostProcess:
-  use_soft_nms: true
-  detections_per_im: 100
-  nms_thresh: 0.001
-  sigma: 0.5
-
 Hourglass:
   dims: [256, 256, 384, 384, 512]
   modules: [2, 2, 2, 2, 4]
@@ -31,6 +25,12 @@ CornerHead:
   ae_threshold: 0.5
   num_dets: 100
   top_k: 20
+
+PostProcess:
+  use_soft_nms: true
+  detections_per_im: 100
+  nms_thresh: 0.001
+  sigma: 0.5
 
 LearningRate:
   base_lr: 0.00025
@@ -65,7 +65,7 @@ TrainReader:
     target_dim: 511
   - !RandomFlipImage
     prob: 0.5
-  - !ColorJitter
+  - !CornerRandColor
     saturation: 0.4
     contrast: 0.4
     brightness: 0.4

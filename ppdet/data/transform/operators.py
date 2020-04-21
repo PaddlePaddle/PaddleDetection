@@ -1171,9 +1171,6 @@ class ColorDistort(BaseOperator):
             in [lower, upper, probability] format.
         random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
             order.
-        is_scale (bool): whether to scale the input image.
-        corner_jitter (bool): whether to apply corner_jitter.
-        apply_hue (bool): whether to apply hue distortion.
     """
 
     def __init__(self,
@@ -1273,8 +1270,8 @@ class ColorDistort(BaseOperator):
 
 
 @register_op
-class ColorJitter(ColorDistort):
-    """Random color jitter.
+class CornerRandColor(ColorDistort):
+    """Random color for CornerNet series models.
     Args:
         saturation (float): saturation settings.
         contrast (float): contrast settings.
@@ -1287,7 +1284,7 @@ class ColorJitter(ColorDistort):
                  contrast=0.4,
                  brightness=0.4,
                  is_scale=True):
-        super(ColorJitter, self).__init__(
+        super(CornerRandColor, self).__init__(
             saturation=saturation, contrast=contrast, brightness=brightness)
         self.is_scale = is_scale
 

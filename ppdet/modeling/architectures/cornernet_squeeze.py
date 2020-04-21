@@ -21,7 +21,6 @@ from collections import OrderedDict
 from paddle import fluid
 
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import MultiClassSoftNMS
 import numpy as np
 
 __all__ = ['CornerNetSqueeze']
