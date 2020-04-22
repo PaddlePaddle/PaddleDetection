@@ -52,12 +52,12 @@ class ConfigPaser {
       return false;
     }
 
-    // Get model arch : YOLO, SSD, RetinaNet, RCNN
+    // Get model arch : YOLO, SSD, RetinaNet, RCNN, Face
     if (config["arch"].IsDefined()) {
       arch_ = config["arch"].as<std::string>();
     } else {
       std::cerr << "Please set model arch,"
-                << "support value : YOLO, SSD, RetinaNet, RCNN."
+                << "support value : YOLO, SSD, RetinaNet, RCNN, Face."
                 << std::endl;
       return false;
     }
