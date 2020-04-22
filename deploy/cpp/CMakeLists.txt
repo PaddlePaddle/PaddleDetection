@@ -1,17 +1,20 @@
 cmake_minimum_required(VERSION 3.0)
-project(cpp_inference_demo CXX C)
+project(PaddleObjectDetector CXX C)
 
 option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."          ON)
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
 option(WITH_STATIC_LIB "Compile demo with static/shared library, default use static."   ON)
-option(USE_TENSORRT "Compile demo with TensorRT."   OFF)
+option(WITH_TENSORRT "Compile demo with TensorRT."   OFF)
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(CUDA_LIB "" CACHE PATH "Location of libraries")
 
+include(cmake/yaml-cpp.cmake)
 
-include(external-cmake/yaml-cpp.cmake)
+include_directories("${CMAKE_SOURCE_DIR}/")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
+link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 
 macro(safe_set_static_flag)
     foreach(flag_var
@@ -19,7 +22,7 @@ macro(safe_set_static_flag)
         CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO)
       if(${flag_var} MATCHES "/MD")
         string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
-	  endif(${flag_var} MATCHES "/MD")
+      endif(${flag_var} MATCHES "/MD")
     endforeach(flag_var)
 endmacro()
 
@@ -36,7 +39,6 @@ if (NOT DEFINED OPENCV_DIR OR ${OPENCV_DIR} STREQUAL "")
 endif()
 
 include_directories("${CMAKE_SOURCE_DIR}/")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/src/ext-yaml-cpp/include")
 include_directories("${PADDLE_DIR}/")
 include_directories("${PADDLE_DIR}/third_party/install/protobuf/include")
 include_directories("${PADDLE_DIR}/third_party/install/glog/include")
@@ -65,21 +67,20 @@ link_directories("${PADDLE_DIR}/third_party/install/glog/lib")
 link_directories("${PADDLE_DIR}/third_party/install/gflags/lib")
 link_directories("${PADDLE_DIR}/third_party/install/xxhash/lib")
 link_directories("${PADDLE_DIR}/paddle/lib/")
-link_directories("${CMAKE_CURRENT_BINARY_DIR}/ext/yaml-cpp/lib")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}")
+
 if (WIN32)
   include_directories("${PADDLE_DIR}/paddle/fluid/inference")
   include_directories("${PADDLE_DIR}/paddle/include")
   link_directories("${PADDLE_DIR}/paddle/fluid/inference")
-  include_directories("${OPENCV_DIR}/build/include")
-  include_directories("${OPENCV_DIR}/opencv/build/include")
-  link_directories("${OPENCV_DIR}/build/x64/vc14/lib")
+  find_package(OpenCV REQUIRED PATHS ${OPENCV_DIR}/build/ NO_DEFAULT_PATH)
+
 else ()
+  find_package(OpenCV REQUIRED PATHS ${OPENCV_DIR}/share/OpenCV NO_DEFAULT_PATH)
   include_directories("${PADDLE_DIR}/paddle/include")
   link_directories("${PADDLE_DIR}/paddle/lib")
-  include_directories("${OPENCV_DIR}/include")
-  link_directories("${OPENCV_DIR}/lib")
 endif ()
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 if (WIN32)
     add_definitions("/DGOOGLE_GLOG_DLL_DECL=")
@@ -92,7 +93,7 @@ if (WIN32)
         add_definitions(-DSTATIC_LIB)
     endif()
 else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -o2 -std=c++11")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o2 -fopenmp -std=c++11")
     set(CMAKE_STATIC_LIBRARY_PREFIX "")
 endif()
 
@@ -106,11 +107,11 @@ if (WITH_GPU)
             message(FATAL_ERROR "please set CUDNN_LIB with -DCUDNN_LIB=/path/cudnn_v7.4/cuda/lib64")
         endif()
     endif(NOT WIN32)
-endif() 
+endif()
 
 
 if (NOT WIN32)
-  if (USE_TENSORRT AND WITH_GPU)
+  if (WITH_TENSORRT AND WITH_GPU)
       include_directories("${PADDLE_DIR}/third_party/install/tensorrt/include")
       link_directories("${PADDLE_DIR}/third_party/install/tensorrt/lib")
   endif()
@@ -149,14 +150,14 @@ else()
   set(MATH_LIB ${PADDLE_DIR}/third_party/install/openblas/lib/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 
-if(WIN32)
+if (WIN32)
     if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set(DEPS
             ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        else()
+    else()
         set(DEPS
             ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-   endif()
+    endif()
 endif()
 
 if(WITH_STATIC_LIB)
@@ -168,11 +169,10 @@ else()
 endif()
 
 if (NOT WIN32)
-    set(EXTERNAL_LIB "-lrt -ldl -lpthread")
     set(DEPS ${DEPS}
-        ${MATH_LIB} ${MKLDNN_LIB}
-        glog gflags protobuf yaml-cpp z xxhash
-        ${EXTERNAL_LIB})
+        ${MATH_LIB} ${MKLDNN_LIB} 
+        glog gflags protobuf z xxhash yaml-cpp
+        )
     if(EXISTS "${PADDLE_DIR}/third_party/install/snappystream/lib")
         set(DEPS ${DEPS} snappystream)
     endif()
@@ -182,7 +182,7 @@ if (NOT WIN32)
 else()
     set(DEPS ${DEPS}
         ${MATH_LIB} ${MKLDNN_LIB}
-        opencv_world346 glog libyaml-cppmt gflags_static libprotobuf zlibstatic xxhash ${EXTERNAL_LIB})
+        glog gflags_static libprotobuf zlibstatic xxhash libyaml-cppmt)
     set(DEPS ${DEPS} libcmt shlwapi)
     if (EXISTS "${PADDLE_DIR}/third_party/install/snappy/lib")
         set(DEPS ${DEPS} snappy)
@@ -194,7 +194,7 @@ endif(NOT WIN32)
 
 if(WITH_GPU)
   if(NOT WIN32)
-    if (USE_TENSORRT)
+    if (WITH_TENSORRT)
       set(DEPS ${DEPS} ${PADDLE_DIR}/third_party/install/tensorrt/lib/libnvinfer${CMAKE_STATIC_LIBRARY_SUFFIX})
       set(DEPS ${DEPS} ${PADDLE_DIR}/third_party/install/tensorrt/lib/libnvinfer_plugin${CMAKE_STATIC_LIBRARY_SUFFIX})
     endif()
@@ -207,58 +207,18 @@ if(WITH_GPU)
   endif()
 endif()
 
-if (NOT WIN32)    
-    set(OPENCV_LIB_DIR ${OPENCV_DIR}/lib)
-    if(EXISTS "${OPENCV_LIB_DIR}")
-	    message("OPENCV_LIB:" ${OPENCV_LIB_DIR})
-    else()
-        set(OPENCV_LIB_DIR ${OPENCV_DIR}/lib64)	
-	    message("OPENCV_LIB:" ${OPENCV_LIB_DIR})        
-    endif()
-   
-    set(OPENCV_3RD_LIB_DIR ${OPENCV_DIR}/share/OpenCV/3rdparty/lib)
-    if(EXISTS "${OPENCV_3RD_LIB_DIR}")
-	    message("OPENCV_3RD_LIB_DIR:" ${OPENCV_3RD_LIB_DIR})
-    else()
-        set(OPENCV_3RD_LIB_DIR ${OPENCV_DIR}/share/OpenCV/3rdparty/lib64)
-	    message("OPENCV_3RD_LIB_DIR:" ${OPENCV_3RD_LIB_DIR})
-    endif()
-
-    set(DEPS ${DEPS} ${OPENCV_LIB_DIR}/libopencv_imgcodecs${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_LIB_DIR}/libopencv_imgproc${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_LIB_DIR}/libopencv_core${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_LIB_DIR}/libopencv_highgui${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/libIlmImf${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/liblibjasper${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/liblibpng${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/liblibtiff${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/libittnotify${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/liblibjpeg-turbo${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/liblibwebp${CMAKE_STATIC_LIBRARY_SUFFIX})
-    set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/libzlib${CMAKE_STATIC_LIBRARY_SUFFIX})
-    if(EXISTS "${OPENCV_3RD_LIB_DIR}/libippiw${CMAKE_STATIC_LIBRARY_SUFFIX}")
-        set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/libippiw${CMAKE_STATIC_LIBRARY_SUFFIX})
-    endif()
-    if(EXISTS "${OPENCV_3RD_LIB_DIR}/libippicv${CMAKE_STATIC_LIBRARY_SUFFIX}")
-        set(DEPS ${DEPS} ${OPENCV_3RD_LIB_DIR}/libippicv${CMAKE_STATIC_LIBRARY_SUFFIX})
-    endif()
+if (NOT WIN32)
+    set(EXTERNAL_LIB "-ldl -lrt -lgomp -lz -lm -lpthread")
+    set(DEPS ${DEPS} ${EXTERNAL_LIB})
 endif()
 
-SET(PADDLESEG_INFERENCE_SRCS  preprocessor/preprocessor.cpp 
-    preprocessor/preprocessor_detection.cpp predictor/detection_predictor.cpp 
-    utils/detection_result.pb.cc)
+set(DEPS ${DEPS} ${OpenCV_LIBS}) 
+add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
+ADD_DEPENDENCIES(main ext-yaml-cpp)
+target_link_libraries(main ${DEPS})
 
-ADD_LIBRARY(libpaddleseg_inference STATIC ${PADDLESEG_INFERENCE_SRCS})
-target_link_libraries(libpaddleseg_inference ${DEPS})
-
-add_executable(detection_demo detection_demo.cpp)
-
-ADD_DEPENDENCIES(libpaddleseg_inference ext-yaml-cpp)
-ADD_DEPENDENCIES(detection_demo ext-yaml-cpp libpaddleseg_inference)
-target_link_libraries(detection_demo ${DEPS} libpaddleseg_inference)
-
-if (WIN32)
-    add_custom_command(TARGET detection_demo POST_BUILD
+if (WIN32 AND WITH_MKL)
+    add_custom_command(TARGET main POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./libiomp5md.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./mkldnn.dll
@@ -267,5 +227,3 @@ if (WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./release/mkldnn.dll
     )
 endif()
-
-execute_process(COMMAND cp -r ${CMAKE_SOURCE_DIR}/images ${CMAKE_SOURCE_DIR}/conf ${CMAKE_CURRENT_BINARY_DIR})

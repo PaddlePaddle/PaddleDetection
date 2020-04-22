@@ -7,8 +7,8 @@ message("${CMAKE_BUILD_TYPE}")
 
 ExternalProject_Add(
         ext-yaml-cpp
-        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-        GIT_TAG e0e01d53c27ffee6c86153fa41e7f5e57d3e5c90
+        URL https://bj.bcebos.com/paddlex/deploy/deps/yaml-cpp.zip
+        URL_MD5 9542d6de397d1fbd649ed468cb5850e6
         CMAKE_ARGS
         -DYAML_CPP_BUILD_TESTS=OFF
 		-DYAML_CPP_BUILD_TOOLS=OFF
