@@ -279,7 +279,7 @@ class Reader(object):
             self.indexes = np.random.choice(
                 self._sample_num,
                 self._sample_num,
-                replace=False,
+                replace=True,
                 p=self.img_weights)
 
         if self._shuffle:
