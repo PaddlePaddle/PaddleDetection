@@ -204,3 +204,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### 基于Open Images V5数据集的物体检测
 
 详细请参考[Open Images V5数据集基线模型](featured_model/OIDV5_BASELINE_MODEL.md)。
+
+### Anchor Free系列模型
+
+详细请参考[Anchor Free系列模型](featured_model/ANCHOR_FREE_DETECTION.md)。
