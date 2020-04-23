@@ -378,7 +378,7 @@ class MultiClassSoftNMS(object):
             fluid.default_main_program(),
             name='softnms_pred_result',
             dtype='float32',
-            shape=[6],
+            shape=[-1, 6],
             lod_level=1)
         fluid.layers.py_func(
             func=_soft_nms, x=[bboxes, scores], out=pred_result)

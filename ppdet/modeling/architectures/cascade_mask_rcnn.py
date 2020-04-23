@@ -408,7 +408,7 @@ class CascadeMaskRCNN(object):
                 box_fields = ['bbox', 'bbox_flip'] if use_flip else ['bbox']
                 for key in box_fields:
                     inputs_def[key] = {
-                        'shape': [6],
+                        'shape': [None, 6],
                         'dtype': 'float32',
                         'lod_level': 1
                     }

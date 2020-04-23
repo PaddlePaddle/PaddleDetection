@@ -18,8 +18,10 @@ from . import rpn_head
 from . import yolo_head
 from . import retina_head
 from . import fcos_head
+from . import corner_head
 
 from .rpn_head import *
 from .yolo_head import *
 from .retina_head import *
 from .fcos_head import *
+from .corner_head import *
