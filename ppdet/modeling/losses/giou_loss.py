@@ -33,14 +33,23 @@ class GiouLoss(object):
         loss_weight (float): diou loss weight, default as 10 in faster-rcnn
         is_cls_agnostic (bool): flag of class-agnostic
         num_classes (int): class num
+        do_average (bool): whether to average the loss
     '''
     __shared__ = ['num_classes']
 
-    def __init__(self, loss_weight=10., is_cls_agnostic=False, num_classes=81):
+    def __init__(self,
+                 loss_weight=10.,
+                 is_cls_agnostic=False,
+                 num_classes=81,
+                 do_average=True,
+                 use_class_weight=True):
         super(GiouLoss, self).__init__()
         self.loss_weight = loss_weight
         self.is_cls_agnostic = is_cls_agnostic
         self.num_classes = num_classes
+        self.do_average = do_average
+        self.class_weight = 2 if is_cls_agnostic else num_classes
+        self.use_class_weight = use_class_weight
 
     # deltas: NxMx4
     def bbox_transform(self, deltas, weights):
@@ -78,10 +87,15 @@ class GiouLoss(object):
                  y,
                  inside_weight=None,
                  outside_weight=None,
-                 bbox_reg_weight=[0.1, 0.1, 0.2, 0.2]):
+                 bbox_reg_weight=[0.1, 0.1, 0.2, 0.2],
+                 use_transform=True):
         eps = 1.e-10
-        x1, y1, x2, y2 = self.bbox_transform(x, bbox_reg_weight)
-        x1g, y1g, x2g, y2g = self.bbox_transform(y, bbox_reg_weight)
+        if use_transform:
+            x1, y1, x2, y2 = self.bbox_transform(x, bbox_reg_weight)
+            x1g, y1g, x2g, y2g = self.bbox_transform(y, bbox_reg_weight)
+        else:
+            x1, y1, x2, y2 = fluid.layers.split(x, num_or_sections=4, dim=1)
+            x1g, y1g, x2g, y2g = fluid.layers.split(y, num_or_sections=4, dim=1)
 
         x2 = fluid.layers.elementwise_max(x1, x2)
         y2 = fluid.layers.elementwise_max(y1, y2)
@@ -116,10 +130,16 @@ class GiouLoss(object):
             outside_weight = fluid.layers.reduce_mean(outside_weight, dim=1)
 
             iou_weights = inside_weight * outside_weight
+        elif outside_weight is not None:
+            iou_weights = outside_weight
 
-        class_weight = 2 if self.is_cls_agnostic else self.num_classes
-        iouk = fluid.layers.reduce_mean((1 - iouk) * iou_weights) * class_weight
-        miouk = fluid.layers.reduce_mean(
-            (1 - miouk) * iou_weights) * class_weight
+        if self.do_average:
+            class_weight = 2 if self.is_cls_agnostic else self.num_classes
+            miouk = fluid.layers.reduce_mean((1 - miouk) * iou_weights)
+        else:
+            miouk = fluid.layers.reduce_sum((1 - miouk) * iou_weights)
+
+        if self.use_class_weight:
+            miouk = miouk * self.class_weight
 
         return miouk * self.loss_weight

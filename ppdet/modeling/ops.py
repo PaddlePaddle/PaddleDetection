@@ -27,9 +27,183 @@ __all__ = [
     'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
     'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
     'MultiBoxHead', 'SSDLiteMultiBoxHead', 'SSDOutputDecoder',
-    'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
-    'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm', 'DeformConvNorm',
+    'MultiClassSoftNMS', 'LibraBBoxAssigner', 'DeformConv', 'SimpleNMS', 'TopK'
 ]
+
+
+def TopK(scores, K):
+    cat, height, width = scores.shape[1:]
+    # batch size is 1
+    scores_r = fluid.layers.reshape(scores, [cat, -1])
+    topk_scores, topk_inds = fluid.layers.topk(scores_r, K)
+    topk_ys = topk_inds / width
+    topk_xs = topk_inds % width
+
+    topk_score_r = fluid.layers.reshape(topk_scores, [-1])
+    topk_score, topk_ind = fluid.layers.topk(topk_score_r, K)
+    topk_clses = fluid.layers.cast(topk_ind / K, 'float32')
+
+    topk_inds = fluid.layers.reshape(topk_inds, [-1])
+    topk_ys = fluid.layers.reshape(topk_ys, [-1, 1])
+    topk_xs = fluid.layers.reshape(topk_xs, [-1, 1])
+    topk_inds = fluid.layers.gather(topk_inds, topk_ind)
+    topk_ys = fluid.layers.gather(topk_ys, topk_ind)
+    topk_xs = fluid.layers.gather(topk_xs, topk_ind)
+
+    return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
+
+
+def SimpleNMS(heat, kernel=3):
+    pad = (kernel - 1) // 2
+    hmax = fluid.layers.pool2d(heat, kernel, 'max', pool_padding=pad)
+    keep = fluid.layers.cast(hmax == heat, 'float32')
+    return heat * keep
+
+
+def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
+    out_channel = filter_size * filter_size * 3
+    out = fluid.layers.conv2d(
+        input,
+        num_filters=out_channel,
+        filter_size=filter_size,
+        stride=stride,
+        padding=padding,
+        param_attr=ParamAttr(
+            initializer=fluid.initializer.Constant(value=0),
+            name=name + ".w_0"),
+        bias_attr=ParamAttr(
+            initializer=fluid.initializer.Constant(value=0),
+            name=name + ".b_0"),
+        act=act,
+        name=name)
+    return out
+
+
+def DeformConv(input,
+               num_filters,
+               filter_size,
+               stride=1,
+               groups=1,
+               dilation=1,
+               lr_scale=1,
+               initializer=None,
+               bias_attr=False,
+               name=None):
+    if bias_attr:
+        bias_para = ParamAttr(
+            name=name + ".bias",
+            initializer=fluid.initializer.Constant(value=0),
+            learning_rate=lr_scale * 2)
+    else:
+        bias_para = False
+    offset_mask = _conv_offset(
+        input=input,
+        filter_size=filter_size,
+        stride=stride,
+        padding=(filter_size - 1) // 2,
+        act=None,
+        name=name + ".conv_offset_mask")
+    offset_channel = filter_size**2 * 2
+    mask_channel = filter_size**2
+    offset, mask = fluid.layers.split(
+        input=offset_mask,
+        num_or_sections=[offset_channel, mask_channel],
+        dim=1)
+    mask = fluid.layers.sigmoid(mask)
+    conv = fluid.layers.deformable_conv(
+        input=input,
+        offset=offset,
+        mask=mask,
+        num_filters=num_filters,
+        filter_size=filter_size,
+        stride=stride,
+        padding=(filter_size - 1) // 2 * dilation,
+        dilation=dilation,
+        groups=groups,
+        deformable_groups=1,
+        im2col_step=1,
+        param_attr=ParamAttr(
+            name=name + ".weight",
+            initializer=initializer,
+            learning_rate=lr_scale),
+        bias_attr=bias_para,
+        name=name + ".conv2d.output.1")
+
+    return conv
+
+
+def DeformConvNorm(input,
+                   num_filters,
+                   filter_size,
+                   stride=1,
+                   groups=1,
+                   norm_decay=0.,
+                   norm_type='affine_channel',
+                   norm_groups=32,
+                   dilation=1,
+                   lr_scale=1,
+                   freeze_norm=False,
+                   act=None,
+                   norm_name=None,
+                   initializer=None,
+                   bias_attr=False,
+                   name=None):
+    assert norm_type in ['bn', 'sync_bn', 'affine_channel']
+    conv = DeformConv(input, num_filters, filter_size, stride, groups, dilation,
+                      lr_scale, initializer, bias_attr, name)
+
+    norm_lr = 0. if freeze_norm else 1.
+    pattr = ParamAttr(
+        name=norm_name + '_scale',
+        learning_rate=norm_lr * lr_scale,
+        regularizer=L2Decay(norm_decay))
+    battr = ParamAttr(
+        name=norm_name + '_offset',
+        learning_rate=norm_lr * lr_scale,
+        regularizer=L2Decay(norm_decay))
+
+    if norm_type in ['bn', 'sync_bn']:
+        global_stats = True if freeze_norm else False
+        out = fluid.layers.batch_norm(
+            input=conv,
+            act=act,
+            name=norm_name + '.output.1',
+            param_attr=pattr,
+            bias_attr=battr,
+            moving_mean_name=norm_name + '_mean',
+            moving_variance_name=norm_name + '_variance',
+            use_global_stats=global_stats)
+        scale = fluid.framework._get_var(pattr.name)
+        bias = fluid.framework._get_var(battr.name)
+    elif norm_type == 'gn':
+        out = fluid.layers.group_norm(
+            input=conv,
+            act=act,
+            name=norm_name + '.output.1',
+            groups=norm_groups,
+            param_attr=pattr,
+            bias_attr=battr)
+        scale = fluid.framework._get_var(pattr.name)
+        bias = fluid.framework._get_var(battr.name)
+    elif norm_type == 'affine_channel':
+        scale = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=pattr,
+            default_initializer=fluid.initializer.Constant(1.))
+        bias = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=battr,
+            default_initializer=fluid.initializer.Constant(0.))
+        out = fluid.layers.affine_channel(
+            x=conv, scale=scale, bias=bias, act=act)
+
+    if freeze_norm:
+        scale.stop_gradient = True
+        bias.stop_gradient = True
+    return out
 
 
 def ConvNorm(input,

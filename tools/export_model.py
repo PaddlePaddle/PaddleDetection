@@ -69,6 +69,8 @@ def parse_reader(reader_cfg, metric, arch):
             params['max_size'] = max(image_shape[
                 1:]) if arch in scale_set else 0
             params['image_shape'] = image_shape[1:]
+            if 'target_dim' in params:
+                params.pop('target_dim')
         p.update(params)
         preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
@@ -102,6 +104,7 @@ def dump_infer_config(config):
         'RCNN': 40,
         'RetinaNet': 40,
         'Face': 3,
+        'TTFNet': 3,
     }
     infer_arch = config['architecture']
 

@@ -73,8 +73,7 @@ class DarkNet(object):
             regularizer=L2Decay(float(self.norm_decay)),
             name=bn_name + '.scale')
         bn_bias_attr = ParamAttr(
-            regularizer=L2Decay(float(self.norm_decay)),
-            name=bn_name + '.offset')
+            regularizer=L2Decay(float(self.norm_decay)), name=bn_name + '.bias')
 
         out = fluid.layers.batch_norm(
             input=conv,

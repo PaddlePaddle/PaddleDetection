@@ -42,7 +42,7 @@ def clip_bbox(src_bbox):
     return src_bbox
 
 
-def bbox_area(src_bbox):
+def bbox_area(src_bbox, normalize=True):
     if src_bbox[2] < src_bbox[0] or src_bbox[3] < src_bbox[1]:
         return 0.
     else:
@@ -393,3 +393,13 @@ def is_poly(segm):
     assert isinstance(segm, (list, dict)), \
         "Invalid segm type: {}".format(type(segm))
     return isinstance(segm, list)
+
+
+def bbox_areas(bboxes):
+    assert len(bboxes.shape) == 2
+    x_min, y_min, x_max, y_max = bboxes[:, 0], bboxes[:,
+                                                      1], bboxes[:,
+                                                                 2], bboxes[:,
+                                                                            3]
+    areas = (y_max - y_min + 1) * (x_max - x_min + 1)
+    return areas

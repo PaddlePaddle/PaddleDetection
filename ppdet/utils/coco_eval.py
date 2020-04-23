@@ -230,7 +230,7 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
     xywh_res = []
     for t in results:
         bboxes = t['bbox'][0]
-        lengths = t['bbox'][1][0]
+        lengths = t['bbox'][1][0] if t['bbox'][1] else [len(bboxes)]
         im_ids = np.array(t['im_id'][0]).flatten()
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
@@ -242,6 +242,7 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
             for j in range(num):
                 dt = bboxes[k]
                 clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
+                if clsid < 0: continue
                 catid = (clsid2catid[int(clsid)])
 
                 if is_bbox_normalized:
