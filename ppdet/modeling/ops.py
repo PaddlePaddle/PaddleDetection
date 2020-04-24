@@ -67,7 +67,6 @@ def DeformConvNorm(input,
                    initializer=None,
                    bias_attr=False,
                    name=None):
-    assert norm_type in ['bn', 'sync_bn', 'affine_channel']
     if bias_attr:
         bias_para = ParamAttr(
             name=name + "_bias",
