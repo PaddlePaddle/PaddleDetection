@@ -1408,3 +1408,4 @@ class RetinaOutputDecoder(object):
         self.nms_top_k = pre_nms_top_n
         self.keep_top_k = detections_per_im
         self.nms_eta = nms_eta
+        
