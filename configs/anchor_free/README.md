@@ -30,6 +30,7 @@
 | CornerNet-Squeeze-dcn-mixup-cosine*    | ResNet50-vd    | 14  |    [faster\_rcnn\_dcn\_r50\_vd\_fpn\_2x](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_2x.tar)    | 38.2    | 40.05      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cornernet_squeeze_dcn_r50_vd_fpn_mixup_cosine.pdparams) |
 | FCOS    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 39.8 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_1x.pdparams) |
 | FCOS+multiscale_train    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 42.0 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_multiscale_2x.pdparams) |
+| FCOS+DCN    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 44.4 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_dcn_r50_fpn_1x.pdparams) |
 
 **注意:**
 
