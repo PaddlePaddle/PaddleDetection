@@ -23,7 +23,7 @@ from paddle import fluid
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
-__all__ = ['YOLOv3']
+__all__ = ['YOLOv3', 'YOLOv4']
 
 
 @register
@@ -42,7 +42,7 @@ class YOLOv3(object):
 
     def __init__(self,
                  backbone,
-                 yolo_head='YOLOv3Head',
+                 yolo_head='YOLOv4Head',
                  use_fine_grained_loss=False):
         super(YOLOv3, self).__init__()
         self.backbone = backbone
@@ -160,3 +160,27 @@ class YOLOv3(object):
 
     def test(self, feed_vars):
         return self.build(feed_vars, mode='test')
+
+
+@register
+class YOLOv4(YOLOv3):
+    """
+    YOLOv4 network, see https://arxiv.org/abs/2004.10934 
+
+    Args:
+        backbone (object): an backbone instance
+        yolo_head (object): an `YOLOv4Head` instance
+    """
+
+    __category__ = 'architecture'
+    __inject__ = ['backbone', 'yolo_head']
+    __shared__ = ['use_fine_grained_loss']
+
+    def __init__(self,
+                 backbone,
+                 yolo_head='YOLOv4Head',
+                 use_fine_grained_loss=False):
+        super(YOLOv4, self).__init__(
+            backbone=backbone,
+            yolo_head=yolo_head,
+            use_fine_grained_loss=use_fine_grained_loss)

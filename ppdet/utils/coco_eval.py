@@ -37,11 +37,13 @@ __all__ = [
 ]
 
 
-def clip_bbox(bbox):
-    xmin = max(min(bbox[0], 1.), 0.)
-    ymin = max(min(bbox[1], 1.), 0.)
-    xmax = max(min(bbox[2], 1.), 0.)
-    ymax = max(min(bbox[3], 1.), 0.)
+def clip_bbox(bbox, im_size=None):
+    h = 1. if im_size is None else im_size[0]
+    w = 1. if im_size is None else im_size[1]
+    xmin = max(min(bbox[0], w), 0.)
+    ymin = max(min(bbox[1], h), 0.)
+    xmax = max(min(bbox[2], w), 0.)
+    ymax = max(min(bbox[3], h), 0.)
     return xmin, ymin, xmax, ymax
 
 
@@ -66,7 +68,8 @@ def bbox_eval(results,
               anno_file,
               outfile,
               with_background=True,
-              is_bbox_normalized=False):
+              is_bbox_normalized=False,
+              save_only=False):
     assert 'bbox' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -91,13 +94,23 @@ def bbox_eval(results,
     with open(outfile, 'w') as f:
         json.dump(xywh_results, f)
 
+    if save_only:
+        logger.info('The bbox result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
     map_stats = cocoapi_eval(outfile, 'bbox', coco_gt=coco_gt)
     # flush coco evaluation result
     sys.stdout.flush()
     return map_stats
 
 
-def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
+def mask_eval(results,
+              anno_file,
+              outfile,
+              resolution,
+              thresh_binarize=0.5,
+              save_only=False):
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -142,6 +155,11 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
 
     with open(outfile, 'w') as f:
         json.dump(segm_results, f)
+
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
 
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
 
@@ -257,8 +275,11 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                     w *= im_width
                     h *= im_height
                 else:
-                    w = xmax - xmin + 1
-                    h = ymax - ymin + 1
+                    im_size = t['im_size'][0][i].tolist()
+                    xmin, ymin, xmax, ymax = \
+                            clip_bbox([xmin, ymin, xmax, ymax], im_size)
+                    w = xmax - xmin
+                    h = ymax - ymin
 
                 bbox = [xmin, ymin, w, h]
                 coco_res = {

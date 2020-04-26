@@ -113,7 +113,7 @@ def main():
     extra_keys = []
 
     if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
+        extra_keys = ['im_info', 'im_id', 'im_shape', 'im_size']
     if cfg.metric == 'VOC':
         extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
 
@@ -162,6 +162,7 @@ def main():
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
+    save_only = getattr(cfg, 'save_result_only', False)
     eval_results(
         results,
         cfg.metric,
@@ -170,7 +171,8 @@ def main():
         is_bbox_normalized,
         FLAGS.output_eval,
         map_type,
-        dataset=dataset)
+        dataset=dataset,
+        save_only=save_only)
 
 
 if __name__ == '__main__':

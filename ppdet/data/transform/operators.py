@@ -88,7 +88,7 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False):
+    def __init__(self, to_rgb=True, with_mixup=False, scale=False):
         """ Transform the image data to numpy format.
 
         Args:
@@ -99,6 +99,7 @@ class DecodeImage(BaseOperator):
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
+        self.scale = scale
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
@@ -113,8 +114,11 @@ class DecodeImage(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+
         if self.to_rgb:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        if self.scale:
+            im = np.array(im).astype('float32') / 255.
         sample['image'] = im
 
         if 'h' not in sample:
@@ -330,7 +334,6 @@ class ResizeImage(BaseOperator):
             im = Image.fromarray(im)
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
-
         sample['image'] = im
         return sample
 
@@ -1148,8 +1151,8 @@ class Resize(BaseOperator):
             scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
             sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
                                         dim - 1)
-        sample['h'] = resize_h
-        sample['w'] = resize_w
+        #sample['h'] = resize_h
+        #sample['w'] = resize_w
 
         sample['image'] = cv2.resize(
             sample['image'], (resize_w, resize_h), interpolation=interp)

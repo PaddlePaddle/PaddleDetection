@@ -37,10 +37,17 @@ class IouLoss(object):
         max_width (int): max width of input to support random shape input
     """
 
-    def __init__(self, loss_weight=2.5, max_height=608, max_width=608):
+    def __init__(self,
+                 loss_weight=2.5,
+                 max_height=608,
+                 max_width=608,
+                 ciou_term=False,
+                 loss_square=True):
         self._loss_weight = loss_weight
         self._MAX_HI = max_height
         self._MAX_WI = max_width
+        self.ciou_term = ciou_term
+        self.loss_square = loss_square
 
     def __call__(self,
                  x,
@@ -65,33 +72,22 @@ class IouLoss(object):
             batch_size (int): training batch size
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
-
-        iouk = self._iou(x, y, w, h, tx, ty, tw, th, anchors, downsample_ratio,
-                         batch_size, ioup, eps)
-        loss_iou = 1. - iouk * iouk
+        pred = self._bbox_transform(x, y, w, h, anchors, downsample_ratio,
+                                    batch_size, False)
+        gt = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio,
+                                  batch_size, True)
+        iouk = self._iou(pred, gt, ioup, eps)
+        if self.loss_square:
+            loss_iou = 1. - iouk * iouk
+        else:
+            loss_iou = 1. - iouk
         loss_iou = loss_iou * self._loss_weight
 
         return loss_iou
 
-    def _iou(self,
-             x,
-             y,
-             w,
-             h,
-             tx,
-             ty,
-             tw,
-             th,
-             anchors,
-             downsample_ratio,
-             batch_size,
-             ioup=None,
-             eps=1.e-10):
-        x1, y1, x2, y2 = self._bbox_transform(
-            x, y, w, h, anchors, downsample_ratio, batch_size, False)
-        x1g, y1g, x2g, y2g = self._bbox_transform(
-            tx, ty, tw, th, anchors, downsample_ratio, batch_size, True)
-
+    def _iou(self, pred, gt, ioup=None, eps=1.e-10):
+        x1, y1, x2, y2 = pred
+        x1g, y1g, x2g, y2g = gt
         x2 = fluid.layers.elementwise_max(x1, x2)
         y2 = fluid.layers.elementwise_max(y1, y2)
 
@@ -106,7 +102,47 @@ class IouLoss(object):
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
+        pred = [x1, y1, x2, y2]
+        if self.ciou_term:
+            ciou = self.get_ciou_term(pred, gt, iouk, eps)
+            iouk = iouk - ciou
         return iouk
+
+    def get_ciou_term(self, pred, gt, iouk, eps):
+        x1, y1, x2, y2 = pred
+        x1g, y1g, x2g, y2g = gt
+
+        cx = (x1 + x2) / 2
+        cy = (y1 + y2) / 2
+        w = x2 - x1
+        h = y2 - y1
+
+        cxg = (x1g + x2g) / 2
+        cyg = (y1g + y2g) / 2
+        wg = x2g - x1g
+        hg = y2g - y1g
+
+        # A or B
+        xc1 = fluid.layers.elementwise_min(x1, x1g)
+        yc1 = fluid.layers.elementwise_min(y1, y1g)
+        xc2 = fluid.layers.elementwise_max(x2, x2g)
+        yc2 = fluid.layers.elementwise_max(y2, y2g)
+
+        # DIOU term
+        dist_intersection = (cx - cxg) * (cx - cxg) + (cy - cyg) * (cy - cyg)
+        dist_union = (xc2 - xc1) * (xc2 - xc1) + (yc2 - yc1) * (yc2 - yc1)
+        diou_term = (dist_intersection + eps) / (dist_union + eps)
+
+        # CIOU term
+        ciou_term = 0
+        ar_gt = wg / hg
+        ar_pred = w / h
+        arctan = fluid.layers.atan(ar_gt) - fluid.layers.atan(ar_pred)
+        ar_loss = 4. / np.pi / np.pi * arctan * arctan
+        alpha = ar_loss / (1 - iouk + ar_loss + eps)
+        alpha.stop_gradient = True
+        ciou_term = alpha * ar_loss
+        return diou_term + ciou_term
 
     def _bbox_transform(self, dcx, dcy, dw, dh, anchors, downsample_ratio,
                         batch_size, is_gt):
