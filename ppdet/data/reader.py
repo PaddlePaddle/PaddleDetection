@@ -351,7 +351,7 @@ class Reader(object):
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
                         'im_file'])
-            if is_valid_path:
+            if is_valid_img_path:
                 batch.append(sample)
                 bs += 1
         return batch
