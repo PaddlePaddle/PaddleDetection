@@ -243,7 +243,7 @@ class Reader(object):
         self._mixup_epoch = mixup_epoch
         self._class_aware_sampling = class_aware_sampling
 
-        self._load_img = False
+        self._load_img = True
         self._sample_num = len(self._roidbs)
 
         if self._class_aware_sampling:
@@ -322,6 +322,7 @@ class Reader(object):
             pos = self.indexes[self._pos]
             sample = copy.deepcopy(self._roidbs[pos])
             self._pos += 1
+            is_valid_img_path = True
 
             if self._drop_empty and self._fields and 'gt_mask' in self._fields:
                 if _has_empty(_segm(sample)):
@@ -336,7 +337,11 @@ class Reader(object):
                     continue
 
             if self._load_img:
-                sample['image'] = self._load_image(sample['im_file'])
+                try:
+                    sample['image'] = self._load_image(sample['im_file'])
+                except Exception as e:
+                    logger.warn('invalid image：{}, error:{}'.format(sample['im_file'],e))
+                    is_valid_path = False
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
@@ -346,9 +351,9 @@ class Reader(object):
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
                         'im_file'])
-
-            batch.append(sample)
-            bs += 1
+            if is_valid_path:
+                batch.append(sample)
+                bs += 1
         return batch
 
     def worker(self, drop_empty=True, batch_samples=None):
