@@ -279,6 +279,7 @@ def main():
                     eval_keys,
                     eval_values,
                     eval_cls,
+                    cfg,
                     resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
