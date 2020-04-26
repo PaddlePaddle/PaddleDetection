@@ -341,7 +341,7 @@ class Reader(object):
                     sample['image'] = self._load_image(sample['im_file'])
                 except Exception as e:
                     logger.warn('invalid image：{}, error:{}'.format(sample['im_file'],e))
-                    is_valid_path = False
+                    is_valid_img_path = False
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
