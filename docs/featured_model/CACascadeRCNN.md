@@ -31,14 +31,14 @@ ${THIS REPO ROOT}
 2.启动训练模型
 
 ```bash
-python tools/train.py -c configs/obj365/cascade_rcnn_dcnv2_se154_vd_fpn_gn.yml
+python tools/train.py -c configs/obj365/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas.yml
 ```
 
 3.模型预测结果
 
-|        模型         | 验证集 mAP |                           下载链接                           |
-| :-----------------: | :--------: | :----------------------------------------------------------: |
-| CACascadeRCNN SE154 |    31.6    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas_obj365.tar) |
+|        模型         | 验证集 mAP |                           下载链接                           | 配置文件 |
+| :-----------------: | :--------: | :----------------------------------------------------------: | :--------: |
+| CACascadeRCNN SE154 |    31.6    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas_obj365.tar) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/obj365/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas.yml) |
 
 ## 模型效果
 

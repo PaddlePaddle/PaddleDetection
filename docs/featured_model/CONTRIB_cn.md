@@ -3,10 +3,10 @@
 
 我们提供了针对不同场景的基于PaddlePaddle的检测模型，用户可以下载模型进行使用。
 
-| 任务                 | 算法 | 精度(Box AP) | 下载                                                                                |
-|:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: |
-| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar) |
-| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar) |
+| 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
+|:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
+| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/contrib/VehicleDetection/vehicle_yolov3_darknet.yml) |
+| 行人检测 |  YOLOv3  |  51.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml) |
 
 
 ## 车辆检测（Vehicle Detection）
