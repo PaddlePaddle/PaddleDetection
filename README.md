@@ -89,7 +89,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [推理部署](inference)
     - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
     - [预测引擎Python API使用示例](docs/advanced_tutorials/inference/INFERENCE.md)
-    - [C++推理部署](inference/README.md)
+    - [C++推理部署](deploy/README.md)
     - [推理Benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
 
 ## 模型库

@@ -43,7 +43,6 @@ from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
@@ -85,8 +84,6 @@ def main():
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -282,6 +279,7 @@ def main():
                     eval_keys,
                     eval_values,
                     eval_cls,
+                    cfg,
                     resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
