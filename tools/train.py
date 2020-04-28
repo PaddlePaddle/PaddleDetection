@@ -126,11 +126,7 @@ def main():
                     loss *= ctx.get_loss_scale_var()
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
-                clip = None
-                if optim_builder.clip_grad_by_norm is not None:
-                    clip = fluid.clip.GradientClipByGlobalNorm(
-                        clip_norm=optim_builder.clip_grad_by_norm)
-                optimizer.minimize(loss, grad_clip=clip)
+                optimizer.minimize(loss)
 
                 if FLAGS.fp16:
                     loss /= ctx.get_loss_scale_var()

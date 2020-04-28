@@ -197,6 +197,10 @@ class OptimizerBuilder():
         self.optimizer = optimizer
 
     def __call__(self, learning_rate):
+        if self.clip_grad_by_norm is not None:
+            fluid.clip.set_gradient_clip(
+                clip=fluid.clip.GradientClipByGlobalNorm(
+                    clip_norm=self.clip_grad_by_norm))
         if self.regularizer:
             reg_type = self.regularizer['type'] + 'Decay'
             reg_factor = self.regularizer['factor']
