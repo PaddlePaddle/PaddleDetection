@@ -29,8 +29,8 @@ __all__ = [
     'AnchorGenerator', 'AnchorGrid', 'DropBlock', 'RPNTargetAssign',
     'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
     'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
-    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder',
-    'ConvNorm', 'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
+    'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
 ]
 
 
