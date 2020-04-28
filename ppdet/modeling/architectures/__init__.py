@@ -22,6 +22,7 @@ from . import cascade_rcnn_cls_aware
 from . import yolov3
 from . import ssd
 from . import retinanet
+from . import efficientdet
 from . import blazeface
 from . import faceboxes
 from . import fcos
@@ -35,6 +36,7 @@ from .cascade_rcnn_cls_aware import *
 from .yolov3 import *
 from .ssd import *
 from .retinanet import *
+from .efficientdet import *
 from .blazeface import *
 from .faceboxes import *
 from .fcos import *
