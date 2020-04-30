@@ -108,7 +108,7 @@ def get_dataset_path(path, annotation, image_dir):
     data_name = os.path.split(path.strip().lower())[-1]
     for name, dataset in DATASETS.items():
         if data_name == name:
-            logger.info("Parse dataset_dir {} as dataset "
+            logger.debug("Parse dataset_dir {} as dataset "
                         "{}".format(path, name))
             if name == 'objects365':
                 raise NotImplementedError(
@@ -146,7 +146,7 @@ def get_dataset_path(path, annotation, image_dir):
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
-    logger.info("Create voc file list...")
+    logger.debug("Create voc file list...")
     devkit_dir = osp.join(data_dir, devkit_subdir)
     years = ['2007', '2012']
 
@@ -155,7 +155,7 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     # do not generate label_list.txt here. For default
     # label, see ../data/source/voc.py
     create_list(devkit_dir, years, data_dir)
-    logger.info("Create voc file list finished")
+    logger.debug("Create voc file list finished")
 
 
 def map_path(url, root_dir):
@@ -197,7 +197,7 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
     exist_flag = False
     if osp.exists(fullpath) and check_exist:
         exist_flag = True
-        logger.info("Found {}".format(fullpath))
+        logger.debug("Found {}".format(fullpath))
     else:
         exist_flag = False
         fullname = _download(url, root_dir, md5sum)
@@ -218,7 +218,7 @@ def download_dataset(path, dataset=None):
     dataset_info = DATASETS[dataset][0]
     for info in dataset_info:
         get_path(info[0], path, info[1], False)
-    logger.info("Download dataset {} finished.".format(dataset))
+    logger.debug("Download dataset {} finished.".format(dataset))
 
 
 def _dataset_exists(path, annotation, image_dir):
@@ -226,23 +226,23 @@ def _dataset_exists(path, annotation, image_dir):
     Check if user define dataset exists
     """
     if not osp.exists(path):
-        logger.info("Config dataset_dir {} is not exits, "
+        logger.debug("Config dataset_dir {} is not exits, "
                     "dataset config is not valid".format(path))
         return False
 
     if annotation:
         annotation_path = osp.join(path, annotation)
         if not osp.isfile(annotation_path):
-            logger.info("Config annotation {} is not a "
+            logger.debug("Config annotation {} is not a "
                         "file, dataset config is not "
                         "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
         if not osp.isdir(image_path):
-            logger.info("Config image_dir {} is not a "
-                        "directory, dataset config is not "
-                        "valid".format(image_path))
+            logger.warning("Config image_dir {} is not a "
+                           "directory, dataset config is not "
+                           "valid".format(image_path))
             return False
     return True
 
@@ -300,7 +300,7 @@ def _md5check(fullname, md5sum=None):
     if md5sum is None:
         return True
 
-    logger.info("File {} md5 checking...".format(fullname))
+    logger.debug("File {} md5 checking...".format(fullname))
     md5 = hashlib.md5()
     with open(fullname, 'rb') as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -308,8 +308,8 @@ def _md5check(fullname, md5sum=None):
     calc_md5sum = md5.hexdigest()
 
     if calc_md5sum != md5sum:
-        logger.info("File {} md5 check failed, {}(calc) != "
-                    "{}(base)".format(fullname, calc_md5sum, md5sum))
+        logger.warning("File {} md5 check failed, {}(calc) != "
+                       "{}(base)".format(fullname, calc_md5sum, md5sum))
         return False
     return True
 

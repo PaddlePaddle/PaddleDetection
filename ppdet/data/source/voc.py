@@ -160,7 +160,7 @@ class VOCDataSet(DataSet):
                     break
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
-        logger.info('{} samples in file {}'.format(ct, anno_path))
+        logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
 
 
