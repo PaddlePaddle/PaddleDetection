@@ -55,6 +55,8 @@ python -c "import paddle; print(paddle.__version__)"
     make install
     # 若您没有权限或更倾向不安装至全局site-packages
     python setup.py install --user
+    # 或者使用pip安装
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **windows用户安装COCO-API方式：**
 
