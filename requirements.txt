@@ -4,7 +4,6 @@ typeguard ; python_version >= '3.4'
 tb-paddle
 tensorboard >= 1.15
 cython
-pycocotools
 opencv-python
 PyYAML
 shapely
