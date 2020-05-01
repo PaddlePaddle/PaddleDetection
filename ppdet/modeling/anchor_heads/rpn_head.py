@@ -169,7 +169,7 @@ class RPNHead(object):
             rpn_cls_prob = fluid.layers.transpose(
                 rpn_cls_prob, perm=[0, 3, 1, 2])
         prop_op = self.train_proposal if mode == 'train' else self.test_proposal
-        rpn_rois, rpn_roi_probs = prop_op(
+        rpn_rois, rpn_roi_probs, _ = prop_op(
             scores=rpn_cls_prob,
             bbox_deltas=rpn_bbox_pred,
             im_info=im_info,
@@ -430,7 +430,7 @@ class FPNRPNHead(RPNHead):
                 rpn_cls_prob_fpn, shape=(0, 0, 0, -1))
             rpn_cls_prob_fpn = fluid.layers.transpose(
                 rpn_cls_prob_fpn, perm=[0, 3, 1, 2])
-        rpn_rois_fpn, rpn_roi_prob_fpn = prop_op(
+        rpn_rois_fpn, rpn_roi_prob_fpn, _ = prop_op(
             scores=rpn_cls_prob_fpn,
             bbox_deltas=rpn_bbox_pred_fpn,
             im_info=im_info,
