@@ -59,6 +59,8 @@ COCO-API is needed for running. Installation is as follows:
     # Alternatively, if you do not have permissions or prefer
     # not to install the COCO API into global site-packages
     python setup.py install --user
+    # or with pip
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **Installation of COCO-API in windows:**
 

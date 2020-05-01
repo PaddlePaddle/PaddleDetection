@@ -117,7 +117,8 @@ class YOLOv3Loss(object):
         for i, (output, target,
                 anchors) in enumerate(zip(outputs, targets, mask_anchors)):
             an_num = len(anchors) // 2
-            ioup, output = self._split_ioup(output, an_num, num_classes)
+            if self._iou_aware_loss is not None:
+                ioup, output = self._split_ioup(output, an_num, num_classes)
             x, y, w, h, obj, cls = self._split_output(output, an_num,
                                                       num_classes)
             tx, ty, tw, th, tscale, tobj, tcls = self._split_target(target)
