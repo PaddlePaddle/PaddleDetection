@@ -256,7 +256,7 @@ def main():
     if FLAGS.eval:
         # evaluation
         results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
+                           eval_values, eval_cls, cfg)
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution

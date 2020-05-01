@@ -56,6 +56,9 @@ class TestMaskRCNN(TestFasterRCNN):
         self.cfg_file = 'configs/mask_rcnn_r50_1x.yml'
 
 
+@unittest.skip(
+    reason="It should be fixed to adapt https://github.com/PaddlePaddle/Paddle/pull/23797"
+)
 class TestCascadeRCNN(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/cascade_rcnn_r50_fpn_1x.yml'
