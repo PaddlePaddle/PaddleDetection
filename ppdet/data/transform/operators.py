@@ -37,6 +37,7 @@ import cv2
 from PIL import Image, ImageEnhance
 
 from ppdet.core.workspace import serializable
+from ppdet.modeling.ops import AnchorGrid
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -1151,8 +1152,8 @@ class Resize(BaseOperator):
             scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
             sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
                                         dim - 1)
-        #sample['h'] = resize_h
-        #sample['w'] = resize_w
+        sample['h'] = resize_h
+        sample['w'] = resize_w
 
         sample['image'] = cv2.resize(
             sample['image'], (resize_w, resize_h), interpolation=interp)
@@ -1973,4 +1974,203 @@ class CornerRatio(BaseOperator):
         width_ratio = out_width / float(sample['w'])
         sample['ratios'] = np.array([height_ratio, width_ratio])
 
+        return sample
+
+
+@register_op
+class RandomScaledCrop(BaseOperator):
+    """Resize image and bbox based on long side (with optional random scaling),
+       then crop or pad image to target size.
+
+    Args:
+        target_dim (int): target size.
+        scale_range (list): random scale range.
+        interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+    """
+
+    def __init__(self,
+                 target_dim=512,
+                 scale_range=[.1, 2.],
+                 interp=cv2.INTER_LINEAR):
+        super(RandomScaledCrop, self).__init__()
+        self.target_dim = target_dim
+        self.scale_range = scale_range
+        self.interp = interp
+
+    def __call__(self, sample, context=None):
+        w = sample['w']
+        h = sample['h']
+        random_scale = np.random.uniform(*self.scale_range)
+        dim = self.target_dim
+        random_dim = int(dim * random_scale)
+        dim_max = max(h, w)
+        scale = random_dim / dim_max
+        resize_w = int(round(w * scale))
+        resize_h = int(round(h * scale))
+        offset_x = int(max(0, np.random.uniform(0., resize_w - dim)))
+        offset_y = int(max(0, np.random.uniform(0., resize_h - dim)))
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
+            shift_array = np.array([offset_x, offset_y] * 2, dtype=np.float32)
+            boxes = sample['gt_bbox'] * scale_array - shift_array
+            boxes = np.clip(boxes, 0, dim - 1)
+            # filter boxes with no area
+            area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
+            valid = (area > 1.).nonzero()[0]
+            sample['gt_bbox'] = boxes[valid]
+            sample['gt_class'] = sample['gt_class'][valid]
+
+        img = sample['image']
+        img = cv2.resize(img, (resize_w, resize_h), interpolation=self.interp)
+        img = np.array(img)
+        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
+        canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
+            offset_y:offset_y + dim, offset_x:offset_x + dim, :]
+        sample['h'] = dim
+        sample['w'] = dim
+        sample['image'] = canvas
+        sample['im_info'] = [resize_h, resize_w, scale]
+        return sample
+
+
+@register_op
+class ResizeAndPad(BaseOperator):
+    """Resize image and bbox, then pad image to target size.
+
+    Args:
+        target_dim (int): target size
+        interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+    """
+
+    def __init__(self, target_dim=512, interp=cv2.INTER_LINEAR):
+        super(ResizeAndPad, self).__init__()
+        self.target_dim = target_dim
+        self.interp = interp
+
+    def __call__(self, sample, context=None):
+        w = sample['w']
+        h = sample['h']
+        interp = self.interp
+        dim = self.target_dim
+        dim_max = max(h, w)
+        scale = self.target_dim / dim_max
+        resize_w = int(round(w * scale))
+        resize_h = int(round(h * scale))
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
+            sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
+                                        dim - 1)
+        img = sample['image']
+        img = cv2.resize(img, (resize_w, resize_h), interpolation=interp)
+        img = np.array(img)
+        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
+        canvas[:resize_h, :resize_w, :] = img
+        sample['h'] = dim
+        sample['w'] = dim
+        sample['image'] = canvas
+        sample['im_info'] = [resize_h, resize_w, scale]
+        return sample
+
+
+@register_op
+class TargetAssign(BaseOperator):
+    """Assign regression target and labels.
+
+    Args:
+        image_size (int or list): input image size, a single integer or list of
+            [h, w]. Default: 512
+        min_level (int): min level of the feature pyramid. Default: 3
+        max_level (int): max level of the feature pyramid. Default: 7
+        anchor_base_scale (int): base anchor scale. Default: 4
+        num_scales (int): number of anchor scales. Default: 3
+        aspect_ratios (list): aspect ratios.
+            Default: [(1, 1), (1.4, 0.7), (0.7, 1.4)]
+        match_threshold (float): threshold for foreground IoU. Default: 0.5
+    """
+
+    def __init__(self,
+                 image_size=512,
+                 min_level=3,
+                 max_level=7,
+                 anchor_base_scale=4,
+                 num_scales=3,
+                 aspect_ratios=[(1, 1), (1.4, 0.7), (0.7, 1.4)],
+                 match_threshold=0.5):
+        super(TargetAssign, self).__init__()
+        assert image_size % 2 ** max_level == 0, \
+            "image size should be multiple of the max level stride"
+        self.image_size = image_size
+        self.min_level = min_level
+        self.max_level = max_level
+        self.anchor_base_scale = anchor_base_scale
+        self.num_scales = num_scales
+        self.aspect_ratios = aspect_ratios
+        self.match_threshold = match_threshold
+
+    @property
+    def anchors(self):
+        if not hasattr(self, '_anchors'):
+            anchor_grid = AnchorGrid(self.image_size, self.min_level,
+                                     self.max_level, self.anchor_base_scale,
+                                     self.num_scales, self.aspect_ratios)
+            self._anchors = np.concatenate(anchor_grid.generate())
+        return self._anchors
+
+    def iou_matrix(self, a, b):
+        tl_i = np.maximum(a[:, np.newaxis, :2], b[:, :2])
+        br_i = np.minimum(a[:, np.newaxis, 2:], b[:, 2:])
+        area_i = np.prod(br_i - tl_i, axis=2) * (tl_i < br_i).all(axis=2)
+        area_a = np.prod(a[:, 2:] - a[:, :2], axis=1)
+        area_b = np.prod(b[:, 2:] - b[:, :2], axis=1)
+        area_o = (area_a[:, np.newaxis] + area_b - area_i)
+        # return area_i / (area_o + 1e-10)
+        return np.where(area_i == 0., np.zeros_like(area_i), area_i / area_o)
+
+    def match(self, anchors, gt_boxes):
+        # XXX put smaller matrix first would be a little bit faster
+        mat = self.iou_matrix(gt_boxes, anchors)
+        max_anchor_for_each_gt = mat.argmax(axis=1)
+        max_for_each_anchor = mat.max(axis=0)
+        anchor_to_gt = mat.argmax(axis=0)
+        anchor_to_gt[max_for_each_anchor < self.match_threshold] = -1
+        # XXX ensure each gt has at least one anchor assigned,
+        # see `force_match_for_each_row` in TF implementation
+        one_hot = np.zeros_like(mat)
+        one_hot[np.arange(mat.shape[0]), max_anchor_for_each_gt] = 1.
+        max_anchor_indices = one_hot.sum(axis=0).nonzero()[0]
+        max_gt_indices = one_hot.argmax(axis=0)[max_anchor_indices]
+        anchor_to_gt[max_anchor_indices] = max_gt_indices
+        return anchor_to_gt
+
+    def encode(self, anchors, boxes):
+        wha = anchors[..., 2:] - anchors[..., :2] + 1
+        ca = anchors[..., :2] + wha * .5
+        whb = boxes[..., 2:] - boxes[..., :2] + 1
+        cb = boxes[..., :2] + whb * .5
+        offsets = np.empty_like(anchors)
+        offsets[..., :2] = (cb - ca) / wha
+        offsets[..., 2:] = np.log(whb / wha)
+        return offsets
+
+    def __call__(self, sample, context=None):
+        gt_boxes = sample['gt_bbox']
+        gt_labels = sample['gt_class']
+        labels = np.full((self.anchors.shape[0], 1), 0, dtype=np.int32)
+        targets = np.full((self.anchors.shape[0], 4), 0., dtype=np.float32)
+        sample['gt_label'] = labels
+        sample['gt_target'] = targets
+
+        if len(gt_boxes) < 1:
+            sample['fg_num'] = np.array(0, dtype=np.int32)
+            return sample
+
+        anchor_to_gt = self.match(self.anchors, gt_boxes)
+        matched_indices = (anchor_to_gt >= 0).nonzero()[0]
+        labels[matched_indices] = gt_labels[anchor_to_gt[matched_indices]]
+
+        matched_boxes = gt_boxes[anchor_to_gt[matched_indices]]
+        matched_anchors = self.anchors[matched_indices]
+        matched_targets = self.encode(matched_anchors, matched_boxes)
+        targets[matched_indices] = matched_targets
+        sample['fg_num'] = np.array(len(matched_targets), dtype=np.int32)
         return sample

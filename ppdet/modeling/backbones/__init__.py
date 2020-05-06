@@ -30,6 +30,8 @@ from . import hrnet
 from . import hrfpn
 from . import bfp
 from . import hourglass
+from . import efficientnet
+from . import bifpn
 from . import cspdarknet
 
 from .resnet import *
@@ -48,4 +50,6 @@ from .hrnet import *
 from .hrfpn import *
 from .bfp import *
 from .hourglass import *
+from .efficientnet import *
+from .bifpn import *
 from .cspdarknet import *

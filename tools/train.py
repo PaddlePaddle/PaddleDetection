@@ -38,6 +38,8 @@ set_paddle_flags(
 )
 
 from paddle import fluid
+from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
+from paddle.fluid.optimizer import ExponentialMovingAverage
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
@@ -125,8 +127,15 @@ def main():
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
                 optimizer.minimize(loss)
+
                 if FLAGS.fp16:
                     loss /= ctx.get_loss_scale_var()
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                global_steps = _decay_step_counter()
+                ema = ExponentialMovingAverage(
+                    cfg['ema_decay'], thres_steps=global_steps)
+                ema.update()
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -265,6 +274,8 @@ def main():
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.apply_program)
             checkpoint.save(exe, train_prog, os.path.join(save_dir, save_name))
 
             if FLAGS.eval:
@@ -279,6 +290,7 @@ def main():
                     eval_keys,
                     eval_values,
                     eval_cls,
+                    cfg,
                     resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
@@ -297,6 +309,9 @@ def main():
                                     os.path.join(save_dir, "best_model"))
                 logger.info("Best test box ap: {}, in iter: {}".format(
                     best_box_ap_list[0], best_box_ap_list[1]))
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.restore_program)
 
     train_loader.reset()
 

@@ -22,7 +22,7 @@ import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, NumpyArrayInitializer
 from paddle.fluid.regularizer import L2Decay
-from ppdet.modeling.ops import ConvNorm
+from ppdet.modeling.ops import ConvNorm, DeformConvNorm
 from ppdet.modeling.ops import MultiClassNMS
 
 from ppdet.core.workspace import register
@@ -89,9 +89,13 @@ class FCOSHead(object):
         subnet_blob_cls = features
         subnet_blob_reg = features
         in_channles = features.shape[1]
+        if self.use_dcn_in_tower:
+            conv_norm = DeformConvNorm
+        else:
+            conv_norm = ConvNorm
         for lvl in range(0, self.num_convs):
             conv_cls_name = 'fcos_head_cls_tower_conv_{}'.format(lvl)
-            subnet_blob_cls = ConvNorm(
+            subnet_blob_cls = conv_norm(
                 input=subnet_blob_cls,
                 num_filters=in_channles,
                 filter_size=3,
@@ -104,7 +108,7 @@ class FCOSHead(object):
                 norm_name=conv_cls_name + "_norm",
                 name=conv_cls_name)
             conv_reg_name = 'fcos_head_reg_tower_conv_{}'.format(lvl)
-            subnet_blob_reg = ConvNorm(
+            subnet_blob_reg = conv_norm(
                 input=subnet_blob_reg,
                 num_filters=in_channles,
                 filter_size=3,

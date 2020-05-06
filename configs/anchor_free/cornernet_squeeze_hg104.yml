@@ -7,7 +7,7 @@ save_dir: output
 snapshot_iter: 10000
 metric: COCO
 pretrain_weights: NULL
-weights: output/cornernet_squeeze/model_final
+weights: output/cornernet_squeeze_hg104/model_final
 num_classes: 80
 stack: 2
 

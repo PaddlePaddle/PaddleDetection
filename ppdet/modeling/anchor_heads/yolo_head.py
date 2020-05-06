@@ -359,8 +359,8 @@ class YOLOv4Head(YOLOv3Head):
                  anchor_masks=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
                  nms=MultiClassNMS(
                      score_threshold=0.01,
-                     nms_top_k=1000,
-                     keep_top_k=100,
+                     nms_top_k=-1,
+                     keep_top_k=-1,
                      nms_threshold=0.45,
                      background_label=-1).__dict__,
                  spp_stage=5,

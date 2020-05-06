@@ -49,7 +49,8 @@ class YOLOv3Loss(object):
                  iou_loss=None,
                  iou_aware_loss=None,
                  downsample=[32, 16, 8],
-                 scale_x_y=1.):
+                 scale_x_y=1.,
+                 match_score=False):
         self._batch_size = batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
@@ -58,6 +59,7 @@ class YOLOv3Loss(object):
         self._iou_aware_loss = iou_aware_loss
         self.downsample = downsample
         self.scale_x_y = scale_x_y
+        self.match_score = match_score
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
                  anchor_masks, mask_anchors, num_classes, prefix_name):
@@ -280,7 +282,7 @@ class YOLOv3Loss(object):
 
         # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
         # NOTE: img_size is set as 1.0 to get noramlized pred bbox
-        bbox, _ = fluid.layers.yolo_box(
+        bbox, prob = fluid.layers.yolo_box(
             x=output,
             img_size=fluid.layers.ones(
                 shape=[batch_size, 2], dtype="int32"),
@@ -290,6 +292,7 @@ class YOLOv3Loss(object):
             downsample_ratio=downsample,
             clip_bbox=False,
             scale_x_y=scale_x_y)
+        print('prob: ', prob)
 
         # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
         #    and gt bbox in each sample
@@ -299,6 +302,7 @@ class YOLOv3Loss(object):
         else:
             preds = [bbox]
             gts = [gt_box]
+            probs = [prob]
         ious = []
         for pred, gt in zip(preds, gts):
 
@@ -318,12 +322,17 @@ class YOLOv3Loss(object):
             pred = fluid.layers.squeeze(pred, axes=[0])
             gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
             ious.append(fluid.layers.iou_similarity(pred, gt))
-        iou = fluid.layers.stack(ious, axis=0)
 
+        iou = fluid.layers.stack(ious, axis=0)
         # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
         #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
+
         max_iou = fluid.layers.reduce_max(iou, dim=-1)
         iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
+        if self.match_score:
+            max_prob = fluid.layers.reduce_max(prob, dim=-1)
+            iou_mask = iou_mask * fluid.layers.cast(
+                max_prob <= 0.25, dtype="float32")
         output_shape = fluid.layers.shape(output)
         an_num = len(anchors) // 2
         iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],

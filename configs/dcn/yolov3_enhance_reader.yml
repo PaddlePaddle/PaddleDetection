@@ -5,9 +5,9 @@ TrainReader:
   use_fine_grained_loss: true
   dataset:
     !COCODataSet
-    image_dir: train2017
-    anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: /paddle/wangguanzhong/data/coco
     with_background: false
   sample_transforms:
     - !DecodeImage
