@@ -23,6 +23,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.check import check_config
 from tools.export_model import prune_feed_vars
 
 import logging
@@ -50,13 +51,10 @@ def save_infer_model(save_dir, exe, feed_vars, test_fetches, infer_prog):
 
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
+
+    main_arch = cfg.architecture
 
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()
