@@ -41,12 +41,11 @@ from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.prune import sensitivity
 import logging
@@ -60,12 +59,10 @@ def main():
 
     print("FLAGS.config: {}".format(FLAGS.config))
     cfg = load_config(FLAGS.config)
-    assert 'architecture' in cfg
-    main_arch = cfg.architecture
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
 
-    print_total_cfg(cfg)
+    main_arch = cfg.architecture
 
     place = fluid.CUDAPlace(0)
     exe = fluid.Executor(place)
