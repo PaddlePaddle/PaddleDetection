@@ -187,7 +187,9 @@ def main():
             pruned_ratios < [1] * len(pruned_ratios)
             ), "The elements of pruned ratios should be in range (0, 1)."
 
-    pruner = Pruner()
+    assert FLAGS.prune_criterion in ['l1_norm', 'geometry_median'], \
+            "unsupported prune criterion {}".format(FLAGS.prune_criterion)
+    pruner = Pruner(criterion=FLAGS.prune_criterion)
     train_prog = pruner.prune(
         train_prog,
         fluid.global_scope(),
@@ -254,7 +256,7 @@ def main():
     if FLAGS.eval:
         # evaluation
         results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
+                           eval_values, eval_cls, cfg)
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution
@@ -388,5 +390,11 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help="Whether to only print the parameters' names and shapes.")
+    parser.add_argument(
+        "--prune_criterion",
+        default='l1_norm',
+        type=str,
+        help="criterion function type for channels sorting in pruning, can be set " \
+             "as 'l1_norm' or 'geometry_median' currently, default 'l1_norm'")
     FLAGS = parser.parse_args()
     main()

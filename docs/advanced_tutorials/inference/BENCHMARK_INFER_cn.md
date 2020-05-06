@@ -10,7 +10,7 @@
 - 测试方式:
   - 为了方便比较不同模型的推理速度，输入采用同样大小的图片，为 3x640x640，采用 `demo/000000014439_640x640.jpg` 图片。
   - Batch Size=1
-  - 去掉前10轮warmup时间，测试100轮的平均时间，单位ms/image，包括输入数据拷贝至GPU的时间、计算时间、数据拷贝只CPU的时间。
+  - 去掉前10轮warmup时间，测试100轮的平均时间，单位ms/image，包括输入数据拷贝至GPU的时间、计算时间、数据拷贝至CPU的时间。
   - 采用Fluid C++预测引擎: 包含Fluid C++预测、Fluid-TensorRT预测，下面同时测试了Float32 (FP32) 和Float16 (FP16)的推理速度。
   - 测试时开启了 FLAGS_cudnn_exhaustive_search=True，使用exhaustive方式搜索卷积计算算法。
 

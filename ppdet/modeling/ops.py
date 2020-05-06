@@ -18,18 +18,148 @@ import math
 import six
 
 from paddle import fluid
+from paddle.fluid.layer_helper import LayerHelper
+from paddle.fluid.initializer import NumpyArrayInitializer
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.bbox_utils import bbox_overlaps, box_to_delta
 
 __all__ = [
-    'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
-    'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
-    'MultiBoxHead', 'SSDLiteMultiBoxHead', 'SSDOutputDecoder',
-    'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
-    'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'AnchorGenerator', 'AnchorGrid', 'DropBlock', 'RPNTargetAssign',
+    'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
+    'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
+    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
+    'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
 ]
+
+
+def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
+    out_channel = filter_size * filter_size * 3
+    out = fluid.layers.conv2d(
+        input,
+        num_filters=out_channel,
+        filter_size=filter_size,
+        stride=stride,
+        padding=padding,
+        param_attr=ParamAttr(
+            initializer=fluid.initializer.Constant(value=0),
+            name=name + ".w_0"),
+        bias_attr=ParamAttr(
+            initializer=fluid.initializer.Constant(value=0),
+            name=name + ".b_0"),
+        act=act,
+        name=name)
+    return out
+
+
+def DeformConvNorm(input,
+                   num_filters,
+                   filter_size,
+                   stride=1,
+                   groups=1,
+                   norm_decay=0.,
+                   norm_type='affine_channel',
+                   norm_groups=32,
+                   dilation=1,
+                   lr_scale=1,
+                   freeze_norm=False,
+                   act=None,
+                   norm_name=None,
+                   initializer=None,
+                   bias_attr=False,
+                   name=None):
+    if bias_attr:
+        bias_para = ParamAttr(
+            name=name + "_bias",
+            initializer=fluid.initializer.Constant(value=0),
+            learning_rate=lr_scale * 2)
+    else:
+        bias_para = False
+    offset_mask = _conv_offset(
+        input=input,
+        filter_size=filter_size,
+        stride=stride,
+        padding=(filter_size - 1) // 2,
+        act=None,
+        name=name + "_conv_offset")
+    offset_channel = filter_size**2 * 2
+    mask_channel = filter_size**2
+    offset, mask = fluid.layers.split(
+        input=offset_mask,
+        num_or_sections=[offset_channel, mask_channel],
+        dim=1)
+    mask = fluid.layers.sigmoid(mask)
+    conv = fluid.layers.deformable_conv(
+        input=input,
+        offset=offset,
+        mask=mask,
+        num_filters=num_filters,
+        filter_size=filter_size,
+        stride=stride,
+        padding=(filter_size - 1) // 2 * dilation,
+        dilation=dilation,
+        groups=groups,
+        deformable_groups=1,
+        im2col_step=1,
+        param_attr=ParamAttr(
+            name=name + "_weights",
+            initializer=initializer,
+            learning_rate=lr_scale),
+        bias_attr=bias_para,
+        name=name + ".conv2d.output.1")
+
+    norm_lr = 0. if freeze_norm else 1.
+    pattr = ParamAttr(
+        name=norm_name + '_scale',
+        learning_rate=norm_lr * lr_scale,
+        regularizer=L2Decay(norm_decay))
+    battr = ParamAttr(
+        name=norm_name + '_offset',
+        learning_rate=norm_lr * lr_scale,
+        regularizer=L2Decay(norm_decay))
+
+    if norm_type in ['bn', 'sync_bn']:
+        global_stats = True if freeze_norm else False
+        out = fluid.layers.batch_norm(
+            input=conv,
+            act=act,
+            name=norm_name + '.output.1',
+            param_attr=pattr,
+            bias_attr=battr,
+            moving_mean_name=norm_name + '_mean',
+            moving_variance_name=norm_name + '_variance',
+            use_global_stats=global_stats)
+        scale = fluid.framework._get_var(pattr.name)
+        bias = fluid.framework._get_var(battr.name)
+    elif norm_type == 'gn':
+        out = fluid.layers.group_norm(
+            input=conv,
+            act=act,
+            name=norm_name + '.output.1',
+            groups=norm_groups,
+            param_attr=pattr,
+            bias_attr=battr)
+        scale = fluid.framework._get_var(pattr.name)
+        bias = fluid.framework._get_var(battr.name)
+    elif norm_type == 'affine_channel':
+        scale = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=pattr,
+            default_initializer=fluid.initializer.Constant(1.))
+        bias = fluid.layers.create_parameter(
+            shape=[conv.shape[1]],
+            dtype=conv.dtype,
+            attr=battr,
+            default_initializer=fluid.initializer.Constant(0.))
+        out = fluid.layers.affine_channel(
+            x=conv, scale=scale, bias=bias, act=act)
+
+    if freeze_norm:
+        scale.stop_gradient = True
+        bias.stop_gradient = True
+    return out
 
 
 def ConvNorm(input,
@@ -194,6 +324,94 @@ class AnchorGenerator(object):
         self.aspect_ratios = aspect_ratios
         self.variance = variance
         self.stride = stride
+
+
+@register
+@serializable
+class AnchorGrid(object):
+    """Generate anchor grid
+
+    Args:
+        image_size (int or list): input image size, may be a single integer or
+            list of [h, w]. Default: 512
+        min_level (int): min level of the feature pyramid. Default: 3
+        max_level (int): max level of the feature pyramid. Default: 7
+        anchor_base_scale: base anchor scale. Default: 4
+        num_scales: number of anchor scales. Default: 3
+        aspect_ratios: aspect ratios. default: [[1, 1], [1.4, 0.7], [0.7, 1.4]]
+    """
+
+    def __init__(self,
+                 image_size=512,
+                 min_level=3,
+                 max_level=7,
+                 anchor_base_scale=4,
+                 num_scales=3,
+                 aspect_ratios=[[1, 1], [1.4, 0.7], [0.7, 1.4]]):
+        super(AnchorGrid, self).__init__()
+        if isinstance(image_size, Integral):
+            self.image_size = [image_size, image_size]
+        else:
+            self.image_size = image_size
+        for dim in self.image_size:
+            assert dim % 2 ** max_level == 0, \
+                "image size should be multiple of the max level stride"
+        self.min_level = min_level
+        self.max_level = max_level
+        self.anchor_base_scale = anchor_base_scale
+        self.num_scales = num_scales
+        self.aspect_ratios = aspect_ratios
+
+    @property
+    def base_cell(self):
+        if not hasattr(self, '_base_cell'):
+            self._base_cell = self.make_cell()
+        return self._base_cell
+
+    def make_cell(self):
+        scales = [2**(i / self.num_scales) for i in range(self.num_scales)]
+        scales = np.array(scales)
+        ratios = np.array(self.aspect_ratios)
+        ws = np.outer(scales, ratios[:, 0]).reshape(-1, 1)
+        hs = np.outer(scales, ratios[:, 1]).reshape(-1, 1)
+        anchors = np.hstack((-0.5 * ws, -0.5 * hs, 0.5 * ws, 0.5 * hs))
+        return anchors
+
+    def make_grid(self, stride):
+        cell = self.base_cell * stride * self.anchor_base_scale
+        x_steps = np.arange(stride // 2, self.image_size[1], stride)
+        y_steps = np.arange(stride // 2, self.image_size[0], stride)
+        offset_x, offset_y = np.meshgrid(x_steps, y_steps)
+        offset_x = offset_x.flatten()
+        offset_y = offset_y.flatten()
+        offsets = np.stack((offset_x, offset_y, offset_x, offset_y), axis=-1)
+        offsets = offsets[:, np.newaxis, :]
+        return (cell + offsets).reshape(-1, 4)
+
+    def generate(self):
+        return [
+            self.make_grid(2**l)
+            for l in range(self.min_level, self.max_level + 1)
+        ]
+
+    def __call__(self):
+        if not hasattr(self, '_anchor_vars'):
+            anchor_vars = []
+            helper = LayerHelper('anchor_grid')
+            for idx, l in enumerate(range(self.min_level, self.max_level + 1)):
+                stride = 2**l
+                anchors = self.make_grid(stride)
+                var = helper.create_parameter(
+                    attr=ParamAttr(name='anchors_{}'.format(idx)),
+                    shape=anchors.shape,
+                    dtype='float32',
+                    stop_gradient=True,
+                    default_initializer=NumpyArrayInitializer(anchors))
+                anchor_vars.append(var)
+                var.persistable = True
+            self._anchor_vars = anchor_vars
+
+        return self._anchor_vars
 
 
 @register
@@ -378,7 +596,7 @@ class MultiClassSoftNMS(object):
             fluid.default_main_program(),
             name='softnms_pred_result',
             dtype='float32',
-            shape=[6],
+            shape=[-1, 6],
             lod_level=1)
         fluid.layers.py_func(
             func=_soft_nms, x=[bboxes, scores], out=pred_result)
