@@ -29,7 +29,7 @@ from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -113,17 +113,12 @@ def split_distill(split_output_names, weight):
 def main():
     env = os.environ
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -231,7 +226,9 @@ def main():
     assert pruned_ratios > [0] * len(pruned_ratios) and pruned_ratios < [1] * len(pruned_ratios), \
         "The elements of pruned ratios should be in range (0, 1)."
 
-    pruner = Pruner()
+    assert FLAGS.prune_criterion in ['l1_norm', 'geometry_median'], \
+            "unsupported prune criterion {}".format(FLAGS.prune_criterion)
+    pruner = Pruner(criterion=FLAGS.prune_criterion)
     distill_prog = pruner.prune(
         fluid.default_main_program(),
         fluid.global_scope(),
@@ -361,5 +358,11 @@ if __name__ == '__main__':
         type=str,
         help="The ratios pruned iteratively for each parameter when calculating sensitivities."
     )
+    parser.add_argument(
+        "--prune_criterion",
+        default='l1_norm',
+        type=str,
+        help="criterion function type for channels sorting in pruning, can be set " \
+             "as 'l1_norm' or 'geometry_median' currently, default 'l1_norm'")
     FLAGS = parser.parse_args()
     main()

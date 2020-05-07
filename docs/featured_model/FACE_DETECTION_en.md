@@ -35,14 +35,14 @@ optimized network structure.
 
 #### mAP in WIDER FACE
 
-| Architecture | Type     | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download |
-|:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
-| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
-| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
-| BlazeFace    | NAS_V2   | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar)
-| FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
-| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
+| Architecture | Type     | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download | Configs |
+|:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
+| BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
+| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
+| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas.yml) |
+| BlazeFace    | NAS_V2   | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas_v2.yml) |
+| FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes.yml) |
+| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes_lite.yml) |
 
 **NOTES:**  
 - Get mAP in `Easy/Medium/Hard Set` by multi-scale evaluation in `tools/face_eval.py`.

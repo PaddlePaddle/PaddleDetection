@@ -37,12 +37,13 @@ import cv2
 from PIL import Image, ImageEnhance
 
 from ppdet.core.workspace import serializable
+from ppdet.modeling.ops import AnchorGrid
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly)
+                        is_poly, gaussian_radius, draw_gaussian)
 
 logger = logging.getLogger(__name__)
 
@@ -1243,10 +1244,13 @@ class ColorDistort(BaseOperator):
     def __call__(self, sample, context=None):
         img = sample['image']
         if self.random_apply:
-            distortions = np.random.permutation([
-                self.apply_brightness, self.apply_contrast,
-                self.apply_saturation, self.apply_hue
-            ])
+            functions = [
+                self.apply_brightness,
+                self.apply_contrast,
+                self.apply_saturation,
+                self.apply_hue,
+            ]
+            distortions = np.random.permutation(functions)
             for func in distortions:
                 img = func(img)
             sample['image'] = img
@@ -1262,6 +1266,66 @@ class ColorDistort(BaseOperator):
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
             img = self.apply_contrast(img)
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class CornerRandColor(ColorDistort):
+    """Random color for CornerNet series models.
+    Args:
+        saturation (float): saturation settings.
+        contrast (float): contrast settings.
+        brightness (float): brightness settings.
+        is_scale (bool): whether to scale the input image.
+    """
+
+    def __init__(self,
+                 saturation=0.4,
+                 contrast=0.4,
+                 brightness=0.4,
+                 is_scale=True):
+        super(CornerRandColor, self).__init__(
+            saturation=saturation, contrast=contrast, brightness=brightness)
+        self.is_scale = is_scale
+
+    def apply_saturation(self, img, img_gray):
+        alpha = 1. + np.random.uniform(
+            low=-self.saturation, high=self.saturation)
+        self._blend(alpha, img, img_gray[:, :, None])
+        return img
+
+    def apply_contrast(self, img, img_gray):
+        alpha = 1. + np.random.uniform(low=-self.contrast, high=self.contrast)
+        img_mean = img_gray.mean()
+        self._blend(alpha, img, img_mean)
+        return img
+
+    def apply_brightness(self, img, img_gray):
+        alpha = 1 + np.random.uniform(
+            low=-self.brightness, high=self.brightness)
+        img *= alpha
+        return img
+
+    def _blend(self, alpha, img, img_mean):
+        img *= alpha
+        img_mean *= (1 - alpha)
+        img += img_mean
+
+    def __call__(self, sample, context=None):
+        img = sample['image']
+        if self.is_scale:
+            img = img.astype(np.float32, copy=False)
+            img /= 255.
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        functions = [
+            self.apply_brightness,
+            self.apply_contrast,
+            self.apply_saturation,
+        ]
+        distortions = np.random.permutation(functions)
+        for func in distortions:
+            img = func(img, img_gray)
         sample['image'] = img
         return sample
 
@@ -1671,4 +1735,439 @@ class BboxXYXY2XYWH(BaseOperator):
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class Lighting(BaseOperator):
+    """
+    Lighting the imagen by eigenvalues and eigenvectors
+    Args:
+        eigval (list): eigenvalues
+        eigvec (list): eigenvectors
+        alphastd (float): random weight of lighting, 0.1 by default
+    """
+
+    def __init__(self, eigval, eigvec, alphastd=0.1):
+        super(Lighting, self).__init__()
+        self.alphastd = alphastd
+        self.eigval = np.array(eigval).astype('float32')
+        self.eigvec = np.array(eigvec).astype('float32')
+
+    def __call__(self, sample, context=None):
+        alpha = np.random.normal(scale=self.alphastd, size=(3, ))
+        sample['image'] += np.dot(self.eigvec, self.eigval * alpha)
+        return sample
+
+
+@register_op
+class CornerTarget(BaseOperator):
+    """
+    Generate targets for CornerNet by ground truth data. 
+    Args:
+        output_size (int): the size of output heatmaps.
+        num_classes (int): num of classes.
+        gaussian_bump (bool): whether to apply gaussian bump on gt targets.
+            True by default.
+        gaussian_rad (int): radius of gaussian bump. If it is set to -1, the 
+            radius will be calculated by iou. -1 by default.
+        gaussian_iou (float): the threshold iou of predicted bbox to gt bbox. 
+            If the iou is larger than threshold, the predicted bboox seems as
+            positive sample. 0.3 by default
+        max_tag_len (int): max num of gt box per image.
+    """
+
+    def __init__(self,
+                 output_size,
+                 num_classes,
+                 gaussian_bump=True,
+                 gaussian_rad=-1,
+                 gaussian_iou=0.3,
+                 max_tag_len=128):
+        super(CornerTarget, self).__init__()
+        self.num_classes = num_classes
+        self.output_size = output_size
+        self.gaussian_bump = gaussian_bump
+        self.gaussian_rad = gaussian_rad
+        self.gaussian_iou = gaussian_iou
+        self.max_tag_len = max_tag_len
+
+    def __call__(self, sample, context=None):
+        tl_heatmaps = np.zeros(
+            (self.num_classes, self.output_size[0], self.output_size[1]),
+            dtype=np.float32)
+        br_heatmaps = np.zeros(
+            (self.num_classes, self.output_size[0], self.output_size[1]),
+            dtype=np.float32)
+
+        tl_regrs = np.zeros((self.max_tag_len, 2), dtype=np.float32)
+        br_regrs = np.zeros((self.max_tag_len, 2), dtype=np.float32)
+        tl_tags = np.zeros((self.max_tag_len), dtype=np.int64)
+        br_tags = np.zeros((self.max_tag_len), dtype=np.int64)
+        tag_masks = np.zeros((self.max_tag_len), dtype=np.uint8)
+        tag_lens = np.zeros((), dtype=np.int32)
+        tag_nums = np.zeros((1), dtype=np.int32)
+
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        keep_inds  = ((gt_bbox[:, 2] - gt_bbox[:, 0]) > 0) & \
+                ((gt_bbox[:, 3] - gt_bbox[:, 1]) > 0)
+        gt_bbox = gt_bbox[keep_inds]
+        gt_class = gt_class[keep_inds]
+        sample['gt_bbox'] = gt_bbox
+        sample['gt_class'] = gt_class
+        width_ratio = self.output_size[1] / sample['w']
+        height_ratio = self.output_size[0] / sample['h']
+        for i in range(gt_bbox.shape[0]):
+            width = gt_bbox[i][2] - gt_bbox[i][0]
+            height = gt_bbox[i][3] - gt_bbox[i][1]
+
+            xtl, ytl = gt_bbox[i][0], gt_bbox[i][1]
+            xbr, ybr = gt_bbox[i][2], gt_bbox[i][3]
+
+            fxtl = (xtl * width_ratio)
+            fytl = (ytl * height_ratio)
+            fxbr = (xbr * width_ratio)
+            fybr = (ybr * height_ratio)
+
+            xtl = int(fxtl)
+            ytl = int(fytl)
+            xbr = int(fxbr)
+            ybr = int(fybr)
+            if self.gaussian_bump:
+                width = math.ceil(width * width_ratio)
+                height = math.ceil(height * height_ratio)
+                if self.gaussian_rad == -1:
+                    radius = gaussian_radius((height, width), self.gaussian_iou)
+                    radius = max(0, int(radius))
+                else:
+                    radius = self.gaussian_rad
+                draw_gaussian(tl_heatmaps[gt_class[i][0]], [xtl, ytl], radius)
+                draw_gaussian(br_heatmaps[gt_class[i][0]], [xbr, ybr], radius)
+            else:
+                tl_heatmaps[gt_class[i][0], ytl, xtl] = 1
+                br_heatmaps[gt_class[i][0], ybr, xbr] = 1
+
+            tl_regrs[i, :] = [fxtl - xtl, fytl - ytl]
+            br_regrs[i, :] = [fxbr - xbr, fybr - ybr]
+            tl_tags[tag_lens] = ytl * self.output_size[1] + xtl
+            br_tags[tag_lens] = ybr * self.output_size[1] + xbr
+            tag_lens += 1
+
+        tag_masks[:tag_lens] = 1
+
+        sample['tl_heatmaps'] = tl_heatmaps
+        sample['br_heatmaps'] = br_heatmaps
+        sample['tl_regrs'] = tl_regrs
+        sample['br_regrs'] = br_regrs
+        sample['tl_tags'] = tl_tags
+        sample['br_tags'] = br_tags
+        sample['tag_masks'] = tag_masks
+
+        return sample
+
+
+@register_op
+class CornerCrop(BaseOperator):
+    """
+    Random crop for CornerNet
+    Args:
+        random_scales (list): scales of output_size to input_size.
+        border (int): border of corp center
+        is_train (bool): train or test
+        input_size (int): size of input image
+    """
+
+    def __init__(self,
+                 random_scales=[0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2, 1.3],
+                 border=128,
+                 is_train=True,
+                 input_size=511):
+        super(CornerCrop, self).__init__()
+        self.random_scales = random_scales
+        self.border = border
+        self.is_train = is_train
+        self.input_size = input_size
+
+    def __call__(self, sample, context=None):
+        im_h, im_w = int(sample['h']), int(sample['w'])
+        if self.is_train:
+            scale = np.random.choice(self.random_scales)
+            height = int(self.input_size * scale)
+            width = int(self.input_size * scale)
+
+            w_border = self._get_border(self.border, im_w)
+            h_border = self._get_border(self.border, im_h)
+
+            ctx = np.random.randint(low=w_border, high=im_w - w_border)
+            cty = np.random.randint(low=h_border, high=im_h - h_border)
+
+        else:
+            cty, ctx = im_h // 2, im_w // 2
+            height = im_h | 127
+            width = im_w | 127
+
+        cropped_image = np.zeros(
+            (height, width, 3), dtype=sample['image'].dtype)
+
+        x0, x1 = max(ctx - width // 2, 0), min(ctx + width // 2, im_w)
+        y0, y1 = max(cty - height // 2, 0), min(cty + height // 2, im_h)
+
+        left_w, right_w = ctx - x0, x1 - ctx
+        top_h, bottom_h = cty - y0, y1 - cty
+
+        # crop image
+        cropped_ctx, cropped_cty = width // 2, height // 2
+        x_slice = slice(int(cropped_ctx - left_w), int(cropped_ctx + right_w))
+        y_slice = slice(int(cropped_cty - top_h), int(cropped_cty + bottom_h))
+        cropped_image[y_slice, x_slice, :] = sample['image'][y0:y1, x0:x1, :]
+
+        sample['image'] = cropped_image
+        sample['h'], sample['w'] = height, width
+
+        if self.is_train:
+            # crop detections
+            gt_bbox = sample['gt_bbox']
+            gt_bbox[:, 0:4:2] -= x0
+            gt_bbox[:, 1:4:2] -= y0
+            gt_bbox[:, 0:4:2] += cropped_ctx - left_w
+            gt_bbox[:, 1:4:2] += cropped_cty - top_h
+        else:
+            sample['borders'] = np.array(
+                [
+                    cropped_cty - top_h, cropped_cty + bottom_h,
+                    cropped_ctx - left_w, cropped_ctx + right_w
+                ],
+                dtype=np.float32)
+
+        return sample
+
+    def _get_border(self, border, size):
+        i = 1
+        while size - border // i <= border // i:
+            i *= 2
+        return border // i
+
+
+@register_op
+class CornerRatio(BaseOperator):
+    """
+    Ratio of output size to image size
+    Args:
+        input_size (int): the size of input size
+        output_size (int): the size of heatmap
+    """
+
+    def __init__(self, input_size=511, output_size=64):
+        super(CornerRatio, self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+
+    def __call__(self, sample, context=None):
+        scale = (self.input_size + 1) // self.output_size
+        out_height, out_width = (sample['h'] + 1) // scale, (
+            sample['w'] + 1) // scale
+        height_ratio = out_height / float(sample['h'])
+        width_ratio = out_width / float(sample['w'])
+        sample['ratios'] = np.array([height_ratio, width_ratio])
+
+        return sample
+
+
+@register_op
+class RandomScaledCrop(BaseOperator):
+    """Resize image and bbox based on long side (with optional random scaling),
+       then crop or pad image to target size.
+
+    Args:
+        target_dim (int): target size.
+        scale_range (list): random scale range.
+        interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+    """
+
+    def __init__(self,
+                 target_dim=512,
+                 scale_range=[.1, 2.],
+                 interp=cv2.INTER_LINEAR):
+        super(RandomScaledCrop, self).__init__()
+        self.target_dim = target_dim
+        self.scale_range = scale_range
+        self.interp = interp
+
+    def __call__(self, sample, context=None):
+        w = sample['w']
+        h = sample['h']
+        random_scale = np.random.uniform(*self.scale_range)
+        dim = self.target_dim
+        random_dim = int(dim * random_scale)
+        dim_max = max(h, w)
+        scale = random_dim / dim_max
+        resize_w = int(round(w * scale))
+        resize_h = int(round(h * scale))
+        offset_x = int(max(0, np.random.uniform(0., resize_w - dim)))
+        offset_y = int(max(0, np.random.uniform(0., resize_h - dim)))
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
+            shift_array = np.array([offset_x, offset_y] * 2, dtype=np.float32)
+            boxes = sample['gt_bbox'] * scale_array - shift_array
+            boxes = np.clip(boxes, 0, dim - 1)
+            # filter boxes with no area
+            area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
+            valid = (area > 1.).nonzero()[0]
+            sample['gt_bbox'] = boxes[valid]
+            sample['gt_class'] = sample['gt_class'][valid]
+
+        img = sample['image']
+        img = cv2.resize(img, (resize_w, resize_h), interpolation=self.interp)
+        img = np.array(img)
+        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
+        canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
+            offset_y:offset_y + dim, offset_x:offset_x + dim, :]
+        sample['h'] = dim
+        sample['w'] = dim
+        sample['image'] = canvas
+        sample['im_info'] = [resize_h, resize_w, scale]
+        return sample
+
+
+@register_op
+class ResizeAndPad(BaseOperator):
+    """Resize image and bbox, then pad image to target size.
+
+    Args:
+        target_dim (int): target size
+        interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+    """
+
+    def __init__(self, target_dim=512, interp=cv2.INTER_LINEAR):
+        super(ResizeAndPad, self).__init__()
+        self.target_dim = target_dim
+        self.interp = interp
+
+    def __call__(self, sample, context=None):
+        w = sample['w']
+        h = sample['h']
+        interp = self.interp
+        dim = self.target_dim
+        dim_max = max(h, w)
+        scale = self.target_dim / dim_max
+        resize_w = int(round(w * scale))
+        resize_h = int(round(h * scale))
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
+            sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
+                                        dim - 1)
+        img = sample['image']
+        img = cv2.resize(img, (resize_w, resize_h), interpolation=interp)
+        img = np.array(img)
+        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
+        canvas[:resize_h, :resize_w, :] = img
+        sample['h'] = dim
+        sample['w'] = dim
+        sample['image'] = canvas
+        sample['im_info'] = [resize_h, resize_w, scale]
+        return sample
+
+
+@register_op
+class TargetAssign(BaseOperator):
+    """Assign regression target and labels.
+
+    Args:
+        image_size (int or list): input image size, a single integer or list of
+            [h, w]. Default: 512
+        min_level (int): min level of the feature pyramid. Default: 3
+        max_level (int): max level of the feature pyramid. Default: 7
+        anchor_base_scale (int): base anchor scale. Default: 4
+        num_scales (int): number of anchor scales. Default: 3
+        aspect_ratios (list): aspect ratios.
+            Default: [(1, 1), (1.4, 0.7), (0.7, 1.4)]
+        match_threshold (float): threshold for foreground IoU. Default: 0.5
+    """
+
+    def __init__(self,
+                 image_size=512,
+                 min_level=3,
+                 max_level=7,
+                 anchor_base_scale=4,
+                 num_scales=3,
+                 aspect_ratios=[(1, 1), (1.4, 0.7), (0.7, 1.4)],
+                 match_threshold=0.5):
+        super(TargetAssign, self).__init__()
+        assert image_size % 2 ** max_level == 0, \
+            "image size should be multiple of the max level stride"
+        self.image_size = image_size
+        self.min_level = min_level
+        self.max_level = max_level
+        self.anchor_base_scale = anchor_base_scale
+        self.num_scales = num_scales
+        self.aspect_ratios = aspect_ratios
+        self.match_threshold = match_threshold
+
+    @property
+    def anchors(self):
+        if not hasattr(self, '_anchors'):
+            anchor_grid = AnchorGrid(self.image_size, self.min_level,
+                                     self.max_level, self.anchor_base_scale,
+                                     self.num_scales, self.aspect_ratios)
+            self._anchors = np.concatenate(anchor_grid.generate())
+        return self._anchors
+
+    def iou_matrix(self, a, b):
+        tl_i = np.maximum(a[:, np.newaxis, :2], b[:, :2])
+        br_i = np.minimum(a[:, np.newaxis, 2:], b[:, 2:])
+        area_i = np.prod(br_i - tl_i, axis=2) * (tl_i < br_i).all(axis=2)
+        area_a = np.prod(a[:, 2:] - a[:, :2], axis=1)
+        area_b = np.prod(b[:, 2:] - b[:, :2], axis=1)
+        area_o = (area_a[:, np.newaxis] + area_b - area_i)
+        # return area_i / (area_o + 1e-10)
+        return np.where(area_i == 0., np.zeros_like(area_i), area_i / area_o)
+
+    def match(self, anchors, gt_boxes):
+        # XXX put smaller matrix first would be a little bit faster
+        mat = self.iou_matrix(gt_boxes, anchors)
+        max_anchor_for_each_gt = mat.argmax(axis=1)
+        max_for_each_anchor = mat.max(axis=0)
+        anchor_to_gt = mat.argmax(axis=0)
+        anchor_to_gt[max_for_each_anchor < self.match_threshold] = -1
+        # XXX ensure each gt has at least one anchor assigned,
+        # see `force_match_for_each_row` in TF implementation
+        one_hot = np.zeros_like(mat)
+        one_hot[np.arange(mat.shape[0]), max_anchor_for_each_gt] = 1.
+        max_anchor_indices = one_hot.sum(axis=0).nonzero()[0]
+        max_gt_indices = one_hot.argmax(axis=0)[max_anchor_indices]
+        anchor_to_gt[max_anchor_indices] = max_gt_indices
+        return anchor_to_gt
+
+    def encode(self, anchors, boxes):
+        wha = anchors[..., 2:] - anchors[..., :2] + 1
+        ca = anchors[..., :2] + wha * .5
+        whb = boxes[..., 2:] - boxes[..., :2] + 1
+        cb = boxes[..., :2] + whb * .5
+        offsets = np.empty_like(anchors)
+        offsets[..., :2] = (cb - ca) / wha
+        offsets[..., 2:] = np.log(whb / wha)
+        return offsets
+
+    def __call__(self, sample, context=None):
+        gt_boxes = sample['gt_bbox']
+        gt_labels = sample['gt_class']
+        labels = np.full((self.anchors.shape[0], 1), 0, dtype=np.int32)
+        targets = np.full((self.anchors.shape[0], 4), 0., dtype=np.float32)
+        sample['gt_label'] = labels
+        sample['gt_target'] = targets
+
+        if len(gt_boxes) < 1:
+            sample['fg_num'] = np.array(0, dtype=np.int32)
+            return sample
+
+        anchor_to_gt = self.match(self.anchors, gt_boxes)
+        matched_indices = (anchor_to_gt >= 0).nonzero()[0]
+        labels[matched_indices] = gt_labels[anchor_to_gt[matched_indices]]
+
+        matched_boxes = gt_boxes[anchor_to_gt[matched_indices]]
+        matched_anchors = self.anchors[matched_indices]
+        matched_targets = self.encode(matched_anchors, matched_boxes)
+        targets[matched_indices] = matched_targets
+        sample['fg_num'] = np.array(len(matched_targets), dtype=np.int32)
         return sample

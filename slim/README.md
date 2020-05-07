@@ -188,9 +188,9 @@ Pascal VOC数据集上蒸馏通道剪裁模型库如下。
 | MobileNetV1      |  ImageNet  |   post   |   608    | 27.9(-1.4)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
 | MobileNetV1      |  ImageNet  |   post   |   416    | 28.0(-1.3)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
 | MobileNetV1      |  ImageNet  |   post   |   320    | 26.0(-1.1)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   608    | 28.1(-1.2)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   416    | 28.2(-1.1)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   320    | 25.8(-1.3)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   608    | 28.1(-1.2)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   416    | 28.2(-1.1)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   320    | 25.8(-1.3)   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
 | ResNet34         |  ImageNet  | baseline |   608    | 36.2         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34         |  ImageNet  | baseline |   416    | 34.3         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |
 | ResNet34         |  ImageNet  | baseline |   320    | 31.4         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar) |

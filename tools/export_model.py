@@ -23,6 +23,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.check import check_config
 import yaml
 import logging
 from collections import OrderedDict
@@ -45,8 +46,14 @@ def parse_reader(reader_cfg, metric, arch):
 
     if metric == 'COCO':
         from ppdet.utils.coco_eval import get_category_info
-    if metric == "VOC":
+    elif metric == "VOC":
         from ppdet.utils.voc_eval import get_category_info
+    elif metric == "WIDERFACE":
+        from ppdet.utils.widerface_eval_utils import get_category_info
+    else:
+        raise ValueError(
+            "metric only supports COCO, VOC, WIDERFACE, but received {}".format(
+                metric))
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
     label_list = [str(cat) for cat in catid2name.values()]
@@ -90,7 +97,13 @@ def dump_infer_config(config):
         'draw_threshold': 0.5,
         'metric': config['metric']
     })
-    trt_min_subgraph = {'YOLO': 3, 'SSD': 40, 'RCNN': 40, 'RetinaNet': 40}
+    trt_min_subgraph = {
+        'YOLO': 3,
+        'SSD': 3,
+        'RCNN': 40,
+        'RetinaNet': 40,
+        'Face': 3,
+    }
     infer_arch = config['architecture']
 
     for arch, min_subgraph_size in trt_min_subgraph.items():
@@ -154,13 +167,10 @@ def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
 
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
+
+    main_arch = cfg.architecture
 
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()

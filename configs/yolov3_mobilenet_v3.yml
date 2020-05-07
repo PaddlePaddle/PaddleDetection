@@ -19,7 +19,8 @@ MobileNetV3:
   norm_decay: 0.
   model_name: large
   scale: 1.
-  with_extra_blocks: false
+  extra_block_filters: []
+  feature_maps: [1, 2, 3, 4, 6]
 
 YOLOv3Head:
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]

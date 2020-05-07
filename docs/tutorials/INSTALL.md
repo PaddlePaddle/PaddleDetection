@@ -59,6 +59,8 @@ COCO-API is needed for running. Installation is as follows:
     # Alternatively, if you do not have permissions or prefer
     # not to install the COCO API into global site-packages
     python setup.py install --user
+    # or with pip
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **Installation of COCO-API in windows:**
 
@@ -86,13 +88,20 @@ Required python packages are specified in [requirements.txt](https://github.com/
 pip install -r requirements.txt
 ```
 
+**Specify the current Python path:**
+
+```shell
+# In Linux/Mac
+export PYTHONPATH=$PYTHONPATH:.
+# In windows
+set PYTHONPATH=%PYTHONPATH%;.
+```
+
 **Make sure the tests pass:**
 
-```
-export PYTHONPATH=`pwd`:$PYTHONPATH
+```shell
 python ppdet/modeling/tests/test_architectures.py
 ```
-
 
 ## Datasets
 
