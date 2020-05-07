@@ -493,7 +493,7 @@ class MultiClassDiouNMS(object):
 
             cls_boxes = np.vstack(cls_boxes[start_idx:])
             cls_ids = np.vstack(cls_ids[start_idx:])
-            pred_result = np.hstack([cls_ids, cls_boxes])
+            pred_result = np.hstack([cls_ids, cls_boxes]).astype(np.float32)
 
             # Limit to max_per_image detections **over all classes**
             image_scores = cls_boxes[:, 0]
@@ -514,8 +514,8 @@ class MultiClassDiouNMS(object):
             fluid.default_main_program(),
             name='diou_nms_pred_result',
             dtype='float32',
-            shape=[6],
-            lod_level=1)
+            shape=[-1, 6],
+            lod_level=0)
         fluid.layers.py_func(
             func=_diou_nms, x=[bboxes, scores], out=pred_result)
         return pred_result
