@@ -43,9 +43,13 @@ class PiecewiseDecay(object):
         milestones (list): steps at which to decay learning rate
     """
 
-    def __init__(self, gamma=0.1, milestones=[60000, 80000], values=None):
-        super(PiecewiseDecay, self).__init__()
-        self.gamma = gamma
+    def __init__(self, gamma=[0.1, 0.1], milestones=[60000, 80000],
+                 values=None):
+        super(PiecewiseDecayV1, self).__init__()
+        if type(gamma) is not list:
+            self.gamma = [gamma, ] * len(milestones)
+        else:
+            self.gamma = gamma
         self.milestones = milestones
         self.values = values
 
@@ -54,11 +58,54 @@ class PiecewiseDecay(object):
             return fluid.layers.piecewise_decay(self.milestones, self.values)
         assert base_lr is not None, "either base LR or values should be provided"
         values = [base_lr]
-        lr = base_lr
-        for _ in self.milestones:
-            lr *= self.gamma
-            values.append(lr)
+        for g in self.gamma:
+            new_lr = base_lr * g
+            values.append(new_lr)
         return fluid.layers.piecewise_decay(self.milestones, values)
+
+
+@serializable
+class PolynomialDecay(object):
+    """
+    Applies polynomial decay to the initial learning rate.
+    Args:
+        max_iter(int32)– A Python int32 number.
+        end_lr(float) – A Python float number.
+        power (float) – A Python float number.
+    """
+
+    def __init__(self, max_iter=180000, end_lr=0.0001, power=1.0):
+        super(PolynomialDecay).__init__()
+        self.max_iter = max_iter
+        self.end_lr = end_lr
+        self.power = power
+
+    def __call__(self, base_lr=None, learning_rate=None):
+        assert base_lr is not None, "either base LR or values should be provided"
+        lr = fluid.layers.polynomial_decay(base_lr, self.max_iter, self.end_lr,
+                                           self.power)
+        return lr
+
+
+@serializable
+class ExponentialDecay(object):
+    """
+    Applies exponential decay to the learning rate.
+    Args:
+       max_iter (int) – The learning rate decay steps. See the decay computation above.
+       decay_rate (float) – The learning rate decay rate. See the decay computation above.
+    """
+
+    def __init__(self, max_iter, decay_rate):
+        super(ExponentialDecay).__init__()
+        self.max_iter = max_iter
+        self.decay_rate = decay_rate
+
+    def __call__(base_lr=None, learning_rate=None):
+        assert base_lr is not None, "either base LR or values should be provided"
+        lr = fluid.layers.exponential_decay(base_lr, self.max_iter,
+                                            self.decay_rate)
+        return lr
 
 
 @serializable
@@ -78,6 +125,7 @@ class CosineDecay(object):
     def __call__(self, base_lr=None, learning_rate=None):
         assert base_lr is not None, "either base LR or values should be provided"
         lr = fluid.layers.cosine_decay(base_lr, 1, self.max_iters)
+        return lr
 
 
 @serializable
