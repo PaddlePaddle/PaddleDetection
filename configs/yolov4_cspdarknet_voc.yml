@@ -1,15 +1,16 @@
 architecture: YOLOv4
 use_gpu: true
-max_iters: 500200
+max_iters: 160000
 log_smooth_window: 20
+#log_iter: 1
 save_dir: output
-snapshot_iter: 10000
-metric: COCO
+snapshot_iter: 1000
+metric: VOC
 pretrain_weights: output/convert_paddle_yolov4.pdparams
 weights: output/yolov4_cspdarknet/model_final
-num_classes: 80
+num_classes: 20
 use_fine_grained_loss: true
-save_result_only: True
+save_result_only: False #True
 
 YOLOv4:
   backbone: CSPDarkNet
@@ -32,13 +33,14 @@ YOLOv4Head:
     normalized: true
     score_threshold: 0.001
   downsample: [8,16,32]
+  #iou_aware: true
 
 YOLOv3Loss:
   # batch_size here is only used for fine grained loss, not used
   # for training batch_size setting, training batch_size setting
   # is in configs/yolov3_reader.yml TrainReader.batch_size, batch
   # size here should be set as same value as TrainReader.batch_size
-  batch_size: 4
+  batch_size: 6
   ignore_thresh: 0.7
   label_smooth: true
   downsample: [8,16,32]
@@ -51,7 +53,12 @@ IouLoss:
   max_height: 608
   max_width: 608
   ciou_term: true
-  loss_square: false
+  loss_square: true #false
+
+#IouAwareLoss:
+#  loss_weight: 1.0
+#  max_height: 608
+#  max_width: 608
 
 LearningRate:
   base_lr: 0.0001
@@ -59,8 +66,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 400000
-    - 450000
+    - 120000
+    - 140000
   - !LinearWarmup
     start_factor: 0.
     steps: 1000
@@ -76,6 +83,27 @@ OptimizerBuilder:
 
 _READER_: 'yolov3_reader.yml'
 TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score', 'im_id']
+    num_max_boxes: 50
+  dataset:
+    !VOCDataSet
+      anno_path: trainval.txt #trainval.txt #
+      dataset_dir: /paddle/wangguanzhong/data/voc #data/voc
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ColorDistort {}
+    - !RandomExpand
+      fill_value: [123.675, 116.28, 103.53]
+    - !RandomCrop {}
+    - !RandomFlipImage
+      is_normalized: false
+    - !NormalizeBox {}
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
   batch_transforms:
   - !RandomShape
     sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
@@ -97,17 +125,25 @@ TrainReader:
               [36, 75], [76, 55], [72, 146],
               [142, 110], [192, 243], [459, 401]]
     downsample_ratios: [8, 16, 32]
-  batch_size: 4
+  batch_size: 6
+  shuffle: true
+  mixup_epoch: 70
+  drop_last: true
+  worker_num: 8
+  bufsize: 16
+  use_process: true
+  drop_empty: true
 
 EvalReader:
   inputs_def:
-    fields: ['image', 'im_size', 'im_id']
+    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
     num_max_boxes: 90
   dataset:
-    !COCODataSet
-      image_dir: test2017
-      anno_path: annotations/image_info_test-dev2017.json
-      dataset_dir: data/coco
+    !VOCDataSet
+      #image_dir: val2017 #test2017 #
+      anno_path: test.txt #annotations/image_info_test-dev2017.json
+      dataset_dir: /paddle/wangguanzhong/data/voc #/paddle/wangguanzhong/data/darknet_coco/coco #data/coco #
+      use_default_label: true
       with_background: false
   sample_transforms:
     - !DecodeImage
@@ -116,7 +152,12 @@ EvalReader:
     - !ResizeImage
       target_size: 608
       interp: 1
+    - !PadBox
+      num_max_boxes: 90
     - !Permute
       to_bgr: false
       channel_first: True
-  batch_size: 1
+  batch_size: 4
+  drop_empty: false
+  worker_num: 8
+  bufsize: 16

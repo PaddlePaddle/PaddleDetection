@@ -113,7 +113,6 @@ class YOLOv3Head(object):
         out = fluid.layers.batch_norm(
             input=conv,
             act=None,
-            use_global_stats=is_test,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
             moving_mean_name=bn_name + '.mean',
@@ -353,22 +352,25 @@ class YOLOv4Head(YOLOv3Head):
     __inject__ = ['nms', 'yolo_loss']
     __shared__ = ['num_classes', 'weight_prefix_name']
 
-    def __init__(self,
-                 anchors=[[12, 16], [19, 36], [40, 28], [36, 75], [76, 55],
-                          [72, 146], [142, 110], [192, 243], [459, 401]],
-                 anchor_masks=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
-                 nms=MultiClassNMS(
-                     score_threshold=0.01,
-                     nms_top_k=-1,
-                     keep_top_k=-1,
-                     nms_threshold=0.45,
-                     background_label=-1).__dict__,
-                 spp_stage=5,
-                 num_classes=80,
-                 weight_prefix_name='',
-                 downsample=[8, 16, 32],
-                 scale_x_y=[1.2, 1.1, 1.05],
-                 yolo_loss="YOLOv3Loss"):
+    def __init__(
+            self,
+            anchors=[[12, 16], [19, 36], [40, 28], [36, 75], [76, 55],
+                     [72, 146], [142, 110], [192, 243], [459, 401]],
+            anchor_masks=[[0, 1, 2], [3, 4, 5], [6, 7, 8]],
+            nms=MultiClassNMS(
+                score_threshold=0.01,
+                nms_top_k=-1,
+                keep_top_k=-1,
+                nms_threshold=0.45,
+                background_label=-1).__dict__,
+            spp_stage=5,
+            num_classes=80,
+            weight_prefix_name='',
+            downsample=[8, 16, 32],
+            scale_x_y=[1.2, 1.1, 1.05],
+            yolo_loss="YOLOv3Loss",
+            iou_aware=False,
+            iou_aware_factor=0.4, ):
         super(YOLOv4Head, self).__init__(
             anchors=anchors,
             anchor_masks=anchor_masks,
@@ -377,7 +379,9 @@ class YOLOv4Head(YOLOv3Head):
             weight_prefix_name=weight_prefix_name,
             downsample=downsample,
             scale_x_y=scale_x_y,
-            yolo_loss=yolo_loss)
+            yolo_loss=yolo_loss,
+            iou_aware=iou_aware,
+            iou_aware_factor=iou_aware_factor)
         self.spp_stage = spp_stage
 
     def _upsample(self, input, scale=2, name=None):
@@ -493,7 +497,10 @@ class YOLOv4Head(YOLOv3Head):
                 padding=1,
                 name=self.prefix_name + 'yolo_output.{}.conv.0'.format(i))
 
-            num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
+            if self.iou_aware:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 6)
+            else:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
             block_out = fluid.layers.conv2d(
                 input=block_out,
                 num_filters=num_filters,

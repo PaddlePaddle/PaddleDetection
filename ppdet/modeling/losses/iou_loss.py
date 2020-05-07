@@ -102,7 +102,6 @@ class IouLoss(object):
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
-        pred = [x1, y1, x2, y2]
         if self.ciou_term:
             ciou = self.get_ciou_term(pred, gt, iouk, eps)
             iouk = iouk - ciou
@@ -114,8 +113,8 @@ class IouLoss(object):
 
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
-        w = x2 - x1
-        h = y2 - y1
+        w = (x2 - x1) + fluid.layers.cast((x2 - x1) == 0, 'float32')
+        h = (y2 - y1) + fluid.layers.cast((y2 - y1) == 0, 'float32')
 
         cxg = (x1g + x2g) / 2
         cyg = (y1g + y2g) / 2
@@ -132,7 +131,6 @@ class IouLoss(object):
         dist_intersection = (cx - cxg) * (cx - cxg) + (cy - cyg) * (cy - cyg)
         dist_union = (xc2 - xc1) * (xc2 - xc1) + (yc2 - yc1) * (yc2 - yc1)
         diou_term = (dist_intersection + eps) / (dist_union + eps)
-
         # CIOU term
         ciou_term = 0
         ar_gt = wg / hg

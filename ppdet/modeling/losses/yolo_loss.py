@@ -292,7 +292,6 @@ class YOLOv3Loss(object):
             downsample_ratio=downsample,
             clip_bbox=False,
             scale_x_y=scale_x_y)
-        print('prob: ', prob)
 
         # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
         #    and gt bbox in each sample
