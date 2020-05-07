@@ -89,7 +89,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 **提示:**  
 
-- `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](#faq)
+- `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](./FAQ.md)
 - 若本地未找到数据集，将自动下载数据集并保存在`~/.cache/paddle/dataset`中。
 - 预训练模型自动下载并保存在`〜/.cache/paddle/weights`中。
 - 模型checkpoints默认保存在`output`中，可通过修改配置文件中save_dir进行配置。
