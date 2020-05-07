@@ -5,7 +5,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 1000
 metric: VOC
-pretrain_weights: output/convert_paddle_yolov4.pdparams
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams
 weights: output/yolov4_cspdarknet_voc/model_final
 num_classes: 20
 use_fine_grained_loss: true
@@ -53,7 +53,7 @@ IouLoss:
   loss_square: true
 
 LearningRate:
-  base_lr: 0.0001
+  base_lr: 0.00025
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -73,7 +73,7 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: 'yolov3_reader.yml'
+_READER_: '../yolov3_reader.yml'
 TrainReader:
   inputs_def:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score', 'im_id']

@@ -30,7 +30,8 @@ PaddleDetection支持YOLO v4的多个模块：
 
 **注意:**
 
-- YOLO v4模型仅支持coco test集评估和图片预测，评估时会将预测结果保存在json文件中，请将结果提交至[cocodataset](http://cocodataset.org/#detection-2019)上查看最终精度指标。
+- 由于原版YOLO v4使用coco trainval2014进行训练，训练样本中包含部分评估样本，若使用val集会导致精度虚高，因此使用coco test集对模型进行评估。
+- YOLO v4模型仅支持coco test集评估和图片预测，由于test集不包含目标框的真实标注，评估时会将预测结果保存在json文件中，请将结果提交至[cocodataset](http://cocodataset.org/#detection-2019)上查看最终精度指标。
 - coco测试集使用test2017，下载请参考[coco2017](http://cocodataset.org/#download)
 
 
