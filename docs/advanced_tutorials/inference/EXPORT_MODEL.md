@@ -41,6 +41,19 @@ python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
 
 预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
 
+如果您要将上述模型用于[Paddle Serving](https://github.com/PaddlePaddle/Serving)在线预估服务，脚本如下
+
+```bash
+# 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
+python tools/export_serving_model.py -c configs/faster_rcnn_r50_1x.yml \
+        --output_dir=./inference_model \
+        -o weights=output/faster_rcnn_r50_1x/model_final \
+```
+
+用于Serving的预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，其中`serving_client`为客户端配置文件夹，`serving_server`为服务端配置文件夹，模型参数也在服务端配置文件夹中。
+
+更多的信息详情参见  [使用Paddle Serving部署Faster RCNN模型](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/faster_rcnn_model)
+
 ## 设置导出模型的输入大小
 
 使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。可通过设置TestReader中`image_shape`可以修改保存模型中的输入图片大小。示例如下:
