@@ -44,6 +44,8 @@ python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
 如果您要将上述模型用于[Paddle Serving](https://github.com/PaddlePaddle/Serving)在线预估服务，脚本如下
 
 ```bash
+# 导出Serving模型需要安装paddle-serving-client
+pip install paddle-serving-client
 # 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
 python tools/export_serving_model.py -c configs/faster_rcnn_r50_1x.yml \
         --output_dir=./inference_model \

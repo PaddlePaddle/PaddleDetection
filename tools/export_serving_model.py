@@ -25,7 +25,6 @@ from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
-from collections import OrderedDict
 from export_model import parse_reader, dump_infer_config, prune_feed_vars
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
