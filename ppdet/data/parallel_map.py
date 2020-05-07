@@ -71,7 +71,7 @@ class ParallelMap(object):
         self._use_process = use_process
         if self._use_process and sys.platform == "win32":
             logger.debug("Use multi-thread reader instead of "
-                        "multi-process reader on Windows.")
+                         "multi-process reader on Windows.")
             self._use_process = False
         if self._use_process and type(memsize) is str:
             assert memsize[-1].lower() in ['g', 'm'], \

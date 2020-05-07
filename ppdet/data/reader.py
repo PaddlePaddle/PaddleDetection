@@ -287,7 +287,7 @@ class Reader(object):
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
             logger.debug("Disable mixup for dataset samples "
-                        "less than 2 samples")
+                         "less than 2 samples")
             self._mixup_epoch = -1
 
         if self._epoch < 0:

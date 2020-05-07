@@ -109,7 +109,7 @@ def get_dataset_path(path, annotation, image_dir):
     for name, dataset in DATASETS.items():
         if data_name == name:
             logger.debug("Parse dataset_dir {} as dataset "
-                        "{}".format(path, name))
+                         "{}".format(path, name))
             if name == 'objects365':
                 raise NotImplementedError(
                     "Dataset {} is not valid for download automatically. "
@@ -227,15 +227,15 @@ def _dataset_exists(path, annotation, image_dir):
     """
     if not osp.exists(path):
         logger.debug("Config dataset_dir {} is not exits, "
-                    "dataset config is not valid".format(path))
+                     "dataset config is not valid".format(path))
         return False
 
     if annotation:
         annotation_path = osp.join(path, annotation)
         if not osp.isfile(annotation_path):
             logger.debug("Config annotation {} is not a "
-                        "file, dataset config is not "
-                        "valid".format(annotation_path))
+                         "file, dataset config is not "
+                         "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
