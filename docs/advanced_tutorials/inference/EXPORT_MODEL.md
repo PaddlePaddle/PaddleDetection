@@ -79,3 +79,20 @@ python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
            TestReader.inputs_def.image_shape=[3,300,300]
 ```
+
+## Paddle Serving部署模型导出
+
+如果您要将上述模型用于[Paddle Serving](https://github.com/PaddlePaddle/Serving)在线预估服务，操作如下
+
+```bash
+# 导出Serving模型需要安装paddle-serving-client
+pip install paddle-serving-client
+# 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
+python tools/export_serving_model.py -c configs/faster_rcnn_r50_1x.yml \
+        --output_dir=./inference_model \
+        -o weights=output/faster_rcnn_r50_1x/model_final \
+```
+
+用于Serving的预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，其中`serving_client`为客户端配置文件夹，`serving_server`为服务端配置文件夹，模型参数也在服务端配置文件夹中。
+
+更多的信息详情参见  [使用Paddle Serving部署Faster RCNN模型](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/faster_rcnn_model)
