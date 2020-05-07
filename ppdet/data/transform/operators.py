@@ -89,7 +89,7 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False, scale=False):
+    def __init__(self, to_rgb=True, with_mixup=False):
         """ Transform the image data to numpy format.
 
         Args:
@@ -100,7 +100,6 @@ class DecodeImage(BaseOperator):
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
-        self.scale = scale
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
@@ -118,8 +117,6 @@ class DecodeImage(BaseOperator):
 
         if self.to_rgb:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        if self.scale:
-            im = np.array(im).astype('float32') / 255.
         sample['image'] = im
 
         if 'h' not in sample:

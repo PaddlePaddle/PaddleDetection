@@ -162,7 +162,7 @@ def main():
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
-    save_only = getattr(cfg, 'save_result_only', False)
+    save_only = getattr(cfg, 'save_prediction_only', False)
     eval_results(
         results,
         cfg.metric,

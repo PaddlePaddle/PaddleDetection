@@ -87,6 +87,11 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
+
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
     else:

@@ -9,7 +9,7 @@ pretrain_weights: output/convert_paddle_yolov4.pdparams
 weights: output/yolov4_cspdarknet/model_final
 num_classes: 80
 use_fine_grained_loss: true
-save_result_only: True
+save_prediction_only: True
 
 YOLOv4:
   backbone: CSPDarkNet
@@ -74,7 +74,7 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: 'yolov3_reader.yml'
+_READER_: '../yolov3_reader.yml'
 TrainReader:
   batch_transforms:
   - !RandomShape
@@ -112,11 +112,35 @@ EvalReader:
   sample_transforms:
     - !DecodeImage
       to_rgb: True
-      scale: True
     - !ResizeImage
       target_size: 608
       interp: 1
+    - !NormalizeImage
+      mean: [0., 0., 0.]
+      std: [1., 1., 1.]
+      is_scale: True
+      is_channel_first: false
     - !Permute
       to_bgr: false
       channel_first: True
   batch_size: 1
+
+TestReader:
+  dataset:
+    !ImageFolder
+    use_default_label: true
+    with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 608
+      interp: 1
+    - !NormalizeImage
+      mean: [0., 0., 0.]
+      std: [1., 1., 1.]
+      is_scale: True
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True

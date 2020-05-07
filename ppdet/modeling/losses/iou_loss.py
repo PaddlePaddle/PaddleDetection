@@ -35,6 +35,8 @@ class IouLoss(object):
         loss_weight (float): iou loss weight, default is 2.5
         max_height (int): max height of input to support random shape input
         max_width (int): max width of input to support random shape input
+        ciou_term (bool): whether to add ciou_term
+        loss_square (bool): whether to square the iou term
     """
 
     def __init__(self,

@@ -341,13 +341,13 @@ class YOLOv4Head(YOLOv3Head):
     Head block for YOLOv4 network
 
     Args:
-        norm_decay (float): weight decay for normalization layer weights
-        num_classes (int): number of output classes
         anchors (list): anchors
         anchor_masks (list): anchor masks
         nms (object): an instance of `MultiClassNMS`
         spp_stage (int): apply spp on which stage.
+        num_classes (int): number of output classes
         downsample (list): downsample ratio for each yolo_head
+        scale_x_y (list): scale the left top point of bbox at each stage
     """
     __inject__ = ['nms', 'yolo_loss']
     __shared__ = ['num_classes', 'weight_prefix_name']

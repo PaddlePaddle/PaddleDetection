@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ class CSPDarkNet(object):
     """
     CSPDarkNet, see https://arxiv.org/abs/1911.11929 
     Args:
-        depth (int): network depth, currently only darknet 53 is supported
+        depth (int): network depth, currently only cspdarknet 53 is supported
         norm_type (str): normalization type, 'bn' and 'sync_bn' are supported
         norm_decay (float): weight decay for normalization layer weights
     """
@@ -60,7 +60,7 @@ class CSPDarkNet(object):
         expf = fluid.layers.exp(fluid.layers.clip(
             input, -20, 20))  #fluid.layers.exp(input) #
         return fluid.layers.log(
-            1 + expf)  #* normal_mask + input * large_mask #+ expf * small_mask
+            1 + expf)  #* normal_mask + input * large_mask + expf * small_mask #
 
     def _mish(self, input):
         return input * fluid.layers.tanh(self._softplus(input))
@@ -101,7 +101,6 @@ class CSPDarkNet(object):
 
         if act == 'mish':
             out = self._mish(out)
-            #out = fluid.layers.leaky_relu(x=out, alpha=0.1)
 
         return out
 
@@ -184,7 +183,7 @@ class CSPDarkNet(object):
 
     def __call__(self, input):
         """
-        Get the backbone of DarkNet, that is output for the 5 stages.
+        Get the backbone of CSPDarkNet, that is output for the 5 stages.
 
         Args:
             input (Variable): input variable.
