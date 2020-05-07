@@ -29,7 +29,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -44,18 +44,14 @@ from paddleslim.quant import quant_aware, convert
 
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
+
+    main_arch = cfg.architecture
 
     dataset = cfg.TestReader['dataset']
 

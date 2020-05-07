@@ -29,7 +29,7 @@ from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -113,17 +113,12 @@ def split_distill(split_output_names, weight):
 def main():
     env = os.environ
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
