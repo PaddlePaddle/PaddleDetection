@@ -191,7 +191,8 @@ def eval_results(results,
                  is_bbox_normalized=False,
                  output_directory=None,
                  map_type='11point',
-                 dataset=None):
+                 dataset=None,
+                 save_only=False):
     """Evaluation for evaluation program results"""
     box_ap_stats = []
     if metric == 'COCO':
@@ -213,13 +214,15 @@ def eval_results(results,
                 anno_file,
                 output,
                 with_background,
-                is_bbox_normalized=is_bbox_normalized)
+                is_bbox_normalized=is_bbox_normalized,
+                save_only=save_only)
 
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:
                 output = os.path.join(output_directory, 'mask.json')
-            mask_eval(results, anno_file, output, resolution)
+            mask_eval(
+                results, anno_file, output, resolution, save_only=save_only)
     else:
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])

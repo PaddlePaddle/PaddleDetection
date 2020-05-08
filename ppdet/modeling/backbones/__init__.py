@@ -32,6 +32,7 @@ from . import bfp
 from . import hourglass
 from . import efficientnet
 from . import bifpn
+from . import cspdarknet
 
 from .resnet import *
 from .resnext import *
@@ -51,3 +52,4 @@ from .bfp import *
 from .hourglass import *
 from .efficientnet import *
 from .bifpn import *
+from .cspdarknet import *
