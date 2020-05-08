@@ -84,7 +84,8 @@ class YOLOv3Head(object):
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
         self.downsample = downsample
-        self.scale_x_y = scale_x_y
+        # TODO(guanzhong) activate scale_x_y in Paddle 2.0
+        #self.scale_x_y = scale_x_y
 
     def _conv_bn(self,
                  input,
@@ -314,8 +315,8 @@ class YOLOv3Head(object):
                                              len(self.anchor_masks[i]),
                                              self.num_classes,
                                              self.iou_aware_factor)
-            scale_x_y = self.scale_x_y if not isinstance(
-                self.scale_x_y, Sequence) else self.scale_x_y[i]
+            #scale_x_y = self.scale_x_y if not isinstance(
+            #    self.scale_x_y, Sequence) else self.scale_x_y[i]
             box, score = fluid.layers.yolo_box(
                 x=output,
                 img_size=im_size,
@@ -324,7 +325,6 @@ class YOLOv3Head(object):
                 conf_thresh=self.nms.score_threshold,
                 downsample_ratio=self.downsample[i],
                 name=self.prefix_name + "yolo_box" + str(i),
-                scale_x_y=scale_x_y,
                 clip_bbox=False)
             boxes.append(box)
             scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))

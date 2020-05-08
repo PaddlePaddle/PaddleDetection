@@ -51,16 +51,8 @@ class CSPDarkNet(object):
         self.prefix_name = weight_prefix_name
 
     def _softplus(self, input):
-        #large_mask = fluid.layers.cast(input > 20, 'float32')
-        #small_mask = fluid.layers.cast(input < -20, 'float32')
-        #normal_mask = 1. - large_mask
-        #large_mask.stop_gradient = True
-        #small_mask.stop_gradient = True
-        #normal_mask.stop_gradient = True
-        expf = fluid.layers.exp(fluid.layers.clip(
-            input, -20, 20))  #fluid.layers.exp(input) #
-        return fluid.layers.log(
-            1 + expf)  #* normal_mask + input * large_mask + expf * small_mask #
+        expf = fluid.layers.exp(fluid.layers.clip(input, -200, 50))
+        return fluid.layers.log(1 + expf)
 
     def _mish(self, input):
         return input * fluid.layers.tanh(self._softplus(input))

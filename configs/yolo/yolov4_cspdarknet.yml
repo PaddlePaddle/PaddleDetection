@@ -16,7 +16,7 @@ YOLOv4:
   yolo_head: YOLOv4Head
 
 CSPDarkNet:
-  norm_type: bn
+  norm_type: sync_bn
   norm_decay: 0.
   depth: 53
 
@@ -42,7 +42,7 @@ YOLOv3Loss:
   ignore_thresh: 0.7
   label_smooth: true
   downsample: [8,16,32]
-  scale_x_y: [1.2, 1.1, 1.05]
+  #scale_x_y: [1.2, 1.1, 1.05]
   iou_loss: IouLoss
   match_score: true
 
@@ -75,30 +75,6 @@ OptimizerBuilder:
     type: L2
 
 _READER_: '../yolov3_reader.yml'
-TrainReader:
-  batch_transforms:
-  - !RandomShape
-    sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
-    random_inter: True
-  - !NormalizeImage
-    mean: [0.,0.,0.]
-    std: [1.,1.,1.]
-    is_scale: True
-    is_channel_first: false
-  - !Permute
-    to_bgr: false
-    channel_first: True
-  # Gt2YoloTarget is only used when use_fine_grained_loss set as true,
-  # this operator will be deleted automatically if use_fine_grained_loss
-  # is set as false
-  - !Gt2YoloTarget
-    anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-    anchors: [[12, 16], [19, 36], [40, 28],
-              [36, 75], [76, 55], [72, 146],
-              [142, 110], [192, 243], [459, 401]]
-    downsample_ratios: [8, 16, 32]
-  batch_size: 4
-
 EvalReader:
   inputs_def:
     fields: ['image', 'im_size', 'im_id']
