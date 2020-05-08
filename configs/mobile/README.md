@@ -34,7 +34,7 @@ This directory contains models optimized for mobile applications, at present the
     -   HiSilicon Kirin 970
     -   HiSilicon Kirin 980
 -   with 1 CPU thread (latency are in ms)
-    
+
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
     | SSDLite Large    | 289.071 | 134.408 | 91.933  | 48.2206 | 144.914   | 55.1186   |
@@ -44,7 +44,7 @@ This directory contains models optimized for mobile applications, at present the
     | Cascade RCNN 320 | 286.526 | 125.635 | 87.404  | 46.184  | 149.179   | 52.9994   |
     | Cascade RCNN 640 | 1115.66 | 495.926 | 351.361 | 189.722 | 573.558   | 207.917   |
 -   with 4 CPU threads (latency are in ms)
-    
+
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
     | SSDLite Large    | 107.535 | 51.1382 | 34.6392 | 20.4978 | 50.5598   | 24.5318   |
@@ -62,13 +62,13 @@ we pruned the YOLO-head and distill the pruned model with YOLOv3-ResNet34 as the
 The following configurations can be used for pruning:
 
 -   Prune with fixed ratio, overall prune ratios is 86%
-    
+
     ```shell
     --pruned_params="yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights,yolo_block.0.1.1.conv.weights,yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.0.0.conv.weights,yolo_block.1.0.1.conv.weights,yolo_block.1.1.0.conv.weights,yolo_block.1.1.1.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights,yolo_block.2.0.0.conv.weights,yolo_block.2.0.1.conv.weights,yolo_block.2.1.0.conv.weights,yolo_block.2.1.1.conv.weights,yolo_block.2.2.conv.weights,yolo_block.2.tip.conv.weights" \
     --pruned_ratios="0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.875,0.875,0.875,0.875,0.875,0.875"
     ```
 -   Prune filters using [FPGM](https://arxiv.org/abs/1811.00250) algorithm:
-    
+
     ```shell
     --prune_criterion=geometry_median
     ```
