@@ -18,9 +18,9 @@ This directory contains models optimized for mobile applications, at present the
 
 -   <a name="gpu">[1]</a> all models are trained on 8 GPUs.
 -   <a name="tarball">[2]</a> the tarball contains the following files
-    1.  model weight file (`.pdparams` or `.tar`)
-    2.  inference model file (`__model__` and `__params__`)
-    3.  Paddle-Lite model file (`.nb`)
+    -  model weight file (`.pdparams` or `.tar`)
+    -  inference model file (`__model__` and `__params__`)
+    -  Paddle-Lite model file (`.nb`)
 -   <a name="prune">[3]</a> see the note section on how Yolo head is prune
 
 
