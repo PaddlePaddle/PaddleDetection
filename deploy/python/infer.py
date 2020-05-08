@@ -306,16 +306,16 @@ def load_predictor(model_dir,
                    batch_size=1,
                    use_gpu=False,
                    min_subgraph_size=3):
-    """set AnalysisConfig，generate AnalysisPredictor
+    """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
-        ValueError: predict by TensorRT need use_gpu == True 
+        ValueError: predict by TensorRT need use_gpu == True.
     """
-    if not use_gpu and run_mode == 'fluid':
+    if not use_gpu and not run_mode == 'fluid':
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
