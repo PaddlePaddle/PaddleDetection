@@ -39,15 +39,17 @@ class PiecewiseDecay(object):
     Multi step learning rate decay
 
     Args:
-        gamma (float): decay factor
+        gamma (float | list): decay factor
         milestones (list): steps at which to decay learning rate
     """
 
     def __init__(self, gamma=[0.1, 0.1], milestones=[60000, 80000],
                  values=None):
-        super(PiecewiseDecayV1, self).__init__()
+        super(PiecewiseDecay, self).__init__()
         if type(gamma) is not list:
-            self.gamma = [gamma, ] * len(milestones)
+            self.gamma = []
+            for i in range(len(milestones)):
+                self.gamma.append(gamma / 10**i)
         else:
             self.gamma = gamma
         self.milestones = milestones
@@ -69,9 +71,9 @@ class PolynomialDecay(object):
     """
     Applies polynomial decay to the initial learning rate.
     Args:
-        max_iter(int32)– A Python int32 number.
-        end_lr(float) – A Python float number.
-        power (float) – A Python float number.
+        max_iter (int) – The learning rate decay steps. 
+        end_lr(float) – End learning rate.
+        power (float) – Polynomial attenuation coefficient
     """
 
     def __init__(self, max_iter=180000, end_lr=0.0001, power=1.0):
@@ -92,8 +94,8 @@ class ExponentialDecay(object):
     """
     Applies exponential decay to the learning rate.
     Args:
-       max_iter (int) – The learning rate decay steps. See the decay computation above.
-       decay_rate (float) – The learning rate decay rate. See the decay computation above.
+        max_iter (int) – The learning rate decay steps. 
+        decay_rate (float) – The learning rate decay rate. 
     """
 
     def __init__(self, max_iter, decay_rate):
@@ -101,7 +103,7 @@ class ExponentialDecay(object):
         self.max_iter = max_iter
         self.decay_rate = decay_rate
 
-    def __call__(base_lr=None, learning_rate=None):
+    def __call__(self, base_lr=None, learning_rate=None):
         assert base_lr is not None, "either base LR or values should be provided"
         lr = fluid.layers.exponential_decay(base_lr, self.max_iter,
                                             self.decay_rate)
