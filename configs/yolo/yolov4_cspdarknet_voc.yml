@@ -1,6 +1,6 @@
 architecture: YOLOv4
 use_gpu: true
-max_iters: 70000
+max_iters: 140000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 1000
@@ -58,8 +58,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 56000
-    - 63000
+    - 110000
+    - 130000
   - !LinearWarmup
     start_factor: 0.
     steps: 1000
@@ -86,10 +86,6 @@ TrainReader:
   sample_transforms:
     - !DecodeImage
       to_rgb: True
-      with_mixup: True
-    - !MixupImage
-      alpha: 1.5
-      beta: 1.5
     - !ColorDistort {}
     - !RandomExpand
       fill_value: [123.675, 116.28, 103.53]
@@ -123,7 +119,6 @@ TrainReader:
     downsample_ratios: [8, 16, 32]
   batch_size: 4
   shuffle: true
-  mixup_epoch: 28
   drop_last: true
   worker_num: 8
   bufsize: 16

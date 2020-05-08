@@ -10,9 +10,9 @@
 
 [YOLO v4](https://arxiv.org/abs/2004.10934)的Paddle实现版本
 
-目前PaddleDetection中转换了[darknet](https://github.com/AlexeyAB/darknet)中YOLO v4的权重，可以直接对图片进行预测，在[test-dev2019](http://cocodataset.org/#detection-2019)中精度为43.5%。另外，PaddleDetection支持VOC数据集上finetune，精度达到86.0%
+目前转换了[darknet](https://github.com/AlexeyAB/darknet)中YOLO v4的权重，可以直接对图片进行预测，在[test-dev2019](http://cocodataset.org/#detection-2019)中精度为43.5%。另外，支持VOC数据集上finetune，精度达到85.5%
 
-PaddleDetection支持YOLO v4的多个模块：
+目前支持YOLO v4的多个模块：
 
 - mish激活函数
 - PAN模块
@@ -21,12 +21,12 @@ PaddleDetection支持YOLO v4的多个模块：
 - label_smooth
 
 ## 模型库
-下表中展示了PaddleDetection当前支持的网络结构。
+下表中展示了当前支持的网络结构。
 
 |                          | GPU个数 | 测试集  | 骨干网络 |  精度  | 模型下载 |  配置文件  |
 |:------------------------:|:-------:|:------:|:--------------------------:|:------------------------:| :---------:| :-----: |
 | YOLO v4  | - |test-dev2019        |     CSPDarkNet53 |  43.5 |[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolo/yolov4_cspdarknet.yml)                   |
-| YOLO v4 VOC  | 2 | VOC2007        |     CSPDarkNet53 |  -  |   [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet_voc.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolo/yolov4_cspdarknet_voc.yml)              |
+| YOLO v4 VOC  | 2 | VOC2007        |     CSPDarkNet53 |  85.5  |   [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet_voc.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolo/yolov4_cspdarknet_voc.yml)              |
 
 **注意:**
 
