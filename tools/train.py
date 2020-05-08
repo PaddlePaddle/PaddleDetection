@@ -79,6 +79,10 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
     main_arch = cfg.architecture
 
     if cfg.use_gpu:

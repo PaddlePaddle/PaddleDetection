@@ -179,13 +179,18 @@ class Gt2YoloTarget(BaseOperator):
     fine grained YOLOv3 loss mode
     """
 
-    def __init__(self, anchors, anchor_masks, downsample_ratios,
-                 num_classes=80):
+    def __init__(self,
+                 anchors,
+                 anchor_masks,
+                 downsample_ratios,
+                 num_classes=80,
+                 iou_thresh=1.):
         super(Gt2YoloTarget, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
         self.num_classes = num_classes
+        self.iou_thresh = iou_thresh
 
     def __call__(self, samples, context=None):
         assert len(self.anchor_masks) == len(self.downsample_ratios), \
@@ -225,12 +230,13 @@ class Gt2YoloTarget(BaseOperator):
                             best_iou = iou
                             best_idx = an_idx
 
+                    gi = int(gx * grid_w)
+                    gj = int(gy * grid_h)
+
                     # gtbox should be regresed in this layes if best match 
                     # anchor index in anchor mask of this layer
                     if best_idx in mask:
                         best_n = mask.index(best_idx)
-                        gi = int(gx * grid_w)
-                        gj = int(gy * grid_h)
 
                         # x, y, w, h, scale
                         target[best_n, 0, gj, gi] = gx * grid_w - gi
@@ -246,6 +252,30 @@ class Gt2YoloTarget(BaseOperator):
 
                         # classification
                         target[best_n, 6 + cls, gj, gi] = 1.
+
+                    # For non-matched anchors, calculate the target if the iou 
+                    # between anchor and gt is larger than iou_thresh
+                    if self.iou_thresh < 1:
+                        for idx, mask_i in enumerate(mask):
+                            if mask_i == best_idx: continue
+                            iou = jaccard_overlap(
+                                [0., 0., gw, gh],
+                                [0., 0., an_hw[mask_i, 0], an_hw[mask_i, 1]])
+                            if iou > self.iou_thresh:
+                                # x, y, w, h, scale
+                                target[idx, 0, gj, gi] = gx * grid_w - gi
+                                target[idx, 1, gj, gi] = gy * grid_h - gj
+                                target[idx, 2, gj, gi] = np.log(
+                                    gw * w / self.anchors[mask_i][0])
+                                target[idx, 3, gj, gi] = np.log(
+                                    gh * h / self.anchors[mask_i][1])
+                                target[idx, 4, gj, gi] = 2.0 - gw * gh
+
+                                # objectness record gt_score
+                                target[idx, 5, gj, gi] = score
+
+                                # classification
+                                target[idx, 6 + cls, gj, gi] = 1.
                 sample['target{}'.format(i)] = target
         return samples
 
