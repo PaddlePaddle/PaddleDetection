@@ -275,11 +275,11 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                     w *= im_width
                     h *= im_height
                 else:
-                    im_size = t['im_size'][0][i].tolist()
-                    xmin, ymin, xmax, ymax = \
-                            clip_bbox([xmin, ymin, xmax, ymax], im_size)
-                    w = xmax - xmin
-                    h = ymax - ymin
+                    # for yolov4
+                    # w = xmax - xmin
+                    # h = ymax - ymin
+                    w = xmax - xmin + 1
+                    h = ymax - ymin + 1
 
                 bbox = [xmin, ymin, w, h]
                 coco_res = {

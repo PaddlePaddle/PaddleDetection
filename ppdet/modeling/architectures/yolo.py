@@ -42,7 +42,7 @@ class YOLOv3(object):
 
     def __init__(self,
                  backbone,
-                 yolo_head='YOLOv4Head',
+                 yolo_head='YOLOv3Head',
                  use_fine_grained_loss=False):
         super(YOLOv3, self).__init__()
         self.backbone = backbone

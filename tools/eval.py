@@ -111,7 +111,7 @@ def main():
     extra_keys = []
 
     if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape', 'im_size']
+        extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg.metric == 'VOC':
         extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
 
