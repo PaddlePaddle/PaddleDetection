@@ -86,7 +86,7 @@ def parse_reader(reader_cfg, metric, arch):
     return with_background, preprocess_list, label_list
 
 
-def dump_infer_config(config):
+def dump_infer_config(FLAGS, config):
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
     from ppdet.core.config.yaml_helpers import setup_orderdict
@@ -192,7 +192,7 @@ def main():
     checkpoint.load_params(exe, infer_prog, cfg.weights)
 
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
-    dump_infer_config(cfg)
+    dump_infer_config(FLAGS, cfg)
 
 
 if __name__ == '__main__':
