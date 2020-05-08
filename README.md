@@ -100,6 +100,7 @@
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到43.6%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
 - [Open Images V5和Objects365数据集模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
+- [移动端模型](configs/mobile/README.md)
 
 
 ## 许可证书
