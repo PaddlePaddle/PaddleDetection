@@ -16,12 +16,12 @@ This directory contains models optimized for mobile applications, at present the
 
 **Notes**:
 
--   <a name="gpu">[1]</a> all models are trained on 8 GPUs.
--   <a name="tarball">[2]</a> the tarball contains the following files
+-   <a name="gpu">[1]</a> All models are trained on 8 GPUs.
+-   <a name="tarball">[2]</a> Each tarball contains the following files
     -  model weight file (`.pdparams` or `.tar`)
-    -  inference model file (`__model__` and `__params__`)
+    -  inference model files (`__model__` and `__params__`)
     -  Paddle-Lite model file (`.nb`)
--   <a name="prune">[3]</a> see the note section on how Yolo head is prune
+-   <a name="prune">[3]</a> See the note section on how Yolo head is pruned
 
 
 ## Benchmarks Results
@@ -33,7 +33,7 @@ This directory contains models optimized for mobile applications, at present the
     -   Qualcomm Snapdragon 855
     -   HiSilicon Kirin 970
     -   HiSilicon Kirin 980
--   with 1 CPU thread (latency are in ms)
+-   With 1 CPU thread (latency numbers are in ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
@@ -43,7 +43,7 @@ This directory contains models optimized for mobile applications, at present the
     | Yolo V3 prune    | 253.98  | 131.279 | 89.4124 | 48.2856 | 122.732   | 55.8626   |
     | Cascade RCNN 320 | 286.526 | 125.635 | 87.404  | 46.184  | 149.179   | 52.9994   |
     | Cascade RCNN 640 | 1115.66 | 495.926 | 351.361 | 189.722 | 573.558   | 207.917   |
--   with 4 CPU threads (latency are in ms)
+-   With 4 CPU threads (latency numbers are in ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
@@ -57,7 +57,7 @@ This directory contains models optimized for mobile applications, at present the
 
 ## Notes on YOLOv3 pruning
 
-we pruned the YOLO-head and distill the pruned model with YOLOv3-ResNet34 as the teacher, which has a higher mAP on COCO (31.4 with 320\*320 input).
+We pruned the YOLO-head and distill the pruned model with YOLOv3-ResNet34 as the teacher, which has a higher mAP on COCO (31.4 with 320\*320 input).
 
 The following configurations can be used for pruning:
 
