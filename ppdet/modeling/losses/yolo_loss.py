@@ -166,7 +166,7 @@ class YOLOv3Loss(object):
             #    self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
                 output, obj, tobj, gt_box, self._batch_size, anchors,
-                num_classes, downsample, self._ignore_thresh, scale_x_y)
+                num_classes, downsample, self._ignore_thresh)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
             loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
@@ -276,7 +276,7 @@ class YOLOv3Loss(object):
         return (tx, ty, tw, th, tscale, tobj, tcls)
 
     def _calc_obj_loss(self, output, obj, tobj, gt_box, batch_size, anchors,
-                       num_classes, downsample, ignore_thresh, scale_x_y):
+                       num_classes, downsample, ignore_thresh):
         # A prediction bbox overlap any gt_bbox over ignore_thresh, 
         # objectness loss will be ignored, process as follows:
 
