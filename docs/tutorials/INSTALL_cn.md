@@ -84,15 +84,6 @@ Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetec
 pip install -r requirements.txt
 ```
 
-**指定当前Python路径：**
-
-```shell
-# 在Linux/Mac系统下运行:
-export PYTHONPATH=$PYTHONPATH:.
-# 在windows系统下运行:
-set PYTHONPATH=%PYTHONPATH%;.
-```
-
 **确认测试通过：**
 
 ```
@@ -119,7 +110,6 @@ ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 对于Pascal VOC数据集，需通过如下命令创建文件列表：
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/create_list.py
 ```
 
@@ -130,7 +120,6 @@ python dataset/voc/create_list.py
 - COCO
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/coco/download_coco.py
 ```
 
@@ -158,7 +147,6 @@ python dataset/coco/download_coco.py
 - Pascal VOC
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/download_voc.py
 python dataset/voc/create_list.py
 ```
