@@ -22,6 +22,7 @@ __pycache__/
 /lib/
 /lib64/
 /output/
+/inference_model/
 /parts/
 /sdist/
 /var/
