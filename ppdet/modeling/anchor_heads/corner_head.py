@@ -23,12 +23,8 @@ from paddle.fluid.initializer import Constant
 from ..backbones.hourglass import _conv_norm, kaiming_init
 from ppdet.core.workspace import register
 import numpy as np
-try:
-    import cornerpool_lib
-except:
-    print(
-        "warning: cornerpool_lib not found, compile in ext_op at first if needed"
-    )
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['CornerHead']
 
@@ -247,6 +243,10 @@ class CornerHead(object):
                  ae_threshold=1,
                  num_dets=1000,
                  top_k=100):
+        try:
+            import cornerpool_lib
+        except:
+            logger.error("cornerpool_lib not found, compile in ext_op at first")
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_classes = num_classes
