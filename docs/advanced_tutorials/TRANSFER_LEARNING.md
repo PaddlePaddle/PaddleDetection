@@ -15,7 +15,6 @@ In transfer learning, it's needed to load pretrained model selectively. Two ways
 The parameters which have diffierent shape between model and pretrain\_weights are ignored automatically. For example:
 
 ```python
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                       -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar
@@ -29,7 +28,6 @@ The parameters which need to ignore can be specified explicitly as well and arbi
 - Set `finetune_exclude_pretrained_params` in command line. For example:
 
 ```python
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                         -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \

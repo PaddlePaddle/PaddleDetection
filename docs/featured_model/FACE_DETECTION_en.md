@@ -170,7 +170,6 @@ Default is `False`, it will select `single-scale` evaluation.
 - Evaluate and generate results files:
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
        -o weights=output/blazeface/model_final \
        --eval_mode=widerface
