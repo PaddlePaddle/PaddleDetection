@@ -384,7 +384,7 @@ class YOLOv4Head(YOLOv3Head):
             yolo_loss=yolo_loss,
             iou_aware=iou_aware,
             iou_aware_factor=iou_aware_factor,
-            clip_box=clip_bbox)
+            clip_bbox=clip_bbox)
         self.spp_stage = spp_stage
 
     def _upsample(self, input, scale=2, name=None):
