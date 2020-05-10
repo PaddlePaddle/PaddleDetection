@@ -176,16 +176,16 @@ python dataset/voc/create_list.py
   │       ├── 001789.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 001789.xml
+  │       ├── 001789.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
   ├── VOCdevkit/VOC2012
   │   ├── Annotations
-  │       ├── 003876.xml
+  │       ├── 2011_003876.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 003876.xml
+  │       ├── 2011_003876.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
