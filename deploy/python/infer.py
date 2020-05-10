@@ -531,7 +531,7 @@ if __name__ == '__main__':
         type=str,
         default=None,
         help=("Directory include:'__model__', '__params__', "
-              "'infer_cfg.yml', created by export_model."),
+              "'infer_cfg.yml', created by tools/export_model.py."),
         required=True)
     parser.add_argument(
         "--image_file", type=str, default='', help="Path of image file.")
