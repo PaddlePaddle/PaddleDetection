@@ -28,7 +28,7 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 在终端输入以下命令进行预测：
 
 ```bash
-python infer.py --models_dir=/path/to/models --image_file=/path/to/image
+python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image
 --use_gpu=(False/True)
 ```
 
@@ -36,7 +36,7 @@ python infer.py --models_dir=/path/to/models --image_file=/path/to/image
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
-| --models_dir | Yes|上述导出的模型路径 |
+| --model_dir | Yes|上述导出的模型路径 |
 | --image_file | Yes |需要预测的图片 |
 | --video_file | Yes |需要预测的视频 |
 | --use_gpu |No|是否GPU，默认为False|
