@@ -63,6 +63,18 @@
 
 **注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
 
+以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图。
+
+<div align="center">
+  <img src="docs/map_fps.png" />
+</div>
+
+**说明：**
+- `CBResNet`为`Cascade-Faster-RCNN-CBResNet200vd-FPN`模型，COCO数据集mAP高达53.3%
+- `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
+- PaddleDetection增强版`YOLOv3-ResNet50vd-DCN`在COCO数据集mAP高于原作10.6个绝对百分点，推理速度为61.3FPS，快于原作约70%
+- 图中模型均可在[模型库](# 模型库)中获取
+
 ## 文档教程
 
 **最新动态：** 已发布文档教程：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
