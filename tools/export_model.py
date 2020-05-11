@@ -61,7 +61,10 @@ def parse_reader(reader_cfg, metric, arch):
                 metric))
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
-    label_list = [str(cat) for cat in catid2name.values()]
+    label_list = []
+    if with_background:
+        label_list.append(catid2name[0])
+    label_list += [str(catid2name[clsid]) for clsid in clsid2catid.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
     for st in sample_transforms[1:]:
