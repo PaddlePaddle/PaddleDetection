@@ -79,7 +79,7 @@ Advanced Features:
 The following is the relationship between COCO mAP and FPS on Tesla V100 of representative models of each architectures and backbones.
 
 <div align="center">
-  <img src="docs/map_fps.png" />
+  <img src="docs/images/map_fps.png" />
 </div>
 
 **NOTE:**

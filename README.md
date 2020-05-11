@@ -66,7 +66,7 @@
 以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图。
 
 <div align="center">
-  <img src="docs/map_fps.png" />
+  <img src="docs/images/map_fps.png" />
 </div>
 
 **说明：**
