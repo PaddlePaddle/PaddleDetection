@@ -354,6 +354,7 @@ def load_predictor(model_dir,
     predictor = fluid.core.create_paddle_predictor(config)
     return predictor
 
+
 def load_executor(model_dir, use_gpu=False):
     if use_gpu:
         place = fluid.CUDAPlace(0)
@@ -391,7 +392,11 @@ class Detector():
         use_gpu (bool): whether use gpu
     """
 
-    def __init__(self, model_dir, use_gpu=False, run_mode='fluid', threshold=0.5):
+    def __init__(self,
+                 model_dir,
+                 use_gpu=False,
+                 run_mode='fluid',
+                 threshold=0.5):
         self.config = Config(model_dir)
         if self.config.use_python_inference:
             self.executor, self.program, self.fecth_targets = load_executor(
@@ -467,6 +472,7 @@ class Detector():
             t2 = time.time()
             ms = (t2 - t1) * 1000.0
             print("Inference: {} ms per batch image".format(ms))
+
             np_boxes = np.array(outs[0])
             if self.config.mask_resolution is not None:
                 np_masks = np.array(outs[1])
@@ -478,8 +484,9 @@ class Detector():
             t1 = time.time()
             self.predictor.zero_copy_run()
             t2 = time.time()
-            ms = (t2 - t1) * 1000.0 
+            ms = (t2 - t1) * 1000.0
             print("Inference: {} ms per batch image".format(ms))
+
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_tensor(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
@@ -492,7 +499,8 @@ class Detector():
 
 
 def predict_image():
-    detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
+    detector = Detector(
+        FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
     results = detector.predict(FLAGS.image_file, FLAGS.threshold)
     visualize(
         FLAGS.image_file,
@@ -503,12 +511,13 @@ def predict_image():
 
 
 def predict_video():
-    detector = Detector(FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
+    detector = Detector(
+        FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
     capture = cv2.VideoCapture(FLAGS.video_file)
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGES.output_dir)
@@ -546,7 +555,10 @@ if __name__ == '__main__':
     parser.add_argument(
         "--video_file", type=str, default='', help="Path of video file.")
     parser.add_argument(
-        "--run_mode", type=str, default='fluid', help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
+        "--run_mode",
+        type=str,
+        default='fluid',
+        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
         "--use_gpu", default=False, help="Whether to predict with GPU.")
     parser.add_argument(
