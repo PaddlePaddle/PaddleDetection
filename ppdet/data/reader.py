@@ -304,11 +304,9 @@ class Reader(object):
         if self._epoch < 0:
             self.reset()
         if self.drained():
-            self.stop()
             raise StopIteration
         batch = self._load_batch()
         if self._drop_last and len(batch) < self._batch_size:
-            self.stop()
             raise StopIteration
         if self._worker_num > -1:
             return batch
@@ -419,8 +417,10 @@ def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
                     yield _batch
                     n += 1
                 if max_iter > 0 and n == max_iter:
+                    reader.stop()
                     return
             if max_iter <= 0:
+                reader.stop()
                 return
             reader.reset()
 
