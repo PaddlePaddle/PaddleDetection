@@ -26,4 +26,5 @@ ExternalProject_Add(
         # Disable install step
         INSTALL_COMMAND ""
 	    LOG_DOWNLOAD ON
+        LOG_BUILD 1
 )
