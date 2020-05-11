@@ -23,6 +23,11 @@ import random
 import datetime
 from collections import deque
 from paddle.fluid import profiler
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 
 def set_paddle_flags(**kwargs):
@@ -79,6 +84,10 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
     main_arch = cfg.architecture
 
     if cfg.use_gpu:

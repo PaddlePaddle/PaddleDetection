@@ -66,8 +66,11 @@ class IouAwareLoss(IouLoss):
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
 
-        iouk = self._iou(x, y, w, h, tx, ty, tw, th, anchors, downsample_ratio,
-                         batch_size, ioup, eps)
+        pred = self._bbox_transform(x, y, w, h, anchors, downsample_ratio,
+                                    batch_size, False)
+        gt = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio,
+                                  batch_size, True)
+        iouk = self._iou(pred, gt, ioup, eps)
         iouk.stop_gradient = True
 
         loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)

@@ -4,7 +4,7 @@
 
 **说明：**
 
-- **输入部分：**导出模型输入为网络输入图像，即原始图片经过预处理后的图像，具体预处理方式可参考配置文件中TestReader部分。各类检测模型的输入格式分别为：
+- **输入部分：** 导出模型输入为网络输入图像，即原始图片经过预处理后的图像，具体预处理方式可参考配置文件中TestReader部分。各类检测模型的输入格式分别为：
 
 | 模型系列名称 | 输入图像预处理方式 | 其他输入信息 |
 | :---------: | ----------- | ---------- |
@@ -16,7 +16,7 @@
 | Face   |  归一化  | im\_shape: 格式为[origin\_H, origin\_W], origin为原始图像  |
 
 
-- **输出部分：**导出模型输出统一为NMS的输出，形状为[N, 6], 其中N为预测框的个数，6为[class_id, score, x1, y1, x2, y2]。
+- **输出部分：** 导出模型输出统一为NMS的输出，形状为[N, 6], 其中N为预测框的个数，6为[class_id, score, x1, y1, x2, y2]。
 
 - 模型导出不支持模型结构中包含```fluid.layers.py_func```的情况。
 
@@ -36,14 +36,15 @@
 # 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
 python tools/export_model.py -c configs/faster_rcnn_r50_1x.yml \
         --output_dir=./inference_model \
-        -o weights=output/faster_rcnn_r50_1x/model_final \
+        -o weights=output/faster_rcnn_r50_1x/model_final
 ```
 
 预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，模型名和参数名分别为`__model__`和`__params__`。
 
+
 ## 设置导出模型的输入大小
 
-使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。可通过设置TestReader中`image_shape`可以修改保存模型中的输入图片大小。示例如下:
+使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。设置TestReader中的`image_shape`可以修改保存模型中的输入图片大小。示例如下:
 
 ```bash
 # 导出FasterRCNN模型，输入是3x640x640
@@ -64,3 +65,20 @@ python tools/export_model.py -c configs/ssd/ssd_mobilenet_v1_voc.yml \
         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar \
            TestReader.inputs_def.image_shape=[3,300,300]
 ```
+
+## Paddle Serving部署模型导出
+
+如果您要将上述模型用于[Paddle Serving](https://github.com/PaddlePaddle/Serving)在线预估服务，操作如下
+
+```bash
+# 导出Serving模型需要安装paddle-serving-client
+pip install paddle-serving-client
+# 导出FasterRCNN模型, 模型中data层默认的shape为3x800x1333
+python tools/export_serving_model.py -c configs/faster_rcnn_r50_1x.yml \
+        --output_dir=./inference_model \
+        -o weights=output/faster_rcnn_r50_1x/model_final
+```
+
+用于Serving的预测模型会导出到`inference_model/faster_rcnn_r50_1x`目录下，其中`serving_client`为客户端配置文件夹，`serving_server`为服务端配置文件夹，模型参数也在服务端配置文件夹中。
+
+更多的信息详情参见  [使用Paddle Serving部署Faster RCNN模型](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/faster_rcnn_model)

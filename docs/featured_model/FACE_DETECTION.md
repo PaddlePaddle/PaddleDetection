@@ -155,7 +155,6 @@ cd dataset/wider_face && ./download.sh
 评估并生成结果文件：
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
        -o weights=output/blazeface/model_final \
        --eval_mode=widerface

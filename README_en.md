@@ -2,10 +2,13 @@ English | [简体中文](README.md)
 
 # PaddleDetection
 
-The goal of PaddleDetection is to provide easy access to a wide range of object
-detection models in both industry and research settings. We design
-PaddleDetection to be not only performant, production-ready but also highly
-flexible, catering to research needs.
+PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which
+aims to help developers in the whole development of training models, optimizing performance and
+inference speed, and deploying models. PaddleDetection provides varied object detection architectures
+in modular design, and wealthy data augmentation methods, network components, loss functions, etc.
+PaddleDetection supported practical projects such as industrial quality inspection, remote sensing
+image object detection, and automatic inspection with its practical features such as model compression
+and multi-platform deployment.
 
 **Now all models in PaddleDetection require PaddlePaddle version 1.7 or higher, or suitable develop version.**
 
@@ -111,6 +114,7 @@ Advanced Features:
 - [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6% and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
 - [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
+- [Mobile models](configs/mobile/README.md)
 
 
 ## License

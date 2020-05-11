@@ -1,7 +1,7 @@
 ## PaddleDetection Python 预测部署方案
 本篇教程使用AnalysisPredictor对[导出模型](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)进行高性能预测。
 
-在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 下面列出了两种不同的预测方式。Executor同时支持训练和预测，AnalysisPredictor则专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，于是我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
+在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 下面列出了两种不同的预测方式。Executor同时支持训练和预测，AnalysisPredictor则专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
 
 - Executor：[Executor](https://www.paddlepaddle.org.cn/documentation/docs/zh/beginners_guide/basic_concept/executor.html#executor)
 - AnalysisPredictor：[AnalysisPredictor](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/python_infer_cn.html#analysispredictor)
@@ -28,7 +28,7 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 在终端输入以下命令进行预测：
 
 ```bash
-python infer.py --models_dir=/path/to/models --image_file=/path/to/image
+python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image
 --use_gpu=(False/True)
 ```
 
@@ -36,14 +36,17 @@ python infer.py --models_dir=/path/to/models --image_file=/path/to/image
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
-| --models_dir | Yes|上述导出的模型路径 |
+| --model_dir | Yes|上述导出的模型路径 |
 | --image_file | Yes |需要预测的图片 |
 | --video_file | Yes |需要预测的视频 |
 | --use_gpu |No|是否GPU，默认为False|
+| --run_mode |No|使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
 | --threshold |No|预测得分的阈值，默认为0.5|
-| --visualize |No|是否可视化结果，默认为False|
 | --output_dir |No|可视化结果保存的根目录，默认为output/|
 
+说明：
+
+run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 
 ## 3. 部署性能对比测试
 对比AnalysisPredictor相对Executor的推理速度

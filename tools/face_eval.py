@@ -17,6 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 import paddle.fluid as fluid
 import numpy as np
@@ -25,7 +30,7 @@ from collections import OrderedDict
 
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_config
 from ppdet.utils.widerface_eval_utils import get_shrink, bbox_vote, \
     save_widerface_bboxes, save_fddb_bboxes, to_chw_bgr
 from ppdet.core.workspace import load_config, merge_config, create

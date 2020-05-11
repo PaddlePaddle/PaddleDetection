@@ -2,7 +2,7 @@
 
 # PaddleDetection
 
-PaddleDetection的目的是为工业界和学术界提供丰富、易用的目标检测模型。不仅性能优越、易于部署，而且能够灵活的满足算法研究的需求。
+飞桨推出的PaddleDetection是端到端目标检测开发套件，旨在帮助开发者更快更好地完成检测模型的训练、精度速度优化到部署全流程。PaddleDetection以模块化的设计实现了多种主流目标检测算法，并且提供了丰富的数据增强、网络组件、损失函数等模块，集成了模型压缩和跨平台高性能部署能力。目前基于PaddleDetection已经完成落地的项目涉及工业质检、遥感图像检测、无人巡检等多个领域。
 
 **目前检测库下模型均要求使用PaddlePaddle 1.7及以上版本或适当的develop版本。**
 
@@ -100,6 +100,7 @@ PaddleDetection的目的是为工业界和学术界提供丰富、易用的目�
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到43.6%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
 - [Open Images V5和Objects365数据集模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
+- [移动端模型](configs/mobile/README.md)
 
 
 ## 许可证书

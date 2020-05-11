@@ -13,7 +13,6 @@
 模型中和预训练模型中对应参数形状不同的参数将自动被忽略，例如：
 
 ```python
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                            -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar
@@ -28,7 +27,6 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 2. 在 train.py的启动参数中设置`finetune_exclude_pretrained_params`。例如：
 
 ```python
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
                          -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \

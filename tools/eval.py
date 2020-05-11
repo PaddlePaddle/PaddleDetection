@@ -17,6 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 
 def set_paddle_flags(**kwargs):
@@ -160,6 +165,7 @@ def main():
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
+    save_only = getattr(cfg, 'save_prediction_only', False)
     eval_results(
         results,
         cfg.metric,
@@ -168,7 +174,8 @@ def main():
         is_bbox_normalized,
         FLAGS.output_eval,
         map_type,
-        dataset=dataset)
+        dataset=dataset,
+        save_only=save_only)
 
 
 if __name__ == '__main__':
