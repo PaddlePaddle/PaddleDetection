@@ -288,6 +288,7 @@ class Config():
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
+        self.print_config()
 
     def check_model(self, yml_conf):
         """
@@ -300,6 +301,15 @@ class Config():
         raise ValueError(
             "Unsupported arch: {}, expect SSD, YOLO, RetinaNet, RCNN and Face".
             format(yml_conf['arch']))
+
+    def print_config(self):
+        print('-----------  Model Configuration -----------')
+        print('%s: %s' % ('Model Arch', self.arch))
+        print('%s: %s' % ('Use Padddle Executor', self.use_python_inference))
+        print('%s: ' % ('Transform Order'))
+        for op_info in self.preprocess_infos:
+            print('--%s: %s' % ('transform op', op_info['type']))
+        print('--------------------------------------------')
 
 
 def load_predictor(model_dir,
@@ -541,6 +551,13 @@ def predict_video():
     writer.release()
 
 
+def print_arguments(args):
+    print('-----------  Running Arguments -----------')
+    for arg, value in sorted(vars(args).items()):
+        print('%s: %s' % (arg, value))
+    print('------------------------------------------')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -570,6 +587,8 @@ if __name__ == '__main__':
         help="Directory of output visualization files.")
 
     FLAGS = parser.parse_args()
+    print_arguments(FLAGS)
+
     if FLAGS.image_file != '' and FLAGS.video_file != '':
         assert "Cannot predict image and video at the same time"
     if FLAGS.image_file != '':
