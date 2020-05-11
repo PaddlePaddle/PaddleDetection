@@ -119,7 +119,7 @@ class ParallelMap(object):
         self._producer = threading.Thread(
             target=self._produce,
             args=('producer-' + id, self._source, self._inq))
-        self._producer.daemon = False
+        self._producer.daemon = True
 
         self._consumers = []
         self._consumer_endsig = {}
@@ -130,7 +130,7 @@ class ParallelMap(object):
                 target=self._consume,
                 args=(consumer_id, self._inq, self._outq, self._worker))
             self._consumers.append(p)
-            p.daemon = use_process
+            p.daemon = True
             setattr(p, 'id', consumer_id)
             if use_process:
                 worker_set.add(p)
