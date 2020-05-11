@@ -472,6 +472,7 @@ class Detector():
             t2 = time.time()
             ms = (t2 - t1) * 1000.0
             print("Inference: {} ms per batch image".format(ms))
+
             np_boxes = np.array(outs[0])
             if self.config.mask_resolution is not None:
                 np_masks = np.array(outs[1])
@@ -485,6 +486,7 @@ class Detector():
             t2 = time.time()
             ms = (t2 - t1) * 1000.0
             print("Inference: {} ms per batch image".format(ms))
+
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_tensor(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
