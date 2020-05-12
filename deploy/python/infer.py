@@ -349,7 +349,7 @@ def load_predictor(model_dir,
     config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
-    # disable feed, fetch OP，needed by zero_copy_run
+    # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = fluid.core.create_paddle_predictor(config)
     return predictor
@@ -456,10 +456,10 @@ class Detector():
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
             threshold (float): threshold of predicted box' score
         Returns:
-            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
+            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's results include 'masks': np.ndarray: 
-                            shape:[N, class_num, mask_resolution, mask_resolution]  
+                            MaskRCNN's results include 'masks': np.ndarray:
+                            shape:[N, class_num, mask_resolution, mask_resolution]
         '''
         inputs, im_info = self.preprocess(image)
         np_boxes, np_masks = None, None
