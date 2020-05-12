@@ -11,6 +11,8 @@ instructions](INSTALL.md).
 PaddleDetection provides scripots for training, evalution and inference with various features according to different configure.
 
 ```bash
+# set PYTHONPATH
+export PYTHONPATH=$PYTHONPATH:.
 # training in single-GPU and multi-GPU. specify different GPU numbers by CUDA_VISIBLE_DEVICES
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python tools/train.py -c configs/faster_rcnn_r50_1x.yml

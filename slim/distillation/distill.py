@@ -16,11 +16,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import numpy as np
 from collections import OrderedDict
-from paddleslim.dist.single_distiller import merge, l2_loss
 
+from paddleslim.dist.single_distiller import merge, l2_loss
 from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader

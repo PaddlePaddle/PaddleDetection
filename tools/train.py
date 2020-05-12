@@ -16,31 +16,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import random
 import datetime
 from collections import deque
 from paddle.fluid import profiler
-import sys
-# add python path of PadleDetection to sys.path
-parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
 
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
