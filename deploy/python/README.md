@@ -46,7 +46,7 @@ python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/
 
 说明：
 
-run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
+run_mode：`fluid`代表使用AnalysisPredictor，精度float32来推理。其他参数指用AnalysisPredictor，TensorRT不同精度来推理。使用TensorRT时，需要[安装与编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html), Paddle-TensorRT使用和介绍可参考[使用Paddle-TensorRT库预测](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/performance_improving/inference_improving/paddle_tensorrt_infer.html)
 
 ## 3. 部署性能对比测试
 对比AnalysisPredictor相对Executor的推理速度
