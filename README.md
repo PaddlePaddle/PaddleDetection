@@ -118,17 +118,9 @@
 - [移动端模型](configs/mobile/README.md)
 - [Anchor free模型](configs/anchor_free/README.md)
 - [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
-
-  开源BlazeFace系列模型，Wider-Face数据集上最高精度达到91.5%，同时具备了较高的预测性能
-
-- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md)
-
-  改进原始YOLOv3，精度达到43.6%，原论文精度为33.0%，同时预测速度也得到提升
-
-- [行人检测和车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
-
-  基于业务数据的行人检测和车辆检测预训练模型
-
+- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
+- [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
+- [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md)
 - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
 

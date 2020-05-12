@@ -131,22 +131,11 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Mobile models](configs/mobile/README.md)
 - [Anchor free models](configs/anchor_free/README.md)
 - [Face detection models](docs/featured_model/FACE_DETECTION_en.md)
-
-    BlazeFace series model with the highest precision of 91.5% on Wider-Face dataset and outstanding inference performance.
-- [Pretrained models for pedestrian and vehicle detection](docs/featured_model/CONTRIB.md)
-
-    Models for object detection in specific scenarios.
-
-- [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md)
-
-    Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6% and inference speed is improved as well
-
+- [Pretrained models for pedestrian detection](docs/featured_model/CONTRIB.md)
+- [Pretrained models for vehicle detection](docs/featured_model/CONTRIB.md)
+- [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/featured_model/CACascadeRCNN.md)
-
-    One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
-
 - [Best single model of Open Images 2019-Object Detction](docs/featured_model/OIDV5_BASELINE_MODEL.md)
-
 
 
 ## License
