@@ -106,6 +106,16 @@ class COCODataSet(DataSet):
 
             im_fname = os.path.join(image_dir,
                                     im_fname) if image_dir else im_fname
+            if not os.path.exists(im_fname):
+                logger.warn('Illegal image file: {}, and it will be '
+                            'ignored'.format(im_fname))
+                continue
+
+            if im_w < 0 or im_h < 0:
+                logger.warn('Illegal width: {} or height: {} in annotation, '
+                            'and im_id: {} will be ignored'.format(im_w, im_h,
+                                                                   img_id))
+                continue
 
             coco_rec = {
                 'im_file': im_fname,
