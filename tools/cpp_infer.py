@@ -505,6 +505,8 @@ def visualize(bbox_results, catid2name, num_classes, mask_results=None):
 
 
 def infer():
+    logger.info("cpp_infer.py is deprecated since release/0.3. Please use"
+                "deploy/python for your python deployment")
     model_path = FLAGS.model_path
     config_path = FLAGS.config_path
     res = {}
