@@ -107,7 +107,7 @@ class COCODataSet(DataSet):
             im_fname = os.path.join(image_dir,
                                     im_fname) if image_dir else im_fname
             if not os.path.exists(im_fname):
-                logger.warn('{} is not exists and will be '
+                logger.warn('Illegal image file: {}, and it will be '
                             'ignored'.format(im_fname))
                 continue
 

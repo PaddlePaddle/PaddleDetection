@@ -80,7 +80,8 @@ class WIDERFaceDataSet(DataSet):
                     # Filter out wrong labels
                     if w < 0 or h < 0:
                         logger.warn('Illegal box with w: {}, h: {} in '
-                                    'img: {}'.format(w, h, im_fname))
+                                    'img: {}, and it will be ignored'.format(
+                                        w, h, im_fname))
                         continue
                     xmin = max(0, xmin)
                     ymin = max(0, ymin)

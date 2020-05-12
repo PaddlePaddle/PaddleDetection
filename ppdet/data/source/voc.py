@@ -111,10 +111,13 @@ class VOCDataSet(DataSet):
                 img_file, xml_file = [os.path.join(image_dir, x) \
                         for x in line.strip().split()[:2]]
                 if not os.path.exists(img_file):
-                    logger.warn('Illegal image file: {}'.format(img_file))
+                    logger.warn(
+                        'Illegal image file: {}, and it will be ignored'.format(
+                            img_file))
                     continue
                 if not os.path.isfile(xml_file):
-                    logger.warn('Illegal xml file: {}'.format(xml_file))
+                    logger.warn('Illegal xml file: {}, and it will be ignored'.
+                                format(xml_file))
                     continue
                 tree = ET.parse(xml_file)
                 if tree.find('id') is None:
