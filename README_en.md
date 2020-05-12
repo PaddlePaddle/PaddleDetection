@@ -112,20 +112,20 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
     - [Model pruning](slim/prune)
     - [Model distillation](slim/distillation)
     - [Neural Architecture Search](slim/nas)
-- [Deployment](inference)
-    - [Export model for inference](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
-    - [Model inference](docs/advanced_tutorials/inference/INFERENCE.md)
-    - [C++ inference](inference/README.md)
+- [Deployment](deploy)
+    - [Export model for inference](docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
+    - [Python inference](deploy/python)
+    - [C++ inference](deploy/cpp)
     - [Inference benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
 
 ## Model Zoo
 
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
-- [Face detection models](configs/face_detection/README.md) BlazeFace series model with the highest precision of 91.5% on Wider-Face dataset and outstanding inference performance.
-- [Pretrained models for pedestrian  and vehicle detection](contrib/README.md) Models for object detection in specific scenarios.
-- [YOLOv3 enhanced model](docs/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6% and inference speed is improved as well
-- [Objects365 2019 Challenge champion model](docs/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
-- [Open Images Dataset V5 and Objects365 Dataset models](docs/OIDV5_BASELINE_MODEL.md)
+- [Face detection models](docs/featured_model/FACE_DETECTION_en.md) BlazeFace series model with the highest precision of 91.5% on Wider-Face dataset and outstanding inference performance.
+- [Pretrained models for pedestrian and vehicle detection](docs/featured_model/CONTRIB.md) Models for object detection in specific scenarios.
+- [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md) Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6% and inference speed is improved as well
+- [Objects365 2019 Challenge champion model](docs/featured_model/CACascadeRCNN.md) One of the best single models in Objects365 Full Track of which MAP reaches 31.7%.
+- [Open Images Dataset V5 and Objects365 Dataset models](docs/featured_model/OIDV5_BASELINE_MODEL.md)
 - [Mobile models](configs/mobile/README.md)
 
 
