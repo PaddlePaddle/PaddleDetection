@@ -517,7 +517,7 @@ def predict_video():
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGES.output_dir)
