@@ -98,17 +98,17 @@
     - [剪枝](slim/prune)
     - [蒸馏](slim/distillation)
     - [神经网络搜索](slim/nas)
-- [推理部署](inference)
-    - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
-    - [预测引擎Python API使用示例](docs/advanced_tutorials/inference/INFERENCE.md)
-    - [C++推理部署](deploy/README.md)
-    - [推理Benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
+- [推理部署](deploy)
+    - [模型导出教程](docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
+    - [Python端推理部署](deploy/python)
+    - [C++端推理部署](deploy/cpp)
+    - [推理Benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 
 ## 模型库
 
 - [模型库](docs/MODEL_ZOO_cn.md)
-- [人脸检测模型](configs/face_detection/README.md) 开源BlazeFace系列模型，Wider-Face数据集上最高精度达到91.5%，同时具备了较高的预测性能
-- [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
+- [人脸检测模型](docs/featured_model/FACE_DETECTION.md) 开源BlazeFace系列模型，Wider-Face数据集上最高精度达到91.5%，同时具备了较高的预测性能
+- [行人检测和车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md) 针对不同场景的检测模型
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到43.6%，原论文精度为33.0%，同时预测速度也得到提升
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
 - [Open Images V5和Objects365数据集模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
