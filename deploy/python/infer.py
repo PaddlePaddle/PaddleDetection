@@ -283,8 +283,6 @@ class Config():
         self.use_python_inference = yml_conf['use_python_inference']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        if not yml_conf['with_background']:
-            self.labels = self.labels[1:]
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
