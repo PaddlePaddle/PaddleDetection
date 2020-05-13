@@ -1,5 +1,5 @@
 ## PaddleDetection Python 预测部署方案
-本篇教程使用AnalysisPredictor对[导出模型](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)进行高性能预测。
+本篇教程使用AnalysisPredictor对[导出模型](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)进行高性能预测。
 
 在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 下面列出了两种不同的预测方式。Executor同时支持训练和预测，AnalysisPredictor则专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
 
@@ -14,7 +14,7 @@
 
 ## 1. 导出预测模型
 
-PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)
+PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
 
 导出后目录下，包括`__model__`，`__params__`和`infer_cfg.yml`三个文件。
 
