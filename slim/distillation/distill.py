@@ -338,7 +338,7 @@ def main():
                                               eval_prog)
             # eval
             results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                               eval_values, eval_cls)
+                               eval_values, eval_cls, cfg)
             resolution = None
             box_ap_stats = eval_results(results, cfg.metric, cfg.num_classes,
                                         resolution, is_bbox_normalized,
