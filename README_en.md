@@ -136,7 +136,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/featured_model/CACascadeRCNN.md)
 - [Best single model of Open Images 2019-Object Detction](docs/featured_model/OIDV5_BASELINE_MODEL.md)
-- [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed can reach 20FPS when COCO mAP is 47.8%.
+- [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
 
 
 ## License
