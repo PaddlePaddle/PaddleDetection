@@ -5,7 +5,7 @@
 ## 模型导出
 训练得到一个满足要求的模型后，如果想要将该模型接入到C++预测库，需要通过`tools/export_model.py`导出该模型。
 
-- [导出教程](../docs/advanced_tutorials/inference/EXPORT_MODEL.md)
+- [导出教程](../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
 
 模型导出后, 目录结构如下(以`yolov3_darknet`为例):
 ```
