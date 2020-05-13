@@ -7,15 +7,11 @@
 >\# 检测模型的名称
 architecture: MaskRCNN
 
->\# 数据输入模块，包括训练、验证、测试三部分 
-train_feed: MaskRCNNTrainFeed
-eval_feed: MaskRCNNEvalFeed
-test_feed: MaskRCNNTestFeed
-
->\# 默认使用GPU运行，设为False时用CPU运行
+>\# 默认使用GPU运行，设为False时使用CPU运行
 use_gpu: true
 
->\# 最大迭代次数，而一个iter会运行batch_size * device_num张图片，一般1x迭代18万次，2x迭代36万次
+>\# 最大迭代次数，而一个iter会运行batch_size * device_num张图片，
+\# 一般batch_size为1时，1x迭代18万次，2x迭代36万次
 max_iters: 180000
 
 >\# 模型保存间隔，如果训练时eval设置为True，会在保存后进行验证
@@ -40,9 +36,10 @@ metric: COCO
 weights: output/mask_rcnn_r50_fpn_1x/model_final/
 
 >\# 用于训练或验证的数据集的类别数目
+\# **其中包含背景类，即81=80 + 1（背景类）**
 num_classes: 81
 
-Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考 https://arxiv.org/abs/1703.06870
+Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)
 >MaskRCNN:
   >>backbone: ResNet
   fpn: FPN
@@ -57,11 +54,13 @@ Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考 https
 
 Backbone module
 >ResNet:
-  >>\# Index of stages using deformable conv v2, [] by default
+  >>\# 配置在哪些阶段加入可变性卷积，默认不添加
   dcn_v2_stages: []
-  \# ResNet深度，默认50
+  
+  >>\# ResNet深度，默认50
   depth: 50
-  \# 主干网络返回的主要阶段特征用于FPN作进一步的特征融合,
+  
+  >>\# 主干网络返回的主要阶段特征用于FPN作进一步的特征融合
   \# 默认从[2,3,4,5]返回特征
   feature_maps:
   >>>\- 2
@@ -69,30 +68,39 @@ Backbone module
   \- 4
   \- 5
   
-  >>\# 默认从第二阶段停止梯度回传
+  >>\# 是否在训练中固定norm layer的权重，默认从第2阶段开始固定
   freeze_at: 2
-  \# 是否停止norm layer的梯度回传，默认是
+  
+  >>\# 是否停止norm layer的梯度回传，默认是
   freeze_norm: true
-  \# norm layer的权重衰退值
+  
+  >>\# norm layer的权重衰退值
   norm_decay: 0.0
-  \# norm layer的类型, 可以选择bn/sync_bn/affine_channel, 默认为affine_channel
+  
+  >>\# norm layer的类型, 可以选择bn/sync_bn/affine_channel, 默认为affine_channel
   norm_type: affine_channel
-  \# ResNet模型的类型, 分为'a', 'b', 'c', 'd'四种, 默认使用'b'类型
+  
+  >>\# ResNet模型的类型, 分为'a', 'b', 'c', 'd'四种, 默认使用'b'类型
   variant: b
 
 FPN module
 >FPN:
   >>\# FPN使用的最高层特征后是否添加额外conv，默认false
   has_extra_convs: false
-  \# FPN使用主干网络最高层特征，默认6
+  
+  >>\# FPN使用主干网络最高层特征，默认是resnet第5阶段后添加额外卷积操作变成了FPN的第6个，总共有5个阶段
   max_level: 6
-  \# FPN使用主干网络最低层特征，默认2
+  
+  >>\# FPN使用主干网络最低层特征，默认是resnet第2阶段的输出
   min_level: 2
-  \# FPN中使用Norm类型, bn/sync_bn/affine_channel, 默认不用norm
+  
+  >>\# FPN中使用Norm类型, bn/sync_bn/affine_channel/null, 默认不用null
   norm_type: null
-  \# FPN输出特征的通道数量, 默认是256
+  
+  >>\# FPN输出特征的通道数量, 默认是256
   num_chan: 256
-  \# 特征图缩放比例, 默认为[0.03125, 0.0625, 0.125, 0.25]
+  
+  >>\# 特征图缩放比例, 默认是[0.03125, 0.0625, 0.125, 0.25]
   spatial_scale:
   >>>\- 0.03125
   \- 0.0625
@@ -109,7 +117,7 @@ RPN Module
   
   >>\# 根据特征图尺寸，在特征图的每个位置生成N个大小、长宽比各不同anchor
   \# N = anchor_sizes * aspect_ratios
-  \# 具体实现参考APIfluid.layers.anchor_generator
+  \# 具体实现参考[API](fluid.layers.anchor_generator)
   anchor_generator:
     >>>aspect_ratios:
     \- 0.5
@@ -123,7 +131,7 @@ RPN Module
     
   >>\# 首先计算Anchor和GT BBox之间的IoU，为每个Anchor匹配上GT，
   \# 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算
-  \# 具体实现参考fluid.layers.rpn_target_assign
+  \# 具体实现参考[API](fluid.layers.rpn_target_assign)
   rpn_target_assign:
     >>>rpn_batch_size_per_im: 256
     rpn_fg_fraction: 0.5
@@ -134,7 +142,7 @@ RPN Module
   >> \# 首先取topk个分类分数高的anchor，
   \# 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。
   \# 训练和测试阶段主要区别在最后NMS保留的Anchor数目。
-  \# 具体实现参考fluid.layers.generate_proposals
+  \# 具体实现参考[API](fluid.layers.generate_proposals)
   train_proposal:
     >>>min_size: 0.0
     nms_thresh: 0.7
@@ -149,38 +157,48 @@ RPN Module
 
 对FPN每层执行RoIAlign后，然后合并输出结果，用于BBox Head计算
 >FPNRoIAlign:
-  \# 用于抽取特征特征的FPN的层数，默认为4
+  >>\# 用于抽取特征特征的FPN的层数，默认为4
   canconical_level: 4
-  \# 用于抽取特征特征的FPN的特征图尺寸，默认为224
+  
+  >>\# 用于抽取特征特征的FPN的特征图尺寸，默认为224
   canonical_size: 224
-  \# 用于抽取特征特征的最高层FPN，默认是2
+  
+  >>\# 用于抽取特征特征的最高层FPN，默认是2
   max_level: 5
-  \# 用于抽取特征特征的最底层FPN，默认是2
+  
+  >>\# 用于抽取特征特征的最底层FPN，默认是2
   min_level: 2
-  \#roi extractor的采样率，默认为2
+  
+  >>\#roi extractor的采样率，默认为2
   sampling_ratio: 2
-  \# 输出bbox的特征图尺寸，默认为7
+  
+  >>\# 输出bbox的特征图尺寸，默认为7
   box_resolution: 7
-  \# 输出mask的特征图尺寸，默认为14
+  
+  >>\# 输出mask的特征图尺寸，默认为14
   mask_resolution: 14
 
 Mask head module  
 
 >MaskHead:
-  \# 卷积的数量，FPN是4，其他为0，默认为0
+  >>\# 卷积的数量，FPN是4，其他为0，默认为0
   num_convs: 4
-  \# mask head输出的特征图尺寸，默认14
+  
+  >>\# mask head输出的特征图尺寸，默认14
   resolution: 28
-  \# 空洞率，默认为1
+  
+  >>\# 空洞率，默认为1
   dilation: 1
-  \# 第一个卷积后输出的特征图通道数, 默认为256
+  
+  >>\# 第一个卷积后输出的特征图通道数, 默认为256
   num_chan_reduced: 256
-  \# 输出的mask的类别，默认为81
+  
+  >>\# 输出的mask的类别，默认为81
   num_classes: 81
 
 \# 求rpn生成的roi跟gt bbox之间的iou，然后根据阈值进行过滤，保留一定数量的roi
 \# 再根据gt bbox的标签，对roi进行标签赋值，即得到每个roi的类别
-\# 具体实现参考fluid.layers.generate_proposal_labels
+\# 具体实现参考[API](fluid.layers.generate_proposal_labels)
 >BBoxAssigner:
   >>batch_size_per_im: 512
   bbox_reg_weights:
@@ -197,7 +215,7 @@ Mask head module
   shuffle_before_sample: true
 
 \# 根据roi的label，选择前景，为其赋值mask label
-\# 具体实现参考fluid.layers.generate_mask_labels
+\# 具体实现参考[API](fluid.layers.generate_mask_labels)
 >MaskAssigner:
   >>resolution: 28
   num_classes: 81
@@ -209,13 +227,13 @@ BBox head module
   head: TwoFCHead
   
   >>\# 通过NMS进行bbox过滤
-  \# 具体实现参考fluid.layers.multiclass_nms
+  \# 具体实现参考[API](fluid.layers.multiclass_nms)
     keep_top_k: 100
     nms_threshold: 0.5
     score_threshold: 0.05
   
   >>\# 对bbox的坐标进行编解码操作
-  \# 具体实现参考fluid.layers.box_coder
+  \# 具体实现参考[API](fluid.layers.box_coder)
   box_coder:
     >>>axis: 1
     box_normalized: false
@@ -235,12 +253,13 @@ RCNN head with two Fully Connected layers
 
 学习率配置
 >LearningRate:
-  >>\# 初始学习率, 一般情况下8卡gpu，batch size为2时设置为0.01
+  >>\# 初始学习率, 一般情况下8卡gpu，batch size为2时设置为0.02
   \# 可以根据具体情况，按比例调整
+  \# 比如说4卡V100，bs=2时，设置为0.01
   base_lr: 0.01
   
   >>\# 学习率规划器
-  \# 具体实现参考fluid.layers.piecewise_decay
+  \# 具体实现参考[API](fluid.layers.piecewise_decay)
   schedulers:
   >>>\- !PiecewiseDecay
     gamma: 0.1
@@ -249,8 +268,10 @@ RCNN head with two Fully Connected layers
     \- 160000
     values: null
   
-  >>\# 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身
-  \# 具体实现参考fluid.layers.linear_lr_warmup
+  >>\# 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率
+  \# linear_step = end_lr - start_lr
+  \# lr = start_lr + linear_step * (global_step / warmup_steps)
+  \# 具体实现参考[API](fluid.layers.linear_lr_warmup)
   >>>\- !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 500
@@ -258,13 +279,13 @@ RCNN head with two Fully Connected layers
 Optimizer module
 >OptimizerBuilder:
   >>\# 默认使用SGD+Momentum进行训练
-  >>\# 具体实现参考fluid.optimizer
+  >>\# 具体实现参考[API](fluid.optimizer)
   optimizer:
     >>>momentum: 0.9
     type: Momentum
     
   >>\# 默认使用L2权重衰减正则化
-  >>\# 具体实现参考fluid.regularizer
+  >>\# 具体实现参考[API](fluid.regularizer)
   regularizer:
     >>>factor: 0.0001
     type: L2
@@ -272,7 +293,7 @@ Optimizer module
 Data feed module
 > \# 模型训练集设置参考 
 \# 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
-MaskRCNNTrainFeed:
+TrainReader:
   >>\# 1个GPU的batch size，默认为1
   batch_size: 1
   \# Dataset module
@@ -349,13 +370,18 @@ MaskRCNNTrainFeed:
   
   >>\# 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的
   drop_last: false
-  \# 使用的多进程数目，默认为2
+  
+  >>\# 使用的进程数目，默认为2
   num_workers: 2
-  \# 使用数据集中的样本数目，默认是-1，表示使用全部
+  
+  >>\# 使用数据集中的样本数目，默认是-1，表示使用全部
   samples: -1
-  \# 选择是否打乱所有样本的顺序
+  
+  >>\# 选择是否打乱所有样本的顺序
   shuffle: true
-  \# 选择是否更新padding之后的数据信息，默认为false
+  
+  >>\# 选择是否更新padding之后的数据信息，默认为false
   use_padded_im_info: false
-  \# 选择是否使用多进程，默认为false
+  
+  >>\# 选择是否使用多进程，默认为false
   use_process: false
