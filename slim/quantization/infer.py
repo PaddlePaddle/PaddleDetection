@@ -16,17 +16,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import glob
-import sys
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
+import glob
 import numpy as np
 from PIL import Image
 
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config

@@ -8,6 +8,8 @@
 PaddleDetection提供了训练/评估/推断三个功能的使用脚本，支持通过不同可选参数实现特定功能
 
 ```bash
+# 设置PYTHONPATH路径
+export PYTHONPATH=$PYTHONPATH:.
 # GPU训练 支持单卡，多卡训练，通过CUDA_VISIBLE_DEVICES指定卡号
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python tools/train.py -c configs/faster_rcnn_r50_1x.yml
