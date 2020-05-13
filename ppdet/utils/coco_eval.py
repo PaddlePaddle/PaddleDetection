@@ -425,7 +425,9 @@ def get_category_info_from_anno(anno_file, with_background=True):
         for i, cat in enumerate(cats)
     }
     catid2name = {cat['id']: cat['name'] for cat in cats}
-
+    if with_background:
+        clsid2catid.update({0: 0})
+        catid2name.update({0: 'background'})
     return clsid2catid, catid2name
 
 
@@ -607,5 +609,7 @@ def coco17_category_info(with_background=True):
 
     if not with_background:
         clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+    else:
+        clsid2catid.update({0: 0})
 
     return clsid2catid, catid2name

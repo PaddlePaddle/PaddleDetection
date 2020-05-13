@@ -110,7 +110,14 @@ class VOCDataSet(DataSet):
                     break
                 img_file, xml_file = [os.path.join(image_dir, x) \
                         for x in line.strip().split()[:2]]
+                if not os.path.exists(img_file):
+                    logger.warn(
+                        'Illegal image file: {}, and it will be ignored'.format(
+                            img_file))
+                    continue
                 if not os.path.isfile(xml_file):
+                    logger.warn('Illegal xml file: {}, and it will be ignored'.
+                                format(xml_file))
                     continue
                 tree = ET.parse(xml_file)
                 if tree.find('id') is None:
@@ -121,14 +128,18 @@ class VOCDataSet(DataSet):
                 objs = tree.findall('object')
                 im_w = float(tree.find('size').find('width').text)
                 im_h = float(tree.find('size').find('height').text)
-                gt_bbox = np.zeros((len(objs), 4), dtype=np.float32)
-                gt_class = np.zeros((len(objs), 1), dtype=np.int32)
-                gt_score = np.ones((len(objs), 1), dtype=np.float32)
-                is_crowd = np.zeros((len(objs), 1), dtype=np.int32)
-                difficult = np.zeros((len(objs), 1), dtype=np.int32)
+                if im_w < 0 or im_h < 0:
+                    logger.warn(
+                        'Illegal width: {} or height: {} in annotation, '
+                        'and {} will be ignored'.format(im_w, im_h, xml_file))
+                    continue
+                gt_bbox = []
+                gt_class = []
+                gt_score = []
+                is_crowd = []
+                difficult = []
                 for i, obj in enumerate(objs):
                     cname = obj.find('name').text
-                    gt_class[i][0] = cname2cid[cname]
                     _difficult = int(obj.find('difficult').text)
                     x1 = float(obj.find('bndbox').find('xmin').text)
                     y1 = float(obj.find('bndbox').find('ymin').text)
@@ -138,9 +149,22 @@ class VOCDataSet(DataSet):
                     y1 = max(0, y1)
                     x2 = min(im_w - 1, x2)
                     y2 = min(im_h - 1, y2)
-                    gt_bbox[i] = [x1, y1, x2, y2]
-                    is_crowd[i][0] = 0
-                    difficult[i][0] = _difficult
+                    if x2 > x1 and y2 > y1:
+                        gt_bbox.append([x1, y1, x2, y2])
+                        gt_class.append([cname2cid[cname]])
+                        gt_score.append([1.])
+                        is_crowd.append([0])
+                        difficult.append([_difficult])
+                    else:
+                        logger.warn(
+                            'Found an invalid bbox in annotations: xml_file: {}'
+                            ', x1: {}, y1: {}, x2: {}, y2: {}.'.format(
+                                xml_file, x1, y1, x2, y2))
+                gt_bbox = np.array(gt_bbox).astype('float32')
+                gt_class = np.array(gt_class).astype('int32')
+                gt_score = np.array(gt_score).astype('float32')
+                is_crowd = np.array(is_crowd).astype('int32')
+                difficult = np.array(difficult).astype('int32')
                 voc_rec = {
                     'im_file': img_file,
                     'im_id': im_id,

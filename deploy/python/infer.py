@@ -283,8 +283,6 @@ class Config():
         self.use_python_inference = yml_conf['use_python_inference']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        if not yml_conf['with_background']:
-            self.labels = self.labels[1:]
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
@@ -349,7 +347,7 @@ def load_predictor(model_dir,
     config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
-    # disable feed, fetch OP，needed by zero_copy_run
+    # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = fluid.core.create_paddle_predictor(config)
     return predictor
@@ -456,10 +454,10 @@ class Detector():
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
             threshold (float): threshold of predicted box' score
         Returns:
-            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
+            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's results include 'masks': np.ndarray: 
-                            shape:[N, class_num, mask_resolution, mask_resolution]  
+                            MaskRCNN's results include 'masks': np.ndarray:
+                            shape:[N, class_num, mask_resolution, mask_resolution]
         '''
         inputs, im_info = self.preprocess(image)
         np_boxes, np_masks = None, None
@@ -517,7 +515,7 @@ def predict_video():
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGES.output_dir)

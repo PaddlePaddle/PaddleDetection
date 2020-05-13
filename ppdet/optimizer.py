@@ -71,9 +71,9 @@ class PolynomialDecay(object):
     """
     Applies polynomial decay to the initial learning rate.
     Args:
-        max_iter (int) – The learning rate decay steps. 
-        end_lr(float) – End learning rate.
-        power (float) – Polynomial attenuation coefficient
+        max_iter (int): The learning rate decay steps. 
+        end_lr (float): End learning rate.
+        power (float): Polynomial attenuation coefficient
     """
 
     def __init__(self, max_iter=180000, end_lr=0.0001, power=1.0):
@@ -94,8 +94,8 @@ class ExponentialDecay(object):
     """
     Applies exponential decay to the learning rate.
     Args:
-        max_iter (int) – The learning rate decay steps. 
-        decay_rate (float) – The learning rate decay rate. 
+        max_iter (int): The learning rate decay steps. 
+        decay_rate (float): The learning rate decay rate. 
     """
 
     def __init__(self, max_iter, decay_rate):
