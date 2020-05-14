@@ -185,10 +185,10 @@ MaskHead:<br>
   >>fg_thresh: 0.5<br>
   >>num_classes: 81<br>
   >>shuffle_before_sample: true<br>
-  >>>\- 0.1<br>
-  >>>\- 0.1<br>
-  >>>\- 0.2<br>
-  >>>\- 0.2<br>
+  \- 0.1<br>
+  \- 0.1<br>
+  \- 0.2<br>
+  \- 0.2<br>
 
 >\# 根据roi的label，选择前景，为其赋值mask label<br>
 >\# 具体实现参考[API](fluid.layers.generate_mask_labels)<br>
@@ -200,19 +200,19 @@ MaskHead:<br>
 BBoxHead:<br>
   >\# 在roi extractor和bbox head之间，插入两层FC，对特征做进一步学习<br>
   >head: TwoFCHead<br>
-  >>\# 通过NMS进行bbox过滤<br>
-  >>\# 具体实现参考[API](fluid.layers.multiclass_nms)<br>
-  >>keep_top_k: 100<br>
-  >>nms_threshold: 0.5<br>
-  >>score_threshold: 0.05<br>
-  >>num_classes: 81<br>
-  >>\# 对bbox的坐标进行编解码操作<br>
-  >>\# 具体实现参考[API](fluid.layers.box_coder)<br>
-  >>box_coder:<br>
-    >>>axis: 1<br>
-    box_normalized: false<br>
-    code_type: decode_center_size<br>
-    prior_box_var:<br>
+  >\# 通过NMS进行bbox过滤<br>
+  >\# 具体实现参考[API](fluid.layers.multiclass_nms)<br>
+  >keep_top_k: 100<br>
+  >nms_threshold: 0.5<br>
+  >score_threshold: 0.05<br>
+  >num_classes: 81<br>
+  >\# 对bbox的坐标进行编解码操作<br>
+  >\# 具体实现参考[API](fluid.layers.box_coder)<br>
+  >box_coder:<br>
+    >>axis: 1<br>
+    >>box_normalized: false<br>
+    >>code_type: decode_center_size<br>
+    >>prior_box_var:<br>
     \- 0.1<br>
     \- 0.1<br>
     \- 0.2<br>
@@ -234,18 +234,18 @@ LearningRate:<br>
   >schedulers:<br>
   >> #学习率衰减策略<br>
   >>\- !PiecewiseDecay<br>
-    >>>gamma: 0.1<br>
-    >>>milestones:<br>
-    >>>>\- 120000<br>
-    >>>>\- 160000<br>
+    gamma: 0.1<br>
+    milestones:<br>
+    \- 120000<br>
+    \- 160000<br>
 
   >>\# 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率<br>
   >>\# linear_step = end_lr - start_lr<br>
   >>\# lr = start_lr + linear_step * (global_step / warmup_steps)<br>
   >>\# 具体实现参考[API](fluid.layers.linear_lr_warmup)<br>
   >>\- !LinearWarmup<br>
-    >>>start_factor: 0.3333333333333333<br>
-    >>>steps: 500<br>
+    start_factor: 0.3333333333333333<br>
+    steps: 500<br>
 
 OptimizerBuilder:<br>
   >\# 默认使用SGD+Momentum进行训练<br>
