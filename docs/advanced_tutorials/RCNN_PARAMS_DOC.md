@@ -1,47 +1,47 @@
 ﻿# RCNN系列模型参数配置教程
 
-标签（空格分隔）： 模型参数配置
+标签： 模型参数配置
 
 ---
 
-\# 检测模型的名称
-architecture: MaskRCNN
+\# 检测模型的名称<br>
+architecture: MaskRCNN<br>
 
-\# 默认使用GPU运行，设为False时使用CPU运行
-use_gpu: true
+\# 默认使用GPU运行，设为False时使用CPU运行<br>
+use_gpu: true<br>
 
-\# 最大迭代次数，而一个iter会运行batch_size * device_num张图片，
-\# 一般batch_size为1时，1x迭代18万次，2x迭代36万次
-max_iters: 180000
+\# 最大迭代次数，而一个iter会运行batch_size * device_num张图片<br>
+\# 一般batch_size为1时，1x迭代18万次，2x迭代36万次<br>
+max_iters: 180000<br>
 
-\# 模型保存间隔，如果训练时eval设置为True，会在保存后进行验证
-snapshot_iter: 10000
+\# 模型保存间隔，如果训练时eval设置为True，会在保存后进行验证<br>
+snapshot_iter: 10000<br>
 
-\# 输出指定区间的平均结果，默认20，即输出20次的平均结果.
-log_smooth_window: 20
+\# 输出指定区间的平均结果，默认20，即输出20次的平均结果<br>
+log_smooth_window: 20<br>
 
-\# 默认打印log的间隔，默认20
-log_iter: 20
+\# 默认打印log的间隔，默认20<br>
+log_iter: 20<br>
 
-\# 训练权重的保存路径
-save_dir: output
+\# 训练权重的保存路径<br>
+save_dir: output<br>
 
-\# 模型的预训练权重，默认是从指定url下载
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+\# 模型的预训练权重，默认是从指定url下载<br>
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar<br>
 
-\# 验证模型的评测标准，可以选择COCO或者VOC 
-metric: COCO
+\# 验证模型的评测标准，可以选择COCO或者VOC<br>
+metric: COCO<br>
 
-\# 用于模型验证或测试的训练好的权重
-weights: output/mask_rcnn_r50_fpn_1x/model_final/
+\# 用于模型验证或测试的训练好的权重<br>
+weights: output/mask_rcnn_r50_fpn_1x/model_final/<br>
 
-\# 用于训练或验证的数据集的类别数目
-\# **其中包含背景类，即81=80 + 1（背景类）**
-num_classes: 81
+\# 用于训练或验证的数据集的类别数目<br>
+\# **其中包含背景类，即81=80 + 1（背景类）**<br>
+num_classes: 81<br>
 
-Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)
+Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)<br>
 
-MaskRCNN:
+MaskRCNN:<br>
   
   >backbone: ResNet <br>
   >fpn: FPN<br>
@@ -53,7 +53,7 @@ MaskRCNN:
   >mask_head: MaskHead<br>
   >rpn_only: false<br>
 
-Backbone module<br>
+主干网络<br>
 ResNet:<br>
   >\# 配置在哪些阶段加入可变性卷积，默认不添加<br>
   >dcn_v2_stages: []<br>
@@ -78,7 +78,7 @@ ResNet:<br>
   >\# ResNet模型的类型, 分为'a', 'b', 'c', 'd'四种, 默认使用'b'类型<br>
   >variant: b<br>
 
-FPN module<br>
+FPN多特征融合<br>
 FPN:<br>
   >\# FPN使用的最高层特征后是否添加额外conv，默认false<br>
   has_extra_convs: false<br>
@@ -97,7 +97,7 @@ FPN:<br>
   \- 0.125<br>
   \- 0.25<br>
 
-RPN Module<br>
+检测第一阶段RPN<br>
 FPNRPNHead:<br>
   >\# FPN第一层特征生成anchor时，默认anchor尺寸32<br>
   anchor_start_size: 32<br>
@@ -161,7 +161,7 @@ FPNRoIAlign:<br>
   >\# 输出mask的特征图尺寸，默认为14<br>
   mask_resolution: 14<br>
 
-Mask head module<br>
+输出实例掩码的Head<br>
 MaskHead:<br>
   >\# 卷积的数量，FPN是4，其他为0，默认为0<br>
   num_convs: 4<br>
@@ -197,7 +197,7 @@ BBoxAssigner:<br>
   >>resolution: 28<br>
   num_classes: 81<br>
 
-BBox head module<br>
+输出检测框的Head<br>
 BBoxHead:<br>
   >\# 在roi extractor和bbox head之间，插入两层FC，对特征做进一步学习<br>
   >head: TwoFCHead<br>
@@ -219,9 +219,7 @@ BBoxHead:<br>
     >>>>\- 0.2<br>
     >>>>\- 0.2<br>
 
-  
-
-RCNN head with two Fully Connected layers<br>
+输出检测框之前，对特征进一步学习<br>
 TwoFCHead:<br>
   >\# FC输出的特征图通道数，默认是1024<br>
   num_chan: 1024<br>
@@ -250,7 +248,6 @@ LearningRate:<br>
     start_factor: 0.3333333333333333<br>
     steps: 500<br>
 
-Optimizer module<br>
 OptimizerBuilder:<br>
   >\# 默认使用SGD+Momentum进行训练<br>
   >\# 具体实现参考[API](fluid.optimizer)<br>
