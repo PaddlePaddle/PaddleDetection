@@ -256,7 +256,7 @@ def main():
         results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
                            eval_values, eval_cls)
         resolution = None
-        if 'mask' in results[0]:
+        if 'Mask' in cfg.architecture:
             resolution = model.mask_head.resolution
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
@@ -267,7 +267,8 @@ def main():
             is_bbox_normalized,
             FLAGS.output_eval,
             map_type,
-            dataset=dataset)
+            dataset=dataset,
+            resolution=resolution)
 
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
