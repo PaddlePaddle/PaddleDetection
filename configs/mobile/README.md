@@ -1,39 +1,41 @@
-# Mobile Model Zoo
+[English](README_en.md) | 简体中文
+
+# 移动端模型库
 
 
-## Models
+## 模型
 
-This directory contains models optimized for mobile applications, at present the following models included:
+PaddleDetection目前提供一系列针对移动应用进行优化的模型，主要支持以下结构:
 
-| Backbone                 | Architecture              | Input | Image/gpu <sup>1</sup> | Lr schd       | Box AP | Download <sup>2</sup> |
+| 骨干网络                 | 结构              | 输入大小 | 图片/gpu <sup>1</sup> | 学习率策略       | Box AP | 下载 <sup>2</sup> |
 |--------------------------|---------------------------|-------|------------------------|---------------|--------|-----------------------|
-| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small.tar.gz) |
-| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_320.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_640.tar.gz) |
-| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.tar.gz) |
-| MobileNetV3 Large        | YOLOv3 Prune <sup>3</sup> | 320   | 8                      | -             | 24.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3_prune86_FPGM_320.tar.gz) |
+| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small.tar.gz) |
+| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large.tar.gz) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_320.tar.gz) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_640.tar.gz) |
+| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.tar.gz) |
+| MobileNetV3 Large        | YOLOv3 Prune <sup>3</sup> | 320   | 8                      | -             | 24.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3_prune86_FPGM_320.tar.gz) |
 
-**Notes**:
+**注意**:
 
--   <a name="gpu">[1]</a> All models are trained on 8 GPUs.
--   <a name="tarball">[2]</a> Each tarball contains the following files
-    -  model weight file (`.pdparams` or `.tar`)
-    -  inference model files (`__model__` and `__params__`)
-    -  Paddle-Lite model file (`.nb`)
--   <a name="prune">[3]</a> See the note section on how YOLO head is pruned
+-   <a name="gpu">[1]</a> 模型统一使用8卡训练.
+-   <a name="tarball">[2]</a> 压缩包包括下列文件
+    -  模型权重文件 (`.pdparams` or `.tar`)
+    -  inference model 文件 (`__model__` and `__params__`)
+    -  Paddle-Lite 模型文件 (`.nb`)
+-   <a name="prune">[3]</a> 参考下面关于YOLO剪裁的说明
 
 
-## Benchmarks Results
+## 评测结果
 
--   Models are benched on following chipsets with [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 2.6 (to be released)
+-   模型使用 [Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 2.6 (即将发布) 在下列平台上进行了测试
     -   Qualcomm Snapdragon 625
     -   Qualcomm Snapdragon 835
     -   Qualcomm Snapdragon 845
     -   Qualcomm Snapdragon 855
     -   HiSilicon Kirin 970
     -   HiSilicon Kirin 980
--   With 1 CPU thread (latency numbers are in ms)
+-   单CPU线程 (单位： ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
@@ -43,7 +45,7 @@ This directory contains models optimized for mobile applications, at present the
     | YOLOv3 prune     | 253.98  | 131.279 | 89.4124 | 48.2856 | 122.732   | 55.8626   |
     | Cascade RCNN 320 | 286.526 | 125.635 | 87.404  | 46.184  | 149.179   | 52.9994   |
     | Cascade RCNN 640 | 1115.66 | 495.926 | 351.361 | 189.722 | 573.558   | 207.917   |
--   With 4 CPU threads (latency numbers are in ms)
+-   4 CPU线程 (单位： ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
     |------------------|---------|---------|---------|---------|-----------|-----------|
@@ -55,26 +57,26 @@ This directory contains models optimized for mobile applications, at present the
     | Cascade RCNN 640 | 473.083 | 224.543 | 156.205 | 100.686 | 231.108   | 138.391   |
 
 
-## Notes on YOLOv3 pruning
+## YOLOv3剪裁说明
 
-We pruned the YOLO-head and distill the pruned model with YOLOv3-ResNet34 as the teacher, which has a higher mAP on COCO (31.4 with 320\*320 input).
+首先对YOLO检测头进行剪裁，然后再使用 YOLOv3-ResNet34 作为teacher网络对剪裁后的模型进行蒸馏, teacher网络在COCO的mAP为31.4 (输入大小320\*320).
 
-The following configurations can be used for pruning:
+可以使用如下两种方式进行剪裁:
 
--   Prune with fixed ratio, overall prune ratios is 86%
+-   固定比例剪裁, 整体剪裁率是86%
 
     ```shell
     --pruned_params="yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights,yolo_block.0.1.1.conv.weights,yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.0.0.conv.weights,yolo_block.1.0.1.conv.weights,yolo_block.1.1.0.conv.weights,yolo_block.1.1.1.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights,yolo_block.2.0.0.conv.weights,yolo_block.2.0.1.conv.weights,yolo_block.2.1.0.conv.weights,yolo_block.2.1.1.conv.weights,yolo_block.2.2.conv.weights,yolo_block.2.tip.conv.weights" \
     --pruned_ratios="0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.875,0.875,0.875,0.875,0.875,0.875"
     ```
--   Prune filters using [FPGM](https://arxiv.org/abs/1811.00250) algorithm:
+-   使用 [FPGM](https://arxiv.org/abs/1811.00250) 算法剪裁:
 
     ```shell
     --prune_criterion=geometry_median
     ```
 
 
-## Upcoming
+## 敬请关注后续发布
 
--   [ ] More models configurations
--   [ ] Quantized models
+-   [ ] 更多模型
+-   [ ] 量化模型
