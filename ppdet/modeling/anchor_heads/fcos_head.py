@@ -283,22 +283,14 @@ class FCOSHead(object):
                 last dimension is [x1, y1, x2, y2]
         """
         act_shape_cls = self.__merge_hw(box_cls)
-        box_cls_ch_last = fluid.layers.reshape(
-            x=box_cls,
-            shape=[self.batch_size, self.num_classes, -1],
-            actual_shape=act_shape_cls)
+        box_cls_ch_last = fluid.layers.reshape(x=box_cls, shape=act_shape_cls)
         box_cls_ch_last = fluid.layers.sigmoid(box_cls_ch_last)
         act_shape_reg = self.__merge_hw(box_reg, "channel_last")
         box_reg_ch_last = fluid.layers.transpose(box_reg, perm=[0, 2, 3, 1])
         box_reg_ch_last = fluid.layers.reshape(
-            x=box_reg_ch_last,
-            shape=[self.batch_size, -1, 4],
-            actual_shape=act_shape_reg)
+            x=box_reg_ch_last, shape=act_shape_reg)
         act_shape_ctn = self.__merge_hw(box_ctn)
-        box_ctn_ch_last = fluid.layers.reshape(
-            x=box_ctn,
-            shape=[self.batch_size, 1, -1],
-            actual_shape=act_shape_ctn)
+        box_ctn_ch_last = fluid.layers.reshape(x=box_ctn, shape=act_shape_ctn)
         box_ctn_ch_last = fluid.layers.sigmoid(box_ctn_ch_last)
 
         box_reg_decoding = fluid.layers.stack(
