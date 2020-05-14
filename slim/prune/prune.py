@@ -252,12 +252,19 @@ def main():
         tb_mAP_step = 0
 
     if FLAGS.eval:
-        # evaluation
-        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
         resolution = None
         if 'Mask' in cfg.architecture:
             resolution = model.mask_head.resolution
+        # evaluation
+        results = eval_run(
+            exe,
+            compiled_eval_prog,
+            eval_loader,
+            eval_keys,
+            eval_values,
+            eval_cls,
+            cfg,
+            resolution=resolution)
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
             results,
@@ -267,8 +274,7 @@ def main():
             is_bbox_normalized,
             FLAGS.output_eval,
             map_type,
-            dataset=dataset,
-            resolution=resolution)
+            dataset=dataset)
 
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
