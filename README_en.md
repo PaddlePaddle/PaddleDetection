@@ -134,8 +134,8 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Pretrained models for pedestrian detection](docs/featured_model/CONTRIB.md)
 - [Pretrained models for vehicle detection](docs/featured_model/CONTRIB.md)
 - [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
-- [Objects365 2019 Challenge champion model](docs/featured_model/CACascadeRCNN.md)
-- [Best single model of Open Images 2019-Object Detction](docs/featured_model/OIDV5_BASELINE_MODEL.md)
+- [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
+- [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
 
 
@@ -143,7 +143,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.2.0 was released at `02/2020`, add some models，Upgrade data processing module, Split YOLOv3's loss, fix many known bugs, etc.
+v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models, refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing
