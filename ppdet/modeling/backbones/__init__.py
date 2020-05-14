@@ -33,6 +33,7 @@ from . import hourglass
 from . import efficientnet
 from . import bifpn
 from . import cspdarknet
+from . import cspresnet
 
 from .resnet import *
 from .resnext import *
@@ -53,3 +54,4 @@ from .hourglass import *
 from .efficientnet import *
 from .bifpn import *
 from .cspdarknet import *
+from .cspresnet import *
