@@ -90,3 +90,26 @@ python export_model.py \
 
 如果需要对自己的模型进行修改，可以参考`prune.py`中对`paddleslim.prune.Pruner`接口的调用方式，基于自己的模型训练脚本进行修改。
 本节我们介绍的剪裁示例，需要用户根据先验知识指定每层的剪裁率，除此之外，PaddleSlim还提供了敏感度分析等功能，协助用户选择合适的剪裁率。更多详情请参考：[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
+
+## 9. 更多示例与注意事项
+
+## 9.1 faster_rcnn与mask_rcnn
+
+**当前PaddleSlim的剪裁功能不支持剪裁循环体或条件判断语句块内的卷积层，请避免剪裁循环和判断语句块前的一个卷积和语句块内部的卷积。**
+
+对于[faster_rcnn_r50](../../configs/faster_rcnn_r50_1x.yml)或[mask_rcnn_r50](../../configs/mask_rcnn_r50_1x.yml)网络，请剪裁卷积`res4f_branch2c`之前的卷积。
+
+对[faster_rcnn_r50](../../configs/faster_rcnn_r50_1x.yml)剪裁示例如下：
+
+```
+# demo for faster_rcnn_r50
+python prune.py -c ../../configs/faster_rcnn_r50_1x.yml --pruned_params "res4f_branch2b_weights,res4f_branch2a_weights" --pruned_ratios="0.3,0.4" --eval
+```
+
+对[mask_rcnn_r50](../../configs/mask_rcnn_r50_1x.yml)剪裁示例如下：
+
+```
+# demo for mask_rcnn_r50
+python prune.py -c ../../configs/mask_rcnn_r50_1x.yml --pruned_params "res4f_branch2b_weights,res4f_branch2a_weights" --pruned_ratios="0.2,0.3" --eval
+
+```
