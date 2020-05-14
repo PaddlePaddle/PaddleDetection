@@ -100,84 +100,83 @@ FPN:<br>
 检测第一阶段RPN<br>
 FPNRPNHead:<br>
   >\# FPN第一层特征生成anchor时，默认anchor尺寸32<br>
-  anchor_start_size: 32<br>
+  >anchor_start_size: 32<br>
   >\# RPNHead默认进行前背景二分类<br>
-  num_classes: 1<br>
+  >num_classes: 1<br>
   >\# 根据特征图尺寸，在特征图的每个位置生成N个大小、长宽比各不同anchor<br>
-  \# N = anchor_sizes * aspect_ratios<br>
-  \# 具体实现参考[API](fluid.layers.anchor_generator)<br>
-  anchor_generator:<br>
+  >\# N = anchor_sizes * aspect_ratios<br>
+  >\# 具体实现参考[API](fluid.layers.anchor_generator)<br>
+  >anchor_generator:<br>
     >>aspect_ratios:<br>
-    >>>\- 0.5<br>
-    \- 1.0<br>
-    \- 2.0<br>
+    >>\- 0.5<br>
+    >>\- 1.0<br>
+    >>\- 2.0<br>
     >>variance:<br>
-    >>>\- 1.0<br>
-    \- 1.0<br>
-    \- 1.0<br>
-    \- 1.0<br>
+    >>\- 1.0<br>
+    >>\- 1.0<br>
+    >>\- 1.0<br>
+    >>\- 1.0<br>
     
   >\# 首先计算Anchor和GT BBox之间的IoU，为每个Anchor匹配上GT，<br>
-  \# 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算<br>
-  \# 具体实现参考[API](fluid.layers.rpn_target_assign)<br>
-  rpn_target_assign:<br>
+  >\# 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算<br>
+  >\# 具体实现参考[API](fluid.layers.rpn_target_assign)<br>
+  >rpn_target_assign:<br>
     >>rpn_batch_size_per_im: 256<br>
-    rpn_fg_fraction: 0.5<br>
-    rpn_negative_overlap: 0.3<br>
-    rpn_positive_overlap: 0.7<br>
-    rpn_straddle_thresh: 0.0<br>
+    >>rpn_fg_fraction: 0.5<br>
+    >>rpn_negative_overlap: 0.3<br>
+    >>rpn_positive_overlap: 0.7<br>
+    >>rpn_straddle_thresh: 0.0<br>
   
-  > \# 首先取topk个分类分数高的anchor，<br>
-  \# 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。<br>
-  \# 训练和测试阶段主要区别在最后NMS保留的Anchor数目。<br>
-  \# 具体实现参考[API](fluid.layers.generate_proposals)<br>
-
+  >\# 首先取topk个分类分数高的anchor，<br>
+  >\# 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。<br>
+  >\# 训练和测试阶段主要区别在最后NMS保留的Anchor数目。<br>
+  >\# 具体实现参考[API](fluid.layers.generate_proposals)<br>
   >train_proposal:<br>
     >>min_size: 0.0<br>
-    nms_thresh: 0.7<br>
-    post_nms_top_n: 2000<br>
-    pre_nms_top_n: 2000<br>
+    >>nms_thresh: 0.7<br>
+    >>post_nms_top_n: 2000<br>
+    >>pre_nms_top_n: 2000<br>
 
   >test_proposal:<br>
     >>min_size: 0.0<br>
-    nms_thresh: 0.7<br>
-    post_nms_top_n: 1000<br>
-    pre_nms_top_n: 1000<br>
+    >>nms_thresh: 0.7<br>
+    >>post_nms_top_n: 1000<br>
+    >>pre_nms_top_n: 1000<br>
 
 对FPN每层执行RoIAlign后，然后合并输出结果，用于BBox Head计算<br>
 FPNRoIAlign:<br>
   >\# 用于抽取特征特征的FPN的层数，默认为4<br>
-  canconical_level: 4<br>
+  >canconical_level: 4<br>
   >\# 用于抽取特征特征的FPN的特征图尺寸，默认为224<br>
-  canonical_size: 224<br>
+  >canonical_size: 224<br>
   >\# 用于抽取特征特征的最高层FPN，默认是2<br>
-  max_level: 5<br>
+  >max_level: 5<br>
   >\# 用于抽取特征特征的最底层FPN，默认是2<br>
-  min_level: 2<br>
+  >min_level: 2<br>
   >\#roi extractor的采样率，默认为2<br>
-  sampling_ratio: 2<br>
+  >sampling_ratio: 2<br>
   >\# 输出bbox的特征图尺寸，默认为7<br>
-  box_resolution: 7<br>
+  >box_resolution: 7<br>
   >\# 输出mask的特征图尺寸，默认为14<br>
-  mask_resolution: 14<br>
+  >mask_resolution: 14<br>
 
 输出实例掩码的Head<br>
 MaskHead:<br>
   >\# 卷积的数量，FPN是4，其他为0，默认为0<br>
-  num_convs: 4<br>
-  \# mask head输出的特征图尺寸，默认14<br>
-  resolution: 28<br>
-  \# 空洞率，默认为1<br>
-  dilation: 1<br>
-  \# 第一个卷积后输出的特征图通道数, 默认为256<br>
-  num_chan_reduced: 256<br>
-  \# 输出的mask的类别，默认为81<br>
-  num_classes: 81<br>
+  >num_convs: 4<br>
+  >\# mask head输出的特征图尺寸，默认14<br>
+  >resolution: 28<br>
+  >\# 空洞率，默认为1<br>
+  >dilation: 1<br>
+  >\# 第一个卷积后输出的特征图通道数, 默认为256<br>
+  >num_chan_reduced: 256<br>
+  >\# 输出的mask的类别，默认为81<br>
+  >num_classes: 81<br>
 
 >\# 求rpn生成的roi跟gt bbox之间的iou，然后根据阈值进行过滤，保留一定数量的roi<br>
-\# 再根据gt bbox的标签，对roi进行标签赋值，即得到每个roi的类别<br>
-\# 具体实现参考[API](fluid.layers.generate_proposal_labels)<br>
-BBoxAssigner:<br>
+>\# 再根据gt bbox的标签，对roi进行标签赋值，即得到每个roi的类别<br>
+>\# 具体实现参考[API](fluid.layers.generate_proposal_labels)<br>
+>BBoxAssigner:<br>
   >>batch_size_per_im: 512<br>
   >>bbox_reg_weights:<br>
   >>bg_thresh_hi: 0.5<br>
@@ -192,10 +191,10 @@ BBoxAssigner:<br>
   >>>\- 0.2<br>
 
 >\# 根据roi的label，选择前景，为其赋值mask label<br>
-\# 具体实现参考[API](fluid.layers.generate_mask_labels)<br>
+>\# 具体实现参考[API](fluid.layers.generate_mask_labels)<br>
 >MaskAssigner:<br>
   >>resolution: 28<br>
-  num_classes: 81<br>
+  >>num_classes: 81<br>
 
 输出检测框的Head<br>
 BBoxHead:<br>
@@ -222,31 +221,31 @@ BBoxHead:<br>
 输出检测框之前，对特征进一步学习<br>
 TwoFCHead:<br>
   >\# FC输出的特征图通道数，默认是1024<br>
-  num_chan: 1024<br>
+  >num_chan: 1024<br>
 
 学习率配置<br>
 LearningRate:<br>
   >\# 初始学习率, 一般情况下8卡gpu，batch size为2时设置为0.02<br>
-  \# 可以根据具体情况，按比例调整<br>
-  \# 比如说4卡V100，bs=2时，设置为0.01<br>
-  base_lr: 0.01<br>
+  >\# 可以根据具体情况，按比例调整<br>
+  >\# 比如说4卡V100，bs=2时，设置为0.01<br>
+  >base_lr: 0.01<br>
   
   >\# 学习率规划器<br>
   >\# 具体实现参考[API](fluid.layers.piecewise_decay)<br>
   >schedulers:<br>
   >>\- !PiecewiseDecay<br>
-    gamma: 0.1<br>
-    milestones:<br>
-    \- 120000<br>
-    \- 160000<br>
+    >>>gamma: 0.1<br>
+    >>>milestones:<br>
+    >>>>\- 120000<br>
+    >>>>\- 160000<br>
     values: null<br>
   >>\# 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率<br>
-  \# linear_step = end_lr - start_lr<br>
-  \# lr = start_lr + linear_step * (global_step / warmup_steps)<br>
-  \# 具体实现参考[API](fluid.layers.linear_lr_warmup)<br>
-  \- !LinearWarmup<br>
-    start_factor: 0.3333333333333333<br>
-    steps: 500<br>
+  >>\# linear_step = end_lr - start_lr<br>
+  >>\# lr = start_lr + linear_step * (global_step / warmup_steps)<br>
+  >>\# 具体实现参考[API](fluid.layers.linear_lr_warmup)<br>
+  >>\- !LinearWarmup<br>
+    >>>start_factor: 0.3333333333333333<br>
+    >>>steps: 500<br>
 
 OptimizerBuilder:<br>
   >\# 默认使用SGD+Momentum进行训练<br>
@@ -259,14 +258,14 @@ OptimizerBuilder:<br>
   >\# 具体实现参考[API](fluid.regularizer)<br>
   >regularizer:<br>
     >>factor: 0.0001<br>
-    type: L2<br>
+    >>type: L2<br>
 
 
 \# 模型训练集设置参考 <br>
 \# 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置<br>
 TrainReader:<br>
   >\# 1个GPU的batch size，默认为1<br>
-  batch_size: 1<br>
+  >batch_size: 1<br>
 
   >\# 数据集目录配置<br>
   >dataset:<br>
@@ -309,9 +308,9 @@ TrainReader:<br>
   >>\# 归一化图片，默认均值[0.485, 0.456, 0.406]，方差[1, 1, 1]<br>
   >>\# 可以选择将归一化结果除以255，可以选择图片的数据格式<br>
   >>\- !NormalizeImage<br>
-    is_channel_first: false<br>
-    is_scale: true<br>
-    mean:<br>
+    >>is_channel_first: false<br>
+    >>is_scale: true<br>
+    >>mean:<br>
     \- 0.485<br>
     \- 0.456<br>
     \- 0.406<br>
@@ -322,21 +321,21 @@ TrainReader:<br>
 
   >>\# 调整图片尺寸，默认采用cv2的线性插值<br>
   >>\- !ResizeImage<br>
-    interp: 1<br>
-    max_size: 1333<br>
-    target_size: 800<br>
-    use_cv2: true  # default: true<br>
+    >>>interp: 1<br>
+    >>>max_size: 1333<br>
+    >>>target_size: 800<br>
+    >>>use_cv2: true  # default: true<br>
 
   >>\# 调整图片数据格式，默认使用CHW<br>
   >>\- !Permute<br>
-     channel_first: true<br>
-     to_bgr: false  # default: true<br>  
+     >>>channel_first: true<br>
+     >>>to_bgr: false  # default: true<br>  
   
   >\# 对一个batch中的图片统一做的数据增强<br>
   >batch_transforms:<br>
   >>\# 将一个batch中的图片，按照最大的尺寸，做补齐<br>
   >>\- !PadBatch<br>
-    pad_to_stride: 32  # default: 32<br>
+    >>>pad_to_stride: 32  # default: 32<br>
 
   >\# 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的<br>
   drop_last: false<br>
