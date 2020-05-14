@@ -143,7 +143,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.2.0 was released at `02/2020`, add some models，Upgrade data processing module, Split YOLOv3's loss, fix many known bugs, etc.
+v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models, refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing

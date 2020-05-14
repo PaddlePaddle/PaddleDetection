@@ -6,6 +6,7 @@
   - 模型丰富度提升：
     - 添加Efficientdet-D0模型，速度与精度优于竞品。
     - 添加anchor-free模型FCOS，精度优于竞品。
+    - 新增yolov4预测模型，精度对齐竞品；新增yolov4在pascal voc数据集上finetune模型，精度达到85.5%。
     - YOLOv3新增MobileNetV3骨干网络，COCO数据集精度达到31.6%。
     -  添加anchor-free模型CornernetSqueeze，精度优于竞品， 优化模型的COCO数据集精度38.2%, +3.7%，速度较yolo_v3 darknet快5%。
     -  添加服务器端实用目标检测模型cascade_rcnn_resnet50_vd_fpn_dcn，速度与精度优于竞品EfficientDet。
