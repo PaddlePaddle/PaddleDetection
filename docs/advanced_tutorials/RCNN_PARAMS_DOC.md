@@ -40,9 +40,8 @@ weights: output/mask_rcnn_r50_fpn_1x/model_final/<br>
 num_classes: 81<br>
 
 Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)<br>
-
 MaskRCNN:<br>
-  
+
   >backbone: ResNet <br>
   >fpn: FPN<br>
   >roi_extractor: FPNRoIAlign<br>
@@ -66,7 +65,7 @@ ResNet:<br>
   >>\- 3<br>
   >>\- 4<br>
   >>\- 5<br>
-  
+
   >\# 是否在训练中固定norm layer的权重，默认从第2阶段开始固定<br>
   >freeze_at: 2<br>
   >\# 是否停止norm layer的梯度回传，默认是<br>
@@ -125,7 +124,7 @@ FPNRPNHead:<br>
     rpn_negative_overlap: 0.3<br>
     rpn_positive_overlap: 0.7<br>
     rpn_straddle_thresh: 0.0<br>
-  
+
   >\# 首先取topk个分类分数高的anchor，<br>
   >\# 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。<br>
   >\# 训练和测试阶段主要区别在最后NMS保留的Anchor数目。<br>
@@ -284,13 +283,13 @@ TrainReader:<br>
   >>\- gt_label<br>
   >>\- is_crowd<br>
   >>\- gt_mask<br>
-  
+
   >\# 输入Image的尺寸<br>
   >image_shape:<br>
   >>\- 3<br>
   >>\- 800<br>
   >>\- 1333<br>
-  
+
   >\# 对一个batch中的单张图片做的数据增强<br>
   >sample_transforms:<br>
   >>\# 读取Image图像为numpy数组，<br>
@@ -329,7 +328,7 @@ TrainReader:<br>
   >>\- !Permute<br>
      channel_first: true<br>
      to_bgr: false  # default: true<br>  
-  
+
   >\# 对一个batch中的图片统一做的数据增强<br>
   >batch_transforms:<br>
   >>\# 将一个batch中的图片，按照最大的尺寸，做补齐<br>
