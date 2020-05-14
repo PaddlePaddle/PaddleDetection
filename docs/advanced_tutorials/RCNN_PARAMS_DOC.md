@@ -116,7 +116,7 @@ FPNRPNHead:<br>
     >>\- 1.0<br>
     >>\- 1.0<br>
     >>\- 1.0<br>
-    
+
   >\# 首先计算Anchor和GT BBox之间的IoU，为每个Anchor匹配上GT，<br>
   >\# 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算<br>
   >\# 具体实现参考[API](fluid.layers.rpn_target_assign)<br>
@@ -210,13 +210,13 @@ BBoxHead:<br>
   >>\# 具体实现参考[API](fluid.layers.box_coder)<br>
   >>box_coder:<br>
     >>>axis: 1<br>
-    >>>box_normalized: false<br>
-    >>>code_type: decode_center_size<br>
-    >>>prior_box_var:<br>
-    >>>>\- 0.1<br>
-    >>>>\- 0.1<br>
-    >>>>\- 0.2<br>
-    >>>>\- 0.2<br>
+    box_normalized: false<br>
+    code_type: decode_center_size<br>
+    prior_box_var:<br>
+    \- 0.1<br>
+    \- 0.1<br>
+    \- 0.2<br>
+    \- 0.2<br>
 
 输出检测框之前，对特征进一步学习<br>
 TwoFCHead:<br>
@@ -229,16 +229,16 @@ LearningRate:<br>
   >\# 可以根据具体情况，按比例调整<br>
   >\# 比如说4卡V100，bs=2时，设置为0.01<br>
   >base_lr: 0.01<br>
-  
   >\# 学习率规划器<br>
   >\# 具体实现参考[API](fluid.layers.piecewise_decay)<br>
   >schedulers:<br>
+  >> #学习率衰减策略<br>
   >>\- !PiecewiseDecay<br>
     >>>gamma: 0.1<br>
     >>>milestones:<br>
     >>>>\- 120000<br>
     >>>>\- 160000<br>
-    values: null<br>
+
   >>\# 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率<br>
   >>\# linear_step = end_lr - start_lr<br>
   >>\# lr = start_lr + linear_step * (global_step / warmup_steps)<br>
