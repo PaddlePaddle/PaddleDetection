@@ -1,6 +1,6 @@
 architecture: HybridTaskCascade
 use_gpu: true
-max_iters: 180000
+max_iters: 90000
 snapshot_iter: 10000
 log_smooth_window: 20
 save_dir: output
@@ -10,7 +10,7 @@ weights: output/htc_r50_fpn_1x/model_final
 num_classes: 81
 
 TrainReader:
-  batch_size: 1
+  batch_size: 2
   worker_num: 2
   dataset:
     !COCODataSet
@@ -169,17 +169,17 @@ CascadeTwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.02
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
+    milestones: [60000, 80000]
   - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 500
+    start_factor: 0.1 #0.3333333333333333
+    steps: 1000 #500
 
 OptimizerBuilder:
-  #clip_grad_by_norm: 35.0
+  clip_grad_by_norm: 35.0
   optimizer:
     momentum: 0.9
     type: Momentum
