@@ -28,7 +28,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_config
+from ppdet.utils.check import check_config, check_version
 import yaml
 import logging
 from collections import OrderedDict
@@ -175,6 +175,8 @@ def main():
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
     check_config(cfg)
+
+    check_version()
 
     main_arch = cfg.architecture
 
