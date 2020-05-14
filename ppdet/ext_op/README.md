@@ -37,6 +37,23 @@ sh make.sh
 编译自定义OP时会报错找不到`mkldnn.h`等文件，可在`make.sh`中删除编译命令中的`-DPADDLE_WITH_MKLDNN`选项。
 
 
+## 设置环境变量
+
+需要将Paddle的核心库设置到`LD_LIBRARY_PATH`里, 先运行下面程序获取路径:
+
+```
+import paddle
+print(paddle.sysconfig.get_lib())
+```
+
+可通过如下方式添加动态库路径:
+
+```
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`python -c 'import paddle; print(paddle.sysconfig.get_lib())'`
+```
+
+
+
 ## 执行单测
 
 执行下列单测，确保自定义算子可在网络中正确使用：
