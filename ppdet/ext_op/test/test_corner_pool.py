@@ -83,7 +83,7 @@ class TestRightPoolOp(unittest.TestCase):
         place = fluid.CUDAPlace(0)
 
         with fluid.program_guard(tp, sp):
-            x = fluid.layers.data(
+            x = fluid.data(
                 name=self.name,
                 shape=x_shape,
                 dtype=x_type,
