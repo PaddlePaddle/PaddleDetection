@@ -283,9 +283,8 @@ class Config():
         self.use_python_inference = yml_conf['use_python_inference']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        if not yml_conf['with_background']:
-            self.labels = self.labels[1:]
         self.mask_resolution = None
+        self.with_background = yml_conf['with_background']
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
         self.print_config()
@@ -359,7 +358,7 @@ def load_predictor(model_dir,
     config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
-    # disable feed, fetch OP，needed by zero_copy_run
+    # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = fluid.core.create_paddle_predictor(config)
     return predictor
@@ -447,6 +446,8 @@ class Detector():
             np_boxes[:, 3] *= w
             np_boxes[:, 4] *= h
             np_boxes[:, 5] *= w
+        if not self.config.with_background:
+            np_boxes[:, 0] += 1
         expect_boxes = np_boxes[:, 1] > threshold
         np_boxes = np_boxes[expect_boxes, :]
         for box in np_boxes:
@@ -466,10 +467,10 @@ class Detector():
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
             threshold (float): threshold of predicted box' score
         Returns:
-            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
+            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's results include 'masks': np.ndarray: 
-                            shape:[N, class_num, mask_resolution, mask_resolution]  
+                            MaskRCNN's results include 'masks': np.ndarray:
+                            shape:[N, class_num, mask_resolution, mask_resolution]
         '''
         inputs, im_info = self.preprocess(image)
         np_boxes, np_masks = None, None
@@ -530,7 +531,7 @@ def predict_video():
     fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGES.output_dir)
+        os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1

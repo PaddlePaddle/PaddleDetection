@@ -16,7 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import numpy as np
 from collections import OrderedDict
 from paddleslim.dist.single_distiller import merge, l2_loss
@@ -29,7 +35,7 @@ from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -117,6 +123,7 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    check_version()
 
     main_arch = cfg.architecture
 

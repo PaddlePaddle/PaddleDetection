@@ -1,6 +1,6 @@
-# PaddleDetection C++预测部署方案
+# C++端预测部署
 
-## 本文档结构
+## 本教程结构
 
 [1.说明](#1说明)
 
@@ -52,7 +52,7 @@ deploy/cpp
 ## 3.编译部署
 
 ### 3.1 导出模型
-请确认您已经基于`PaddleDetection`的[export_model.py](../../tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)。
+请确认您已经基于`PaddleDetection`的[export_model.py](../../tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)。
 
 模型导出后, 目录结构如下(以`yolov3_darknet`为例):
 ```

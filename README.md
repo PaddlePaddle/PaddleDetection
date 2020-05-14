@@ -44,7 +44,14 @@
 | BlazeFace          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 | Faceboxes          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 
-<a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型提供了较大的精度提高和较少的性能损失。
+<a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型预测速度基本不变的情况下提高了精度。
+
+更多的模型:
+
+- EfficientDet
+- FCOS
+- CornerNet-Squeeze
+- YOLOv4
 
 更多的Backone：
 
@@ -52,16 +59,29 @@
 - VGG
 - GCNet
 - CBNet
+- Hourglass
 
 扩展特性：
 
-- [x] **Synchronized Batch Norm**: 目前在YOLOv3中使用。
+- [x] **Synchronized Batch Norm**
 - [x] **Group Norm**
 - [x] **Modulated Deformable Convolution**
 - [x] **Deformable PSRoI Pooling**
 - [x] **Non-local和GCNet**
 
 **注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
+
+以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图。
+
+<div align="center">
+  <img src="docs/images/map_fps.png" />
+</div>
+
+**说明：**
+- `CBResNet`为`Cascade-Faster-RCNN-CBResNet200vd-FPN`模型，COCO数据集mAP高达53.3%
+- `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
+- PaddleDetection增强版`YOLOv3-ResNet50vd-DCN`在COCO数据集mAP高于原作10.6个绝对百分点，推理速度为61.3FPS，快于原作约70%
+- 图中模型均可在[模型库](#模型库)中获取
 
 ## 文档教程
 
@@ -86,28 +106,31 @@
     - [剪枝](slim/prune)
     - [蒸馏](slim/distillation)
     - [神经网络搜索](slim/nas)
-- [推理部署](inference)
-    - [模型导出教程](docs/advanced_tutorials/inference/EXPORT_MODEL.md)
-    - [预测引擎Python API使用示例](docs/advanced_tutorials/inference/INFERENCE.md)
-    - [C++推理部署](deploy/README.md)
-    - [推理Benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
+- [推理部署](deploy)
+    - [模型导出教程](docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
+    - [Python端推理部署](deploy/python)
+    - [C++端推理部署](deploy/cpp)
+    - [推理Benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 
 ## 模型库
 
 - [模型库](docs/MODEL_ZOO_cn.md)
-- [人脸检测模型](configs/face_detection/README.md) 开源BlazeFace系列模型，Wider-Face数据集上最高精度达到91.5%，同时具备了较高的预测性能
-- [行人检测和车辆检测预训练模型](contrib/README_cn.md) 针对不同场景的检测模型
-- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md) 改进原始YOLOv3，精度达到43.6%，原论文精度为33.0%，同时预测速度也得到提升
-- [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md) Objects365 Full Track任务中最好的单模型之一,精度达到31.7%
-- [Open Images V5和Objects365数据集模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
 - [移动端模型](configs/mobile/README.md)
+- [Anchor free模型](configs/anchor_free/README.md)
+- [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
+- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
+- [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
+- [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
+- [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
+- [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+- [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
 
 
 ## 许可证书
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.2.0版本已经在`02/2020`发布，增加多个模型，升级数据处理模块，拆分YOLOv3的loss，修复已知诸多bug等，
+v0.3.0版本已经在`05/2020`发布，增加anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，重构预测部署功能，提升易用性，修复已知诸多bug等，
 详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码

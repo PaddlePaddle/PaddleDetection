@@ -152,5 +152,5 @@ class BFP(object):
         out_shape = fluid.layers.cast(out_shape_, dtype='int32')
         out_shape.stop_gradient = True
         body_output = fluid.layers.resize_nearest(
-            body_input, scale=scale, actual_shape=out_shape)
+            body_input, scale=scale, out_shape=out_shape)
         return body_output
