@@ -321,21 +321,21 @@ TrainReader:<br>
 
   >>\# 调整图片尺寸，默认采用cv2的线性插值<br>
   >>\- !ResizeImage<br>
-    >>>interp: 1<br>
-    >>>max_size: 1333<br>
-    >>>target_size: 800<br>
-    >>>use_cv2: true  # default: true<br>
+    interp: 1<br>
+    max_size: 1333<br>
+    target_size: 800<br>
+    use_cv2: true  # default: true<br>
 
   >>\# 调整图片数据格式，默认使用CHW<br>
   >>\- !Permute<br>
-     >>>channel_first: true<br>
-     >>>to_bgr: false  # default: true<br>  
+     channel_first: true<br>
+     to_bgr: false  # default: true<br>  
   
   >\# 对一个batch中的图片统一做的数据增强<br>
   >batch_transforms:<br>
   >>\# 将一个batch中的图片，按照最大的尺寸，做补齐<br>
   >>\- !PadBatch<br>
-    >>>pad_to_stride: 32  # default: 32<br>
+    pad_to_stride: 32  # default: 32<br>
 
   >\# 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的<br>
   drop_last: false<br>
