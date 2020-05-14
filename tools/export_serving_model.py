@@ -22,7 +22,7 @@ from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_config
+from ppdet.utils.check import check_config, check_version
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
@@ -58,6 +58,7 @@ def main():
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
     check_config(cfg)
+    check_version()
 
     main_arch = cfg.architecture
 
