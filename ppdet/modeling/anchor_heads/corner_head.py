@@ -246,7 +246,8 @@ class CornerHead(object):
         try:
             import cornerpool_lib
         except:
-            logger.error("cornerpool_lib not found, compile in ext_op at first")
+            logger.error(
+                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_classes = num_classes
