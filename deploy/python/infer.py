@@ -518,7 +518,7 @@ def predict_video():
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
-        os.makedirs(FLAGES.output_dir)
+        os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
