@@ -18,6 +18,10 @@ from __future__ import print_function
 
 from paddle import fluid
 from ppdet.core.workspace import register
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 __all__ = ['YOLOv3Loss']
 
@@ -34,7 +38,7 @@ class YOLOv3Loss(object):
         use_fine_grained_loss (bool): whether use fine grained YOLOv3 loss
                                       instead of fluid.layers.yolov3_loss
     """
-    __inject__ = ['iou_loss']
+    __inject__ = ['iou_loss', 'iou_aware_loss']
     __shared__ = ['use_fine_grained_loss']
 
     def __init__(self,
@@ -42,12 +46,21 @@ class YOLOv3Loss(object):
                  ignore_thresh=0.7,
                  label_smooth=True,
                  use_fine_grained_loss=False,
-                 iou_loss=None):
+                 iou_loss=None,
+                 iou_aware_loss=None,
+                 downsample=[32, 16, 8],
+                 scale_x_y=1.,
+                 match_score=False):
         self._batch_size = batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
         self._use_fine_grained_loss = use_fine_grained_loss
         self._iou_loss = iou_loss
+        self._iou_aware_loss = iou_aware_loss
+        self.downsample = downsample
+        # TODO(guanzhong) activate scale_x_y in Paddle 2.0
+        #self.scale_x_y = scale_x_y
+        self.match_score = match_score
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
                  anchor_masks, mask_anchors, num_classes, prefix_name):
@@ -57,8 +70,9 @@ class YOLOv3Loss(object):
                 mask_anchors, self._ignore_thresh)
         else:
             losses = []
-            downsample = 32
             for i, output in enumerate(outputs):
+                #scale_x_y = self.scale_x_y if not isinstance(
+                #    self.scale_x_y, Sequence) else self.scale_x_y[i]
                 anchor_mask = anchor_masks[i]
                 loss = fluid.layers.yolov3_loss(
                     x=output,
@@ -69,11 +83,10 @@ class YOLOv3Loss(object):
                     anchor_mask=anchor_mask,
                     class_num=num_classes,
                     ignore_thresh=self._ignore_thresh,
-                    downsample_ratio=downsample,
+                    downsample_ratio=self.downsample[i],
                     use_label_smooth=self._label_smooth,
                     name=prefix_name + "yolo_loss" + str(i))
                 losses.append(fluid.layers.reduce_mean(loss))
-                downsample //= 2
 
             return {'loss': sum(losses)}
 
@@ -106,14 +119,17 @@ class YOLOv3Loss(object):
         assert len(outputs) == len(targets), \
             "YOLOv3 output layer number not equal target number"
 
-        downsample = 32
-        if self._iou_loss is None:
-            loss_xys, loss_whs, loss_objs, loss_clss = [], [], [], []
-        else:
-            loss_xys, loss_whs, loss_ious, loss_objs, loss_clss = [], [], [], [], []
+        loss_xys, loss_whs, loss_objs, loss_clss = [], [], [], []
+        if self._iou_loss is not None:
+            loss_ious = []
+        if self._iou_aware_loss is not None:
+            loss_iou_awares = []
         for i, (output, target,
                 anchors) in enumerate(zip(outputs, targets, mask_anchors)):
+            downsample = self.downsample[i]
             an_num = len(anchors) // 2
+            if self._iou_aware_loss is not None:
+                ioup, output = self._split_ioup(output, an_num, num_classes)
             x, y, w, h, obj, cls = self._split_output(output, an_num,
                                                       num_classes)
             tx, ty, tw, th, tscale, tobj, tcls = self._split_target(target)
@@ -137,6 +153,17 @@ class YOLOv3Loss(object):
                 loss_iou = fluid.layers.reduce_sum(loss_iou, dim=[1, 2, 3])
                 loss_ious.append(fluid.layers.reduce_mean(loss_iou))
 
+            if self._iou_aware_loss is not None:
+                loss_iou_aware = self._iou_aware_loss(
+                    ioup, x, y, w, h, tx, ty, tw, th, anchors, downsample,
+                    self._batch_size)
+                loss_iou_aware = loss_iou_aware * tobj
+                loss_iou_aware = fluid.layers.reduce_sum(
+                    loss_iou_aware, dim=[1, 2, 3])
+                loss_iou_awares.append(fluid.layers.reduce_mean(loss_iou_aware))
+
+            #scale_x_y = self.scale_x_y if not isinstance(
+            #    self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
                 output, obj, tobj, gt_box, self._batch_size, anchors,
                 num_classes, downsample, self._ignore_thresh)
@@ -151,7 +178,6 @@ class YOLOv3Loss(object):
                 fluid.layers.reduce_mean(loss_obj_pos + loss_obj_neg))
             loss_clss.append(fluid.layers.reduce_mean(loss_cls))
 
-            downsample //= 2
         losses_all = {
             "loss_xy": fluid.layers.sum(loss_xys),
             "loss_wh": fluid.layers.sum(loss_whs),
@@ -160,7 +186,23 @@ class YOLOv3Loss(object):
         }
         if self._iou_loss is not None:
             losses_all["loss_iou"] = fluid.layers.sum(loss_ious)
+        if self._iou_aware_loss is not None:
+            losses_all["loss_iou_aware"] = fluid.layers.sum(loss_iou_awares)
         return losses_all
+
+    def _split_ioup(self, output, an_num, num_classes):
+        """
+        Split output feature map to output, predicted iou
+        along channel dimension
+        """
+        ioup = fluid.layers.slice(output, axes=[1], starts=[0], ends=[an_num])
+        ioup = fluid.layers.sigmoid(ioup)
+        oriout = fluid.layers.slice(
+            output,
+            axes=[1],
+            starts=[an_num],
+            ends=[an_num * (num_classes + 6)])
+        return (ioup, oriout)
 
     def _split_output(self, output, an_num, num_classes):
         """
@@ -240,7 +282,7 @@ class YOLOv3Loss(object):
 
         # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
         # NOTE: img_size is set as 1.0 to get noramlized pred bbox
-        bbox, _ = fluid.layers.yolo_box(
+        bbox, prob = fluid.layers.yolo_box(
             x=output,
             img_size=fluid.layers.ones(
                 shape=[batch_size, 2], dtype="int32"),
@@ -258,6 +300,7 @@ class YOLOv3Loss(object):
         else:
             preds = [bbox]
             gts = [gt_box]
+            probs = [prob]
         ious = []
         for pred, gt in zip(preds, gts):
 
@@ -277,12 +320,17 @@ class YOLOv3Loss(object):
             pred = fluid.layers.squeeze(pred, axes=[0])
             gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
             ious.append(fluid.layers.iou_similarity(pred, gt))
-        iou = fluid.layers.stack(ious, axis=0)
 
+        iou = fluid.layers.stack(ious, axis=0)
         # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
         #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
+
         max_iou = fluid.layers.reduce_max(iou, dim=-1)
         iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
+        if self.match_score:
+            max_prob = fluid.layers.reduce_max(prob, dim=-1)
+            iou_mask = iou_mask * fluid.layers.cast(
+                max_prob <= 0.25, dtype="float32")
         output_shape = fluid.layers.shape(output)
         an_num = len(anchors) // 2
         iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],

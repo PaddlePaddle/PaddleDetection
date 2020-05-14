@@ -184,7 +184,7 @@ A small utility (`tools/configure.py`) is included to simplify the configuration
 4.  `generate`: Generate a configuration template for a given list of modules. By default it generates a complete configuration file, which can be quite verbose; if a `--minimal` flag is given, it generates a template that only contain non optional settings. For example, to generate a configuration for Faster R-CNN architecture with `ResNet` backbone and `FPN`, run:
 
     ```shell
-    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead FasterRCNNTrainFeed FasterRCNNTestFeed LearningRate OptimizerBuilder
+    python tools/configure.py generate FasterRCNN ResNet RPNHead RoIAlign BBoxAssigner BBoxHead LearningRate OptimizerBuilder
     ```
 
     For a minimal version, run:
@@ -192,14 +192,3 @@ A small utility (`tools/configure.py`) is included to simplify the configuration
     ```shell
     python tools/configure.py generate --minimal FasterRCNN BBoxHead
     ```
-
-
-## FAQ
-
-**Q:** There are some configuration options that are used by multiple modules (e.g., `num_classes`), how do I avoid duplication in config files?
-
-**A:** We provided a `__shared__` annotation for exactly this purpose, simply annotate like this `__shared__ = ['num_classes']`. It works as follows:
-
-1.  if `num_classes` is configured for a module in config file, it takes precedence.
-2.  if `num_classes` is not configured for a module but is present in the config file as a global key, its value will be used.
-3.  otherwise, the default value (`81`) will be used.

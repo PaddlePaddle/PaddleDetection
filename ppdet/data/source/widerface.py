@@ -79,6 +79,9 @@ class WIDERFaceDataSet(DataSet):
                     h = float(temp_info_box[3])
                     # Filter out wrong labels
                     if w < 0 or h < 0:
+                        logger.warn('Illegal box with w: {}, h: {} in '
+                                    'img: {}, and it will be ignored'.format(
+                                        w, h, im_fname))
                         continue
                     xmin = max(0, xmin)
                     ymin = max(0, ymin)
@@ -102,7 +105,7 @@ class WIDERFaceDataSet(DataSet):
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
         assert len(records) > 0, 'not found any widerface in %s' % (anno_path)
-        logger.info('{} samples in file {}'.format(ct, anno_path))
+        logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
 
 

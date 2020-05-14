@@ -187,7 +187,6 @@ class CascadeRCNN(object):
             # backbone
             body_feats = self.backbone(im)
             result.update(body_feats)
-            body_feat_names = list(body_feats.keys())
 
             # FPN
             if self.fpn is not None:
@@ -319,7 +318,7 @@ class CascadeRCNN(object):
             lod_level=inputs_def[key]['lod_level'])) for key in fields])
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
-            capacity=64,
+            capacity=16,
             use_double_buffer=True,
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader

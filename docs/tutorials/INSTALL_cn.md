@@ -55,6 +55,8 @@ python -c "import paddle; print(paddle.__version__)"
     make install
     # 若您没有权限或更倾向不安装至全局site-packages
     python setup.py install --user
+    # 或者使用pip安装
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **windows用户安装COCO-API方式：**
 
@@ -85,10 +87,8 @@ pip install -r requirements.txt
 **确认测试通过：**
 
 ```
-export PYTHONPATH=`pwd`:$PYTHONPATH
 python ppdet/modeling/tests/test_architectures.py
 ```
-
 
 ## 数据集
 
@@ -110,7 +110,6 @@ ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 对于Pascal VOC数据集，需通过如下命令创建文件列表：
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/create_list.py
 ```
 
@@ -121,7 +120,6 @@ python dataset/voc/create_list.py
 - COCO
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/coco/download_coco.py
 ```
 
@@ -149,7 +147,6 @@ python dataset/coco/download_coco.py
 - Pascal VOC
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/download_voc.py
 python dataset/voc/create_list.py
 ```
@@ -167,16 +164,16 @@ python dataset/voc/create_list.py
   │       ├── 001789.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 001789.xml
+  │       ├── 001789.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
   ├── VOCdevkit/VOC2012
   │   ├── Annotations
-  │       ├── 003876.xml
+  │       ├── 2011_003876.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 003876.xml
+  │       ├── 2011_003876.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...

@@ -16,24 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import glob
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
+import glob
 import numpy as np
 from PIL import Image
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
 
 from paddle import fluid
 
@@ -41,7 +32,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -74,20 +65,20 @@ def get_test_images(infer_dir, infer_img):
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \
             "{} is not a directory".format(infer_dir)
-    images = []
 
     # infer_img has a higher priority
     if infer_img and os.path.isfile(infer_img):
-        images.append(infer_img)
-        return images
+        return [infer_img]
 
+    images = set()
     infer_dir = os.path.abspath(infer_dir)
     assert os.path.isdir(infer_dir), \
         "infer_dir {} is not a directory".format(infer_dir)
     exts = ['jpg', 'jpeg', 'png', 'bmp']
     exts += [ext.upper() for ext in exts]
     for ext in exts:
-        images.extend(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+    images = list(images)
 
     assert len(images) > 0, "no image found in {}".format(infer_dir)
     logger.info("Found {} inference images in total.".format(len(images)))
@@ -98,17 +89,14 @@ def get_test_images(infer_dir, infer_img):
 def main():
     cfg = load_config(FLAGS.config)
 
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
+
+    main_arch = cfg.architecture
 
     dataset = cfg.TestReader['dataset']
 
@@ -130,7 +118,7 @@ def main():
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
-    reader = create_reader(cfg.TestReader)
+    reader = create_reader(cfg.TestReader, devices_num=1)
     loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)

@@ -116,7 +116,7 @@ EvalReader:
     std: [127.502231, 127.502231, 127.502231]
   batch_size: 32
   worker_num: 8
-  bufsize: 32
+  bufsize: 16
   use_process: false
 
 TestReader:

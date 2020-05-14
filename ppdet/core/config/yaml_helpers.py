@@ -21,6 +21,15 @@ from .schema import SharedConfig
 __all__ = ['serializable', 'Callable']
 
 
+def represent_dictionary_order(self, dict_data):
+    return self.represent_mapping('tag:yaml.org,2002:map', dict_data.items())
+
+
+def setup_orderdict():
+    from collections import OrderedDict
+    yaml.add_representer(OrderedDict, represent_dictionary_order)
+
+
 def _make_python_constructor(cls):
     def python_constructor(loader, node):
         if isinstance(node, yaml.SequenceNode):

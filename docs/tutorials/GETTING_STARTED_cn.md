@@ -60,7 +60,15 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 - Fine-tune其他任务
 
-  使用预训练模型fine-tune其他任务时，可采用如下两种方式：
+  使用预训练模型fine-tune其他任务时，可以直接加载预训练模型，形状不匹配的参数将自动忽略，例如：
+
+  ```bash
+  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
+                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
+  ```
+
+  也可以显示的指定忽略参数名，可采用如下两种方式：
 
   1. 在YAML配置文件中设置`finetune_exclude_pretrained_params`
   2. 在命令行中添加-o finetune\_exclude\_pretrained_params对预训练模型进行选择性加载。
@@ -89,11 +97,10 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 **提示:**  
 
-- `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](#faq)
+- `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](./FAQ.md)
 - 若本地未找到数据集，将自动下载数据集并保存在`~/.cache/paddle/dataset`中。
 - 预训练模型自动下载并保存在`〜/.cache/paddle/weights`中。
 - 模型checkpoints默认保存在`output`中，可通过修改配置文件中save_dir进行配置。
-- RCNN系列模型CPU训练在PaddlePaddle 1.5.1及以下版本暂不支持。
 
 ### 混合精度训练
 
@@ -154,30 +161,3 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 
   `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
   不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行推断，可以设置`-o weights`指定模型路径。
-
-## FAQ
-
-**Q:**  为什么我使用单GPU训练loss会出`NaN`? </br>
-**A:**  默认学习率是适配多GPU训练(8x GPU)，若使用单GPU训练，须对应调整学习率（例如，除以8）。
-计算规则表如下所示，它们是等价的，表中变化节点即为`piecewise decay`里的`boundaries`: </br>
-
-
-| GPU数  | 学习率  | 最大轮数 | 变化节点       |
-| :---------: | :------------: | :-------: | :--------------: |
-| 2           | 0.0025         | 720000    | [480000, 640000] |
-| 4           | 0.005          | 360000    | [240000, 320000] |
-| 8           | 0.01           | 180000    | [120000, 160000] |
-
-
-**Q:**  如何减少GPU显存使用率? </br>
-**A:**  可通过设置环境变量`FLAGS_conv_workspace_size_limit`为较小的值来减少显存消耗，并且不
-会影响训练速度。以Mask-RCNN（R50）为例，设置`export FLAGS_conv_workspace_size_limit = 512`，
-batch size可以达到每GPU 4 (Tesla V100 16GB)。
-
-
-**Q:**  如何修改数据预处理? </br>
-**A:**  可在配置文件中设置 `sample_transform`。注意需要在配置文件中加入**完整预处理**
-例如RCNN模型中`DecodeImage`, `NormalizeImage` and `Permute`。
-
-**Q:** affine_channel和batch norm是什么关系? </br>
-**A:** 在RCNN系列模型加载预训练模型初始化，有时候会固定住batch norm的参数, 使用预训练模型中的全局均值和方式，并且batch norm的scale和bias参数不更新，已发布的大多ResNet系列的RCNN模型采用这种方式。这种情况下可以在config中设置norm_type为bn或affine_channel, freeze_norm为true (默认为true)，两种方式等价。affne_channel的计算方式为`scale * x + bias`。只不过设置affine_channel时，内部对batch norm的参数自动做了融合。如果训练使用的affine_channel，用保存的模型做初始化，训练其他任务时，既可使用affine_channel, 也可使用batch norm, 参数均可正确加载。

@@ -16,37 +16,32 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
+import random
 import datetime
 from collections import deque
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
+from paddle.fluid import profiler
 
 from paddle import fluid
+from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
+from paddle.fluid.optimizer import ExponentialMovingAverage
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -60,28 +55,27 @@ def main():
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
-        import random
         local_seed = (99 + trainer_id)
         random.seed(local_seed)
         np.random.seed(local_seed)
 
+    if FLAGS.enable_ce:
+        random.seed(0)
+        np.random.seed(0)
+
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -101,6 +95,9 @@ def main():
     # build program
     startup_prog = fluid.Program()
     train_prog = fluid.Program()
+    if FLAGS.enable_ce:
+        startup_prog.random_seed = 1000
+        train_prog.random_seed = 1000
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
@@ -120,8 +117,15 @@ def main():
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
                 optimizer.minimize(loss)
+
                 if FLAGS.fp16:
                     loss /= ctx.get_loss_scale_var()
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                global_steps = _decay_step_counter()
+                ema = ExponentialMovingAverage(
+                    cfg['ema_decay'], thres_steps=global_steps)
+                ema.update()
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -137,7 +141,7 @@ def main():
                 fetches = model.eval(feed_vars)
         eval_prog = eval_prog.clone(True)
 
-        eval_reader = create_reader(cfg.EvalReader)
+        eval_reader = create_reader(cfg.EvalReader, devices_num=1)
         eval_loader.set_sample_list_generator(eval_reader, place)
 
         # parse eval fetches
@@ -193,8 +197,10 @@ def main():
         checkpoint.load_params(
             exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
 
-    train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
-                                 devices_num, cfg)
+    train_reader = create_reader(
+        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
+        cfg,
+        devices_num=devices_num)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer
@@ -247,19 +253,35 @@ def main():
                 it, np.mean(outs[-1]), logs, time_cost, eta)
             logger.info(strs)
 
+        # NOTE : profiler tools, used for benchmark
+        if FLAGS.is_profiler and it == 5:
+            profiler.start_profiler("All")
+        elif FLAGS.is_profiler and it == 10:
+            profiler.stop_profiler("total", FLAGS.profiler_path)
+            return
+
 
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.apply_program)
             checkpoint.save(exe, train_prog, os.path.join(save_dir, save_name))
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
                 resolution = None
-                if 'mask' in results[0]:
+                if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    cfg,
+                    resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type,
@@ -277,6 +299,9 @@ def main():
                                     os.path.join(save_dir, "best_model"))
                 logger.info("Best test box ap: {}, in iter: {}".format(
                     best_box_ap_list[0], best_box_ap_list[1]))
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.restore_program)
 
     train_loader.reset()
 
@@ -319,5 +344,23 @@ if __name__ == '__main__':
         type=str,
         default="tb_log_dir/scalar",
         help='Tensorboard logging directory for scalar.')
+    parser.add_argument(
+        "--enable_ce",
+        type=bool,
+        default=False,
+        help="If set True, enable continuous evaluation job."
+        "This flag is only used for internal test.")
+
+    #NOTE:args for profiler tools, used for benchmark
+    parser.add_argument(
+        '--is_profiler',
+        type=int,
+        default=0,
+        help='The switch of profiler tools. (used for benchmark)')
+    parser.add_argument(
+        '--profiler_path',
+        type=str,
+        default="./detection.profiler",
+        help='The profiler output file path. (used for benchmark)')
     FLAGS = parser.parse_args()
     main()

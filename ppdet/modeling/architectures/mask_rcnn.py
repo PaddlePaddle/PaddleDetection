@@ -311,7 +311,7 @@ class MaskRCNN(object):
                 box_fields = ['bbox', 'bbox_flip'] if use_flip else ['bbox']
                 for key in box_fields:
                     inputs_def[key] = {
-                        'shape': [6],
+                        'shape': [None, 6],
                         'dtype': 'float32',
                         'lod_level': 1
                     }
@@ -324,7 +324,7 @@ class MaskRCNN(object):
         use_dataloader = use_dataloader and not mask_branch
         loader = fluid.io.DataLoader.from_generator(
             feed_list=list(feed_vars.values()),
-            capacity=64,
+            capacity=16,
             use_double_buffer=True,
             iterable=iterable) if use_dataloader else None
         return feed_vars, loader

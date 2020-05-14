@@ -16,7 +16,6 @@
     - [评估配置](#评估配置)
     - [推理配置](#推理配置)
     - [运行](#运行)
-- [FAQ](#faq)
 
 ## 简介
 PaddleDetection的数据处理模块是一个Python模块，所有代码逻辑在`ppdet/data/`中，数据处理模块用于加载数据并将其转换成适用于物体检测模型的训练、评估、推理所需要的格式。
@@ -143,16 +142,16 @@ bird
   │       ├── 001789.xml
   │       │   ...
   │   ├── JPEGImages
-  │       ├── 001789.xml
+  │       ├── 001789.jpg
   │       │   ...
   │   ├── ImageSets
   │       |   ...
   ├── VOCdevkit/VOC2012
   │   ├── Annotations
-  │       ├── 003876.xml
+  │       ├── 2011_003876.xml
   │       │   ...
   │   ├── JPEGImages
-  │       ├── 003876.xml
+  │       ├── 2011_003876.jpg
   │       │   ...
   │   ├── ImageSets
   │       │   ...
@@ -436,11 +435,5 @@ reader = create_reader(cfg.TestReader)
 loader.set_sample_list_generator(reader, place)
 ```
 在运行程序中设置完数据处理模块后，就可以开始训练、评估与测试了，具体请参考相应运行程序python源码。
-
-## FAQ
-
-**Q:** 在配置文件中设置use_process=True，并且运行报错：`not enough space for reason[failed to malloc 601 pages...`
-
-**A:** 当前Reader的共享存储队列空间不足，请增大配置文件`xxx.yml`中的`memsize`,如`memsize: 3G`->`memsize: 6G`。或者配置文件中设置`use_process=False`。
 
 > 关于数据处理模块，如您有其他问题或建议，请给我们提issue，我们非常欢迎您的反馈。

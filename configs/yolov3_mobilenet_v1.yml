@@ -1,9 +1,9 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 500200
+max_iters: 500000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 2000
+snapshot_iter: 10000
 metric: COCO
 pretrain_weights: http://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_pretrained.tar
 weights: output/yolov3_mobilenet_v1/model_final
@@ -36,9 +36,13 @@ YOLOv3Head:
     score_threshold: 0.01
 
 YOLOv3Loss:
+  # batch_size here is only used for fine grained loss, not used
+  # for training batch_size setting, training batch_size setting
+  # is in configs/yolov3_reader.yml TrainReader.batch_size, batch
+  # size here should be set as same value as TrainReader.batch_size
   batch_size: 8
   ignore_thresh: 0.7
-  label_smooth: false
+  label_smooth: true
 
 LearningRate:
   base_lr: 0.001

@@ -37,11 +37,13 @@ __all__ = [
 ]
 
 
-def clip_bbox(bbox):
-    xmin = max(min(bbox[0], 1.), 0.)
-    ymin = max(min(bbox[1], 1.), 0.)
-    xmax = max(min(bbox[2], 1.), 0.)
-    ymax = max(min(bbox[3], 1.), 0.)
+def clip_bbox(bbox, im_size=None):
+    h = 1. if im_size is None else im_size[0]
+    w = 1. if im_size is None else im_size[1]
+    xmin = max(min(bbox[0], w), 0.)
+    ymin = max(min(bbox[1], h), 0.)
+    xmax = max(min(bbox[2], w), 0.)
+    ymax = max(min(bbox[3], h), 0.)
     return xmin, ymin, xmax, ymax
 
 
@@ -66,7 +68,8 @@ def bbox_eval(results,
               anno_file,
               outfile,
               with_background=True,
-              is_bbox_normalized=False):
+              is_bbox_normalized=False,
+              save_only=False):
     assert 'bbox' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -91,13 +94,23 @@ def bbox_eval(results,
     with open(outfile, 'w') as f:
         json.dump(xywh_results, f)
 
+    if save_only:
+        logger.info('The bbox result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
     map_stats = cocoapi_eval(outfile, 'bbox', coco_gt=coco_gt)
     # flush coco evaluation result
     sys.stdout.flush()
     return map_stats
 
 
-def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
+def mask_eval(results,
+              anno_file,
+              outfile,
+              resolution,
+              thresh_binarize=0.5,
+              save_only=False):
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -105,7 +118,36 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     coco_gt = COCO(anno_file)
     clsid2catid = {i + 1: v for i, v in enumerate(coco_gt.getCatIds())}
 
-    segm_results = mask2out(results, clsid2catid, resolution, thresh_binarize)
+    segm_results = []
+    for t in results:
+        im_ids = np.array(t['im_id'][0])
+        bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
+        masks = t['mask']
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+        if len(bboxes.tolist()) == 0:
+            continue
+        s = 0
+        for i in range(len(lengths)):
+            num = lengths[i]
+            im_id = int(im_ids[i][0])
+            clsid_scores = bboxes[s:s + num][:, 0:2]
+            mask = masks[s:s + num]
+            s += num
+            for j in range(num):
+                clsid, score = clsid_scores[j].tolist()
+                catid = int(clsid2catid[clsid])
+                segm = mask[j]
+                segm['counts'] = segm['counts'].decode('utf8')
+                coco_res = {
+                    'image_id': im_id,
+                    'category_id': int(catid),
+                    'segmentation': segm,
+                    'score': score
+                }
+                segm_results.append(coco_res)
+
     if len(segm_results) == 0:
         logger.warning("The number of valid mask detected is zero.\n \
             Please use reasonable model and check input data.")
@@ -113,6 +155,11 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
 
     with open(outfile, 'w') as f:
         json.dump(segm_results, f)
+
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
 
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
 
@@ -201,9 +248,10 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
     xywh_res = []
     for t in results:
         bboxes = t['bbox'][0]
+        if len(t['bbox'][1]) == 0: continue
         lengths = t['bbox'][1][0]
         im_ids = np.array(t['im_id'][0]).flatten()
-        if bboxes.shape == (1, 1) or bboxes is None:
+        if bboxes.shape == (1, 1) or bboxes is None or len(bboxes) == 0:
             continue
 
         k = 0
@@ -227,6 +275,9 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                     w *= im_width
                     h *= im_height
                 else:
+                    # for yolov4
+                    # w = xmax - xmin
+                    # h = ymax - ymin
                     w = xmax - xmin + 1
                     h = ymax - ymin + 1
 
@@ -374,7 +425,9 @@ def get_category_info_from_anno(anno_file, with_background=True):
         for i, cat in enumerate(cats)
     }
     catid2name = {cat['id']: cat['name'] for cat in cats}
-
+    if with_background:
+        clsid2catid.update({0: 0})
+        catid2name.update({0: 'background'})
     return clsid2catid, catid2name
 
 
@@ -556,5 +609,7 @@ def coco17_category_info(with_background=True):
 
     if not with_background:
         clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+    else:
+        clsid2catid.update({0: 0})
 
     return clsid2catid, catid2name

@@ -16,40 +16,29 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
 from collections import deque
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
-#from ppdet.data.data_feed import create_reader
 
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.modeling.model_input import create_feed
 from paddleslim.prune import sensitivity
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -62,12 +51,11 @@ def main():
 
     print("FLAGS.config: {}".format(FLAGS.config))
     cfg = load_config(FLAGS.config)
-    assert 'architecture' in cfg
-    main_arch = cfg.architecture
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
+    check_version()
 
-    print_total_cfg(cfg)
+    main_arch = cfg.architecture
 
     place = fluid.CUDAPlace(0)
     exe = fluid.Executor(place)
@@ -82,7 +70,6 @@ def main():
             feed_vars, eval_loader = model.build_inputs(**inputs_def)
             fetches = model.eval(feed_vars)
     eval_prog = eval_prog.clone(True)
-
     if FLAGS.print_params:
         print(
             "-------------------------All parameters in current graph----------------------"
@@ -104,7 +91,7 @@ def main():
     if cfg.metric == 'COCO':
         extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg.metric == 'VOC':
-        extra_keys = ['gt_box', 'gt_label', 'is_difficult']
+        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
     if cfg.metric == 'WIDERFACE':
         extra_keys = ['im_id', 'im_shape', 'gt_box']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
@@ -137,8 +124,14 @@ def main():
 
         compiled_eval_prog = fluid.compiler.CompiledProgram(program)
 
-        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
+        results = eval_run(
+            exe,
+            compiled_eval_prog,
+            eval_loader,
+            eval_keys,
+            eval_values,
+            eval_cls,
+            cfg=cfg)
         resolution = None
         if 'mask' in results[0]:
             resolution = model.mask_head.resolution

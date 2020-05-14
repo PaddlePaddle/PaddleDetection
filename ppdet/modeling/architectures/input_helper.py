@@ -20,11 +20,18 @@ def multiscale_def(image_shape, num_scale, use_flip=True):
     if use_flip:
         num_scale //= 2
         base_name_list.append('image_flip')
+        multiscale_def['image_flip'] = {
+            'shape': [None] + image_shape,
+            'dtype': 'float32',
+            'lod_level': 0
+        }
         multiscale_def['im_info_image_flip'] = {
             'shape': [None, 3],
             'dtype': 'float32',
             'lod_level': 0
         }
+        ms_def_names.append('image_flip')
+        ms_def_names.append('im_info_image_flip')
     for base_name in base_name_list:
         for i in range(0, num_scale - 1):
             name = base_name + '_scale_' + str(i)
