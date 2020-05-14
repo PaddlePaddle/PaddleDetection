@@ -35,6 +35,7 @@ This directory contains models optimized for mobile applications, at present the
     -   Qualcomm Snapdragon 855
     -   HiSilicon Kirin 970
     -   HiSilicon Kirin 980
+
 -   With 1 CPU thread (latency numbers are in ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |
@@ -45,6 +46,7 @@ This directory contains models optimized for mobile applications, at present the
     | YOLOv3 prune     | 253.98  | 131.279 | 89.4124 | 48.2856 | 122.732   | 55.8626   |
     | Cascade RCNN 320 | 286.526 | 125.635 | 87.404  | 46.184  | 149.179   | 52.9994   |
     | Cascade RCNN 640 | 1115.66 | 495.926 | 351.361 | 189.722 | 573.558   | 207.917   |
+
 -   With 4 CPU threads (latency numbers are in ms)
 
     |                  | SD625   | SD835   | SD845   | SD855   | Kirin 970 | Kirin 980 |

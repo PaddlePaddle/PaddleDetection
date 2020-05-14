@@ -1,4 +1,4 @@
-# YOLO v4
+# YOLO v4 模型
 
 ## 内容
 - [简介](#简介)
@@ -25,8 +25,8 @@
 
 |                          | GPU个数 | 测试集  | 骨干网络 |  精度  | 模型下载 |  配置文件  |
 |:------------------------:|:-------:|:------:|:--------------------------:|:------------------------:| :---------:| :-----: |
-| YOLO v4  | - |test-dev2019        |     CSPDarkNet53 |  43.5 |[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolo/yolov4_cspdarknet.yml)                   |
-| YOLO v4 VOC  | 2 | VOC2007        |     CSPDarkNet53 |  85.5  |   [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet_voc.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolo/yolov4_cspdarknet_voc.yml)              |
+| YOLO v4  | - |test-dev2019        |     CSPDarkNet53 |  43.5 |[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_cspdarknet.yml)                   |
+| YOLO v4 VOC  | 2 | VOC2007        |     CSPDarkNet53 |  85.5  |   [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet_voc.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_cspdarknet_voc.yml)              |
 
 **注意:**
 

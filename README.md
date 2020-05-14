@@ -121,8 +121,8 @@
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
 - [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
-- [Objects365 2019 Challenge夺冠模型](docs/featured_model/CACascadeRCNN.md)
-- [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/OIDV5_BASELINE_MODEL.md)
+- [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
+- [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
 
 
@@ -130,7 +130,7 @@
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.2.0版本已经在`02/2020`发布，增加多个模型，升级数据处理模块，拆分YOLOv3的loss，修复已知诸多bug等，
+v0.3.0版本已经在`05/2020`发布，增加anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，重构预测部署功能，提升易用性，修复已知诸多bug等，
 详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
