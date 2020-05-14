@@ -107,41 +107,40 @@ FPNRPNHead:<br>
   >\# N = anchor_sizes * aspect_ratios<br>
   >\# 具体实现参考[API](fluid.layers.anchor_generator)<br>
   >anchor_generator:<br>
-    >>aspect_ratios:<br>
-    >>\- 0.5<br>
-    >>\- 1.0<br>
-    >>\- 2.0<br>
-    >>variance:<br>
-    >>\- 1.0<br>
-    >>\- 1.0<br>
-    >>\- 1.0<br>
-    >>\- 1.0<br>
-
+    aspect_ratios:<br>
+    \- 0.5<br>
+    \- 1.0<br>
+    \- 2.0<br>
+    variance:<br>
+    \- 1.0<br>
+    \- 1.0<br>
+    \- 1.0<br>
+    \- 1.0<br>
   >\# 首先计算Anchor和GT BBox之间的IoU，为每个Anchor匹配上GT，<br>
   >\# 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算<br>
   >\# 具体实现参考[API](fluid.layers.rpn_target_assign)<br>
   >rpn_target_assign:<br>
-    >>rpn_batch_size_per_im: 256<br>
-    >>rpn_fg_fraction: 0.5<br>
-    >>rpn_negative_overlap: 0.3<br>
-    >>rpn_positive_overlap: 0.7<br>
-    >>rpn_straddle_thresh: 0.0<br>
+    rpn_batch_size_per_im: 256<br>
+    rpn_fg_fraction: 0.5<br>
+    rpn_negative_overlap: 0.3<br>
+    rpn_positive_overlap: 0.7<br>
+    rpn_straddle_thresh: 0.0<br>
   
   >\# 首先取topk个分类分数高的anchor，<br>
   >\# 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。<br>
   >\# 训练和测试阶段主要区别在最后NMS保留的Anchor数目。<br>
   >\# 具体实现参考[API](fluid.layers.generate_proposals)<br>
   >train_proposal:<br>
-    >>min_size: 0.0<br>
-    >>nms_thresh: 0.7<br>
-    >>post_nms_top_n: 2000<br>
-    >>pre_nms_top_n: 2000<br>
+    min_size: 0.0<br>
+    nms_thresh: 0.7<br>
+    post_nms_top_n: 2000<br>
+    pre_nms_top_n: 2000<br>
 
   >test_proposal:<br>
-    >>min_size: 0.0<br>
-    >>nms_thresh: 0.7<br>
-    >>post_nms_top_n: 1000<br>
-    >>pre_nms_top_n: 1000<br>
+    min_size: 0.0<br>
+    nms_thresh: 0.7<br>
+    post_nms_top_n: 1000<br>
+    pre_nms_top_n: 1000<br>
 
 对FPN每层执行RoIAlign后，然后合并输出结果，用于BBox Head计算<br>
 FPNRoIAlign:<br>
@@ -209,10 +208,10 @@ BBoxHead:<br>
   >\# 对bbox的坐标进行编解码操作<br>
   >\# 具体实现参考[API](fluid.layers.box_coder)<br>
   >box_coder:<br>
-    >>axis: 1<br>
-    >>box_normalized: false<br>
-    >>code_type: decode_center_size<br>
-    >>prior_box_var:<br>
+    axis: 1<br>
+    box_normalized: false<br>
+    code_type: decode_center_size<br>
+    prior_box_var:<br>
     \- 0.1<br>
     \- 0.1<br>
     \- 0.2<br>
@@ -251,14 +250,14 @@ OptimizerBuilder:<br>
   >\# 默认使用SGD+Momentum进行训练<br>
   >\# 具体实现参考[API](fluid.optimizer)<br>
   >optimizer:<br>
-    >>momentum: 0.9<br>
-    >>type: Momentum<br>
+    momentum: 0.9<br>
+    type: Momentum<br>
 
   >\# 默认使用L2权重衰减正则化<br>
   >\# 具体实现参考[API](fluid.regularizer)<br>
   >regularizer:<br>
-    >>factor: 0.0001<br>
-    >>type: L2<br>
+    factor: 0.0001<br>
+    type: L2<br>
 
 
 \# 模型训练集设置参考 <br>
@@ -269,12 +268,12 @@ TrainReader:<br>
 
   >\# 数据集目录配置<br>
   >dataset:<br>
-    >>\# 数据集根目录<br>
-    >>dataset_dir: dataset/coco<br>
-    >>\# 标记文件所在目录<br>
-    >>annotation: annotations/instances_train2017.json<br>
-    >>\# 训练图片所在目录<br>
-    >>image_dir: train2017<br>
+    \# 数据集根目录<br>
+    dataset_dir: dataset/coco<br>
+    \# 标记文件所在目录<br>
+    annotation: annotations/instances_train2017.json<br>
+    \# 训练图片所在目录<br>
+    image_dir: train2017<br>
 
   >\# 训练过程中模型的相关输入<br>
   >fields:<br>
@@ -308,9 +307,9 @@ TrainReader:<br>
   >>\# 归一化图片，默认均值[0.485, 0.456, 0.406]，方差[1, 1, 1]<br>
   >>\# 可以选择将归一化结果除以255，可以选择图片的数据格式<br>
   >>\- !NormalizeImage<br>
-    >>is_channel_first: false<br>
-    >>is_scale: true<br>
-    >>mean:<br>
+    is_channel_first: false<br>
+    is_scale: true<br>
+    mean:<br>
     \- 0.485<br>
     \- 0.456<br>
     \- 0.406<br>
