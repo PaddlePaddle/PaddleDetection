@@ -6,43 +6,36 @@
 ```yaml
 
 #####################################基础配置#####################################
+
 # 检测模型的名称
 architecture: MaskRCNN
 
 # 默认使用GPU运行，设为False时使用CPU运行
 use_gpu: true
-
 # 最大迭代次数，而一个iter会运行batch_size * device_num张图片
 # 一般batch_size为1时，1x迭代18万次，2x迭代36万次
 max_iters: 180000
-
 # 模型保存间隔，如果训练时eval设置为True，会在保存后进行验证
 snapshot_iter: 10000
-
 # 输出指定区间的平均结果，默认20，即输出20次的平均结果
 log_smooth_window: 20
-
 # 默认打印log的间隔，默认20
 log_iter: 20
-
 # 训练权重的保存路径
 save_dir: output
-
 # 模型的预训练权重，默认是从指定url下载
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-
 # 验证模型的评测标准，可以选择COCO或者VOC
 metric: COCO
-
 # 用于模型验证或测试的训练好的权重
 weights: output/mask_rcnn_r50_fpn_1x/model_final/
-
 # 用于训练或验证的数据集的类别数目
 # **其中包含背景类，即81=80 + 1（背景类）**
 num_classes: 81
 
 #####################################模型配置#####################################
-Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)
+
+# Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)
 MaskRCNN:
   backbone: ResNet
   fpn: FPN
@@ -54,7 +47,7 @@ MaskRCNN:
   mask_head: MaskHead
   rpn_only: false
 
-主干网络
+# 主干网络
 ResNet:
   # 配置在哪些阶段加入可变性卷积，默认不添加
   dcn_v2_stages: []
@@ -78,7 +71,7 @@ ResNet:
   # ResNet模型的类型, 分为'a', 'b', 'c', 'd'四种, 默认使用'b'类型
   variant: b
 
-FPN多特征融合
+# FPN多特征融合
 FPN:
   # FPN使用的最高层特征后是否添加额外conv，默认false
   has_extra_convs: false
@@ -97,7 +90,7 @@ FPN:
     - 0.125
     - 0.25
 
-检测第一阶段RPN
+# 检测第一阶段RPN
 FPNRPNHead:
   # FPN第一层特征生成anchor时，默认anchor尺寸32
   anchor_start_size: 32
@@ -125,7 +118,6 @@ FPNRPNHead:
     rpn_negative_overlap: 0.3
     rpn_positive_overlap: 0.7
     rpn_straddle_thresh: 0.0
-
   # 首先取topk个分类分数高的anchor
   # 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的
   # 训练和测试阶段主要区别在最后NMS保留的Anchor数目
@@ -136,14 +128,13 @@ FPNRPNHead:
     nms_thresh: 0.7
     post_nms_top_n: 2000
     pre_nms_top_n: 2000
-
   test_proposal:
     min_size: 0.0
     nms_thresh: 0.7
     post_nms_top_n: 1000
     pre_nms_top_n: 1000
 
-对FPN每层执行RoIAlign后，然后合并输出结果，用于BBox Head计算
+# 对FPN每层执行RoIAlign后，然后合并输出结果，用于BBox Head计算
 FPNRoIAlign:
   # 用于抽取特征特征的FPN的层数，默认为4
   canconical_level: 4
@@ -160,7 +151,7 @@ FPNRoIAlign:
   # 输出mask的特征图尺寸，默认为14
   mask_resolution: 14
 
-输出实例掩码的Head
+# 输出实例掩码的Head
 MaskHead:
   # 卷积的数量，FPN是4，其他为0，默认为0
   num_convs: 4
@@ -178,25 +169,25 @@ MaskHead:
 # 具体实现参考[API](fluid.layers.generate_proposal_labels)
 BBoxAssigner:
   batch_size_per_im: 512
-  bbox_reg_weights:
   bg_thresh_hi: 0.5
   bg_thresh_lo: 0.0
   fg_fraction: 0.25
   fg_thresh: 0.5
   num_classes: 81
   shuffle_before_sample: true
+  bbox_reg_weights:
     - 0.1
     - 0.1
     - 0.2
     - 0.2
 
-根据roi的label，选择前景，为其赋值mask label
-具体实现参考[API](fluid.layers.generate_mask_labels)
+# 根据roi的label，选择前景，为其赋值mask label
+# 具体实现参考[API](fluid.layers.generate_mask_labels)
 MaskAssigner:
   resolution: 28
   num_classes: 81
 
-输出检测框的Head
+# 输出检测框的Head
 BBoxHead:
   # 在roi extractor和bbox head之间，插入两层FC，对特征做进一步学习
   head: TwoFCHead
@@ -213,18 +204,19 @@ BBoxHead:
     box_normalized: false
     code_type: decode_center_size
     prior_box_var:
-    - 0.1
-    - 0.1
-    - 0.2
-    - 0.2
+      - 0.1
+      - 0.1
+      - 0.2
+      - 0.2
 
-输出检测框之前，对特征进一步学习
+# 输出检测框之前，对特征进一步学习
 TwoFCHead:
   # FC输出的特征图通道数，默认是1024
   num_chan: 1024
 
 #####################################训练配置#####################################
-学习率配置
+
+# 学习率配置
 LearningRate:
   # 初始学习率, 一般情况下8卡gpu，batch size为2时设置为0.02
   # 可以根据具体情况，按比例调整
@@ -253,7 +245,6 @@ OptimizerBuilder:
   optimizer:
     momentum: 0.9
     type: Momentum
-
   # 默认使用L2权重衰减正则化
   # 具体实现参考[API](fluid.regularizer)
   regularizer:
@@ -261,12 +252,12 @@ OptimizerBuilder:
     type: L2
 
 #####################################数据配置#####################################
+
 # 模型训练集设置参考
 # 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
 TrainReader:
   # 1个GPU的batch size，默认为1
   batch_size: 1
-
   # 数据集目录配置
   dataset:
     # 数据集根目录
@@ -275,24 +266,21 @@ TrainReader:
     annotation: annotations/instances_train2017.json
     # 训练图片所在目录
     image_dir: train2017
-
   # 训练过程中模型的相关输入
   # 包括图片，图片长宽高等基本信息，图片id， 标记的目标框、实例标签、实例分割掩码
   fields:
-  - image
-  - im_info
-  - im_id
-  - gt_box
-  - gt_label
-  - is_crowd
-  - gt_mask
-
+    - image
+    - im_info
+    - im_id
+    - gt_box
+    - gt_label
+    - is_crowd
+    - gt_mask
   # 输入Image的尺寸
   image_shape:
     - 3
     - 800
     - 1333
-
   # 对一个batch中的单张图片做的数据增强
   sample_transforms:
     # 读取Image图像为numpy数组
@@ -325,29 +313,25 @@ TrainReader:
       max_size: 1333
       target_size: 800
       use_cv2: true  # default: true
-
     # 调整图片数据格式，默认使用CHW
     - !Permute
        channel_first: true
       to_bgr: false  # default: true
-
   # 对一个batch中的图片统一做的数据增强
   batch_transforms:
-  # 将一个batch中的图片，按照最大的尺寸，做补齐
+    # 将一个batch中的图片，按照最大的尺寸，做补齐
     - !PadBatch
       pad_to_stride: 32  # default: 32
-
-  # 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的
-  drop_last: false
-  # 使用的进程数目，默认为2
-  num_workers: 2
+      # 选择是否使用padding之后的image信息，默认为true
+      use_padded_im_info: true
+  # 使用多进程/线程的数目，默认为2
+  worker_num: 2
+  # 选择是否使用多进程，默认为false
+  use_process: false
   # 使用数据集中的样本数目，默认是-1，表示使用全部
   samples: -1
   # 选择是否打乱所有样本的顺序
   shuffle: true
-  # 选择是否更新padding之后的数据信息，默认为false
-  use_padded_im_info: false
-  # 选择是否使用多进程，默认为false
-  use_process: false
-
+  # 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的
+  drop_last: false
   ```
