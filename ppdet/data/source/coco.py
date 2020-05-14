@@ -133,6 +133,8 @@ class COCODataSet(DataSet):
                 if 'segmentation' in box:
                     gt_poly[i] = box['segmentation']
 
+            seg_fname = os.path.join(self.dataset_dir, 'stuffthingmaps',
+                                     'train2017', im_fname[:-3] + 'png')
             im_fname = os.path.join(image_dir,
                                     im_fname) if image_dir else im_fname
             coco_rec = {
@@ -145,6 +147,7 @@ class COCODataSet(DataSet):
                 'gt_bbox': gt_bbox,
                 'gt_score': gt_score,
                 'gt_poly': gt_poly,
+                'semantic': seg_fname
             }
 
             logger.debug('Load file: {}, im_id: {}, h: {}, w: {}.'.format(

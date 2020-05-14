@@ -87,7 +87,7 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False):
+    def __init__(self, to_rgb=True, with_mixup=False, read_semantic=False):
         """ Transform the image data to numpy format.
 
         Args:
@@ -98,6 +98,7 @@ class DecodeImage(BaseOperator):
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
+        self.read_semantic = read_semantic
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
@@ -126,6 +127,12 @@ class DecodeImage(BaseOperator):
         # decode mixup image
         if self.with_mixup and 'mixup' in sample:
             self.__call__(sample['mixup'], context)
+
+        if self.read_semantic:
+            sem_file = sample['semantic']
+            sem = cv2.imread(sem_file, cv2.IMREAD_GRAYSCALE)
+            sample['semantic'] = sem.astype('int32')
+
         return sample
 
 
@@ -239,11 +246,13 @@ class MultiscaleTestResize(BaseOperator):
 
 @register_op
 class ResizeImage(BaseOperator):
-    def __init__(self,
-                 target_size=0,
-                 max_size=0,
-                 interp=cv2.INTER_LINEAR,
-                 use_cv2=True):
+    def __init__(
+            self,
+            target_size=0,
+            max_size=0,
+            interp=cv2.INTER_LINEAR,
+            use_cv2=True,
+            resize_semantic=False, ):
         """
         Rescale image to the specified target size, and capped at max_size
         if max_size != 0.
@@ -262,6 +271,7 @@ class ResizeImage(BaseOperator):
         self.max_size = int(max_size)
         self.interp = int(interp)
         self.use_cv2 = use_cv2
+        self.resize_semantic = resize_semantic
         if not (isinstance(target_size, int) or isinstance(target_size, list)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List, now is {}".
@@ -320,6 +330,18 @@ class ResizeImage(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
+            if self.resize_semantic:
+                semantic = sample['semantic']
+                semantic = cv2.resize(
+                    semantic.astype('float32'),
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=self.interp)
+                semantic = np.asarray(semantic).astype('int32')
+                semantic = np.expand_dims(semantic, 0)
+                sample['semantic'] = semantic
         else:
             if self.max_size != 0:
                 raise TypeError(
@@ -336,7 +358,11 @@ class ResizeImage(BaseOperator):
 
 @register_op
 class RandomFlipImage(BaseOperator):
-    def __init__(self, prob=0.5, is_normalized=False, is_mask_flip=False):
+    def __init__(self,
+                 prob=0.5,
+                 is_normalized=False,
+                 is_mask_flip=False,
+                 is_semantic_flip=False):
         """
         Args:
             prob (float): the probability of flipping image
@@ -347,9 +373,11 @@ class RandomFlipImage(BaseOperator):
         self.prob = prob
         self.is_normalized = is_normalized
         self.is_mask_flip = is_mask_flip
+        self.is_semantic_flip = is_semantic_flip
         if not (isinstance(self.prob, float) and
                 isinstance(self.is_normalized, bool) and
-                isinstance(self.is_mask_flip, bool)):
+                isinstance(self.is_mask_flip, bool) and
+                isinstance(self.is_semantic_flip, bool)):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def flip_segms(self, segms, height, width):
@@ -429,6 +457,10 @@ class RandomFlipImage(BaseOperator):
                 if self.is_mask_flip and len(sample['gt_poly']) != 0:
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
+
+                if self.is_semantic_flip and len(sample['semantic']) != 0:
+                    sample['semantic'] = sample['semantic'][:, ::-1]
+
                 sample['flipped'] = True
                 sample['image'] = im
         sample = samples if batch_input else samples[0]

@@ -44,10 +44,14 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, use_padded_im_info=True):
+    def __init__(self,
+                 pad_to_stride=0,
+                 use_padded_im_info=True,
+                 pad_semantic=False):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
+        self.pad_semantic = pad_semantic
 
     def __call__(self, samples, context=None):
         """
@@ -76,6 +80,13 @@ class PadBatch(BaseOperator):
             data['image'] = padding_im
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
+            if self.pad_semantic:
+                semantic = data['semantic']
+                padding_sem = np.zeros(
+                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_sem[:, :im_h, :im_w] = semantic
+                data['semantic'] = padding_sem
+
         return samples
 
 

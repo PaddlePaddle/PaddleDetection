@@ -18,9 +18,12 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import copy
+import numpy as np
 
 import paddle.fluid as fluid
-
+from paddle.fluid.param_attr import ParamAttr
+from paddle.fluid.initializer import MSRA
+from paddle.fluid.regularizer import L2Decay
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
@@ -41,24 +44,27 @@ class HybridTaskCascade(object):
         roi_extractor (object): ROI extractor instance
         bbox_head (object): `BBoxHead` instance
         mask_assigner (object): `MaskAssigner` instance
-        mask_head (object): `MaskHead` instance
+        mask_head (object): `HTCMaskHead` instance
         fpn (object): feature pyramid network instance
     """
 
     __category__ = 'architecture'
     __inject__ = [
         'backbone', 'rpn_head', 'bbox_assigner', 'roi_extractor', 'bbox_head',
-        'mask_assigner', 'mask_head', 'fpn'
+        'mask_assigner', 'mask_head', 'fpn', 'semantic_roi_extractor',
+        'fused_semantic_head'
     ]
 
     def __init__(self,
                  backbone,
                  rpn_head,
                  roi_extractor='FPNRoIAlign',
+                 semantic_roi_extractor='RoIAlign',
+                 fused_semantic_head='FusedSemanticHead',
                  bbox_head='CascadeBBoxHead',
                  bbox_assigner='CascadeBBoxAssigner',
                  mask_assigner='MaskAssigner',
-                 mask_head='MaskHead',
+                 mask_head='HTCMaskHead',
                  rpn_only=False,
                  fpn='FPN'):
         super(HybridTaskCascade, self).__init__()
@@ -68,6 +74,8 @@ class HybridTaskCascade(object):
         self.rpn_head = rpn_head
         self.bbox_assigner = bbox_assigner
         self.roi_extractor = roi_extractor
+        self.semantic_roi_extractor = semantic_roi_extractor
+        self.fused_semantic_head = fused_semantic_head
         self.bbox_head = bbox_head
         self.mask_assigner = mask_assigner
         self.mask_head = mask_head
@@ -81,14 +89,17 @@ class HybridTaskCascade(object):
             [1. / brw2, 1. / brw2, 2. / brw2, 2. / brw2]
         ]
         self.cascade_rcnn_loss_weight = [1.0, 0.5, 0.25]
-        self.stage_loss_weights = [1, 0.5, 0.25]
-        self.mask_info_flow = False 
-        self.with_semantic = False 
-        
+        self.num_stage = 3
+        self.with_mask = True
+        self.interleaved = True
+        self.mask_info_flow = True
+        self.with_semantic = True
+
     def build(self, feed_vars, mode='train'):
         if mode == 'train':
             required_fields = [
-                'gt_class', 'gt_bbox', 'gt_mask', 'is_crowd', 'im_info'
+                'gt_class', 'gt_bbox', 'gt_mask', 'is_crowd', 'im_info',
+                'semantic'
             ]
         else:
             required_fields = ['im_shape', 'im_info']
@@ -114,19 +125,28 @@ class HybridTaskCascade(object):
             body_feats = OrderedDict((k, fluid.layers.cast(v, 'float32'))
                                      for k, v in body_feats.items())
 
+        loss = {}
         # FPN
         if self.fpn is not None:
             body_feats, spatial_scale = self.fpn.get_output(body_feats)
 
         if self.with_semantic:
             # TODO: use cfg
-            semantic_feat, seg_pred = self.fused_semantic_head(body_feats, num_class=81)
-            
+            semantic_feat, seg_pred = self.fused_semantic_head.get_out(
+                body_feats)
+            if mode == 'train':
+                s_label = feed_vars['semantic']
+                semantic_loss = self.fused_semantic_head.get_loss(seg_pred,
+                                                                  s_label) * 0.2
+                loss.update({"semantic_loss": semantic_loss})
+        else:
+            semantic_feat = None
+
         # rpn proposals
         rpn_rois = self.rpn_head.get_proposals(body_feats, im_info, mode=mode)
-
         if mode == 'train':
             rpn_loss = self.rpn_head.get_loss(im_info, gt_bbox, is_crowd)
+            loss.update(rpn_loss)
         else:
             if self.rpn_only:
                 im_scale = fluid.layers.slice(
@@ -139,49 +159,53 @@ class HybridTaskCascade(object):
         roi_feat_list = []
         rcnn_pred_list = []
         rcnn_target_list = []
-
+        mask_logits_list = []
+        mask_target_list = []
         proposals = None
         bbox_pred = None
-        num_stage = 4
-        for i in range(num_stage):
-            if i > 0:
-                refined_bbox = self._decode_box(
-                    proposals,
-                    bbox_pred,
-                    curr_stage=i - 1, )
-            else:
-                refined_bbox = rpn_rois
+        outs = None
 
+        refined_bbox = rpn_rois
+        for i in range(self.num_stage):
+            # BBox Branch
             if mode == 'train':
                 outs = self.bbox_assigner(
                     input_rois=refined_bbox, feed_vars=feed_vars, curr_stage=i)
-
                 proposals = outs[0]
                 rcnn_target_list.append(outs)
             else:
                 proposals = refined_bbox
             proposal_list.append(proposals)
 
-            if i < 3:
-                # extract roi features
-                roi_feat = self.roi_extractor(body_feats, proposals, spatial_scale)
-                roi_feat_list.append(roi_feat)
-                # bbox head
-                cls_score, bbox_pred = self.bbox_head.get_output(
-                    roi_feat,
-                    wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
-                    name='_' + str(i + 1) if i > 0 else '')
-                rcnn_pred_list.append((cls_score, bbox_pred))
+            # bbox loops for 3 times
+            # extract roi features
+            roi_feat = self.roi_extractor(body_feats, proposals, spatial_scale)
+            if self.with_semantic:
+                semantic_roi_feat = self.semantic_roi_extractor(semantic_feat,
+                                                                proposals)
+                if semantic_roi_feat is not None:
+                    semantic_roi_feat = fluid.layers.pool2d(
+                        semantic_roi_feat,
+                        pool_size=2,
+                        pool_stride=2,
+                        pool_padding='SAME')
+                    roi_feat = fluid.layers.sum([roi_feat, semantic_roi_feat])
+            roi_feat_list.append(roi_feat)
 
-            # get mask rois
-            base_feat_list = []
-            if mode == 'train':
-                if i < 3:
-                    loss = self.bbox_head.get_loss(rcnn_pred_list, rcnn_target_list,
-                                                self.cascade_rcnn_loss_weight)
-                    loss.update(rpn_loss)
-                if i > 0: 
-                    labels_int32 = rcnn_target_list[2][1]
+            # bbox head
+            cls_score, bbox_pred = self.bbox_head.get_output(
+                roi_feat,
+                wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
+                name='_' + str(i + 1) if i > 0 else '')
+            rcnn_pred_list.append((cls_score, bbox_pred))
+
+            # Mask Branch 
+            if self.with_mask:
+                if not self.interleaved and i < 2:
+                    continue
+                elif mode == 'train':
+                    labels_int32 = outs[1]
+                    # interleaved default is True 
                     mask_rois, roi_has_mask_int32, mask_int32 = self.mask_assigner(
                         rois=proposals,
                         gt_classes=feed_vars['gt_class'],
@@ -189,67 +213,67 @@ class HybridTaskCascade(object):
                         gt_segms=feed_vars['gt_mask'],
                         im_info=feed_vars['im_info'],
                         labels_int32=labels_int32)
+                    mask_target_list.append(mask_int32)
 
                     if self.fpn is None:
                         bbox_head_feat = self.bbox_head.get_head_feat()
-                        feat = fluid.layers.gather(bbox_head_feat, roi_has_mask_int32)
+                        feat = fluid.layers.gather(bbox_head_feat,
+                                                   roi_has_mask_int32)
                     else:
                         feat = self.roi_extractor(
                             body_feats, mask_rois, spatial_scale, is_mask=True)
-                    base_feat_list.append(feat)
+
+                    if self.with_semantic:
+                        semantic_roi_feat = self.semantic_roi_extractor(
+                            semantic_feat, mask_rois)
+                        if semantic_roi_feat is not None:
+                            feat = fluid.layers.sum([feat, semantic_roi_feat])
+
                     if self.mask_info_flow:
-                        body_feat_c = 512 # need dynamic compute 
-                        last_stage_feats = fluid.layers.conv2d(
-                            body_feats, body_feat_c, 1
-                        )
-                        feat = fluid.layers.sum(
-                            body_feats, last_stage_feats
-                        )
-                    mask_loss = self.mask_head.get_loss(feat, mask_int32)
-                    loss.update(mask_loss * self.stage_loss_weights[i-1])
+                        last_feat = None
+                        for j in range(i):
+                            last_feat = self.mask_head.get_output(
+                                feat,
+                                last_feat,
+                                return_logits=False,
+                                return_feat=True,
+                                name='_' + str(i) + '_' + str(j))
+                        mask_logits = self.mask_head.get_output(
+                            feat, last_feat, name='_' + str(i))
+                    else:
+                        mask_logits = self.mask_head.get_output(
+                            feat, return_logits=True, name='_' + str(i))
+                    mask_logits_list.append(mask_logits)
 
-                    total_loss = fluid.layers.sum(list(loss.values()))
-                    loss.update({'loss': total_loss})
-                    return loss
-                else:
-                    mask_name = 'mask_pred'
-                    mask_pred, bbox_pred = self.single_scale_eval(
-                        body_feats, spatial_scale, im_info, mask_name, bbox_pred,
-                        roi_feat_list, rcnn_pred_list, proposal_list,
-                        feed_vars['im_shape'])
-                    return {'bbox': bbox_pred, 'mask': mask_pred}
+            if i < self.num_stage - 1:
+                refined_bbox = self._decode_box(
+                    proposals, bbox_pred, curr_stage=i)
 
-    def fused_semantic_head(self, fpn_feats, num_class):
-        r"""Multi-level fused semantic segmentation head.
-        in_1 -> 1x1 conv ---
-                            |
-        in_2 -> 1x1 conv -- |
-                           ||
-        in_3 -> 1x1 conv - ||
-                          |||                  /-> 1x1 conv (mask prediction)
-        in_4 -> 1x1 conv -----> 3x3 convs (*4)
-                            |                  \-> 1x1 conv (feature)
-        in_5 -> 1x1 conv ---
-        """
-        new_feats_list = []
-        new_shape = fpn_feats.values()[3].shape[2:]
-        out_c = 256
-        for _, v in fpn_feats.items():
-            if v.shape[2:] != new_shape:
-                new_feat = fluid.layers.resize_bilinear(v, new_shape)
-            else: 
-                new_feat = v 
-            new_feat = fluid.layers.conv2d(new_feat, out_c, 1)
-            new_feats_list.append(new_feat)
-        new_feat = fluid.layers.sum(new_feats_list)
-        for i in range(4):
-            new_feat = fluid.layers.conv2d(new_feat, out_c, 3)
-
-        # conv embedding
-        semantic_feat = fluid.layers.conv2d(new_feat, out_c, 1)
-        # conv logits 
-        seg_pred = fluid.layers.conv2d(new_feat, num_class, 1)
-        return semantic_feat, seg_pred
+        if mode == 'train':
+            bbox_loss = self.bbox_head.get_loss(
+                rcnn_pred_list, rcnn_target_list, self.cascade_rcnn_loss_weight)
+            loss.update(bbox_loss)
+            mask_loss = self.mask_head.get_loss(mask_logits_list,
+                                                mask_target_list,
+                                                self.cascade_rcnn_loss_weight)
+            loss.update(mask_loss)
+            total_loss = fluid.layers.sum(list(loss.values()))
+            loss.update({'loss': total_loss})
+            return loss
+        else:
+            mask_name = 'mask_pred'
+            mask_pred, bbox_pred = self.single_scale_eval(
+                body_feats,
+                spatial_scale,
+                im_info,
+                mask_name,
+                bbox_pred,
+                roi_feat_list,
+                rcnn_pred_list,
+                proposal_list,
+                feed_vars['im_shape'],
+                semantic_feat=semantic_feat if self.with_semantic else None)
+            return {'bbox': bbox_pred, 'mask': mask_pred}
 
     def build_multi_scale(self, feed_vars, mask_branch=False):
         required_fields = ['image', 'im_info']
@@ -273,68 +297,68 @@ class HybridTaskCascade(object):
             if not mask_branch:
                 im_shape = feed_vars['im_shape']
                 body_feat_names = list(body_feats.keys())
-                proposal_list = []
-                roi_feat_list = []
-                rcnn_pred_list = []
+            proposal_list = []
+            roi_feat_list = []
+            rcnn_pred_list = []
 
-                proposals = None
-                bbox_pred = None
-                for i in range(3):
-                    if i > 0:
-                        refined_bbox = self._decode_box(
-                            proposals,
-                            bbox_pred,
-                            curr_stage=i - 1, )
-                    else:
-                        refined_bbox = rois
+            proposals = None
+            bbox_pred = None
+            for i in range(3):
+                if i > 0:
+                    refined_bbox = self._decode_box(
+                        proposals,
+                        bbox_pred,
+                        curr_stage=i - 1, )
+                else:
+                    refined_bbox = rois
 
-                    proposals = refined_bbox
-                    proposal_list.append(proposals)
+                proposals = refined_bbox
+                proposal_list.append(proposals)
 
-                    # extract roi features
-                    roi_feat = self.roi_extractor(body_feats, proposals,
-                                                  spatial_scale)
-                    roi_feat_list.append(roi_feat)
+                # extract roi features
+                roi_feat = self.roi_extractor(body_feats, proposals,
+                                              spatial_scale)
+                roi_feat_list.append(roi_feat)
 
-                    # bbox head
-                    cls_score, bbox_pred = self.bbox_head.get_output(
-                        roi_feat,
-                        wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
-                        name='_' + str(i + 1) if i > 0 else '')
-                    rcnn_pred_list.append((cls_score, bbox_pred))
+                # bbox head
+                cls_score, bbox_pred = self.bbox_head.get_output(
+                    roi_feat,
+                    wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
+                    name='_' + str(i + 1) if i > 0 else '')
+                rcnn_pred_list.append((cls_score, bbox_pred))
 
-                # get mask rois
-                if self.fpn is None:
-                    body_feat = body_feats[body_feat_names[-1]]
-                pred = self.bbox_head.get_prediction(
-                    im_info,
-                    im_shape,
-                    roi_feat_list,
-                    rcnn_pred_list,
-                    proposal_list,
-                    self.cascade_bbox_reg_weights,
-                    return_box_score=True)
-                bbox_name = 'bbox_' + str(i)
-                score_name = 'score_' + str(i)
-                if 'flip' in im.name:
-                    bbox_name += '_flip'
-                    score_name += '_flip'
-                result[bbox_name] = pred['bbox']
-                result[score_name] = pred['score']
-            else:
-                mask_name = 'mask_pred_' + str(i)
-                bbox_pred = feed_vars['bbox']
-                if 'flip' in im.name:
-                    mask_name += '_flip'
-                    bbox_pred = feed_vars['bbox_flip']
-                mask_pred, bbox_pred = self.single_scale_eval(
-                    body_feats,
-                    spatial_scale,
-                    im_info,
-                    mask_name,
-                    bbox_pred=bbox_pred,
-                    use_multi_test=True)
-                result[mask_name] = mask_pred
+            # get mask rois
+            if self.fpn is None:
+                body_feat = body_feats[body_feat_names[-1]]
+            pred = self.bbox_head.get_prediction(
+                im_info,
+                im_shape,
+                roi_feat_list,
+                rcnn_pred_list,
+                proposal_list,
+                self.cascade_bbox_reg_weights,
+                return_box_score=True)
+            bbox_name = 'bbox_' + str(i)
+            score_name = 'score_' + str(i)
+            if 'flip' in im.name:
+                bbox_name += '_flip'
+                score_name += '_flip'
+            result[bbox_name] = pred['bbox']
+            result[score_name] = pred['score']
+        else:
+            mask_name = 'mask_pred_' + str(i)
+            bbox_pred = feed_vars['bbox']
+            if 'flip' in im.name:
+                mask_name += '_flip'
+                bbox_pred = feed_vars['bbox_flip']
+            mask_pred, bbox_pred = self.single_scale_eval(
+                body_feats,
+                spatial_scale,
+                im_info,
+                mask_name,
+                bbox_pred=bbox_pred,
+                use_multi_test=True)
+            result[mask_name] = mask_pred
         return result
 
     def single_scale_eval(self,
@@ -347,9 +371,11 @@ class HybridTaskCascade(object):
                           rcnn_pred_list=None,
                           proposal_list=None,
                           im_shape=None,
-                          use_multi_test=False):
+                          use_multi_test=False,
+                          semantic_feat=None):
         if self.fpn is None:
             last_feat = body_feats[list(body_feats.keys())[-1]]
+
         if not use_multi_test:
             bbox_pred = self.bbox_head.get_prediction(
                 im_info, im_shape, roi_feat_list, rcnn_pred_list, proposal_list,
@@ -380,6 +406,7 @@ class HybridTaskCascade(object):
             im_scale = fluid.layers.sequence_expand(im_scale, bbox)
 
             mask_rois = bbox * im_scale
+
             if self.fpn is None:
                 mask_feat = self.roi_extractor(last_feat, mask_rois)
                 mask_feat = self.bbox_head.get_head_feat(mask_feat)
@@ -387,8 +414,42 @@ class HybridTaskCascade(object):
                 mask_feat = self.roi_extractor(
                     body_feats, mask_rois, spatial_scale, is_mask=True)
 
-            mask_out = self.mask_head.get_prediction(mask_feat, bbox)
-            fluid.layers.assign(input=mask_out, output=mask_pred)
+            if self.with_semantic:
+                semantic_roi_feat = self.semantic_roi_extractor(semantic_feat,
+                                                                mask_rois)
+                if semantic_roi_feat is not None:
+                    mask_feat = fluid.layers.sum([mask_feat, semantic_roi_feat])
+
+            mask_pred_list = []
+            last_feat = None
+            #for i in range(self.num_stage):
+            for i in range(self.num_stage):
+                if self.mask_info_flow:
+                    for j in range(i):
+                        last_feat = self.mask_head.get_output(
+                            mask_feat,
+                            last_feat,
+                            return_logits=False,
+                            return_feat=True,
+                            name='_' + str(i) + '_' + str(j))
+                    mask_logits = self.mask_head.get_output(
+                        mask_feat,
+                        last_feat,
+                        return_logits=True,
+                        return_feat=False,
+                        name='_' + str(i))
+                else:
+                    mask_logits = self.mask_head.get_output(
+                        mask_feat,
+                        return_logits=True,
+                        return_feat=False,
+                        name='_' + str(i))
+                mask_pred_out = self.mask_head.get_prediction(mask_logits, bbox)
+                mask_pred_list.append(mask_pred_out)
+            mask_pred_out = fluid.layers.sum(mask_pred_list) / float(
+                len(mask_pred_list))
+
+            fluid.layers.assign(input=mask_pred_out, output=mask_pred)
 
         fluid.layers.cond(cond, noop, process_boxes)
         return mask_pred, bbox_pred
@@ -427,7 +488,7 @@ class HybridTaskCascade(object):
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'gt_mask':  {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 3}, # polygon coordinates
-            'is_difficult': {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
+            'semantic': {'shape': [None, 1]+image_shape[1:], 'dtype': 'int32', 'lod_level': 0},
         }
         # yapf: enable
         return inputs_def
@@ -436,7 +497,7 @@ class HybridTaskCascade(object):
                      image_shape=[3, None, None],
                      fields=[
                          'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
-                         'is_crowd', 'gt_mask'
+                         'is_crowd', 'gt_mask', 'semantic'
                      ],
                      multi_scale=False,
                      num_scales=-1,

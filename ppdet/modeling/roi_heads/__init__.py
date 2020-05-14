@@ -17,7 +17,11 @@ from __future__ import absolute_import
 from . import bbox_head
 from . import mask_head
 from . import cascade_head
+from . import htc_mask_head
+from . import fused_semantic_head
 
 from .bbox_head import *
 from .mask_head import *
 from .cascade_head import *
+from .htc_mask_head import *
+from .fused_semantic_head import *
