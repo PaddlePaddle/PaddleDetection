@@ -95,7 +95,7 @@ python export_model.py \
 
 ## 9.1 faster_rcnn与mask_rcnn
 
-**当前PaddleSlim的剪裁功能不支持剪裁循环体内的卷积层，请避免剪裁循环体前一个卷积和循环体内的卷积。**
+**当前PaddleSlim的剪裁功能不支持剪裁循环体或条件判断语句块内的卷积层，请避免剪裁循环和判断语句块前的一个卷积和语句块内部的卷积。**
 
 对于[faster_rcnn_r50](../../configs/faster_rcnn_r50_1x.yml)或[mask_rcnn_r50](../../configs/mask_rcnn_r50_1x.yml)网络，请剪裁卷积`res4f_branch2c`之前的卷积。
 
