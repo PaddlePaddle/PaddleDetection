@@ -3,7 +3,9 @@
 标签： 模型参数配置
 
 ---
-```python
+```yaml
+
+#####################################基础配置#####################################
 # 检测模型的名称
 architecture: MaskRCNN
 
@@ -39,6 +41,7 @@ weights: output/mask_rcnn_r50_fpn_1x/model_final/
 # **其中包含背景类，即81=80 + 1（背景类）**
 num_classes: 81
 
+#####################################模型配置#####################################
 Mask RCNN元结构，包括了以下主要组件, 具体细节可以参考[论文]( https://arxiv.org/abs/1703.06870)
 MaskRCNN:
   backbone: ResNet
@@ -123,9 +126,10 @@ FPNRPNHead:
     rpn_positive_overlap: 0.7
     rpn_straddle_thresh: 0.0
 
-  # 首先取topk个分类分数高的anchor，
-  # 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的。
-  # 训练和测试阶段主要区别在最后NMS保留的Anchor数目。
+  # 首先取topk个分类分数高的anchor
+  # 然后通过NMS对这topk个anchor进行重叠度检测，对重叠高的两个anchor只保留得分高的
+  # 训练和测试阶段主要区别在最后NMS保留的Anchor数目
+  # 训练时输出2000个proposals，推理时输出1000个proposals
   # 具体实现参考[API](fluid.layers.generate_proposals)
   train_proposal:
     min_size: 0.0
@@ -219,6 +223,7 @@ TwoFCHead:
   # FC输出的特征图通道数，默认是1024
   num_chan: 1024
 
+#####################################训练配置#####################################
 学习率配置
 LearningRate:
   # 初始学习率, 一般情况下8卡gpu，batch size为2时设置为0.02
@@ -255,6 +260,7 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
+#####################################数据配置#####################################
 # 模型训练集设置参考
 # 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
 TrainReader:
@@ -271,6 +277,7 @@ TrainReader:
     image_dir: train2017
 
   # 训练过程中模型的相关输入
+  # 包括图片，图片长宽高等基本信息，图片id， 标记的目标框、实例标签、实例分割掩码
   fields:
   - image
   - im_info
