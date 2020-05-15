@@ -83,11 +83,7 @@ class TestRightPoolOp(unittest.TestCase):
         place = fluid.CUDAPlace(0)
 
         with fluid.program_guard(tp, sp):
-            x = fluid.data(
-                name=self.name,
-                shape=x_shape,
-                dtype=x_type,
-                append_batch_size=False)
+            x = fluid.data(name=self.name, shape=x_shape, dtype=x_type)
             y = self.func_map[self.name][0](x)
 
             np.random.seed(0)
