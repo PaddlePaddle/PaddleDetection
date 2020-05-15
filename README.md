@@ -97,14 +97,14 @@
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
 - [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
-- [常见问题汇总](docs/tutorials/FAQ.md)
+- [常见问题汇总](docs/FAQ.md)
 
 ### 进阶教程
 - [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- 模型参数配置:
-  - [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
-  - [RCNN模型参数说明](docs/advanced_tutorials/RCNN_PARAMS_DOC.md)
+- [模型参数配置](docs/advanced_tutorials/config_doc):
+  - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)
+  - [RCNN模型参数说明](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [模型压缩](slim)
