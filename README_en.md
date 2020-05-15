@@ -111,16 +111,16 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Installation guide](docs/tutorials/INSTALL.md)
 - [Quick start on small dataset](docs/tutorials/QUICK_STARTED.md)
 - [Train/Evaluation/Inference](docs/tutorials/GETTING_STARTED.md)
-- [FAQ](docs/tutorials/FAQ.md)
+- [FAQ](docs/FAQ.md)
 
 ### Advanced Tutorial
 
 - [Guide to preprocess pipeline and custom dataset](docs/advanced_tutorials/READER.md)
 - [Models technical](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
-- Parameter configuration:
-  - [Introduction to the configuration workflow](docs/advanced_tutorials/CONFIG.md)
-  - [Parameter configuration for RCNN model](docs/advanced_tutorials/RCNN_PARAMS_DOC.md)
+- [Parameter configuration](docs/advanced_tutorials/params_docs):
+  - [Introduction to the configuration workflow](docs/advanced_tutorials/params_docs/CONFIG.md)
+  - [Parameter configuration for RCNN model](docs/advanced_tutorials/params_docs/RCNN_PARAMS_DOC.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Model compression](slim)
     - [Model compression benchmark](slim)
@@ -152,7 +152,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models, refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
+v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models. For example, the YOLOv3-MobileNetv3 mobile side model is accelerated 3.5 times, the server side has optimized the two-stage model, and the speed and accuracy have high cost performance. We also refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing
