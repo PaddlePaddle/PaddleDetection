@@ -3,9 +3,9 @@
 关于配置运行环境，请参考[安装指南](INSTALL_cn.md)
 
 
-## 训练/评估/推断
+## 训练/评估/预测
 
-PaddleDetection提供了训练/评估/推断三个功能的使用脚本，支持通过不同可选参数实现特定功能
+PaddleDetection提供了训练/评估/预测，支持通过不同可选参数实现特定功能
 
 ```bash
 # 设置PYTHONPATH路径
@@ -16,7 +16,7 @@ python tools/train.py -c configs/faster_rcnn_r50_1x.yml
 # GPU评估
 export CUDA_VISIBLE_DEVICES=0
 python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
-# 推断
+# 预测
 python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
 ```
 
@@ -34,10 +34,10 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
 |       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
-|       --output_dir       |      infer     |  输出推断后可视化文件  |  `./output`  |  `--output_dir output`  |
+|       --output_dir       |      infer     |  输出预测后可视化文件  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
-|      --infer_dir         |       infer     |  用于推断的图片文件夹路径  |  None  |    |
-|      --infer_img         |       infer     |  用于推断的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
+|      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    |
+|      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
 |        --use_tb          |   train/infer   |  是否使用[tb-paddle](https://github.com/linshuliang/tb-paddle)记录数据，进而在TensorBoard中显示  |  False  |      |
 |        --tb\_log_dir     |   train/infer   |  指定 tb-paddle 记录数据的存储路径  |  train:`tb_log_dir/scalar` infer: `tb_log_dir/image`  |     |
 
@@ -145,9 +145,9 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 - R-CNN和SSD模型目前暂不支持多GPU评估，将在后续版本支持
 
 
-### 模型推断
+### 模型预测
 
-- 设置输出路径 && 设置推断阈值
+- 设置输出路径 && 设置预测阈值
 
   ```bash
   export CUDA_VISIBLE_DEVICES=0
@@ -160,4 +160,6 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 
 
   `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
-  不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行推断，可以设置`-o weights`指定模型路径。
+  不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行预测，可以设置`-o weights`指定模型路径。
+
+  此预测过程依赖PaddleDetection源码，如果您想使用C++进行服务器端预测、或在移动端预测、或使用PaddleServing部署、或独立于PaddleDetection源码使用Python预测可以参考[模型导出教程](../advanced_tutorials/deploy/EXPORT_MODEL.md)和推理部署。
