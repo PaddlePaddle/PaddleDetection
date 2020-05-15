@@ -168,13 +168,23 @@ def main():
     if 'weights' in cfg:
         checkpoint.load_checkpoint(exe, eval_prog, cfg.weights)
 
-    results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
-                       sub_eval_prog, sub_keys, sub_values)
-
-    # evaluation
     resolution = None
-    if 'mask' in results[0]:
+    if 'Mask' in cfg.architecture:
         resolution = model.mask_head.resolution
+
+    results = eval_run(
+        exe,
+        compile_program,
+        loader,
+        keys,
+        values,
+        cls,
+        cfg,
+        sub_eval_prog,
+        sub_keys,
+        sub_values,
+        resolution=resolution)
+
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
     eval_results(
