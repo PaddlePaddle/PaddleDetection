@@ -15,6 +15,10 @@
 
 特性：
 
+- 模型丰富：
+
+  PaddleDetection提供了丰富的模型，包含目标检测、实例分割、人脸检测等100+个预训练模型，涵盖多种数据集竞赛冠军方案、适合云端/边缘端设备部署的检测方案。
+
 - 易部署:
 
   PaddleDetection的模型中使用的核心算子均通过C++或CUDA实现，同时基于PaddlePaddle的高性能推理引擎可以方便地部署在多种硬件平台上。
@@ -26,6 +30,7 @@
 - 高性能：
 
   基于PaddlePaddle框架的高性能内核，在模型训练速度、显存占用上有一定的优势。例如，YOLOv3的训练速度快于其他框架，在Tesla V100 16GB环境下，Mask-RCNN(ResNet50)可以单卡Batch Size可以达到4 (甚至到5)。
+
 
 支持的模型结构：
 
@@ -98,8 +103,8 @@
 - [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 - [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
-- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
+- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [模型压缩](slim)
     - [压缩benchmark](slim)
     - [量化](slim/quantization)
@@ -130,8 +135,7 @@
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.3.0版本已经在`05/2020`发布，增加anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，重构预测部署功能，提升易用性，修复已知诸多bug等，
-详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.3.0版本已经在`05/2020`发布，增加Anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，例如移动端将YOLOv3-MobileNetv3加速3.5倍，服务器端优化两阶段模型，速度和精度具备较高性价比。重构预测部署功能，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
 
