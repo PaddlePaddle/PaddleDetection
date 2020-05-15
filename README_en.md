@@ -118,9 +118,9 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Guide to preprocess pipeline and custom dataset](docs/advanced_tutorials/READER.md)
 - [Models technical](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
-- [Parameter configuration](docs/advanced_tutorials/params_docs):
-  - [Introduction to the configuration workflow](docs/advanced_tutorials/params_docs/CONFIG.md)
-  - [Parameter configuration for RCNN model](docs/advanced_tutorials/params_docs/RCNN_PARAMS_DOC.md)
+- [Parameter configuration](docs/advanced_tutorials/config_doc):
+  - [Introduction to the configuration workflow](docs/advanced_tutorials/config_doc/CONFIG.md)
+  - [Parameter configuration for RCNN model](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Model compression](slim)
     - [Model compression benchmark](slim)

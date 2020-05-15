@@ -26,7 +26,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 
 |         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../advanced_tutorials/params_docs/CONFIG_cn.md)** |
+|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../advanced_tutorials/config_doc/CONFIG_cn.md)** |
 |          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
 |   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  是否边训练边测试  |  False  |    |

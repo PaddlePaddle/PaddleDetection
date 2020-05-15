@@ -69,7 +69,7 @@ from .darknet import *
 **几点说明：**
 - 为了在yaml配置文件中灵活配置网络，所有Backbone、模型组件与architecture类需要利用`ppdet.core.workspace`里的`register`进行注册，形式请参考如上示例；
 - 在Backbone中都需定义`__init__`函数与`__call__`函数，`__init__`函数负责初始化参数，在调用此Backbone时会执行`__call__`函数；
-- `__shared__`为了实现一些参数的配置全局共享，具体细节请参考[配置文件说明文档](params_docs/CONFIG_cn.md#faq)。
+- `__shared__`为了实现一些参数的配置全局共享，具体细节请参考[配置文件说明文档](config_doc/CONFIG_cn.md#faq)。
 
 2.配置编写：
 在yaml文件中以注册好了的`DarkNet`类名为标题，可选择性的对`__init__`函数中的参数进行更新，不在配置文件中配置的参数会保持`__init__`函数中的初始化值：

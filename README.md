@@ -102,9 +102,9 @@
 ### 进阶教程
 - [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- [模型参数配置](docs/advanced_tutorials/params_doc):
-  - [配置模块设计和介绍](docs/advanced_tutorials/params_doc/CONFIG_cn.md)
-  - [RCNN模型参数说明](docs/advanced_tutorials/params_doc/RCNN_PARAMS_DOC.md)
+- [模型参数配置](docs/advanced_tutorials/config_doc):
+  - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)
+  - [RCNN模型参数说明](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [模型压缩](slim)

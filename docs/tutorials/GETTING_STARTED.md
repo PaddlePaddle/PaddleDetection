@@ -29,7 +29,7 @@ list below can be viewed by `--help`
 
 |         FLAG             |  script supported  |    description    |     default     |      remark      |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  Select config file  |  None  |  **The description of configure can refer to [CONFIG.md](../advanced_tutorials/params_docs/CONFIG.md)** |
+|          -c              |      ALL       |  Select config file  |  None  |  **The description of configure can refer to [CONFIG.md](../advanced_tutorials/config_doc/CONFIG.md)** |
 |          -o              |      ALL       |  Set parameters in configure file  |  None  |  `-o` has higher priority to file configured by `-c`. Such as `-o use_gpu=False max_iter=10000`  |  
 |   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |

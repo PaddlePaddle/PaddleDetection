@@ -5,7 +5,7 @@
    :maxdepth: 2
 
    deploy/index
-   params_docs/index
+   config_doc/index
    READER.md
    MODEL_TECHNICAL.md
    TRANSFER_LEARNING_cn.md
