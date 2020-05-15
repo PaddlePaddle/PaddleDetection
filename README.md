@@ -1,4 +1,6 @@
-[English](README_en.md) | 简体中文
+简体中文 | [English](README_en.md)
+
+文档：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
 
 # PaddleDetection
 
@@ -90,8 +92,6 @@
 
 ## 文档教程
 
-**最新动态：** 已发布文档教程：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
-
 ### 入门教程
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
@@ -102,7 +102,9 @@
 ### 进阶教程
 - [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
+- 模型参数配置:
+  - [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
+  - [RCNN模型参数说明](docs/advanced_tutorials/RCNN_PARAMS_DOC.md)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [模型压缩](slim)
