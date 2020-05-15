@@ -1,5 +1,7 @@
 English | [简体中文](README.md)
 
+Documentation:[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
+
 # PaddleDetection
 
 PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which
@@ -20,6 +22,12 @@ and multi-platform deployment.
 ## Introduction
 
 Features:
+
+- Rich models:
+
+  PaddleDetection provides rich of models, including 100+ pre-trained models
+such as object detection, instance segmentation, face detection etc. It covers
+the champion models, the practical detection models for cloud and edge device.
 
 - Production Ready:
 
@@ -97,7 +105,6 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 
 ## Tutorials
 
-**News:** Documentation:[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
 
 ### Get Started
 
@@ -110,9 +117,11 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 
 - [Guide to preprocess pipeline and custom dataset](docs/advanced_tutorials/READER.md)
 - [Models technical](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- [Introduction to the configuration workflow](docs/advanced_tutorials/CONFIG.md)
-- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
+- Parameter configuration:
+  - [Introduction to the configuration workflow](docs/advanced_tutorials/CONFIG.md)
+  - [Parameter configuration for RCNN model](docs/advanced_tutorials/RCNN_PARAMS_DOC.md)
+- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Model compression](slim)
     - [Model compression benchmark](slim)
     - [Quantization](slim/quantization)
