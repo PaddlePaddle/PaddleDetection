@@ -17,6 +17,42 @@ IOU是论文中十分常用的指标，它对于物体的尺度并不敏感，�
 PaddleDetection也开源了基于faster rcnn的GIOU loss实现。使用GIOU loss替换传统的smooth l1 loss，基于faster rcnn的resnet50-vd-fpn 1x实验，coco val mAP能由38.3%提升到39.4%（没有带来任何预测耗时的损失）
 
 
+### DIOU/CIOU loss
+
+GIOU loss解决了IOU loss中预测边框A与真值B的交并比为0时，模型无法给出优化方向的问题，但是仍然有2种情况难以解决，
+1. 当边框A和边框B处于包含关系的时候，GIOU loss退化为IOU loss，此时模型收敛较慢。
+2. 当A与B相交，若A和B的的x1与x2均相等或者y1与y2均相等，GIOU loss仍然会退化为IOU loss，收敛很慢。
+
+基于此，论文提出了DIOU loss与CIOU loss，解决收敛速度慢以及部分条件下无法收敛的问题。
+为加速收敛，论文在改进的loss中引入距离的概念，具体地，边框loss可以定义为如下形式：
+
+![iou_loss_diou_bbox_loss](../../docs/images/models/iou_loss_diou_bbox_loss.png)
+
+其中 是惩罚项，考虑预测边框与真值的距离损失时，惩罚项可以定义为
+
+![iou_loss_diou_rdiou_penalty](../../docs/images/models/iou_loss_diou_rdiou_penalty.png)
+
+其中分子表示预测框与真值边框中心点的欧式距离，分母的c表示预测框与真值边框的最小外包边框的对角长度。因此DIOU loss可以写为
+
+![iou_loss_diou_diou_final](../../docs/images/models/iou_loss_diou_diou_final.png)
+
+相对于GIOU loss，DIOU loss不仅考虑了IOU，也考虑边框之间的距离，从而加快了模型收敛的速度。但是使用DIOU loss作为边框损失函数时，只考虑了边框的交并比以及中心点的距离，没有考虑到预测边框与真值的长宽比差异的情况，因此论文中提出了CIOU loss，惩罚项添加关于长宽比的约束。具体地，惩罚项定义如下
+
+![iou_loss_diou_rciou_penalty.png](../../docs/images/models/iou_loss_diou_rciou_penalty.png)
+
+其中v为惩罚项，α为惩罚系数，定义分别如下
+
+![iou_loss_diou_v_and_alpha](../../docs/images/models/iou_loss_diou_v_and_alpha.png)
+
+CIOU loss使得在边框回归时，与目标框有重叠甚至包含时能够更快更准确地收敛。
+在NMS阶段，一般的阈值计算为IOU，论文使用了DIOU修正后的阈值，检测框得分的更新方法如下。
+
+![iou_loss_diou_ciou_nms](../../docs/images/models/iou_loss_diou_ciou_nms.png)
+
+这使得模型效果有进一步的提升。
+
+
+
 
 
 ## 模型库
