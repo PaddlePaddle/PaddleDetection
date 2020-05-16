@@ -21,10 +21,12 @@ PaddleDetection也开源了基于faster rcnn的GIOU loss实现。使用GIOU loss
 
 ## 模型库
 
-| 骨架网络             | 网络类型 | Context设置     | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
-| :---------------------- | :-------------: |  :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| ResNet50-vd-FPN         | Mask       | GC(c3-c5, r16, add)  |     2     |   2x    |     15.31     |  41.4  |    36.8    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_gcb_add_r16_2x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gcnet/mask_rcnn_r50_vd_fpn_gcb_add_r16_2x.yml) |
-| ResNet50-vd-FPN         | Mask       | GC(c3-c5, r16, mul)  |     2     |   2x    |     15.35     |  40.7  |    36.1    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_gcb_mul_r16_2x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gcnet/mask_rcnn_r50_vd_fpn_gcb_mul_r16_2x.yml) |
+| 骨架网络             | 网络类型 | Loss类型 | Loss权重     | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
+| :---------------------- | :------------- | :---: | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :---: |
+| ResNet50-vd-FPN            | Faster         | GIOU |   10   |    2     |   1x    |     22.94     |  39.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_giou_loss_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/iou_loss/faster_rcnn_r50_vd_fpn_giou_loss_1x.yml) |
+| ResNet50-vd-FPN            | Faster         | DIOU |   12   |    2     |   1x    |     22.94     |  39.2  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_diou_loss_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/iou_loss/faster_rcnn_r50_vd_fpn_diou_loss_1x.yml) |
+| ResNet50-vd-FPN            | Faster         | CIOU |   12   |    2     |   1x    |     22.95     |  39.6  |   -   | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_ciou_loss_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/iou_loss/faster_rcnn_r50_vd_fpn_ciou_loss_1x.yml) |
+
 
 
 ## 引用
