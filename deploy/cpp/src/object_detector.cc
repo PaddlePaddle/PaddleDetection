@@ -74,6 +74,7 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     int c2 = colormap[3 * results[i].class_id + 1];
     int c3 = colormap[3 * results[i].class_id + 2];
     cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
+    text += " ";
     text += std::to_string(static_cast<int>(results[i].confidence * 100)) + "%";
     int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
     double font_scale = 0.5f;
@@ -83,12 +84,6 @@ cv::Mat VisualizeResult(const cv::Mat& img,
                                          font_scale,
                                          thickness,
                                          nullptr);
-    float new_font_scale = roi.width * font_scale / text_size.width;
-    text_size = cv::getTextSize(text,
-                               font_face,
-                               new_font_scale,
-                               thickness,
-                               nullptr);
     cv::Point origin;
     origin.x = roi.x;
     origin.y = roi.y;
@@ -106,7 +101,7 @@ cv::Mat VisualizeResult(const cv::Mat& img,
                 text,
                 origin,
                 font_face,
-                new_font_scale,
+                font_scale,
                 cv::Scalar(255, 255, 255),
                 thickness);
   }
