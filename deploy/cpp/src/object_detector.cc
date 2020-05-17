@@ -17,15 +17,38 @@
 namespace PaddleDetection {
 
 // Load Model and create model predictor
-void ObjectDetector::LoadModel(const std::string& model_dir, bool use_gpu) {
+void ObjectDetector::LoadModel(const std::string& model_dir,
+                               bool use_gpu,
+                               const int batch_size,
+                               const int min_subgraph_size,
+                               const std::string& run_mode) {
   paddle::AnalysisConfig config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
   config.SetModel(prog_file, params_file);
   if (use_gpu) {
-      config.EnableUseGpu(100, 0);
+    config.EnableUseGpu(100, 0);
+    if (run_mode != "fluid") {
+      auto precision = paddle::AnalysisConfig::Precision::kFloat32;
+      if (run_mode == "trt_fp16") {
+        precision = paddle::AnalysisConfig::Precision::kHalf;
+      } else if (run_mode == "trt_int8") {
+        precision = paddle::AnalysisConfig::Precision::kInt8;
+      } else {
+        if (run_mode != "trt_32") {
+          printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
+        }
+      }
+      config.EnableTensorRtEngine(
+          1 << 10,
+          batch_size,
+          min_subgraph_size,
+          precision,
+          false,
+          run_mode == "trt_int8");
+    }
   } else {
-      config.DisableGpu();
+    config.DisableGpu();
   }
   config.SwitchUseFeedFetchOps(false);
   config.SwitchSpecifyInputNames(true);
