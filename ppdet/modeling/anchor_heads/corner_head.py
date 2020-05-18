@@ -243,11 +243,6 @@ class CornerHead(object):
                  ae_threshold=1,
                  num_dets=1000,
                  top_k=100):
-        try:
-            import cornerpool_lib
-        except:
-            logger.error(
-                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         self.train_batch_size = train_batch_size
         self.test_batch_size = test_batch_size
         self.num_classes = num_classes
@@ -279,6 +274,11 @@ class CornerHead(object):
         return conv1
 
     def get_output(self, input):
+        try:
+            from ppdet.ext_op import cornerpool_lib
+        except:
+            logger.error(
+                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         for ind in range(self.stack):
             cnv = input[ind]
             tl_modules = corner_pool(
@@ -455,6 +455,11 @@ class CornerHead(object):
         return {'loss': loss}
 
     def get_prediction(self, input):
+        try:
+            from ppdet.ext_op import cornerpool_lib
+        except:
+            logger.error(
+                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         ind = self.stack - 1
         tl_modules = corner_pool(
             input,
