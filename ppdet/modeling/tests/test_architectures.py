@@ -20,6 +20,12 @@ import unittest
 import numpy as np
 
 import paddle.fluid as fluid
+import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
@@ -56,6 +62,9 @@ class TestMaskRCNN(TestFasterRCNN):
         self.cfg_file = 'configs/mask_rcnn_r50_1x.yml'
 
 
+@unittest.skip(
+    reason="It should be fixed to adapt https://github.com/PaddlePaddle/Paddle/pull/23797"
+)
 class TestCascadeRCNN(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/cascade_rcnn_r50_fpn_1x.yml'

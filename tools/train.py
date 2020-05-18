@@ -16,7 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import random
@@ -24,31 +29,19 @@ import datetime
 from collections import deque
 from paddle.fluid import profiler
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
+from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
+from paddle.fluid.optimizer import ExponentialMovingAverage
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -71,22 +64,18 @@ def main():
         np.random.seed(0)
 
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -128,8 +117,15 @@ def main():
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
                 optimizer.minimize(loss)
+
                 if FLAGS.fp16:
                     loss /= ctx.get_loss_scale_var()
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                global_steps = _decay_step_counter()
+                ema = ExponentialMovingAverage(
+                    cfg['ema_decay'], thres_steps=global_steps)
+                ema.update()
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -268,6 +264,8 @@ def main():
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.apply_program)
             checkpoint.save(exe, train_prog, os.path.join(save_dir, save_name))
 
             if FLAGS.eval:
@@ -282,6 +280,7 @@ def main():
                     eval_keys,
                     eval_values,
                     eval_cls,
+                    cfg,
                     resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
@@ -300,6 +299,9 @@ def main():
                                     os.path.join(save_dir, "best_model"))
                 logger.info("Best test box ap: {}, in iter: {}".format(
                     best_box_ap_list[0], best_box_ap_list[1]))
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.restore_program)
 
     train_loader.reset()
 

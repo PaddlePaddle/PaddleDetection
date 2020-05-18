@@ -67,6 +67,7 @@ class COCODataSet(DataSet):
         self.roidbs = None
         # a dict used to map category name to class id
         self.cname2cid = None
+        self.load_image_only = False
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -92,60 +93,80 @@ class COCODataSet(DataSet):
             for catid, clsid in catid2clsid.items()
         })
 
+        if 'annotations' not in coco.dataset:
+            self.load_image_only = True
+            logger.warn('Annotation file: {} does not contains ground truth '
+                        'and load image information only.'.format(anno_path))
+
         for img_id in img_ids:
             img_anno = coco.loadImgs(img_id)[0]
             im_fname = img_anno['file_name']
             im_w = float(img_anno['width'])
             im_h = float(img_anno['height'])
 
-            ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
-            instances = coco.loadAnns(ins_anno_ids)
-
-            bboxes = []
-            for inst in instances:
-                x, y, box_w, box_h = inst['bbox']
-                x1 = max(0, x)
-                y1 = max(0, y)
-                x2 = min(im_w - 1, x1 + max(0, box_w - 1))
-                y2 = min(im_h - 1, y1 + max(0, box_h - 1))
-                if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
-                    inst['clean_bbox'] = [x1, y1, x2, y2]
-                    bboxes.append(inst)
-                else:
-                    logger.warn(
-                        'Found an invalid bbox in annotations: im_id: {}, '
-                        'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
-                            img_id, float(inst['area']), x1, y1, x2, y2))
-            num_bbox = len(bboxes)
-
-            gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
-            gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
-            gt_score = np.ones((num_bbox, 1), dtype=np.float32)
-            is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
-            difficult = np.zeros((num_bbox, 1), dtype=np.int32)
-            gt_poly = [None] * num_bbox
-
-            for i, box in enumerate(bboxes):
-                catid = box['category_id']
-                gt_class[i][0] = catid2clsid[catid]
-                gt_bbox[i, :] = box['clean_bbox']
-                is_crowd[i][0] = box['iscrowd']
-                if 'segmentation' in box:
-                    gt_poly[i] = box['segmentation']
-
             im_fname = os.path.join(image_dir,
                                     im_fname) if image_dir else im_fname
+            if not os.path.exists(im_fname):
+                logger.warn('Illegal image file: {}, and it will be '
+                            'ignored'.format(im_fname))
+                continue
+
+            if im_w < 0 or im_h < 0:
+                logger.warn('Illegal width: {} or height: {} in annotation, '
+                            'and im_id: {} will be ignored'.format(im_w, im_h,
+                                                                   img_id))
+                continue
+
             coco_rec = {
                 'im_file': im_fname,
                 'im_id': np.array([img_id]),
                 'h': im_h,
                 'w': im_w,
-                'is_crowd': is_crowd,
-                'gt_class': gt_class,
-                'gt_bbox': gt_bbox,
-                'gt_score': gt_score,
-                'gt_poly': gt_poly,
             }
+
+            if not self.load_image_only:
+                ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
+                instances = coco.loadAnns(ins_anno_ids)
+
+                bboxes = []
+                for inst in instances:
+                    x, y, box_w, box_h = inst['bbox']
+                    x1 = max(0, x)
+                    y1 = max(0, y)
+                    x2 = min(im_w - 1, x1 + max(0, box_w - 1))
+                    y2 = min(im_h - 1, y1 + max(0, box_h - 1))
+                    if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
+                        inst['clean_bbox'] = [x1, y1, x2, y2]
+                        bboxes.append(inst)
+                    else:
+                        logger.warn(
+                            'Found an invalid bbox in annotations: im_id: {}, '
+                            'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
+                                img_id, float(inst['area']), x1, y1, x2, y2))
+                num_bbox = len(bboxes)
+
+                gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
+                gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
+                gt_score = np.ones((num_bbox, 1), dtype=np.float32)
+                is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
+                difficult = np.zeros((num_bbox, 1), dtype=np.int32)
+                gt_poly = [None] * num_bbox
+
+                for i, box in enumerate(bboxes):
+                    catid = box['category_id']
+                    gt_class[i][0] = catid2clsid[catid]
+                    gt_bbox[i, :] = box['clean_bbox']
+                    is_crowd[i][0] = box['iscrowd']
+                    if 'segmentation' in box:
+                        gt_poly[i] = box['segmentation']
+
+                coco_rec.update({
+                    'is_crowd': is_crowd,
+                    'gt_class': gt_class,
+                    'gt_bbox': gt_bbox,
+                    'gt_score': gt_score,
+                    'gt_poly': gt_poly,
+                })
 
             logger.debug('Load file: {}, im_id: {}, h: {}, w: {}.'.format(
                 im_fname, img_id, im_h, im_w))
@@ -154,5 +175,5 @@ class COCODataSet(DataSet):
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
         assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
-        logger.info('{} samples in file {}'.format(ct, anno_path))
+        logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid

@@ -1,5 +1,34 @@
 # 版本更新信息
 
+## 最新版本信息
+
+### v0.3.0(05/2020)
+  - 模型丰富度提升：
+    - 添加Efficientdet-D0模型，速度与精度优于竞品。
+    - 新增YOLOv4预测模型，精度对齐竞品；新增YOLOv4在Pascal VOC数据集上微调训练，精度达到85.5%。
+    - YOLOv3新增MobileNetV3骨干网络，COCO数据集精度达到31.6%。
+    - 添加Anchor-free模型FCOS，精度优于竞品。
+    - 添加Anchor-free模型CornernetSqueeze，精度优于竞品，优化模型的COCO数据集精度38.2%, +3.7%，速度较YOLOv3-Darknet53快5%。
+    - 添加服务器端实用目标检测模型CascadeRCNN-ResNet50vd模型，速度与精度优于竞品EfficientDet。
+
+  - 移动端推出3种模型：
+    - SSDLite系列模型：SSDLite-Mobilenetv3 small/large模型，精度优于竞品。
+    - YOLOv3移动端方案: YOLOv3-MobileNetv3模型压缩后加速3.5倍，速度和精度均领先于竞品的SSDLite模型。
+    - RCNN移动端方案：CascadeRCNN-MobileNetv3经过系列优化, 推出输入图像分别为320x320和640x640的模型，速度与精度具有较高性价比。
+
+  - 预测部署重构：
+    - 新增Python预测部署流程，支持RCNN，YOLO，SSD，RetinaNet，人脸系列模型，支持视频预测。
+    - 重构C++预测部署，提高易用性。
+
+  - 易用性提升及功能组件：
+    - 增加AutoAugment数据增强。
+    - 升级检测库文档结构。
+    - 支持迁移学习自动进行shape匹配。
+    - 优化mask分支评估阶段内存占用。
+
+
+## 历史版本信息
+
 ### v0.2.0(02/2020)
   - 新增模型:
     - 新增基于CBResNet模型。

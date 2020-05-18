@@ -1,7 +1,11 @@
-## PaddleDetection Python 预测部署方案
-本篇教程使用AnalysisPredictor对[导出模型](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)进行高性能预测。
+# Python端预测部署
 
-在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 下面列出了两种不同的预测方式。Executor同时支持训练和预测，AnalysisPredictor则专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，于是我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
+Python预测可以使用`tools/infer.py`，此种方式依赖PaddleDetection源码；也可以使用本篇教程预测方式，先将模型导出，使用一个独立的文件进行预测。
+
+
+本篇教程使用AnalysisPredictor对[导出模型](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)进行高性能预测。
+
+在PaddlePaddle中预测引擎和训练引擎底层有着不同的优化方法, 下面列出了两种不同的预测方式。Executor同时支持训练和预测，AnalysisPredictor则专门针对推理进行了优化，是基于[C++预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/native_infer.html)的Python接口，该引擎可以对模型进行多项图优化，减少不必要的内存拷贝。如果用户在部署已训练模型的过程中对性能有较高的要求，我们提供了独立于PaddleDetection的预测脚本，方便用户直接集成部署。
 
 - Executor：[Executor](https://www.paddlepaddle.org.cn/documentation/docs/zh/beginners_guide/basic_concept/executor.html#executor)
 - AnalysisPredictor：[AnalysisPredictor](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/python_infer_cn.html#analysispredictor)
@@ -14,11 +18,12 @@
 
 ## 1. 导出预测模型
 
-PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../../docs/advanced_tutorials/inference/EXPORT_MODEL.md)
+PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
 
 导出后目录下，包括`__model__`，`__params__`和`infer_cfg.yml`三个文件。
 
 ## 2. 基于python的预测
+
 ### 2.1 安装依赖
   - `PaddlePaddle`的安装:
     请点击[官方安装文档](https://paddlepaddle.org.cn/install/quick) 选择适合的方式，版本为1.7以上即可
@@ -28,7 +33,7 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 在终端输入以下命令进行预测：
 
 ```bash
-python infer.py --models_dir=/path/to/models --image_file=/path/to/image
+python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image
 --use_gpu=(False/True)
 ```
 
@@ -36,14 +41,18 @@ python infer.py --models_dir=/path/to/models --image_file=/path/to/image
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
-| --models_dir | Yes|上述导出的模型路径 |
+| --model_dir | Yes|上述导出的模型路径 |
 | --image_file | Yes |需要预测的图片 |
 | --video_file | Yes |需要预测的视频 |
 | --use_gpu |No|是否GPU，默认为False|
+| --run_mode |No|使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
 | --threshold |No|预测得分的阈值，默认为0.5|
-| --visualize |No|是否可视化结果，默认为False|
 | --output_dir |No|可视化结果保存的根目录，默认为output/|
 
+说明：
+
+- run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
+- PaddlePaddle默认的GPU安装包(<=1.7)，不支持基于TensorRT进行预测，如果想基于TensorRT加速预测，需要自行编译，详细可参考[预测库编译教程](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_usage/deploy/inference/paddle_tensorrt_infer.html)。
 
 ## 3. 部署性能对比测试
 对比AnalysisPredictor相对Executor的推理速度

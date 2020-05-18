@@ -6,7 +6,7 @@
 
 在检测库中，可以直接调用`PaddleDetection/slim/prune/prune.py`脚本实现剪裁，在该脚本中调用了PaddleSlim的[paddleslim.prune.Pruner](https://paddlepaddle.github.io/PaddleSlim/api/prune_api/#Pruner)接口。
 
-该教程中所示操作，如无特殊说明，均在`PaddleDetection/slim/prune/`路径下执行。
+该教程中所示操作，如无特殊说明，均在`PaddleDetection/`路径下执行。
 
 已发布裁剪模型见[压缩模型库](../README.md)
 
@@ -40,8 +40,8 @@
 通过以下命令查看当前模型的所有参数：
 
 ```
-python prune.py \
--c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python slim/prune/prune.py \
+-c ./configs/yolov3_mobilenet_v1_voc.yml \
 --print_params
 ```
 
@@ -56,8 +56,8 @@ python prune.py \
 使用`prune.py`启动裁剪任务时，通过`--pruned_params`选项指定待裁剪的参数名称列表，参数名之间用空格分隔，通过`--pruned_ratios`选项指定各个参数被裁掉的比例。
 
 ```
-python prune.py \
--c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python slim/prune/prune.py \
+-c ./configs/yolov3_mobilenet_v1_voc.yml \
 --pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
 --pruned_ratios="0.2,0.3,0.4"
 ```
@@ -67,8 +67,8 @@ python prune.py \
 训练剪裁任务完成后，可通过`eval.py`评估剪裁模型精度，通过`--pruned_params`和`--pruned_ratios`指定裁剪的参数名称列表和各参数裁剪比例。
 
 ```
-python eval.py \
--c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python slim/prune/eval.py \
+-c ./configs/yolov3_mobilenet_v1_voc.yml \
 --pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
 --pruned_ratios="0.2,0.3,0.4" \
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
@@ -79,8 +79,8 @@ python eval.py \
 如果想要将剪裁模型接入到C++预测库或者Serving服务，可通过`export_model.py`导出该模型。
 
 ```
-python export_model.py \
--c ../../configs/yolov3_mobilenet_v1_voc.yml \
+python slim/prune/export_model.py \
+-c ./configs/yolov3_mobilenet_v1_voc.yml \
 --pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
 --pruned_ratios="0.2,0.3,0.4" \
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
@@ -90,3 +90,26 @@ python export_model.py \
 
 如果需要对自己的模型进行修改，可以参考`prune.py`中对`paddleslim.prune.Pruner`接口的调用方式，基于自己的模型训练脚本进行修改。
 本节我们介绍的剪裁示例，需要用户根据先验知识指定每层的剪裁率，除此之外，PaddleSlim还提供了敏感度分析等功能，协助用户选择合适的剪裁率。更多详情请参考：[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
+
+## 9. 更多示例与注意事项
+
+## 9.1 faster_rcnn与mask_rcnn
+
+**当前PaddleSlim的剪裁功能不支持剪裁循环体或条件判断语句块内的卷积层，请避免剪裁循环和判断语句块前的一个卷积和语句块内部的卷积。**
+
+对于[faster_rcnn_r50](../../configs/faster_rcnn_r50_1x.yml)或[mask_rcnn_r50](../../configs/mask_rcnn_r50_1x.yml)网络，请剪裁卷积`res4f_branch2c`之前的卷积。
+
+对[faster_rcnn_r50](../../configs/faster_rcnn_r50_1x.yml)剪裁示例如下：
+
+```
+# demo for faster_rcnn_r50
+python slim/prune/prune.py -c ./configs/faster_rcnn_r50_1x.yml --pruned_params "res4f_branch2b_weights,res4f_branch2a_weights" --pruned_ratios="0.3,0.4" --eval
+```
+
+对[mask_rcnn_r50](../../configs/mask_rcnn_r50_1x.yml)剪裁示例如下：
+
+```
+# demo for mask_rcnn_r50
+python slim/prune/prune.py -c ./configs/mask_rcnn_r50_1x.yml --pruned_params "res4f_branch2b_weights,res4f_branch2a_weights" --pruned_ratios="0.2,0.3" --eval
+
+```

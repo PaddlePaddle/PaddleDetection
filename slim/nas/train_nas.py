@@ -16,29 +16,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
 from collections import deque
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
-import sys
 
-sys.path.append("../../")
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create, register
 from ppdet.data.reader import create_reader
@@ -47,7 +37,7 @@ from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.analysis import flops, TableLatencyEvaluator
 from paddleslim.nas import SANAS
@@ -209,20 +199,14 @@ def main():
         np.random.seed(local_seed)
 
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
+
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()

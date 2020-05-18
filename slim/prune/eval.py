@@ -16,20 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 import paddle.fluid as fluid
 from paddleslim.prune import Pruner
@@ -37,7 +29,7 @@ from paddleslim.analysis import flops
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 
 from ppdet.data.reader import create_reader
 
@@ -55,16 +47,14 @@ def main():
     Main evaluate function
     """
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
+
+    main_arch = cfg.architecture
 
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
 
@@ -178,13 +168,23 @@ def main():
     if 'weights' in cfg:
         checkpoint.load_checkpoint(exe, eval_prog, cfg.weights)
 
-    results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
-                       sub_eval_prog, sub_keys, sub_values)
-
-    # evaluation
     resolution = None
-    if 'mask' in results[0]:
+    if 'Mask' in cfg.architecture:
         resolution = model.mask_head.resolution
+
+    results = eval_run(
+        exe,
+        compile_program,
+        loader,
+        keys,
+        values,
+        cls,
+        cfg,
+        sub_eval_prog,
+        sub_keys,
+        sub_values,
+        resolution=resolution)
+
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
     eval_results(
