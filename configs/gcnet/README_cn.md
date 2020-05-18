@@ -6,28 +6,34 @@ Nonlocal基于自注意力机制，给出了捕捉长时依赖的方法，但是
 
 论文中基于attention map差距很小的现象，设计了simplified nonlocal结构（SNL），结构如下图所示，对所有位置共享全局attention map。
 
-![gcnet_snl_module](../../docs/images/models/gcnet_snl_module.png)
+<div align="center">
+    <img src="../../docs/images/models/gcnet_snl_module.png" width="300">
+</div>
 
 
 SNL的网络输出计算如下
 
-![gcnet_snl_out](../../docs/images/models/gcnet_snl_out.png)
+<div align="center">
+    <img src="../../docs/images/models/gcnet_snl_out.png" width="400">
+</div>
 
 为进一步减少计算量，将$W_v$提取到attention pooling计算的外面，表示为
 
-
-![gcnet_snl_out_simple](../../docs/images/models/gcnet_snl_out_simple.png)
-
+<div align="center">
+    <img src="../../docs/images/models/gcnet_snl_out_simple.png" width="400">
+</div>
 
 对应结构如下所示。通过共享attention map，计算量减少为之前的1/WH。
 
-![gcnet_snl_module_simple](../../docs/images/models/gcnet_snl_module_simple.png)
-
+<div align="center">
+    <img src="../../docs/images/models/gcnet_snl_module_simple.png" width="250">
+</div>
 
 SNL模块可以抽象为上下文建模、特征转换和特征聚合三个部分，特征转化部分有大量参数，因此在这里参考SE的结构，最终GC block的结构如下所示。使用两层降维的1*1卷积降低计算量，由于两层卷积参数较难优化，在这里加入layer normalization的正则化层降低优化难度。
 
-![gcnet_gcblock_module](../../docs/images/models/gcnet_gcblock_module.png)
-
+<div align="center">
+    <img src="../../docs/images/models/gcnet_gcblock_module.png" width="300">
+</div>
 
 该模块可以很方便地插入到骨干网络中，提升模型的全局上下文表达能力，可以提升检测和分割任务的模型性能。
 
