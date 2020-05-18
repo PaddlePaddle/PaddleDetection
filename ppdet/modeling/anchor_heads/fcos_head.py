@@ -50,7 +50,7 @@ class FCOSHead(object):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 num_classes=81,
+                 num_classes=80,
                  fpn_stride=[8, 16, 32, 64, 128],
                  prior_prob=0.01,
                  num_convs=4,
@@ -65,7 +65,7 @@ class FCOSHead(object):
                      keep_top_k=100,
                      nms_threshold=0.45,
                      background_label=-1).__dict__):
-        self.num_classes = num_classes - 1
+        self.num_classes = num_classes
         self.fpn_stride = fpn_stride[::-1]
         self.prior_prob = prior_prob
         self.num_convs = num_convs
