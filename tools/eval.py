@@ -142,7 +142,8 @@ def main():
         checkpoint.load_params(exe, startup_prog, cfg.weights)
 
     resolution = None
-    if 'Mask' in cfg.architecture:
+    #if 'Mask' in cfg.architecture:
+    if model.mask_head is not None:
         resolution = model.mask_head.resolution
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values, resolution)
