@@ -111,7 +111,7 @@ TrainReader:
     norm_reg_targets: True
   batch_size: 2
   shuffle: true
-  worker_num: 16
+  worker_num: 4
   use_process: false
 
 EvalReader:

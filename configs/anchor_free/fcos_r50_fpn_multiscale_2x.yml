@@ -110,7 +110,7 @@ TrainReader:
     norm_reg_targets: True
   batch_size: 2
   shuffle: true
-  worker_num: 16
+  worker_num: 4
   use_process: false
 
 EvalReader:
@@ -143,7 +143,7 @@ EvalReader:
   - !PadBatch
     pad_to_stride: 128
     use_padded_im_info: true
-  batch_size: 8
+  batch_size: 1
   shuffle: false
   worker_num: 2
   use_process: false
