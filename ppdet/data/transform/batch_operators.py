@@ -439,7 +439,7 @@ class Gt2FCOSTarget(BaseOperator):
             points2gtarea[is_match_current_level == 0] = self.INF
             points2min_area = points2gtarea.min(axis=1)
             points2min_area_ind = points2gtarea.argmin(axis=1)
-            labels = gt_class[points2min_area_ind]
+            labels = gt_class[points2min_area_ind] + 1
             labels[points2min_area == self.INF] = 0
             reg_targets = reg_targets[range(xs.shape[0]), points2min_area_ind]
             ctn_targets = np.sqrt((reg_targets[:, [0, 2]].min(axis=1) / \
