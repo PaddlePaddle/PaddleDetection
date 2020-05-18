@@ -318,8 +318,10 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
+    if run_mode == 'trt_int8':
+        raise ValueError("TensorRT int8 mode is not supported now, "
+                         "please use trt_fp32 or trt_fp16 instead.")
     precision_map = {
-        'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
         'trt_fp16': fluid.core.AnalysisConfig.Precision.Half
     }
@@ -341,7 +343,7 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=run_mode == 'trt_int8')
+            use_calib_mode=False)
 
     # disable print log when predict
     config.disable_glog_info()
@@ -482,8 +484,6 @@ class Detector():
             t1 = time.time()
             self.predictor.zero_copy_run()
             t2 = time.time()
-            ms = (t2 - t1) * 1000.0
-            print("Inference: {} ms per batch image".format(ms))
 
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_tensor(output_names[0])
@@ -491,6 +491,10 @@ class Detector():
             if self.config.mask_resolution is not None:
                 masks_tensor = self.predictor.get_output_tensor(output_names[1])
                 np_masks = masks_tensor.copy_to_cpu()
+
+            ms = (t2 - t1) * 1000.0
+            print("Inference: {} ms per batch image".format(ms))
+
         results = self.postprocess(
             np_boxes, np_masks, im_info, threshold=threshold)
         return results
@@ -556,7 +560,7 @@ if __name__ == '__main__':
         "--run_mode",
         type=str,
         default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
+        help="mode of running(fluid/trt_fp32/trt_fp16)")
     parser.add_argument(
         "--use_gpu", default=False, help="Whether to predict with GPU.")
     parser.add_argument(
