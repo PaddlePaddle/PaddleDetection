@@ -48,17 +48,28 @@ fluid_inference
 ### Step4: 使用Visual Studio 2019直接编译CMake
 
 1. 打开Visual Studio 2019 Community，点击`继续但无需代码`
-![step2](https://paddleseg.bj.bcebos.com/inference/vs2019_step1.png)
+
+<div align="center">
+  <img src="https://paddleseg.bj.bcebos.com/inference/vs2019_step1.png">
+</div>
+
 2. 点击： `文件`->`打开`->`CMake`
-![step2.1](https://paddleseg.bj.bcebos.com/inference/vs2019_step2.png)
+
+<div align="center">
+  <img src="https://paddleseg.bj.bcebos.com/inference/vs2019_step2.png">
+</div>
 
 选择项目代码所在路径，并打开`CMakeList.txt`：
 
-![step2.2](https://paddleseg.bj.bcebos.com/inference/vs2019_step3.png)
+<div align="center">
+  <img src="https://paddleseg.bj.bcebos.com/inference/vs2019_step3.png" >
+</div>
 
 3. 点击：`项目`->`cpp_inference_demo的CMake设置`
 
-![step3](https://paddleseg.bj.bcebos.com/inference/vs2019_step4.png)
+<div align="center">
+  <img src="https://paddleseg.bj.bcebos.com/inference/vs2019_step4.png" >
+</div>
 
 4. 点击`浏览`，分别设置编译选项指定`CUDA`、`OpenCV`、`Paddle预测库`的路径
 
