@@ -59,12 +59,9 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`python -c 'import paddle; print(paddle.
 执行下列单测，确保自定义算子可在网络中正确使用：
 
 ```
-# 回到 ext_op 目录，添加 PYTHONPATH
+# 回到 ext_op 目录，运行单测
 cd ..
-export PYTHONPATH=$PYTHONPATH:`pwd`
-
-# 运行单测
-python test/test_corner_op.py
+python test/test_corner_pool.py
 ```
 
 单测运行成功会输出提示信息，如下所示：
