@@ -6,11 +6,39 @@ Transfer learning aims at learning new knowledge from existing knowledge. For ex
 
 In transfer learning, if different dataset and the number of classes is used, the dimensional inconsistency will causes in loading parameters related to the number of classes; On the other hand, if more complicated model is used, need to motify the open-source model construction and selective load parameters. Thus, PaddleDetection should designate parameter fields and ignore loading the parameters which match the fields.
 
-## Transfer Learning in PaddleDetection
+### Use custom dataset
 
-In transfer learning, it's needed to load pretrained model selectively. Two ways are provided in PaddleDetection.
+Transfer learning needs custom dataset and annotation in COCO-format and VOC-format is supported now. The script converts the annotation from labelme or cityscape to COCO is provided in ```ppdet/data/tools/x2coco.py```. More details please refer to [READER](READER.md). After data preparation, update the data parameters in configuration file.
 
-#### Load pretrain weights directly (**recommended**)
+
+1. COCO-format dataset, take [yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66) for example, modify the COCODataSet in yolov3\_reader:
+
+```yml
+  dataset:
+    !COCODataSet
+      dataset_dir: custom_data/coco # directory of custom dataset
+      image_dir: train2017 # custom training dataset which is in dataset_dir
+      anno_path: annotations/instances_train2017.json # custom annotation path which is in dataset_dir
+      with_background: false
+```
+
+2. VOC-format dataset, take [yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet_voc.yml#L67) for example, modify the VOCDataSet in the configuration:
+
+```yml
+  dataset:
+    !VOCDataSet
+      dataset_dir: custom_data/voc # directory of custom dataset
+      anno_path: trainval.txt # custom annotation path which is in dataset_dir
+      use_default_label: true
+      with_background: false
+```
+
+
+### Load pretrained model
+
+In transfer learning, it's needed to load pretrained model selectively. Two methods are provided.
+
+#### Load pretrained weights directly (**recommended**)
 
 The parameters which have diffierent shape between model and pretrain\_weights are ignored automatically. For example:
 

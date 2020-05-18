@@ -1,9 +1,39 @@
+[English](TRANSFER_LEARNING.md) | 简体中文
+
 # 迁移学习教程
 
 迁移学习为利用已有知识，对新知识进行学习。例如利用ImageNet分类预训练模型做初始化来训练检测模型，利用在COCO数据集上的检测模型做初始化来训练基于PascalVOC数据集的检测模型。
 
 
 ### 选择数据
+
+迁移学习需要使用自己的数据集，目前已支持COCO和VOC的数据标注格式，在```ppdet/data/tools/x2coco.py```中给出了labelme和cityscape标注格式转换为coco格式的脚本，具体使用方式可以参考[自定义数据源](READER.md)。数据准备完成后，在配置文件中配置数据路径，对应修改reader中的路径参数即可。
+
+1. coco数据集需要修改COCODataSet中的参数，以[yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66)为例，修改yolov3\_reader中的配置：
+
+```yml
+  dataset:
+    !COCODataSet
+      dataset_dir: custom_data/coco # 自定义数据目录
+      image_dir: train2017 # 自定义训练集目录，该目录在dataset_dir中
+      anno_path: annotations/instances_train2017.json # 自定义数据标注路径，该目录在dataset_dir中  
+      with_background: false
+```
+
+2. voc数据集需要修改VOCDataSet中的参数，以[yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet_voc.yml#L67)为例：
+
+```yml
+  dataset:
+    !VOCDataSet
+    dataset_dir: custom_data/voc # 自定义数据集目录
+    anno_path: trainval.txt # 自定义数据标注路径，该目录在dataset_dir中
+    use_default_label: true
+    with_background: false
+
+```
+
+
+### 加载预训练模型
 
 
 在进行迁移学习时，由于会使用不同的数据集，数据类别数与COCO/VOC数据类别不同，导致在加载开源模型(如COCO预训练模型)时，与类别数相关的权重（例如分类模块的fc层）会出现维度不匹配的问题；另外，如果需要结构更加复杂的模型，需要对已有开源模型结构进行调整，对应权重也需要选择性加载。因此，需要在加载模型时不加载不能匹配的权重。
