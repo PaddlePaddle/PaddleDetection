@@ -42,13 +42,15 @@ class DarkNet(object):
                  depth=53,
                  norm_type='bn',
                  norm_decay=0.,
-                 weight_prefix_name=''):
+                 weight_prefix_name='',
+                 freeze_at=-1):
         assert depth in [53], "unsupported depth value"
         self.depth = depth
         self.norm_type = norm_type
         self.norm_decay = norm_decay
         self.depth_cfg = {53: ([1, 2, 8, 8, 4], self.basicblock)}
         self.prefix_name = weight_prefix_name
+        self.freeze_at = freeze_at
 
     def _conv_norm(self,
                    input,
@@ -65,13 +67,13 @@ class DarkNet(object):
             stride=stride,
             padding=padding,
             act=None,
-            param_attr=ParamAttr(name=name + ".conv.weights"),
+            param_attr=ParamAttr(name=name + ".conv.weight"),
             bias_attr=False)
 
         bn_name = name + ".bn"
         bn_param_attr = ParamAttr(
             regularizer=L2Decay(float(self.norm_decay)),
-            name=bn_name + '.scale')
+            name=bn_name + '.weight')
         bn_bias_attr = ParamAttr(
             regularizer=L2Decay(float(self.norm_decay)), name=bn_name + '.bias')
 
@@ -80,8 +82,8 @@ class DarkNet(object):
             act=None,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
-            moving_mean_name=bn_name + '.mean',
-            moving_variance_name=bn_name + '.var')
+            moving_mean_name=bn_name + '.running_mean',
+            moving_variance_name=bn_name + '.running_var')
 
         # leaky relu here has `alpha` as 0.1, can not be set by
         # `act` param in fluid.layers.batch_norm above.
@@ -141,6 +143,7 @@ class DarkNet(object):
         """
         stages, block_func = self.depth_cfg[self.depth]
         stages = stages[0:5]
+        fluid.layers.Print(input)
         conv = self._conv_norm(
             input=input,
             ch_out=32,
@@ -151,7 +154,7 @@ class DarkNet(object):
         downsample_ = self._downsample(
             input=conv,
             ch_out=conv.shape[1] * 2,
-            name=self.prefix_name + "yolo_input.downsample")
+            name=self.prefix_name + "darknet_stem.downsample")
         blocks = []
         for i, stage in enumerate(stages):
             block = self.layer_warp(
@@ -160,6 +163,8 @@ class DarkNet(object):
                 ch_out=32 * 2**i,
                 count=stage,
                 name=self.prefix_name + "stage.{}".format(i))
+            if self.freeze_at > i:
+                block.stop_gradient = True
             blocks.append(block)
             if i < len(stages) - 1:  # do not downsaple in the last stage
                 downsample_ = self._downsample(

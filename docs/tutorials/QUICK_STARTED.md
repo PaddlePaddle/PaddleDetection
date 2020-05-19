@@ -4,10 +4,9 @@ English | [简体中文](QUICK_STARTED_cn.md)
 
 This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 20min with good performance.
 
-- **Note: before started, need to set PYTHONPATH and specifiy the GPU device as follows in Linux platform. For Windows users, also need to set PYTHONPATH correctly.**
+- **Note: before started, need to specifiy the GPU device as follows.**
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0
 ```
 

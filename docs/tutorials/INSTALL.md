@@ -59,6 +59,8 @@ COCO-API is needed for running. Installation is as follows:
     # Alternatively, if you do not have permissions or prefer
     # not to install the COCO API into global site-packages
     python setup.py install --user
+    # or with pip
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **Installation of COCO-API in windows:**
 
@@ -86,15 +88,6 @@ Required python packages are specified in [requirements.txt](https://github.com/
 pip install -r requirements.txt
 ```
 
-**Specify the current Python path:**
-
-```shell
-# In Linux/Mac
-export PYTHONPATH=$PYTHONPATH:.
-# In windows
-set PYTHONPATH=%PYTHONPATH%;.
-```
-
 **Make sure the tests pass:**
 
 ```shell
@@ -119,7 +112,6 @@ ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 For Pascal VOC dataset, you should create file list by:
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/create_list.py
 ```
 
@@ -130,7 +122,6 @@ On the other hand, to download the datasets, run the following commands:
 - COCO
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/coco/download_coco.py
 ```
 
@@ -158,7 +149,6 @@ python dataset/coco/download_coco.py
 - Pascal VOC
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/download_voc.py
 python dataset/voc/create_list.py
 ```
@@ -176,16 +166,16 @@ python dataset/voc/create_list.py
   │       ├── 001789.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 001789.xml
+  │       ├── 001789.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
   ├── VOCdevkit/VOC2012
   │   ├── Annotations
-  │       ├── 003876.xml
+  │       ├── 2011_003876.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 003876.xml
+  │       ├── 2011_003876.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...

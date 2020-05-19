@@ -16,7 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
@@ -24,15 +30,15 @@ from collections import deque
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
 from paddle import fluid
+
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -52,22 +58,14 @@ def main():
         np.random.seed(local_seed)
 
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -187,7 +185,9 @@ def main():
             pruned_ratios < [1] * len(pruned_ratios)
             ), "The elements of pruned ratios should be in range (0, 1)."
 
-    pruner = Pruner()
+    assert FLAGS.prune_criterion in ['l1_norm', 'geometry_median'], \
+            "unsupported prune criterion {}".format(FLAGS.prune_criterion)
+    pruner = Pruner(criterion=FLAGS.prune_criterion)
     train_prog = pruner.prune(
         train_prog,
         fluid.global_scope(),
@@ -252,12 +252,19 @@ def main():
         tb_mAP_step = 0
 
     if FLAGS.eval:
-        # evaluation
-        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
         resolution = None
-        if 'mask' in results[0]:
+        if 'Mask' in cfg.architecture:
             resolution = model.mask_head.resolution
+        # evaluation
+        results = eval_run(
+            exe,
+            compiled_eval_prog,
+            eval_loader,
+            eval_keys,
+            eval_values,
+            eval_cls,
+            cfg,
+            resolution=resolution)
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
             results,
@@ -300,8 +307,14 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    cfg=cfg)
                 resolution = None
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution
@@ -388,5 +401,11 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help="Whether to only print the parameters' names and shapes.")
+    parser.add_argument(
+        "--prune_criterion",
+        default='l1_norm',
+        type=str,
+        help="criterion function type for channels sorting in pruning, can be set " \
+             "as 'l1_norm' or 'geometry_median' currently, default 'l1_norm'")
     FLAGS = parser.parse_args()
     main()

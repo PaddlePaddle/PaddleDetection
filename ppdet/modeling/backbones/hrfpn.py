@@ -120,7 +120,7 @@ class HRFPN(object):
         out_shape = fluid.layers.cast(out_shape_, dtype='int32')
         out_shape.stop_gradient = True
         body_output = fluid.layers.resize_bilinear(
-            body_input, scale=scale, actual_shape=out_shape)
+            body_input, scale=scale, out_shape=out_shape)
         return body_output
 
     def pooling(self, input, size, stride, pooling_type):

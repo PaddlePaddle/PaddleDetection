@@ -401,8 +401,7 @@ class CBResNet(object):
         out_shape_ = shape_hw
         out_shape = fluid.layers.cast(out_shape_, dtype='int32')
         out_shape.stop_gradient = True
-        conv = fluid.layers.resize_nearest(
-            conv, scale=2., actual_shape=out_shape)
+        conv = fluid.layers.resize_nearest(conv, scale=2., out_shape=out_shape)
 
         output = fluid.layers.elementwise_add(x=right, y=conv)
         return output

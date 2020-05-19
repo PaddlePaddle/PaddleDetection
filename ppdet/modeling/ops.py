@@ -18,17 +18,20 @@ import math
 import six
 
 from paddle import fluid
+from paddle.fluid.layer_helper import LayerHelper
+from paddle.fluid.initializer import NumpyArrayInitializer
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.bbox_utils import bbox_overlaps, box_to_delta
 
 __all__ = [
-    'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
-    'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
-    'MultiBoxHead', 'SSDLiteMultiBoxHead', 'SSDOutputDecoder',
-    'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm', 'DeformConvNorm',
-    'MultiClassSoftNMS', 'LibraBBoxAssigner', 'DeformConv', 'SimpleNMS', 'TopK'
+    'AnchorGenerator', 'AnchorGrid', 'DropBlock', 'RPNTargetAssign',
+    'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
+    'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
+    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
+    'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner', 'DeformConv',
+    'SimpleNMS', 'TopK'
 ]
 
 
@@ -372,6 +375,94 @@ class AnchorGenerator(object):
 
 @register
 @serializable
+class AnchorGrid(object):
+    """Generate anchor grid
+
+    Args:
+        image_size (int or list): input image size, may be a single integer or
+            list of [h, w]. Default: 512
+        min_level (int): min level of the feature pyramid. Default: 3
+        max_level (int): max level of the feature pyramid. Default: 7
+        anchor_base_scale: base anchor scale. Default: 4
+        num_scales: number of anchor scales. Default: 3
+        aspect_ratios: aspect ratios. default: [[1, 1], [1.4, 0.7], [0.7, 1.4]]
+    """
+
+    def __init__(self,
+                 image_size=512,
+                 min_level=3,
+                 max_level=7,
+                 anchor_base_scale=4,
+                 num_scales=3,
+                 aspect_ratios=[[1, 1], [1.4, 0.7], [0.7, 1.4]]):
+        super(AnchorGrid, self).__init__()
+        if isinstance(image_size, Integral):
+            self.image_size = [image_size, image_size]
+        else:
+            self.image_size = image_size
+        for dim in self.image_size:
+            assert dim % 2 ** max_level == 0, \
+                "image size should be multiple of the max level stride"
+        self.min_level = min_level
+        self.max_level = max_level
+        self.anchor_base_scale = anchor_base_scale
+        self.num_scales = num_scales
+        self.aspect_ratios = aspect_ratios
+
+    @property
+    def base_cell(self):
+        if not hasattr(self, '_base_cell'):
+            self._base_cell = self.make_cell()
+        return self._base_cell
+
+    def make_cell(self):
+        scales = [2**(i / self.num_scales) for i in range(self.num_scales)]
+        scales = np.array(scales)
+        ratios = np.array(self.aspect_ratios)
+        ws = np.outer(scales, ratios[:, 0]).reshape(-1, 1)
+        hs = np.outer(scales, ratios[:, 1]).reshape(-1, 1)
+        anchors = np.hstack((-0.5 * ws, -0.5 * hs, 0.5 * ws, 0.5 * hs))
+        return anchors
+
+    def make_grid(self, stride):
+        cell = self.base_cell * stride * self.anchor_base_scale
+        x_steps = np.arange(stride // 2, self.image_size[1], stride)
+        y_steps = np.arange(stride // 2, self.image_size[0], stride)
+        offset_x, offset_y = np.meshgrid(x_steps, y_steps)
+        offset_x = offset_x.flatten()
+        offset_y = offset_y.flatten()
+        offsets = np.stack((offset_x, offset_y, offset_x, offset_y), axis=-1)
+        offsets = offsets[:, np.newaxis, :]
+        return (cell + offsets).reshape(-1, 4)
+
+    def generate(self):
+        return [
+            self.make_grid(2**l)
+            for l in range(self.min_level, self.max_level + 1)
+        ]
+
+    def __call__(self):
+        if not hasattr(self, '_anchor_vars'):
+            anchor_vars = []
+            helper = LayerHelper('anchor_grid')
+            for idx, l in enumerate(range(self.min_level, self.max_level + 1)):
+                stride = 2**l
+                anchors = self.make_grid(stride)
+                var = helper.create_parameter(
+                    attr=ParamAttr(name='anchors_{}'.format(idx)),
+                    shape=anchors.shape,
+                    dtype='float32',
+                    stop_gradient=True,
+                    default_initializer=NumpyArrayInitializer(anchors))
+                anchor_vars.append(var)
+                var.persistable = True
+            self._anchor_vars = anchor_vars
+
+        return self._anchor_vars
+
+
+@register
+@serializable
 class RPNTargetAssign(object):
     __op__ = fluid.layers.rpn_target_assign
     __append_doc__ = True
@@ -552,7 +643,7 @@ class MultiClassSoftNMS(object):
             fluid.default_main_program(),
             name='softnms_pred_result',
             dtype='float32',
-            shape=[6],
+            shape=[-1, 6],
             lod_level=1)
         fluid.layers.py_func(
             func=_soft_nms, x=[bboxes, scores], out=pred_result)
@@ -678,7 +769,7 @@ class MultiClassDiouNMS(object):
 
             cls_boxes = np.vstack(cls_boxes[start_idx:])
             cls_ids = np.vstack(cls_ids[start_idx:])
-            pred_result = np.hstack([cls_ids, cls_boxes])
+            pred_result = np.hstack([cls_ids, cls_boxes]).astype(np.float32)
 
             # Limit to max_per_image detections **over all classes**
             image_scores = cls_boxes[:, 0]
@@ -699,8 +790,8 @@ class MultiClassDiouNMS(object):
             fluid.default_main_program(),
             name='diou_nms_pred_result',
             dtype='float32',
-            shape=[6],
-            lod_level=1)
+            shape=[-1, 6],
+            lod_level=0)
         fluid.layers.py_func(
             func=_diou_nms, x=[bboxes, scores], out=pred_result)
         return pred_result

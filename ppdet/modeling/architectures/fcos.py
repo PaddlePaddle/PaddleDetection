@@ -162,7 +162,7 @@ class FCOS(object):
             for i in range(len(self.fcos_head.fpn_stride)):
                 fields.extend(
                     ['labels%d' % i, 'reg_target%d' % i, 'centerness%d' % i])
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],
