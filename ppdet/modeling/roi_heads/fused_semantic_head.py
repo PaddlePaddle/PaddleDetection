@@ -33,7 +33,11 @@ class FusedSemanticHead(object):
         super(FusedSemanticHead, self).__init__()
         self.semantic_num_class = semantic_num_class
 
-    def get_out(self, fpn_feats, out_c=256, num_convs=4, fusion_level=3):
+    def get_out(self,
+                fpn_feats,
+                out_c=256,
+                num_convs=4,
+                fusion_level='fpn_res3_sum'):
         r"""Multi-level fused semantic segmentation head.
         in_1 -> 1x1 conv ---
                             |
@@ -45,15 +49,16 @@ class FusedSemanticHead(object):
                             |                  \-> 1x1 conv (feature)
         in_5 -> 1x1 conv ---
         """
-        new_feat = fpn_feats['fpn_res3_sum']
+        new_feat = fpn_feats[fusion_level]
+        new_feat_list = [new_feat, ]
         target_shape = fluid.layers.shape(new_feat)[2:]
-        #fluid.layers.Print(target_shape)
         for k, v in fpn_feats.items():
-            if k == 'fpn_res3_sum':
+            if k != 'fpn_res3_sum':
                 v = fluid.layers.resize_bilinear(
                     v, target_shape, align_corners=True)
                 v = fluid.layers.conv2d(v, out_c, 1)
-                new_feat = fluid.layers.sum([new_feat, v])
+                new_feat_list.append(v)
+        new_feat = fluid.layers.sum(new_feat_list)
 
         for i in range(num_convs):
             new_feat = fluid.layers.conv2d(new_feat, out_c, 3, padding=1)
