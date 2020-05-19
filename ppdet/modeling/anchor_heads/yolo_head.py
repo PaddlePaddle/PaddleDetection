@@ -85,8 +85,7 @@ class YOLOv3Head(object):
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
         self.downsample = downsample
-        # TODO(guanzhong) activate scale_x_y in Paddle 2.0
-        #self.scale_x_y = scale_x_y
+        self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
 
     def _conv_bn(self,
@@ -317,8 +316,8 @@ class YOLOv3Head(object):
                                              len(self.anchor_masks[i]),
                                              self.num_classes,
                                              self.iou_aware_factor)
-            #scale_x_y = self.scale_x_y if not isinstance(
-            #    self.scale_x_y, Sequence) else self.scale_x_y[i]
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
             box, score = fluid.layers.yolo_box(
                 x=output,
                 img_size=im_size,
@@ -327,7 +326,8 @@ class YOLOv3Head(object):
                 conf_thresh=self.nms.score_threshold,
                 downsample_ratio=self.downsample[i],
                 name=self.prefix_name + "yolo_box" + str(i),
-                clip_bbox=self.clip_bbox)
+                clip_bbox=self.clip_bbox,
+                scale_x_y=scale_x_y)
             boxes.append(box)
             scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
 
@@ -349,7 +349,7 @@ class YOLOv4Head(YOLOv3Head):
         spp_stage (int): apply spp on which stage.
         num_classes (int): number of output classes
         downsample (list): downsample ratio for each yolo_head
-        scale_x_y (list): scale the left top point of bbox at each stage
+        scale_x_y (list): scale the center point of bbox at each stage
     """
     __inject__ = ['nms', 'yolo_loss']
     __shared__ = ['num_classes', 'weight_prefix_name']
@@ -368,7 +368,7 @@ class YOLOv4Head(YOLOv3Head):
                  num_classes=80,
                  weight_prefix_name='',
                  downsample=[8, 16, 32],
-                 scale_x_y=[1.2, 1.1, 1.05],
+                 scale_x_y=1.0,
                  yolo_loss="YOLOv3Loss",
                  iou_aware=False,
                  iou_aware_factor=0.4,

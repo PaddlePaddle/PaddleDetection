@@ -58,8 +58,7 @@ class YOLOv3Loss(object):
         self._iou_loss = iou_loss
         self._iou_aware_loss = iou_aware_loss
         self.downsample = downsample
-        # TODO(guanzhong) activate scale_x_y in Paddle 2.0
-        #self.scale_x_y = scale_x_y
+        self.scale_x_y = scale_x_y
         self.match_score = match_score
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
@@ -71,8 +70,8 @@ class YOLOv3Loss(object):
         else:
             losses = []
             for i, output in enumerate(outputs):
-                #scale_x_y = self.scale_x_y if not isinstance(
-                #    self.scale_x_y, Sequence) else self.scale_x_y[i]
+                scale_x_y = self.scale_x_y if not isinstance(
+                    self.scale_x_y, Sequence) else self.scale_x_y[i]
                 anchor_mask = anchor_masks[i]
                 loss = fluid.layers.yolov3_loss(
                     x=output,
@@ -85,6 +84,7 @@ class YOLOv3Loss(object):
                     ignore_thresh=self._ignore_thresh,
                     downsample_ratio=self.downsample[i],
                     use_label_smooth=self._label_smooth,
+                    scale_x_y=scale_x_y,
                     name=prefix_name + "yolo_loss" + str(i))
                 losses.append(fluid.layers.reduce_mean(loss))
 
@@ -162,11 +162,11 @@ class YOLOv3Loss(object):
                     loss_iou_aware, dim=[1, 2, 3])
                 loss_iou_awares.append(fluid.layers.reduce_mean(loss_iou_aware))
 
-            #scale_x_y = self.scale_x_y if not isinstance(
-            #    self.scale_x_y, Sequence) else self.scale_x_y[i]
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
                 output, obj, tobj, gt_box, self._batch_size, anchors,
-                num_classes, downsample, self._ignore_thresh)
+                num_classes, downsample, self._ignore_thresh, scale_x_y)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
             loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
@@ -276,7 +276,7 @@ class YOLOv3Loss(object):
         return (tx, ty, tw, th, tscale, tobj, tcls)
 
     def _calc_obj_loss(self, output, obj, tobj, gt_box, batch_size, anchors,
-                       num_classes, downsample, ignore_thresh):
+                       num_classes, downsample, ignore_thresh, scale_x_y):
         # A prediction bbox overlap any gt_bbox over ignore_thresh, 
         # objectness loss will be ignored, process as follows:
 
@@ -290,7 +290,8 @@ class YOLOv3Loss(object):
             class_num=num_classes,
             conf_thresh=0.,
             downsample_ratio=downsample,
-            clip_bbox=False)
+            clip_bbox=False,
+            scale_x_y=scale_x_y)
 
         # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
         #    and gt bbox in each sample
