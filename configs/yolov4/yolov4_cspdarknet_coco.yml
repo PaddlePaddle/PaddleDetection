@@ -5,7 +5,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/CSPDarkNet53_pretrained.pdparams
 weights: output/yolov4_cspdarknet_coco/model_final
 num_classes: 80
 use_fine_grained_loss: true
@@ -38,7 +38,7 @@ YOLOv3Loss:
   # for training batch_size setting, training batch_size setting
   # is in configs/yolov3_reader.yml TrainReader.batch_size, batch
   # size here should be set as same value as TrainReader.batch_size
-  batch_size: 6
+  batch_size: 8
   ignore_thresh: 0.7
   label_smooth: true
   downsample: [8,16,32]
@@ -119,7 +119,7 @@ TrainReader:
               [36, 75], [76, 55], [72, 146],
               [142, 110], [192, 243], [459, 401]]
     downsample_ratios: [8, 16, 32]
-  batch_size: 6
+  batch_size: 8
   shuffle: true
   drop_last: true
   worker_num: 8
