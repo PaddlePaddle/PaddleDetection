@@ -218,7 +218,7 @@ class HTCMaskHead(object):
         Get prediction mask in test stage.
 
         Args:
-            roi_feat (Variable): RoI feature from RoIExtractor.
+            mask_logits (Variable): mask head output features.
             bbox_pred (Variable): predicted bbox.
 
         Returns:

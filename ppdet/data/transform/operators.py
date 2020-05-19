@@ -95,6 +95,7 @@ class DecodeImage(BaseOperator):
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
+            read_semantic (bool): whether or not to read semantic label file 
         """
 
         super(DecodeImage, self).__init__()
@@ -262,13 +263,12 @@ class MultiscaleTestResize(BaseOperator):
 
 @register_op
 class ResizeImage(BaseOperator):
-    def __init__(
-            self,
-            target_size=0,
-            max_size=0,
-            interp=cv2.INTER_LINEAR,
-            use_cv2=True,
-            resize_semantic=False, ):
+    def __init__(self,
+                 target_size=0,
+                 max_size=0,
+                 interp=cv2.INTER_LINEAR,
+                 use_cv2=True,
+                 resize_semantic=False):
         """
         Rescale image to the specified target size, and capped at max_size
         if max_size != 0.
@@ -282,6 +282,7 @@ class ResizeImage(BaseOperator):
             interp (int): the interpolation method
             use_cv2 (bool): use the cv2 interpolation method or use PIL
                 interpolation method
+            resize_semantic (bool): whether or not to resize semantic label
         """
         super(ResizeImage, self).__init__()
         self.max_size = int(max_size)
@@ -383,6 +384,7 @@ class RandomFlipImage(BaseOperator):
             prob (float): the probability of flipping image
             is_normalized (bool): whether the bbox scale to [0,1]
             is_mask_flip (bool): whether flip the segmentation
+            is_semantic_flip (bool): whether flip the semantic label 
         """
         super(RandomFlipImage, self).__init__()
         self.prob = prob

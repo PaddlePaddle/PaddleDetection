@@ -45,6 +45,7 @@ class PadBatch(BaseOperator):
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
             height and width is divisible by `pad_to_stride`.
+        pad_semantic (bool): Wether pad the semantic label  
     """
 
     def __init__(self,
