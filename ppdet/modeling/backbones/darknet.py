@@ -67,23 +67,24 @@ class DarkNet(object):
             stride=stride,
             padding=padding,
             act=None,
-            param_attr=ParamAttr(name=name + ".conv.weight"),
+            param_attr=ParamAttr(name=name + ".conv.weights"),
             bias_attr=False)
 
         bn_name = name + ".bn"
         bn_param_attr = ParamAttr(
             regularizer=L2Decay(float(self.norm_decay)),
-            name=bn_name + '.weight')
+            name=bn_name + '.scale')
         bn_bias_attr = ParamAttr(
-            regularizer=L2Decay(float(self.norm_decay)), name=bn_name + '.bias')
+            regularizer=L2Decay(float(self.norm_decay)),
+            name=bn_name + '.offset')
 
         out = fluid.layers.batch_norm(
             input=conv,
             act=None,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
-            moving_mean_name=bn_name + '.running_mean',
-            moving_variance_name=bn_name + '.running_var')
+            moving_mean_name=bn_name + '.mean',
+            moving_variance_name=bn_name + '.var')
 
         # leaky relu here has `alpha` as 0.1, can not be set by
         # `act` param in fluid.layers.batch_norm above.
@@ -143,7 +144,6 @@ class DarkNet(object):
         """
         stages, block_func = self.depth_cfg[self.depth]
         stages = stages[0:5]
-        fluid.layers.Print(input)
         conv = self._conv_norm(
             input=input,
             ch_out=32,
@@ -154,7 +154,7 @@ class DarkNet(object):
         downsample_ = self._downsample(
             input=conv,
             ch_out=conv.shape[1] * 2,
-            name=self.prefix_name + "darknet_stem.downsample")
+            name=self.prefix_name + "yolo_input.downsample")
         blocks = []
         for i, stage in enumerate(stages):
             block = self.layer_warp(

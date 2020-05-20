@@ -97,8 +97,8 @@ class GiouLoss(object):
             x1, y1, x2, y2 = fluid.layers.split(x, num_or_sections=4, dim=1)
             x1g, y1g, x2g, y2g = fluid.layers.split(y, num_or_sections=4, dim=1)
 
-        x2 = fluid.layers.elementwise_max(x1, x2)
-        y2 = fluid.layers.elementwise_max(y1, y2)
+        #x2 = fluid.layers.elementwise_max(x1, x2)
+        #y2 = fluid.layers.elementwise_max(y1, y2)
 
         xkis1 = fluid.layers.elementwise_max(x1, x1g)
         ykis1 = fluid.layers.elementwise_max(y1, y1g)
@@ -110,15 +110,20 @@ class GiouLoss(object):
         xc2 = fluid.layers.elementwise_max(x2, x2g)
         yc2 = fluid.layers.elementwise_max(y2, y2g)
 
-        intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
-        intsctk = intsctk * fluid.layers.greater_than(
-            xkis2, xkis1) * fluid.layers.greater_than(ykis2, ykis1)
+        zero = fluid.layers.fill_constant([1, 1], dtype='float32', value=0)
+        inter_w = fluid.layers.elementwise_max(xkis2 - xkis1 + 1, zero)
+        inter_h = fluid.layers.elementwise_max(ykis2 - ykis1 + 1, zero)
 
-        unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
-                                                        ) - intsctk + eps
+        enclose_w = fluid.layers.elementwise_max(xc2 - xc1 + 1, zero)
+        enclose_h = fluid.layers.elementwise_max(yc2 - yc1 + 1, zero)
+
+        intsctk = inter_w * inter_h
+
+        unionk = (x2 - x1 + 1) * (y2 - y1 + 1) + (x2g - x1g + 1) * (y2g - y1g +
+                                                                    1) - intsctk
         iouk = intsctk / unionk
 
-        area_c = (xc2 - xc1) * (yc2 - yc1) + eps
+        area_c = enclose_w * enclose_h
         miouk = iouk - ((area_c - unionk) / area_c)
 
         iou_weights = 1
@@ -137,7 +142,9 @@ class GiouLoss(object):
             class_weight = 2 if self.is_cls_agnostic else self.num_classes
             miouk = fluid.layers.reduce_mean((1 - miouk) * iou_weights)
         else:
-            miouk = fluid.layers.reduce_sum((1 - miouk) * iou_weights)
+            iou_distance = fluid.layers.elementwise_mul(
+                1 - miouk, iou_weights, axis=0)
+            miouk = fluid.layers.reduce_sum(iou_distance)
 
         if self.use_class_weight:
             miouk = miouk * self.class_weight

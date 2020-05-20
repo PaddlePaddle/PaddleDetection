@@ -99,11 +99,7 @@ class TTFHead(object):
         conv = DeformConv(x, out_c, 3, bias_attr=True, name=name + '.0')
         norm_name = name + '.1'
         pattr = ParamAttr(name=norm_name + '.weight', initializer=Constant(1.))
-        battr = ParamAttr(
-            name=norm_name + '.bias',
-            initializer=Constant(0.),
-            learning_rate=2.,
-            regularizer=L2Decay(0.))
+        battr = ParamAttr(name=norm_name + '.bias', initializer=Constant(0.))
         bn = fluid.layers.batch_norm(
             input=conv,
             act='relu',
@@ -175,6 +171,7 @@ class TTFHead(object):
 
         hm = self.hm_head(feat, name=name + '.hm')
         wh = self.wh_head(feat, name=name + '.wh') * self.wh_offset_base
+
         return hm, wh
 
     def get_bboxes(self, heatmap, wh, scale_factor):
@@ -230,6 +227,7 @@ class TTFHead(object):
 
     def filter_box_by_weight(self, pred, target, weight):
         index = fluid.layers.where(weight > 0)
+        index.stop_gradient = True
         weight = fluid.layers.gather_nd(weight, index)
         pred = fluid.layers.gather_nd(pred, index)
         target = fluid.layers.gather_nd(target, index)
@@ -242,24 +240,23 @@ class TTFHead(object):
         H, W = target_hm.shape[2:]
         mask = fluid.layers.reshape(target_weight, [-1, H, W])
         avg_factor = fluid.layers.reduce_sum(mask) + 1e-4
-
         base_step = self.down_ratio
         shifts_x = paddle.arange(0, W * base_step, base_step)
         shifts_y = paddle.arange(0, H * base_step, base_step)
         shift_y, shift_x = paddle.tensor.meshgrid([shifts_y, shifts_x])
-        self.base_loc = fluid.layers.stack([shift_x, shift_y], axis=0)
+        base_loc = fluid.layers.stack([shift_x, shift_y], axis=0)
+        base_loc.stop_gradient = True
 
         pred_boxes = fluid.layers.concat(
-            [
-                0 - pred_wh[:, 0:2, :, :] + self.base_loc,
-                pred_wh[:, 2:4] + self.base_loc
-            ],
+            [0 - pred_wh[:, 0:2, :, :] + base_loc, pred_wh[:, 2:4] + base_loc],
             axis=1)
         pred_boxes = fluid.layers.transpose(pred_boxes, [0, 2, 3, 1])
         boxes = fluid.layers.transpose(box_target, [0, 2, 3, 1])
+        boxes.stop_gradient = True
 
         pred_boxes, boxes, mask = self.filter_box_by_weight(pred_boxes, boxes,
                                                             mask)
+        mask.stop_gradient = True
         wh_loss = self.wh_loss(
             pred_boxes, boxes, outside_weight=mask, use_transform=False)
         wh_loss = wh_loss / avg_factor

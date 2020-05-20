@@ -95,7 +95,7 @@ def DeformConv(input,
                name=None):
     if bias_attr:
         bias_para = ParamAttr(
-            name=name + ".bias",
+            name=name + "_bias",
             initializer=fluid.initializer.Constant(value=0),
             learning_rate=lr_scale * 2)
     else:
@@ -106,7 +106,7 @@ def DeformConv(input,
         stride=stride,
         padding=(filter_size - 1) // 2,
         act=None,
-        name=name + ".conv_offset_mask")
+        name=name + "_conv_offset")
     offset_channel = filter_size**2 * 2
     mask_channel = filter_size**2
     offset, mask = fluid.layers.split(
@@ -127,7 +127,7 @@ def DeformConv(input,
         deformable_groups=1,
         im2col_step=1,
         param_attr=ParamAttr(
-            name=name + ".weight",
+            name=name + "_weight",
             initializer=initializer,
             learning_rate=lr_scale),
         bias_attr=bias_para,

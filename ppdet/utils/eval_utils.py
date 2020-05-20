@@ -131,7 +131,6 @@ def eval_run(exe,
                 k: (np.array(v), v.recursive_sequence_lengths())
                 for k, v in zip(keys, outs)
             }
-            #print('res bbox: ', res['bbox'])
             multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
             mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
 

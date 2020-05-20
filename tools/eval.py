@@ -140,7 +140,6 @@ def main():
     exe.run(startup_prog)
     if 'weights' in cfg:
         checkpoint.load_params(exe, startup_prog, cfg.weights)
-    #checkpoint.save(exe, startup_prog, './output/ttfnet/init_model')
 
     resolution = None
     if 'Mask' in cfg.architecture:
