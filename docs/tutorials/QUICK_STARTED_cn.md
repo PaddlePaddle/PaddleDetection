@@ -24,21 +24,21 @@ python dataset/fruit/download_fruit.py
 
 ```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_tb=True \
-                        --tb_log_dir=tb_fruit_dir/scalar \
+                        --use_vdl=True \
+                        --vdl_log_dir=vdl_fruit_dir/scalar \
                         --eval
 ```
 
-训练使用`yolov3_mobilenet_v1`基于COCO数据集训练好的模型进行finetune。训练期间可以通过tensorboard实时观察loss和精度值，启动命令如下：
+训练使用`yolov3_mobilenet_v1`基于COCO数据集训练好的模型进行finetune。训练期间可以通过VisualDL实时观察loss和精度值，启动命令如下：
 
 ```bash
-tensorboard --logdir tb_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
-tensorboard结果显示如下：
+VisualDL结果显示如下：
 
 
-![](../images/tensorboard_fruit.jpg)
+![](../images/visualdl_fruit.jpg)
 
 训练模型[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
