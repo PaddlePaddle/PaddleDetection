@@ -41,8 +41,8 @@ list below can be viewed by `--help`
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
 |      --infer_img         |       infer     |  Image path  |  None  |  higher priority over --infer_dir  |
-|        --use_tb          |   train/infer   |  Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard  |  False  |      |
-|        --tb\_log_dir     |   train/infer   |  tb-paddle logging directory for image  |  train:`tb_log_dir/scalar` infer: `tb_log_dir/image`  |     |
+|        --use_vdl          |   train/infer   |  Whether to record the data with [VisualDL](https://github.com/paddlepaddle/visualdl), so as to display in VisualDL  |  False  |      |
+|        --vdl\_log_dir     |   train/infer   |  VisualDL logging directory for image  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |     |
 
 
 ## Examples
@@ -163,7 +163,7 @@ moment, but it is a planned feature
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/faster_rcnn_r50_1x/model_final \
-                      --use_tb=Ture
+                      --use_vdl=Ture
   ```
 
   `--draw_threshold` is an optional argument. Default is 0.5.
