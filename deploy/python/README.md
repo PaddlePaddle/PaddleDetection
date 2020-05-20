@@ -45,7 +45,7 @@ python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/
 | --image_file | Yes |需要预测的图片 |
 | --video_file | Yes |需要预测的视频 |
 | --use_gpu |No|是否GPU，默认为False|
-| --run_mode |No|使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --run_mode |No|使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
 | --threshold |No|预测得分的阈值，默认为0.5|
 | --output_dir |No|可视化结果保存的根目录，默认为output/|
 

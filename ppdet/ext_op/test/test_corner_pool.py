@@ -17,7 +17,14 @@ from __future__ import print_function
 import unittest
 import numpy as np
 import paddle.fluid as fluid
-import cornerpool_lib
+import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
+from ppdet.ext_op import cornerpool_lib
 
 
 def bottom_pool_np(x):
@@ -83,11 +90,7 @@ class TestRightPoolOp(unittest.TestCase):
         place = fluid.CUDAPlace(0)
 
         with fluid.program_guard(tp, sp):
-            x = fluid.data(
-                name=self.name,
-                shape=x_shape,
-                dtype=x_type,
-                append_batch_size=False)
+            x = fluid.data(name=self.name, shape=x_shape, dtype=x_type)
             y = self.func_map[self.name][0](x)
 
             np.random.seed(0)

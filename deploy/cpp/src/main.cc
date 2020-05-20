@@ -25,6 +25,7 @@ DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_path, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
+DEFINE_string(run_mode, "fluid", "mode of running(fluid/trt_fp32/trt_fp16)");
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
@@ -93,7 +94,10 @@ void PredictImage(const std::string& image_path,
   auto colormap = PaddleDetection::GenerateColorMap(labels.size());
   cv::Mat vis_img = PaddleDetection::VisualizeResult(
       im, result, labels, colormap);
-  cv::imwrite("output.jpeg", vis_img);
+  std::vector<int> compression_params;
+  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+  compression_params.push_back(95);
+  cv::imwrite("output.jpeg", vis_img, compression_params);
   printf("Visualized output saved as output.jpeg\n");
 }
 
@@ -102,13 +106,19 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_model_dir.empty()
       || (FLAGS_image_path.empty() && FLAGS_video_path.empty())) {
-      std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
+    std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
                 << "--image_path=/PATH/TO/INPUT/IMAGE/" << std::endl;
-      return -1;
+    return -1;
+  }
+  if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
+      || FLAGS_run_mode == "trt_fp16")) {
+    std::cout << "run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'.";
+    return -1;
   }
 
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu);
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
+    FLAGS_run_mode);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty()) {
     PredictVideo(FLAGS_video_path, &det);
