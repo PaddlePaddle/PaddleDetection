@@ -196,8 +196,7 @@ def main():
                 original_image_np = np.array(image)
                 vdl_writer.add_image(
                     "original/frame_{}".format(vdl_image_frame),
-                    original_image_np,
-                    vdl_image_step)
+                    original_image_np, vdl_image_step)
 
             image = visualize_results(image,
                                       int(im_id), catid2name,
@@ -207,10 +206,8 @@ def main():
             # use VisualDL to log image with bbox
             if FLAGS.use_vdl:
                 infer_image_np = np.array(image)
-                vdl_writer.add_image(
-                    "bbox/frame_{}".format(vdl_image_frame),
-                    infer_image_np,
-                    vdl_image_step)
+                vdl_writer.add_image("bbox/frame_{}".format(vdl_image_frame),
+                                     infer_image_np, vdl_image_step)
                 vdl_image_step += 1
                 if vdl_image_step % 10 == 0:
                     vdl_image_step = 0
