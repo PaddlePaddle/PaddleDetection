@@ -22,20 +22,20 @@ Training:
 
 ```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_tb=True \
-                        --tb_log_dir=tb_fruit_dir/scalar \
+                        --use_vdl=True \
+                        --vdl_log_dir=vdl_fruit_dir/scalar \
                         --eval
 ```
 
-Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on tensorboard.  
+Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on VisualDL.
 
 ```bash
-tensorboard --logdir tb_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
-Result on tensorboard is shown below:
+Result on VisualDL is shown below:
 
-![tensorboard_fruit.jpg](../images/tensorboard_fruit.jpg)
+![visualdl_fruit.jpg](../images/visualdl_fruit.jpg)
 
 Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
