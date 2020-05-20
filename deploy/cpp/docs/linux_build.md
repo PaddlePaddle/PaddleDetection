@@ -106,7 +106,7 @@ make
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --image_path=/root/projects/images/test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
 
 
 `样例二`:
@@ -114,4 +114,4 @@ make
 #使用 `GPU`预测视频`/root/projects/videos/test.avi`
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.avi --use_gpu=1
 ```
-视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
+视频文件`可视化预测结果`会保存在当前目录下`output.avi`文件中。
