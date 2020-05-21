@@ -222,12 +222,12 @@ def main():
     time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
-    # use tb-paddle to log data
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_loss_step = 0
-        tb_mAP_step = 0
+    # use VisualDL to log data
+    if FLAGS.use_vdl:
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_loss_step = 0
+        vdl_mAP_step = 0
 
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
@@ -239,12 +239,12 @@ def main():
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
-        # use tb-paddle to log loss
-        if FLAGS.use_tb:
+        # use vdl-paddle to log loss
+        if FLAGS.use_vdl:
             if it % cfg.log_iter == 0:
                 for loss_name, loss_value in stats.items():
-                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
-                tb_loss_step += 1
+                    vdl_writer.add_scalar(loss_name, loss_value, vdl_loss_step)
+                vdl_loss_step += 1
 
         train_stats.update(stats)
         logs = train_stats.log()
@@ -287,10 +287,10 @@ def main():
                     is_bbox_normalized, FLAGS.output_eval, map_type,
                     cfg['EvalReader']['dataset'])
 
-                # use tb_paddle to log mAP
-                if FLAGS.use_tb:
-                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
-                    tb_mAP_step += 1
+                # use vdl_paddle to log mAP
+                if FLAGS.use_vdl:
+                    vdl_writer.add_scalar("mAP", box_ap_stats[0], vdl_mAP_step)
+                    vdl_mAP_step += 1
 
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
@@ -335,15 +335,15 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
+        default="vdl_log_dir/scalar",
+        help='VisualDL logging directory for scalar.')
     parser.add_argument(
         "--enable_ce",
         type=bool,
