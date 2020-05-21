@@ -35,6 +35,7 @@
 **注意:**
 
 - 模型FPS在Tesla V100单卡环境中通过tools/eval.py进行测试
+- CornerNet-Squeeze要求使用PaddlePaddle1.8及以上版本或适当的develop版本
 - CornerNet-Squeeze中使用ResNet结构的骨干网络时，加入了FPN结构，骨干网络的输出feature map采用FPN中的P3层输出。
 - \*CornerNet-Squeeze-dcn-mixup-cosine是基于原版CornerNet-Squeeze优化效果最好的模型，在ResNet的骨干网络基础上增加mixup预处理和使用cosine_decay
 - FCOS使用GIoU loss、用location分支预测centerness、左上右下角点偏移量归一化和ground truth中心匹配策略

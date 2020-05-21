@@ -22,6 +22,7 @@ from paddle import fluid
 
 from ppdet.core.workspace import register
 import numpy as np
+from ppdet.utils.check import check_version
 
 __all__ = ['CornerNetSqueeze']
 
@@ -48,6 +49,7 @@ class CornerNetSqueeze(object):
                  corner_head='CornerHead',
                  num_classes=80,
                  fpn=None):
+        check_version('1.8.0')
         super(CornerNetSqueeze, self).__init__()
         self.backbone = backbone
         self.corner_head = corner_head
