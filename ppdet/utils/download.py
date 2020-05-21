@@ -79,6 +79,7 @@ DATASETS = {
         'baa8806617a54ccf3685fa7153388ae6', ), ],
               ['Annotations', 'JPEGImages']),
     'objects365': (),
+    'traffic': (),
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
@@ -98,7 +99,7 @@ def get_dataset_path(path, annotation, image_dir):
     Otherwise, get dataset path from DATASET_HOME, if not exists,
     download it.
     """
-    if _dataset_exists(path, annotation, image_dir):
+    if _dataset_exists(osp.realpath(path), annotation, image_dir):
         return path
 
     logger.info("Dataset {} is not valid for reason above, try searching {} or "
@@ -232,9 +233,9 @@ def _dataset_exists(path, annotation, image_dir):
 
     if annotation:
         annotation_path = osp.join(path, annotation)
-        if not osp.isfile(annotation_path):
+        if not osp.exists(annotation_path):
             logger.debug("Config annotation {} is not a "
-                         "file, dataset config is not "
+                         "file or dir, dataset config is not "
                          "valid".format(annotation_path))
             return False
     if image_dir:

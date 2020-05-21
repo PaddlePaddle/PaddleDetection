@@ -97,14 +97,16 @@ def main():
     if cfg.metric == "WIDERFACE":
         raise ValueError("metric type {} does not support in tools/eval.py, "
                          "please use tools/face_eval.py".format(cfg.metric))
-    assert cfg.metric in ['COCO', 'VOC'], \
-            "unknown metric type {}".format(cfg.metric)
+    #assert cfg.metric in ['COCO', 'VOC'], \
+    #        "unknown metric type {}".format(cfg.metric)
     extra_keys = []
 
     if cfg.metric == 'COCO':
         extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
+    elif cfg.metric == 'VOC':
         extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
+    else:
+        extra_keys = ['gt_bbox', 'gt_class', 'im_id']
 
     keys, values, cls = parse_fetches(fetches, eval_prog, extra_keys)
 
@@ -147,7 +149,18 @@ def main():
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values, resolution)
 
-    #print(cfg['EvalReader']['dataset'].__dict__)
+    if cfg.metric == 'traffic':
+        from ppdet.utils.traffic_eval import get_category_info, bbox2out, write_output
+        with_background = dataset.with_background
+        dataset_dir = dataset.dataset_dir
+        im_info_file = os.path.join(dataset_dir, 'data_info.txt')
+        clsid2catid, catid2name = get_category_info(
+            with_background=with_background)
+        xywh_results = bbox2out(
+            results, clsid2catid, is_bbox_normalized=is_bbox_normalized)
+        write_output(
+            xywh_results, im_info_file, catid2name, outfile='bbox.json')
+
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'

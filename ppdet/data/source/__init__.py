@@ -15,7 +15,9 @@
 from . import coco
 from . import voc
 from . import widerface
+from . import traffic
 
 from .coco import *
 from .voc import *
 from .widerface import *
+from .traffic import *
