@@ -19,8 +19,8 @@ namespace PaddleDetection {
 // Load Model and create model predictor
 void ObjectDetector::LoadModel(const std::string& model_dir,
                                bool use_gpu,
-                               const int batch_size,
                                const int min_subgraph_size,
+                               const int batch_size,
                                const std::string& run_mode) {
   paddle::AnalysisConfig config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
