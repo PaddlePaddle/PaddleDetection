@@ -22,6 +22,7 @@ from paddle import fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3', 'YOLOv4']
 
@@ -180,6 +181,7 @@ class YOLOv4(YOLOv3):
                  backbone,
                  yolo_head='YOLOv4Head',
                  use_fine_grained_loss=False):
+        check_version('2.0.0')
         super(YOLOv4, self).__init__(
             backbone=backbone,
             yolo_head=yolo_head,
