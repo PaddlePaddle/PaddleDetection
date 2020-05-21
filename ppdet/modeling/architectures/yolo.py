@@ -181,7 +181,6 @@ class YOLOv4(YOLOv3):
                  backbone,
                  yolo_head='YOLOv4Head',
                  use_fine_grained_loss=False):
-        check_version('2.0.0')
         super(YOLOv4, self).__init__(
             backbone=backbone,
             yolo_head=yolo_head,

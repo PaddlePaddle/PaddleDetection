@@ -16,12 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 from paddle import fluid
 from ppdet.core.workspace import register
 try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['YOLOv3Loss']
 
@@ -73,19 +76,39 @@ class YOLOv3Loss(object):
                 scale_x_y = self.scale_x_y if not isinstance(
                     self.scale_x_y, Sequence) else self.scale_x_y[i]
                 anchor_mask = anchor_masks[i]
-                loss = fluid.layers.yolov3_loss(
-                    x=output,
-                    gt_box=gt_box,
-                    gt_label=gt_label,
-                    gt_score=gt_score,
-                    anchors=anchors,
-                    anchor_mask=anchor_mask,
-                    class_num=num_classes,
-                    ignore_thresh=self._ignore_thresh,
-                    downsample_ratio=self.downsample[i],
-                    use_label_smooth=self._label_smooth,
-                    scale_x_y=scale_x_y,
-                    name=prefix_name + "yolo_loss" + str(i))
+                try:
+                    loss = fluid.layers.yolov3_loss(
+                        x=output,
+                        gt_box=gt_box,
+                        gt_label=gt_label,
+                        gt_score=gt_score,
+                        anchors=anchors,
+                        anchor_mask=anchor_mask,
+                        class_num=num_classes,
+                        ignore_thresh=self._ignore_thresh,
+                        downsample_ratio=self.downsample[i],
+                        use_label_smooth=self._label_smooth,
+                        scale_x_y=scale_x_y,
+                        name=prefix_name + "yolo_loss" + str(i))
+                except:
+                    logger.warn(
+                        "The scale_x_y is not activated at the "
+                        "current Paddle version: {}. If you do need scale_x_y,"
+                        " please update Paddle to 2.0.0-alpha or higher, or "
+                        "suitable develop version.".format(paddle.__version__))
+                    loss = fluid.layers.yolov3_loss(
+                        x=output,
+                        gt_box=gt_box,
+                        gt_label=gt_label,
+                        gt_score=gt_score,
+                        anchors=anchors,
+                        anchor_mask=anchor_mask,
+                        class_num=num_classes,
+                        ignore_thresh=self._ignore_thresh,
+                        downsample_ratio=self.downsample[i],
+                        use_label_smooth=self._label_smooth,
+                        name=prefix_name + "yolo_loss" + str(i))
+
                 losses.append(fluid.layers.reduce_mean(loss))
 
             return {'loss': sum(losses)}
@@ -282,16 +305,32 @@ class YOLOv3Loss(object):
 
         # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
         # NOTE: img_size is set as 1.0 to get noramlized pred bbox
-        bbox, prob = fluid.layers.yolo_box(
-            x=output,
-            img_size=fluid.layers.ones(
-                shape=[batch_size, 2], dtype="int32"),
-            anchors=anchors,
-            class_num=num_classes,
-            conf_thresh=0.,
-            downsample_ratio=downsample,
-            clip_bbox=False,
-            scale_x_y=scale_x_y)
+        try:
+            bbox, prob = fluid.layers.yolo_box(
+                x=output,
+                img_size=fluid.layers.ones(
+                    shape=[batch_size, 2], dtype="int32"),
+                anchors=anchors,
+                class_num=num_classes,
+                conf_thresh=0.,
+                downsample_ratio=downsample,
+                clip_bbox=False,
+                scale_x_y=scale_x_y)
+        except:
+            logger.warn("The scale_x_y is not activated at the "
+                        "current Paddle version: {}. If you do need scale_x_y, "
+                        "please update Paddle to 2.0.0-alpha or higher, "
+                        "or suitable develop version.".format(
+                            paddle.__version__))
+            bbox, prob = fluid.layers.yolo_box(
+                x=output,
+                img_size=fluid.layers.ones(
+                    shape=[batch_size, 2], dtype="int32"),
+                anchors=anchors,
+                class_num=num_classes,
+                conf_thresh=0.,
+                downsample_ratio=downsample,
+                clip_bbox=False)
 
         # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
         #    and gt bbox in each sample
