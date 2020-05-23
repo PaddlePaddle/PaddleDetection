@@ -175,44 +175,6 @@ class HTCMaskHead(object):
             loss_mask_dict[loss_name] = loss_mask
         return loss_mask_dict
 
-    def get_loss_(self,
-                  mask_logits_list,
-                  mask_int32_list,
-                  cascade_loss_weights=[1.0, 0.5, 0.25]):
-        loss_mask_dict = {}
-        for i, (mask_logits, mask_int32
-                ) in enumerate(zip(mask_logits_list, mask_int32_list)):
-            mask_logits = fluid.layers.transpose(mask_logits, [0, 2, 3, 1])
-            mask_logits = fluid.layers.reshape(mask_logits,
-                                               (-1, self.num_classes))
-
-            mask_label = fluid.layers.reshape(mask_int32, (
-                -1, self.resolution, self.resolution, self.num_classes))
-            #mask_label = fluid.layers.reshape(mask_int32, (-1, self.num_classes, self.resolution, self.resolution)) 
-            #mask_label = fluid.layers.transpose(mask_label, [0,2,3,1])
-            mask_label = fluid.layers.reduce_max(mask_label, dim=3)
-            mask_label = fluid.layers.reshape(mask_label, [-1, 1])
-            mask_label = fluid.layers.cast(x=mask_label, dtype='int64')
-
-            loss_name = 'loss_mask_' + str(i)
-            loss_mask, probs = fluid.layers.softmax_with_cross_entropy(
-                mask_logits, mask_label, ignore_index=0, return_softmax=True)
-
-            ignore_mask = (mask_label.astype('int32') != 0).astype('int32')
-            if ignore_mask is not None:
-                ignore_mask = fluid.layers.cast(ignore_mask, 'float32')
-                ignore_mask = fluid.layers.reshape(ignore_mask, [-1, 1])
-                ignore_mask.stop_gradient = True
-                loss_mask = loss_mask * ignore_mask
-                loss_mask = fluid.layers.mean(loss_mask) / fluid.layers.mean(
-                    ignore_mask)
-            else:
-                loss_mask = fluid.layers.mean(loss_mask)
-
-            mask_label.stop_gradient = True
-            loss_mask_dict[loss_name] = loss_mask * cascade_loss_weights[i]
-        return loss_mask_dict
-
     def get_prediction(self, mask_logits, bbox_pred):
         """
         Get prediction mask in test stage.

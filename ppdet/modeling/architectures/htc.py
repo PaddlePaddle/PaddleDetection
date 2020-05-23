@@ -46,6 +46,8 @@ class HybridTaskCascade(object):
         mask_assigner (object): `MaskAssigner` instance
         mask_head (object): `HTCMaskHead` instance
         fpn (object): feature pyramid network instance
+        semantic_roi_extractor(object): ROI extractor instance 
+        fused_semantic_head (object): `FusedSemanticHeadi` instance 
     """
 
     __category__ = 'architecture'
@@ -201,11 +203,13 @@ class HybridTaskCascade(object):
 
             # Mask Branch 
             if self.with_mask:
-                if not self.interleaved and i < 2:
-                    continue
-                elif mode == 'train':
+                if mode == 'train':
                     labels_int32 = outs[1]
-                    # interleaved default is True 
+                    if self.interleaved:
+                        refined_bbox = self._decode_box(
+                            proposals, bbox_pred, curr_stage=i)
+                        proposals = refined_bbox
+
                     mask_rois, roi_has_mask_int32, mask_int32 = self.mask_assigner(
                         rois=proposals,
                         gt_classes=feed_vars['gt_class'],
@@ -245,7 +249,10 @@ class HybridTaskCascade(object):
                             feat, return_logits=True, name='_' + str(i))
                     mask_logits_list.append(mask_logits)
 
-            if i < self.num_stage - 1:
+            if i < self.num_stage - 1 and not self.interleaved:
+                refined_bbox = self._decode_box(
+                    proposals, bbox_pred, curr_stage=i)
+            elif mode != 'train':
                 refined_bbox = self._decode_box(
                     proposals, bbox_pred, curr_stage=i)
 
@@ -333,10 +340,9 @@ class HybridTaskCascade(object):
                                                                 mask_rois)
                 if semantic_roi_feat is not None:
                     mask_feat = fluid.layers.sum([mask_feat, semantic_roi_feat])
-
+            mask_logits_list = []
             mask_pred_list = []
             last_feat = None
-            #for i in range(self.num_stage):
             for i in range(self.num_stage):
                 if self.mask_info_flow:
                     for j in range(i):
@@ -346,12 +352,13 @@ class HybridTaskCascade(object):
                             return_logits=False,
                             return_feat=True,
                             name='_' + str(i) + '_' + str(j))
-                    mask_logits = self.mask_head.get_output(
+                    mask_logits, last_feat = self.mask_head.get_output(
                         mask_feat,
                         last_feat,
                         return_logits=True,
-                        return_feat=False,
+                        return_feat=True,
                         name='_' + str(i))
+                    mask_logits_list.append(mask_logits)
                 else:
                     mask_logits = self.mask_head.get_output(
                         mask_feat,
@@ -362,7 +369,7 @@ class HybridTaskCascade(object):
                 mask_pred_list.append(mask_pred_out)
             mask_pred_out = fluid.layers.sum(mask_pred_list) / float(
                 len(mask_pred_list))
-
+            mask_pred_out = self.mask_head.get_prediction(mask_logits, bbox)
             fluid.layers.assign(input=mask_pred_out, output=mask_pred)
 
         fluid.layers.cond(cond, noop, process_boxes)

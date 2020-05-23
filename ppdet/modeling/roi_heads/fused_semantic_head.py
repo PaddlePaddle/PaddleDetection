@@ -58,6 +58,7 @@ class FusedSemanticHead(object):
                     v, target_shape, align_corners=True)
                 v = fluid.layers.conv2d(v, out_c, 1)
                 new_feat_list.append(v)
+                #fluid.layers.Print(fluid.layers.shape(v))
         new_feat = fluid.layers.sum(new_feat_list)
 
         for i in range(num_convs):
@@ -72,13 +73,12 @@ class FusedSemanticHead(object):
     def get_loss(self, logit, label, weight=None, ignore_index=255):
         label = fluid.layers.resize_nearest(label,
                                             fluid.layers.shape(logit)[2:])
-        #label = fluid.layers.elementwise_min(
-        #    label, fluid.layers.assign(np.array([num_classes - 1], dtype=np.int32)))
         label = fluid.layers.reshape(label, [-1, 1])
         label = fluid.layers.cast(label, 'int64')
 
         logit = fluid.layers.transpose(logit, [0, 2, 3, 1])
         logit = fluid.layers.reshape(logit, [-1, self.semantic_num_class])
+
         if weight is None:
             loss, probs = fluid.layers.softmax_with_cross_entropy(
                 logit, label, ignore_index=ignore_index, return_softmax=True)
@@ -132,4 +132,5 @@ class FusedSemanticHead(object):
         else:
             avg_loss = fluid.layers.mean(loss)
         label.stop_gradient = True
+
         return avg_loss

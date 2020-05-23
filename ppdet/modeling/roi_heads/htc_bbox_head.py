@@ -25,7 +25,7 @@ from ppdet.modeling.ops import MultiClassNMS
 from ppdet.modeling.ops import ConvNorm
 from ppdet.modeling.losses import SmoothL1Loss
 from ppdet.core.workspace import register
-from .cascade_head import CascadeBBoxHead 
+from .cascade_head import CascadeBBoxHead
 
 __all__ = ['HTCBBoxHead']
 
@@ -100,7 +100,7 @@ class HTCBBoxHead(CascadeBBoxHead):
         for i in range(repreat_num):
             # cls score
             cls_score, _ = self.get_output(
-                roi_feat_list[i],  # roi_feat_3
+                roi_feat_list[-1],  # roi_feat_3
                 name='_' + str(i + 1) if i > 0 else '')
             cls_prob = fluid.layers.softmax(cls_score, use_cudnn=False)
             boxes_cls_prob_l.append(cls_prob)
@@ -136,4 +136,3 @@ class HTCBBoxHead(CascadeBBoxHead):
             return {'bbox': box_out, 'score': boxes_cls_prob_mean}
         pred_result = self.nms(bboxes=box_out, scores=boxes_cls_prob_mean)
         return {"bbox": pred_result}
-
