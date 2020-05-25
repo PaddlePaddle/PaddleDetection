@@ -1,13 +1,12 @@
 architecture: HybridTaskCascade
 use_gpu: true
-max_iters: 150000
+max_iters: 90000
 snapshot_iter: 10000
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
-#weights: output/htc_r50_fpn_1x/model_final
-weights: output/htc_r50_fpn_1x/30000
+weights: output/htc_r50_fpn_1x/model_final
 num_classes: 81
 
 TrainReader:
@@ -178,17 +177,13 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [60000, 90000]
+    milestones: [60000, 80000]
   - !LinearWarmup
-    start_factor: 0.1 #0.3333333333333333
+    start_factor: 0.1 
     steps: 1000
-  #schedulers:
-  #- !ExponentialDecay
-  #  max_iter: 100000
-  #  decay_rate: 0.05
 
 OptimizerBuilder:
-  clip_grad_by_norm: 10.0 #35.0
+  clip_grad_by_norm: 35.0
   optimizer:
     momentum: 0.9
     type: Momentum
