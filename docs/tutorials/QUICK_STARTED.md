@@ -4,10 +4,9 @@ English | [简体中文](QUICK_STARTED_cn.md)
 
 This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 20min with good performance.
 
-- **Note: before started, need to set PYTHONPATH and specifiy the GPU device as follows in Linux platform. For Windows users, also need to set PYTHONPATH correctly.**
+- **Note: before started, need to specifiy the GPU device as follows.**
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0
 ```
 
@@ -23,20 +22,20 @@ Training:
 
 ```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_tb=True \
-                        --tb_log_dir=tb_fruit_dir/scalar \
+                        --use_vdl=True \
+                        --vdl_log_dir=vdl_fruit_dir/scalar \
                         --eval
 ```
 
-Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on tensorboard.  
+Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on VisualDL.
 
 ```bash
-tensorboard --logdir tb_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
-Result on tensorboard is shown below:
+Result on VisualDL is shown below:
 
-![tensorboard_fruit.jpg](../images/tensorboard_fruit.jpg)
+![visualdl_fruit.jpg](../images/visualdl_fruit.jpg)
 
 Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 

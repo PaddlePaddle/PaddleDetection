@@ -114,14 +114,28 @@ class DecodeImage(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+
         if self.to_rgb:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         sample['image'] = im
 
         if 'h' not in sample:
             sample['h'] = im.shape[0]
+        elif sample['h'] != im.shape[0]:
+            logger.warn(
+                "The actual image height: {} is not equal to the "
+                "height: {} in annotation, and update sample['h'] by actual "
+                "image height.".format(im.shape[0], sample['h']))
+            sample['h'] = im.shape[0]
         if 'w' not in sample:
             sample['w'] = im.shape[1]
+        elif sample['w'] != im.shape[1]:
+            logger.warn(
+                "The actual image width: {} is not equal to the "
+                "width: {} in annotation, and update sample['w'] by actual "
+                "image width.".format(im.shape[1], sample['w']))
+            sample['w'] = im.shape[1]
+
         # make default im_info with [h, w, 1]
         sample['im_info'] = np.array(
             [im.shape[0], im.shape[1], 1.], dtype=np.float32)
@@ -331,7 +345,6 @@ class ResizeImage(BaseOperator):
             im = Image.fromarray(im)
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
-
         sample['image'] = im
         return sample
 

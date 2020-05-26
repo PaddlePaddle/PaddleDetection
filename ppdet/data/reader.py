@@ -286,8 +286,8 @@ class Reader(object):
             np.random.shuffle(self.indexes)
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
-            logger.info("Disable mixup for dataset samples "
-                        "less than 2 samples")
+            logger.debug("Disable mixup for dataset samples "
+                         "less than 2 samples")
             self._mixup_epoch = -1
 
         if self._epoch < 0:

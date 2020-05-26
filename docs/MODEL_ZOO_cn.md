@@ -173,14 +173,23 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 **注意事项:** RetinaNet系列模型中，在总batch size为16下情况下，初始学习率改为0.01。
 
+### EfficientDet
+
+| 尺度              | 每张GPU图片个数 | 学习率策略 | Box AP | 下载      | 配置文件 |
+| :---------------: | :-----:         | :-----:    | :----: | :-------: | :----:   |
+| EfficientDet-D0   | 16              | 300 epochs | 33.8   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/efficientdet_d0.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/efficientdet_d0.yml) |
+
+**注意事项:** 在总batch size为128(8x16)时，基础学习率改为0.16。
+
 ### SSDLite
 
 |  骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略|推理时间(fps) | Box AP | 下载 | 配置文件 |
 | :----------: | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: |
+| MobileNet_v1 | 300 | 64 | 40w | - | 23.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v1.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v1.yml) |
 | MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small.yml) |
 | MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
 
-**注意事项:** MobileNet_v3-SSDLite 使用学习率余弦衰减策略在8卡GPU下总batch size为512。
+**注意事项:** SSDLite模型使用学习率余弦衰减策略在8卡GPU下总batch size为512。
 
 ### SSD
 

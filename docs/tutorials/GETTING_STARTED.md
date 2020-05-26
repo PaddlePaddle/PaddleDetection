@@ -29,7 +29,7 @@ list below can be viewed by `--help`
 
 |         FLAG             |  script supported  |    description    |     default     |      remark      |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  Select config file  |  None  |  **The description of configure can refer to [CONFIG.md](../advanced_tutorials/CONFIG.md)** |
+|          -c              |      ALL       |  Select config file  |  None  |  **The description of configure can refer to [CONFIG.md](../advanced_tutorials/config_doc/CONFIG.md)** |
 |          -o              |      ALL       |  Set parameters in configure file  |  None  |  `-o` has higher priority to file configured by `-c`. Such as `-o use_gpu=False max_iter=10000`  |  
 |   -r/--resume_checkpoint |     train      |  Checkpoint path for resuming training  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
 |        --eval            |     train      |  Whether to perform evaluation in training  |  False  |    |
@@ -41,8 +41,8 @@ list below can be viewed by `--help`
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
 |      --infer_img         |       infer     |  Image path  |  None  |  higher priority over --infer_dir  |
-|        --use_tb          |   train/infer   |  Whether to record the data with [tb-paddle](https://github.com/linshuliang/tb-paddle), so as to display in Tensorboard  |  False  |      |
-|        --tb\_log_dir     |   train/infer   |  tb-paddle logging directory for image  |  train:`tb_log_dir/scalar` infer: `tb_log_dir/image`  |     |
+|        --use_vdl          |   train/infer   |  Whether to record the data with [VisualDL](https://github.com/paddlepaddle/visualdl), so as to display in VisualDL  |  False  |      |
+|        --vdl\_log_dir     |   train/infer   |  VisualDL logging directory for image  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |     |
 
 
 ## Examples
@@ -100,7 +100,7 @@ list below can be viewed by `--help`
 
 ##### NOTES
 
-- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](./FAQ.md)
+- `CUDA_VISIBLE_DEVICES` can specify different gpu numbers. Such as: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU calculation rules can refer [FAQ](../FAQ.md)
 - Dataset will be downloaded automatically and cached in `~/.cache/paddle/dataset` if not be found locally.
 - Pretrained model is downloaded automatically and cached in `~/.cache/paddle/weights`.
 - Checkpoints are saved in `output` by default, and can be revised from save_dir in configure files.
@@ -163,7 +163,7 @@ moment, but it is a planned feature
                       --output_dir=infer_output/ \
                       --draw_threshold=0.5 \
                       -o weights=output/faster_rcnn_r50_1x/model_final \
-                      --use_tb=Ture
+                      --use_vdl=Ture
   ```
 
   `--draw_threshold` is an optional argument. Default is 0.5.

@@ -23,12 +23,8 @@ from paddle.fluid.initializer import Constant
 from ..backbones.hourglass import _conv_norm, kaiming_init
 from ppdet.core.workspace import register
 import numpy as np
-try:
-    import cornerpool_lib
-except:
-    print(
-        "warning: cornerpool_lib not found, compile in ext_op at first if needed"
-    )
+import logging
+logger = logging.getLogger(__name__)
 
 __all__ = ['CornerHead']
 
@@ -278,6 +274,11 @@ class CornerHead(object):
         return conv1
 
     def get_output(self, input):
+        try:
+            from ppdet.ext_op import cornerpool_lib
+        except:
+            logger.error(
+                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         for ind in range(self.stack):
             cnv = input[ind]
             tl_modules = corner_pool(
@@ -454,6 +455,11 @@ class CornerHead(object):
         return {'loss': loss}
 
     def get_prediction(self, input):
+        try:
+            from ppdet.ext_op import cornerpool_lib
+        except:
+            logger.error(
+                "cornerpool_lib not found, compile in ppdet/ext_op at first")
         ind = self.stack - 1
         tl_modules = corner_pool(
             input,

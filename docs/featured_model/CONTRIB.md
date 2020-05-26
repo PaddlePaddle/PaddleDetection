@@ -43,7 +43,6 @@ Users can employ the model to conduct the inference:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/infer.py -c contrib/VehicleDetection/vehicle_yolov3_darknet.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar \
                          --infer_dir contrib/VehicleDetection/demo \
@@ -90,7 +89,6 @@ Users can employ the model to conduct the inference:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/infer.py -c contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar \
                          --infer_dir contrib/PedestrianDetection/demo \

@@ -67,6 +67,7 @@ fluid_inference
 |  参数名   | 含义  |
 |  ----  | ----  |
 | *CUDA_LIB  | CUDA的库路径 |
+| CUDNN_LIB | CUDNN的库路径 |
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
 
@@ -85,7 +86,7 @@ fluid_inference
 上述`Visual Studio 2019`编译产出的可执行文件在`out\build\x64-Release`目录下，打开`cmd`，并切换到该目录：
 
 ```
-cd D:\projects\PaddleDetection\inference\out\build\x64-Release
+cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 ```
 可执行文件`main`即为样例的预测程序，其主要的命令行参数如下：
 
@@ -105,7 +106,7 @@ cd D:\projects\PaddleDetection\inference\out\build\x64-Release
 .\main --model_dir=D:\\models\\yolov3_darknet --image_path=D:\\images\\test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
 
 
 `样例二`:
@@ -114,4 +115,4 @@ cd D:\projects\PaddleDetection\inference\out\build\x64-Release
 .\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.jpeg --use_gpu=1
 ```
 
-视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
+视频文件`可视化预测结果`会保存在当前目录下`output.avi`文件中。

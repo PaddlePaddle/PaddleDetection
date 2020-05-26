@@ -17,12 +17,18 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.check import check_config, check_version
 import yaml
 import logging
 from collections import OrderedDict
@@ -55,6 +61,7 @@ def parse_reader(reader_cfg, metric, arch):
                 metric))
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
+
     label_list = [str(cat) for cat in catid2name.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
@@ -85,7 +92,7 @@ def parse_reader(reader_cfg, metric, arch):
     return with_background, preprocess_list, label_list
 
 
-def dump_infer_config(config):
+def dump_infer_config(FLAGS, config):
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
     from ppdet.core.config.yaml_helpers import setup_orderdict
@@ -166,13 +173,12 @@ def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
 
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
+
+    check_version()
+
+    main_arch = cfg.architecture
 
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()
@@ -194,7 +200,7 @@ def main():
     checkpoint.load_params(exe, infer_prog, cfg.weights)
 
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
-    dump_infer_config(cfg)
+    dump_infer_config(FLAGS, cfg)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@
 - [如何贡献代码](#如何贡献代码)
 
 ## 简介
-目前主流的检测算法大体分为两类： single-stage和two-stage，其中single-stage的经典算法包括SSD, YOLO等，two-stage方法有RCNN系列模型，两大类算法在[PaddleDetection Model Zoo](../MODEL_ZOO.md)中均有给出，它们的共同特点是先定义一系列密集的，大小不等的anchor区域，再基于这些先验区域进行分类和回归，这种方式极大的受限于anchor自身的设计。随着CornerNet的提出，涌现了多种anchor free方法，PaddleDetection也集成了一系列anchor free算法。
+目前主流的检测算法大体分为两类： single-stage和two-stage，其中single-stage的经典算法包括SSD, YOLO等，two-stage方法有RCNN系列模型，两大类算法在[PaddleDetection Model Zoo](../../docs/MODEL_ZOO.md)中均有给出，它们的共同特点是先定义一系列密集的，大小不等的anchor区域，再基于这些先验区域进行分类和回归，这种方式极大的受限于anchor自身的设计。随着CornerNet的提出，涌现了多种anchor free方法，PaddleDetection也集成了一系列anchor free算法。
 
 ## 模型库与基线
 下表中展示了PaddleDetection当前支持的网络结构，具体细节请参考[算法细节](#算法细节)。
@@ -38,6 +38,7 @@
 - CornerNet-Squeeze中使用ResNet结构的骨干网络时，加入了FPN结构，骨干网络的输出feature map采用FPN中的P3层输出。
 - \*CornerNet-Squeeze-dcn-mixup-cosine是基于原版CornerNet-Squeeze优化效果最好的模型，在ResNet的骨干网络基础上增加mixup预处理和使用cosine_decay
 - FCOS使用GIoU loss、用location分支预测centerness、左上右下角点偏移量归一化和ground truth中心匹配策略
+- Cornernet-Squeeze模型依赖corner_pooling op，该op在```ppdet/ext_op```中编译得到，具体编译方式请参考[自定义OP的编译过程](../../ppdet/ext_op/README.md)
 
 ## 算法细节
 

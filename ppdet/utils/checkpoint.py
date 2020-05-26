@@ -119,7 +119,7 @@ def load_params(exe, prog, path, ignore_params=[]):
         raise ValueError("Model pretrain path {} does not "
                          "exists.".format(path))
 
-    logger.info('Loading parameters from {}...'.format(path))
+    logger.debug('Loading parameters from {}...'.format(path))
 
     ignore_set = set()
     state = _load_state(path)
@@ -208,7 +208,7 @@ def load_and_fusebn(exe, prog, path):
         prog (fluid.Program): save weight from which Program object.
         path (string): the path to save model.
     """
-    logger.info('Load model and fuse batch norm if have from {}...'.format(
+    logger.debug('Load model and fuse batch norm if have from {}...'.format(
         path))
 
     if is_url(path):

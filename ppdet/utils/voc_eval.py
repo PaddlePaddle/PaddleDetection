@@ -68,7 +68,6 @@ def bbox_eval(results,
 
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
-
         gt_boxes = t['gt_bbox'][0]
         gt_labels = t['gt_class'][0]
         difficults = t['is_difficult'][0] if not evaluate_difficult \

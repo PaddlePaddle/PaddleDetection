@@ -35,7 +35,9 @@ def _split_ioup(output, an_num, num_classes):
 
 def _de_sigmoid(x, eps=1e-7):
     x = fluid.layers.clip(x, eps, 1 / eps)
-    x = fluid.layers.clip((1 / x - 1.0), eps, 1 / eps)
+    one = fluid.layers.fill_constant(
+        shape=[1, 1, 1, 1], dtype=x.dtype, value=1.)
+    x = fluid.layers.clip((one / x - 1.0), eps, 1 / eps)
     x = -fluid.layers.log(x)
     return x
 
