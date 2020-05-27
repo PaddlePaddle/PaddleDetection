@@ -89,7 +89,7 @@ def check_config(cfg):
 
     actual_num_classes = int(cfg.num_classes) - int(
         train_dataset.with_background)
-    logger.info("The 'num_classes'(number of classes) you set is {}, " \
+    logger.debug("The 'num_classes'(number of classes) you set is {}, " \
                 "and 'with_background' in 'dataset' sets {}.\n" \
                 "So please note the actual number of categories is {}."
                 .format(cfg.num_classes, train_dataset.with_background,
