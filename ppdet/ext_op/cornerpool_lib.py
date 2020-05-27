@@ -1,8 +1,16 @@
 import os
 import paddle.fluid as fluid
 
+use_cpp = False
+
 file_dir = os.path.dirname(os.path.abspath(__file__))
-fluid.load_op_library(os.path.join(file_dir, 'src/cornerpool_lib.so'))
+try:
+    fluid.load_op_library(os.path.join(file_dir, 'src/cornerpool_lib.so'))
+    use_cpp = True
+except:
+    print(
+        'Warning: cornerpool_lib.so not found, use python version instead which may drop the inference speed. Compile in ppdet/ext_op at first if you need cpp version.'
+    )
 
 from paddle.fluid.layer_helper import LayerHelper
 
@@ -12,6 +20,19 @@ __all__ = [
     'right_pool',
     'left_pool',
 ]
+
+
+def cornerpool_op(layer_type, input, name):
+    helper = LayerHelper(layer_type, input=input, name=name)
+    dtype = helper.input_dtype()
+    output = helper.create_variable_for_type_inference(dtype)
+    max_map = helper.create_variable_for_type_inference(dtype)
+    helper.append_op(
+        type=layer_type,
+        inputs={"X": input},
+        outputs={"Output": output,
+                 "MaxMap": max_map})
+    return output
 
 
 def bottom_pool(input, is_test=False, name=None):
@@ -34,16 +55,28 @@ def bottom_pool(input, is_test=False, name=None):
             output = corner_pool.bottom_pool(input)
     """
     if is_test:
-        helper = LayerHelper('bottom_pool', **locals())
-        dtype = helper.input_dtype()
-        output = helper.create_variable_for_type_inference(dtype)
-        max_map = helper.create_variable_for_type_inference(dtype)
-        helper.append_op(
-            type="bottom_pool",
-            inputs={"X": input},
-            outputs={"Output": output,
-                     "MaxMap": max_map})
-        return output
+        if use_cpp:
+            output = cornerpool_op("bottom_pool", input, name)
+            return output
+
+        def cond(i, output):
+            return i < H
+
+        def body(i, output):
+            cur = fluid.layers.slice(output, [2], [i], [H])
+            next = fluid.layers.slice(output, [2], [0], [H - i])
+            max_v = fluid.layers.elementwise_max(cur, next)
+            orig = fluid.layers.slice(output, [2], [0], [i])
+            output = fluid.layers.concat([orig, max_v], axis=2)
+            i = i * 2
+            return [i, output]
+
+        H = fluid.layers.shape(input)[2]
+        i = fluid.layers.fill_constant(shape=[1], dtype='int32', value=1)
+        output = input
+        output = fluid.layers.while_loop(cond, body, [i, output])
+        return output[-1]
+
     H = input.shape[2]
     i = 1
     output = input
@@ -77,16 +110,27 @@ def top_pool(input, is_test=False, name=None):
             output = corner_pool.top_pool(input)
     """
     if is_test:
-        helper = LayerHelper('top_pool', **locals())
-        dtype = helper.input_dtype()
-        output = helper.create_variable_for_type_inference(dtype)
-        max_map = helper.create_variable_for_type_inference(dtype)
-        helper.append_op(
-            type="top_pool",
-            inputs={"X": input},
-            outputs={"Output": output,
-                     "MaxMap": max_map})
-        return output
+        if use_cpp:
+            output = cornerpool_op("top_pool", input, name)
+            return output
+
+        def cond(i, output):
+            return i < H
+
+        def body(i, output):
+            cur = fluid.layers.slice(output, [2], [0], [H - i])
+            next = fluid.layers.slice(output, [2], [i], [H])
+            max_v = fluid.layers.elementwise_max(cur, next)
+            orig = fluid.layers.slice(output, [2], [H - i], [H])
+            output = fluid.layers.concat([max_v, orig], axis=2)
+            i = i * 2
+            return [i, output]
+
+        H = fluid.layers.shape(input)[2]
+        i = fluid.layers.fill_constant(shape=[1], dtype='int32', value=1)
+        output = input
+        output = fluid.layers.while_loop(cond, body, [i, output])
+        return output[-1]
 
     H = input.shape[2]
     i = 1
@@ -121,16 +165,27 @@ def right_pool(input, is_test=False, name=None):
             output = corner_pool.right_pool(input)
     """
     if is_test:
-        helper = LayerHelper('right_pool', **locals())
-        dtype = helper.input_dtype()
-        output = helper.create_variable_for_type_inference(dtype)
-        max_map = helper.create_variable_for_type_inference(dtype)
-        helper.append_op(
-            type="right_pool",
-            inputs={"X": input},
-            outputs={"Output": output,
-                     "MaxMap": max_map})
-        return output
+        if use_cpp:
+            output = cornerpool_op("right_pool", input, name)
+            return output
+
+        def cond(i, output):
+            return i < W
+
+        def body(i, output):
+            cur = fluid.layers.slice(output, [3], [i], [W])
+            next = fluid.layers.slice(output, [3], [0], [W - i])
+            max_v = fluid.layers.elementwise_max(cur, next)
+            orig = fluid.layers.slice(output, [3], [0], [i])
+            output = fluid.layers.concat([orig, max_v], axis=-1)
+            i = i * 2
+            return [i, output]
+
+        W = fluid.layers.shape(input)[3]
+        i = fluid.layers.fill_constant(shape=[1], dtype='int32', value=1)
+        output = input
+        output = fluid.layers.while_loop(cond, body, [i, output])
+        return output[-1]
 
     W = input.shape[3]
     i = 1
@@ -165,16 +220,27 @@ def left_pool(input, is_test=False, name=None):
             output = corner_pool.left_pool(input)
     """
     if is_test:
-        helper = LayerHelper('left_pool', **locals())
-        dtype = helper.input_dtype()
-        output = helper.create_variable_for_type_inference(dtype)
-        max_map = helper.create_variable_for_type_inference(dtype)
-        helper.append_op(
-            type="left_pool",
-            inputs={"X": input},
-            outputs={"Output": output,
-                     "MaxMap": max_map})
-        return output
+        if use_cpp:
+            output = cornerpool_op("left_pool", input, name)
+            return output
+
+        def cond(i, output):
+            return i < W
+
+        def body(i, output):
+            cur = fluid.layers.slice(output, [3], [0], [W - i])
+            next = fluid.layers.slice(output, [3], [i], [W])
+            max_v = fluid.layers.elementwise_max(cur, next)
+            orig = fluid.layers.slice(output, [3], [W - i], [W])
+            output = fluid.layers.concat([max_v, orig], axis=-1)
+            i = i * 2
+            return [i, output]
+
+        W = fluid.layers.shape(input)[3]
+        i = fluid.layers.fill_constant(shape=[1], dtype='int32', value=1)
+        output = input
+        output = fluid.layers.while_loop(cond, body, [i, output])
+        return output[-1]
 
     W = input.shape[3]
     i = 1

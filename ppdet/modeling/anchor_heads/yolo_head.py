@@ -29,6 +29,7 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
+from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3Head', 'YOLOv4Head']
 
@@ -70,6 +71,7 @@ class YOLOv3Head(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.0,
                  clip_bbox=True):
+        check_version('2.0.0')
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.anchor_masks = anchor_masks

@@ -86,6 +86,7 @@ class YOLOv3Loss(object):
                     use_label_smooth=self._label_smooth,
                     scale_x_y=scale_x_y,
                     name=prefix_name + "yolo_loss" + str(i))
+
                 losses.append(fluid.layers.reduce_mean(loss))
 
             return {'loss': sum(losses)}
