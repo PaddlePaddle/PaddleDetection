@@ -21,6 +21,8 @@ import sys
 import paddle.fluid as fluid
 
 import logging
+import six
+import paddle.version as fluid_version
 logger = logging.getLogger(__name__)
 
 __all__ = ['check_gpu', 'check_version', 'check_config']
@@ -54,11 +56,18 @@ def check_version(version='1.7.0'):
           "or a suitable develop version is satisfied as well. \n" \
           "Please make sure the version is good with your code.".format(version)
 
-    try:
-        fluid.require_version(version)
-    except Exception as e:
-        logger.error(err)
-        sys.exit(1)
+    version_installed = [
+        fluid_version.major, fluid_version.minor, fluid_version.patch,
+        fluid_version.rc
+    ]
+    if version_installed == ['0', '0', '0', '0']:
+        return
+    version_split = version.split('.')
+
+    length = min(len(version_installed), len(version_split))
+    for i in six.moves.range(length):
+        if version_installed[i] < version_split[i]:
+            raise Exception(err)
 
 
 def check_config(cfg):

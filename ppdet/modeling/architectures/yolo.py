@@ -22,7 +22,6 @@ from paddle import fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
-from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3', 'YOLOv4']
 

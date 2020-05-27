@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
@@ -30,8 +29,7 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
-import logging
-logger = logging.getLogger(__name__)
+from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3Head', 'YOLOv4Head']
 
@@ -73,6 +71,7 @@ class YOLOv3Head(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.0,
                  clip_bbox=True):
+        check_version('2.0.0')
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.anchor_masks = anchor_masks
@@ -321,32 +320,16 @@ class YOLOv3Head(object):
                                              self.iou_aware_factor)
             scale_x_y = self.scale_x_y if not isinstance(
                 self.scale_x_y, Sequence) else self.scale_x_y[i]
-            try:
-                box, score = fluid.layers.yolo_box(
-                    x=output,
-                    img_size=im_size,
-                    anchors=self.mask_anchors[i],
-                    class_num=self.num_classes,
-                    conf_thresh=self.nms.score_threshold,
-                    downsample_ratio=self.downsample[i],
-                    name=self.prefix_name + "yolo_box" + str(i),
-                    clip_bbox=self.clip_bbox,
-                    scale_x_y=scale_x_y)
-            except:
-                logger.warn(
-                    "The scale_x_y is not activated at the "
-                    "current Paddle version: {}. If you do need scale_x_y, "
-                    "please update Paddle to 2.0.0-alpha or higher, "
-                    "or suitable develop version.".format(paddle.__version__))
-                box, score = fluid.layers.yolo_box(
-                    x=output,
-                    img_size=im_size,
-                    anchors=self.mask_anchors[i],
-                    class_num=self.num_classes,
-                    conf_thresh=self.nms.score_threshold,
-                    downsample_ratio=self.downsample[i],
-                    name=self.prefix_name + "yolo_box" + str(i),
-                    clip_bbox=self.clip_bbox)
+            box, score = fluid.layers.yolo_box(
+                x=output,
+                img_size=im_size,
+                anchors=self.mask_anchors[i],
+                class_num=self.num_classes,
+                conf_thresh=self.nms.score_threshold,
+                downsample_ratio=self.downsample[i],
+                name=self.prefix_name + "yolo_box" + str(i),
+                clip_bbox=self.clip_bbox,
+                scale_x_y=scale_x_y)
             boxes.append(box)
             scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
 
