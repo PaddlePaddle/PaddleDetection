@@ -105,7 +105,8 @@ class DetectionMAP(object):
 
         # record class score positive
         visited = [False] * len(gt_label)
-        for b in bbox:
+        probidx=np.argsort(-bbox[:,1])
+        for b in bbox[probidx,:]:
             label, score, xmin, ymin, xmax, ymax = b.tolist()
             pred = [xmin, ymin, xmax, ymax]
             max_idx = -1
