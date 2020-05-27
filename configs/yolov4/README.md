@@ -8,7 +8,7 @@
 
 ## 简介
 
-[YOLO v4](https://arxiv.org/abs/2004.10934)的Paddle实现版本
+[YOLO v4](https://arxiv.org/abs/2004.10934)的Paddle实现版本，要求使用PaddlePaddle2.0.0及以上版本或适当的develop版本
 
 目前转换了[darknet](https://github.com/AlexeyAB/darknet)中YOLO v4的权重，可以直接对图片进行预测，在[test-dev2019](http://cocodataset.org/#detection-2019)中精度为43.5%。另外，支持VOC数据集上finetune，精度达到85.5%
 
@@ -19,6 +19,7 @@
 - SPP模块
 - ciou loss
 - label_smooth
+- grid_sensitive
 
 ## 模型库
 下表中展示了当前支持的网络结构。
@@ -39,7 +40,7 @@
 
 1. mish激活函数优化
 2. mosaic数据预处理实现
-3. scale\_x\_y为yolo_box中decode时对box的位置进行微调，该功能将在Paddle2.0版本中实现
+
 
 
 ## 如何贡献代码
