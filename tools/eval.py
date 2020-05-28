@@ -97,8 +97,8 @@ def main():
     if cfg.metric == "WIDERFACE":
         raise ValueError("metric type {} does not support in tools/eval.py, "
                          "please use tools/face_eval.py".format(cfg.metric))
-    #assert cfg.metric in ['COCO', 'VOC'], \
-    #        "unknown metric type {}".format(cfg.metric)
+    assert cfg.metric in ['COCO', 'VOC', 'traffic'], \
+            "unknown metric type {}".format(cfg.metric)
     extra_keys = []
 
     if cfg.metric == 'COCO':
@@ -148,6 +148,7 @@ def main():
         resolution = model.mask_head.resolution
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values, resolution)
+    save_only = getattr(cfg, 'save_prediction_only', False)
 
     if cfg.metric == 'traffic':
         from ppdet.utils.traffic_eval import get_category_info, bbox2out, write_output
@@ -158,13 +159,18 @@ def main():
             with_background=with_background)
         xywh_results = bbox2out(
             results, clsid2catid, is_bbox_normalized=is_bbox_normalized)
-        write_output(
-            xywh_results, im_info_file, catid2name, outfile='bbox.json')
+        if save_only:
+            write_output(
+                xywh_results,
+                im_info_file,
+                catid2name,
+                dataset.get_anno(),
+                outpath='output/test')
+            return
 
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
-    save_only = getattr(cfg, 'save_prediction_only', False)
     eval_results(
         results,
         cfg.metric,

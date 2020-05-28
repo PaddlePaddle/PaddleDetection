@@ -60,6 +60,7 @@ class TrafficDataSet(DataSet):
         # 'cname2id' is a dict to map category name to class id
         self.cname2cid = None
         self.use_default_label = use_default_label
+        self.load_image_only = False
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -83,55 +84,76 @@ class TrafficDataSet(DataSet):
             anno_file = os.path.join(anno_path, file)
             with open(anno_file, 'r') as fr:
                 jsonfile = json.load(fr)
-                anno_list = jsonfile['signs']
-                for obj in anno_list:
-                    img_file = os.path.join(image_dir,
-                                            str(obj['pic_id']) + '.jpg')
-                    pic_id = obj['pic_id']
-                    if not os.path.exists(img_file):
-                        logger.warn(
-                            'Illegal image file: {}, and it will be ignored'.
-                            format(img_file))
-                        continue
+                if 'signs' not in jsonfile.keys():
+                    self.load_image_only = True
+                    groups = jsonfile['group']
+                    for group in groups:
+                        pic_list = group['pic_list']
+                        for pic_id in pic_list:
+                            img_file = os.path.join(image_dir,
+                                                    str(pic_id) + '.jpg')
+                            if not os.path.exists(img_file):
+                                logger.warn(
+                                    'Illegal image file: {}, and it will be ignored'.
+                                    format(img_file))
+                                continue
+                            im_id = np.array([ct])
+                            im_info_dict[pic_id] = {
+                                'im_file': img_file,
+                                'im_id': im_id,
+                                'group_id': str(file)
+                            }
+                            ct += 1
+                else:
+                    anno_list = jsonfile['signs']
+                    for obj in anno_list:
+                        img_file = os.path.join(image_dir,
+                                                str(obj['pic_id']) + '.jpg')
+                        pic_id = obj['pic_id']
+                        if not os.path.exists(img_file):
+                            logger.warn(
+                                'Illegal image file: {}, and it will be ignored'.
+                                format(img_file))
+                            continue
 
-                    x1 = float(obj['x'])
-                    y1 = float(obj['y'])
-                    x2 = float(obj['x']) + float(obj['w'])
-                    y2 = float(obj['y']) + float(obj['h'])
-                    x1 = max(0, x1)
-                    y1 = max(0, y1)
+                        x1 = float(obj['x'])
+                        y1 = float(obj['y'])
+                        x2 = float(obj['x']) + float(obj['w'])
+                        y2 = float(obj['y']) + float(obj['h'])
+                        x1 = max(0, x1)
+                        y1 = max(0, y1)
 
-                    gt_bbox = [x1, y1, x2, y2]
-                    gt_class = [cname2cid[obj['type']]]
-                    gt_score = [1.]
-                    if pic_id not in im_info_dict.keys():
-                        im_id = np.array([ct])
-                        im_info_dict[pic_id] = {
-                            'im_file': img_file,
-                            'im_id': im_id,
-                            'group_id': str(file),
-                            'gt_class': [gt_class],
-                            'gt_score': [gt_score],
-                            'gt_bbox': [gt_bbox],
-                        }
-                        ct += 1
-                    else:
-                        im_info_dict[pic_id]['gt_bbox'].append(gt_bbox)
-                        im_info_dict[pic_id]['gt_class'].append(gt_class)
-                        im_info_dict[pic_id]['gt_score'].append(gt_score)
+                        gt_bbox = [x1, y1, x2, y2]
+                        gt_class = [cname2cid[obj['type']]]
+                        gt_score = [1.]
+                        if pic_id not in im_info_dict.keys():
+                            im_id = np.array([ct])
+                            im_info_dict[pic_id] = {
+                                'im_file': img_file,
+                                'im_id': im_id,
+                                'group_id': str(file),
+                                'gt_class': [gt_class],
+                                'gt_score': [gt_score],
+                                'gt_bbox': [gt_bbox],
+                            }
+                            ct += 1
+                        else:
+                            im_info_dict[pic_id]['gt_bbox'].append(gt_bbox)
+                            im_info_dict[pic_id]['gt_class'].append(gt_class)
+                            im_info_dict[pic_id]['gt_score'].append(gt_score)
 
         write_im_info(self.dataset_dir, im_info_dict)
 
         for traffic_rec in im_info_dict.values():
-            #print(traffic_rec)
-            traffic_rec['gt_bbox'] = np.array(traffic_rec['gt_bbox']).astype(
-                'float32')
-            traffic_rec['gt_class'] = np.array(traffic_rec['gt_class']).astype(
-                'int32')
-            traffic_rec['gt_score'] = np.array(traffic_rec['gt_score']).astype(
-                'float32')
-            traffic_rec['is_crowd'] = np.zeros(
-                (len(traffic_rec['gt_class']), 1)).astype('int32')
+            if not self.load_image_only:
+                traffic_rec['gt_bbox'] = np.array(traffic_rec[
+                    'gt_bbox']).astype('float32')
+                traffic_rec['gt_class'] = np.array(traffic_rec[
+                    'gt_class']).astype('int32')
+                traffic_rec['gt_score'] = np.array(traffic_rec[
+                    'gt_score']).astype('float32')
+                traffic_rec['is_crowd'] = np.zeros(
+                    (len(traffic_rec['gt_class']), 1)).astype('int32')
 
             records.append(traffic_rec)
 

@@ -35,9 +35,10 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    #fields: ['image', 'im_info', 'im_id', 'im_shape']
-    # for voc
-    fields: ['image', 'im_info', 'im_id',  'im_shape', 'gt_bbox', 'gt_class']
+    # for traffic eval
+    #fields: ['image', 'im_info', 'im_id',  'im_shape', 'gt_bbox', 'gt_class']
+    # for traffic output
+    fields: ['image', 'im_info', 'im_id',  'im_shape']
   dataset:
     !TrafficDataSet
     image_dir: pic

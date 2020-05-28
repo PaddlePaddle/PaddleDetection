@@ -113,7 +113,7 @@ def bbox_eval(results,
     return map_stat
 
 
-def write_output(results, im_info_file, catid2name, outfile='bbox.json'):
+def write_output(results, im_info_file, catid2name, gt_path, outpath='test'):
     im_info_dict = {}
     with open(im_info_file, 'r') as fr:
         while True:
@@ -124,11 +124,13 @@ def write_output(results, im_info_file, catid2name, outfile='bbox.json'):
             im_info_dict[int(im_infos[
                 2])] = [str(im_infos[0]), str(im_infos[1])]
 
+    if not os.path.exists(outpath):
+        os.makedirs(outpath)
+
     out_results = []
     for res in results:
         assert res['image_id'] in im_info_dict.keys()
         out_dict = {
-            "group_id": im_info_dict[res['image_id']][0],
             "pic_id": im_info_dict[res['image_id']][1],
             "x": res['bbox'][0],
             "y": res['bbox'][1],
@@ -137,10 +139,17 @@ def write_output(results, im_info_file, catid2name, outfile='bbox.json'):
             "score": res['score'],
             "type": catid2name[res['category_id']]
         }
-        out_results.append(out_dict)
 
-    with open(outfile, 'w') as f:
-        json.dump(out_results, f)
+        group_id = im_info_dict[res['image_id']][0]
+        out_res_file = os.path.join(outpath, group_id)
+        if not os.path.exists(out_res_file):
+            match_data = json.load(open(os.path.join(gt_path, group_id)))
+            match_data['signs'] = [out_dict]
+        else:
+            match_data['signs'].append(out_dict)
+        with open(out_res_file, 'w') as fp:
+            json.dump(match_data, fp)
+        fp.close()
 
 
 def prune_zero_padding(gt_box, gt_label, difficult=None):

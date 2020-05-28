@@ -70,7 +70,7 @@ def bbox_eval(results,
             continue
         gt_boxes = t['gt_bbox'][0]
         gt_labels = t['gt_class'][0]
-        difficults = t['is_difficult'][0] if not evaluate_difficult \
+        difficults = t['is_difficult'][0] if evaluate_difficult \
                             else None
 
         if len(t['gt_bbox'][1]) == 0:
