@@ -358,8 +358,13 @@ class CornerHead(object):
         tag1 = fluid.layers.squeeze(br_tag, [2])
         tag_mean = (tag0 + tag1) / 2
 
-        tag0 = fluid.layers.pow(tag0 - tag_mean, 2) / (num + 1e-4) * gt_masks
-        tag1 = fluid.layers.pow(tag1 - tag_mean, 2) / (num + 1e-4) * gt_masks
+        tag0 = fluid.layers.pow(tag0 - tag_mean, 2)
+        tag1 = fluid.layers.pow(tag1 - tag_mean, 2)
+
+        tag0 = fluid.layers.elementwise_div(tag0, num + 1e-4, axis=0)
+        tag1 = fluid.layers.elementwise_div(tag1, num + 1e-4, axis=0)
+        tag0 = tag0 * gt_masks
+        tag1 = tag1 * gt_masks
         tag0 = fluid.layers.reduce_sum(tag0)
         tag1 = fluid.layers.reduce_sum(tag1)
 
@@ -381,8 +386,8 @@ class CornerHead(object):
         dist = tag_mean_1 - tag_mean_2
         dist = 1 - fluid.layers.abs(dist)
         dist = fluid.layers.relu(dist)
-        dist = dist - 1 / (num + 1e-4)
-        dist = dist / (num2 + 1e-4)
+        dist = fluid.layers.elementwise_sub(dist, 1 / (num + 1e-4), axis=0)
+        dist = fluid.layers.elementwise_div(dist, (num2 + 1e-4), axis=0)
         dist = dist * mask
         push = fluid.layers.reduce_sum(dist)
         return pull, push
