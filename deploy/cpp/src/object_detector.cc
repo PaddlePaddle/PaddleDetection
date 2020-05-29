@@ -182,7 +182,12 @@ void ObjectDetector::Predict(const cv::Mat& im,
   // Calculate output length
   int output_size = 1;
   for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
+    output_size *= output_shape[j];
+  }
+
+  if (output_size < 6) {
+    std::cerr << "[WARNING] No object detected." << std::endl;
+    return true;
   }
   output_data_.resize(output_size);
   out_tensor->copy_to_cpu(output_data_.data());
