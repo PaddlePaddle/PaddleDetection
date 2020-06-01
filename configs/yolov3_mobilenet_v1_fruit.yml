@@ -111,6 +111,8 @@ TrainReader:
   batch_size: 1
   shuffle: true
   mixup_epoch: -1
+  worker_num: -1
+  use_process: false
 
 EvalReader:
   batch_size: 1
