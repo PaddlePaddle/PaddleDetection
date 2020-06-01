@@ -1,0 +1,121 @@
+architecture: FasterRCNN
+use_gpu: true
+max_iters: 8000
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 1000
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_2x.tar
+metric: VOC
+map_type: 11point
+weights: output/faster_rcnn_r50_1x_fruit/model_final
+# 3 + 1 (background)
+num_classes: 4
+finetune_exclude_pretrained_params: ['bbox_pred', 'cls_score']
+
+FasterRCNN:
+  backbone: ResNet
+  rpn_head: RPNHead
+  roi_extractor: RoIAlign
+  bbox_head: BBoxHead
+  bbox_assigner: BBoxAssigner
+
+ResNet:
+  norm_type: affine_channel
+  depth: 50
+  feature_maps: 4
+  freeze_at: 2
+
+ResNetC5:
+  depth: 50
+  norm_type: affine_channel
+
+RPNHead:
+  anchor_generator:
+    anchor_sizes: [32, 64, 128, 256, 512]
+    aspect_ratios: [0.5, 1.0, 2.0]
+    stride: [16.0, 16.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
+  rpn_target_assign:
+    rpn_batch_size_per_im: 256
+    rpn_fg_fraction: 0.5
+    rpn_negative_overlap: 0.3
+    rpn_positive_overlap: 0.7
+    rpn_straddle_thresh: 0.0
+    use_random: true
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 12000
+    post_nms_top_n: 2000
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 6000
+    post_nms_top_n: 1000
+
+RoIAlign:
+  resolution: 14
+  sampling_ratio: 0
+  spatial_scale: 0.0625
+
+BBoxAssigner:
+  batch_size_per_im: 512
+  bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
+  bg_thresh_hi: 0.5
+  bg_thresh_lo: 0.0
+  fg_fraction: 0.25
+  fg_thresh: 0.5
+
+BBoxHead:
+  head: ResNetC5
+  nms:
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
+
+LearningRate:
+  base_lr: 0.00001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [6400, 7200]
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+_READER_: 'faster_reader.yml'
+TrainReader:
+  dataset:
+    !VOCDataSet
+    dataset_dir: dataset/fruit
+    anno_path: train.txt
+    with_background: true
+    use_default_label: false
+  worker_num: -1
+  use_process: false
+
+EvalReader:
+   inputs_def:
+     fields: ['image', 'im_info', 'im_id', 'im_shape', 'gt_bbox', 'gt_class', 'is_difficult']
+   dataset:
+    !VOCDataSet
+    dataset_dir: dataset/fruit
+    anno_path: val.txt
+    with_background: true
+    use_default_label: false
+
+TestReader:
+  batch_size: 1
+  dataset:
+    !ImageFolder
+    anno_path: dataset/fruit/label_list.txt
+    use_default_label: false
+    with_background: true
