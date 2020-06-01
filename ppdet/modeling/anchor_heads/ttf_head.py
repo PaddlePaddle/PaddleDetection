@@ -21,7 +21,7 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Constant
+from paddle.fluid.initializer import Normal, Constant, Uniform
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK
@@ -96,7 +96,15 @@ class TTFHead(object):
         return x
 
     def upsample(self, x, out_c, name=None):
-        conv = DeformConv(x, out_c, 3, bias_attr=True, name=name + '.0')
+        fan_in = x.shape[1] * 3 * 3
+        stdv = 1. / math.sqrt(fan_in)
+        conv = DeformConv(
+            x,
+            out_c,
+            3,
+            initializer=Uniform(-stdv, stdv),
+            bias_attr=True,
+            name=name + '.0')
         norm_name = name + '.1'
         pattr = ParamAttr(name=norm_name + '.weight', initializer=Constant(1.))
         battr = ParamAttr(name=norm_name + '.bias', initializer=Constant(0.))

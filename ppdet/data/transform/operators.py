@@ -1186,6 +1186,8 @@ class ColorDistort(BaseOperator):
             in [lower, upper, probability] format.
         random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
             order.
+        hsv_format (bool): whether to convert color from BGR to HSV
+        random_channel (bool): whether to swap channels randomly
     """
 
     def __init__(self,
@@ -1193,13 +1195,17 @@ class ColorDistort(BaseOperator):
                  saturation=[0.5, 1.5, 0.5],
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
-                 random_apply=True):
+                 random_apply=True,
+                 hsv_format=False,
+                 random_channel=False):
         super(ColorDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
         self.brightness = brightness
         self.random_apply = random_apply
+        self.hsv_format = hsv_format
+        self.random_channel = random_channel
 
     def apply_hue(self, img):
         low, high, prob = self.hue
@@ -1207,6 +1213,11 @@ class ColorDistort(BaseOperator):
             return img
 
         img = img.astype(np.float32)
+        if self.hsv_format:
+            img[..., 0] += random.uniform(low, high)
+            img[..., 0][img[..., 0] > 360] -= 360
+            img[..., 0][img[..., 0] < 0] += 360
+            return img
 
         # XXX works, but result differ from HSV version
         delta = np.random.uniform(low, high)
@@ -1226,8 +1237,10 @@ class ColorDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-
         img = img.astype(np.float32)
+        if self.hsv_format:
+            img[..., 1] *= delta
+            return img
         gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
         gray = gray.sum(axis=2, keepdims=True)
         gray *= (1.0 - delta)
@@ -1274,12 +1287,24 @@ class ColorDistort(BaseOperator):
 
         if np.random.randint(0, 2):
             img = self.apply_contrast(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
         else:
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
             img = self.apply_contrast(img)
+
+        if self.random_channel:
+            if np.random.randint(0, 2):
+                img = img[..., np.random.permutation(3)]
         sample['image'] = img
         return sample
 
@@ -1596,11 +1621,16 @@ class RandomCrop(BaseOperator):
             found = False
             for i in range(self.num_attempts):
                 scale = np.random.uniform(*self.scaling)
-                min_ar, max_ar = self.aspect_ratio
-                aspect_ratio = np.random.uniform(
-                    max(min_ar, scale**2), min(max_ar, scale**-2))
-                crop_h = int(h * scale / np.sqrt(aspect_ratio))
-                crop_w = int(w * scale * np.sqrt(aspect_ratio))
+                if self.aspect_ratio is not None:
+                    min_ar, max_ar = self.aspect_ratio
+                    aspect_ratio = np.random.uniform(
+                        max(min_ar, scale**2), min(max_ar, scale**-2))
+                    h_scale = scale / np.sqrt(aspect_ratio)
+                    w_scale = scale * np.sqrt(aspect_ratio)
+                else:
+                    h_scale = w_scale = scale
+                crop_h = int(h * h_scale)
+                crop_w = int(w * w_scale)
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]

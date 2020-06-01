@@ -1,9 +1,9 @@
 architecture: TTFNet
 use_gpu: true
-max_iters: 15000
+max_iters: 150000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 1000
+snapshot_iter: 5000
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/ttfnet_darknet/model_final
@@ -14,7 +14,7 @@ TTFNet:
   ttf_head: TTFHead
 
 DarkNet:
-  norm_type: bn
+  norm_type: sync_bn
   norm_decay: 0.0004
   depth: 53
   freeze_at: 1
@@ -38,8 +38,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 11250
-    - 13750
+    - 112500
+    - 137500
   - !LinearWarmup
     start_factor: 0.2
     steps: 500
@@ -65,6 +65,22 @@ TrainReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
+  - !ColorDistort
+    hue: [-18., 18., 0.5]
+    saturation: [0.5, 1.5, 0.5]
+    contrast: [0.5, 1.5, 0.5]
+    brightness: [-32., 32., 0.5]
+    random_apply: False
+    hsv_format: True
+    random_channel: True
+  - !RandomExpand
+    ratio: 4
+    prob: 0.5
+    fill_value: [123.675, 116.28, 103.53]
+  - !RandomCrop
+    aspect_ratio: NULL
+    scaling: [0.3]
+    cover_all_box: True
   - !Resize
     target_dim: 512
   - !RandomFlipImage

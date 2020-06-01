@@ -73,10 +73,11 @@ def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
         stride=stride,
         padding=padding,
         param_attr=ParamAttr(
-            initializer=fluid.initializer.Constant(value=0),
-            name=name + ".w_0"),
+            initializer=fluid.initializer.Constant(0), name=name + ".w_0"),
         bias_attr=ParamAttr(
-            initializer=fluid.initializer.Constant(value=0),
+            initializer=fluid.initializer.Constant(0),
+            learning_rate=2.,
+            regularizer=L2Decay(0.),
             name=name + ".b_0"),
         act=act,
         name=name)
@@ -96,7 +97,8 @@ def DeformConv(input,
     if bias_attr:
         bias_para = ParamAttr(
             name=name + "_bias",
-            initializer=fluid.initializer.Constant(value=0),
+            initializer=fluid.initializer.Constant(0),
+            regularizer=L2Decay(0.),
             learning_rate=lr_scale * 2)
     else:
         bias_para = False
