@@ -222,11 +222,12 @@ OptimizerBuilder:
 # 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
 TrainReader:
   # 训练过程中模型的相关输入
-  # 包括图片，图片长宽高等基本信息，图片id， 标记的目标框、实例标签、实例分割掩码
+  # 包括图片，图片长宽高等基本信息，图片id，标记的目标框、实例标签、实例分割掩码
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
   # 数据集目录配置
   dataset:
+    # 指定数据集名称，可以选择VOCDataSet, COCODataSet
     !COCODataSet
     # 训练图片所在目录
     image_dir: train2017
@@ -280,4 +281,70 @@ TrainReader:
   drop_last: false
   # 使用数据集中的样本数目，默认是-1，表示使用全部
   samples: -1
+
+  # 模型验证集设置参考
+  EvalReader:
+  # 验证过程中模型的相关输入
+  # 包括图片，图片长宽高等基本信息，图片id，图片shape
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+    # for voc
+    #fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+  drop_empty: false
+  worker_num: 2
+
+# 测试验证集设置参考
+TestReader:
+  # 测试过程中模型的相关输入
+  # 包括图片，图片长宽高等基本信息，图片id，图片shape
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+  dataset:
+    # 测试图片所在目录
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeImage
+    interp: 1
+    max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_size: 1
+  shuffle: false
+  drop_last: false
   ```
