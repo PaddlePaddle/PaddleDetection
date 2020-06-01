@@ -1,1 +1,0 @@
-../../configs/anchor_free/README.md

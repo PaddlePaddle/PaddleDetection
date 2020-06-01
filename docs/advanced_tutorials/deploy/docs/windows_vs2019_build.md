@@ -1,1 +1,0 @@
-../../../../deploy/cpp/docs/windows_vs2019_build.md
