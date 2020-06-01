@@ -1,1 +1,0 @@
-../../../../slim/prune/README.md
