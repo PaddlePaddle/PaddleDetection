@@ -240,5 +240,5 @@ def create(cls_or_name, **kwargs):
                 raise ValueError("Unsupported injection type:", target_key)
     # prevent modification of global config values of reference types
     # (e.g., list, dict) from within the created module instances
-    kwargs = copy.deepcopy(kwargs)
+    #kwargs = copy.deepcopy(kwargs)
     return cls(**kwargs)

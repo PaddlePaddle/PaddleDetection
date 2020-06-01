@@ -57,7 +57,7 @@ class PiecewiseDecay(object):
 
     def __call__(self, base_lr=None, learning_rate=None):
         if self.values is not None:
-            return fluid.layers.piecewise_decay(self.milestones, self.values)
+            return fluid.dygraph.PiecewiseDecay(self.milestones, self.values)
         assert base_lr is not None, "either base LR or values should be provided"
         values = [base_lr]
         for g in self.gamma:
@@ -246,21 +246,24 @@ class OptimizerBuilder():
         self.regularizer = regularizer
         self.optimizer = optimizer
 
-    def __call__(self, learning_rate):
+    def __call__(self, learning_rate, params=None):
         if self.clip_grad_by_norm is not None:
             fluid.clip.set_gradient_clip(
                 clip=fluid.clip.GradientClipByGlobalNorm(
                     clip_norm=self.clip_grad_by_norm))
+
         if self.regularizer:
             reg_type = self.regularizer['type'] + 'Decay'
             reg_factor = self.regularizer['factor']
             regularization = getattr(regularizer, reg_type)(reg_factor)
         else:
             regularization = None
+
         optim_args = self.optimizer.copy()
         optim_type = optim_args['type']
         del optim_args['type']
         op = getattr(optimizer, optim_type)
         return op(learning_rate=learning_rate,
+                  parameter_list=params,
                   regularization=regularization,
                   **optim_args)
