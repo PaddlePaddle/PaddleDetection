@@ -186,13 +186,6 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # use VisualDL to log image
-    if FLAGS.use_vdl:
-        from visualdl import LogWriter
-        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
-        vdl_image_step = 0
-        vdl_image_frame = 0  # each frame can display ten pictures at most.
-
     imid2path = dataset.get_imid2path()
     for iter_id, data in enumerate(loader()):
         outs = exe.run(infer_prog,
@@ -219,27 +212,10 @@ def main():
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
 
-            # use VisualDL to log original image
-            if FLAGS.use_vdl:
-                original_image_np = np.array(image)
-                vdl_writer.add_image(
-                    "original/frame_{}".format(vdl_image_frame),
-                    original_image_np, vdl_image_step)
-
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
                                       mask_results)
-
-            # use VisualDL to log image with bbox
-            if FLAGS.use_vdl:
-                infer_image_np = np.array(image)
-                vdl_writer.add_image("bbox/frame_{}".format(vdl_image_frame),
-                                     infer_image_np, vdl_image_step)
-                vdl_image_step += 1
-                if vdl_image_step % 10 == 0:
-                    vdl_image_step = 0
-                    vdl_image_frame += 1
 
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
@@ -268,16 +244,6 @@ if __name__ == '__main__':
         type=float,
         default=0.5,
         help="Threshold to reserve the result for visualization.")
-    parser.add_argument(
-        "--use_vdl",
-        type=bool,
-        default=False,
-        help="whether to record the data to VisualDL.")
-    parser.add_argument(
-        '--vdl_log_dir',
-        type=str,
-        default="vdl_log_dir/image",
-        help='VisualDL logging directory for image.')
 
     parser.add_argument(
         "-p",
