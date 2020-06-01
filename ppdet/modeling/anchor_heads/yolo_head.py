@@ -188,9 +188,6 @@ class YOLOv3Head(object):
             out = fluid.layers.resize_nearest(
                 input=input, scale=float(scale), name=name)
         else:
-            print("upsample", upsample)
-            import sys
-            sys.stdout.flush()
             assert isinstance(
                 upsample, dict), "Unknown upsample method: {}".format(upsample)
             assert upsample['type'] in [
