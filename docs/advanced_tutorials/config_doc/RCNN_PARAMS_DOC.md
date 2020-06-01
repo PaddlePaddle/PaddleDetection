@@ -9,7 +9,6 @@
 
 # 检测模型的名称
 architecture: MaskRCNN
-
 # 默认使用GPU运行，设为False时使用CPU运行
 use_gpu: true
 # 最大迭代次数，而一个iter会运行batch_size * device_num张图片
@@ -39,8 +38,8 @@ num_classes: 81
 MaskRCNN:
   backbone: ResNet
   fpn: FPN
-  roi_extractor: FPNRoIAlign
   rpn_head: FPNRPNHead
+  roi_extractor: FPNRoIAlign
   bbox_assigner: BBoxAssigner
   bbox_head: BBoxHead
   mask_assigner: MaskAssigner
@@ -55,11 +54,7 @@ ResNet:
   depth: 50
   # 主干网络返回的主要阶段特征用于FPN作进一步的特征融合
   # 默认从[2,3,4,5]返回特征
-  feature_maps:
-    - 2
-    - 3
-    - 4
-    - 5
+  feature_maps: [2,3,4,5]
   # 是否在训练中固定norm layer的权重，默认从第2阶段开始固定
   freeze_at: 2
   # 是否停止norm layer的梯度回传，默认是
@@ -84,11 +79,7 @@ FPN:
   # FPN输出特征的通道数量, 默认是256
   num_chan: 256
   # 特征图缩放比例, 默认是[0.03125, 0.0625, 0.125, 0.25]
-  spatial_scale:
-    - 0.03125
-    - 0.0625
-    - 0.125
-    - 0.25
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
 
 # 检测第一阶段RPN
 FPNRPNHead:
@@ -100,15 +91,8 @@ FPNRPNHead:
   # N = anchor_sizes * aspect_ratios
   # 具体实现参考[API](fluid.layers.anchor_generator)
   anchor_generator:
-    aspect_ratios:
-      - 0.5
-      - 1.0
-      - 2.0
-    variance:
-      - 1.0
-      - 1.0
-      - 1.0
-      - 1.0
+    aspect_ratios: [0.5, 1.0, 2.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
   # 首先计算Anchor和GT BBox之间的IoU，为每个Anchor匹配上GT，
   # 然后根据阈值过滤掉IoU低的Anchor，得到最终的Anchor及其GT进行loss计算
   # 具体实现参考[API](fluid.layers.rpn_target_assign)
@@ -169,17 +153,11 @@ MaskHead:
 # 具体实现参考[API](fluid.layers.generate_proposal_labels)
 BBoxAssigner:
   batch_size_per_im: 512
-  bg_thresh_hi: 0.5
+  bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
   bg_thresh_lo: 0.0
+  bg_thresh_hi: 0.5
   fg_fraction: 0.25
   fg_thresh: 0.5
-  num_classes: 81
-  shuffle_before_sample: true
-  bbox_reg_weights:
-    - 0.1
-    - 0.1
-    - 0.2
-    - 0.2
 
 # 根据roi的label，选择前景，为其赋值mask label
 # 具体实现参考[API](fluid.layers.generate_mask_labels)
@@ -193,21 +171,10 @@ BBoxHead:
   head: TwoFCHead
   # 通过NMS进行bbox过滤
   # 具体实现参考[API](fluid.layers.multiclass_nms)
-  keep_top_k: 100
-  nms_threshold: 0.5
-  score_threshold: 0.05
-  num_classes: 81
-  # 对bbox的坐标进行编解码操作
-  # 具体实现参考[API](fluid.layers.box_coder)
-  box_coder:
-    axis: 1
-    box_normalized: false
-    code_type: decode_center_size
-    prior_box_var:
-      - 0.1
-      - 0.1
-      - 0.2
-      - 0.2
+  nms:
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
 
 # 输出检测框之前，对特征进一步学习
 TwoFCHead:
@@ -228,9 +195,7 @@ LearningRate:
     #学习率衰减策略
     - !PiecewiseDecay
       gamma: 0.1
-      milestones:
-        - 120000
-        - 160000
+      milestones: [120000, 160000]
     # 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率
     # linear_step = end_lr - start_lr
     # lr = start_lr + linear_step * (global_step / warmup_steps)
@@ -256,82 +221,63 @@ OptimizerBuilder:
 # 模型训练集设置参考
 # 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
 TrainReader:
-  # 1个GPU的batch size，默认为1
-  batch_size: 1
-  # 数据集目录配置
-  dataset:
-    # 数据集根目录
-    dataset_dir: dataset/coco
-    # 标记文件所在目录
-    annotation: annotations/instances_train2017.json
-    # 训练图片所在目录
-    image_dir: train2017
   # 训练过程中模型的相关输入
   # 包括图片，图片长宽高等基本信息，图片id， 标记的目标框、实例标签、实例分割掩码
-  fields:
-    - image
-    - im_info
-    - im_id
-    - gt_box
-    - gt_label
-    - is_crowd
-    - gt_mask
-  # 输入Image的尺寸
-  image_shape:
-    - 3
-    - 800
-    - 1333
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
+  # 数据集目录配置
+  dataset:
+    !COCODataSet
+    # 训练图片所在目录
+    image_dir: train2017
+    # 标记文件所在目录
+    anno_path: annotations/instances_train2017.json
+    # 数据集根目录
+    dataset_dir: dataset/coco
   # 对一个batch中的单张图片做的数据增强
   sample_transforms:
-    # 读取Image图像为numpy数组
-    # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
-    - !DecodeImage
-      to_rgb: true  # default: true
-      with_mixup: false  # default: false
-    # 对图片进行随机翻转
-    # 可以选择同步翻转mask，可以选择归一化bbox的坐标
-    - !RandomFlipImage
-      is_mask_flip: true  # default: false
-      is_normalized: false  # default: false
-      prob: 0.5  # default: 0.5
-    # 归一化图片，默认均值[0.485, 0.456, 0.406]，方差[1, 1, 1]
-    # 可以选择将归一化结果除以255，可以选择图片的数据格式
-    - !NormalizeImage
-      is_channel_first: false
-      is_scale: true
-      mean:
-        - 0.485
-        - 0.456
-        - 0.406
-      std:
-        - 0.229
-        - 0.224
-        - 0.225
-    # 调整图片尺寸，默认采用cv2的线性插值
-    - !ResizeImage
-      interp: 1
-      max_size: 1333
-      target_size: 800
-      use_cv2: true  # default: true
-    # 调整图片数据格式，默认使用CHW
-    - !Permute
-       channel_first: true
-      to_bgr: false  # default: true
+  # 读取Image图像为numpy数组
+  # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
+  - !DecodeImage
+    to_rgb: true
+  # 对图片进行随机翻转
+  # 可以选择同步翻转mask，可以选择归一化bbox的坐标
+  - !RandomFlipImage
+    prob: 0.5
+  # 归一化图片，默认均值[0.485, 0.456, 0.406]，方差[1, 1, 1]
+  # 可以选择将归一化结果除以255，可以选择图片的数据格式
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  # 调整图片尺寸，默认采用cv2的线性插值
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+    use_cv2: true
+  # 调整图片数据格式，默认使用CHW
+  - !Permute
+    to_bgr: false
+    channel_first: true
   # 对一个batch中的图片统一做的数据增强
   batch_transforms:
-    # 将一个batch中的图片，按照最大的尺寸，做补齐
-    - !PadBatch
-      pad_to_stride: 32  # default: 32
-      # 选择是否使用padding之后的image信息，默认为true
-      use_padded_im_info: true
+  # 将一个batch中的图片，按照最大的尺寸，做补齐
+  - !PadBatch
+    pad_to_stride: 32
+    # 选择是否使用padding之后的image信息，默认为false
+    use_padded_im_info: false
+  # 1个GPU的batch size，默认为1
+  batch_size: 1
+  # 选择是否打乱所有样本的顺序
+  shuffle: true
   # 使用多进程/线程的数目，默认为2
   worker_num: 2
   # 选择是否使用多进程，默认为false
   use_process: false
-  # 使用数据集中的样本数目，默认是-1，表示使用全部
-  samples: -1
-  # 选择是否打乱所有样本的顺序
-  shuffle: true
   # 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch，不进行训练，默认是不丢掉的
   drop_last: false
+  # 使用数据集中的样本数目，默认是-1，表示使用全部
+  samples: -1
   ```
