@@ -20,7 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.ops import MultiClassNMS, CARAFEUpsample
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -55,6 +55,7 @@ class YOLOv3Head(object):
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 upsample='nearest',
                  drop_block=False,
                  iou_aware=False,
                  iou_aware_factor=0.4,
@@ -75,6 +76,7 @@ class YOLOv3Head(object):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.anchor_masks = anchor_masks
+        self.upsample = upsample
         self._parse_anchors(anchors)
         self.yolo_loss = yolo_loss
         self.nms = nms
@@ -180,9 +182,27 @@ class YOLOv3Head(object):
             name='{}.tip'.format(name))
         return route, tip
 
-    def _upsample(self, input, scale=2, name=None):
-        out = fluid.layers.resize_nearest(
-            input=input, scale=float(scale), name=name)
+    def _upsample(self, input, scale=2, upsample='nearest', name=None):
+        upsample = upsample.copy()
+        if upsample == 'nearest':
+            out = fluid.layers.resize_nearest(
+                input=input, scale=float(scale), name=name)
+        else:
+            print("upsample", upsample)
+            import sys
+            sys.stdout.flush()
+            assert isinstance(
+                upsample, dict), "Unknown upsample method: {}".format(upsample)
+            assert upsample['type'] in [
+                'carafe'
+            ], 'Unknown upsample type {}'.format(upsample['type'])
+
+            upsample_type = upsample.pop('type')
+            upsample['name'] = name
+
+            if upsample_type.lower() == 'carafe':
+                up = CARAFEUpsample(**upsample)
+                out = up(input)
         return out
 
     def _parse_anchors(self, anchors):
@@ -268,7 +288,10 @@ class YOLOv3Head(object):
                     is_test=(not is_train),
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 # upsample
-                route = self._upsample(route)
+                route = self._upsample(
+                    route,
+                    upsample=self.upsample,
+                    name="yolo_upsample.{}".format(i))
 
         return outputs
 

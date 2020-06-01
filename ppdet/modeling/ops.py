@@ -26,11 +26,26 @@ from ppdet.core.workspace import register, serializable
 from ppdet.utils.bbox_utils import bbox_overlaps, box_to_delta
 
 __all__ = [
-    'AnchorGenerator', 'AnchorGrid', 'DropBlock', 'RPNTargetAssign',
-    'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
-    'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
-    'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
-    'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'AnchorGenerator',
+    'AnchorGrid',
+    'DropBlock',
+    'RPNTargetAssign',
+    'GenerateProposals',
+    'MultiClassNMS',
+    'BBoxAssigner',
+    'MaskAssigner',
+    'RoIAlign',
+    'RoIPool',
+    'MultiBoxHead',
+    'SSDLiteMultiBoxHead',
+    'SSDOutputDecoder',
+    'RetinaTargetAssign',
+    'RetinaOutputDecoder',
+    'ConvNorm',
+    'DeformConvNorm',
+    'MultiClassSoftNMS',
+    'LibraBBoxAssigner',
+    'CARAFEUpsample',
 ]
 
 
@@ -50,6 +65,31 @@ def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
             name=name + ".b_0"),
         act=act,
         name=name)
+    return out
+
+
+def _conv_bn(input, ch_out, filter_size, stride, padding, act=None, name=None):
+    conv = fluid.layers.conv2d(
+        input=input,
+        num_filters=ch_out,
+        filter_size=filter_size,
+        stride=stride,
+        padding=padding,
+        act=None,
+        param_attr=ParamAttr(name=name + ".conv.weights"),
+        bias_attr=False)
+
+    bn_name = name + ".bn"
+    bn_param_attr = ParamAttr(regularizer=L2Decay(0.), name=bn_name + '.scale')
+    bn_bias_attr = ParamAttr(regularizer=L2Decay(0.), name=bn_name + '.offset')
+    out = fluid.layers.batch_norm(
+        input=conv,
+        act=act,
+        param_attr=bn_param_attr,
+        bias_attr=bn_bias_attr,
+        moving_mean_name=bn_name + '.mean',
+        moving_variance_name=bn_name + '.var')
+
     return out
 
 
@@ -1497,3 +1537,57 @@ class RetinaOutputDecoder(object):
         self.nms_top_k = pre_nms_top_n
         self.keep_top_k = detections_per_im
         self.nms_eta = nms_eta
+
+
+@register
+@serializable
+class CARAFEUpsample(object):
+    def __init__(self,
+                 scale=2,
+                 mid_channels=64,
+                 kernel_size=3,
+                 group_size=3,
+                 name=None):
+        super(CARAFEUpsample, self).__init__()
+        self.scale = scale
+        self.mid_channels = mid_channels
+        self.kernel_size = kernel_size
+        self.group_size = group_size
+        self.name = name
+
+    def __call__(self, input):
+        weight = _conv_bn(
+            input,
+            self.mid_channels,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            act='relu',
+            name=self.name + '.compresser')
+        weight = _conv_bn(
+            weight, (self.scale * self.group_size)**2,
+            filter_size=self.kernel_size,
+            stride=1,
+            padding=(self.kernel_size - 1) // 2,
+            act=None,
+            name=self.name + '.encoder')
+        weight = fluid.layers.pixel_shuffle(weight, upscale_factor=self.scale)
+        weight = fluid.layers.softmax(weight, axis=1)
+        weight = fluid.layers.unsqueeze(weight, axes=[1])
+
+        out = fluid.layers.resize_nearest(input, scale=float(self.scale))
+        out = fluid.layers.unfold(
+            out,
+            self.group_size,
+            dilations=self.scale,
+            paddings=(self.group_size - 1) // 2 * self.scale)
+
+        input_shape = fluid.layers.shape(input)
+        b = input_shape[0]
+        h = input_shape[2]
+        w = input_shape[3]
+        out = fluid.layers.reshape(
+            out, [b, int(input.shape[1]), -1, h * self.scale, w * self.scale])
+        out = fluid.layers.reduce_sum(weight * out, dim=2)
+
+        return out
