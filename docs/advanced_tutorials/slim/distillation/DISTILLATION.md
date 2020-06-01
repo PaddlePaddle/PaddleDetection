@@ -1,1 +1,0 @@
-../../../../slim/distillation/README.md
