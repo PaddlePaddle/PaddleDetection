@@ -58,7 +58,6 @@ class FusedSemanticHead(object):
                     v, target_shape, align_corners=True)
                 v = fluid.layers.conv2d(v, out_c, 1)
                 new_feat_list.append(v)
-                #fluid.layers.Print(fluid.layers.shape(v))
         new_feat = fluid.layers.sum(new_feat_list)
 
         for i in range(num_convs):

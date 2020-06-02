@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,31 +90,28 @@ class HTCBBoxHead(CascadeBBoxHead):
                row has 6 values: [label, confidence, xmin, ymin, xmax, ymax].
                N is the total number of prediction.
         """
-        self.im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+        # cls pred 
         boxes_cls_prob_l = []
-
-        rcnn_pred = rcnn_pred_list[-1]  # stage 3
-        repreat_num = 1
         repreat_num = 3
-        bbox_reg_w = cascade_bbox_reg_weights[-1]
         for i in range(repreat_num):
             # cls score
             cls_score, _ = self.get_output(
                 roi_feat_list[-1],  # roi_feat_3
-                name='_' + str(i + 1) if i > 0 else '')
+                #name='_' + str(i + 1) if i > 0 else ''
+                name='_' + str(i))
             cls_prob = fluid.layers.softmax(cls_score, use_cudnn=False)
             boxes_cls_prob_l.append(cls_prob)
-
-        boxes_cls_prob_mean = (
-            boxes_cls_prob_l[0] + boxes_cls_prob_l[1] + boxes_cls_prob_l[2]
-        ) / 3.0
+        boxes_cls_prob_mean = fluid.layers.sum(boxes_cls_prob_l) / float(
+            len(boxes_cls_prob_l))
 
         # bbox pred
         proposals_boxes = proposal_list[-1]
+        bbox_reg_w = cascade_bbox_reg_weights[-1]
+        self.im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
         im_scale_lod = fluid.layers.sequence_expand(self.im_scale,
                                                     proposals_boxes)
         proposals_boxes = proposals_boxes / im_scale_lod
-        bbox_pred = rcnn_pred[1]
+        bbox_pred = rcnn_pred_list[-1][1]
         bbox_pred_new = fluid.layers.reshape(bbox_pred,
                                              (-1, cls_agnostic_bbox_reg, 4))
         if cls_agnostic_bbox_reg == 2:

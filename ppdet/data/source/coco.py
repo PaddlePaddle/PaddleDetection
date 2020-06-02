@@ -42,7 +42,8 @@ class COCODataSet(DataSet):
                  anno_path=None,
                  dataset_dir=None,
                  sample_num=-1,
-                 with_background=True):
+                 with_background=True,
+                 load_semantic=False):
         super(COCODataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
@@ -68,7 +69,7 @@ class COCODataSet(DataSet):
         # a dict used to map category name to class id
         self.cname2cid = None
         self.load_image_only = False
-        self.load_semantic = True
+        self.load_semantic = load_semantic
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)

@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ __all__ = ['HybridTaskCascade']
 @register
 class HybridTaskCascade(object):
     """
-    Cascade Mask R-CNN architecture, see https://arxiv.org/abs/1712.00726
+    Hybrid Task Cascade  Mask R-CNN architecture, see https://arxiv.org/abs/1901.07518
 
     Args:
         backbone (object): backbone instance
@@ -166,7 +166,6 @@ class HybridTaskCascade(object):
         proposals = None
         bbox_pred = None
         outs = None
-
         refined_bbox = rpn_rois
         for i in range(self.num_stage):
             # BBox Branch
@@ -198,7 +197,8 @@ class HybridTaskCascade(object):
             cls_score, bbox_pred = self.bbox_head.get_output(
                 roi_feat,
                 wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
-                name='_' + str(i + 1) if i > 0 else '')
+                #name='_' + str(i + 1) if i > 0 else ''
+                name='_' + str(i))
             rcnn_pred_list.append((cls_score, bbox_pred))
 
             # Mask Branch 
@@ -221,38 +221,43 @@ class HybridTaskCascade(object):
 
                     if self.fpn is None:
                         bbox_head_feat = self.bbox_head.get_head_feat()
-                        feat = fluid.layers.gather(bbox_head_feat,
-                                                   roi_has_mask_int32)
+                        mask_feat = fluid.layers.gather(bbox_head_feat,
+                                                        roi_has_mask_int32)
                     else:
-                        feat = self.roi_extractor(
+                        mask_feat = self.roi_extractor(
                             body_feats, mask_rois, spatial_scale, is_mask=True)
 
                     if self.with_semantic:
                         semantic_roi_feat = self.semantic_roi_extractor(
                             semantic_feat, mask_rois)
                         if semantic_roi_feat is not None:
-                            feat = fluid.layers.sum([feat, semantic_roi_feat])
+                            mask_feat = fluid.layers.sum(
+                                [mask_feat, semantic_roi_feat])
 
                     if self.mask_info_flow:
                         last_feat = None
                         for j in range(i):
                             last_feat = self.mask_head.get_output(
-                                feat,
+                                mask_feat,
                                 last_feat,
                                 return_logits=False,
                                 return_feat=True,
                                 name='_' + str(i) + '_' + str(j))
                         mask_logits = self.mask_head.get_output(
-                            feat, last_feat, name='_' + str(i))
+                            mask_feat,
+                            last_feat,
+                            return_logits=True,
+                            return_feat=False,
+                            name='_' + str(i))
                     else:
                         mask_logits = self.mask_head.get_output(
-                            feat, return_logits=True, name='_' + str(i))
+                            mask_feat, return_logits=True, name='_' + str(i))
                     mask_logits_list.append(mask_logits)
 
             if i < self.num_stage - 1 and not self.interleaved:
                 refined_bbox = self._decode_box(
                     proposals, bbox_pred, curr_stage=i)
-            elif mode != 'train':
+            elif i < self.num_stage - 1 and mode != 'train':
                 refined_bbox = self._decode_box(
                     proposals, bbox_pred, curr_stage=i)
 
@@ -340,11 +345,14 @@ class HybridTaskCascade(object):
                                                                 mask_rois)
                 if semantic_roi_feat is not None:
                     mask_feat = fluid.layers.sum([mask_feat, semantic_roi_feat])
+
             mask_logits_list = []
             mask_pred_list = []
-            last_feat = None
             for i in range(self.num_stage):
+                if i < 2:
+                    continue
                 if self.mask_info_flow:
+                    last_feat = None
                     for j in range(i):
                         last_feat = self.mask_head.get_output(
                             mask_feat,
@@ -352,11 +360,11 @@ class HybridTaskCascade(object):
                             return_logits=False,
                             return_feat=True,
                             name='_' + str(i) + '_' + str(j))
-                    mask_logits, last_feat = self.mask_head.get_output(
+                    mask_logits = self.mask_head.get_output(
                         mask_feat,
                         last_feat,
                         return_logits=True,
-                        return_feat=True,
+                        return_feat=False,
                         name='_' + str(i))
                     mask_logits_list.append(mask_logits)
                 else:
@@ -367,9 +375,9 @@ class HybridTaskCascade(object):
                         name='_' + str(i))
                 mask_pred_out = self.mask_head.get_prediction(mask_logits, bbox)
                 mask_pred_list.append(mask_pred_out)
+
             mask_pred_out = fluid.layers.sum(mask_pred_list) / float(
                 len(mask_pred_list))
-            mask_pred_out = self.mask_head.get_prediction(mask_logits, bbox)
             fluid.layers.assign(input=mask_pred_out, output=mask_pred)
 
         fluid.layers.cond(cond, noop, process_boxes)
@@ -409,7 +417,6 @@ class HybridTaskCascade(object):
             'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
             'gt_mask':  {'shape': [None, 2], 'dtype': 'float32', 'lod_level': 3}, # polygon coordinates
-            #'semantic': {'shape': [None, 1]+image_shape[1:], 'dtype': 'int32', 'lod_level': 0},
             'semantic': {'shape': [None, 1, None, None], 'dtype': 'int32', 'lod_level': 0},
         }
         # yapf: enable
