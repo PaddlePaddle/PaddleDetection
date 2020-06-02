@@ -42,7 +42,7 @@ class ACFPN(object):
         spatial_scale (list): feature map scaling factor
         has_extra_convs (bool): whether has extral convolutions in higher levels
         norm_type (str|None): normalization type, 'bn'/'sync_bn'/'affine_channel'
-        use_c5 (bool): whether to use C5 as the featre map.
+        use_c5 (bool): whether to use C5 as the feature map.
         norm_groups (int): group number of group norm.
     """
     __shared__ = ['norm_type', 'freeze_norm']
