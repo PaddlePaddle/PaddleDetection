@@ -21,13 +21,14 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
                                bool use_gpu,
                                const int min_subgraph_size,
                                const int batch_size,
-                               const std::string& run_mode) {
+                               const std::string& run_mode,
+                               const int gpu_id) {
   paddle::AnalysisConfig config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
   config.SetModel(prog_file, params_file);
   if (use_gpu) {
-    config.EnableUseGpu(100, 0);
+    config.EnableUseGpu(100, gpu_id);
     if (run_mode != "fluid") {
       auto precision = paddle::AnalysisConfig::Precision::kFloat32;
       if (run_mode == "trt_fp16") {
@@ -182,7 +183,11 @@ void ObjectDetector::Predict(const cv::Mat& im,
   // Calculate output length
   int output_size = 1;
   for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
+    output_size *= output_shape[j];
+  }
+
+  if (output_size < 6) {
+    std::cerr << "[WARNING] No object detected." << std::endl;
   }
   output_data_.resize(output_size);
   out_tensor->copy_to_cpu(output_data_.data());

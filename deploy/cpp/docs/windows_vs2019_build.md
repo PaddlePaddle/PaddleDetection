@@ -96,6 +96,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | image_path  | 要预测的图片文件路径 |
 | video_path  | 要预测的视频文件路径 |
 | use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
+| gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 
 **注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
 
@@ -111,8 +112,8 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 `样例二`:
 ```shell
-#使用`GPU`测试视频 `D:\\videos\\test.avi`  
-.\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.jpeg --use_gpu=1
+#使用`GPU`测试视频 `D:\\videos\\test.mp4`  
+.\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.mp4 --use_gpu=1
 ```
 
-视频文件`可视化预测结果`会保存在当前目录下`output.avi`文件中。
+视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
