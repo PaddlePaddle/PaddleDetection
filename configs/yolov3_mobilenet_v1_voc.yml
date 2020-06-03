@@ -28,22 +28,14 @@ YOLOv3Head:
             [116, 90], [156, 198], [373, 326]]
   norm_decay: 0.
   yolo_loss: YOLOv3Loss
-  nms: MultiClassSoftNMS
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    normalized: false
+    score_threshold: 0.01
 
-MultiClassSoftNMS:
-  score_threshold: 0.01
-  keep_top_k: 100
-  softnms_sigma: 0.5
-  normalized: false
-
-#  nms:
-#    background_label: -1
-#    keep_top_k: 100
-#    nms_threshold: 0.45
-#    nms_top_k: 1000
-#    normalized: false
-#    score_threshold: 0.01
-#
 YOLOv3Loss:
   # batch_size here is only used for fine grained loss, not used
   # for training batch_size setting, training batch_size setting

@@ -334,7 +334,6 @@ class YOLOv3Head(object):
         yolo_boxes = fluid.layers.concat(boxes, axis=1)
         yolo_scores = fluid.layers.concat(scores, axis=2)
         if type(self.nms) is MultiClassSoftNMS:
-            print('=====MultiClassSoftNMS=======')
             yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
         pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         return {'bbox': pred}

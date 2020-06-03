@@ -556,10 +556,6 @@ class MultiClassSoftNMS(object):
             cls_boxes = [[] for _ in range(class_nums)]
             cls_ids = [[] for _ in range(class_nums)]
 
-            # score, bboxes
-            # (array([], dtype=int64), (870, 81), (870, 81, 4))
-            # ((0,), (0, 4), (0, 1))
-
             start_idx = 1 if self.background_label == 0 else 0
             for j in range(start_idx, class_nums):
                 inds = np.where(scores[:, j] >= softnms_thres)[0]
@@ -605,7 +601,6 @@ class MultiClassSoftNMS(object):
             else:
                 assert len(bboxes.shape) == 3
                 assert len(scores.shape) == 3
-                #                print(bboxes.shape, scores.shape)
                 for i in range(bboxes.shape[0]):
                     pred = _soft_nms(bboxes[i], scores[i])
                     out_offsets.append(pred.shape[0] + out_offsets[-1])
