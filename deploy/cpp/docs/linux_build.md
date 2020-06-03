@@ -85,7 +85,7 @@ make
  ```shell
  sh ./scripts/build.sh
  ```
-
+**注意**: OPENCV依赖OPENBLAS，Ubuntu用户需确认系统是否已存在`libopenblas.so`。如未安装，可执行apt-get install libopenblas-dev进行安装。
 
 ### Step5: 预测及可视化
 编译成功后，预测入口程序为`build/main`其主要命令参数说明如下：
@@ -95,9 +95,10 @@ make
 | image_path  | 要预测的图片文件路径 |
 | video_path  | 要预测的视频文件路径 |
 | use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
+| gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
 
-**注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
+**注意**: 如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
 
 
 `样例一`：
@@ -111,7 +112,7 @@ make
 
 `样例二`:
 ```shell
-#使用 `GPU`预测视频`/root/projects/videos/test.avi`
-./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.avi --use_gpu=1
+#使用 `GPU`预测视频`/root/projects/videos/test.mp4`
+./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --use_gpu=1
 ```
-视频文件`可视化预测结果`会保存在当前目录下`output.avi`文件中。
+视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
