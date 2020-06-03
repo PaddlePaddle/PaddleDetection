@@ -183,13 +183,13 @@ class YOLOv3Head(object):
         return route, tip
 
     def _upsample(self, input, scale=2, upsample='nearest', name=None):
-        upsample = upsample.copy()
         if upsample == 'nearest':
             out = fluid.layers.resize_nearest(
                 input=input, scale=float(scale), name=name)
         else:
             assert isinstance(
                 upsample, dict), "Unknown upsample method: {}".format(upsample)
+            upsample = upsample.copy()
             assert upsample['type'] in [
                 'carafe'
             ], 'Unknown upsample type {}'.format(upsample['type'])

@@ -75,7 +75,6 @@ def _conv_bn(input, ch_out, filter_size, stride, padding, act=None, name=None):
         filter_size=filter_size,
         stride=stride,
         padding=padding,
-        act=None,
         param_attr=ParamAttr(name=name + ".conv.weights"),
         bias_attr=False)
 
@@ -1588,6 +1587,8 @@ class CARAFEUpsample(object):
         w = input_shape[3]
         out = fluid.layers.reshape(
             out, [b, int(input.shape[1]), -1, h * self.scale, w * self.scale])
+
+        weight = fluid.layers.expand_as(weight, out)
         out = fluid.layers.reduce_sum(weight * out, dim=2)
 
         return out
