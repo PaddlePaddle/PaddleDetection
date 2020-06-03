@@ -46,10 +46,9 @@ void PredictVideo(const std::string& video_path,
 
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "output.avi";
+  std::string video_out_path = "output.mp4";
   video_out.open(video_out_path.c_str(),
-                 CV_FOURCC('m', 'p', '4', 'v'),
-                 //CV_FOURCC('M', 'J', 'P', 'G'),
+                 0x00000021,
                  video_fps,
                  cv::Size(video_width, video_height),
                  true);
