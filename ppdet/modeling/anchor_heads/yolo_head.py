@@ -20,7 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -335,6 +335,8 @@ class YOLOv3Head(object):
 
         yolo_boxes = fluid.layers.concat(boxes, axis=1)
         yolo_scores = fluid.layers.concat(scores, axis=2)
+        if type(self.nms) is MultiClassSoftNMS:
+            yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
         pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         return {'bbox': pred}
 
