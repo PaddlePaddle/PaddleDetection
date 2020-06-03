@@ -66,6 +66,8 @@ def check_version(version='1.7.0'):
 
     length = min(len(version_installed), len(version_split))
     for i in six.moves.range(length):
+        if version_installed[i] > version_split[i]:
+            return
         if version_installed[i] < version_split[i]:
             raise Exception(err)
 
