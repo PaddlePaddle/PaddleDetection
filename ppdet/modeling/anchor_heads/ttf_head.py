@@ -21,7 +21,7 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Constant, Uniform
+from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK
@@ -41,7 +41,7 @@ class TTFHead(object):
 
     def __init__(self,
                  head_conv=128,
-                 num_classes=81,
+                 num_classes=80,
                  hm_weight=1.,
                  wh_weight=5.,
                  wh_offset_base=16.,
@@ -53,7 +53,8 @@ class TTFHead(object):
                  score_thresh=0.01,
                  max_per_img=100,
                  base_down_ratio=32,
-                 wh_loss='GiouLoss'):
+                 wh_loss='GiouLoss',
+                 dcn_upsample=True):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
         self.num_classes = num_classes
@@ -72,6 +73,7 @@ class TTFHead(object):
         self.hm_weight = hm_weight
         self.wh_weight = wh_weight
         self.wh_loss = wh_loss
+        self.dcn_upsample = dcn_upsample
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -88,7 +90,8 @@ class TTFHead(object):
                 padding=padding,
                 act=act,
                 param_attr=ParamAttr(
-                    initializer=Normal(0, std), name=param_name + '.weight'),
+                    initializer=Xavier(uniform=False),
+                    name=param_name + '.weight'),
                 bias_attr=ParamAttr(
                     learning_rate=2.,
                     regularizer=L2Decay(0.),
@@ -98,13 +101,25 @@ class TTFHead(object):
     def upsample(self, x, out_c, name=None):
         fan_in = x.shape[1] * 3 * 3
         stdv = 1. / math.sqrt(fan_in)
-        conv = DeformConv(
-            x,
-            out_c,
-            3,
-            initializer=Uniform(-stdv, stdv),
-            bias_attr=True,
-            name=name + '.0')
+        if self.dcn_upsample:
+            conv = DeformConv(
+                x,
+                out_c,
+                3,
+                initializer=Xavier(uniform=True),
+                bias_attr=True,
+                name=name + '.0')
+        else:
+            conv = fluid.layers.conv2d(
+                x,
+                out_c,
+                3,
+                padding=1,
+                param_attr=ParamAttr(initializer=Xavier()),
+                bias_attr=ParamAttr(
+                    learning_rate=2., regularizer=L2Decay(0.)))
+            #groups=out_c)
+
         norm_name = name + '.1'
         pattr = ParamAttr(name=norm_name + '.weight', initializer=Constant(1.))
         battr = ParamAttr(name=norm_name + '.bias', initializer=Constant(0.))
@@ -245,12 +260,17 @@ class TTFHead(object):
         pred_hm = paddle.tensor.clamp(
             fluid.layers.sigmoid(pred_hm), 1e-4, 1 - 1e-4)
         hm_loss = self.ct_focal_loss(pred_hm, target_hm) * self.hm_weight
-        H, W = target_hm.shape[2:]
+        #H, W = target_hm.shape[2:]
+        shape = fluid.layers.shape(target_hm)
+        shape.stop_gradient = True
+        H, W = shape[2], shape[3]
+
         mask = fluid.layers.reshape(target_weight, [-1, H, W])
         avg_factor = fluid.layers.reduce_sum(mask) + 1e-4
         base_step = self.down_ratio
-        shifts_x = paddle.arange(0, W * base_step, base_step)
-        shifts_y = paddle.arange(0, H * base_step, base_step)
+        zero = fluid.layers.fill_constant(shape=[1], value=0, dtype='int32')
+        shifts_x = paddle.arange(zero, W * base_step, base_step, dtype='int32')
+        shifts_y = paddle.arange(zero, H * base_step, base_step, dtype='int32')
         shift_y, shift_x = paddle.tensor.meshgrid([shifts_y, shifts_x])
         base_loc = fluid.layers.stack([shift_x, shift_y], axis=0)
         base_loc.stop_gradient = True

@@ -84,7 +84,8 @@ class TTFNet(object):
     def _inputs_def(self, image_shape, downsample):
         im_shape = [None] + image_shape
         H, W = im_shape[2:]
-        target_h, target_w = H // downsample, W // downsample
+        target_h = None if H is None else H // downsample
+        target_w = None if W is None else W // downsample
         # yapf: disable
         inputs_def = {
             'image':    {'shape': im_shape,                 'dtype': 'float32', 'lod_level': 0},
@@ -100,7 +101,7 @@ class TTFNet(object):
 
     def build_inputs(
             self,
-            image_shape=[3, 512, 512],
+            image_shape=[3, None, None],
             fields=[
                 'image', 'ttf_heatmap', 'ttf_box_target', 'ttf_reg_weight'
             ],  # for train
