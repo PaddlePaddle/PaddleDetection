@@ -24,7 +24,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK
+from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, CARAFEUpsample
 from ppdet.modeling.losses import GiouLoss
 
 __all__ = ['TTFHead']
@@ -54,6 +54,7 @@ class TTFHead(object):
                  max_per_img=100,
                  base_down_ratio=32,
                  wh_loss='GiouLoss',
+                 upsample_method='bilinear',
                  dcn_upsample=True):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
@@ -74,6 +75,7 @@ class TTFHead(object):
         self.wh_weight = wh_weight
         self.wh_loss = wh_loss
         self.dcn_upsample = dcn_upsample
+        self.upsample_method = upsample_method
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -131,8 +133,24 @@ class TTFHead(object):
             name=norm_name + '.output.1',
             moving_mean_name=norm_name + '.running_mean',
             moving_variance_name=norm_name + '.running_var')
-        up = fluid.layers.resize_bilinear(
-            bn, scale=2, name=name + '.2.upsample')
+        if self.upsample_method == 'bilinear':
+            up = fluid.layers.resize_bilinear(
+                bn, scale=2, name=name + '.2.upsample')
+        else:
+            assert isinstance(self.upsample_method,
+                              dict), "Unknown upsample method: {}".format(
+                                  self.upsample_method)
+            upsample = self.upsample_method.copy()
+            assert upsample['type'] in [
+                'carafe'
+            ], 'Unknown upsample type {}'.format(upsample['type'])
+
+            upsample_type = upsample.pop('type')
+            upsample['name'] = name + '2.upsample'
+
+            if upsample_type.lower() == 'carafe':
+                carafe_up = CARAFEUpsample(**upsample)
+                up = carafe_up(bn)
         return up
 
     def _head(self, x, out_c, conv_num=1, head_out_c=None, name=None):
