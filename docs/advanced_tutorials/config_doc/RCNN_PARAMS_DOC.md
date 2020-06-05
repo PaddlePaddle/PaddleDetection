@@ -55,7 +55,7 @@ ResNet:
   # 主干网络返回的主要阶段特征用于FPN作进一步的特征融合
   # 默认从[2,3,4,5]返回特征
   feature_maps: [2,3,4,5]
-  # 是否在训练中固定norm layer的权重，默认从第2阶段开始固定
+  # 是否在训练中固定某些权重，默认从第2阶段开始固定，即resnet的stage 1
   freeze_at: 2
   # 是否停止norm layer的梯度回传，默认是
   freeze_norm: true
@@ -192,7 +192,14 @@ LearningRate:
   # 学习率规划器
   # 具体实现参考[API](fluid.layers.piecewise_decay)
   schedulers:
-    #学习率衰减策略
+    # 学习率衰减策略
+    # 对于coco数据集，1个epoch大概需要7000个iter
+    # if step < 120000:
+    #    learning_rate = 0.1
+    # elif 120000 <= step < 160000:
+    #    learning_rate = 0.1 * 0.1
+    # else:
+    #    learning_rate = 0.1 * (0.1)**2
     - !PiecewiseDecay
       gamma: 0.1
       milestones: [120000, 160000]
@@ -225,6 +232,8 @@ TrainReader:
   # 包括图片，图片长宽高等基本信息，图片id，标记的目标框、实例标签、实例分割掩码
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
+  # VOC数据集对应的输入，注意选择VOC时，也要对应修改metric: VOC
+- # fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
   # 数据集目录配置
   dataset:
     # 指定数据集名称，可以选择VOCDataSet, COCODataSet
@@ -288,8 +297,6 @@ TrainReader:
   # 包括图片，图片长宽高等基本信息，图片id，图片shape
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
-    # for voc
-    #fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
   dataset:
     !COCODataSet
     image_dir: val2017
