@@ -5,6 +5,8 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-from . import rcnn
+from . import faster_rcnn
+from . import mask_rcnn
 
-from .rcnn import *
+from .faster_rcnn import *
+from .mask_rcnn import *

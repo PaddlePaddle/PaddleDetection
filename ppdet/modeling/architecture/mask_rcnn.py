@@ -13,13 +13,12 @@ from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
-from ..ops import RoIAlign
 
-__all__ = ['FasterRCNN']
+__all__ = ['MaskRCNN']
 
 
 @register
-class FasterRCNN(Layer):
+class MaskRCNN(Layer):
     __category__ = 'architecture'
     __inject__ = [
         # stage 1
@@ -29,9 +28,12 @@ class FasterRCNN(Layer):
         'anchor',
         # stage 2 
         'proposal',
+        'mask',
         'roi_extractor',
         'bbox_neck',
         'bbox_head',
+        'mask_neck',
+        'mask_head'
     ]
 
     def __init__(
@@ -41,11 +43,14 @@ class FasterRCNN(Layer):
             rpn_head,
             anchor,
             proposal,
+            mask,
             roi_extractor,
             bbox_neck='BBoxNeck',
             bbox_head='BBoxHead',
+            mask_neck='MaskNeck',
+            mask_head='MaskHead',
             rpn_only=False, ):
-        super(FasterRCNN, self).__init__()
+        super(MaskRCNN, self).__init__()
 
         self.backbone = backbone
         self.rpn_neck = rpn_neck
@@ -55,6 +60,9 @@ class FasterRCNN(Layer):
         self.roi_extractor = roi_extractor
         self.bbox_neck = bbox_neck
         self.bbox_head = bbox_head
+        self.mask = mask
+        self.mask_neck = mask_neck
+        self.mask_head = mask_head
         self.rpn_only = rpn_only
 
     def forward(self, inputs, mode='train'):
@@ -85,8 +93,19 @@ class FasterRCNN(Layer):
 
         # BBox Head
         bbox_neck_out = self.bbox_neck(self.gbd)
-        bbox_head_out = self.bbox_head(bbox_neck_out)
+        self.gbd.update(bbox_neck_out)
+        bbox_head_out = self.bbox_head(self.gbd)
         self.gbd.update(bbox_head_out)
+
+        # Mask 
+        mask_out = self.mask(self.gbd)
+        self.gbd.update(mask_out)
+
+        # Mask Head 
+        mask_neck_out = self.mask_neck(self.gbd)
+        self.gbd.update(mask_neck_out)
+        mask_head_out = self.mask_head(self.gbd)
+        self.gbd.update(mask_head_out)
 
         # result  
         if self.gbd['mode'] == 'train':
@@ -104,16 +123,24 @@ class FasterRCNN(Layer):
 
         # BBox loss
         bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(inputs)
-        losses = [bbox_cls_loss, bbox_reg_loss, rpn_cls_loss, rpn_reg_loss]
+
+        # Mask loss 
+        mask_loss = self.mask_head.loss(inputs)
+
+        # Total loss 
+        losses = [
+            rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss, mask_loss
+        ]
         loss = fluid.layers.sum(losses)
+
         out = {
             'loss': loss,
             'loss_rpn_cls': rpn_cls_loss,
             'loss_rpn_reg': rpn_reg_loss,
             'loss_bbox_cls': bbox_cls_loss,
             'loss_bbox_reg': bbox_reg_loss,
+            'loss_mask': mask_loss
         }
-
         return out
 
     def post_processing(self, inputs):
@@ -124,11 +151,20 @@ class FasterRCNN(Layer):
                      inputs,
                      fields=[
                          'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
-                         'is_crowd'
+                         'is_crowd', 'gt_mask'
                      ]):
         gbd = BufferDict()
-        with fluid.dygraph.guard():
-            for i, k in enumerate(fields):
-                v = to_variable(np.array([x[i] for x in inputs]))
-                gbd.set(k, v)
+        # init input 
+        for k in fields:
+            gbd[k] = []
+        # make batch list 
+        for batch in inputs:
+            for i, (k, v) in enumerate(zip(fields, batch)):
+                gbd[k].append(v)
+        # make variable  
+        for k, v in gbd.items():
+            batch = np.asarray(v)
+            if k == 'gt_mask':
+                batch = np.squeeze(batch, axis=3)
+            gbd[k] = to_variable(batch)
         return gbd

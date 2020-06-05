@@ -47,11 +47,16 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
+    def __init__(self,
+                 pad_to_stride=0,
+                 use_padded_im_info=True,
+                 pad_gt=False,
+                 pad_mask=False):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
+        self.pad_mask = pad_mask
 
     def __call__(self, samples, context=None):
         """
@@ -82,51 +87,50 @@ class PadBatch(BaseOperator):
                 data['im_info'][:2] = max_shape[1:3]
 
         if self.pad_gt:
-            #batch_size = len(samples)
             gt_num = []
-            '''
-            if samples[0]['gt_poly'] is not None:
-                has_poly = True
+            if self.pad_mask:
                 poly_num = []
                 point_num = []
-            '''
+
             for data in samples:
                 gt_num.append(data['gt_bbox'].shape[0])
-                '''
-                if has_poly:
-                    print("gt_poly: ", data['gt_poly'])
+
+                if self.pad_mask:
                     poly_num.append(len(data['gt_poly']))
-                    for one_poly in data['gt_poly']:
-                        point_num.append(one_poly.shape[0])
-                '''
+                    for poly in data['gt_poly']:
+                        p_num = 0
+                        for p in poly:
+                            p_num += len(p)
+                        point_num.append(int(p_num / 2))
+
             gt_num_max = max(gt_num)
             gt_box_data = np.zeros([gt_num_max, 4])
             gt_class_data = np.zeros([gt_num_max])
             is_crowd_data = np.ones([gt_num_max])
-            '''
-            if has_poly:
+
+            if self.pad_mask:
                 poly_num_max = max(poly_num)
                 point_num_max = max(point_num)
-                gt_masks_data = -np.ones(
-                    [batch_size, gt_num_max, poly_num_max, point_num_max, 2])
-            '''
+                gt_masks_data = -np.ones([poly_num_max, point_num_max, 2])
 
-            for batch_id, data in enumerate(samples):
+            for i, data in enumerate(samples):
                 gt_num = data['gt_bbox'].shape[0]
                 gt_box_data[0:gt_num, :] = data['gt_bbox']
                 gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
                 is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
-                '''
-                if has_poly:
-                    # all masks of one image
-                    for i, gt_seg in enumerate(data['gt_poly']):
-                        for ii, poly in enumerate(gt_seg):
-                            gt_masks_data[batch_id, i, ii, :poly.shape[0], :] = poly
-                '''
+                if self.pad_mask:
+                    for j, poly in enumerate(data['gt_poly']):
+                        if len(poly) > 1:
+                            one_poly = []
+                            for p in poly:
+                                one_poly.extend(p)
+                            poly = one_poly
+                        poly_np = np.array(poly).reshape(-1, 2)
+                        gt_masks_data[j, :poly_np.shape[0], :] = poly_np
+                    data['gt_poly'] = gt_masks_data
                 data['gt_bbox'] = gt_box_data
                 data['gt_class'] = gt_class_data
                 data['is_crowd_data'] = is_crowd_data
-
         return samples
 
 

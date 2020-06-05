@@ -15,18 +15,25 @@ class MaskNeck(Layer):
         super(MaskNeck, self).__init__()
 
     def forward(self, inputs):
-        conv5 = fluid.layers.gather(inputs, inputs['roi_has_mask_int32'])
-        return conv5
+        x = inputs['res5']
+        y = fluid.layers.gather(x, inputs['rois_has_mask_int32'])
+        outs = {'mask_neck': y}
+        return outs
 
 
 @register
 class MaskHead(Layer):
-    def __init__(self, ):
+    __shared__ = ['num_classes']
+
+    def __init__(self, dim_reduced=256, resolution=14, num_classes=81):
         super(MaskHead, self).__init__()
+        self.dim_reduced = dim_reduced
+        self.resolution = resolution
+        self.num_classes = num_classes
 
         self.mask_out = fluid.dygraph.Conv2DTranspose(
             num_channels=2048,
-            num_filters=self.cfg.dim_reduced,
+            num_filters=self.dim_reduced,
             filter_size=2,
             stride=2,
             act='relu',
@@ -36,10 +43,10 @@ class MaskHead(Layer):
                 name='conv5_mask_b', learning_rate=2., regularizer=L2Decay(0.)))
 
         self.mask_fcn_logits = fluid.dygraph.Conv2D(
-            num_channels=self.cfg.dim_reduced,
-            num_filters=self.cfg.class_num,
+            num_channels=self.dim_reduced,
+            num_filters=self.num_classes,
             filter_size=1,
-            act='sigmoid' if self.mode != 'train' else None,
+            #act='sigmoid' if self.mode != 'train' else None,
             param_attr=ParamAttr(
                 name='mask_fcn_logits_w', initializer=MSRA(uniform=False)),
             bias_attr=ParamAttr(
@@ -48,14 +55,18 @@ class MaskHead(Layer):
                 regularizer=L2Decay(0.0)))
 
     def forward(self, inputs):
-        m_out = self.mask_out(inputs)
-        m_logits = self.mask_fcn_logits(m_out)
+        x = inputs['mask_neck']
+        y = self.mask_out(x)
+        y = self.mask_fcn_logits(y)
+        if inputs['mode'] == 'train':
+            y = fluid.layers.sigmoid(y, name='mask_logits_sigmoid')
 
-        return m_logits
+        outs = {'mask_logits': y}
+        return outs
 
     def loss(self, inputs):
         # input needs (model_out, target)
-        reshape_dim = self.cfg.Dataset.NUM_CLASSES * cfg.resolution * cfg.resolution
+        reshape_dim = self.num_classes * self.resolution * self.resolution
         mask_logits = fluid.layers.reshape(inputs['mask_logits'],
                                            (-1, reshape_dim))
         mask_label = fluid.layers.cast(x=inputs['mask_int32'], dtype='float32')

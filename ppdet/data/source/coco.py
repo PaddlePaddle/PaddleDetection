@@ -77,7 +77,7 @@ class COCODataSet(DataSet):
             'invalid coco annotation file: ' + anno_path
         from pycocotools.coco import COCO
         coco = COCO(anno_path)
-        img_ids = coco.getImgIds()
+        img_ids = coco.getImgIds()[:4]
         cat_ids = coco.getCatIds()
         records = []
         ct = 0

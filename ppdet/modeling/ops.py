@@ -174,22 +174,32 @@ class ProposalTargetGenerator(object):
         return outs
 
 
-# def generate_mask_target_op(im_info, gt_classes, is_crowd, gt_segms, rois,
-#                               rois_lod, labels_int32, num_classes, resolution):
-#     im_info = im_info.numpy()
-#     gt_classes = gt_classes.numpy()
-#     is_crowd = is_crowd.numpy()
-#     gt_segms = gt_segms.numpy()
-#     rois = rois.numpy()
-#     rois_lod = rois_lod.numpy()
-#     labels_int32 = labels_int32.numpy() 
-#     outs = generate_mask_labels(im_info, gt_classes, is_crowd, gt_segms, rois,
-#                                 rois_lod, labels_int32, num_classes, resolution)
+@register
+class MaskTargetGenerator(object):
+    __shared__ = ['num_classes']
 
-#     outs = [to_variable(v) for v in outs]
-#     for v in outs:
-#         v.stop_gradient = True
-#     return outs
+    def __init__(self, num_classes=81, resolution=14):
+        super(MaskTargetGenerator, self).__init__()
+        self.num_classes = num_classes
+        self.resolution = resolution
+
+    def __call__(self, im_info, gt_classes, is_crowd, gt_segms, rois, rois_lod,
+                 labels_int32):
+        im_info = im_info.numpy()
+        gt_classes = gt_classes.numpy()
+        is_crowd = is_crowd.numpy()
+        gt_segms = gt_segms.numpy()
+        rois = rois.numpy()
+        rois_lod = rois_lod.numpy()
+        labels_int32 = labels_int32.numpy()
+        outs = generate_mask_target(im_info, gt_classes, is_crowd, gt_segms,
+                                    rois, rois_lod, labels_int32,
+                                    self.num_classes, self.resolution)
+
+        outs = [to_variable(v) for v in outs]
+        for v in outs:
+            v.stop_gradient = True
+        return outs
 
 
 @register

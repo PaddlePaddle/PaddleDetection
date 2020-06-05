@@ -261,7 +261,6 @@ class ResNet(Layer):
 
     def forward(self, inputs):
         x = inputs.get('image')
-
         conv1 = self.conv(x)
         poo1 = self.pool2d_max(conv1)
 

@@ -107,23 +107,17 @@ def polys_to_boxes(polys):
     boxes_from_polys = np.zeros((len(polys), 4), dtype=np.float32)
     for j in range(len(polys)):
         x_min, y_min = 10000000, 10000000
-        x_max, y_max = 0, 0
-        for i in range(len(polys[j])):
-            poly = polys[j][i]
-            x0 = min(min(p[::2]) for p in poly)
-            x_min = min(x0, x_min)
-            y0 = min(min(p[1::2]) for p in poly)
-            y_min = min(y0, y_min)
-            x1 = max(max(p[::2]) for p in poly)
-            x_max = max(x_max, x1)
-            y1 = max(max(p[1::2]) for p in poly)
-            y_max = max(y1, y_max)
-        boxes_from_polys[j, :] = [x_min, y_min, x_max, y_max]
+        poly = polys[j]
+        x0 = min(min(p[::2]) for p in poly)
+        y0 = min(min(p[1::2]) for p in poly)
+        x1 = max(max(p[::2]) for p in poly)
+        y1 = max(max(p[1::2]) for p in poly)
+        boxes_from_polys[j, :] = [x0, y0, x1, y1]  #[x_min, y_min, x_max, y_max]
     return boxes_from_polys
 
 
 @jit
-def bbox_overlaps_mask_1(boxes, query_boxes):
+def bbox_overlaps_mask(boxes, query_boxes):
     N = boxes.shape[0]
     K = query_boxes.shape[0]
     overlaps = np.zeros((N, K), dtype=boxes.dtype)
@@ -142,29 +136,6 @@ def bbox_overlaps_mask_1(boxes, query_boxes):
                          (boxes[n, 3] - boxes[n, 1] + 1) +\
                          box_area - iw * ih)
                     overlaps[n, k] = iw * ih / ua
-    return overlaps
-
-
-@jit
-def bbox_overlaps_mask(roi_boxes, gt_boxes):
-    w1 = np.maximum(roi_boxes[:, 2] - roi_boxes[:, 0] + 1, 0)
-    h1 = np.maximum(roi_boxes[:, 3] - roi_boxes[:, 1] + 1, 0)
-    w2 = np.maximum(gt_boxes[:, 2] - gt_boxes[:, 0] + 1, 0)
-    h2 = np.maximum(gt_boxes[:, 3] - gt_boxes[:, 1] + 1, 0)
-    area1 = w1 * h1
-    area2 = w2 * h2
-    overlaps = np.zeros((roi_boxes.shape[0], gt_boxes.shape[0]))
-    for ind1 in range(roi_boxes.shape[0]):
-        for ind2 in range(gt_boxes.shape[0]):
-            x_min = np.maximum(roi_boxes[ind1, 0], gt_boxes[ind2, 0])
-            y_min = np.maximum(roi_boxes[ind1, 1], gt_boxes[ind2, 1])
-            x_max = np.minimum(roi_boxes[ind1, 2], gt_boxes[ind2, 2])
-            y_max = np.minimum(roi_boxes[ind1, 3], gt_boxes[ind2, 3])
-            inter_w = np.maximum(x_max - x_min + 1, 0)
-            inter_h = np.maximum(y_max - y_min + 1, 0)
-            inter_area = inter_w * inter_h
-            iou = inter_area / (area1[ind1] + area2[ind2] - inter_area)
-            overlaps[ind1, ind2] = iou
     return overlaps
 
 
@@ -222,4 +193,5 @@ def expand_mask_targets(masks, mask_class_labels, resolution, num_classes):
         # (only happens when there is no fg samples in an image)
         if cls > 0:
             mask_targets[i, start:end] = masks[i, :]
+
     return mask_targets

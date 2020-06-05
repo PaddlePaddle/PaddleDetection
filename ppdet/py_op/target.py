@@ -308,34 +308,25 @@ def _sample_rois(rpn_rois,
 def generate_mask_target(im_info, gt_classes, is_crowd, gt_segms, rois,
                          rois_lod, labels_int32, num_classes, resolution):
     mask_rois = []
-    roi_has_mask_int32 = []
+    rois_has_mask_int32 = []
     mask_int32 = []
-    #new_lod = []
     st_num = 0
-
     for i in range(len(rois_lod)):
         rois_num = rois_lod[i]
         mask_blob = _sample_mask(
-            rois[st_num:rois_num],
-            labels_int32[st_num:rois_num],
-            gt_segms[i],
-            im_info[i],
-            gt_classes[i],
-            is_crowd[i],
-            num_classes,
-            resolution, )
+            rois[st_num:rois_num], labels_int32[st_num:rois_num], gt_segms[i],
+            im_info[i], gt_classes[i], is_crowd[i], num_classes, resolution)
+
         st_num = rois_num
-        #new_lod.append(mask_blob['mask_rois'].shape[0])
         mask_rois.append(mask_blob['mask_rois'])
-        roi_has_mask_int32.append(mask_blob['roi_has_mask_int32'])
+        rois_has_mask_int32.append(mask_blob['roi_has_mask_int32'])
         mask_int32.append(mask_blob['mask_int32'])
+    mask_rois = np.concatenate(mask_rois, axis=0).astype(np.float32)
+    rois_has_mask_int32 = np.concatenate(
+        rois_has_mask_int32, axis=0).astype(np.int32)
+    mask_int32 = np.concatenate(mask_int32, axis=0).astype(np.int32)
 
-    o_mask_rois = np.concatenate(mask_rois, axis=0).astype(np.float32)
-    o_roi_has_mask_int32 = np.concatenate(
-        roi_has_mask_int32, axis=0).astype(np.int32)
-    o_mask_int32 = np.concatenate(mask_int32, axis=0).astype(np.int32)
-
-    return o_mask_rois, o_roi_has_mask_int32, o_mask_int32
+    return mask_rois, rois_has_mask_int32, mask_int32
 
 
 @jit
@@ -350,6 +341,7 @@ def _sample_mask(
         resolution, ):
     # remove padding 
     new_gt_polys = []
+    '''
     # 7, 2, 45, 2
     for i in range(gt_polys.shape[0]):
         gt_segs = []
@@ -358,27 +350,29 @@ def _sample_mask(
             polys = gt_polys[i][j]
             for ii in range(polys.shape[0]):
                 x, y = polys[ii]
-                if (x == -1 and y == -1):
-                    continue
-                elif (x >= 0 and y >= 0):
-                    new_poly.append([x, y])  # array, one poly 
-
+                if (x==-1 and y==-1):
+                    continue 
+                elif(x>=0 and y>=0):
+                    new_poly.append([x,y]) # array, one poly 
+            
             if len(new_poly) > 0:
                 gt_segs.append(new_poly)
 
         new_gt_polys.append(gt_segs)
-    """
-    for j in range(gt_polys.shape[0]):
-        polys = gt_polys[j]
-        new_polys = []
-        for ii in range(polys.shape[0]):
-            x, y = polys[ii]
-            if (x==-1 or y==-1):
-                continue 
-            else:
-                new_polys.append([x,y])
-        new_gt_polys.append(new_polys)
-    """
+    '''
+    # (4, 36, 2)
+    for i in range(gt_polys.shape[0]):
+        old_poly = gt_polys[i]
+        new_poly = []
+        for j in range(old_poly.shape[0]):
+            x, y = old_poly[j]
+            if (x == -1 and y == -1):
+                continue
+            elif (x >= 0 and y >= 0):
+                new_poly.append([x, y])  # array, one poly 
+
+        if len(new_poly) > 0:
+            new_gt_polys.append(new_poly)
 
     im_scale = im_info[2]
     # TODO: check here 
