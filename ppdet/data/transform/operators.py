@@ -89,7 +89,7 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False):
+    def __init__(self, to_rgb=True, with_mosaic=False, with_mixup=False):
         """ Transform the image data to numpy format.
 
         Args:
@@ -99,8 +99,11 @@ class DecodeImage(BaseOperator):
 
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
+        self.with_mosaic = with_mosaic
         self.with_mixup = with_mixup
         if not isinstance(self.to_rgb, bool):
+            raise TypeError("{}: input type is invalid.".format(self))
+        if not isinstance(self.with_mosaic, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
             raise TypeError("{}: input type is invalid.".format(self))
@@ -139,7 +142,18 @@ class DecodeImage(BaseOperator):
         # make default im_info with [h, w, 1]
         sample['im_info'] = np.array(
             [im.shape[0], im.shape[1], 1.], dtype=np.float32)
-        # decode mixup image
+
+        # decode mosaic
+        if self.with_mosaic and ('mosaic0' in sample or 'mosaic1' in sample or
+                                 'mosaic2' in sample):
+            if 'mosaic0' in sample:
+                self.__call__(sample['mosaic0'])
+            if 'mosaic1' in sample:
+                self.__call__(sample['mosaic1'])
+            if 'mosaic2' in sample:
+                self.__call__(sample['mosaic2'])
+
+            # decode mixup image
         if self.with_mixup and 'mixup' in sample:
             self.__call__(sample['mixup'], context)
         return sample
@@ -1028,6 +1042,468 @@ class Permute(BaseOperator):
         if not batch_input:
             samples = samples[0]
         return samples
+
+
+@register_op
+class MosaicImage(BaseOperator):
+    def __init__(self,
+                 offset=0.2,
+                 mosaic_prob=0.5,
+                 mosaic_scale=[0.5, 2.0],
+                 sample_scale=[0.5, 2.0],
+                 sample_flip=0.5,
+                 use_cv2=False,
+                 interp=Image.BILINEAR):
+        super(MosaicImage, self).__init__()
+        self.offset = offset
+        self.mosaic_prob = mosaic_prob
+        self.mosaic_scale = mosaic_scale
+        self.sample_scale = sample_scale
+        self.sample_flip = sample_flip
+        self.use_cv2 = use_cv2
+        self.interp = interp
+        self.crop = MosaicCrop()
+        if not (isinstance(self.mosaic_prob, float) and isinstance(
+                self.offset, float) and isinstance(self.mosaic_scale, list) and
+                isinstance(self.sample_scale, list) and
+                isinstance(self.sample_flip, float)):
+            raise TypeError("{}: input type is invalid.".format(self))
+
+    def _mosaic_img(self, img1, img2, img3, img4, h, w, cut_h, cut_w):
+        img_row1 = np.concatenate([img1, img2], axis=1)
+        img_row2 = np.concatenate([img3, img4], axis=1)
+        im = np.concatenate((img_row1, img_row2))
+
+        return im
+
+    def _mosaic_gt_bbox(self, sample, cut_h, cut_w):
+        gt_bbox1 = sample['gt_bbox']
+        gt_bbox2 = sample['mosaic0']['gt_bbox']
+        gt_bbox3 = sample['mosaic1']['gt_bbox']
+        gt_bbox4 = sample['mosaic2']['gt_bbox']
+
+        new_gt_bbox = []
+        if len(gt_bbox1):
+            for box in gt_bbox1:
+                new_gt_bbox.append(box)
+
+        if len(gt_bbox2):
+            for box in gt_bbox2:
+                box[0] += cut_w
+                box[2] += cut_w
+                new_gt_bbox.append(box)
+
+        if len(gt_bbox3):
+            for box in gt_bbox3:
+                box[1] += cut_h
+                box[3] += cut_h
+                new_gt_bbox.append(box)
+
+        if len(gt_bbox4):
+            for box in gt_bbox4:
+                box[0] += cut_w
+                box[1] += cut_h
+                box[2] += cut_w
+                box[3] += cut_h
+                new_gt_bbox.append(box)
+
+        gt_bbox = np.array(new_gt_bbox)
+
+        return gt_bbox
+
+    def _mosaic_gt_score(self, sample):
+
+        gt_score1 = sample['gt_score']
+        gt_score2 = sample['mosaic0']['gt_score']
+        gt_score3 = sample['mosaic1']['gt_score']
+        gt_score4 = sample['mosaic2']['gt_score']
+        new_gt_score = []
+        if len(gt_score1):
+            for score in gt_score1:
+                new_gt_score.append(score)
+
+        if len(gt_score2):
+            for score in gt_score2:
+                new_gt_score.append(score)
+
+        if len(gt_score3):
+            for score in gt_score3:
+                new_gt_score.append(score)
+
+        if len(gt_score4):
+            for score in gt_score4:
+                new_gt_score.append(score)
+
+        gt_score = np.array(new_gt_score)
+
+        return gt_score
+
+    def _mosaic_gt_class(self, sample):
+
+        gt_class1 = sample['gt_class']
+        gt_class2 = sample['mosaic0']['gt_class']
+        gt_class3 = sample['mosaic1']['gt_class']
+        gt_class4 = sample['mosaic2']['gt_class']
+        new_gt_class = []
+
+        if len(gt_class1):
+            for cla in gt_class1:
+                new_gt_class.append(cla)
+
+        if len(gt_class2):
+            for cla in gt_class2:
+                new_gt_class.append(cla)
+
+        if len(gt_class3):
+            for cla in gt_class3:
+                new_gt_class.append(cla)
+
+        if len(gt_class4):
+            for cla in gt_class4:
+                new_gt_class.append(cla)
+
+        gt_class = np.array(new_gt_class)
+
+        return gt_class
+
+    def _mosaic_is_crowd(self, sample):
+        is_crowd1 = sample['is_crowd']
+        is_crowd2 = sample['mosaic0']['is_crowd']
+        is_crowd3 = sample['mosaic1']['is_crowd']
+        is_crowd4 = sample['mosaic2']['is_crowd']
+        new_is_crowd = []
+
+        if len(is_crowd1):
+            for crowd in is_crowd1:
+                new_is_crowd.append(crowd)
+
+        if len(is_crowd2):
+            for crowd in is_crowd2:
+                new_is_crowd.append(crowd)
+
+        if len(is_crowd3):
+            for crowd in is_crowd3:
+                new_is_crowd.append(crowd)
+
+        if len(is_crowd4):
+            for crowd in is_crowd4:
+                new_is_crowd.append(crowd)
+
+        is_crowd = np.array(new_is_crowd)
+
+        return is_crowd
+
+    def draw_bbox(self, img, gt_bbox, c=255):
+        for bbox in gt_bbox:
+            x1, y1, h, w = bbox
+            cv2.rectangle(img, (x1, y1), (h, w), (0, 0, c), 2)
+
+        return img
+
+    def sample_scale_fun(self, sample, sample_scale, min_h, min_w):
+        h = sample['h']
+        w = sample['w']
+        new_scale = sample_scale[:]
+        scale_min = max(min_h / h, min_w / w)
+        if scale_min > new_scale[1]:
+            scale = round(scale_min + 0.05, 1)
+        else:
+            new_scale[0] = max(new_scale[0], scale_min)
+            scale = round(random.uniform(*new_scale) + 0.05, 1)
+            # scale = round(random.uniform(max(sample_scale[0], scale_min), sample_scale[1]), 1)
+        # int can not ensure new_h or new_w great than min_h or min_w
+        # new_h = int(sample['h'] * scale)
+        # new_w = int(sample['w'] * scale)
+        new_h = int(round(sample['h'] * scale + 0.5))
+        new_w = int(round(sample['w'] * scale + 0.5))
+        im = np.array(sample['image'])
+        if new_h < min_h or new_w < min_w:
+            print('!!scale error!!', scale, h, min_h, w, min_w)
+
+        if self.use_cv2:
+            im = cv2.resize(im, (new_w, new_h), interpolation=self.interp)
+        else:
+            im = im.astype('uint8')
+            im = Image.fromarray(im)
+            im = im.resize((new_w, new_h), self.interp)
+            im = np.array(im)
+        sample['h'] = new_h
+        sample['w'] = new_w
+        sample['image'] = im
+        sample['gt_bbox'] = sample['gt_bbox'] * scale
+        return sample
+
+    def sample_flip_fun(self, sample, flip_prob):
+        if random.uniform(0, 1) < flip_prob:
+            h = sample['h']
+            w = sample['w']
+            gt_bbox = sample['gt_bbox']
+            if gt_bbox.shape == 0:
+                return sample
+            old_x1 = gt_bbox[:, 0].copy()
+            old_x2 = gt_bbox[:, 2].copy()
+            gt_bbox[:, 0] = np.round(np.clip(w - old_x2 - 1, 0, w - 1), 2)
+            gt_bbox[:, 2] = np.round(np.clip(w - old_x1 - 1, 0, w - 1), 2)
+            if gt_bbox.shape[0] != 0 and (gt_bbox[:, 2] < gt_bbox[:, 0]).all():
+                m = "{}: invalid box, x2 should be greater than x1".format(self)
+                raise BboxError(m)
+            sample['gt_bbox'] = np.array(gt_bbox)
+            sample['image'] = sample['image'][:, ::-1, :]
+
+        return sample
+
+    def _org_img(self, sample):
+        img1 = sample['image'].copy()
+        gt1 = sample['gt_bbox']
+        img1 = self.draw_bbox(img1, gt1)
+        img2 = sample['mosaic0']['image'].copy()
+        gt2 = sample['mosaic0']['gt_bbox']
+        img2 = self.draw_bbox(img2, gt2)
+        img3 = sample['mosaic1']['image'].copy()
+        gt3 = sample['mosaic1']['gt_bbox']
+        img3 = self.draw_bbox(img3, gt3)
+        img4 = sample['mosaic2']['image'].copy()
+        gt4 = sample['mosaic2']['gt_bbox']
+        img4 = self.draw_bbox(img4, gt4)
+
+        img1 = cv2.resize(img1, (200, 200))
+        img2 = cv2.resize(img2, (200, 200))
+        img3 = cv2.resize(img3, (200, 200))
+        img4 = cv2.resize(img4, (200, 200))
+
+        img_row1 = np.concatenate([img1, img2], axis=1)
+        img_row2 = np.concatenate([img3, img4], axis=1)
+        img = np.concatenate((img_row1, img_row2))
+
+        return img
+
+    def __call__(self, sample, context=None):
+        if 'mosaic0' not in sample:
+            sample = self.crop(sample, 0, 0)
+            if self.sample_flip:
+                sample = self.sample_flip_fun(sample, self.sample_flip)
+            return sample
+        h = sample['h']
+        w = sample['w']
+        if self.mosaic_scale[0]:
+            scale = round(random.uniform(*self.mosaic_scale), 1)
+            new_h = int(h * scale)
+            new_w = int(w * scale)
+        cut_h = np.random.randint(h * self.offset, h * (1 - self.offset))
+        cut_w = np.random.randint(w * self.offset, w * (1 - self.offset))
+
+        # org_img = self._org_img(sample)
+
+        if self.sample_scale[0]:
+            sample = self.sample_scale_fun(sample, self.sample_scale, cut_h,
+                                           cut_w)
+            sample['mosaic0'] = self.sample_scale_fun(
+                sample['mosaic0'], self.sample_scale, cut_h, new_w - cut_w)
+            sample['mosaic1'] = self.sample_scale_fun(
+                sample['mosaic1'], self.sample_scale, new_h - cut_h, cut_w)
+            sample['mosaic2'] = self.sample_scale_fun(
+                sample['mosaic2'], self.sample_scale, new_h - cut_h,
+                new_w - cut_w)
+
+        if self.sample_flip:
+            sample = self.sample_flip_fun(sample, self.sample_flip)
+            sample['mosaic0'] = self.sample_flip_fun(sample['mosaic0'],
+                                                     self.sample_flip)
+            sample['mosaic1'] = self.sample_flip_fun(sample['mosaic1'],
+                                                     self.sample_flip)
+            sample['mosaic2'] = self.sample_flip_fun(sample['mosaic2'],
+                                                     self.sample_flip)
+
+        sample = self.crop(sample, width=cut_w, height=cut_h)
+        sample['mosaic0'] = self.crop(
+            sample['mosaic0'], width=new_w - cut_w, height=cut_h)
+        sample['mosaic1'] = self.crop(
+            sample['mosaic1'], width=cut_w, height=new_h - cut_h)
+        sample['mosaic2'] = self.crop(
+            sample['mosaic2'], width=new_w - cut_w, height=new_h - cut_h)
+
+        img = self._mosaic_img(sample['image'], sample['mosaic0']['image'],\
+                sample['mosaic1']['image'], sample['mosaic2']['image'], new_h, new_w, cut_h, cut_w)
+        gt_bbox = self._mosaic_gt_bbox(sample, cut_h, cut_w)
+        gt_score = self._mosaic_gt_score(sample)
+        gt_class = self._mosaic_gt_class(sample)
+        is_crowd = self._mosaic_is_crowd(sample)
+
+        # image = self.draw_bbox(img, gt_bbox)
+        # image = cv2.resize(image, (400, 400))
+        # image = np.concatenate([image, org_img], axis = 1)
+        # savename = '/mosaicbbox/' + sample['im_file']
+        # cv2.imwrite(savename, image)
+
+        sample['h'] = new_h
+        sample['w'] = new_w
+        sample['image'] = img
+        sample['gt_bbox'] = gt_bbox
+        sample['gt_class'] = gt_class
+        sample['gt_score'] = gt_score
+        sample['is_crowd'] = is_crowd
+        sample.pop('mosaic0')
+        sample.pop('mosaic1')
+        sample.pop('mosaic2')
+
+        return sample
+
+
+class MosaicCrop(object):
+    """Random crop image and bboxes.
+
+    Args:
+        aspect_ratio (list): aspect ratio of cropped region.
+            in [min, max] format.
+        thresholds (list): iou thresholds for decide a valid bbox crop.
+        scaling (list): ratio between a cropped region and the original image.
+             in [min, max] format.
+        num_attempts (int): number of tries before giving up.
+        allow_no_crop (bool): allow return without actually cropping them.
+        cover_all_box (bool): ensure all bboxes are covered in the final crop.
+    """
+
+    def __init__(self,
+                 aspect_ratio=[.5, 2.],
+                 thresholds=[.0, .1, .3, .5, .7, .9],
+                 scaling=[.3, 1.],
+                 num_attempts=50,
+                 allow_no_crop=True,
+                 cover_all_box=False):
+        super(MosaicCrop, self).__init__()
+        self.aspect_ratio = aspect_ratio
+        self.thresholds = thresholds
+        self.scaling = scaling
+        self.num_attempts = num_attempts
+        self.allow_no_crop = allow_no_crop
+        self.cover_all_box = cover_all_box
+
+    def __call__(self, sample, width=0, height=0, context=None):
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            if width:
+                sample['image'] = sample['image'][0:height, 0:width]
+            return sample
+
+        h = sample['h']
+        w = sample['w']
+        gt_bbox = sample['gt_bbox']
+
+        # NOTE Original method attempts to generate one candidate for each
+        # threshold then randomly sample one from the resulting list.
+        # Here a short circuit approach is taken, i.e., randomly choose a
+        # threshold and attempt to find a valid crop, and simply return the
+        # first one found.
+        # The probability is not exactly the same, kinda resembling the
+        # "Monty Hall" problem. Actually carrying out the attempts will affect
+        # observability (just like opening doors in the "Monty Hall" game).
+        thresholds = list(self.thresholds)
+        if self.allow_no_crop and not width:
+            thresholds.append('no_crop')
+        np.random.shuffle(thresholds)
+
+        for thresh in thresholds:
+            if thresh == 'no_crop':
+                return sample
+
+            found = False
+            for i in range(self.num_attempts):
+                if width:
+                    if w < width or h < height:
+                        raise Exception('!!image size is not enough!!', w,
+                                        width, h, height)
+                    if w == width: crop_x = 0
+                    else: crop_x = np.random.randint(0, w - width)
+                    if h == height: crop_y = 0
+                    else: crop_y = np.random.randint(0, h - height)
+                    crop_box = [crop_x, crop_y, crop_x + width, crop_y + height]
+
+                else:
+                    scale = np.random.uniform(*self.scaling)
+                    min_ar, max_ar = self.aspect_ratio
+                    aspect_ratio = np.random.uniform(
+                        max(min_ar, scale**2), min(max_ar, scale**-2))
+                    crop_h = int(h * scale / np.sqrt(aspect_ratio))
+                    crop_w = int(w * scale * np.sqrt(aspect_ratio))
+                    crop_y = np.random.randint(0, h - crop_h)
+                    crop_x = np.random.randint(0, w - crop_w)
+                    crop_box = [
+                        crop_x, crop_y, crop_x + crop_w, crop_y + crop_h
+                    ]
+                iou = self._iou_matrix(
+                    gt_bbox, np.array(
+                        [crop_box], dtype=np.float32))
+                if iou.max() < thresh:
+                    continue
+
+                if self.cover_all_box and iou.min() < thresh:
+                    continue
+
+                cropped_box, valid_ids = self._crop_box_with_center_constraint(
+                    gt_bbox, np.array(
+                        crop_box, dtype=np.float32))
+                if valid_ids.size > 0:
+                    found = True
+                    break
+
+            if found:
+                sample['image'] = self._crop_image(sample['image'], crop_box)
+                sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
+                sample['gt_class'] = np.take(
+                    sample['gt_class'], valid_ids, axis=0)
+                sample['w'] = crop_box[2] - crop_box[0]
+                sample['h'] = crop_box[3] - crop_box[1]
+                if 'gt_score' in sample:
+                    sample['gt_score'] = np.take(
+                        sample['gt_score'], valid_ids, axis=0)
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = np.take(
+                        sample['is_crowd'], valid_ids, axis=0)
+                return sample
+
+        if width:
+            crop_box = [0, 0, width, height]
+            sample['image'] = self._crop_image(sample['image'], crop_box)
+            sample['gt_bbox'] = np.array([])
+            sample['gt_class'] = np.array([])
+            sample['w'] = crop_box[2] - crop_box[0]
+            sample['h'] = crop_box[3] - crop_box[1]
+            if 'gt_score' in sample:
+                sample['gt_score'] = np.array([])
+            if 'is_crowd' in sample:
+                sample['is_crowd'] = np.array([])
+            return sample
+
+        return sample
+
+    def _iou_matrix(self, a, b):
+        tl_i = np.maximum(a[:, np.newaxis, :2], b[:, :2])
+        br_i = np.minimum(a[:, np.newaxis, 2:], b[:, 2:])
+
+        area_i = np.prod(br_i - tl_i, axis=2) * (tl_i < br_i).all(axis=2)
+        area_a = np.prod(a[:, 2:] - a[:, :2], axis=1)
+        area_b = np.prod(b[:, 2:] - b[:, :2], axis=1)
+        area_o = (area_a[:, np.newaxis] + area_b - area_i)
+        return area_i / (area_o + 1e-10)
+
+    def _crop_box_with_center_constraint(self, box, crop):
+        cropped_box = box.copy()
+
+        cropped_box[:, :2] = np.maximum(box[:, :2], crop[:2])
+        cropped_box[:, 2:] = np.minimum(box[:, 2:], crop[2:])
+        cropped_box[:, :2] -= crop[:2]
+        cropped_box[:, 2:] -= crop[:2]
+
+        centers = (box[:, :2] + box[:, 2:]) / 2
+        valid = np.logical_and(crop[:2] <= centers,
+                               centers < crop[2:]).all(axis=1)
+        valid = np.logical_and(
+            valid, (cropped_box[:, :2] < cropped_box[:, 2:]).all(axis=1))
+
+        return cropped_box, np.where(valid)[0]
+
+    def _crop_image(self, img, crop):
+        x1, y1, x2, y2 = crop
+        return img[y1:y2, x1:x2, :]
 
 
 @register_op

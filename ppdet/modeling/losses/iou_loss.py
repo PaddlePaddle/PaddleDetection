@@ -115,8 +115,8 @@ class IouLoss(object):
 
         cx = (x1 + x2) / 2
         cy = (y1 + y2) / 2
-        w = (x2 - x1) + fluid.layers.cast((x2 - x1) == 0, 'float32')
-        h = (y2 - y1) + fluid.layers.cast((y2 - y1) == 0, 'float32')
+        w = x2 - x1
+        h = (y2 - y1) + fluid.layers.cast((y2 - y1) == 0, 'float32') * eps
 
         cxg = (x1g + x2g) / 2
         cyg = (y1g + y2g) / 2

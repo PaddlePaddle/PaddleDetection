@@ -50,7 +50,7 @@ class YOLOv3Loss(object):
                  iou_aware_loss=None,
                  downsample=[32, 16, 8],
                  scale_x_y=1.,
-                 match_score=False):
+                 ignore_class_score_thresh=-1.):
         self._batch_size = batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
@@ -59,7 +59,7 @@ class YOLOv3Loss(object):
         self._iou_aware_loss = iou_aware_loss
         self.downsample = downsample
         self.scale_x_y = scale_x_y
-        self.match_score = match_score
+        self.ignore_class_score_thresh = ignore_class_score_thresh
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
                  anchor_masks, mask_anchors, num_classes, prefix_name):
@@ -167,7 +167,7 @@ class YOLOv3Loss(object):
                 self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
                 output, obj, tobj, gt_box, self._batch_size, anchors,
-                num_classes, downsample, self._ignore_thresh, scale_x_y)
+                num_classes, downsample, self._ignore_thresh, scale_x_y, cls)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
             loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
@@ -277,7 +277,7 @@ class YOLOv3Loss(object):
         return (tx, ty, tw, th, tscale, tobj, tcls)
 
     def _calc_obj_loss(self, output, obj, tobj, gt_box, batch_size, anchors,
-                       num_classes, downsample, ignore_thresh, scale_x_y):
+                       num_classes, downsample, ignore_thresh, scale_x_y, cls):
         # A prediction bbox overlap any gt_bbox over ignore_thresh, 
         # objectness loss will be ignored, process as follows:
 
@@ -329,14 +329,16 @@ class YOLOv3Loss(object):
 
         max_iou = fluid.layers.reduce_max(iou, dim=-1)
         iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
-        if self.match_score:
-            max_prob = fluid.layers.reduce_max(prob, dim=-1)
-            iou_mask = iou_mask * fluid.layers.cast(
-                max_prob <= 0.25, dtype="float32")
         output_shape = fluid.layers.shape(output)
         an_num = len(anchors) // 2
         iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],
                                                    output_shape[3]))
+        if self.ignore_class_score_thresh > 0.:
+            max_cls = fluid.layers.reduce_max(fluid.layers.sigmoid(cls), dim=-1)
+            iou_mask = fluid.layers.elementwise_max(
+                fluid.layers.cast(
+                    max_cls <= self.ignore_class_score_thresh, dtype="float32"),
+                iou_mask)
         iou_mask.stop_gradient = True
 
         # NOTE: tobj holds gt_score, obj_mask holds object existence mask

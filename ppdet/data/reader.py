@@ -165,6 +165,7 @@ class Reader(object):
         drop_last (bool): whether drop last batch or not. Default False.
         drop_empty (bool): whether drop sample when it's gt is empty or not.
             Default True.
+        mosaic_epoch(int): mosaic epoc number
         mixup_epoch (int): mixup epoc number. Default is -1, meaning
             not use mixup.
         class_aware_sampling (bool): whether use class-aware sampling or not.
@@ -190,6 +191,8 @@ class Reader(object):
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
+                 mosaic_epoch=-1,
+                 mosaic_prob=0.5,
                  mixup_epoch=-1,
                  class_aware_sampling=False,
                  worker_num=-1,
@@ -240,6 +243,8 @@ class Reader(object):
         self._drop_empty = drop_empty
 
         # sampling
+        self._mosaic_epoch = mosaic_epoch
+        self.mosaic_prob = mosaic_prob
         self._mixup_epoch = mixup_epoch
         self._class_aware_sampling = class_aware_sampling
 
@@ -284,6 +289,11 @@ class Reader(object):
 
         if self._shuffle:
             np.random.shuffle(self.indexes)
+
+        if self._mosaic_epoch > 0 and len(self.indexes) < 4:
+            logger.info("Disable mosaic for dataset samples "
+                        "less than 4 samples")
+            self.mosaic_epoch = -1
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
             logger.debug("Disable mixup for dataset samples "
@@ -337,6 +347,20 @@ class Reader(object):
 
             if self._load_img:
                 sample['image'] = self._load_image(sample['im_file'])
+
+            if np.random.uniform(0, 1) < self.mosaic_prob:
+                if self._epoch < self._mosaic_epoch:
+                    num = len(self.indexes)
+                    mosaic_idx = np.random.randint(1, num, size=3)
+                    for i in range(len(mosaic_idx)):
+                        mosaic_idx[i] = self.indexes[(
+                            mosaic_idx[i] + self._pos - 1) % num]
+                        mosaic_name = 'mosaic' + str(i)
+                        sample[mosaic_name] = copy.deepcopy(self._roidbs[
+                            mosaic_idx[i]])
+                        if self._load_img:
+                            sample[mosaic_name]['image'] = self._load_image(
+                                sample[mosaic_name]['im_file'])
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
