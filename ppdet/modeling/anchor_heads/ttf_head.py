@@ -55,7 +55,8 @@ class TTFHead(object):
                  base_down_ratio=32,
                  wh_loss='GiouLoss',
                  upsample_method='bilinear',
-                 dcn_upsample=True):
+                 dcn_upsample=True,
+                 dcn_head=False):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
         self.num_classes = num_classes
@@ -76,6 +77,7 @@ class TTFHead(object):
         self.wh_loss = wh_loss
         self.dcn_upsample = dcn_upsample
         self.upsample_method = upsample_method
+        self.dcn_head = dcn_head
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -159,18 +161,27 @@ class TTFHead(object):
         conv_w_init = Normal(0, conv_w_std)
         for i in range(conv_num):
             conv_name = '{}.{}.conv'.format(name, i)
-            x = fluid.layers.conv2d(
-                x,
-                head_out_c,
-                3,
-                padding=1,
-                param_attr=ParamAttr(
-                    initializer=conv_w_init, name=conv_name + '.weight'),
-                bias_attr=ParamAttr(
-                    learning_rate=2.,
-                    regularizer=L2Decay(0.),
-                    name=conv_name + '.bias'),
-                act='relu')
+            if self.dcn_head:
+                x = DeformConv(
+                    x,
+                    head_out_c,
+                    3,
+                    initializer=conv_w_init,
+                    name=conv_name + '.dcn')
+                x = fluid.layers.relu(x)
+            else:
+                x = fluid.layers.conv2d(
+                    x,
+                    head_out_c,
+                    3,
+                    padding=1,
+                    param_attr=ParamAttr(
+                        initializer=conv_w_init, name=conv_name + '.weight'),
+                    bias_attr=ParamAttr(
+                        learning_rate=2.,
+                        regularizer=L2Decay(0.),
+                        name=conv_name + '.bias'),
+                    act='relu')
         bias_init = float(-np.log((1 - 0.01) / 0.01)) if '.hm' in name else 0.
         conv_b_init = Constant(bias_init)
         x = fluid.layers.conv2d(
