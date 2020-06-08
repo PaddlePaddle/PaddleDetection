@@ -132,8 +132,7 @@ def main():
         checkpoint.load_params(exe, eval_prog, cfg.weights)
     eval_prog = convert(eval_prog, place, config, save_int8=False)
 
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
+    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
 
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)
