@@ -215,7 +215,7 @@ def main():
         logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(
             float(base_flops - pruned_flops) / base_flops, base_flops,
             pruned_flops))
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)

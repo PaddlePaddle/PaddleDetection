@@ -119,8 +119,7 @@ def main():
     logger.info("pruned FLOPS: {}".format(
         float(base_flops - pruned_flops) / base_flops))
 
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
+    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."
