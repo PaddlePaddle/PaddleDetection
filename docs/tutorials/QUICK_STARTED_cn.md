@@ -23,13 +23,23 @@ python dataset/fruit/download_fruit.py
 训练命令如下：
 
 ```bash
+python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml --eval
+```
+
+训练使用`yolov3_mobilenet_v1`基于COCO数据集训练好的模型进行finetune。
+
+
+如果想通过VisualDL实时观察loss和精度值，启动命令添加`--use_vdl=True`，以及通过`--vdl_log_dir`设置日志保存路径，但注意**VisualDL需Python>=3.5**：
+
+
+```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
                         --use_vdl=True \
                         --vdl_log_dir=vdl_fruit_dir/scalar \
                         --eval
 ```
 
-训练使用`yolov3_mobilenet_v1`基于COCO数据集训练好的模型进行finetune。训练期间可以通过VisualDL实时观察loss和精度值，启动命令如下：
+通过`visualdl`命令实时查看变化曲线：
 
 ```bash
 visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
@@ -38,7 +48,9 @@ visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 VisualDL结果显示如下：
 
 
-![](../images/visualdl_fruit.jpg)
+<div align="center">
+  <img src='../images/visualdl_fruit.jpg' width='800'>
+</div>
 
 训练模型[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
@@ -61,7 +73,14 @@ python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
 预测图片如下：
 
 
-![](../../demo/orange_71.jpg)
-![](../images/orange_71_detection.jpg)
+<div align="center">
+  <img src='../../demo/orange_71.jpg' width='600'>
+</div>
+
+
+<div align="center">
+  <img src='../images/orange_71_detection.jpg' width='600'>
+</div>
+
 
 更多训练及评估流程，请参考[入门使用文档](GETTING_STARTED_cn.md)。
