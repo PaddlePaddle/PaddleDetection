@@ -5,7 +5,7 @@ from paddle.fluid.dygraph import Layer
 from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import AnchorGenerator, ProposalGenerator, ProposalTargetGenerator
+from ppdet.modeling.ops import AnchorGenerator, ProposalGenerator, ProposalTargetGenerator, MaskTargetGenerator
 
 
 @register
@@ -72,18 +72,17 @@ class Proposal(Layer):
             variances=self.inputs['var'],
             im_info=self.inputs['im_info'],
             mode=self.inputs['mode'])
-
         outs = {
             'rpn_rois': outs[0],
             'rpn_rois_probs': outs[1],
-            'rpn_rois_lod': outs[2]
+            'rpn_rois_nums': outs[2]
         }
         return outs
 
     def generate_proposal_target(self, proposal_out):
         outs = self.proposal_target_generator(
             rpn_rois=proposal_out['rpn_rois'],
-            rpn_rois_lod=proposal_out['rpn_rois_lod'],
+            rpn_rois_nums=proposal_out['rpn_rois_nums'],
             gt_classes=self.inputs['gt_class'],
             is_crowd=self.inputs['is_crowd'],
             gt_boxes=self.inputs['gt_bbox'],
@@ -94,6 +93,40 @@ class Proposal(Layer):
             'bbox_targets': outs[2],
             'bbox_inside_weights': outs[3],
             'bbox_outside_weights': outs[4],
-            'rois_lod': outs[5]
+            'rois_nums': outs[5]
+        }
+        return outs
+
+
+@register
+class Mask(Layer):
+    __inject__ = ['mask_target_generator']
+
+    def __init__(self, mask_target_generator=MaskTargetGenerator().__dict__):
+        super(Mask, self).__init__()
+        self.mask_target_generator = mask_target_generator
+        if isinstance(mask_target_generator, dict):
+            self.mask_target_generator = MaskTargetGenerator(
+                **mask_target_generator)
+
+    def forward(self, inputs):
+        self.inputs = inputs
+        if self.inputs['mode'] == 'train':
+            outs = self.generate_mask_target()
+            return outs
+
+    def generate_mask_target(self, ):
+        outs = self.mask_target_generator(
+            im_info=self.inputs['im_info'],
+            gt_classes=self.inputs['gt_class'],
+            is_crowd=self.inputs['is_crowd'],
+            gt_segms=self.inputs['gt_mask'],
+            rois=self.inputs['rois'],
+            rois_nums=self.inputs['rois_nums'],
+            labels_int32=self.inputs['labels_int32'], )
+        outs = {
+            'mask_rois': outs[0],
+            'rois_has_mask_int32': outs[1],
+            'mask_int32': outs[2]
         }
         return outs

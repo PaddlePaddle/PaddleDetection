@@ -13,7 +13,6 @@ from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
-from ..ops import RoIAlign
 
 __all__ = ['FasterRCNN']
 
@@ -85,7 +84,8 @@ class FasterRCNN(Layer):
 
         # BBox Head
         bbox_neck_out = self.bbox_neck(self.gbd)
-        bbox_head_out = self.bbox_head(bbox_neck_out)
+        self.gbd.update(bbox_neck_out)
+        bbox_head_out = self.bbox_head(self.gbd)
         self.gbd.update(bbox_head_out)
 
         # result  
@@ -104,8 +104,11 @@ class FasterRCNN(Layer):
 
         # BBox loss
         bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(inputs)
-        losses = [bbox_cls_loss, bbox_reg_loss, rpn_cls_loss, rpn_reg_loss]
+
+        # Total loss 
+        losses = [rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss]
         loss = fluid.layers.sum(losses)
+
         out = {
             'loss': loss,
             'loss_rpn_cls': rpn_cls_loss,
@@ -113,7 +116,6 @@ class FasterRCNN(Layer):
             'loss_bbox_cls': bbox_cls_loss,
             'loss_bbox_reg': bbox_reg_loss,
         }
-
         return out
 
     def post_processing(self, inputs):

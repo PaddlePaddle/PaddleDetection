@@ -21,11 +21,11 @@ class BBoxNeck(Layer):
 
     def forward(self, inputs):
         x = inputs['rois_feat']
-        x = self.res5(x)
-        x = self.res5_pool(x)
-        x = fluid.layers.squeeze(x, axes=[2, 3])
-
-        return {"bbox_neck": x}
+        y_res5 = self.res5(x)
+        y = self.res5_pool(y_res5)
+        y = fluid.layers.squeeze(y, axes=[2, 3])
+        outs = {'res5': y_res5, "bbox_neck": y}
+        return outs
 
 
 @register

@@ -127,6 +127,7 @@ class ProposalGenerator(object):
 
 
 @register
+@serializable
 class ProposalTargetGenerator(object):
     __shared__ = ['num_classes']
 
@@ -153,20 +154,49 @@ class ProposalTargetGenerator(object):
         self.is_cls_agnostic = is_cls_agnostic,
         self.is_cascade_rcnn = is_cascade_rcnn
 
-    def __call__(self, rpn_rois, rpn_rois_lod, gt_classes, is_crowd, gt_boxes,
+    def __call__(self, rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes,
                  im_info):
         rpn_rois = rpn_rois.numpy()
-        rpn_rois_lod = rpn_rois_lod.numpy()
+        rpn_rois_nums = rpn_rois_nums.numpy()
         gt_classes = gt_classes.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
         outs = generate_proposal_target(
-            rpn_rois, rpn_rois_lod, gt_classes, is_crowd, gt_boxes, im_info,
+            rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh,
             self.bg_thresh_hi, self.bg_thresh_lo, self.bbox_reg_weights,
             self.num_classes, self.use_random, self.is_cls_agnostic,
             self.is_cascade_rcnn)
+
+        outs = [to_variable(v) for v in outs]
+        for v in outs:
+            v.stop_gradient = True
+        return outs
+
+
+@register
+@serializable
+class MaskTargetGenerator(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self, num_classes=81, resolution=14):
+        super(MaskTargetGenerator, self).__init__()
+        self.num_classes = num_classes
+        self.resolution = resolution
+
+    def __call__(self, im_info, gt_classes, is_crowd, gt_segms, rois, rois_nums,
+                 labels_int32):
+        im_info = im_info.numpy()
+        gt_classes = gt_classes.numpy()
+        is_crowd = is_crowd.numpy()
+        gt_segms = gt_segms.numpy()
+        rois = rois.numpy()
+        rois_nums = rois_nums.numpy()
+        labels_int32 = labels_int32.numpy()
+        outs = generate_mask_target(im_info, gt_classes, is_crowd, gt_segms,
+                                    rois, rois_nums, labels_int32,
+                                    self.num_classes, self.resolution)
 
         outs = [to_variable(v) for v in outs]
         for v in outs:
@@ -187,19 +217,19 @@ class RoIAlign(object):
 
     def __call__(self, inputs):
         cur_l = 0
-        new_lod = [cur_l]
-        rois_lod_np = inputs['rois_lod'].numpy()
-        for l in rois_lod_np:
+        new_nums = [cur_l]
+        rois_nums_np = inputs['rois_nums'].numpy()
+        for l in rois_nums_np:
             cur_l += l
-            new_lod.append(cur_l)
-        lod_t = to_variable(np.asarray(new_lod))
+            new_nums.append(cur_l)
+        nums_t = to_variable(np.asarray(new_nums))
         rois_feat = fluid.layers.roi_align(
             inputs['res4'],
             inputs['rois'],
             self.pooled_height,
             self.pooled_width,
             self.spatial_scale,
-            rois_lod=lod_t)
+            rois_lod=nums_t)
 
         return {'rois_feat': rois_feat}
 
@@ -216,18 +246,106 @@ class RoIPool(object):
 
     def __call__(self, inputs):
         cur_l = 0
-        new_lod = [cur_l]
-        rois_lod_np = inputs['rois_lod'].numpy()
-        for l in rois_lod_np:
+        new_nums = [cur_l]
+        rois_nums_np = inputs['rois_nums'].numpy()
+        for l in rois_nums_np:
             cur_l += l
-            new_lod.append(cur_l)
-        lod_t = to_variable(np.asarray(new_lod))
+            new_nums.append(cur_l)
+        nums_t = to_variable(np.asarray(new_nums))
         rois_feat = fluid.layers.roi_pool(
             inputs['res4'],
             inputs['rois'],
             self.pooled_height,
             self.pooled_width,
             self.spatial_scale,
-            rois_lod=lod_t)
+            rois_nums=nums_t)
 
         return {'rois_feat': rois_feat}
+
+
+@register
+@serializable
+class AnchorGrid(object):
+    """Generate anchor grid
+
+    Args:
+        image_size (int or list): input image size, may be a single integer or
+            list of [h, w]. Default: 512
+        min_level (int): min level of the feature pyramid. Default: 3
+        max_level (int): max level of the feature pyramid. Default: 7
+        anchor_base_scale: base anchor scale. Default: 4
+        num_scales: number of anchor scales. Default: 3
+        aspect_ratios: aspect ratios. default: [[1, 1], [1.4, 0.7], [0.7, 1.4]]
+    """
+
+    def __init__(self,
+                 image_size=512,
+                 min_level=3,
+                 max_level=7,
+                 anchor_base_scale=4,
+                 num_scales=3,
+                 aspect_ratios=[[1, 1], [1.4, 0.7], [0.7, 1.4]]):
+        super(AnchorGrid, self).__init__()
+        if isinstance(image_size, Integral):
+            self.image_size = [image_size, image_size]
+        else:
+            self.image_size = image_size
+        for dim in self.image_size:
+            assert dim % 2 ** max_level == 0, \
+                "image size should be multiple of the max level stride"
+        self.min_level = min_level
+        self.max_level = max_level
+        self.anchor_base_scale = anchor_base_scale
+        self.num_scales = num_scales
+        self.aspect_ratios = aspect_ratios
+
+    @property
+    def base_cell(self):
+        if not hasattr(self, '_base_cell'):
+            self._base_cell = self.make_cell()
+        return self._base_cell
+
+    def make_cell(self):
+        scales = [2**(i / self.num_scales) for i in range(self.num_scales)]
+        scales = np.array(scales)
+        ratios = np.array(self.aspect_ratios)
+        ws = np.outer(scales, ratios[:, 0]).reshape(-1, 1)
+        hs = np.outer(scales, ratios[:, 1]).reshape(-1, 1)
+        anchors = np.hstack((-0.5 * ws, -0.5 * hs, 0.5 * ws, 0.5 * hs))
+        return anchors
+
+    def make_grid(self, stride):
+        cell = self.base_cell * stride * self.anchor_base_scale
+        x_steps = np.arange(stride // 2, self.image_size[1], stride)
+        y_steps = np.arange(stride // 2, self.image_size[0], stride)
+        offset_x, offset_y = np.meshgrid(x_steps, y_steps)
+        offset_x = offset_x.flatten()
+        offset_y = offset_y.flatten()
+        offsets = np.stack((offset_x, offset_y, offset_x, offset_y), axis=-1)
+        offsets = offsets[:, np.newaxis, :]
+        return (cell + offsets).reshape(-1, 4)
+
+    def generate(self):
+        return [
+            self.make_grid(2**l)
+            for l in range(self.min_level, self.max_level + 1)
+        ]
+
+    def __call__(self):
+        if not hasattr(self, '_anchor_vars'):
+            anchor_vars = []
+            helper = LayerHelper('anchor_grid')
+            for idx, l in enumerate(range(self.min_level, self.max_level + 1)):
+                stride = 2**l
+                anchors = self.make_grid(stride)
+                var = helper.create_parameter(
+                    attr=ParamAttr(name='anchors_{}'.format(idx)),
+                    shape=anchors.shape,
+                    dtype='float32',
+                    stop_gradient=True,
+                    default_initializer=NumpyArrayInitializer(anchors))
+                anchor_vars.append(var)
+                var.persistable = True
+            self._anchor_vars = anchor_vars
+
+        return self._anchor_vars
