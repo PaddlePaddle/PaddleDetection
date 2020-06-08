@@ -180,7 +180,7 @@ def main():
         exec_strategy=exec_strategy)
 
     if FLAGS.eval:
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 

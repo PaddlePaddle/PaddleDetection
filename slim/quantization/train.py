@@ -200,7 +200,7 @@ def main():
     if FLAGS.eval:
         # insert quantize op in eval_prog
         eval_prog = quant_aware(eval_prog, place, config, for_test=True)
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     start_iter = 0
     if FLAGS.resume_checkpoint:
