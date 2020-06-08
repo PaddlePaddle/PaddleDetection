@@ -305,7 +305,7 @@ def main():
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
 
-    compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+    compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
