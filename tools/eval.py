@@ -88,8 +88,7 @@ def main():
             cfg.metric, json_directory=FLAGS.output_eval, dataset=dataset)
         return
 
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
+    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."

@@ -276,7 +276,7 @@ def main():
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
-    compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+    compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     # parse eval fetches
     extra_keys = []
