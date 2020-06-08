@@ -73,18 +73,17 @@ def get_nmsed_box(rpn_rois,
                   score_thresh=0.05,
                   nms_thresh=0.5,
                   detections_per_im=100):
-    #lod = rpn_rois.lod()[0]
-    lod = [0, rpn_rois.shape[0]]
+    box_nums = [0, rpn_rois.shape[0]]
     variance_v = np.array(bbox_reg_weights)
     rpn_rois_v = np.array(rpn_rois)
     confs_v = np.array(confs)
     locs_v = np.array(locs)
 
-    im_results = [[] for _ in range(len(lod) - 1)]
-    new_lod = [0]
-    for i in range(len(lod) - 1):
-        start = lod[i]
-        end = lod[i + 1]
+    im_results = [[] for _ in range(len(box_nums) - 1)]
+    new_box_nums = [0]
+    for i in range(len(box_nums) - 1):
+        start = box_nums[i]
+        end = box_nums[i + 1]
         if start == end:
             continue
 
@@ -119,28 +118,28 @@ def get_nmsed_box(rpn_rois,
                 cls_boxes[j] = cls_boxes[j][keep, :]
         im_results_n = np.vstack([cls_boxes[j] for j in range(1, class_nums)])
         im_results[i] = im_results_n
-        new_lod.append(len(im_results_n) + new_lod[-1])
+        new_box_nums.append(len(im_results_n) + new_box_nums[-1])
         labels = im_results_n[:, 0]
         scores = im_results_n[:, 1]
         boxes = im_results_n[:, 2:]
-    im_results = np.vstack([im_results[k] for k in range(len(lod) - 1)])
-    return new_lod, im_results
+    im_results = np.vstack([im_results[k] for k in range(len(box_nums) - 1)])
+    return new_box_nums, im_results
 
 
 @jit
-def get_dt_res(batch_size, lod, nmsed_out, data, num_id_to_cat_id_map):
+def get_dt_res(batch_size, box_nums, nmsed_out, data, num_id_to_cat_id_map):
     dts_res = []
     nmsed_out_v = np.array(nmsed_out)
     if nmsed_out_v.shape == (
             1,
             1, ):
         return dts_res
-    assert (len(lod) == batch_size + 1), \
-      "Error Lod Tensor offset dimension. Lod({}) vs. batch_size({})"\
-                    .format(len(lod), batch_size)
+    assert (len(box_nums) == batch_size + 1), \
+      "Error Tensor offset dimension. Box Nums({}) vs. batch_size({})"\
+                    .format(len(box_nums), batch_size)
     k = 0
     for i in range(batch_size):
-        dt_num_this_img = lod[i + 1] - lod[i]
+        dt_num_this_img = box_nums[i + 1] - box_nums[i]
         image_id = int(data[i][-1])
         image_width = int(data[i][1][1])
         image_height = int(data[i][1][2])
@@ -163,12 +162,12 @@ def get_dt_res(batch_size, lod, nmsed_out, data, num_id_to_cat_id_map):
 
 
 @jit
-def get_segms_res(batch_size, lod, segms_out, data, num_id_to_cat_id_map):
+def get_segms_res(batch_size, box_nums, segms_out, data, num_id_to_cat_id_map):
     segms_res = []
     segms_out_v = np.array(segms_out)
     k = 0
     for i in range(batch_size):
-        dt_num_this_img = lod[i + 1] - lod[i]
+        dt_num_this_img = box_nums[i + 1] - box_nums[i]
         image_id = int(data[i][-1])
         for j in range(dt_num_this_img):
             dt = segms_out_v[k]
