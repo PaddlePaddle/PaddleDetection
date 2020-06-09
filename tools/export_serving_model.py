@@ -22,6 +22,7 @@ from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
+from ppdet.utils.check import check_config, check_version
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
@@ -49,19 +50,21 @@ def save_serving_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
     import paddle_serving_client.io as serving_io
     serving_client = os.path.join(save_dir, 'serving_client')
     serving_server = os.path.join(save_dir, 'serving_server')
-    serving_io.save_model(serving_client, serving_server, feed_dict, fetch_dict,
-                          infer_prog)
+    serving_io.save_model(
+        client_config_folder=serving_client,
+        server_model_folder=serving_server,
+        feed_dict,
+        fetch_dict,
+        infer_prog)
 
 
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
+    check_version()
+
+    main_arch = cfg.architecture
 
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()

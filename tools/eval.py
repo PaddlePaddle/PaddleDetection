@@ -16,20 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 import paddle.fluid as fluid
 
@@ -97,8 +88,7 @@ def main():
             cfg.metric, json_directory=FLAGS.output_eval, dataset=dataset)
         return
 
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
+    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."
@@ -160,6 +150,7 @@ def main():
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
+    save_only = getattr(cfg, 'save_prediction_only', False)
     eval_results(
         results,
         cfg.metric,
@@ -168,7 +159,8 @@ def main():
         is_bbox_normalized,
         FLAGS.output_eval,
         map_type,
-        dataset=dataset)
+        dataset=dataset,
+        save_only=save_only)
 
 
 if __name__ == '__main__':

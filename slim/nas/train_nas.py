@@ -16,29 +16,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
 from collections import deque
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
-import sys
 
-sys.path.append("../../")
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create, register
 from ppdet.data.reader import create_reader
@@ -333,7 +323,7 @@ def main():
                 build_strategy=build_strategy,
                 exec_strategy=exec_strategy)
         if FLAGS.eval:
-            compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+            compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
         train_loader.set_sample_list_generator(train_reader, place)
 

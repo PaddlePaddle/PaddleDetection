@@ -16,8 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import sys
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
@@ -28,7 +32,6 @@ from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
-
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
@@ -197,7 +200,7 @@ def main():
     if FLAGS.eval:
         # insert quantize op in eval_prog
         eval_prog = quant_aware(eval_prog, place, config, for_test=True)
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     start_iter = 0
     if FLAGS.resume_checkpoint:
@@ -253,8 +256,14 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    cfg=cfg)
                 resolution = None
                 if 'mask' in results[0]:
                     resolution = model.mask_head.resolution

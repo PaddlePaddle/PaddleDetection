@@ -21,6 +21,8 @@ import sys
 import paddle.fluid as fluid
 
 import logging
+import six
+import paddle.version as fluid_version
 logger = logging.getLogger(__name__)
 
 __all__ = ['check_gpu', 'check_version', 'check_config']
@@ -45,20 +47,29 @@ def check_gpu(use_gpu):
         pass
 
 
-def check_version():
+def check_version(version='1.7.0'):
     """
     Log error and exit when the installed version of paddlepaddle is
     not satisfied.
     """
-    err = "PaddlePaddle version 1.6 or higher is required, " \
+    err = "PaddlePaddle version {} or higher is required, " \
           "or a suitable develop version is satisfied as well. \n" \
-          "Please make sure the version is good with your code." \
+          "Please make sure the version is good with your code.".format(version)
 
-    try:
-        fluid.require_version('1.7.0')
-    except Exception as e:
-        logger.error(err)
-        sys.exit(1)
+    version_installed = [
+        fluid_version.major, fluid_version.minor, fluid_version.patch,
+        fluid_version.rc
+    ]
+    if version_installed == ['0', '0', '0', '0']:
+        return
+    version_split = version.split('.')
+
+    length = min(len(version_installed), len(version_split))
+    for i in six.moves.range(length):
+        if version_installed[i] > version_split[i]:
+            return
+        if version_installed[i] < version_split[i]:
+            raise Exception(err)
 
 
 def check_config(cfg):
@@ -89,7 +100,7 @@ def check_config(cfg):
 
     actual_num_classes = int(cfg.num_classes) - int(
         train_dataset.with_background)
-    logger.info("The 'num_classes'(number of classes) you set is {}, " \
+    logger.debug("The 'num_classes'(number of classes) you set is {}, " \
                 "and 'with_background' in 'dataset' sets {}.\n" \
                 "So please note the actual number of categories is {}."
                 .format(cfg.num_classes, train_dataset.with_background,

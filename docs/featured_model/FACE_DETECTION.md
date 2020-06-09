@@ -1,5 +1,5 @@
 [English](FACE_DETECTION_en.md) | 简体中文
-# FaceDetection
+# 人脸检测模型
 
 ## 内容
 - [简介](#简介)
@@ -155,7 +155,6 @@ cd dataset/wider_face && ./download.sh
 评估并生成结果文件：
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
        -o weights=output/blazeface/model_final \
        --eval_mode=widerface

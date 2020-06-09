@@ -54,17 +54,24 @@ cv::Mat VisualizeResult(const cv::Mat& img,
 
 class ObjectDetector {
  public:
-  explicit ObjectDetector(const std::string& model_dir, bool use_gpu = false) {
+  explicit ObjectDetector(const std::string& model_dir, 
+                          bool use_gpu=false,
+                          const std::string& run_mode="fluid",
+                          const int gpu_id=0) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
     preprocessor_.Init(config_.preprocess_info_, config_.arch_);
-    LoadModel(model_dir, use_gpu);
+    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id);
   }
 
   // Load Paddle inference model
   void LoadModel(
     const std::string& model_dir,
-    bool use_gpu);
+    bool use_gpu,
+    const int min_subgraph_size,
+    const int batch_size = 1,
+    const std::string& run_mode = "fluid",
+    const int gpu_id=0);
 
   // Run predictor
   void Predict(

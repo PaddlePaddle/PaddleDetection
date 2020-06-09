@@ -4,10 +4,9 @@ English | [简体中文](QUICK_STARTED_cn.md)
 
 This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 20min with good performance.
 
-- **Note: before started, need to set PYTHONPATH and specifiy the GPU device as follows in Linux platform. For Windows users, also need to set PYTHONPATH correctly.**
+- **Note: before started, need to specifiy the GPU device as follows.**
 
 ```bash
-export PYTHONPATH=$PYTHONPATH:.
 export CUDA_VISIBLE_DEVICES=0
 ```
 
@@ -22,21 +21,31 @@ python dataset/fruit/download_fruit.py
 Training:
 
 ```bash
+python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml --eval
+```
+
+Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset.
+
+Meanwhile, loss and mAP can be observed on VisualDL by set `--use_vdl` and `--vdl_log_dir`. But note  Python version required >= 3.5 for VisualDL.
+
+```bash
 python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_tb=True \
-                        --tb_log_dir=tb_fruit_dir/scalar \
+                        --use_vdl=True \
+                        --vdl_log_dir=vdl_fruit_dir/scalar \
                         --eval
 ```
 
-Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset. Meanwhile, loss and mAP can be observed on tensorboard.  
+Then observe the loss and mAP curve through VisualDL command:
 
 ```bash
-tensorboard --logdir tb_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
-Result on tensorboard is shown below:
+Result on VisualDL is shown below:
 
-![tensorboard_fruit.jpg](../images/tensorboard_fruit.jpg)
+<div align="center">
+  <img src='../images/visualdl_fruit.jpg' width='800'>
+</div>
 
 Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
@@ -56,8 +65,13 @@ python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
 
 Inference images are shown below:
 
+<div align="center">
+  <img src='../../demo/orange_71.jpg' width='600'>
+</div>
 
-![orange_71.jpg](../../demo/orange_71.jpg)
-![orange_71_detection.jpg](../images/orange_71_detection.jpg)
+
+<div align="center">
+  <img src='../images/orange_71_detection.jpg' width='600'>
+</div>
 
 For detailed infomation of training and evalution, please refer to [GETTING_STARTED.md](GETTING_STARTED.md).

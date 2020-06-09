@@ -45,7 +45,7 @@ class Compose(object):
                 data = f(data, ctx)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.info("fail to map op [{}] with error: {} and stack:\n{}".
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
                             format(f, e, str(stack_info)))
                 raise e
         return data
@@ -286,8 +286,8 @@ class Reader(object):
             np.random.shuffle(self.indexes)
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
-            logger.info("Disable mixup for dataset samples "
-                        "less than 2 samples")
+            logger.debug("Disable mixup for dataset samples "
+                         "less than 2 samples")
             self._mixup_epoch = -1
 
         if self._epoch < 0:

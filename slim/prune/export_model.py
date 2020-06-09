@@ -16,14 +16,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_config
+from ppdet.utils.check import check_config, check_version
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
 
@@ -78,6 +82,7 @@ def main():
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
     check_config(cfg)
+    check_version()
 
     main_arch = cfg.architecture
 

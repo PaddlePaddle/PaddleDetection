@@ -16,7 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
@@ -24,6 +30,7 @@ from collections import deque
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
 from paddle import fluid
+
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
@@ -208,7 +215,7 @@ def main():
         logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(
             float(base_flops - pruned_flops) / base_flops, base_flops,
             pruned_flops))
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
@@ -237,20 +244,27 @@ def main():
     time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
-    # use tb-paddle to log data
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_loss_step = 0
-        tb_mAP_step = 0
+    # use VisualDL to log data
+    if FLAGS.use_vdl:
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_loss_step = 0
+        vdl_mAP_step = 0
 
     if FLAGS.eval:
-        # evaluation
-        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls, cfg)
         resolution = None
-        if 'mask' in results[0]:
+        if 'Mask' in cfg.architecture:
             resolution = model.mask_head.resolution
+        # evaluation
+        results = eval_run(
+            exe,
+            compiled_eval_prog,
+            eval_loader,
+            eval_keys,
+            eval_values,
+            eval_cls,
+            cfg,
+            resolution=resolution)
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
             results,
@@ -272,12 +286,12 @@ def main():
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
-        # use tb-paddle to log loss
-        if FLAGS.use_tb:
+        # use VisualDL to log loss
+        if FLAGS.use_vdl:
             if it % cfg.log_iter == 0:
                 for loss_name, loss_value in stats.items():
-                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
-                tb_loss_step += 1
+                    vdl_writer.add_scalar(loss_name, loss_value, vdl_loss_step)
+                vdl_loss_step += 1
 
         train_stats.update(stats)
         logs = train_stats.log()
@@ -293,11 +307,18 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
                 resolution = None
-                if 'mask' in results[0]:
+                if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    cfg=cfg,
+                    resolution=resolution)
                 box_ap_stats = eval_results(
                     results,
                     cfg.metric,
@@ -308,10 +329,10 @@ def main():
                     map_type,
                     dataset=dataset)
 
-                # use tb_paddle to log mAP
-                if FLAGS.use_tb:
-                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
-                    tb_mAP_step += 1
+                # use VisualDL to log mAP
+                if FLAGS.use_vdl:
+                    vdl_writer.add_scalar("mAP", box_ap_stats[0], vdl_mAP_step)
+                    vdl_mAP_step += 1
 
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
@@ -353,15 +374,15 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
+        default="vdl_log_dir/scalar",
+        help='VisualDL logging directory for scalar.')
 
     parser.add_argument(
         "-p",

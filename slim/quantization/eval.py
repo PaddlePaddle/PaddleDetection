@@ -16,8 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
-import sys
+import os, sys
+
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 import paddle.fluid as fluid
 
@@ -128,8 +132,7 @@ def main():
         checkpoint.load_params(exe, eval_prog, cfg.weights)
     eval_prog = convert(eval_prog, place, config, save_int8=False)
 
-    compile_program = fluid.compiler.CompiledProgram(
-        eval_prog).with_data_parallel()
+    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
 
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values)

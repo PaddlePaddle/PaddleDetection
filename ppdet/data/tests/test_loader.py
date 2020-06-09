@@ -14,6 +14,11 @@
 
 import unittest
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.data.source.coco import COCODataSet
 from ppdet.data.reader import Reader

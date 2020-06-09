@@ -22,6 +22,7 @@ from paddle import fluid
 
 from ppdet.core.workspace import register
 import numpy as np
+from ppdet.utils.check import check_version
 
 __all__ = ['CornerNetSqueeze']
 
@@ -48,6 +49,7 @@ class CornerNetSqueeze(object):
                  corner_head='CornerHead',
                  num_classes=80,
                  fpn=None):
+        check_version('1.8.0')
         super(CornerNetSqueeze, self).__init__()
         self.backbone = backbone
         self.corner_head = corner_head
@@ -59,7 +61,7 @@ class CornerNetSqueeze(object):
         body_feats = self.backbone(im)
         if self.fpn is not None:
             body_feats, _ = self.fpn.get_output(body_feats)
-            body_feats = [body_feats.values()[-1]]
+            body_feats = [list(body_feats.values())[-1]]
         if mode == 'train':
             target_vars = [
                 'tl_heatmaps', 'br_heatmaps', 'tag_masks', 'tl_regrs',

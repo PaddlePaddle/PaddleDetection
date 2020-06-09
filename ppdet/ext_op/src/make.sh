@@ -19,5 +19,3 @@ g++ bottom_pool_op.cc bottom_pool_op.cu.o top_pool_op.cc top_pool_op.cu.o right_
   -L /usr/local/cuda/lib64 -lpaddle_framework -lcudart
 
 rm *.cu.o
-
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$lib_dir
