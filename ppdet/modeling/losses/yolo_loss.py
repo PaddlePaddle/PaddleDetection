@@ -147,9 +147,13 @@ class YOLOv3Loss(object):
             loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
             loss_h = fluid.layers.abs(h - th) * tscale_tobj
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
+
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
             if self._iou_loss is not None:
                 loss_iou = self._iou_loss(x, y, w, h, tx, ty, tw, th, anchors,
-                                          downsample, self._batch_size)
+                                          downsample, self._batch_size,
+                                          scale_x_y)
                 loss_iou = loss_iou * tscale_tobj
                 loss_iou = fluid.layers.reduce_sum(loss_iou, dim=[1, 2, 3])
                 loss_ious.append(fluid.layers.reduce_mean(loss_iou))

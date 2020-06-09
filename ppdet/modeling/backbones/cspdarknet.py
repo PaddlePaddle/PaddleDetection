@@ -55,7 +55,8 @@ class CSPDarkNet(object):
         return fluid.layers.log(1 + expf)
 
     def _mish(self, input):
-        return input * fluid.layers.tanh(self._softplus(input))
+        return fluid.layers.mish(input)
+        # return input * fluid.layers.tanh(self._softplus(input))
 
     def _conv_norm(self,
                    input,

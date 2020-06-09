@@ -90,6 +90,7 @@ TrainReader:
     - !DecodeImage
       to_rgb: True
       with_mosaic: True
+      with_mixup: True
     - !MosaicImage
       offset: 0.3
       mosaic_scale: [0.8, 1.0]
@@ -97,6 +98,15 @@ TrainReader:
       sample_flip: 0.5
       use_cv2: true
       interp: 2
+    - !MixupImage
+      alpha: 1.5
+      beta: 1.5
+    - !ColorDistort {}
+    - !RandomExpand
+      fill_value: [123.675, 116.28, 103.53]
+    - !RandomCrop {}
+    - !RandomFlipImage
+      is_normalized: false
     - !NormalizeBox {}
     - !PadBox
       num_max_boxes: 90

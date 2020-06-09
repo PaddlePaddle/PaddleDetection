@@ -87,6 +87,11 @@ class BaseOperator(object):
         return str(self._id)
 
 
+def is_mosaiced(context):
+    return isinstance(context, dict) and \
+            'mosaic' in context and context['mosaic']
+
+
 @register_op
 class DecodeImage(BaseOperator):
     def __init__(self, to_rgb=True, with_mosaic=False, with_mixup=False):
@@ -670,6 +675,7 @@ class RandomDistort(BaseOperator):
 
     def __call__(self, sample, context):
         """random distort the image"""
+
         ops = [
             self.random_brightness, self.random_contrast,
             self.random_saturation, self.random_hue
@@ -795,6 +801,7 @@ class CropImage(BaseOperator):
         Returns:
             sample: the image, bounding box are replaced.
         """
+
         assert 'image' in sample, "image data not found"
         im = sample['image']
         gt_bbox = sample['gt_bbox']
@@ -1279,9 +1286,10 @@ class MosaicImage(BaseOperator):
 
     def __call__(self, sample, context=None):
         if 'mosaic0' not in sample:
-            sample = self.crop(sample, 0, 0)
-            if self.sample_flip:
-                sample = self.sample_flip_fun(sample, self.sample_flip)
+            # sample = self.crop(sample, 0, 0)
+            # if self.sample_flip:
+            #     sample = self.sample_flip_fun(sample, self.sample_flip)
+            context['mosaic'] = False
             return sample
         h = sample['h']
         w = sample['w']
@@ -1346,6 +1354,7 @@ class MosaicImage(BaseOperator):
         sample.pop('mosaic1')
         sample.pop('mosaic2')
 
+        context['mosaic'] = True
         return sample
 
 
@@ -1533,6 +1542,9 @@ class MixupImage(BaseOperator):
         return img.astype('uint8')
 
     def __call__(self, sample, context=None):
+        if is_mosaiced(context):
+            return sample
+
         if 'mixup' not in sample:
             return sample
         factor = np.random.beta(self.alpha, self.beta)
@@ -2044,6 +2056,9 @@ class RandomCrop(BaseOperator):
         return crop_segms
 
     def __call__(self, sample, context=None):
+        if is_mosaiced(context):
+            return sample
+
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
