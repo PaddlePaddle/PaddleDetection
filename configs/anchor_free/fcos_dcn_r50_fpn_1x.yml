@@ -75,7 +75,7 @@ OptimizerBuilder:
 
 TrainReader:
   inputs_def:
-    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score', 'im_info']
+    fields: ['image', 'im_info', 'fcos_target']
   dataset:
     !COCODataSet
     image_dir: train2017
