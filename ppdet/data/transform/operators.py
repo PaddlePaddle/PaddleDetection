@@ -1628,9 +1628,16 @@ class RandomCrop(BaseOperator):
                     h_scale = scale / np.sqrt(aspect_ratio)
                     w_scale = scale * np.sqrt(aspect_ratio)
                 else:
-                    h_scale = w_scale = scale
-                crop_h = int(h * h_scale)
-                crop_w = int(w * w_scale)
+                    h_scale = np.random.uniform(*self.scaling)
+                    w_scale = np.random.uniform(*self.scaling)
+                crop_h = h * h_scale
+                crop_w = w * w_scale
+                if self.aspect_ratio is None:
+                    if crop_h / crop_w < 0.5 or crop_h / crop_w > 2.0:
+                        continue
+
+                crop_h = int(crop_h)
+                crop_w = int(crop_w)
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]

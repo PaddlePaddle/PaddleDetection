@@ -102,7 +102,7 @@ class TTFHead(object):
                     name=param_name + '.bias'))
         return x
 
-    def upsample(self, x, out_c, name=None):
+    def upsample(self, x, out_c, name=None, index=-1):
         fan_in = x.shape[1] * 3 * 3
         stdv = 1. / math.sqrt(fan_in)
         if self.dcn_upsample:
@@ -135,7 +135,7 @@ class TTFHead(object):
             name=norm_name + '.output.1',
             moving_mean_name=norm_name + '.running_mean',
             moving_variance_name=norm_name + '.running_var')
-        if self.upsample_method == 'bilinear':
+        if self.upsample_method == 'bilinear' or index > 0:
             up = fluid.layers.resize_bilinear(
                 bn, scale=2, name=name + '.2.upsample')
         else:
@@ -212,7 +212,7 @@ class TTFHead(object):
         feat = input[-1]
         for i, out_c in enumerate(self.planes):
             feat = self.upsample(
-                feat, out_c, name=name + '.deconv_layers.' + str(i))
+                feat, out_c, name=name + '.deconv_layers.' + str(i), index=i)
             if i < self.shortcut_len:
                 shortcut = self.shortcut(
                     input[-i - 2],

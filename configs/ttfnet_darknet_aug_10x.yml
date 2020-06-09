@@ -80,7 +80,6 @@ TrainReader:
     fill_value: [123.675, 116.28, 103.53]
   - !RandomCrop
     aspect_ratio: NULL
-    scaling: [0.3]
     cover_all_box: True
   - !Resize
     target_dim: 512
