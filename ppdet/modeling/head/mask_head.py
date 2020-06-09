@@ -10,30 +10,15 @@ from ppdet.core.workspace import register
 
 
 @register
-class MaskNeck(Layer):
-    def __init__(self, ):
-        super(MaskNeck, self).__init__()
+class MaskFeat(Layer):
+    def __init__(self, feat_in=2048, feat_out=256):
+        super(MaskFeat, self).__init__()
+        self.feat_in = feat_in
+        self.feat_out = feat_out
 
-    def forward(self, inputs):
-        x = inputs['res5']
-        y = fluid.layers.gather(x, inputs['rois_has_mask_int32'])
-        outs = {'mask_neck': y}
-        return outs
-
-
-@register
-class MaskHead(Layer):
-    __shared__ = ['num_classes']
-
-    def __init__(self, dim_reduced=256, resolution=14, num_classes=81):
-        super(MaskHead, self).__init__()
-        self.dim_reduced = dim_reduced
-        self.resolution = resolution
-        self.num_classes = num_classes
-
-        self.mask_out = fluid.dygraph.Conv2DTranspose(
-            num_channels=2048,
-            num_filters=self.dim_reduced,
+        self.upsample = fluid.dygraph.Conv2DTranspose(
+            num_channels=self.feat_in,
+            num_filters=self.feat_out,
             filter_size=2,
             stride=2,
             act='relu',
@@ -42,8 +27,34 @@ class MaskHead(Layer):
             bias_attr=ParamAttr(
                 name='conv5_mask_b', learning_rate=2., regularizer=L2Decay(0.)))
 
+    def forward(self, inputs):
+        x = inputs['res5']
+        y = fluid.layers.gather(x, inputs['rois_has_mask_int32'])
+        y = self.upsample(y)
+        outs = {'mask_feat': y}
+        return outs
+
+
+@register
+class MaskHead(Layer):
+    __shared__ = ['num_classes']
+    __inject__ = ['mask_feat']
+
+    def __init__(self,
+                 feat_out=256,
+                 resolution=14,
+                 num_classes=81,
+                 mask_feat=MaskFeat().__dict__):
+        super(MaskHead, self).__init__()
+        self.feat_out = feat_out
+        self.resolution = resolution
+        self.num_classes = num_classes
+        self.mask_feat = mask_feat
+        if isinstance(mask_feat, dict):
+            self.mask_feat = MaskFeat(**mask_feat)
+
         self.mask_fcn_logits = fluid.dygraph.Conv2D(
-            num_channels=self.dim_reduced,
+            num_channels=self.feat_out,
             num_filters=self.num_classes,
             filter_size=1,
             #act='sigmoid' if self.mode != 'train' else None,
@@ -55,13 +66,13 @@ class MaskHead(Layer):
                 regularizer=L2Decay(0.0)))
 
     def forward(self, inputs):
-        x = inputs['mask_neck']
-        y = self.mask_out(x)
-        y = self.mask_fcn_logits(y)
+        mask_feat_out = self.mask_feat(inputs)
+        x = mask_feat_out['mask_feat']
+        y = self.mask_fcn_logits(x)
         if inputs['mode'] == 'train':
             y = fluid.layers.sigmoid(y, name='mask_logits_sigmoid')
-
         outs = {'mask_logits': y}
+        outs.update(mask_feat_out)
         return outs
 
     def loss(self, inputs):

@@ -28,7 +28,7 @@ class Anchor(Layer):
 
     def generate_anchors(self, ):
         # TODO: update here to use int to specify featmap size
-        outs = self.anchor_generator(self.inputs['rpn_neck'])
+        outs = self.anchor_generator(self.inputs['rpn_feat'])
         outs = {'anchor': outs[0], 'var': outs[1]}
         return outs
 

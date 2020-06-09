@@ -1,47 +1,47 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
 import numpy as np
-
-from collections import OrderedDict
-import copy
-
 from paddle import fluid
-from paddle.fluid.dygraph import Layer
 from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
 
-__all__ = ['FasterRCNN']
+__all__ = ['MaskRCNN']
 
 
 @register
-class FasterRCNN(Layer):
+class MaskRCNN(fluid.dygraph.Layer):
     __category__ = 'architecture'
     __inject__ = [
         'anchor',
         'proposal',
+        'mask',
         'backbone',
         'rpn_head',
         'bbox_head',
+        'mask_head',
     ]
 
     def __init__(self,
                  anchor,
                  proposal,
+                 mask,
                  backbone,
                  rpn_head,
-                 bbox_head='BBoxHead',
+                 bbox_head,
+                 mask_head,
                  rpn_only=False):
-        super(FasterRCNN, self).__init__()
+        super(MaskRCNN, self).__init__()
+
         self.anchor = anchor
         self.proposal = proposal
+        self.mask = mask
         self.backbone = backbone
         self.rpn_head = rpn_head
         self.bbox_head = bbox_head
-        self.rpn_only = rpn_only
+        self.mask_head = mask_head
 
     def forward(self, inputs, mode='train'):
         self.gbd = self.build_inputs(inputs)
@@ -67,6 +67,14 @@ class FasterRCNN(Layer):
         bbox_head_out = self.bbox_head(self.gbd)
         self.gbd.update(bbox_head_out)
 
+        # Mask 
+        mask_out = self.mask(self.gbd)
+        self.gbd.update(mask_out)
+
+        # Mask Head 
+        mask_head_out = self.mask_head(self.gbd)
+        self.gbd.update(mask_head_out)
+
         # result  
         if self.gbd['mode'] == 'train':
             return self.loss(self.gbd)
@@ -84,8 +92,13 @@ class FasterRCNN(Layer):
         # BBox loss
         bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(inputs)
 
+        # Mask loss 
+        mask_loss = self.mask_head.loss(inputs)
+
         # Total loss 
-        losses = [rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss]
+        losses = [
+            rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss, mask_loss
+        ]
         loss = fluid.layers.sum(losses)
 
         out = {
@@ -94,6 +107,7 @@ class FasterRCNN(Layer):
             'loss_rpn_reg': rpn_reg_loss,
             'loss_bbox_cls': bbox_cls_loss,
             'loss_bbox_reg': bbox_reg_loss,
+            'loss_mask': mask_loss
         }
         return out
 
@@ -105,11 +119,18 @@ class FasterRCNN(Layer):
                      inputs,
                      fields=[
                          'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
-                         'is_crowd'
+                         'is_crowd', 'gt_mask'
                      ]):
         gbd = BufferDict()
-        with fluid.dygraph.guard():
-            for i, k in enumerate(fields):
-                v = to_variable(np.array([x[i] for x in inputs]))
-                gbd.set(k, v)
+        # init input 
+        for k in fields:
+            gbd[k] = []
+        # make batch list 
+        for batch in inputs:
+            for i, (k, v) in enumerate(zip(fields, batch)):
+                gbd[k].append(v)
+        # make variable  
+        for k, v in gbd.items():
+            batch = np.asarray(v)
+            gbd[k] = to_variable(batch)
         return gbd

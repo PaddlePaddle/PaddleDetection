@@ -10,9 +10,9 @@ from ..ops import RPNAnchorTargetGenerator
 
 
 @register
-class RPNNeck(Layer):
-    def __init__(self, ):
-        super(RPNNeck, self).__init__()
+class RPNFeat(Layer):
+    def __init__(self, feat_in=1024, feat_out=1024):
+        super(RPNFeat, self).__init__()
         self.rpn_conv = fluid.dygraph.Conv2D(
             num_channels=1024,
             num_filters=1024,
@@ -29,18 +29,24 @@ class RPNNeck(Layer):
     def forward(self, inputs):
         x = inputs.get('res4')
         y = self.rpn_conv(x)
-        outs = {'rpn_neck': y}
+        outs = {'rpn_feat': y}
         return outs
 
 
 @register
 class RPNHead(Layer):
+    __inject__ = ['rpn_feat', 'rpn_target_assign']
+
     def __init__(self,
                  anchor_per_position=15,
+                 rpn_feat=RPNFeat().__dict__,
                  rpn_target_assign=RPNAnchorTargetGenerator().__dict__):
         super(RPNHead, self).__init__()
         self.anchor_per_position = anchor_per_position
+        self.rpn_feat = rpn_feat
         self.rpn_target_assign = rpn_target_assign
+        if isinstance(rpn_feat, dict):
+            self.rpn_feat = RPNFeat(**rpn_feat)
         if isinstance(rpn_target_assign, dict):
             self.rpn_target_assign = RPNAnchorTargetGenerator(
                 **rpn_target_assign)
@@ -78,10 +84,13 @@ class RPNHead(Layer):
                 regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
-        x = inputs.get('rpn_neck')
+        #x = inputs.get('rpn_neck')
+        rpn_feat_out = self.rpn_feat(inputs)
+        x = rpn_feat_out['rpn_feat']
         rrs = self.rpn_rois_score(x)
         rrd = self.rpn_rois_delta(x)
         outs = {'rpn_rois_score': rrs, 'rpn_rois_delta': rrd}
+        outs.update(rpn_feat_out)
         return outs
 
     def loss(self, inputs):
