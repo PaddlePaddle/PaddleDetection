@@ -60,7 +60,7 @@ fluid_inference
 
 ![step3](https://paddleseg.bj.bcebos.com/inference/vs2019_step4.png)
 
-4. 点击`浏览`，分别设置编译选项指定`CUDA`、`OpenCV`、`Paddle预测库`的路径
+4. 点击`浏览`，分别设置编译选项指定`CUDA`、`CUDNN_LIB`、`OpenCV`、`Paddle预测库`的路径
 
 三个编译参数的含义说明如下（带*表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
 
