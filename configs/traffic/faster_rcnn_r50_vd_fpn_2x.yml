@@ -1,13 +1,15 @@
 architecture: FasterRCNN
 max_iters: 120000
-snapshot_iter: 10000
+snapshot_iter: 300
 use_gpu: true
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
 weights: output/faster_rcnn_r50_vd_fpn_2x/model_final
 metric: traffic
-save_prediction_only: true
+# If set `true`, for traffic output json
+#save_prediction_only: true
+save_prediction_only: false
 num_classes: 20
 
 FasterRCNN:
@@ -33,11 +35,11 @@ FPN:
 
 FPNRPNHead:
   anchor_generator:
-    anchor_sizes: [32, 64, 128, 256, 512]
-    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_sizes: [8, 16, 32, 64, 128]
+    aspect_ratios: [1.0]
     stride: [16.0, 16.0]
     variance: [1.0, 1.0, 1.0, 1.0]
-  anchor_start_size: 32
+  anchor_start_size: 8
   max_level: 6
   min_level: 2
   num_chan: 256
@@ -85,7 +87,7 @@ TwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.02
+  base_lr: 0.005
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -104,4 +106,4 @@ OptimizerBuilder:
 
 _READER_: 'faster_fpn_reader.yml'
 TrainReader:
-  batch_size: 2
+  batch_size: 4

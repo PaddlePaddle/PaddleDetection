@@ -3,9 +3,9 @@ TrainReader:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
     !TrafficDataSet
-    image_dir: pic
-    anno_path: train/json
-    dataset_dir: dataset/traffic
+    image_dir: train/pic
+    anno_path: tag/train/
+    dataset_dir: ../traffic_data_0609/
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -35,15 +35,18 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    # for traffic eval
+    # for traffic calculate mAP
     #fields: ['image', 'im_info', 'im_id',  'im_shape', 'gt_bbox', 'gt_class']
-    # for traffic output
+    # for traffic output json
     fields: ['image', 'im_info', 'im_id',  'im_shape']
   dataset:
     !TrafficDataSet
-    image_dir: pic
-    anno_path: val/json
-    dataset_dir: dataset/traffic
+    image_dir: test/pic/
+    # for traffic calculate mAP
+    #anno_path: tag/test/
+    # for traffic output json
+    anno_path: test/input/
+    dataset_dir: ../traffic_data_0609/
   sample_transforms:
   - !DecodeImage
     to_rgb: true

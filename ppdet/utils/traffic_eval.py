@@ -113,7 +113,12 @@ def bbox_eval(results,
     return map_stat
 
 
-def write_output(results, im_info_file, catid2name, gt_path, outpath='test'):
+def write_output(results,
+                 im_info_file,
+                 catid2name,
+                 gt_path,
+                 threshold=0.3,
+                 outpath='detect'):
     im_info_dict = {}
     with open(im_info_file, 'r') as fr:
         while True:
@@ -130,6 +135,10 @@ def write_output(results, im_info_file, catid2name, gt_path, outpath='test'):
     out_results = []
     for res in results:
         assert res['image_id'] in im_info_dict.keys()
+        if catid2name[res['category_id']] == 'background':
+            continue
+        if float(res['score']) < threshold:
+            continue
         out_dict = {
             "pic_id": im_info_dict[res['image_id']][1],
             "x": res['bbox'][0],
@@ -146,6 +155,7 @@ def write_output(results, im_info_file, catid2name, gt_path, outpath='test'):
             match_data = json.load(open(os.path.join(gt_path, group_id)))
             match_data['signs'] = [out_dict]
         else:
+            match_data = json.load(open(out_res_file))
             match_data['signs'].append(out_dict)
         with open(out_res_file, 'w') as fp:
             json.dump(match_data, fp)
@@ -268,9 +278,6 @@ def all_category_info(with_background=True):
     label_map = label_list(with_background)
     label_map = sorted(label_map.items(), key=lambda x: x[1])
     cats = [l[0] for l in label_map]
-
-    if with_background:
-        cats.insert(0, 'background')
 
     clsid2catid = {i: i for i in range(len(cats))}
     catid2name = {i: name for i, name in enumerate(cats)}

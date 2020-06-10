@@ -71,10 +71,6 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
-    save_only = getattr(cfg, 'save_prediction_only', False)
-    if save_only:
-        raise NotImplementedError('The config file only support prediction,'
-                                  ' training stage is not implemented now')
     main_arch = cfg.architecture
 
     if cfg.use_gpu:
@@ -148,10 +144,12 @@ def main():
         extra_keys = []
         if cfg.metric == 'COCO':
             extra_keys = ['im_info', 'im_id', 'im_shape']
-        if cfg.metric == 'VOC':
+        elif cfg.metric == 'VOC':
             extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
-        if cfg.metric == 'WIDERFACE':
+        elif cfg.metric == 'WIDERFACE':
             extra_keys = ['im_id', 'im_shape', 'gt_bbox']
+        else:
+            extra_keys = ['gt_bbox', 'gt_class', 'im_id']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
