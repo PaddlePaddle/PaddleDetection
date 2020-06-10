@@ -59,7 +59,7 @@ def get_isr_p_func(pos_iou_thresh=0.25, bias=0, k=2):
             weight_factor = np.clip(max_l_num - l_max_iou_rank, 0.,
                                     None) / max_l_num
             weight_factor = np.power(bias + (1 - bias) * weight_factor, k)
-            pos_weights[l_inds] *= weight_factor * 1.2
+            pos_weights[l_inds] *= weight_factor
         pos_weights = pos_weights / np.mean(pos_weights)
         all_pos_weights[pos_mask] = pos_weights
 

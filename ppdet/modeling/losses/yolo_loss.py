@@ -142,21 +142,24 @@ class YOLOv3Loss(object):
             iou = self._calc_iou(output, target, gt_box, anchors, batch_size,
                                  num_classes, downsample, scale_x_y)
 
-            # sorted_iou, sorted_gt_inds = fluid.layers.argsort(iou, axis=-1, descending=True)
-            # max_iou = sorted_iou[:, :, 0:1]
-            # gt_inds = fluid.layers.cast(sorted_gt_inds[:, :, 0:1], dtype='float32')
-            # pred_cls = fluid.layers.argmax(cls, axis=-1)
-            # pred_cls = fluid.layers.reshape(pred_cls, [batch_size, -1, 1])
-            # pred_cls = fluid.layers.cast(pred_cls, dtype='float32')
-            # isr_p_input = fluid.layers.concat([max_iou, gt_inds, pred_cls], axis=-1)
-            # isr_p = get_isr_p_func()
-            # pos_weights = fluid.layers.zeros_like(max_iou)
-            # fluid.layers.py_func(isr_p, isr_p_input, pos_weights)
-            #
-            # tobj_shape = fluid.layers.shape(tobj)
-            # pos_weights = fluid.layers.reshape(pos_weights, (-1, an_num, tobj_shape[2],
-            #                                            tobj_shape[3]))
-            # tobj = tobj * pos_weights
+            sorted_iou, sorted_gt_inds = fluid.layers.argsort(
+                iou, axis=-1, descending=True)
+            max_iou = sorted_iou[:, :, 0:1]
+            gt_inds = fluid.layers.cast(
+                sorted_gt_inds[:, :, 0:1], dtype='float32')
+            pred_cls = fluid.layers.argmax(cls, axis=-1)
+            pred_cls = fluid.layers.reshape(pred_cls, [batch_size, -1, 1])
+            pred_cls = fluid.layers.cast(pred_cls, dtype='float32')
+            isr_p_input = fluid.layers.concat(
+                [max_iou, gt_inds, pred_cls], axis=-1)
+            isr_p = get_isr_p_func()
+            pos_weights = fluid.layers.zeros_like(max_iou)
+            fluid.layers.py_func(isr_p, isr_p_input, pos_weights)
+
+            tobj_shape = fluid.layers.shape(tobj)
+            pos_weights = fluid.layers.reshape(pos_weights, (
+                -1, an_num, tobj_shape[2], tobj_shape[3]))
+            tobj = tobj * pos_weights
 
             # isr_tobj = tobj * pos_weights
             # loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
