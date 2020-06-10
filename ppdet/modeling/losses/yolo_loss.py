@@ -18,6 +18,7 @@ from __future__ import print_function
 
 from paddle import fluid
 from ppdet.core.workspace import register
+from .pisa_utils import get_isr_p_func
 try:
     from collections.abc import Sequence
 except Exception:
@@ -65,8 +66,8 @@ class YOLOv3Loss(object):
                  anchor_masks, mask_anchors, num_classes, prefix_name):
         if self._use_fine_grained_loss:
             return self._get_fine_grained_loss(
-                outputs, targets, gt_box, self._batch_size, num_classes,
-                mask_anchors, self._ignore_thresh)
+                outputs, targets, gt_box, gt_label, self._batch_size,
+                num_classes, mask_anchors, self._ignore_thresh)
         else:
             losses = []
             for i, output in enumerate(outputs):
@@ -91,8 +92,9 @@ class YOLOv3Loss(object):
 
             return {'loss': sum(losses)}
 
-    def _get_fine_grained_loss(self, outputs, targets, gt_box, batch_size,
-                               num_classes, mask_anchors, ignore_thresh):
+    def _get_fine_grained_loss(self, outputs, targets, gt_box, gt_label,
+                               batch_size, num_classes, mask_anchors,
+                               ignore_thresh):
         """
         Calculate fine grained YOLOv3 loss
 
@@ -135,6 +137,38 @@ class YOLOv3Loss(object):
                                                       num_classes)
             tx, ty, tw, th, tscale, tobj, tcls = self._split_target(target)
 
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
+            iou = self._calc_iou(output, target, gt_box, anchors, batch_size,
+                                 num_classes, downsample, scale_x_y)
+
+            # sorted_iou, sorted_gt_inds = fluid.layers.argsort(iou, axis=-1, descending=True)
+            # max_iou = sorted_iou[:, :, 0:1]
+            # gt_inds = fluid.layers.cast(sorted_gt_inds[:, :, 0:1], dtype='float32')
+            # pred_cls = fluid.layers.argmax(cls, axis=-1)
+            # pred_cls = fluid.layers.reshape(pred_cls, [batch_size, -1, 1])
+            # pred_cls = fluid.layers.cast(pred_cls, dtype='float32')
+            # isr_p_input = fluid.layers.concat([max_iou, gt_inds, pred_cls], axis=-1)
+            # isr_p = get_isr_p_func()
+            # pos_weights = fluid.layers.zeros_like(max_iou)
+            # fluid.layers.py_func(isr_p, isr_p_input, pos_weights)
+            #
+            # tobj_shape = fluid.layers.shape(tobj)
+            # pos_weights = fluid.layers.reshape(pos_weights, (-1, an_num, tobj_shape[2],
+            #                                            tobj_shape[3]))
+            # tobj = tobj * pos_weights
+
+            # isr_tobj = tobj * pos_weights
+            # loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
+            # pos_mask = fluid.layers.cast(pos_weights > 0., dtype='flaot32')
+            # orig_loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj * pos_mask, axis=0)
+            # orig_loss_cls = fluid.layers.reduce_sum(loss_cls)
+            # orig_loss_cls.stop_gradient = True
+            # new_loss_cls = fluid.layers.elementwise_mul(loss_cls, isr_tobj * pos_mask, axis=0)
+            # new_loss_cls = fluid.layers.reduce_sum(loss_cls)
+            # new_loss_cls.stop_gradient = True
+            # pos_loss_cls_ratio = orig_loss_cls / new_loss_cls
+
             tscale_tobj = tscale * tobj
             loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
                 x, tx) * tscale_tobj
@@ -163,11 +197,8 @@ class YOLOv3Loss(object):
                     loss_iou_aware, dim=[1, 2, 3])
                 loss_iou_awares.append(fluid.layers.reduce_mean(loss_iou_aware))
 
-            scale_x_y = self.scale_x_y if not isinstance(
-                self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
-                output, obj, tobj, gt_box, self._batch_size, anchors,
-                num_classes, downsample, self._ignore_thresh, scale_x_y)
+                output, obj, tobj, iou, an_num, self._ignore_thresh, scale_x_y)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
             loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj, axis=0)
@@ -276,11 +307,8 @@ class YOLOv3Loss(object):
 
         return (tx, ty, tw, th, tscale, tobj, tcls)
 
-    def _calc_obj_loss(self, output, obj, tobj, gt_box, batch_size, anchors,
-                       num_classes, downsample, ignore_thresh, scale_x_y):
-        # A prediction bbox overlap any gt_bbox over ignore_thresh, 
-        # objectness loss will be ignored, process as follows:
-
+    def _calc_iou(self, output, target, gt_box, anchors, batch_size,
+                  num_classes, downsample, scale_x_y):
         # 1. get pred bbox, which is same with YOLOv3 infer mode, use yolo_box here
         # NOTE: img_size is set as 1.0 to get noramlized pred bbox
         bbox, prob = fluid.layers.yolo_box(
@@ -302,7 +330,6 @@ class YOLOv3Loss(object):
         else:
             preds = [bbox]
             gts = [gt_box]
-            probs = [prob]
         ious = []
         for pred, gt in zip(preds, gts):
 
@@ -322,10 +349,17 @@ class YOLOv3Loss(object):
             pred = fluid.layers.squeeze(pred, axes=[0])
             gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
             ious.append(fluid.layers.iou_similarity(pred, gt))
-
         iou = fluid.layers.stack(ious, axis=0)
-        # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
-        #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
+
+        return iou
+
+    def _calc_obj_loss(self, output, obj, tobj, iou, an_num, ignore_thresh,
+                       scale_x_y):
+        # A prediction bbox overlap any gt_bbox over ignore_thresh, 
+        # objectness loss will be ignored, process as follows:
+
+        # Get iou_mask by IoU between gt bbox and prediction bbox,
+        # Get obj_mask by tobj(holds gt_score), calculate objectness loss
 
         max_iou = fluid.layers.reduce_max(iou, dim=-1)
         iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
@@ -334,7 +368,6 @@ class YOLOv3Loss(object):
             iou_mask = iou_mask * fluid.layers.cast(
                 max_prob <= 0.25, dtype="float32")
         output_shape = fluid.layers.shape(output)
-        an_num = len(anchors) // 2
         iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],
                                                    output_shape[3]))
         iou_mask.stop_gradient = True
