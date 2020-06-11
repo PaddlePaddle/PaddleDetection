@@ -134,8 +134,9 @@ TrainReader:
       downsample_ratios: [8, 16, 32]
       iou_thresh: 0.213
   batch_size: 8
-  mosaic_prob: 0.3
-  mosaic_epoch: 200
+  mixup_epoch: 250
+  mosaic_prob: 0.5
+  mosaic_epoch: 260
   shuffle: true
   drop_last: true
   worker_num: 8

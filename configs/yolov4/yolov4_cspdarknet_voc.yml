@@ -1,6 +1,6 @@
 architecture: YOLOv4
 use_gpu: true
-max_iters: 70000
+max_iters: 72000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 2000
@@ -135,8 +135,8 @@ TrainReader:
       iou_thresh: 0.213
   batch_size: 8
   mixup_epoch: 250
-  mosaic_prob: 0.3
-  mosaic_epoch: 300
+  mosaic_prob: 0.5
+  mosaic_epoch: 260
   shuffle: true
   drop_last: true
   worker_num: 8
