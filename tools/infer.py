@@ -126,10 +126,10 @@ def main():
         checkpoint.load_params(exe, infer_prog, cfg.weights)
 
     # parse infer fetches
-    assert cfg.metric in ['COCO', 'VOC', 'OID', 'WIDERFACE'], \
+    assert cfg.metric in ['COCO', 'VOC', 'OID', 'WIDERFACE', 'GENERIC'], \
             "unknown metric type {}".format(cfg.metric)
     extra_keys = []
-    if cfg['metric'] in ['COCO', 'OID']:
+    if cfg['metric'] in ['COCO', 'OID', 'GENERIC']:
         extra_keys = ['im_info', 'im_id', 'im_shape']
     if cfg['metric'] == 'VOC' or cfg['metric'] == 'WIDERFACE':
         extra_keys = ['im_id', 'im_shape']
@@ -140,6 +140,8 @@ def main():
         from ppdet.utils.coco_eval import bbox2out, mask2out, get_category_info
     if cfg.metric == 'OID':
         from ppdet.utils.oid_eval import bbox2out, get_category_info
+    if cfg.metric == "GENERIC":
+        from ppdet.utils.generic_eval import bbox2out, get_category_info
     if cfg.metric == "VOC":
         from ppdet.utils.voc_eval import bbox2out, get_category_info
     if cfg.metric == "WIDERFACE":
