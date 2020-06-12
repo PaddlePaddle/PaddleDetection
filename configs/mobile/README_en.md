@@ -7,8 +7,8 @@ English | [简体中文](README.md)
 
 This directory contains models optimized for mobile applications, at present the following models included:
 
-| Backbone                 | Architecture              | Input | Image/gpu <sup>1</sup> | Lr schd       | Box AP | Weights Download | PaddleLite Model Download |
-| :----------------------- | :------------------------ | :---: | :--------------------: | :------------ | :----: | :--------------- | :------------------------ |
+| Backbone                 | Architecture              | Input | Image/gpu <sup>1</sup> | Lr schd       | Box AP | Download | PaddleLite Model Download |
+| :----------------------- | :------------------------ | :---: | :--------------------: | :------------ | :----: | :------- | :------------------------ |
 | MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_small.tar) |
 | MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_large.tar) |
 | MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_320.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_320.tar) |
