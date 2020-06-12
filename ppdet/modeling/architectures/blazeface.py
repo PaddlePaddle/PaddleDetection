@@ -96,7 +96,6 @@ class BlazeFace(object):
                 overlap_threshold=0.35,
                 neg_overlap=0.35)
             loss = fluid.layers.reduce_sum(loss)
-            loss.persistable = True
             return {'loss': loss}
         else:
             pred = self.output_decoder(locs, confs, box, box_var)
