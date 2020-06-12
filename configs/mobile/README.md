@@ -19,7 +19,7 @@ PaddleDetection目前提供一系列针对移动应用进行优化的模型，�
 **注意**:
 
 -   <a name="gpu">[1]</a> 模型统一使用8卡训练.
--   <a name="prune">[3]</a> 参考下面关于YOLO剪裁的说明
+-   <a name="prune">[2]</a> 参考下面关于YOLO剪裁的说明
 
 
 ## 评测结果
