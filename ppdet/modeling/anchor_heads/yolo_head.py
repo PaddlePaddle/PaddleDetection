@@ -90,6 +90,21 @@ class YOLOv3Head(object):
         self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
 
+    def _add_coord(self, input):                                                                                               
+        input_shape = fluid.layers.shape(input)                                                                                
+        b = input_shape[0]                                                                                                     
+        h = input_shape[2]                                                                                                     
+        w = input_shape[3]                                                                                                     
+                                                                                                                               
+        x_range = fluid.layers.range(0, w, 1, 'float32') / (w - 1.)                                                            
+        x_range = x_range * 2. - 1.                                                                                            
+        x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])                                                                   
+        x_range = fluid.layers.expand(x_range, [b, 1, h, 1])                                                                   
+        x_range.stop_gradient = True                                                                                           
+        y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])                                                                
+        y_range.stop_gradient = True                                                                                           
+                                                                                                                               
+        return fluid.layers.concat([input, x_range, y_range], axis=1) 
     def _conv_bn(self,
                  input,
                  ch_out,
@@ -99,6 +114,7 @@ class YOLOv3Head(object):
                  act='leaky',
                  is_test=True,
                  name=None):
+        input = self._add_coord(input)
         conv = fluid.layers.conv2d(
             input=input,
             num_filters=ch_out,
