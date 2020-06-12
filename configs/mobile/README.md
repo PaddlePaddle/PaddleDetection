@@ -7,23 +7,19 @@
 
 PaddleDetection目前提供一系列针对移动应用进行优化的模型，主要支持以下结构:
 
-| 骨干网络                 | 结构              | 输入大小 | 图片/gpu <sup>1</sup> | 学习率策略       | Box AP | 下载 <sup>2</sup> |
-|--------------------------|---------------------------|-------|------------------------|---------------|--------|-----------------------|
-| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small.tar.gz) |
-| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_320.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_640.tar.gz) |
-| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.tar.gz) |
-| MobileNetV3 Large        | YOLOv3 Prune <sup>3</sup> | 320   | 8                      | -             | 24.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3_prune86_FPGM_320.tar.gz) |
+| 骨干网络                 | 结构                   | 输入大小 | 图片/gpu <sup>1</sup>  | 学习率策略    | Box AP | 下载 | PaddleLite模型下载 |
+| :----------------------- | :------------------------ | :---: | :--------------------: | :------------ | :----: | :--- | :----------------- |
+| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_small.tar) |
+| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_large.tar) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_320.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_320.tar) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_640.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_640.tar) |
+| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/yolov3_mobilenet_v3.tar) |
+| MobileNetV3 Large        | YOLOv3 Prune <sup>2</sup> | 320   | 8                      | -             | 24.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/yolov3_mobilenet_v3_prune75875_FPGM_distillby_r34.pdparams) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/yolov3_mobilenet_v3_prune86_FPGM_320.tar) |
 
 **注意**:
 
 -   <a name="gpu">[1]</a> 模型统一使用8卡训练.
--   <a name="tarball">[2]</a> 压缩包包括下列文件
-    -  模型权重文件 (`.pdparams` or `.tar`)
-    -  inference model 文件 (`__model__` and `__params__`)
-    -  Paddle-Lite 模型文件 (`.nb`)
--   <a name="prune">[3]</a> 参考下面关于YOLO剪裁的说明
+-   <a name="prune">[2]</a> 参考下面关于YOLO剪裁的说明
 
 
 ## 评测结果
