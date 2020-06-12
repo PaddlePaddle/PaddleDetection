@@ -20,25 +20,33 @@ import numpy as np
 __all__ = ['get_isr_p_func']
 
 
-def get_isr_p_func(pos_iou_thresh=0.25, bias=0, k=2):
+def get_isr_p_func(max_box_num=50, pos_iou_thresh=0.5, bias=0, k=2):
     def irs_p(x):
-        np.save("data", x)
         x = np.array(x)
-        max_ious = x[:, :, 0]
-        gt_inds = x[:, :, 1].astype('int32')
-        cls = x[:, :, 2].astype('int32')
+        gt_label = x[:, :max_box_num]
+        gt_score = x[:, max_box_num:2 * max_box_num]
+        remain = x[:, 2 * max_box_num:]
+        pn = remain.shape[1] // 3
+        max_ious = remain[:, :pn]
+        gt_inds = remain[:, pn:2 * pn].astype('int32')
+        cls = remain[:, 2 * pn:].astype('int32')
 
-        # # n_{max}: max gt box num in each class
-        # valid_gt = gt_box[:, :, 2] > 0. 
-        # valid_gt_label = gt_label[valid_gt]
-        # max_l_num = np.bincount(valid_gt_label).max()
+        pos_mask = max_ious > pos_iou_thresh
+        if not np.any(pos_mask):
+            return np.zeros([max_ious.shape[0], pn, 2]).astype('float32')
+
+        cls_target = np.zeros_like(max_ious)
+        cls_target_weights = np.zeros_like(max_ious)
+        for i in range(gt_label.shape[0]):
+            cls_target[i] = gt_label[i, gt_inds[i]]
+            cls_target_weights[i] = gt_score[i, gt_inds[i]]
+        # cls_target *= pos_mask.astype('float32')
 
         # divide gt index in each sample
         gt_inds = gt_inds + np.arange(gt_inds.shape[
-            0])[:, np.newaxis] * gt_inds.shape[1]
+            0])[:, np.newaxis] * max_box_num
 
-        all_pos_weights = np.ones_like(max_ious)
-        pos_mask = max_ious > pos_iou_thresh
+        all_pos_weights = np.zeros_like(max_ious)
         cls = np.reshape(cls, list(max_ious.shape) + [-1])
         max_ious = max_ious[pos_mask]
         pos_weights = all_pos_weights[pos_mask]
@@ -58,12 +66,12 @@ def get_isr_p_func(pos_iou_thresh=0.25, bias=0, k=2):
             l_max_iou_rank = np.argsort(-l_max_ious).argsort().astype('float32')
             weight_factor = np.clip(max_l_num - l_max_iou_rank, 0.,
                                     None) / max_l_num
-            weight_factor = np.power(bias + (1 - bias) * weight_factor, k)
-            pos_weights[l_inds] *= weight_factor
-        pos_weights = pos_weights / np.mean(pos_weights)
+            pos_weights[l_inds] = np.power(bias + (1 - bias) * weight_factor, k)
+        pos_weights = pos_weights / max(np.mean(pos_weights), 1e-6)
         all_pos_weights[pos_mask] = pos_weights
+        cls_target_weights *= all_pos_weights
 
-        return all_pos_weights
+        return np.stack([cls_target, cls_target_weights], axis=-1)
 
     return irs_p
 
