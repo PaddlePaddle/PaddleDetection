@@ -8,7 +8,7 @@
 PaddleDetection目前提供一系列针对移动应用进行优化的模型，主要支持以下结构:
 
 | 骨干网络                 | 结构                   | 输入大小 | 图片/gpu <sup>1</sup>  | 学习率策略    | Box AP | 权重下载 | PaddleLite模型下载 |
-|--------------------------|---------------------------|-------|------------------------|---------------|--------|----------| ------------------ |
+| :----------------------- | :------------------------ | :---: | :--------------------: | :------------ | :----: | :------- | :----------------- |
 | MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_small.tar) |
 | MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_large.tar) |
 | MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_320.tar) | [链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_320.tar) |
