@@ -19,7 +19,7 @@ This directory contains models optimized for mobile applications, at present the
 **Notes**:
 
 -   <a name="gpu">[1]</a> All models are trained on 8 GPUs.
--   <a name="prune">[3]</a> See the note section on how YOLO head is pruned
+-   <a name="prune">[2]</a> See the note section on how YOLO head is pruned
 
 
 ## Benchmarks Results
