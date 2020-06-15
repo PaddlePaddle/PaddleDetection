@@ -84,7 +84,7 @@ class TTFHead(object):
         assert layer_num > 0
         for i in range(layer_num):
             act = 'relu' if i < layer_num - 1 else None
-            fan_out = x.shape[2] * x.shape[3] * out_c
+            fan_out = kernel_size * kernel_size * out_c
             std = math.sqrt(2. / fan_out)
             param_name = name + '.layers.' + str(i * 2)
             x = fluid.layers.conv2d(
@@ -94,8 +94,7 @@ class TTFHead(object):
                 padding=padding,
                 act=act,
                 param_attr=ParamAttr(
-                    initializer=Xavier(uniform=False),
-                    name=param_name + '.weight'),
+                    initializer=Normal(0, std), name=param_name + '.weight'),
                 bias_attr=ParamAttr(
                     learning_rate=2.,
                     regularizer=L2Decay(0.),
@@ -110,7 +109,7 @@ class TTFHead(object):
                 x,
                 out_c,
                 3,
-                initializer=Xavier(uniform=True),
+                initializer=Uniform(-stdv, stdv),
                 bias_attr=True,
                 name=name + '.0')
         else:
@@ -119,7 +118,7 @@ class TTFHead(object):
                 out_c,
                 3,
                 padding=1,
-                param_attr=ParamAttr(initializer=Xavier()),
+                param_attr=ParamAttr(initializer=Uniform(-stdv, stdv)),
                 bias_attr=ParamAttr(
                     learning_rate=2., regularizer=L2Decay(0.)))
             #groups=out_c)
