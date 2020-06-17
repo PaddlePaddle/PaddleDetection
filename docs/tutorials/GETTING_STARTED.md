@@ -41,8 +41,8 @@ list below can be viewed by `--help`
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
 |      --infer_img         |       infer     |  Image path  |  None  |  higher priority over --infer_dir  |
-|        --use_vdl          |   train/infer   |  Whether to record the data with [VisualDL](https://github.com/paddlepaddle/visualdl), so as to display in VisualDL  |  False  |      |
-|        --vdl\_log_dir     |   train/infer   |  VisualDL logging directory for image  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |     |
+|        --use_vdl          |   train/infer   |  Whether to record the data with [VisualDL](https://github.com/paddlepaddle/visualdl), so as to display in VisualDL  |  False  |  VisualDL requires Python>=3.5   |
+|        --vdl\_log_dir     |   train/infer   |  VisualDL logging directory for image  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL requires Python>=3.5   |
 
 
 ## Examples
