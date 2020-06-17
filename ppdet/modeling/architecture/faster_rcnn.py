@@ -33,7 +33,7 @@ class FasterRCNN(Layer):
                  proposal,
                  backbone,
                  rpn_head,
-                 bbox_head='BBoxHead',
+                 bbox_head,
                  rpn_only=False):
         super(FasterRCNN, self).__init__()
         self.anchor = anchor
@@ -67,11 +67,15 @@ class FasterRCNN(Layer):
         bbox_head_out = self.bbox_head(self.gbd)
         self.gbd.update(bbox_head_out)
 
+        if self.gbd['mode'] == 'infer':
+            bbox_out = self.proposal.post_process(self.gbd)
+            self.gbd.update(bbox_out)
+
         # result  
         if self.gbd['mode'] == 'train':
             return self.loss(self.gbd)
         elif self.gbd['mode'] == 'infer':
-            self.post_processing(self.gbd)
+            return self.infer(self.gbd)
         else:
             raise "Now, only support train or infer mode!"
 
@@ -80,14 +84,11 @@ class FasterRCNN(Layer):
         losses = []
         # RPN loss
         rpn_cls_loss, rpn_reg_loss = self.rpn_head.loss(inputs)
-
         # BBox loss
         bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(inputs)
-
         # Total loss 
         losses = [rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss]
         loss = fluid.layers.sum(losses)
-
         out = {
             'loss': loss,
             'loss_rpn_cls': rpn_cls_loss,
@@ -97,19 +98,20 @@ class FasterRCNN(Layer):
         }
         return out
 
-    def post_processing(self, inputs):
-        # used in infer 
-        pass
+    def infer(self, inputs):
+        outs = {
+            "bbox_nums": inputs['predicted_bbox_nums'].numpy(),
+            "bbox": inputs['predicted_bbox'].numpy(),
+        }
+        return outs
 
-    def build_inputs(self,
-                     inputs,
-                     fields=[
-                         'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
-                         'is_crowd'
-                     ]):
+    def build_inputs(
+            self,
+            inputs,
+            #fields=['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+            fields=['image', 'im_info', 'im_id', 'im_shape']):
         gbd = BufferDict()
-        with fluid.dygraph.guard():
-            for i, k in enumerate(fields):
-                v = to_variable(np.array([x[i] for x in inputs]))
-                gbd.set(k, v)
+        for i, k in enumerate(fields):
+            v = to_variable(np.array([x[i] for x in inputs]))
+            gbd.set(k, v)
         return gbd
