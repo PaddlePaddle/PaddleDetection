@@ -24,6 +24,7 @@ if parent_path not in sys.path:
 
 import glob
 import numpy as np
+import six
 from PIL import Image
 
 from paddle import fluid
@@ -160,6 +161,7 @@ def main():
 
     # use VisualDL to log image
     if FLAGS.use_vdl:
+        assert six.PY3, "VisualDL requires Python >= 3.5"
         from visualdl import LogWriter
         vdl_writer = LogWriter(FLAGS.vdl_log_dir)
         vdl_image_step = 0
