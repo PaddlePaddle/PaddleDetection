@@ -988,7 +988,6 @@ class Permute(BaseOperator):
     def __init__(self, to_bgr=True, channel_first=True):
         """
         Change the channel.
-
         Args:
             to_bgr (bool): confirm whether to convert RGB to BGR
             channel_first (bool): confirm whether to change channel
