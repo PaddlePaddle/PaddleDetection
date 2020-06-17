@@ -147,7 +147,8 @@ class MultiscaleTestResize(BaseOperator):
                  interp=cv2.INTER_LINEAR,
                  use_flip=True):
         """
-        Rescale image to the each size in target size, and capped at max_size
+        Rescale image to the each size in target size, and capped at max_size.
+ 
         Args:
             origin_target_size(int): original target size of image's short side.
             origin_max_size(int): original max size of image.
@@ -256,6 +257,7 @@ class ResizeImage(BaseOperator):
         if max_size != 0.
         If target_size is list, selected a scale randomly as the specified
         target size.
+
         Args:
             target_size (int|list): the target size of image's short side,
                 multi-scale training is adopted when type is list.
@@ -986,6 +988,7 @@ class Permute(BaseOperator):
     def __init__(self, to_bgr=True, channel_first=True):
         """
         Change the channel.
+
         Args:
             to_bgr (bool): confirm whether to convert RGB to BGR
             channel_first (bool): confirm whether to change channel
@@ -1024,6 +1027,7 @@ class Permute(BaseOperator):
 class MixupImage(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
         """ Mixup image and gt_bbbox/gt_score
+ 
         Args:
             alpha (float): alpha parameter of beta distribute
             beta (float): beta parameter of beta distribute
@@ -1195,6 +1199,7 @@ class RandomInterpImage(BaseOperator):
 @register_op
 class Resize(BaseOperator):
     """Resize image and bbox.
+
     Args:
         target_dim (int or list): target size, can be a single number or a list
             (for random shape).
@@ -1234,10 +1239,11 @@ class Resize(BaseOperator):
             sample['image'], (resize_w, resize_h), interpolation=interp)
         return sample
 
-
+    
 @register_op
 class ColorDistort(BaseOperator):
     """Random color distortion.
+
     Args:
         hue (list): hue settings.
             in [lower, upper, probability] format.
@@ -1410,6 +1416,7 @@ class CornerRandColor(ColorDistort):
 @register_op
 class NormalizePermute(BaseOperator):
     """Normalize and permute channel order.
+
     Args:
         mean (list): mean values in RGB order.
         std (list): std values in RGB order.
@@ -1439,6 +1446,7 @@ class NormalizePermute(BaseOperator):
 @register_op
 class RandomExpand(BaseOperator):
     """Random expand the canvas.
+
     Args:
         ratio (float): maximum expansion ratio.
         prob (float): probability to expand.
@@ -1530,6 +1538,7 @@ class RandomExpand(BaseOperator):
 @register_op
 class RandomCrop(BaseOperator):
     """Random crop image and bboxes.
+
     Args:
         aspect_ratio (list): aspect ratio of cropped region.
             in [min, max] format.
