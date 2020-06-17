@@ -410,6 +410,7 @@ class Reader(object):
 def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
     """
     Return iterable data reader.
+
     Args:
         max_iter (int): number of iterations.
     """
