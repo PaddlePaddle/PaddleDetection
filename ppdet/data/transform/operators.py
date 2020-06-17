@@ -148,7 +148,7 @@ class MultiscaleTestResize(BaseOperator):
                  use_flip=True):
         """
         Rescale image to the each size in target size, and capped at max_size.
- 
+
         Args:
             origin_target_size(int): original target size of image's short side.
             origin_max_size(int): original max size of image.
@@ -992,6 +992,7 @@ class Permute(BaseOperator):
         Args:
             to_bgr (bool): confirm whether to convert RGB to BGR
             channel_first (bool): confirm whether to change channel
+
         """
         super(Permute, self).__init__()
         self.to_bgr = to_bgr
@@ -1026,8 +1027,7 @@ class Permute(BaseOperator):
 @register_op
 class MixupImage(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
-        """ Mixup image and gt_bbbox/gt_score
- 
+        """ Mixup image and gt_bbbox/gt_score 
         Args:
             alpha (float): alpha parameter of beta distribute
             beta (float): beta parameter of beta distribute
@@ -1092,6 +1092,7 @@ class MixupImage(BaseOperator):
 class CutmixImage(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
         """ Cutmix image and gt_bbbox/gt_score
+
         Args:
              alpha (float): alpha parameter of beta distribute
              beta (float): beta parameter of beta distribute
@@ -1239,7 +1240,7 @@ class Resize(BaseOperator):
             sample['image'], (resize_w, resize_h), interpolation=interp)
         return sample
 
-    
+
 @register_op
 class ColorDistort(BaseOperator):
     """Random color distortion.
