@@ -90,6 +90,7 @@ class BaseOperator(object):
 class DecodeImage(BaseOperator):
     def __init__(self, to_rgb=True, with_mixup=False, with_cutmix=False):
         """ Transform the image data to numpy format.
+
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
