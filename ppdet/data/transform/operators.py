@@ -1027,7 +1027,7 @@ class Permute(BaseOperator):
 @register_op
 class MixupImage(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
-        """ Mixup image and gt_bbbox/gt_score 
+        """ Mixup image and gt_bbbox/gt_score
         Args:
             alpha (float): alpha parameter of beta distribute
             beta (float): beta parameter of beta distribute
