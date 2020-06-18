@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import copy
 import functools
 import collections
@@ -274,6 +275,11 @@ class Reader(object):
     def reset(self):
         """implementation of Dataset.reset
         """
+        if self._epoch < 0:
+            self._epoch = 0
+        else:
+            self._epoch += 1
+
         self.indexes = [i for i in range(self.size())]
         if self._class_aware_sampling:
             self.indexes = np.random.choice(
@@ -283,17 +289,14 @@ class Reader(object):
                 p=self.img_weights)
 
         if self._shuffle:
+            trainer_id = int(os.getenv("PADDLE_TRAINER_ID", 0))
+            np.random.seed(self._epoch + trainer_id)
             np.random.shuffle(self.indexes)
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
             logger.debug("Disable mixup for dataset samples "
                          "less than 2 samples")
             self._mixup_epoch = -1
-
-        if self._epoch < 0:
-            self._epoch = 0
-        else:
-            self._epoch += 1
 
         self._pos = 0
 
