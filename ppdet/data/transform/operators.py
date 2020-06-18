@@ -1105,7 +1105,9 @@ class MixupImage(BaseOperator):
 @register_op
 class CutmixImage(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
-        """ Cutmix image and gt_bbbox/gt_score
+        """ 
+        CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://https://arxiv.org/abs/1905.04899
+        Cutmix image and gt_bbbox/gt_score
         Args:
              alpha (float): alpha parameter of beta distribute
              beta (float): beta parameter of beta distribute
