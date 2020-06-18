@@ -17,14 +17,18 @@ class MaskFeat(Layer):
     def __init__(self,
                  feat_in=2048,
                  feat_out=256,
-                 mask_roi_extractor=RoIExtractor().__dict__):
+                 mask_roi_extractor=RoIExtractor().__dict__,
+                 stage=0):
         super(MaskFeat, self).__init__()
         self.feat_in = feat_in
         self.feat_out = feat_out
         self.mask_roi_extractor = mask_roi_extractor
         if isinstance(mask_roi_extractor, dict):
             self.mask_roi_extractor = RoIExtractor(**mask_roi_extractor)
-
+        if stage == 0:
+            postfix = ''
+        else:
+            postfix = '_' + str(stage)
         self.upsample = fluid.dygraph.Conv2DTranspose(
             num_channels=self.feat_in,
             num_filters=self.feat_out,
@@ -32,9 +36,11 @@ class MaskFeat(Layer):
             stride=2,
             act='relu',
             param_attr=ParamAttr(
-                name='conv5_mask_w', initializer=MSRA(uniform=False)),
+                name='conv5_mask_w' + postfix, initializer=MSRA(uniform=False)),
             bias_attr=ParamAttr(
-                name='conv5_mask_b', learning_rate=2., regularizer=L2Decay(0.)))
+                name='conv5_mask_b' + postfix,
+                learning_rate=2.,
+                regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
         if inputs['mode'] == 'train':
@@ -64,7 +70,8 @@ class MaskHead(Layer):
                  feat_in=256,
                  resolution=14,
                  num_classes=81,
-                 mask_feat=MaskFeat().__dict__):
+                 mask_feat=MaskFeat().__dict__,
+                 stage=0):
         super(MaskHead, self).__init__()
         self.feat_in = feat_in
         self.resolution = resolution
@@ -72,15 +79,19 @@ class MaskHead(Layer):
         self.mask_feat = mask_feat
         if isinstance(mask_feat, dict):
             self.mask_feat = MaskFeat(**mask_feat)
-
+        if stage == 0:
+            postfix = ''
+        else:
+            postfix = '_' + str(stage)
         self.mask_fcn_logits = fluid.dygraph.Conv2D(
             num_channels=self.feat_in,
             num_filters=self.num_classes,
             filter_size=1,
             param_attr=ParamAttr(
-                name='mask_fcn_logits_w', initializer=MSRA(uniform=False)),
+                name='mask_fcn_logits_w' + postfix,
+                initializer=MSRA(uniform=False)),
             bias_attr=ParamAttr(
-                name='mask_fcn_logits_b',
+                name='mask_fcn_logits_b' + postfix,
                 learning_rate=2.,
                 regularizer=L2Decay(0.0)))
 

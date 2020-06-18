@@ -7,12 +7,12 @@ from paddle import fluid
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
 
-from .meta_arch import ObjectDetection
+from .meta_arch import BaseArch
 __all__ = ['MaskRCNN']
 
 
 @register
-class MaskRCNN(ObjectDetection):
+class MaskRCNN(BaseArch):
     __category__ = 'architecture'
     __inject__ = [
         'anchor',

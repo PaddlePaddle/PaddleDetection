@@ -11,13 +11,13 @@ from paddle.fluid.dygraph.base import to_variable
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
 
-__all__ = ['ObjectDetection']
+__all__ = ['BaseArch']
 
 
 @register
-class ObjectDetection(Layer):
+class BaseArch(Layer):
     def __init__(self, *args, **kwargs):
-        super(ObjectDetection, self).__init__()
+        super(BaseArch, self).__init__()
 
     def forward(self, inputs, inputs_keys, mode='train'):
         raise NotImplementedError("Should implement forward method!")

@@ -135,10 +135,10 @@ class ProposalTargetGenerator(object):
     def __init__(self,
                  batch_size_per_im=512,
                  fg_fraction=.25,
-                 fg_thresh=.5,
-                 bg_thresh_hi=.5,
-                 bg_thresh_lo=0.,
-                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
+                 fg_thresh=[.5, ],
+                 bg_thresh_hi=[.5, ],
+                 bg_thresh_lo=[0., ],
+                 bbox_reg_weights=[[0.1, 0.1, 0.2, 0.2]],
                  num_classes=81,
                  shuffle_before_sample=True,
                  is_cls_agnostic=False,
@@ -155,8 +155,14 @@ class ProposalTargetGenerator(object):
         self.is_cls_agnostic = is_cls_agnostic,
         self.is_cascade_rcnn = is_cascade_rcnn
 
-    def __call__(self, rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes,
-                 im_info):
+    def __call__(self,
+                 rpn_rois,
+                 rpn_rois_nums,
+                 gt_classes,
+                 is_crowd,
+                 gt_boxes,
+                 im_info,
+                 stage=0):
         rpn_rois = rpn_rois.numpy()
         rpn_rois_nums = rpn_rois_nums.numpy()
         gt_classes = gt_classes.numpy()
@@ -165,10 +171,10 @@ class ProposalTargetGenerator(object):
         im_info = im_info.numpy()
         outs = generate_proposal_target(
             rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes, im_info,
-            self.batch_size_per_im, self.fg_fraction, self.fg_thresh,
-            self.bg_thresh_hi, self.bg_thresh_lo, self.bbox_reg_weights,
-            self.num_classes, self.use_random, self.is_cls_agnostic,
-            self.is_cascade_rcnn)
+            self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
+            self.bg_thresh_hi[stage], self.bg_thresh_lo[stage],
+            self.bbox_reg_weights[stage], self.num_classes, self.use_random,
+            self.is_cls_agnostic, self.is_cascade_rcnn)
 
         outs = [to_variable(v) for v in outs]
         for v in outs:

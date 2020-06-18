@@ -17,12 +17,16 @@ class BBoxFeat(Layer):
     def __init__(self,
                  feat_in=1024,
                  feat_out=512,
-                 roi_extractor=RoIExtractor().__dict__):
+                 roi_extractor=RoIExtractor().__dict__,
+                 stage=0):
         super(BBoxFeat, self).__init__()
         self.roi_extractor = roi_extractor
         if isinstance(roi_extractor, dict):
             self.roi_extractor = RoIExtractor(**roi_extractor)
-
+        if stage == 0:
+            postfix = ''
+        else:
+            postfix = '_' + str(stage)
         self.res5 = Blocks(
             "res5", ch_in=feat_in, ch_out=feat_out, count=3, stride=2)
         self.res5_pool = fluid.dygraph.Pool2D(
@@ -61,32 +65,42 @@ class BBoxHead(Layer):
     def __init__(self,
                  in_feat=2048,
                  num_classes=81,
-                 bbox_feat=BBoxFeat().__dict__):
+                 bbox_feat=BBoxFeat().__dict__,
+                 stage=0):
         super(BBoxHead, self).__init__()
         self.num_classes = num_classes
         self.bbox_feat = bbox_feat
         if isinstance(bbox_feat, dict):
             self.bbox_feat = BBoxFeat(**bbox_feat)
-
+        if stage == 0:
+            postfix = ''
+        else:
+            postfix = '_' + str(stage)
         self.bbox_score = fluid.dygraph.Linear(
             input_dim=in_feat,
             output_dim=1 * self.num_classes,
             act=None,
             param_attr=ParamAttr(
-                name='cls_score_w', initializer=Normal(
+                name='cls_score_w' + postfix,
+                initializer=Normal(
                     loc=0.0, scale=0.001)),
             bias_attr=ParamAttr(
-                name='cls_score_b', learning_rate=2., regularizer=L2Decay(0.)))
+                name='cls_score_b' + postfix,
+                learning_rate=2.,
+                regularizer=L2Decay(0.)))
 
         self.bbox_delta = fluid.dygraph.Linear(
             input_dim=in_feat,
             output_dim=4 * self.num_classes,
             act=None,
             param_attr=ParamAttr(
-                name='bbox_pred_w', initializer=Normal(
+                name='bbox_pred_w' + postfix,
+                initializer=Normal(
                     loc=0.0, scale=0.01)),
             bias_attr=ParamAttr(
-                name='bbox_pred_b', learning_rate=2., regularizer=L2Decay(0.)))
+                name='bbox_pred_b' + postfix,
+                learning_rate=2.,
+                regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
         outs = self.bbox_feat(inputs)

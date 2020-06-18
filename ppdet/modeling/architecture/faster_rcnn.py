@@ -5,13 +5,13 @@ from __future__ import print_function
 from paddle import fluid
 
 from ppdet.core.workspace import register
-from .meta_arch import ObjectDetection
+from .meta_arch import BaseArch
 
 __all__ = ['FasterRCNN']
 
 
 @register
-class FasterRCNN(ObjectDetection):
+class FasterRCNN(BaseArch):
     __category__ = 'architecture'
     __inject__ = [
         'anchor',

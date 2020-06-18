@@ -58,7 +58,7 @@ class MaskPostProcess(object):
 
 
 @register
-class Anchor(Layer):
+class Anchor(object):
     __inject__ = ['anchor_generator', 'anchor_target_generator']
 
     def __init__(self,
@@ -74,19 +74,17 @@ class Anchor(Layer):
             self.anchor_target_generator = RPNAnchorTargetGenerator(
                 **anchor_target_generator)
 
-    def forward(self, inputs):
-        self.inputs = inputs
-        anchor_out = self.generate_anchors()
-        return anchor_out
+    def __call__(self, inputs):
+        outs = self.generate_anchors(inputs)
+        return outs
 
-    def generate_anchors(self, ):
+    def generate_anchors(self, inputs):
         # TODO: update here to use int to specify featmap size
-        outs = self.anchor_generator(self.inputs['rpn_feat'])
+        outs = self.anchor_generator(inputs['rpn_feat'])
         outs = {'anchor': outs[0], 'var': outs[1], 'anchor_module': self}
         return outs
 
     def generate_anchors_target(self, inputs):
-        # TODO: add rpn anchor targets
         # TODO: add yolo anchor targets 
         rpn_rois_score = fluid.layers.transpose(
             inputs['rpn_rois_score'], perm=[0, 2, 3, 1])
@@ -122,7 +120,7 @@ class Anchor(Layer):
 
 
 @register
-class Proposal(Layer):
+class Proposal(object):
     __inject__ = [
         'proposal_generator', 'proposal_target_generator', 'bbox_post_process'
     ]
@@ -144,25 +142,26 @@ class Proposal(Layer):
         if isinstance(bbox_post_process, dict):
             self.bbox_post_process = BBoxPostProcess(**bbox_post_process)
 
-    def forward(self, inputs):
-        self.inputs = inputs
+    def __call__(self, inputs, stage=0):
+        outs = {}
+        if stage == 0:
+            proposal_out = self.generate_proposal(inputs)
+            inputs.update(proposal_out)
+        if inputs['mode'] == 'train':
+            proposal_target_out = self.generate_proposal_target(inputs, stage)
+            outs.update(proposal_target_out)
+        return outs
 
-        proposal_out = self.generate_proposal()
-        if self.inputs['mode'] == 'train':
-            proposal_target_out = self.generate_proposal_target(proposal_out)
-            proposal_out.update(proposal_target_out)
-        return proposal_out
-
-    def generate_proposal(self, ):
+    def generate_proposal(self, inputs):
         rpn_rois_prob = fluid.layers.sigmoid(
-            self.inputs['rpn_rois_score'], name='rpn_rois_prob')
+            inputs['rpn_rois_score'], name='rpn_rois_prob')
         outs = self.proposal_generator(
             scores=rpn_rois_prob,
-            bbox_deltas=self.inputs['rpn_rois_delta'],
-            anchors=self.inputs['anchor'],
-            variances=self.inputs['var'],
-            im_info=self.inputs['im_info'],
-            mode=self.inputs['mode'])
+            bbox_deltas=inputs['rpn_rois_delta'],
+            anchors=inputs['anchor'],
+            variances=inputs['var'],
+            im_info=inputs['im_info'],
+            mode=inputs['mode'])
         outs = {
             'rpn_rois': outs[0],
             'rpn_rois_probs': outs[1],
@@ -170,14 +169,15 @@ class Proposal(Layer):
         }
         return outs
 
-    def generate_proposal_target(self, proposal_out):
+    def generate_proposal_target(self, inputs, stage=0):
         outs = self.proposal_target_generator(
-            rpn_rois=proposal_out['rpn_rois'],
-            rpn_rois_nums=proposal_out['rpn_rois_nums'],
-            gt_classes=self.inputs['gt_class'],
-            is_crowd=self.inputs['is_crowd'],
-            gt_boxes=self.inputs['gt_bbox'],
-            im_info=self.inputs['im_info'])
+            rpn_rois=inputs['rpn_rois'],
+            rpn_rois_nums=inputs['rpn_rois_nums'],
+            gt_classes=inputs['gt_class'],
+            is_crowd=inputs['is_crowd'],
+            gt_boxes=inputs['gt_bbox'],
+            im_info=inputs['im_info'],
+            stage=stage)
         outs = {
             'rois': outs[0],
             'labels_int32': outs[1],
@@ -194,7 +194,7 @@ class Proposal(Layer):
 
 
 @register
-class Mask(Layer):
+class Mask(object):
     __inject__ = ['mask_target_generator', 'mask_post_process']
 
     def __init__(self,
@@ -209,22 +209,21 @@ class Mask(Layer):
         if isinstance(mask_post_process, dict):
             self.mask_post_process = MaskPostProcess(**mask_post_process)
 
-    def forward(self, inputs):
-        self.inputs = inputs
+    def __call__(self, inputs):
         outs = {}
-        if self.inputs['mode'] == 'train':
-            outs = self.generate_mask_target()
+        if inputs['mode'] == 'train':
+            outs = self.generate_mask_target(inputs)
         return outs
 
-    def generate_mask_target(self, ):
+    def generate_mask_target(self, inputs):
         outs = self.mask_target_generator(
-            im_info=self.inputs['im_info'],
-            gt_classes=self.inputs['gt_class'],
-            is_crowd=self.inputs['is_crowd'],
-            gt_segms=self.inputs['gt_mask'],
-            rois=self.inputs['rois'],
-            rois_nums=self.inputs['rois_nums'],
-            labels_int32=self.inputs['labels_int32'], )
+            im_info=inputs['im_info'],
+            gt_classes=inputs['gt_class'],
+            is_crowd=inputs['is_crowd'],
+            gt_segms=inputs['gt_mask'],
+            rois=inputs['rois'],
+            rois_nums=inputs['rois_nums'],
+            labels_int32=inputs['labels_int32'], )
         outs = {
             'mask_rois': outs[0],
             'rois_has_mask_int32': outs[1],
