@@ -2,23 +2,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
-
-from collections import OrderedDict
-import copy
-
 from paddle import fluid
-from paddle.fluid.dygraph import Layer
-from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
-from ppdet.utils.data_structure import BufferDict
+from .meta_arch import ObjectDetection
 
 __all__ = ['FasterRCNN']
 
 
 @register
-class FasterRCNN(Layer):
+class FasterRCNN(ObjectDetection):
     __category__ = 'architecture'
     __inject__ = [
         'anchor',
@@ -43,8 +36,8 @@ class FasterRCNN(Layer):
         self.bbox_head = bbox_head
         self.rpn_only = rpn_only
 
-    def forward(self, inputs, mode='train'):
-        self.gbd = self.build_inputs(inputs, mode)
+    def forward(self, inputs, inputs_keys, mode='train'):
+        self.gbd = self.build_inputs(inputs, inputs_keys)
         self.gbd['mode'] = mode
 
         # Backbone
@@ -102,16 +95,3 @@ class FasterRCNN(Layer):
             'im_shape': inputs['im_shape'].numpy()
         }
         return outs
-
-    def build_inputs(self, inputs, mode='train'):
-
-        input_keys = [
-            'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd'
-        ]
-        if mode == 'infer':
-            input_keys = ['image', 'im_info', 'im_id', 'im_shape']
-        gbd = BufferDict()
-        for i, k in enumerate(input_keys):
-            v = to_variable(np.array([x[i] for x in inputs]))
-            gbd.set(k, v)
-        return gbd

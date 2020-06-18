@@ -260,7 +260,8 @@ class ResNet(Layer):
             "res4", ch_in=512, ch_out=256, count=blocks[2], stride=2)
 
     def forward(self, inputs):
-        x = inputs.get('image')
+        x = inputs['image']
+
         conv1 = self.conv(x)
         poo1 = self.pool2d_max(conv1)
 

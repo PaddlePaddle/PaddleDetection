@@ -1,18 +1,18 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy as np
+
 from paddle import fluid
-from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
 
+from .meta_arch import ObjectDetection
 __all__ = ['MaskRCNN']
 
 
 @register
-class MaskRCNN(fluid.dygraph.Layer):
+class MaskRCNN(ObjectDetection):
     __category__ = 'architecture'
     __inject__ = [
         'anchor',
@@ -43,8 +43,8 @@ class MaskRCNN(fluid.dygraph.Layer):
         self.bbox_head = bbox_head
         self.mask_head = mask_head
 
-    def forward(self, inputs, mode='train'):
-        self.gbd = self.build_inputs(inputs, mode)
+    def forward(self, inputs, inputs_keys, mode='train'):
+        self.gbd = self.build_inputs(inputs, inputs_keys)
         self.gbd['mode'] = mode
 
         # Backbone
@@ -119,17 +119,3 @@ class MaskRCNN(fluid.dygraph.Layer):
             'im_shape': inputs['im_shape'].numpy()
         }
         return inputs
-
-    def build_inputs(self, inputs, mode='train'):
-        input_keys = [
-            'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd',
-            'gt_mask'
-        ]
-        if mode == 'infer':
-            input_keys = ['image', 'im_info', 'im_id', 'im_shape']
-        gbd = BufferDict()
-        for i, k in enumerate(input_keys):
-            v = to_variable(np.array([x[i] for x in inputs]))
-            gbd.set(k, v)
-
-        return gbd
