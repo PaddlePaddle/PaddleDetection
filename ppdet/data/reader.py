@@ -359,8 +359,8 @@ class Reader(object):
                 mix_idx = np.random.randint(1, num)
                 sample['cutmix'] = copy.deepcopy(self._roidbs[mix_idx])
                 if self._load_img:
-                    sample['cutmix']['image'] = self._load_image(sample['cutmix'][
-                        'im_file'])
+                    sample['cutmix']['image'] = self._load_image(sample[
+                        'cutmix']['im_file'])
 
             batch.append(sample)
             bs += 1
