@@ -2270,3 +2270,4 @@ class TargetAssign(BaseOperator):
         targets[matched_indices] = matched_targets
         sample['fg_num'] = np.array(len(matched_targets), dtype=np.int32)
         return sample
+
