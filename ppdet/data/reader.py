@@ -167,6 +167,8 @@ class Reader(object):
             Default True.
         mixup_epoch (int): mixup epoc number. Default is -1, meaning
             not use mixup.
+        cutmix_epoch (int): cutmix epoc number. Default is -1, meaning
+            not use cutmix.
         class_aware_sampling (bool): whether use class-aware sampling or not.
             Default False.
         worker_num (int): number of working threads/processes.
@@ -191,6 +193,7 @@ class Reader(object):
                  drop_last=False,
                  drop_empty=True,
                  mixup_epoch=-1,
+                 cutmix_epoch=-1,
                  class_aware_sampling=False,
                  worker_num=-1,
                  use_process=False,
@@ -241,6 +244,7 @@ class Reader(object):
 
         # sampling
         self._mixup_epoch = mixup_epoch
+        self._cutmix_epoch = cutmix_epoch
         self._class_aware_sampling = class_aware_sampling
 
         self._load_img = False
@@ -289,6 +293,10 @@ class Reader(object):
             logger.debug("Disable mixup for dataset samples "
                          "less than 2 samples")
             self._mixup_epoch = -1
+        if self._cutmix_epoch > 0 and len(self.indexes) < 2:
+            logger.info("Disable cutmix for dataset samples "
+                        "less than 2 samples")
+            self._cutmix_epoch = -1
 
         if self._epoch < 0:
             self._epoch = 0
@@ -345,6 +353,13 @@ class Reader(object):
                 sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
+                        'im_file'])
+            if self._epoch < self._cutmix_epoch:
+                num = len(self.indexes)
+                mix_idx = np.random.randint(1, num)
+                sample['cutmix'] = copy.deepcopy(self._roidbs[mix_idx])
+                if self._load_img:
+                    sample['cutmix']['image'] = self._load_image(sample['cutmix'][
                         'im_file'])
 
             batch.append(sample)
