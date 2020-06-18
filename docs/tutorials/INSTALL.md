@@ -150,15 +150,13 @@ python dataset/coco/download_coco.py
 
 ```
 python dataset/voc/download_voc.py
-python dataset/voc/create_list.py
 ```
 
 `Pascal VOC` dataset with directory structure like this:
 
   ```
   dataset/voc/
-  ├── train.txt
-  ├── val.txt
+  ├── trainval.txt
   ├── test.txt
   ├── label_list.txt (optional)
   ├── VOCdevkit/VOC2007
@@ -197,4 +195,7 @@ will be cached in `~/.cache/paddle/dataset/` and can be discovered automatically
 subsequently.
 
 
-**NOTE:** For further informations on the datasets, please see [READER.md](../advanced_tutorials/READER.md)
+**NOTE:**
+
+- If you want to use a custom datasets, please refer to [Custom DataSet Document](Custom_DataSet.md)
+- For further informations on the datasets, please see [READER.md](../advanced_tutorials/READER.md)
