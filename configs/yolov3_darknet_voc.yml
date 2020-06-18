@@ -1,6 +1,6 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 70000
+max_iters: 20000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 2000
@@ -8,7 +8,7 @@ metric: VOC
 map_type: 11point
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet_voc/model_final
-num_classes: 20
+num_classes: 6
 use_fine_grained_loss: false
 
 YOLOv3:
@@ -50,11 +50,11 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 55000
-    - 62000
+    - 16000
+    - 18000
   - !LinearWarmup
     start_factor: 0.
-    steps: 1000
+    steps: 4000
 
 OptimizerBuilder:
   optimizer:
@@ -70,22 +70,34 @@ TrainReader:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
   dataset:
-    !VOCDataSet
-    dataset_dir: dataset/voc
-    anno_path: trainval.txt
-    use_default_label: true
-    with_background: false
+    # !VOCDataSet
+    # dataset_dir: dataset/voc
+    # anno_path: trainval.txt
+    # use_default_label: true
+    # with_background: false
+    !KITTIDataSet
+      dataset_dir: /paddle/ssd7/dengkaipeng/aicv-data/kitti
+      image_dir: training/image_2
+      anno_path: training/ape_bin
+      split_file: datasets/splits/train.txt
+      with_background: false
 
 EvalReader:
   inputs_def:
     fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
     num_max_boxes: 50
   dataset:
-    !VOCDataSet
-    dataset_dir: dataset/voc
-    anno_path: test.txt
-    use_default_label: true
-    with_background: false
+    # !VOCDataSet
+    # dataset_dir: dataset/voc
+    # anno_path: test.txt
+    # use_default_label: true
+    # with_background: false
+    !KITTIDataSet
+      dataset_dir: /paddle/ssd7/dengkaipeng/aicv-data/kitti
+      image_dir: training/image_2
+      anno_path: training/ape_bin
+      split_file: datasets/splits/valid.txt
+      with_background: false
 
 TestReader:
   dataset:
