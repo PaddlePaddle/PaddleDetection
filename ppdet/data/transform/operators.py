@@ -149,7 +149,7 @@ class DecodeImage(BaseOperator):
         # decode cutmix image
         if self.with_cutmix and 'cutmix' in sample:
             self.__call__(sample['cutmix'], context)
-        
+
         return sample
 
 
