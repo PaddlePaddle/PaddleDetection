@@ -148,13 +148,13 @@ def get_dataset_path(path, annotation, image_dir):
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     logger.debug("Create voc file list...")
     devkit_dir = osp.join(data_dir, devkit_subdir)
-    years = ['2007', '2012']
+    year_dirs = [osp.join(devkit_dir, x) for x in os.listdir(devkit_dir)]
 
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
     # label, see ../data/source/voc.py
-    create_list(devkit_dir, years, data_dir)
+    create_list(year_dirs, data_dir)
     logger.debug("Create voc file list finished")
 
 
