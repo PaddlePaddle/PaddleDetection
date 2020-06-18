@@ -5,9 +5,9 @@ from paddle.fluid.dygraph import Layer
 from paddle.fluid.dygraph.base import to_variable
 
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import (AnchorGenerator, ProposalGenerator,
-                                ProposalTargetGenerator, MaskTargetGenerator,
-                                DecodeClipNms)
+from ppdet.modeling.ops import (AnchorGenerator, RPNAnchorTargetGenerator,
+                                ProposalGenerator, ProposalTargetGenerator,
+                                MaskTargetGenerator, DecodeClipNms)
 # TODO: modify here into ppdet.modeling.ops like DecodeClipNms 
 from ppdet.py_op.post_process import mask_post_process
 
@@ -59,31 +59,62 @@ class MaskPostProcess(object):
 
 @register
 class Anchor(Layer):
-    __inject__ = ['anchor_generator']
+    __inject__ = ['anchor_generator', 'anchor_target_generator']
 
-    def __init__(self, anchor_generator=AnchorGenerator().__dict__):
+    def __init__(self,
+                 anchor_type='rpn',
+                 anchor_generator=AnchorGenerator().__dict__,
+                 anchor_target_generator=RPNAnchorTargetGenerator().__dict__):
         super(Anchor, self).__init__()
         self.anchor_generator = anchor_generator
+        self.anchor_target_generator = anchor_target_generator
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
+        if isinstance(anchor_target_generator, dict):
+            self.anchor_target_generator = RPNAnchorTargetGenerator(
+                **anchor_target_generator)
 
     def forward(self, inputs):
         self.inputs = inputs
         anchor_out = self.generate_anchors()
-        if self.inputs['mode'] == 'train':
-            anchor_target_out = self.generate_anchors_target()
-            anchor_out.update(anchor_target_out)
         return anchor_out
 
     def generate_anchors(self, ):
         # TODO: update here to use int to specify featmap size
         outs = self.anchor_generator(self.inputs['rpn_feat'])
-        outs = {'anchor': outs[0], 'var': outs[1]}
+        outs = {'anchor': outs[0], 'var': outs[1], 'anchor_module': self}
         return outs
 
-    def generate_anchors_target(self, ):
-        # TODO: mv from rpn_head to here 
-        return {}
+    def generate_anchors_target(self, inputs):
+        # TODO: add rpn anchor targets
+        # TODO: add yolo anchor targets 
+        rpn_rois_score = fluid.layers.transpose(
+            inputs['rpn_rois_score'], perm=[0, 2, 3, 1])
+        rpn_rois_delta = fluid.layers.transpose(
+            inputs['rpn_rois_delta'], perm=[0, 2, 3, 1])
+        rpn_rois_score = fluid.layers.reshape(
+            x=rpn_rois_score, shape=(0, -1, 1))
+        rpn_rois_delta = fluid.layers.reshape(
+            x=rpn_rois_delta, shape=(0, -1, 4))
+
+        anchor = fluid.layers.reshape(inputs['anchor'], shape=(-1, 4))
+        #var = fluid.layers.reshape(inputs['var'], shape=(-1, 4))
+
+        score_pred, roi_pred, score_tgt, roi_tgt, roi_weight = self.anchor_target_generator(
+            bbox_pred=rpn_rois_delta,
+            cls_logits=rpn_rois_score,
+            anchor_box=anchor,
+            gt_boxes=inputs['gt_bbox'],
+            is_crowd=inputs['is_crowd'],
+            im_info=inputs['im_info'])
+        outs = {
+            'rpn_score_pred': score_pred,
+            'rpn_score_target': score_tgt,
+            'rpn_rois_pred': roi_pred,
+            'rpn_rois_target': roi_tgt,
+            'rpn_rois_weight': roi_weight
+        }
+        return outs
 
     def post_process(self, ):
         # TODO: whether move bbox post process to here 

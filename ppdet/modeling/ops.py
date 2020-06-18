@@ -35,18 +35,18 @@ class AnchorGenerator(object):
 @serializable
 class RPNAnchorTargetGenerator(object):
     def __init__(self,
-                 rpn_batch_size_per_im=256,
-                 rpn_straddle_thresh=0.,
-                 rpn_fg_fraction=0.5,
-                 rpn_positive_overlap=0.7,
-                 rpn_negative_overlap=0.3,
+                 batch_size_per_im=256,
+                 straddle_thresh=0.,
+                 fg_fraction=0.5,
+                 positive_overlap=0.7,
+                 negative_overlap=0.3,
                  use_random=True):
         super(RPNAnchorTargetGenerator, self).__init__()
-        self.rpn_batch_size_per_im = rpn_batch_size_per_im
-        self.rpn_straddle_thresh = rpn_straddle_thresh
-        self.rpn_fg_fraction = rpn_fg_fraction
-        self.rpn_positive_overlap = rpn_positive_overlap
-        self.rpn_negative_overlap = rpn_negative_overlap
+        self.batch_size_per_im = batch_size_per_im
+        self.straddle_thresh = straddle_thresh
+        self.fg_fraction = fg_fraction
+        self.positive_overlap = positive_overlap
+        self.negative_overlap = negative_overlap
         self.use_random = use_random
 
     def __call__(self, cls_logits, bbox_pred, anchor_box, gt_boxes, is_crowd,
@@ -57,9 +57,9 @@ class RPNAnchorTargetGenerator(object):
         im_info = im_info.numpy()
 
         loc_indexes, score_indexes, tgt_labels, tgt_bboxes, bbox_inside_weights = generate_rpn_anchor_target(
-            anchor_box, gt_boxes, is_crowd, im_info, self.rpn_straddle_thresh,
-            self.rpn_batch_size_per_im, self.rpn_positive_overlap,
-            self.rpn_negative_overlap, self.rpn_fg_fraction, self.use_random)
+            anchor_box, gt_boxes, is_crowd, im_info, self.straddle_thresh,
+            self.batch_size_per_im, self.positive_overlap,
+            self.negative_overlap, self.fg_fraction, self.use_random)
 
         loc_indexes = to_variable(loc_indexes)
         score_indexes = to_variable(score_indexes)
