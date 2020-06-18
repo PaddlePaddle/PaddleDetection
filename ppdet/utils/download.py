@@ -139,10 +139,11 @@ def get_dataset_path(path, annotation, image_dir):
             return data_dir
 
     # not match any dataset in DATASETS
-    raise ValueError("Dataset {} is not valid and cannot parse dataset type "
-                     "'{}' for automaticly downloading, which only supports "
-                     "'voc' , 'coco', 'wider_face' and 'fruit' currently".
-                     format(path, osp.split(path)[-1]))
+    # raise ValueError("Dataset {} is not valid and cannot parse dataset type "
+    #                  "'{}' for automaticly downloading, which only supports "
+    #                  "'voc' , 'coco', 'wider_face' and 'fruit' currently".
+    #                  format(path, osp.split(path)[-1]))
+    return path
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):

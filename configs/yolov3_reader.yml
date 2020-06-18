@@ -3,10 +3,16 @@ TrainReader:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
   dataset:
-    !COCODataSet
-      image_dir: train2017
-      anno_path: annotations/instances_train2017.json
-      dataset_dir: dataset/coco
+    # !COCODataSet
+    #   image_dir: train2017
+    #   anno_path: annotations/instances_train2017.json
+    #   dataset_dir: dataset/coco
+    #   with_background: false
+    !KITTIDataSet
+      dataset_dir: /paddle/ssd7/dengkaipeng/aicv-data/kitti
+      image_dir: training/image_2
+      anno_path: training/ape_bin
+      split_file: datasets/splits/train.txt
       with_background: false
   sample_transforms:
     - !DecodeImage
@@ -60,10 +66,16 @@ EvalReader:
     fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 50
   dataset:
-    !COCODataSet
-      image_dir: val2017
-      anno_path: annotations/instances_val2017.json
-      dataset_dir: dataset/coco
+    # !COCODataSet
+    #   image_dir: val2017
+    #   anno_path: annotations/instances_val2017.json
+    #   dataset_dir: dataset/coco
+    #   with_background: false
+    !KITTIDataSet
+      dataset_dir: /paddle/ssd7/dengkaipeng/aicv-data/kitti
+      image_dir: training/image_2
+      anno_path: training/ape_bin
+      split_file: datasets/splits/valid.txt
       with_background: false
   sample_transforms:
     - !DecodeImage
