@@ -148,15 +148,13 @@ python dataset/coco/download_coco.py
 
 ```
 python dataset/voc/download_voc.py
-python dataset/voc/create_list.py
 ```
 
 `Pascal VOC` 数据集目录结构如下：
 
   ```
   dataset/voc/
-  ├── train.txt
-  ├── val.txt
+  ├── trainval.txt
   ├── test.txt
   ├── label_list.txt (optional)
   ├── VOCdevkit/VOC2007
@@ -192,4 +190,7 @@ PaddleDetection将自动从[COCO-2017](http://images.cocodataset.org)或
 `〜/.cache/paddle/dataset/`目录下，下次运行时，也可自动从该目录发现数据集。
 
 
-**说明：** 更多有关数据集的介绍，请参考[数据处理文档](../advanced_tutorials/READER.md)
+**说明：**
+
+- 如果要使用自定义数据集，请参考[自定义数据集文档](Custom_DataSet.md)
+- 更多有关数据集的介绍，请参考[数据处理文档](../advanced_tutorials/READER.md)
