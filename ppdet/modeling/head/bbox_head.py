@@ -39,6 +39,7 @@ class BBoxFeat(Layer):
             raise "BBoxFeat only support train or infer mode!"
 
         rois_feat = self.roi_extractor(inputs['res4'], rois, rois_num)
+        # TODO: add others 
         y_res5 = self.res5(rois_feat)
         y = self.res5_pool(y_res5)
         y = fluid.layers.squeeze(y, axes=[2, 3])
@@ -88,15 +89,14 @@ class BBoxHead(Layer):
                 name='bbox_pred_b', learning_rate=2., regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
-        bbox_feat_out = self.bbox_feat(inputs)
-        x = bbox_feat_out['bbox_feat']
+        outs = self.bbox_feat(inputs)
+        x = outs['bbox_feat']
         bs = self.bbox_score(x)
         bd = self.bbox_delta(x)
-        outs = {'bbox_score': bs, 'bbox_delta': bd}
+        outs.update({'bbox_score': bs, 'bbox_delta': bd})
         if inputs['mode'] == 'infer':
             bbox_prob = fluid.layers.softmax(bs, use_cudnn=False)
             outs['bbox_prob'] = bbox_prob
-        outs.update(bbox_feat_out)
         return outs
 
     def loss(self, inputs):
