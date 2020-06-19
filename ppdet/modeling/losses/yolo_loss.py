@@ -179,31 +179,20 @@ class YOLOv3Loss(object):
             loss_isrp_cls = fluid.layers.reduce_sum(
                 loss_isrp_cls, dim=[1, 2, 3])
 
-            bias = 0.2
-            pos_cls_score = fluid.layers.reduce_sum(
-                cls_score * cls_target, dim=[-1])
-            pos_cls_score = fluid.layers.reshape(pos_cls_score, [
-                batch_size,
-                -1,
-            ])
-            pos_mask = fluid.layers.cast(
-                sorted_iou[:, :, 0] > 0.5, dtype='float32')
-            carl_weights = bias + (1 - bias) * pos_cls_score * pos_mask
-            carl_weights *= fluid.layers.reduce_sum(
-                pos_mask) / fluid.layers.reduce_sum(carl_weights)
-            carl_weights = fluid.layers.reshape(carl_weights, (
-                -1, an_num, tobj_shape[2], tobj_shape[3]))
-
-            # isr_tobj = tobj * pos_weights
-            # loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
-            # pos_mask = fluid.layers.cast(pos_weights > 0., dtype='flaot32')
-            # orig_loss_cls = fluid.layers.elementwise_mul(loss_cls, tobj * pos_mask, axis=0)
-            # orig_loss_cls = fluid.layers.reduce_sum(loss_cls)
-            # orig_loss_cls.stop_gradient = True
-            # new_loss_cls = fluid.layers.elementwise_mul(loss_cls, isr_tobj * pos_mask, axis=0)
-            # new_loss_cls = fluid.layers.reduce_sum(loss_cls)
-            # new_loss_cls.stop_gradient = True
-            # pos_loss_cls_ratio = orig_loss_cls / new_loss_cls
+            # bias = 0.2
+            # pos_cls_score = fluid.layers.reduce_sum(
+            #     cls_score * cls_target, dim=[-1])
+            # pos_cls_score = fluid.layers.reshape(pos_cls_score, [
+            #     batch_size,
+            #     -1,
+            # ])
+            # pos_mask = fluid.layers.cast(
+            #     sorted_iou[:, :, 0] > 0.5, dtype='float32')
+            # carl_weights = bias + (1 - bias) * pos_cls_score * pos_mask
+            # carl_weights *= fluid.layers.reduce_sum(
+            #     pos_mask) / fluid.layers.reduce_sum(carl_weights)
+            # carl_weights = fluid.layers.reshape(carl_weights, (
+            #     -1, an_num, tobj_shape[2], tobj_shape[3]))
 
             loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(x,
                                                                     tx) * tscale
@@ -215,8 +204,8 @@ class YOLOv3Loss(object):
             loss_h = fluid.layers.abs(h - th) * tscale
             loss_wh = loss_w + loss_h
 
-            loss_carl = (loss_xy + loss_wh) * carl_weights
-            loss_carl = fluid.layers.reduce_sum(loss_carl, dim=[1, 2, 3])
+            # loss_carl = (loss_xy + loss_wh) * carl_weights
+            # loss_carl = fluid.layers.reduce_sum(loss_carl, dim=[1, 2, 3])
 
             # loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
             # loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
@@ -253,7 +242,7 @@ class YOLOv3Loss(object):
             loss_xys.append(fluid.layers.reduce_mean(loss_xy))
             loss_whs.append(fluid.layers.reduce_mean(loss_wh))
             loss_isrp_clss.append(fluid.layers.reduce_mean(loss_isrp_cls))
-            loss_carls.append(fluid.layers.reduce_mean(loss_carl))
+            # loss_carls.append(fluid.layers.reduce_mean(loss_carl))
             loss_objs.append(
                 fluid.layers.reduce_mean(loss_obj_pos + loss_obj_neg))
             loss_clss.append(fluid.layers.reduce_mean(loss_cls))
@@ -262,7 +251,7 @@ class YOLOv3Loss(object):
             "loss_xy": fluid.layers.sum(loss_xys),
             "loss_wh": fluid.layers.sum(loss_whs),
             "loss_isrp_cls": fluid.layers.sum(loss_isrp_clss),
-            "loss_carl": fluid.layers.sum(loss_carls),
+            # "loss_carl": fluid.layers.sum(loss_carls),
             "loss_obj": fluid.layers.sum(loss_objs),
             "loss_cls": fluid.layers.sum(loss_clss),
         }
