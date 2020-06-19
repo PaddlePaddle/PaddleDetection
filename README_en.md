@@ -60,12 +60,14 @@ Supported Architectures:
 | Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |   ✗    |  ✗      |
 | Libra R-CNN         |   ✗    |                             ✓ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 | RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
-| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
+| YOLOv3              |   ✓    |                             ✓ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
 | SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
 | BlazeFace           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 | Faceboxes           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
+
+**NOTE:** ✓ for config file and pretrain model provided in [Model Zoo](docs/MODEL_ZOO.md), ✗ for not provided but is supported generally.
 
 More models:
 
@@ -111,11 +113,12 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Installation guide](docs/tutorials/INSTALL.md)
 - [Quick start on small dataset](docs/tutorials/QUICK_STARTED.md)
 - [Train/Evaluation/Inference](docs/tutorials/GETTING_STARTED.md)
+- [How to train a custom dataset](docs/tutorials/Custom_DataSet.md)
 - [FAQ](docs/FAQ.md)
 
 ### Advanced Tutorial
 
-- [Guide to preprocess pipeline and custom dataset](docs/advanced_tutorials/READER.md)
+- [Guide to preprocess pipeline and dataset definition](docs/advanced_tutorials/READER.md)
 - [Models technical](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
 - [Parameter configuration](docs/advanced_tutorials/config_doc):

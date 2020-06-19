@@ -46,12 +46,14 @@
 | Cascade Mask-RCNN  | ✓      |                             ✗ | ✗          | ✓     | ✗         |  ✗     |  ✗      |
 | Libra R-CNN        | ✗      |                             ✓ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 | RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
-| YOLOv3             | ✓      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
+| YOLOv3             | ✓      |                             ✓ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
 | SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
 | BlazeFace          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 | Faceboxes          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型预测速度基本不变的情况下提高了精度。
+
+**说明：** ✓ 为[模型库](docs/MODEL_ZOO_cn.md)中提供了对应配置文件和预训练模型，✗ 为未提供参考配置，但一般都支持。
 
 更多的模型:
 
@@ -97,10 +99,11 @@
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
 - [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
+- [如何训练自定义数据集](docs/tutorials/Custom_DataSet.md)
 - [常见问题汇总](docs/FAQ.md)
 
 ### 进阶教程
-- [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
+- [数据预处理及数据集定义](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 - [模型参数配置](docs/advanced_tutorials/config_doc):
   - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)

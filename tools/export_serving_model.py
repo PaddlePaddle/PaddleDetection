@@ -50,8 +50,12 @@ def save_serving_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
     import paddle_serving_client.io as serving_io
     serving_client = os.path.join(save_dir, 'serving_client')
     serving_server = os.path.join(save_dir, 'serving_server')
-    serving_io.save_model(serving_client, serving_server, feed_dict, fetch_dict,
-                          infer_prog)
+    serving_io.save_model(
+        client_config_folder=serving_client,
+        server_model_folder=serving_server,
+        feed_var_dict=feed_dict,
+        fetch_var_dict=fetch_dict,
+        main_program=infer_prog)
 
 
 def main():

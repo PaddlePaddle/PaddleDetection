@@ -7,23 +7,19 @@ English | [简体中文](README.md)
 
 This directory contains models optimized for mobile applications, at present the following models included:
 
-| Backbone                 | Architecture              | Input | Image/gpu <sup>1</sup> | Lr schd       | Box AP | Download <sup>2</sup> |
-|--------------------------|---------------------------|-------|------------------------|---------------|--------|-----------------------|
-| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small.tar.gz) |
-| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_320.tar.gz) |
-| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_mobilenetv3_fpn_640.tar.gz) |
-| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.tar.gz) |
-| MobileNetV3 Large        | YOLOv3 Prune <sup>3</sup> | 320   | 8                      | -             | 24.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3_prune86_FPGM_320.tar.gz) |
+| Backbone                 | Architecture              | Input | Image/gpu <sup>1</sup> | Lr schd       | Box AP | Download | PaddleLite Model Download |
+| :----------------------- | :------------------------ | :---: | :--------------------: | :------------ | :----: | :------- | :------------------------ |
+| MobileNetV3 Small        | SSDLite                   | 320   | 64                     | 400K (cosine) | 16.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_small.tar) |
+| MobileNetV3 Large        | SSDLite                   | 320   | 64                     | 400K (cosine) | 22.8   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/ssdlite_mobilenet_v3_large.tar) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 320   | 2                      | 500k (cosine) | 25.0   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_320.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_320.tar) |
+| MobileNetV3 Large w/ FPN | Cascade RCNN              | 640   | 2                      | 500k (cosine) | 30.2   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/cascade_rcnn_mobilenetv3_fpn_640.tar) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/cascade_rcnn_mobilenetv3_fpn_640.tar) |
+| MobileNetV3 Large        | YOLOv3                    | 320   | 8                      | 500K          | 27.1   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/yolov3_mobilenet_v3.tar) |
+| MobileNetV3 Large        | YOLOv3 Prune <sup>2</sup> | 320   | 8                      | -             | 24.6   | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/yolov3_mobilenet_v3_prune75875_FPGM_distillby_r34.pdparams) | [Link](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/lite/yolov3_mobilenet_v3_prune86_FPGM_320.tar) |
 
 **Notes**:
 
 -   <a name="gpu">[1]</a> All models are trained on 8 GPUs.
--   <a name="tarball">[2]</a> Each tarball contains the following files
-    -  model weight file (`.pdparams` or `.tar`)
-    -  inference model files (`__model__` and `__params__`)
-    -  Paddle-Lite model file (`.nb`)
--   <a name="prune">[3]</a> See the note section on how YOLO head is pruned
+-   <a name="prune">[2]</a> See the note section on how YOLO head is pruned
 
 
 ## Benchmarks Results

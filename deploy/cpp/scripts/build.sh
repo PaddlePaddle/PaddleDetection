@@ -18,7 +18,7 @@ CUDNN_LIB=/path/to/cudnn/lib/
 
 # OPENCV 路径, 如果使用自带预编译版本可不修改
 sh $(pwd)/scripts/bootstrap.sh  # 下载预编译版本的opencv
-OPENCV_DIR=$(pwd)/deps/opencv3gcc4.8/
+OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
 
 # 以下无需改动
 rm -rf build

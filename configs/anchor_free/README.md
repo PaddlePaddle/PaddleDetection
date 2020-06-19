@@ -31,10 +31,13 @@
 | FCOS    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 39.8 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_1x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_r50_fpn_1x.yml) |
 | FCOS+multiscale_train    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 42.0 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_multiscale_2x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_r50_fpn_multiscale_2x.yml) |
 | FCOS+DCN    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 44.4 | -      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_dcn_r50_fpn_1x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_dcn_r50_fpn_1x.yml) |
+| FCOS+DCN+cutmix    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 44.5 | -      | [下载链接]
+(https://paddlemodels.bj.bcebos.com/object_detection/fcos_dcn_r50_fpn_1x_cutmix.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_dcn_r50_fpn_1x_cutmix.yml) |
 
 **注意:**
 
 - 模型FPS在Tesla V100单卡环境中通过tools/eval.py进行测试
+- CornerNet-Squeeze要求使用PaddlePaddle1.8及以上版本或适当的develop版本
 - CornerNet-Squeeze中使用ResNet结构的骨干网络时，加入了FPN结构，骨干网络的输出feature map采用FPN中的P3层输出。
 - \*CornerNet-Squeeze-dcn-mixup-cosine是基于原版CornerNet-Squeeze优化效果最好的模型，在ResNet的骨干网络基础上增加mixup预处理和使用cosine_decay
 - FCOS使用GIoU loss、用location分支预测centerness、左上右下角点偏移量归一化和ground truth中心匹配策略

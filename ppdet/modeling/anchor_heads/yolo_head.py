@@ -20,7 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import MultiClassNMS
+from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -29,6 +29,7 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
+from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3Head', 'YOLOv4Head']
 
@@ -70,6 +71,7 @@ class YOLOv3Head(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.0,
                  clip_bbox=True):
+        check_version('2.0.0')
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.anchor_masks = anchor_masks
@@ -85,8 +87,7 @@ class YOLOv3Head(object):
         if isinstance(nms, dict):
             self.nms = MultiClassNMS(**nms)
         self.downsample = downsample
-        # TODO(guanzhong) activate scale_x_y in Paddle 2.0
-        #self.scale_x_y = scale_x_y
+        self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
 
     def _conv_bn(self,
@@ -317,8 +318,8 @@ class YOLOv3Head(object):
                                              len(self.anchor_masks[i]),
                                              self.num_classes,
                                              self.iou_aware_factor)
-            #scale_x_y = self.scale_x_y if not isinstance(
-            #    self.scale_x_y, Sequence) else self.scale_x_y[i]
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
             box, score = fluid.layers.yolo_box(
                 x=output,
                 img_size=im_size,
@@ -327,12 +328,15 @@ class YOLOv3Head(object):
                 conf_thresh=self.nms.score_threshold,
                 downsample_ratio=self.downsample[i],
                 name=self.prefix_name + "yolo_box" + str(i),
-                clip_bbox=self.clip_bbox)
+                clip_bbox=self.clip_bbox,
+                scale_x_y=scale_x_y)
             boxes.append(box)
             scores.append(fluid.layers.transpose(score, perm=[0, 2, 1]))
 
         yolo_boxes = fluid.layers.concat(boxes, axis=1)
         yolo_scores = fluid.layers.concat(scores, axis=2)
+        if type(self.nms) is MultiClassSoftNMS:
+            yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
         pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         return {'bbox': pred}
 
@@ -349,7 +353,7 @@ class YOLOv4Head(YOLOv3Head):
         spp_stage (int): apply spp on which stage.
         num_classes (int): number of output classes
         downsample (list): downsample ratio for each yolo_head
-        scale_x_y (list): scale the left top point of bbox at each stage
+        scale_x_y (list): scale the center point of bbox at each stage
     """
     __inject__ = ['nms', 'yolo_loss']
     __shared__ = ['num_classes', 'weight_prefix_name']
@@ -368,7 +372,7 @@ class YOLOv4Head(YOLOv3Head):
                  num_classes=80,
                  weight_prefix_name='',
                  downsample=[8, 16, 32],
-                 scale_x_y=[1.2, 1.1, 1.05],
+                 scale_x_y=1.0,
                  yolo_loss="YOLOv3Loss",
                  iou_aware=False,
                  iou_aware_factor=0.4,

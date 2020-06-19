@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +24,11 @@ if parent_path not in sys.path:
 
 import glob
 import numpy as np
-import six
 from PIL import Image
 
 from paddle import fluid
+from paddleslim.prune import Pruner
+from paddleslim.analysis import flops
 
 from ppdet.core.workspace import load_config, merge_config, create
 
@@ -119,12 +120,38 @@ def main():
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
+    pruned_params = FLAGS.pruned_params
+    assert (
+        FLAGS.pruned_params is not None
+    ), "FLAGS.pruned_params is empty!!! Please set it by '--pruned_params' option."
+    pruned_params = FLAGS.pruned_params.strip().split(",")
+    logger.info("pruned params: {}".format(pruned_params))
+    pruned_ratios = [float(n) for n in FLAGS.pruned_ratios.strip().split(",")]
+    logger.info("pruned ratios: {}".format(pruned_ratios))
+    assert (len(pruned_params) == len(pruned_ratios)
+            ), "The length of pruned params and pruned ratios should be equal."
+    assert (pruned_ratios > [0] * len(pruned_ratios) and
+            pruned_ratios < [1] * len(pruned_ratios)
+            ), "The elements of pruned ratios should be in range (0, 1)."
+
+    base_flops = flops(infer_prog)
+    pruner = Pruner()
+    infer_prog, _, _ = pruner.prune(
+        infer_prog,
+        fluid.global_scope(),
+        params=pruned_params,
+        ratios=pruned_ratios,
+        place=place,
+        only_graph=True)
+    pruned_flops = flops(infer_prog)
+    logger.info("pruned FLOPS: {}".format(
+        float(base_flops - pruned_flops) / base_flops))
     reader = create_reader(cfg.TestReader, devices_num=1)
     loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
     if cfg.weights:
-        checkpoint.load_params(exe, infer_prog, cfg.weights)
+        checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
 
     # parse infer fetches
     assert cfg.metric in ['COCO', 'VOC', 'OID', 'WIDERFACE'], \
@@ -159,14 +186,6 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # use VisualDL to log image
-    if FLAGS.use_vdl:
-        assert six.PY3, "VisualDL requires Python >= 3.5"
-        from visualdl import LogWriter
-        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
-        vdl_image_step = 0
-        vdl_image_frame = 0  # each frame can display ten pictures at most.
-
     imid2path = dataset.get_imid2path()
     for iter_id, data in enumerate(loader()):
         outs = exe.run(infer_prog,
@@ -193,27 +212,10 @@ def main():
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
 
-            # use VisualDL to log original image
-            if FLAGS.use_vdl:
-                original_image_np = np.array(image)
-                vdl_writer.add_image(
-                    "original/frame_{}".format(vdl_image_frame),
-                    original_image_np, vdl_image_step)
-
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
                                       mask_results)
-
-            # use VisualDL to log image with bbox
-            if FLAGS.use_vdl:
-                infer_image_np = np.array(image)
-                vdl_writer.add_image("bbox/frame_{}".format(vdl_image_frame),
-                                     infer_image_np, vdl_image_step)
-                vdl_image_step += 1
-                if vdl_image_step % 10 == 0:
-                    vdl_image_step = 0
-                    vdl_image_frame += 1
 
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
@@ -242,15 +244,19 @@ if __name__ == '__main__':
         type=float,
         default=0.5,
         help="Threshold to reserve the result for visualization.")
+
     parser.add_argument(
-        "--use_vdl",
-        type=bool,
-        default=False,
-        help="whether to record the data to VisualDL.")
-    parser.add_argument(
-        '--vdl_log_dir',
+        "-p",
+        "--pruned_params",
+        default=None,
         type=str,
-        default="vdl_log_dir/image",
-        help='VisualDL logging directory for image.')
+        help="The parameters to be pruned when calculating sensitivities.")
+    parser.add_argument(
+        "--pruned_ratios",
+        default=None,
+        type=str,
+        help="The ratios pruned iteratively for each parameter when calculating sensitivities."
+    )
+
     FLAGS = parser.parse_args()
     main()

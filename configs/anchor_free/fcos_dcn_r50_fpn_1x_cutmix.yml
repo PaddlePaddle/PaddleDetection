@@ -1,13 +1,13 @@
 architecture: FCOS
 max_iters: 90000
 use_gpu: true
-snapshot_iter: 10000
+snapshot_iter: 5000
 log_smooth_window: 20
 log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
-weights: output/fcos_r50_fpn_1x/model_final
+weights: output/fcos_dcn_r50_fpn_1x_cutmix/model_final
 num_classes: 80
 
 FCOS:
@@ -21,6 +21,7 @@ ResNet:
   depth: 50
   feature_maps: [3, 4, 5]
   freeze_at: 2
+  dcn_v2_stages: [3, 4, 5]
 
 FPN:
   min_level: 3
@@ -38,7 +39,7 @@ FCOSHead:
   fcos_loss: FCOSLoss
   norm_reg_targets: True
   centerness_on_reg: True
-  use_dcn_in_tower: False
+  use_dcn_in_tower: True
   nms: MultiClassNMS
 
 MultiClassNMS:
@@ -84,6 +85,10 @@ TrainReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
+    with_cutmix: True
+  - !CutmixImage
+    alpha: 1.5
+    beta: 1.5
   - !RandomFlipImage
     prob: 0.5
   - !NormalizeImage
@@ -112,6 +117,7 @@ TrainReader:
   shuffle: true
   worker_num: 4
   use_process: false
+  cutmix_epoch: 10
 
 EvalReader:
   inputs_def:
@@ -145,7 +151,7 @@ EvalReader:
     use_padded_im_info: true
   batch_size: 1
   shuffle: false
-  worker_num: 2
+  worker_num: 1
   use_process: false
 
 TestReader:

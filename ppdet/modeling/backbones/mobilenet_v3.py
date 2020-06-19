@@ -393,20 +393,22 @@ class MobileNetV3(object):
             self.end_points.append(conv)
 
         # extra block
-        conv_extra = self._conv_bn_layer(
-            conv,
-            filter_size=1,
-            num_filters=self._make_divisible(scale * cfg[-1][1]),
-            stride=1,
-            padding="SAME",
-            num_groups=1,
-            if_act=True,
-            act='hard_swish',
-            name='conv' + str(i + 2))
-        self.block_stride += 1
-        if self.block_stride in self.feature_maps:
-            self.end_points.append(conv_extra)
-        i += 1
+        # check whether conv_extra is needed
+        if self.block_stride < max(self.feature_maps):
+            conv_extra = self._conv_bn_layer(
+                conv,
+                filter_size=1,
+                num_filters=self._make_divisible(scale * cfg[-1][1]),
+                stride=1,
+                padding="SAME",
+                num_groups=1,
+                if_act=True,
+                act='hard_swish',
+                name='conv' + str(i + 2))
+            self.block_stride += 1
+            if self.block_stride in self.feature_maps:
+                self.end_points.append(conv_extra)
+            i += 1
         for block_filter in self.extra_block_filters:
             conv_extra = self._extra_block_dw(conv_extra, block_filter[0],
                                               block_filter[1], 2,
