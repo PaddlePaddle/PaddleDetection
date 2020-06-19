@@ -139,7 +139,7 @@ cd dataset/wider_face && ./download.sh
 训练流程与推理流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../tutorials/GETTING_STARTED_cn.md)。  
 **注意:**
 - `BlazeFace`和`FaceBoxes`训练是以每卡`batch_size=8`在4卡GPU上进行训练(总`batch_size`是32),并且训练320000轮
-(如果你的GPU数达不到4，请参考[学习率计算规则表](../tutorials/GETTING_STARTED_cn.html#faq))。
+(如果你的GPU数达不到4，请参考[学习率计算规则表](../FAQ.md))。
 - 人脸检测模型目前我们不支持边训练边评估。
 
 
