@@ -14,7 +14,7 @@ TTFNet:
   ttf_head: TTFHead
 
 DarkNet:
-  norm_type: sync_bn
+  norm_type: bn
   norm_decay: 0.0004
   depth: 53
   freeze_at: 1
@@ -80,6 +80,7 @@ TrainReader:
     fill_value: [123.675, 116.28, 103.53]
   - !RandomCrop
     aspect_ratio: NULL
+    scaling: [0.3]
     cover_all_box: True
   - !Resize
     target_dim: 512

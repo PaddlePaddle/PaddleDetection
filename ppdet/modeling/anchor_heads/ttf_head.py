@@ -36,7 +36,7 @@ class TTFHead(object):
     TTFHead
     """
 
-    __inject__ = ['wh_loss']
+    __inject__ = ['wh_loss', 'iou_aware']
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -50,13 +50,16 @@ class TTFHead(object):
                  wh_head_conv_num=2,
                  hm_head_conv_num=2,
                  wh_conv=64,
+                 wh_planes=4,
                  score_thresh=0.01,
                  max_per_img=100,
                  base_down_ratio=32,
                  wh_loss='GiouLoss',
                  upsample_method='bilinear',
                  dcn_upsample=True,
-                 dcn_head=False):
+                 dcn_head=False,
+                 iou_aware=None,
+                 iou_aware_factor=0.3):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
         self.num_classes = num_classes
@@ -69,6 +72,7 @@ class TTFHead(object):
         self.wh_head_conv_num = wh_head_conv_num
         self.hm_head_conv_num = hm_head_conv_num
         self.wh_conv = wh_conv
+        self.wh_planes = 4
         self.score_thresh = score_thresh
         self.max_per_img = max_per_img
         self.down_ratio = base_down_ratio // 2**len(planes)
@@ -78,6 +82,8 @@ class TTFHead(object):
         self.dcn_upsample = dcn_upsample
         self.upsample_method = upsample_method
         self.dcn_head = dcn_head
+        self.iou_aware = iou_aware
+        self.iou_aware_factor = iou_aware_factor
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -202,9 +208,9 @@ class TTFHead(object):
         return hm
 
     def wh_head(self, x, name=None):
-        wh_planes = 4
+        planes = self.wh_planes + (self.iou_aware is not None)
         wh = self._head(
-            x, wh_planes, self.wh_head_conv_num, self.wh_conv, name=name)
+            x, planes, self.wh_head_conv_num, self.wh_conv, name=name)
         return fluid.layers.relu(wh)
 
     def get_output(self, input, name=None):
@@ -231,13 +237,23 @@ class TTFHead(object):
         scores, inds, clses, ys, xs = TopK(heat, self.max_per_img)
         ys = fluid.layers.cast(ys, 'float32') * self.down_ratio
         xs = fluid.layers.cast(xs, 'float32') * self.down_ratio
+        scores = fluid.layers.unsqueeze(scores, [1])
+        clses = fluid.layers.unsqueeze(clses, [1])
 
+        if self.iou_aware is not None:
+            ioup = wh[:, 4:5, :, :]
+            ioup_t = fluid.layers.transpose(ioup, [0, 2, 3, 1])
+            ioup = fluid.layers.reshape(ioup_t, [-1, ioup_t.shape[-1]])
+            ioup = fluid.layers.gather(ioup, inds)
+            ioup = fluid.layers.sigmoid(ioup)
+            scores = fluid.layers.pow(scores,
+                                      self.iou_aware_factor) * fluid.layers.pow(
+                                          ioup, self.iou_aware_factor)
+            wh = wh[:, :4, :, :]
         wh_t = fluid.layers.transpose(wh, [0, 2, 3, 1])
         wh = fluid.layers.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = fluid.layers.gather(wh, inds)
 
-        scores = fluid.layers.unsqueeze(scores, [1])
-        clses = fluid.layers.unsqueeze(clses, [1])
         x1 = xs - wh[:, 0:1]
         y1 = ys - wh[:, 1:2]
         x2 = xs + wh[:, 2:3]
@@ -276,13 +292,15 @@ class TTFHead(object):
             fg_num + fluid.layers.cast(fg_num == 0, 'float32'))
         return focal_loss
 
-    def filter_box_by_weight(self, pred, target, weight):
+    def filter_box_by_weight(self, pred, target, weight, ioup):
         index = fluid.layers.where(weight > 0)
         index.stop_gradient = True
         weight = fluid.layers.gather_nd(weight, index)
         pred = fluid.layers.gather_nd(pred, index)
         target = fluid.layers.gather_nd(target, index)
-        return pred, target, weight
+        if ioup is not None:
+            ioup = fluid.layers.gather_nd(ioup, index)
+        return pred, target, weight, ioup
 
     def get_loss(self, pred_hm, pred_wh, target_hm, box_target, target_weight):
         pred_hm = paddle.tensor.clamp(
@@ -309,11 +327,24 @@ class TTFHead(object):
         pred_boxes = fluid.layers.transpose(pred_boxes, [0, 2, 3, 1])
         boxes = fluid.layers.transpose(box_target, [0, 2, 3, 1])
         boxes.stop_gradient = True
+        ioup = None
+        if self.iou_aware is not None:
+            pred_ioup = pred_wh[:, 4:5, :, :]
+            ioup = fluid.layers.transpose(pred_ioup, [0, 2, 3, 1])
+            ioup = fluid.layers.sigmoid(ioup)
 
-        pred_boxes, boxes, mask = self.filter_box_by_weight(pred_boxes, boxes,
-                                                            mask)
+        pred_boxes, boxes, mask, ioup = self.filter_box_by_weight(
+            pred_boxes, boxes, mask, ioup)
         mask.stop_gradient = True
         wh_loss = self.wh_loss(
             pred_boxes, boxes, outside_weight=mask, use_transform=False)
         wh_loss = wh_loss / avg_factor
-        return {'hm_loss': hm_loss, 'wh_loss': wh_loss}
+
+        ttf_loss = {'hm_loss': hm_loss, 'wh_loss': wh_loss}
+
+        if self.iou_aware is not None:
+            iou_aware_loss = self.iou_aware(ioup, pred_boxes, boxes)
+            iou_aware_loss = fluid.layers.reduce_sum(iou_aware_loss)
+            ttf_loss['iou_aware_loss'] = iou_aware_loss / avg_factor
+
+        return ttf_loss

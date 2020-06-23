@@ -76,3 +76,39 @@ class IouAwareLoss(IouLoss):
         loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)
         loss_iou_aware = loss_iou_aware * self._loss_weight
         return loss_iou_aware
+
+
+@register
+@serializable
+class TTFIouAwareLoss(IouAwareLoss):
+    """
+    ttfnet iou aware loss without bbox transformation.
+    Args:
+        loss_weight (float): iou aware loss weight, default is 1.0
+        max_height (int): max height of input to support random shape input
+        max_width (int): max width of input to support random shape input
+    """
+
+    def __init__(self, loss_weight=1.0):
+        super(TTFIouAwareLoss, self).__init__(loss_weight=loss_weight)
+
+    def __call__(self, ioup, pred_boxes, boxes, eps=1.e-10):
+        '''
+        Args:
+            ioup ([Variables]): the predicted iou
+            pred_boxes ([Variables]): the predicted box of ttfnet
+            boxes ([Variables]): the target box of ttfnet 
+            eps (float): the decimal to prevent the denominator eqaul zero
+        '''
+
+        pred = fluid.layers.split(pred_boxes, 4)
+        gt = fluid.layers.split(boxes, 4)
+
+        iouk = self._iou(pred, gt, ioup, eps)
+        fluid.layers.Print(ioup)
+        fluid.layers.Print(iouk)
+
+        iouk.stop_gradient = True
+        loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)
+        loss_iou_aware = loss_iou_aware * self._loss_weight
+        return loss_iou_aware
