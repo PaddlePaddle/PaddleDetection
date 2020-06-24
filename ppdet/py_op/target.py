@@ -51,7 +51,7 @@ def generate_rpn_anchor_target(anchor_box,
         score_inds = inds_inside[score_inds]
         sampled_anchor = anchor_box[loc_inds]
         sampled_gt = gt_boxes_slice[gt_inds]
-        box_deltas = box_to_delta(sampled_anchor, sampled_gt, [1., 1., 1., 1.])
+        box_deltas = bbox2delta(sampled_anchor, sampled_gt, [1., 1., 1., 1.])
 
         if i == 0:
             loc_indexes = loc_inds
@@ -164,7 +164,7 @@ def generate_proposal_target(rpn_rois,
     # TODO: modify here
     # rpn_rois = rpn_rois.reshape(batch_size, -1, 4)
     st_num = 0
-
+    print("debug: ", rpn_rois_nums)
     for im_i in range(len(rpn_rois_nums)):
         rpn_rois_num = rpn_rois_nums[im_i]
         frcn_blobs = _sample_rois(
@@ -280,8 +280,8 @@ def _sample_rois(rpn_rois,
     sampled_boxes = boxes[keep_inds]
     sampled_gts = gt_boxes[box_to_gt_ind_map[keep_inds]]
     sampled_gts[fg_rois_per_this_image:, :] = gt_boxes[0]
-    bbox_label_targets = compute_targets(sampled_boxes, sampled_gts,
-                                         sampled_labels, bbox_reg_weights)
+    bbox_label_targets = compute_bbox_targets(sampled_boxes, sampled_gts,
+                                              sampled_labels, bbox_reg_weights)
     bbox_targets, bbox_inside_weights = expand_bbox_targets(
         bbox_label_targets, class_nums, is_cls_agnostic)
     bbox_outside_weights = np.array(
