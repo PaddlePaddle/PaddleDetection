@@ -454,6 +454,103 @@ class RandomFlipImage(BaseOperator):
 
 
 @register_op
+class CutoutImage(BaseOperator):
+    def __init__(self, prob=0.5, n_holes=1, length_ratio=0.5):
+        super(CutoutImage, self).__init__()
+        self.prob = prob
+        self.n_holes = n_holes
+        self.length_ratio = length_ratio
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+
+            for idx in range(gt_bbox.shape[0]):
+                x1, y1, x2, y2 = gt_bbox[idx, :]
+                w = x2 - x1 + 1
+                h = y2 - y1 + 1
+
+                hole_w = int(self.length_ratio * w)
+                hole_h = int(self.length_ratio * h)
+                if hole_w <= 0 or hole_h <= 0 or self.prob <= np.random.rand():
+                    continue
+
+                for n in range(self.n_holes):
+                    y = np.random.randint(h)
+                    x = np.random.randint(w)
+
+                    offset_y1 = np.clip(y - hole_h // 2, 0, h)
+                    offset_y2 = np.clip(y + hole_h // 2, 0, h)
+                    offset_x1 = np.clip(x - hole_w // 2, 0, w)
+                    offset_x2 = np.clip(x + hole_w // 2, 0, w)
+                    im[int(y1 + offset_y1):int(y1 + offset_y2), int(
+                        x1 + offset_x1):int(x1 + offset_x2), :] = 0
+            sample['image'] = im
+
+        sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
+class RandomErasingImage(BaseOperator):
+    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+        super(RandomErasingImage, self).__init__()
+        self.prob = prob
+        self.sl = sl
+        self.sh = sh
+        self.r1 = r1
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+
+            for idx in range(gt_bbox.shape[0]):
+                if self.prob <= np.random.rand():
+                    continue
+
+                x1, y1, x2, y2 = gt_bbox[idx, :]
+                w_bbox = x2 - x1 + 1
+                h_bbox = y2 - y1 + 1
+                area = w_bbox * h_bbox
+
+                target_area = random.uniform(self.sl, self.sh) * area
+                aspect_ratio = random.uniform(self.r1, 1 / self.r1)
+
+                h = int(round(math.sqrt(target_area * aspect_ratio)))
+                w = int(round(math.sqrt(target_area / aspect_ratio)))
+
+                if w < w_bbox and h < h_bbox:
+                    off_y1 = random.randint(0, int(h_bbox - h))
+                    off_x1 = random.randint(0, int(w_bbox - w))
+                    im[int(y1 + off_y1):int(y1 + off_y1 + h), int(x1 + off_x1):
+                       int(x1 + off_x1 + w), :] = 0
+            sample['image'] = im
+
+        sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
 class AutoAugmentImage(BaseOperator):
     def __init__(self, is_normalized=False, autoaug_type="v1"):
         """
