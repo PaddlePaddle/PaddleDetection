@@ -105,8 +105,6 @@ class TTFIouAwareLoss(IouAwareLoss):
         gt = fluid.layers.split(boxes, 4)
 
         iouk = self._iou(pred, gt, ioup, eps)
-        fluid.layers.Print(ioup)
-        fluid.layers.Print(iouk)
 
         iouk.stop_gradient = True
         loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)

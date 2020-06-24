@@ -65,8 +65,8 @@ class TTFNet(object):
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
 
-        predict_hm, predict_wh = self.ttf_head.get_output(body_feats,
-                                                          'ttf_head')
+        predict_hm, predict_wh = self.ttf_head.get_output(
+            body_feats, 'ttf_head', is_test=mode == 'test')
         if mode == 'train':
             heatmap = feed_vars['ttf_heatmap']
             box_target = feed_vars['ttf_box_target']

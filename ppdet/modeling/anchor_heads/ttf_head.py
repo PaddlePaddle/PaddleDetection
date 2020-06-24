@@ -24,7 +24,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, CARAFEUpsample
+from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, CARAFEUpsample, DropBlock
 from ppdet.modeling.losses import GiouLoss
 
 __all__ = ['TTFHead']
@@ -59,7 +59,10 @@ class TTFHead(object):
                  dcn_upsample=True,
                  dcn_head=False,
                  iou_aware=None,
-                 iou_aware_factor=0.3):
+                 iou_aware_factor=0.3,
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
         self.num_classes = num_classes
@@ -72,7 +75,7 @@ class TTFHead(object):
         self.wh_head_conv_num = wh_head_conv_num
         self.hm_head_conv_num = hm_head_conv_num
         self.wh_conv = wh_conv
-        self.wh_planes = 4
+        self.wh_planes = wh_planes
         self.score_thresh = score_thresh
         self.max_per_img = max_per_img
         self.down_ratio = base_down_ratio // 2**len(planes)
@@ -84,6 +87,9 @@ class TTFHead(object):
         self.dcn_head = dcn_head
         self.iou_aware = iou_aware
         self.iou_aware_factor = iou_aware_factor
+        self.drop_block = drop_block
+        self.block_size = block_size
+        self.keep_prob = keep_prob
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -160,7 +166,13 @@ class TTFHead(object):
                 up = carafe_up(bn)
         return up
 
-    def _head(self, x, out_c, conv_num=1, head_out_c=None, name=None):
+    def _head(self,
+              x,
+              out_c,
+              conv_num=1,
+              head_out_c=None,
+              name=None,
+              is_test=False):
         head_out_c = self.head_conv if not head_out_c else head_out_c
         conv_w_std = 0.01 if '.hm' in name else 0.001
         conv_w_init = Normal(0, conv_w_std)
@@ -187,6 +199,12 @@ class TTFHead(object):
                         regularizer=L2Decay(0.),
                         name=conv_name + '.bias'),
                     act='relu')
+        if self.drop_block and '.hm' in name:
+            x = DropBlock(
+                x,
+                block_size=self.block_size,
+                keep_prob=self.keep_prob,
+                is_test=is_test)
         bias_init = float(-np.log((1 - 0.01) / 0.01)) if '.hm' in name else 0.
         conv_b_init = Constant(bias_init)
         x = fluid.layers.conv2d(
@@ -203,8 +221,13 @@ class TTFHead(object):
                 initializer=conv_b_init))
         return x
 
-    def hm_head(self, x, name=None):
-        hm = self._head(x, self.num_classes, self.hm_head_conv_num, name=name)
+    def hm_head(self, x, name=None, is_test=False):
+        hm = self._head(
+            x,
+            self.num_classes,
+            self.hm_head_conv_num,
+            name=name,
+            is_test=is_test)
         return hm
 
     def wh_head(self, x, name=None):
@@ -213,7 +236,7 @@ class TTFHead(object):
             x, planes, self.wh_head_conv_num, self.wh_conv, name=name)
         return fluid.layers.relu(wh)
 
-    def get_output(self, input, name=None):
+    def get_output(self, input, name=None, is_test=False):
         feat = input[-1]
         for i, out_c in enumerate(self.planes):
             feat = self.upsample(
@@ -226,7 +249,7 @@ class TTFHead(object):
                     name=name + '.shortcut_layers.' + str(i))
                 feat = fluid.layers.elementwise_add(feat, shortcut)
 
-        hm = self.hm_head(feat, name=name + '.hm')
+        hm = self.hm_head(feat, name=name + '.hm', is_test=is_test)
         wh = self.wh_head(feat, name=name + '.wh') * self.wh_offset_base
 
         return hm, wh
