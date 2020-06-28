@@ -41,6 +41,8 @@ class FPN(object):
         spatial_scale (list): feature map scaling factor
         has_extra_convs (bool): whether has extral convolutions in higher levels
         norm_type (str|None): normalization type, 'bn'/'sync_bn'/'affine_channel'
+        norm_decay (float): weight decay for normalization layer weights.
+        reverse_out (bool): whether to flip the output.
     """
     __shared__ = ['norm_type', 'freeze_norm']
 
@@ -51,8 +53,10 @@ class FPN(object):
                  spatial_scale=[1. / 32., 1. / 16., 1. / 8., 1. / 4.],
                  has_extra_convs=False,
                  norm_type=None,
+                 norm_decay=0.,
                  freeze_norm=False,
-                 use_c5=True):
+                 use_c5=True,
+                 reverse_out=False):
         self.freeze_norm = freeze_norm
         self.num_chan = num_chan
         self.min_level = min_level
@@ -60,7 +64,9 @@ class FPN(object):
         self.spatial_scale = spatial_scale
         self.has_extra_convs = has_extra_convs
         self.norm_type = norm_type
+        self.norm_decay = norm_decay
         self.use_c5 = use_c5
+        self.reverse_out = reverse_out
 
     def _add_topdown_lateral(self, body_name, body_input, upper_output):
         lateral_name = 'fpn_inner_' + body_name + '_lateral'
@@ -74,6 +80,7 @@ class FPN(object):
                 1,
                 initializer=initializer,
                 norm_type=self.norm_type,
+                norm_decay=self.norm_decay,
                 freeze_norm=self.freeze_norm,
                 name=lateral_name,
                 norm_name=lateral_name)
@@ -89,8 +96,15 @@ class FPN(object):
                     learning_rate=2.,
                     regularizer=L2Decay(0.)),
                 name=lateral_name)
-        topdown = fluid.layers.resize_nearest(
-            upper_output, scale=2., name=topdown_name)
+        print("{}".format(body_input.shape))
+        if body_input.shape[2] == -1 and body_input.shape[3] == -1:
+            topdown = fluid.layers.resize_nearest(
+                upper_output, scale=2., name=topdown_name)
+        else:
+            topdown = fluid.layers.resize_nearest(
+                upper_output,
+                out_shape=[body_input.shape[2], body_input.shape[3]],
+                name=topdown_name)
 
         return lateral + topdown
 
@@ -122,6 +136,7 @@ class FPN(object):
                 1,
                 initializer=initializer,
                 norm_type=self.norm_type,
+                norm_decay=self.norm_decay,
                 freeze_norm=self.freeze_norm,
                 name=fpn_inner_name,
                 norm_name=fpn_inner_name)
@@ -158,6 +173,7 @@ class FPN(object):
                     3,
                     initializer=initializer,
                     norm_type=self.norm_type,
+                    norm_decay=self.norm_decay,
                     freeze_norm=self.freeze_norm,
                     name=fpn_name,
                     norm_name=fpn_name)
@@ -217,5 +233,8 @@ class FPN(object):
                 fpn_dict[fpn_name] = fpn_blob
                 fpn_name_list.insert(0, fpn_name)
                 spatial_scale.insert(0, spatial_scale[0] * 0.5)
+
+        if self.reverse_out:
+            fpn_name_list = fpn_name_list[::-1]
         res_dict = OrderedDict([(k, fpn_dict[k]) for k in fpn_name_list])
         return res_dict, spatial_scale

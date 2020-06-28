@@ -193,9 +193,11 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 
 | Backbone | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           | Configs |
 | :------: | :--: | :-------: | :-----: | :------------: | :----: | :----------------------------------------------------------: | :----: |
-| MobileNet_v1 | 300 | 64 | 40w | - | 23.6 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v1.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v1.yml) |
-| MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small.yml) |
-| MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
+| MobileNet_v1 | 300 | 64 | Cosine decay(40w) | - | 23.6 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v1.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v1.yml) |
+| MobileNet_v3 small | 320 | 64 | Cosine decay(40w) | - | 16.2 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small.yml) |
+| MobileNet_v3 large | 320 | 64 | Cosine decay(40w) | - | 23.3 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
+| MobileNet_v3 large w/ FPN | 320 | 64 | Cosine decay(40w) | - | 18.9 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_small_fpn.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small_fpn.yml) |
+| MobileNet_v3 large w/ FPN | 320 | 64 | Cosine decay(40w) | - | 24.3 | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v3_large_fpn.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large_fpn.yml) |
 
 **Notes:** `SSDLite` is trained in 8 GPU with total batch size as 512 and uses cosine decay strategy to train.
 
