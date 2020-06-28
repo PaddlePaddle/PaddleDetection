@@ -66,32 +66,34 @@ For details can refer to [Evaluation](#Evaluate-on-the-FDDB).
 
 #### Infer Time and Model Size comparison  
 
-| Architecture | Type     | Size | P4(trt32) (ms) | CPU (ms) | Qualcomm SnapDragon 855(armv8) (ms)   | Model size (MB) |
-|:------------:|:--------:|:----:|:--------------:|:--------:|:-------------------------------------:|:---------------:|
-| BlazeFace    | Original | 128  | 1.387          | 23.461   |  6.036                                | 0.777           |
-| BlazeFace    | Lite     | 128  | 1.323          | 12.802   |  6.193                                | 0.68            |
-| BlazeFace    | NAS      | 128  | 1.03           | 6.714    |  2.7152                               | 0.234           |
-| FaceBoxes    | Original | 128  | 3.144          | 14.972   |  19.2196                              | 3.6             |
-| FaceBoxes    | Lite     | 128  | 2.295          | 11.276   |  8.5278                               | 2               |
-| BlazeFace    | Original | 320  | 3.01           | 132.408  |  70.6916                              | 0.777           |
-| BlazeFace    | Lite     | 320  | 2.535          | 69.964   |  69.9438                              | 0.68            |
-| BlazeFace    | NAS      | 320  | 2.392          | 36.962   |  39.8086                              | 0.234           |
-| FaceBoxes    | Original | 320  | 7.556          | 84.531   |  52.1022                              | 3.6             |
-| FaceBoxes    | Lite     | 320  | 18.605         | 78.862   |  59.8996                              | 2               |
-| BlazeFace    | Original | 640  | 8.885          | 519.364  |  149.896                              | 0.777           |
-| BlazeFace    | Lite     | 640  | 6.988          | 284.13   |  149.902                              | 0.68            |
-| BlazeFace    | NAS      | 640  | 7.448          | 142.91   |  69.8266                              | 0.234           |
-| FaceBoxes    | Original | 640  | 78.201         | 394.043  |  169.877                              | 3.6             |
-| FaceBoxes    | Lite     | 640  | 59.47          | 313.683  |  139.918                              | 2               |
-
+| Architecture | Type     | Size | P4(trt32) (ms) | CPU (ms) | CPU (ms)(enable_mkldmm) | Qualcomm SnapDragon 855(armv8) (ms)   | Model size (MB) |
+|:------------:|:--------:|:----:|:--------------:|:--------:|:--------:|:-------------------------------------:|:---------------:|
+| BlazeFace    | 原始版本 | 128  | 1.387          | 23.461   | 4.92 |  6.036                                | 0.777           |
+| BlazeFace    | Lite版本   | 128  | 1.323          | 12.802   | 7.16 | 6.193                                | 0.68            |
+| BlazeFace    | NAS版本    | 128  | 1.03           | 6.714    | 3.641 | 2.7152                               | 0.234           |
+| BlazeFace    | NAS_V2版本    | 128  | 0.909        |   9.58  | 7.903 | 3.499                               | 0.383           |
+| FaceBoxes    | 原始版本 | 128  | 3.144          | 14.972   | 9,852 | 19.2196                              | 3.6             |
+| FaceBoxes    | Lite版本   | 128  | 2.295          | 11.276   | 6.969 | 8.5278                               | 2               |
+| BlazeFace    | 原始版本 | 320  | 3.01           | 132.408  | 20.762 | 70.6916                              | 0.777           |
+| BlazeFace    | Lite版本   | 320  | 2.535          | 69.964   | 35.612 | 69.9438                              | 0.68            |
+| BlazeFace    | NAS版本    | 320  | 2.392          | 36.962   | 14.443 | 39.8086                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 320  | 1.487          | 52.038   | 38.693 | 56.137                              | 0.383           |
+| FaceBoxes    | 原始版本 | 320  | 7.556          | 84.531   | 48.465 | 52.1022                              | 3.6             |
+| FaceBoxes    | Lite版本   | 320  | 18.605         | 78.862   | 46.488 |  59.8996                              | 2               |
+| BlazeFace    | 原始版本 | 640  | 8.885          | 519.364  | 78.825 | 149.896                              | 0.777           |
+| BlazeFace    | Lite版本   | 640  | 6.988          | 284.13   | 131.385 | 149.902                              | 0.68            |
+| BlazeFace    | NAS版本    | 640  | 7.448          | 142.91   | 56.725 | 69.8266                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 640  | 4.201          | 197.695   | 153.626 | 88.278                             | 0.383           |
+| FaceBoxes    | 原始版本 | 640  | 78.201         | 394.043  |  239.201 | 169.877                              | 3.6             |
+| FaceBoxes    | Lite版本  | 640  | 59.47          | 313.683  | 168.73 | 139.918                              | 2               |
 
 **NOTES:**  
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz.
-- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.6.1.
+- P4(trt32) and CPU tests based on PaddlePaddle, PaddlePaddle version is 1.8.0.
 - ARM test environment:
     - Qualcomm SnapDragon 855(armv8);
     - Single thread;
-    - Paddle-Lite version 2.0.0.
+    - Paddle-Lite version develop.
 
 ## Quick Start
 
