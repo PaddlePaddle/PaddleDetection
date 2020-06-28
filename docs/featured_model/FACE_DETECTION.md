@@ -83,7 +83,7 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 
 **注意:**  
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz。
-- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.8。0版本。
+- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.8.0版本。
 - ARM测试环境:
     - 高通骁龙855(armv8)；
     - 单线程；
