@@ -503,12 +503,13 @@ class CutoutImage(BaseOperator):
 
 @register_op
 class RandomErasingImage(BaseOperator):
-    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3, upper_iter=60000):
         super(RandomErasingImage, self).__init__()
         self.prob = prob
         self.sl = sl
         self.sh = sh
         self.r1 = r1
+        self.upper_iter = upper_iter
 
     def __call__(self, sample, context=None):
         samples = sample
@@ -524,8 +525,10 @@ class RandomErasingImage(BaseOperator):
             if len(im.shape) != 3:
                 raise ImageError("{}: image is not 3-dimensional.".format(self))
 
+            prob = self.prob * min(1,
+                                   1.0 * sample["curr_iter"] / self.upper_iter)
             for idx in range(gt_bbox.shape[0]):
-                if self.prob <= np.random.rand():
+                if prob <= np.random.rand():
                     continue
 
                 x1, y1, x2, y2 = gt_bbox[idx, :]
@@ -547,6 +550,58 @@ class RandomErasingImage(BaseOperator):
             sample['image'] = im
 
         sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
+class GridMaskOp(BaseOperator):
+    def __init__(self,
+                 use_h,
+                 use_w,
+                 rotate=1,
+                 offset=False,
+                 ratio=0.5,
+                 mode=1,
+                 prob=0.7,
+                 upper_iter=60000):
+        """
+        Change the channel.
+        Args:
+            to_bgr (bool): confirm whether to convert RGB to BGR
+            channel_first (bool): confirm whether to change channel
+        """
+        super(GridMaskOp, self).__init__()
+        self.use_h = use_h
+        self.use_w = use_w
+        self.rotate = rotate
+        self.offset = offset
+        self.ratio = ratio
+        self.mode = mode
+        self.prob = prob
+        self.upper_iter = upper_iter
+
+        from .gridmask_utils import GridMask
+        self.gridmask_op = GridMask(
+            use_h,
+            use_w,
+            rotate=rotate,
+            offset=offset,
+            ratio=ratio,
+            mode=mode,
+            prob=prob,
+            upper_iter=upper_iter)
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            sample['image'] = self.gridmask_op(sample['image'],
+                                               sample['curr_iter'])
+        if not batch_input:
+            samples = samples[0]
         return sample
 
 
