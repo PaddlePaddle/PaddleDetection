@@ -175,9 +175,9 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 
 | Backbone          | Image/gpu | Lr schd | Inf time (fps) | Box AP | Download  | Configs |
 | :---------------: | :-----: | :-----: | :----: | :----: | :-------: | :----: |
-| ResNet50-FPN      |    2    |   1x    | 6.988 | 36.0  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r50_fpn_1x.yml) |
-| ResNet101-FPN     |    2    |   1x    | 6.418 | 37.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r101_fpn_1x.yml) |
-| ResNeXt101-vd-FPN |    1    |   1x    | 4.602 | 40.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_x101_vd_64x4d_fpn_1x.yml) |
+| ResNet50-FPN      |    2    |   1x    | - | 36.0  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r50_fpn_1x.yml) |
+| ResNet101-FPN     |    2    |   1x    | - | 37.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r101_fpn_1x.yml) |
+| ResNeXt101-vd-FPN |    1    |   1x    | - | 40.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_x101_vd_64x4d_fpn_1x.yml) |
 
 **Notes:** In RetinaNet, the base LR is changed to 0.01 for minibatch size 16.
 
