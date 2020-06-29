@@ -64,7 +64,7 @@ This directory contains models optimized for mobile applications, at present the
 
 ## Notes on SSDLite quantization
 
-In the SSDLite model, we use a complete quantitative training method to train the model. A total of 400,000 rounds are trained under the 8-card GPU. During the training, `res_conv1` and `se_block` are fixed and not trained. The execution instructions are:
+We use a complete quantitative training method to train the SSDLite model. It is trained for a total of 400,000 rounds with the 8-card GPU. We freeze `res_conv1` and `se_block`. The command used is listed bellow:
 
 ```shell
 python slim/quantization/train.py --not_quant_pattern res_conv1 se_block \

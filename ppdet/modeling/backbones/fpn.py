@@ -96,7 +96,6 @@ class FPN(object):
                     learning_rate=2.,
                     regularizer=L2Decay(0.)),
                 name=lateral_name)
-        print("{}".format(body_input.shape))
         if body_input.shape[2] == -1 and body_input.shape[3] == -1:
             topdown = fluid.layers.resize_nearest(
                 upper_output, scale=2., name=topdown_name)
