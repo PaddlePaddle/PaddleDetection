@@ -259,3 +259,48 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             cocoapi_eval(v_json, coco_eval_style[i], anno_file=anno_file)
         else:
             logger.info("{} not exists!".format(v_json))
+
+
+def coco_eval_results(outs_res=None, include_mask=False, batch_size=1):
+    print("start evaluate bbox using coco api")
+    import io
+    import six
+    import json
+    from pycocotools.coco import COCO
+    from pycocotools.cocoeval import COCOeval
+    from ppdet.py_op.post_process import get_det_res, get_seg_res
+    anno_file = "/home/ai/dataset/COCO17/annotations/instances_train2017.json"
+    cocoGt = COCO(anno_file)
+    catid = {i + 1: v for i, v in enumerate(cocoGt.getCatIds())}
+
+    if outs_res is not None and len(outs_res) > 0:
+        det_res = []
+        for outs in outs_res:
+            det_res += get_det_res(outs['bbox_nums'], outs['bbox'],
+                                   outs['im_id'], outs['im_shape'], catid,
+                                   batch_size)
+
+        with io.open("bbox_eval.json", 'w') as outfile:
+            encode_func = unicode if six.PY2 else str
+            outfile.write(encode_func(json.dumps(det_res)))
+
+        cocoDt = cocoGt.loadRes("bbox_eval.json")
+        cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
+        cocoEval.evaluate()
+        cocoEval.accumulate()
+        cocoEval.summarize()
+
+    if outs_res is not None and len(outs_res) > 0 and include_mask:
+        seg_res = []
+        for outs in outs_res:
+            seg_res += get_seg_res(outs['bbox_nums'], outs['mask'],
+                                   outs['im_id'], catid, batch_size)
+
+        with io.open("mask_eval.json", 'w') as outfile:
+            encode_func = unicode if six.PY2 else str
+            outfile.write(encode_func(json.dumps(seg_res)))
+
+        cocoSg = cocoGt.loadRes("mask_eval.json")
+        cocoEval = COCOeval(cocoGt, cocoSg, 'bbox')
+        cocoEval.evaluate()
+        cocoEval.accumulate()

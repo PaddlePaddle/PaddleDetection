@@ -301,3 +301,36 @@ def load_and_fusebn(exe, prog, path):
         # fuse to scale and bias in affine_channel
         scale.set(new_scale, exe.place)
         bias.set(new_bias, exe.place)
+
+
+def load_dygraph_ckpt(model, pretrain_ckpt=None, resume_ckpt=None):
+
+    if pretrain_ckpt is not None:
+        model_state = model.state_dict()
+        w_dict = np.load(pretrain_ckpt)
+        for k, v in w_dict.items():
+            for wk in model_state.keys():
+                res = re.search(k, wk)
+                if res is not None:
+                    print("load: ", k, v.shape, np.mean(np.abs(v)), " --> ", wk,
+                          model_state[wk].shape)
+                    model_state[wk] = v
+                    break
+        model.set_dict(model_state)
+
+    elif resume_ckpt is not None:
+        para_state_dict, _ = fluid.load_dygraph(resume_ckpt)
+        model.set_dict(para_state_dict)
+
+    else:
+        print("Attention: train model from strach!!!")
+
+    return model
+
+
+def save_dygraph_ckpt(model, optimizer, save_dir):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    fluid.dygraph.save_dygraph(model.state_dict(), save_dir)
+    fluid.dygraph.save_dygraph(optimizer.state_dict(), save_dir)
+    print("Save checkpoint:", save_dir)

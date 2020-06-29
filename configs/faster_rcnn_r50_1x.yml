@@ -1,0 +1,100 @@
+architecture: FasterRCNN
+use_gpu: true
+max_iters: 180000
+log_smooth_window: 50
+save_dir: output
+snapshot_iter: 1000
+#pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+pretrain_weights: ../imagenet_resnet50_fusebn_dygraph.npz
+metric: COCO
+weights: output/faster_rcnn_r50_1x/1000 #model_final
+num_classes: 81
+
+# Model Achitecture
+FasterRCNN:
+  # model anchor info flow
+  anchor: AnchorRPN
+  proposal: Proposal
+  # model feat info flow
+  backbone: ResNet
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+
+ResNet:
+  norm_type: bn
+  depth: 50
+  feature_maps: 4
+  freeze_at: 2
+
+RPNHead:
+  rpn_feat:
+    feat_in: 1024
+    feat_out: 1024
+  anchor_per_position: 15
+
+BBoxHead:
+  bbox_feat:
+    feat_in: 1024
+    feat_out: 512
+    roi_extractor:
+      resolution: 7
+      sampling_ratio: 0
+      spatial_scale: 0.0625
+      extractor_type: 'RoIPool'
+
+AnchorRPN:
+  anchor_generator:
+    anchor_sizes: [32, 64, 128, 256, 512]
+    aspect_ratios: [0.5, 1.0, 2.0]
+    stride: [16.0, 16.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
+  anchor_target_generator:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    straddle_thresh: 0.0
+
+Proposal:
+  proposal_generator:
+    min_size: 0.0
+    nms_thresh: 0.7
+    train_pre_nms_top_n: 12000
+    train_post_nms_top_n: 2000
+    infer_pre_nms_top_n: 12000 # used in infer
+    infer_post_nms_top_n: 2000 # used in infer
+    return_rois_num: True
+  proposal_target_generator:
+    batch_size_per_im: 512
+    bbox_reg_weights: [[0.1, 0.1, 0.2, 0.2],]
+    bg_thresh_hi: [0.5,]
+    bg_thresh_lo: [0.0,]
+    fg_thresh: [0.5,]
+    fg_fraction: 0.25
+  bbox_post_process: # used in infer
+    # decode -> clip -> nms
+    decode_clip_nms:
+      keep_top_k: 100
+      score_threshold: 0.05
+      nms_threshold: 0.5
+
+# Train
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [120000, 160000]
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+_READER_: 'faster_reader.yml'
