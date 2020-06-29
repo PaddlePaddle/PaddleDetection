@@ -145,7 +145,8 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
 - [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
-- [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%. What's more, Practical Server-side detection pretrained models with 676 categories are provided for most application scenarios.
+- [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
+- [Large-scale detection pretrained models](configs/rcnn_enhance/README_en.md): Large-scale practical server-side detection pretrained models with 676 categories are provided for most application scenarios.
 
 ## License
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
