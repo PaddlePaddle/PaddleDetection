@@ -6,8 +6,8 @@ log_smooth_window: 20
 log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_ssld_pretrained.tar
-weights: output/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side/model_final
-metric: GENERIC
+weights: output/cascade_rcnn_dcn_r50_vd_fpn_generic_server_side/model_final
+metric: VOC
 num_classes: 677
 
 CascadeRCNN:
@@ -155,7 +155,9 @@ TestReader:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
-    anno_path: annotations/instances_val2017.json
+    use_default_label: false
+    with_background: true
+    anno_path: ./dataset/voc/generic_det_label_list.txt
   sample_transforms:
   - !DecodeImage
     to_rgb: true

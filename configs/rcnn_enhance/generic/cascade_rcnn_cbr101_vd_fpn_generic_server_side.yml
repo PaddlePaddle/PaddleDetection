@@ -1,36 +1,37 @@
 architecture: CascadeRCNN
-max_iters: 360000
-snapshot_iter: 30000
+max_iters: 1500000
+snapshot_iter: 100000
 use_gpu: true
 log_smooth_window: 20
 log_iter: 20
 save_dir: output
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/bject_detection/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side.tar
-weights: output/cascade_rcnn_dcn_r101_vd_fpn_2x_server_side_generic_pretrain/model_final
-metric: COCO
-num_classes: 81
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/CBResNet101_vd_ssld_pretrained.tar
+weights: output/cascade_rcnn_cbr101_vd_fpn_generic_server_side/model_final
+metric: VOC
+num_classes: 677
 
 CascadeRCNN:
-  backbone: ResNet
+  backbone: CBResNet
   fpn: FPN
   rpn_head: FPNRPNHead
   roi_extractor: FPNRoIAlign
   bbox_head: CascadeBBoxHead
   bbox_assigner: CascadeBBoxAssigner
 
-ResNet:
+CBResNet:
   norm_type: bn
+  norm_decay: 0.
   depth: 101
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
   variant: d
-  dcn_v2_stages: [3, 4, 5]
+  repeat_num: 2
   lr_mult_list: [0.05, 0.05, 0.1, 0.15]
 
 FPN:
   max_level: 6
   min_level: 2
-  num_chan: 64
+  num_chan: 256
   spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
 
 FPNRPNHead:
@@ -42,7 +43,7 @@ FPNRPNHead:
   anchor_start_size: 32
   min_level: 2
   max_level: 6
-  num_chan: 64
+  num_chan: 256
   rpn_target_assign:
     rpn_batch_size_per_im: 256
     rpn_fg_fraction: 0.5
@@ -65,7 +66,7 @@ FPNRoIAlign:
   canonical_size: 224
   min_level: 2
   max_level: 5
-  box_resolution: 7
+  box_resolution: 14
   sampling_ratio: 2
 
 CascadeBBoxAssigner:
@@ -94,10 +95,11 @@ CascadeTwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.001
+  base_lr: 0.01
   schedulers:
-  - !CosineDecay
-    max_iters: 360000
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [1000000, 1400000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
@@ -142,7 +144,7 @@ TrainReader:
   - !PadBatch
     pad_to_stride: 32
     use_padded_im_info: false
-  batch_size: 1
+  batch_size: 2
   shuffle: true
   worker_num: 2
   use_process: false
@@ -154,7 +156,9 @@ TestReader:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
-    anno_path: annotations/instances_val2017.json
+    use_default_label: false
+    with_background: true
+    anno_path: ./dataset/voc/generic_det_label_list.txt
   sample_transforms:
   - !DecodeImage
     to_rgb: true
