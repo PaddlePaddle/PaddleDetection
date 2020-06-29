@@ -34,7 +34,21 @@ And the following figure shows `mAP-Speed` curves for some common detectors.
 
 ## Model Zoo
 
+#### COCO dataset
+
 | Backbone                | Type     | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
 | ResNet50-vd-FPN-Dcnv2         | Faster     |     2     |   3x    |     61.425     |  41.6  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.yml) |
 | ResNet50-vd-FPN-Dcnv2         | Cascade Faster     |     2     |   3x    |     20.001     |  47.8  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r50_vd_fpn_3x_server_side.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/cascade_rcnn_dcn_r50_vd_fpn_3x_server_side.yml) |
+| ResNet101-vd-FPN-Dcnv2         | Cascade Faster     |     2     |   3x    |     19.523     |  49.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_3x_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/cascade_rcnn_dcn_r101_vd_fpn_3x_server_side.yml) |
+
+#### Practical Server-side detection models base on RCNN with 676 categories
+
+* Based on the above practical server-side detection methods. PaddleDetection merges Open image V5 and Objects365 dataset to generate a new training set containing 676 categories. Some practical server-side models are trained on the dataset, which are suitable for most application scenarios. It is convenient for users to directly infer or deploy. Users can also finetune on their own datasets based on the provided pretrained models to accelerate convergence and achieve higher performance.
+
+
+| Backbone       | Type     |      Download       | Configs |
+| :---------------| :---------------| :---------------| :---------------
+| ResNet50-vd-FPN-Dcnv2         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r50_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_dcn_r50_vd_fpn_generic_server_side.yml) |
+| ResNet101-vd-FPN-Dcnv2         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side.yml) |
+| CBResNet101-vd-FPN         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr101_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_cbr101_vd_fpn_generic_server_side.yml) |
