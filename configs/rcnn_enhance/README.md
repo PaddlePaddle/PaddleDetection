@@ -30,22 +30,8 @@
 
 ### 模型库
 
-#### COCO数据集
-
 | 骨架网络             | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :-------------: | :-----: |
 | ResNet50-vd-FPN-Dcnv2         | Faster     |     2     |   3x    |     61.425     |  41.6  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/faster_rcnn_dcn_r50_vd_fpn_3x_server_side.yml) |
 | ResNet50-vd-FPN-Dcnv2         | Cascade Faster     |     2     |   3x    |     20.001     |  47.8  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r50_vd_fpn_3x_server_side.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/cascade_rcnn_dcn_r50_vd_fpn_3x_server_side.yml) |
 | ResNet101-vd-FPN-Dcnv2         | Cascade Faster     |     2     |   3x    |     19.523     |  49.4  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_3x_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/cascade_rcnn_dcn_r101_vd_fpn_3x_server_side.yml) |
-
-
-#### 676类通用目标检测模型
-
-* 基于上述服务器端实用目标检测方案，PaddleDetection融合Open Images V5和Objects365训练集数据，生成了包含676个类别的新数据集，并训练了服务器端实用目标检测模型，适用于绝大部分应用场景，方便用户直接部署使用，用户也可以根据提供的预训练模型，在自己的数据集上进行模型微调，加快收敛并获得更高的精度指标。
-
-
-| 骨架网络       | 网络类型     |      下载       | 配置文件 |
-| :---------------| :---------------| :---------------| :---------------
-| ResNet50-vd-FPN-Dcnv2         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r50_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_dcn_r50_vd_fpn_generic_server_side.yml) |
-| ResNet101-vd-FPN-Dcnv2         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side.yml) |
-| CBResNet101-vd-FPN         | Cascade Faster     |  [model](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr101_vd_fpn_generic_server_side.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/rcnn_server_side_det/generic/cascade_rcnn_cbr101_vd_fpn_generic_server_side.yml) |
