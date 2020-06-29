@@ -130,7 +130,7 @@
 - [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
-- [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
+- [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%；此外也提供了包括676个类别的实用目标检测模型，适用于绝大部分使用场景。
 
 
 ## 许可证书
