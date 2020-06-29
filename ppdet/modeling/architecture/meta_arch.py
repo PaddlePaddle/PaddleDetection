@@ -16,8 +16,9 @@ __all__ = ['BaseArch']
 
 @register
 class BaseArch(Layer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, mode='train', *args, **kwargs):
         super(BaseArch, self).__init__()
+        self.mode = mode
 
     def forward(self, inputs, inputs_keys, mode='train'):
         raise NotImplementedError("Should implement forward method!")

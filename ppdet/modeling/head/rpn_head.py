@@ -6,14 +6,13 @@ from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D
 
 from ppdet.core.workspace import register
-from ..ops import RPNAnchorTargetGenerator
 
 
 @register
 class RPNFeat(Layer):
     def __init__(self, feat_in=1024, feat_out=1024):
         super(RPNFeat, self).__init__()
-        self.rpn_conv = fluid.dygraph.Conv2D(
+        self.rpn_conv = Conv2D(
             num_channels=1024,
             num_filters=1024,
             filter_size=3,
@@ -45,7 +44,7 @@ class RPNHead(Layer):
             self.rpn_feat = RPNFeat(**rpn_feat)
 
         # rpn roi classification scores
-        self.rpn_rois_score = fluid.dygraph.Conv2D(
+        self.rpn_rois_score = Conv2D(
             num_channels=1024,
             num_filters=1 * self.anchor_per_position,
             filter_size=1,
@@ -61,7 +60,7 @@ class RPNHead(Layer):
                 regularizer=L2Decay(0.)))
 
         # rpn roi bbox regression deltas
-        self.rpn_rois_delta = fluid.dygraph.Conv2D(
+        self.rpn_rois_delta = Conv2D(
             num_channels=1024,
             num_filters=4 * self.anchor_per_position,
             filter_size=1,
