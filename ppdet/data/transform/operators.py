@@ -455,11 +455,12 @@ class RandomFlipImage(BaseOperator):
 
 @register_op
 class CutoutImage(BaseOperator):
-    def __init__(self, prob=0.5, n_holes=1, length_ratio=0.5):
+    def __init__(self, prob=0.5, n_holes=1, length_ratio=0.5, upper_iter=60000):
         super(CutoutImage, self).__init__()
         self.prob = prob
         self.n_holes = n_holes
         self.length_ratio = length_ratio
+        self.upper_iter = upper_iter
 
     def __call__(self, sample, context=None):
         samples = sample
@@ -474,6 +475,9 @@ class CutoutImage(BaseOperator):
                 raise TypeError("{}: image is not a numpy array.".format(self))
             if len(im.shape) != 3:
                 raise ImageError("{}: image is not 3-dimensional.".format(self))
+
+            prob = self.prob * min(1,
+                                   1.0 * sample["curr_iter"] / self.upper_iter)
 
             for idx in range(gt_bbox.shape[0]):
                 x1, y1, x2, y2 = gt_bbox[idx, :]
