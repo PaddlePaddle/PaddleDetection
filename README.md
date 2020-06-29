@@ -131,7 +131,7 @@
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
-- [大规模检测预训练模型](configs/rcnn_enhance/README.md): 提供了包含676个类别的大规模服务器端实用目标检测模型，适用于绝大部分使用场景。
+- [大规模实用目标检测模型](docs/featured_model/LARGE_SCALE_DET_MODEL.md): 提供了包含676个类别的大规模服务器端实用目标检测模型，适用于绝大部分使用场景。
 
 
 ## 许可证书
