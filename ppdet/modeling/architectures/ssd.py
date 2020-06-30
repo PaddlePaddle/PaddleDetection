@@ -40,16 +40,18 @@ class SSD(object):
     """
 
     __category__ = 'architecture'
-    __inject__ = ['backbone', 'multi_box_head', 'output_decoder']
+    __inject__ = ['backbone', 'multi_box_head', 'output_decoder', 'fpn']
     __shared__ = ['num_classes']
 
     def __init__(self,
                  backbone,
+                 fpn=None,
                  multi_box_head='MultiBoxHead',
                  output_decoder=SSDOutputDecoder().__dict__,
                  num_classes=21):
         super(SSD, self).__init__()
         self.backbone = backbone
+        self.fpn = fpn
         self.multi_box_head = multi_box_head
         self.num_classes = num_classes
         self.output_decoder = output_decoder
@@ -69,6 +71,9 @@ class SSD(object):
 
         # backbone
         body_feats = self.backbone(im)
+
+        if self.fpn is not None:
+            body_feats, spatial_scale = self.fpn.get_output(body_feats)
 
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(body_feats.keys())
