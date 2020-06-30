@@ -27,7 +27,8 @@ class FasterRCNN(BaseArch):
                  backbone,
                  rpn_head,
                  bbox_head,
-                 rpn_only=False):
+                 rpn_only=False,
+                 mode='train'):
         super(FasterRCNN, self).__init__()
         self.anchor = anchor
         self.proposal = proposal
@@ -35,10 +36,11 @@ class FasterRCNN(BaseArch):
         self.rpn_head = rpn_head
         self.bbox_head = bbox_head
         self.rpn_only = rpn_only
+        self.mode = mode
 
-    def forward(self, inputs, inputs_keys, mode='train'):
+    def forward(self, inputs, inputs_keys):
         self.gbd = self.build_inputs(inputs, inputs_keys)
-        self.gbd['mode'] = mode
+        self.gbd['mode'] = self.mode
 
         # Backbone
         bb_out = self.backbone(self.gbd)
@@ -89,8 +91,8 @@ class FasterRCNN(BaseArch):
 
     def infer(self, inputs):
         outs = {
-            "bbox_nums": inputs['predicted_bbox_nums'].numpy(),
             "bbox": inputs['predicted_bbox'].numpy(),
+            "bbox_nums": inputs['predicted_bbox_nums'].numpy(),
             'im_id': inputs['im_id'].numpy(),
             'im_shape': inputs['im_shape'].numpy()
         }
