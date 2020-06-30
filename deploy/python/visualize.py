@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from __future__ import division
+
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
@@ -31,7 +33,7 @@ def visualize_box_mask(im, results, labels, mask_resolution=14):
     Returns:
         im (PIL.Image.Image): visualized image  
     """
-    if im is str:
+    if isinstance(im, str):
         im = Image.open(im).convert('RGB')
     else:
         im = Image.fromarray(im)
@@ -156,7 +158,7 @@ def draw_box(im, np_boxes, labels):
     Returns:
         im (PIL.Image.Image): visualized image  
     """
-    draw_thickness = min(im.size) / 320
+    draw_thickness = min(im.size) // 320
     draw = ImageDraw.Draw(im)
     clsid2color = {}
     color_list = get_color_map_list(len(labels))

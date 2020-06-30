@@ -1,5 +1,5 @@
 [English](FACE_DETECTION_en.md) | 简体中文
-# FaceDetection
+# 人脸检测模型
 
 ## 内容
 - [简介](#简介)
@@ -31,14 +31,14 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 
 #### WIDER-FACE数据集上的mAP
 
-| 网络结构 | 类型     | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy Set  | Medium Set | Hard Set  | 下载 |
-|:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace    | 原始版本 | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) |
-| BlazeFace    | Lite版本    | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) |
-| BlazeFace    | NAS版本    | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) |
-| BlazeFace    | NAS_V2版本 | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar)
-| FaceBoxes    | 原始版本 | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |
-| FaceBoxes    | Lite版本   | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) |
+| 网络结构 | 类型     | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy Set  | Medium Set | Hard Set  | 下载 | 配置文件 |
+|:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
+| BlazeFace    | 原始版本 | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
+| BlazeFace    | Lite版本    | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
+| BlazeFace    | NAS版本    | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas.yml) |
+| BlazeFace    | NAS_V2版本 | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas_v2.yml) |
+| FaceBoxes    | 原始版本 | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes.yml) |
+| FaceBoxes    | Lite版本   | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes_lite.yml) |
 
 **注意:**  
 - 我们使用`tools/face_eval.py`中多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
@@ -59,32 +59,35 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 
 #### 推理时间和模型大小比较
 
-| 网络结构 | 类型     | 输入尺寸 | P4(trt32) (ms) | CPU (ms) | 高通骁龙855(armv8) (ms)   | 模型大小(MB) |
-|:------------:|:--------:|:----:|:--------------:|:--------:|:-------------------------------------:|:---------------:|
-| BlazeFace    | 原始版本 | 128  | 1.387          | 23.461   |  6.036                                | 0.777           |
-| BlazeFace    | Lite版本   | 128  | 1.323          | 12.802   |  6.193                                | 0.68            |
-| BlazeFace    | NAS版本    | 128  | 1.03           | 6.714    |  2.7152                               | 0.234           |
-| FaceBoxes    | 原始版本 | 128  | 3.144          | 14.972   |  19.2196                              | 3.6             |
-| FaceBoxes    | Lite版本   | 128  | 2.295          | 11.276   |  8.5278                               | 2               |
-| BlazeFace    | 原始版本 | 320  | 3.01           | 132.408  |  70.6916                              | 0.777           |
-| BlazeFace    | Lite版本   | 320  | 2.535          | 69.964   |  69.9438                              | 0.68            |
-| BlazeFace    | NAS版本    | 320  | 2.392          | 36.962   |  39.8086                              | 0.234           |
-| FaceBoxes    | 原始版本 | 320  | 7.556          | 84.531   |  52.1022                              | 3.6             |
-| FaceBoxes    | Lite版本   | 320  | 18.605         | 78.862   |  59.8996                              | 2               |
-| BlazeFace    | 原始版本 | 640  | 8.885          | 519.364  |  149.896                              | 0.777           |
-| BlazeFace    | Lite版本   | 640  | 6.988          | 284.13   |  149.902                              | 0.68            |
-| BlazeFace    | NAS版本    | 640  | 7.448          | 142.91   |  69.8266                              | 0.234           |
-| FaceBoxes    | 原始版本 | 640  | 78.201         | 394.043  |  169.877                              | 3.6             |
-| FaceBoxes    | Lite版本  | 640  | 59.47          | 313.683  |  139.918                              | 2               |
+| 网络结构 | 类型     | 输入尺寸 | P4(trt32) (ms) | CPU (ms) |  CPU (ms)(enable_mkldmm) | 高通骁龙855(armv8) (ms)   | 模型大小(MB) |
+|:------------:|:--------:|:----:|:--------------:|:--------:|:--------:|:-------------------------------------:|:---------------:|
+| BlazeFace    | 原始版本 | 128  | 1.387          | 23.461   | 4.92 |  6.036                                | 0.777           |
+| BlazeFace    | Lite版本   | 128  | 1.323          | 12.802   | 7.16 | 6.193                                | 0.68            |
+| BlazeFace    | NAS版本    | 128  | 1.03           | 6.714    | 3.641 | 2.7152                               | 0.234           |
+| BlazeFace    | NAS_V2版本    | 128  | 0.909        |   9.58  | 7.903 | 3.499                               | 0.383           |
+| FaceBoxes    | 原始版本 | 128  | 3.144          | 14.972   | 9,852 | 19.2196                              | 3.6             |
+| FaceBoxes    | Lite版本   | 128  | 2.295          | 11.276   | 6.969 | 8.5278                               | 2               |
+| BlazeFace    | 原始版本 | 320  | 3.01           | 132.408  | 20.762 | 70.6916                              | 0.777           |
+| BlazeFace    | Lite版本   | 320  | 2.535          | 69.964   | 35.612 | 69.9438                              | 0.68            |
+| BlazeFace    | NAS版本    | 320  | 2.392          | 36.962   | 14.443 | 39.8086                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 320  | 1.487          | 52.038   | 38.693 | 56.137                              | 0.383           |
+| FaceBoxes    | 原始版本 | 320  | 7.556          | 84.531   | 48.465 | 52.1022                              | 3.6             |
+| FaceBoxes    | Lite版本   | 320  | 18.605         | 78.862   | 46.488 |  59.8996                              | 2               |
+| BlazeFace    | 原始版本 | 640  | 8.885          | 519.364  | 78.825 | 149.896                              | 0.777           |
+| BlazeFace    | Lite版本   | 640  | 6.988          | 284.13   | 131.385 | 149.902                              | 0.68            |
+| BlazeFace    | NAS版本    | 640  | 7.448          | 142.91   | 56.725 | 69.8266                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 640  | 4.201          | 197.695   | 153.626 | 88.278                             | 0.383           |
+| FaceBoxes    | 原始版本 | 640  | 78.201         | 394.043  |  239.201 | 169.877                              | 3.6             |
+| FaceBoxes    | Lite版本  | 640  | 59.47          | 313.683  | 168.73 | 139.918                              | 2               |
 
 
 **注意:**  
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz。
-- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.6.1版本。
+- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.8.0版本。
 - ARM测试环境:
     - 高通骁龙855(armv8)；
     - 单线程；
-    - Paddle-Lite 2.0.0版本。
+    - Paddle-Lite develop版本。
 
 
 ## 快速开始
@@ -155,7 +158,6 @@ cd dataset/wider_face && ./download.sh
 评估并生成结果文件：
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/face_eval.py -c configs/face_detection/blazeface.yml \
        -o weights=output/blazeface/model_final \
        --eval_mode=widerface

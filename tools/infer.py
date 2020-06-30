@@ -16,24 +16,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import glob
-
 import numpy as np
+import six
 from PIL import Image
-
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
 
 from paddle import fluid
 
@@ -41,7 +33,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -98,17 +90,14 @@ def get_test_images(infer_dir, infer_img):
 def main():
     cfg = load_config(FLAGS.config)
 
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
+
+    main_arch = cfg.architecture
 
     dataset = cfg.TestReader['dataset']
 
@@ -170,12 +159,13 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # use tb-paddle to log image
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_image_step = 0
-        tb_image_frame = 0  # each frame can display ten pictures at most. 
+    # use VisualDL to log image
+    if FLAGS.use_vdl:
+        assert six.PY3, "VisualDL requires Python >= 3.5"
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_image_step = 0
+        vdl_image_frame = 0  # each frame can display ten pictures at most.
 
     imid2path = dataset.get_imid2path()
     for iter_id, data in enumerate(loader()):
@@ -206,32 +196,27 @@ def main():
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
 
-            # use tb-paddle to log original image           
-            if FLAGS.use_tb:
+            # use VisualDL to log original image
+            if FLAGS.use_vdl:
                 original_image_np = np.array(image)
-                tb_writer.add_image(
-                    "original/frame_{}".format(tb_image_frame),
-                    original_image_np,
-                    tb_image_step,
-                    dataformats='HWC')
+                vdl_writer.add_image(
+                    "original/frame_{}".format(vdl_image_frame),
+                    original_image_np, vdl_image_step)
 
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
                                       mask_results, lmk_results)
 
-            # use tb-paddle to log image with bbox
-            if FLAGS.use_tb:
+            # use VisualDL to log image with bbox
+            if FLAGS.use_vdl:
                 infer_image_np = np.array(image)
-                tb_writer.add_image(
-                    "bbox/frame_{}".format(tb_image_frame),
-                    infer_image_np,
-                    tb_image_step,
-                    dataformats='HWC')
-                tb_image_step += 1
-                if tb_image_step % 10 == 0:
-                    tb_image_step = 0
-                    tb_image_frame += 1
+                vdl_writer.add_image("bbox/frame_{}".format(vdl_image_frame),
+                                     infer_image_np, vdl_image_step)
+                vdl_image_step += 1
+                if vdl_image_step % 10 == 0:
+                    vdl_image_step = 0
+                    vdl_image_frame += 1
 
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
@@ -261,14 +246,14 @@ if __name__ == '__main__':
         default=0.5,
         help="Threshold to reserve the result for visualization.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/image",
-        help='Tensorboard logging directory for image.')
+        default="vdl_log_dir/image",
+        help='VisualDL logging directory for image.')
     FLAGS = parser.parse_args()
     main()

@@ -16,7 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import datetime
@@ -24,15 +30,15 @@ from collections import deque
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
 from paddle import fluid
+
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -52,22 +58,14 @@ def main():
         np.random.seed(local_seed)
 
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -187,7 +185,9 @@ def main():
             pruned_ratios < [1] * len(pruned_ratios)
             ), "The elements of pruned ratios should be in range (0, 1)."
 
-    pruner = Pruner()
+    assert FLAGS.prune_criterion in ['l1_norm', 'geometry_median'], \
+            "unsupported prune criterion {}".format(FLAGS.prune_criterion)
+    pruner = Pruner(criterion=FLAGS.prune_criterion)
     train_prog = pruner.prune(
         train_prog,
         fluid.global_scope(),
@@ -215,7 +215,7 @@ def main():
         logger.info("FLOPs -{}; total FLOPs: {}; pruned FLOPs: {}".format(
             float(base_flops - pruned_flops) / base_flops, base_flops,
             pruned_flops))
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     if FLAGS.resume_checkpoint:
         checkpoint.load_checkpoint(exe, train_prog, FLAGS.resume_checkpoint)
@@ -244,20 +244,27 @@ def main():
     time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
-    # use tb-paddle to log data
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_loss_step = 0
-        tb_mAP_step = 0
+    # use VisualDL to log data
+    if FLAGS.use_vdl:
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_loss_step = 0
+        vdl_mAP_step = 0
 
     if FLAGS.eval:
-        # evaluation
-        results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                           eval_values, eval_cls)
         resolution = None
-        if 'mask' in results[0]:
+        if 'Mask' in cfg.architecture:
             resolution = model.mask_head.resolution
+        # evaluation
+        results = eval_run(
+            exe,
+            compiled_eval_prog,
+            eval_loader,
+            eval_keys,
+            eval_values,
+            eval_cls,
+            cfg,
+            resolution=resolution)
         dataset = cfg['EvalReader']['dataset']
         box_ap_stats = eval_results(
             results,
@@ -279,12 +286,12 @@ def main():
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
-        # use tb-paddle to log loss
-        if FLAGS.use_tb:
+        # use VisualDL to log loss
+        if FLAGS.use_vdl:
             if it % cfg.log_iter == 0:
                 for loss_name, loss_value in stats.items():
-                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
-                tb_loss_step += 1
+                    vdl_writer.add_scalar(loss_name, loss_value, vdl_loss_step)
+                vdl_loss_step += 1
 
         train_stats.update(stats)
         logs = train_stats.log()
@@ -300,11 +307,18 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                   eval_keys, eval_values, eval_cls)
                 resolution = None
-                if 'mask' in results[0]:
+                if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
+                results = eval_run(
+                    exe,
+                    compiled_eval_prog,
+                    eval_loader,
+                    eval_keys,
+                    eval_values,
+                    eval_cls,
+                    cfg=cfg,
+                    resolution=resolution)
                 box_ap_stats = eval_results(
                     results,
                     cfg.metric,
@@ -315,10 +329,10 @@ def main():
                     map_type,
                     dataset=dataset)
 
-                # use tb_paddle to log mAP
-                if FLAGS.use_tb:
-                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
-                    tb_mAP_step += 1
+                # use VisualDL to log mAP
+                if FLAGS.use_vdl:
+                    vdl_writer.add_scalar("mAP", box_ap_stats[0], vdl_mAP_step)
+                    vdl_mAP_step += 1
 
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
@@ -360,15 +374,15 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
+        default="vdl_log_dir/scalar",
+        help='VisualDL logging directory for scalar.')
 
     parser.add_argument(
         "-p",
@@ -388,5 +402,11 @@ if __name__ == '__main__':
         default=False,
         action='store_true',
         help="Whether to only print the parameters' names and shapes.")
+    parser.add_argument(
+        "--prune_criterion",
+        default='l1_norm',
+        type=str,
+        help="criterion function type for channels sorting in pruning, can be set " \
+             "as 'l1_norm' or 'geometry_median' currently, default 'l1_norm'")
     FLAGS = parser.parse_args()
     main()

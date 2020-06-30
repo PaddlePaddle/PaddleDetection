@@ -135,7 +135,8 @@ def eval_run(exe,
             mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
 
             if multi_scale_test:
-                post_res = mstest_box_post_process(res, cfg)
+                post_res = mstest_box_post_process(res, multi_scale_test,
+                                                   cfg.num_classes)
                 res.update(post_res)
             if mask_multi_scale_test:
                 place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
@@ -156,10 +157,16 @@ def eval_run(exe,
             if 'mask' in res:
                 from ppdet.utils.post_process import mask_encode
                 res['mask'] = mask_encode(res, resolution)
+            post_config = getattr(cfg, 'PostProcess', None)
+            if 'Corner' in cfg.architecture and post_config is not None:
+                from ppdet.utils.post_process import corner_post_process
+                corner_post_process(res, post_config, cfg.num_classes)
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
+            if len(res['bbox'][1]) == 0:
+                has_bbox = False
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
         loader.reset()
@@ -184,7 +191,8 @@ def eval_results(results,
                  is_bbox_normalized=False,
                  output_directory=None,
                  map_type='11point',
-                 dataset=None):
+                 dataset=None,
+                 save_only=False):
     """Evaluation for evaluation program results"""
     box_ap_stats = []
     if metric == 'COCO':
@@ -206,13 +214,15 @@ def eval_results(results,
                 anno_file,
                 output,
                 with_background,
-                is_bbox_normalized=is_bbox_normalized)
+                is_bbox_normalized=is_bbox_normalized,
+                save_only=save_only)
 
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:
                 output = os.path.join(output_directory, 'mask.json')
-            mask_eval(results, anno_file, output, resolution)
+            mask_eval(
+                results, anno_file, output, resolution, save_only=save_only)
     else:
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])

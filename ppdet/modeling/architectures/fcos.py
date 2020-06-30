@@ -107,7 +107,7 @@ class FCOS(object):
             'is_difficult': {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1}
         }
         # yapf: disable
-        if 'gt_bbox' in fields:
+        if 'fcos_target' in fields:
             targets_def = {
                 'labels0':      {'shape': [None, None, None, 1],  'dtype': 'int32',     'lod_level': 0},
                 'reg_target0':  {'shape': [None, None, None, 4],  'dtype': 'float32',   'lod_level': 0},
@@ -152,17 +152,16 @@ class FCOS(object):
     def build_inputs(
             self,
             image_shape=[3, None, None],
-            fields=[
-                'image', 'im_shape', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd'
-            ],  # for-train
+            fields=['image', 'im_info', 'fcos_target'],  # for-train
             use_dataloader=True,
             iterable=False):
         inputs_def = self._inputs_def(image_shape, fields)
-        if "gt_bbox" in fields:
+        if "fcos_target" in fields:
             for i in range(len(self.fcos_head.fpn_stride)):
                 fields.extend(
                     ['labels%d' % i, 'reg_target%d' % i, 'centerness%d' % i])
-        feed_vars = OrderedDict([(key, fluid.layers.data(
+            fields.remove('fcos_target')
+        feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
             dtype=inputs_def[key]['dtype'],

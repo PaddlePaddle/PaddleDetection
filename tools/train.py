@@ -16,39 +16,33 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 import numpy as np
 import random
 import datetime
+import six
 from collections import deque
 from paddle.fluid import profiler
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
 from paddle import fluid
+from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
+from paddle.fluid.optimizer import ExponentialMovingAverage
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 
-from ppdet.utils.cli import print_total_cfg
 from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -71,22 +65,18 @@ def main():
         np.random.seed(0)
 
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
-    if 'log_iter' not in cfg:
-        cfg.log_iter = 20
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
-    if not FLAGS.dist or trainer_id == 0:
-        print_total_cfg(cfg)
+
+    save_only = getattr(cfg, 'save_prediction_only', False)
+    if save_only:
+        raise NotImplementedError('The config file only support prediction,'
+                                  ' training stage is not implemented now')
+    main_arch = cfg.architecture
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
@@ -128,8 +118,15 @@ def main():
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
                 optimizer.minimize(loss)
+
                 if FLAGS.fp16:
                     loss /= ctx.get_loss_scale_var()
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                global_steps = _decay_step_counter()
+                ema = ExponentialMovingAverage(
+                    cfg['ema_decay'], thres_steps=global_steps)
+                ema.update()
 
     # parse train fetches
     train_keys, train_values, _ = parse_fetches(train_fetches)
@@ -184,7 +181,7 @@ def main():
         exec_strategy=exec_strategy)
 
     if FLAGS.eval:
-        compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+        compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
@@ -226,12 +223,13 @@ def main():
     time_stat = deque(maxlen=cfg.log_smooth_window)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
-    # use tb-paddle to log data
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_loss_step = 0
-        tb_mAP_step = 0
+    # use VisualDL to log data
+    if FLAGS.use_vdl:
+        assert six.PY3, "VisualDL requires Python >= 3.5"
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_loss_step = 0
+        vdl_mAP_step = 0
 
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
@@ -243,12 +241,12 @@ def main():
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
-        # use tb-paddle to log loss
-        if FLAGS.use_tb:
+        # use vdl-paddle to log loss
+        if FLAGS.use_vdl:
             if it % cfg.log_iter == 0:
                 for loss_name, loss_value in stats.items():
-                    tb_writer.add_scalar(loss_name, loss_value, tb_loss_step)
-                tb_loss_step += 1
+                    vdl_writer.add_scalar(loss_name, loss_value, vdl_loss_step)
+                vdl_loss_step += 1
 
         train_stats.update(stats)
         logs = train_stats.log()
@@ -268,6 +266,8 @@ def main():
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.apply_program)
             checkpoint.save(exe, train_prog, os.path.join(save_dir, save_name))
 
             if FLAGS.eval:
@@ -282,16 +282,17 @@ def main():
                     eval_keys,
                     eval_values,
                     eval_cls,
+                    cfg,
                     resolution=resolution)
                 box_ap_stats = eval_results(
                     results, cfg.metric, cfg.num_classes, resolution,
                     is_bbox_normalized, FLAGS.output_eval, map_type,
                     cfg['EvalReader']['dataset'])
 
-                # use tb_paddle to log mAP
-                if FLAGS.use_tb:
-                    tb_writer.add_scalar("mAP", box_ap_stats[0], tb_mAP_step)
-                    tb_mAP_step += 1
+                # use vdl_paddle to log mAP
+                if FLAGS.use_vdl:
+                    vdl_writer.add_scalar("mAP", box_ap_stats[0], vdl_mAP_step)
+                    vdl_mAP_step += 1
 
                 if box_ap_stats[0] > best_box_ap_list[0]:
                     best_box_ap_list[0] = box_ap_stats[0]
@@ -300,6 +301,9 @@ def main():
                                     os.path.join(save_dir, "best_model"))
                 logger.info("Best test box ap: {}, in iter: {}".format(
                     best_box_ap_list[0], best_box_ap_list[1]))
+
+            if 'use_ema' in cfg and cfg['use_ema']:
+                exe.run(ema.restore_program)
 
     train_loader.reset()
 
@@ -333,15 +337,15 @@ if __name__ == '__main__':
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
+        default="vdl_log_dir/scalar",
+        help='VisualDL logging directory for scalar.')
     parser.add_argument(
         "--enable_ce",
         type=bool,

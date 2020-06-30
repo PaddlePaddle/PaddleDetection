@@ -55,6 +55,8 @@ python -c "import paddle; print(paddle.__version__)"
     make install
     # 若您没有权限或更倾向不安装至全局site-packages
     python setup.py install --user
+    # 或者使用pip安装
+    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
 **windows用户安装COCO-API方式：**
 
@@ -80,15 +82,6 @@ Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetec
 
 ```
 pip install -r requirements.txt
-```
-
-**指定当前Python路径：**
-
-```shell
-# 在Linux/Mac系统下运行:
-export PYTHONPATH=$PYTHONPATH:.
-# 在windows系统下运行:
-set PYTHONPATH=%PYTHONPATH%;.
 ```
 
 **确认测试通过：**
@@ -117,7 +110,6 @@ ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
 对于Pascal VOC数据集，需通过如下命令创建文件列表：
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/create_list.py
 ```
 
@@ -128,7 +120,6 @@ python dataset/voc/create_list.py
 - COCO
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/coco/download_coco.py
 ```
 
@@ -156,17 +147,14 @@ python dataset/coco/download_coco.py
 - Pascal VOC
 
 ```
-export PYTHONPATH=$PYTHONPATH:.
 python dataset/voc/download_voc.py
-python dataset/voc/create_list.py
 ```
 
 `Pascal VOC` 数据集目录结构如下：
 
   ```
   dataset/voc/
-  ├── train.txt
-  ├── val.txt
+  ├── trainval.txt
   ├── test.txt
   ├── label_list.txt (optional)
   ├── VOCdevkit/VOC2007
@@ -174,16 +162,16 @@ python dataset/voc/create_list.py
   │       ├── 001789.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 001789.xml
+  │       ├── 001789.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
   ├── VOCdevkit/VOC2012
   │   ├── Annotations
-  │       ├── 003876.xml
+  │       ├── 2011_003876.xml
   │       |   ...
   │   ├── JPEGImages
-  │       ├── 003876.xml
+  │       ├── 2011_003876.jpg
   │       |   ...
   │   ├── ImageSets
   │       |   ...
@@ -202,4 +190,7 @@ PaddleDetection将自动从[COCO-2017](http://images.cocodataset.org)或
 `〜/.cache/paddle/dataset/`目录下，下次运行时，也可自动从该目录发现数据集。
 
 
-**说明：** 更多有关数据集的介绍，请参考[数据处理文档](../advanced_tutorials/READER.md)
+**说明：**
+
+- 如果要使用自定义数据集，请参考[自定义数据集文档](Custom_DataSet.md)
+- 更多有关数据集的介绍，请参考[数据处理文档](../advanced_tutorials/READER.md)

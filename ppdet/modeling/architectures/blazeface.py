@@ -112,7 +112,6 @@ class BlazeFace(object):
                     neg_overlap=0.35)
 
             loss = fluid.layers.reduce_sum(loss)
-            loss.persistable = True
             return {'loss': loss}
         else:
             if self.with_lmk:

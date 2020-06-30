@@ -3,10 +3,10 @@ English | [简体中文](CONTRIB_cn.md)
 
 We provide some models implemented by PaddlePaddle to detect objects in specific scenarios, users can download the models and use them in these scenarios.
 
-| Task                 | Algorithm | Box AP | Download                                                                                |
-|:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |
-| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar) |
-| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar) |
+| Task                 | Algorithm | Box AP | Download                                                                                | Configs |
+|:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
+| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/contrib/VehicleDetection/vehicle_yolov3_darknet.yml) |
+| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml) |
 
 ## Vehicle Detection
 
@@ -43,7 +43,6 @@ Users can employ the model to conduct the inference:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/infer.py -c contrib/VehicleDetection/vehicle_yolov3_darknet.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/vehicle_yolov3_darknet.tar \
                          --infer_dir contrib/VehicleDetection/demo \
@@ -90,7 +89,6 @@ Users can employ the model to conduct the inference:
 
 ```
 export CUDA_VISIBLE_DEVICES=0
-export PYTHONPATH=$PYTHONPATH:.
 python -u tools/infer.py -c contrib/PedestrianDetection/pedestrian_yolov3_darknet.yml \
                          -o weights=https://paddlemodels.bj.bcebos.com/object_detection/pedestrian_yolov3_darknet.tar \
                          --infer_dir contrib/PedestrianDetection/demo \
