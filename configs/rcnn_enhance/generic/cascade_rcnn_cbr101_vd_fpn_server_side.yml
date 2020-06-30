@@ -5,32 +5,33 @@ use_gpu: true
 log_smooth_window: 20
 log_iter: 20
 save_dir: output
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_ssld_pretrained.tar
-weights: output/cascade_rcnn_dcn_r101_vd_fpn_generic_server_side/model_final
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/CBResNet101_vd_ssld_pretrained.tar
+weights: output/cascade_rcnn_cbr101_vd_fpn_server_side/model_final
 metric: VOC
 num_classes: 677
 
 CascadeRCNN:
-  backbone: ResNet
+  backbone: CBResNet
   fpn: FPN
   rpn_head: FPNRPNHead
   roi_extractor: FPNRoIAlign
   bbox_head: CascadeBBoxHead
   bbox_assigner: CascadeBBoxAssigner
 
-ResNet:
+CBResNet:
   norm_type: bn
+  norm_decay: 0.
   depth: 101
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
   variant: d
-  dcn_v2_stages: [3, 4, 5]
+  repeat_num: 2
   lr_mult_list: [0.05, 0.05, 0.1, 0.15]
 
 FPN:
   max_level: 6
   min_level: 2
-  num_chan: 64
+  num_chan: 256
   spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
 
 FPNRPNHead:
@@ -42,7 +43,7 @@ FPNRPNHead:
   anchor_start_size: 32
   min_level: 2
   max_level: 6
-  num_chan: 64
+  num_chan: 256
   rpn_target_assign:
     rpn_batch_size_per_im: 256
     rpn_fg_fraction: 0.5
@@ -65,7 +66,7 @@ FPNRoIAlign:
   canonical_size: 224
   min_level: 2
   max_level: 5
-  box_resolution: 7
+  box_resolution: 14
   sampling_ratio: 2
 
 CascadeBBoxAssigner:
@@ -94,7 +95,7 @@ CascadeTwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.005
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -183,6 +184,7 @@ EvalReader:
   shuffle: false
   drop_empty: false
   worker_num: 2
+
 
 TestReader:
   inputs_def:
