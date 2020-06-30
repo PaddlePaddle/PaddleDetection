@@ -95,7 +95,7 @@ CascadeTwoFCHead:
   mlp_dim: 1024
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.005
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
@@ -144,7 +144,7 @@ TrainReader:
   - !PadBatch
     pad_to_stride: 32
     use_padded_im_info: false
-  batch_size: 2
+  batch_size: 1
   shuffle: true
   worker_num: 2
   use_process: false
