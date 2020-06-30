@@ -8,6 +8,7 @@
     - [数据准备](#数据准备)
     - [训练与推理](#训练与推理)
     - [评估](#评估)
+- [人脸关键点检测](#人脸关键点检测)
 - [算法细节](#算法细节)
 - [如何贡献代码](#如何贡献代码)
 
@@ -142,7 +143,7 @@ cd dataset/wider_face && ./download.sh
 训练流程与推理流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../tutorials/GETTING_STARTED_cn.md)。  
 **注意:**
 - `BlazeFace`和`FaceBoxes`训练是以每卡`batch_size=8`在4卡GPU上进行训练(总`batch_size`是32),并且训练320000轮
-(如果你的GPU数达不到4，请参考[学习率计算规则表](../tutorials/GETTING_STARTED_cn.html#faq))。
+(如果你的GPU数达不到4，请参考[学习率计算规则表](../FAQ.md))。
 - 人脸检测模型目前我们不支持边训练边评估。
 
 
@@ -241,6 +242,20 @@ cd dataset/fddb/evaluation
 (2)`OUTPUT_DIR`是FDDB评估输出结果文件前缀，会生成两个文件`{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`；  
 (3)参数用法及注释可通过执行`./evaluate --help`来获取。
 
+
+## 人脸关键点检测
+
+(1)下载PaddleDetection开放的WIDER-FACE数据集人脸关键点标注文件([链接](https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt))，并拷贝至`wider_face/wider_face_split`文件夹中：
+
+```shell
+cd dataset/wider_face/wider_face_split/
+wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
+```
+
+(2)使用`configs/face_detection/blazeface_keypoint.yml`配置文件进行训练与评估，使用方法与上一节内容一致。
+
+![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
+
 ## 算法细节
 
 ### BlazeFace
@@ -257,7 +272,7 @@ cd dataset/fddb/evaluation
 - 原始版本: 参考原始论文复现；
 - Lite版本: 使用3x3卷积替换5x5卷积，更少的网络层数和通道数；
 - NAS版本: 使用神经网络搜索算法构建网络结构，相比于`Lite`版本，NAS版本需要更少的网络层数和通道数。
-- NAS_V2版本1: 基于PaddleSlim中SANAS算法在blazeface-NAS的基础上搜索出来的结构，相比`NAS`版本，NAS_V2版本的精度平均高出3个点，在855芯片上的硬件延时相对`NAS`版本仅增加5%。
+- NAS_V2版本: 基于PaddleSlim中SANAS算法在blazeface-NAS的基础上搜索出来的结构，相比`NAS`版本，NAS_V2版本的精度平均高出3个点，在855芯片上的硬件延时相对`NAS`版本仅增加5%。
 
 ### FaceBoxes
 **简介:**  

@@ -968,7 +968,6 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = gt_keypoints[0]
                     sample['keypoint_ignore'] = gt_keypoints[1]
-                #print(sample)
                 return sample
             return sample
 
@@ -1020,7 +1019,6 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = gt_keypoints[0]
                     sample['keypoint_ignore'] = gt_keypoints[1]
-                #print(sample)
                 return sample
             return sample
 
@@ -2327,7 +2325,7 @@ class TargetAssign(BaseOperator):
         targets[matched_indices] = matched_targets
         sample['fg_num'] = np.array(len(matched_targets), dtype=np.int32)
         return sample
- 
+
 
 @register_op
 class DebugVisibleImage(BaseOperator):

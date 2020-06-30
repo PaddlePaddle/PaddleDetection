@@ -122,8 +122,8 @@ def draw_lmk(image, im_id, lmk_results, threshold):
         if score < threshold:
             continue
         for j in range(5):
-            x1 = round(lmk_decode[2 * j]).astype(np.int32)
-            y1 = round(lmk_decode[2 * j + 1]).astype(np.int32)
+            x1 = int(round(lmk_decode[2 * j]))
+            y1 = int(round(lmk_decode[2 * j + 1]))
             draw.ellipse(
                 (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
     return image

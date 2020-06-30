@@ -129,7 +129,7 @@ class WIDERFaceDataSet(DataSet):
                 if w < 0 or h < 0:
                     logger.warn('Illegal box with w: {}, h: {} in '
                                 'img: {}, and it will be ignored'.format(
-                                    w, h, im_fname))
+                                    w, h, file_dict[num_class][0]))
                     continue
                 xmin = max(0, xmin)
                 ymin = max(0, ymin)
@@ -138,7 +138,9 @@ class WIDERFaceDataSet(DataSet):
                 gt_bbox = [xmin, ymin, xmax, ymax]
                 result_boxs.append(gt_bbox)
                 if self.with_lmk:
-                    assert len(split_str) > 18
+                    assert len(split_str) > 18, 'When `with_lmk=True`, the number' \
+                            'of characters per line in the annotation file should' \
+                            'exceed 18.'
                     lmk0_x = float(split_str[5])
                     lmk0_y = float(split_str[6])
                     lmk1_x = float(split_str[8])
