@@ -16,6 +16,6 @@ wget https://dataset.bj.bcebos.com/wider_face/WIDER_val.zip
 wget https://dataset.bj.bcebos.com/wider_face/wider_face_split.zip
 # Extract the data.
 echo "Extracting..."
-unzip WIDER_train.zip
-unzip WIDER_val.zip
-unzip wider_face_split.zip
+unzip -q WIDER_train.zip
+unzip -q WIDER_val.zip
+unzip -q wider_face_split.zip
