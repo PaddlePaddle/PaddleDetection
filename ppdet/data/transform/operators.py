@@ -454,58 +454,6 @@ class RandomFlipImage(BaseOperator):
 
 
 @register_op
-class CutoutImage(BaseOperator):
-    def __init__(self, prob=0.5, n_holes=1, length_ratio=0.5, upper_iter=60000):
-        super(CutoutImage, self).__init__()
-        self.prob = prob
-        self.n_holes = n_holes
-        self.length_ratio = length_ratio
-        self.upper_iter = upper_iter
-
-    def __call__(self, sample, context=None):
-        samples = sample
-        batch_input = True
-        if not isinstance(samples, Sequence):
-            batch_input = False
-            samples = [samples]
-        for sample in samples:
-            gt_bbox = sample['gt_bbox']
-            im = sample['image']
-            if not isinstance(im, np.ndarray):
-                raise TypeError("{}: image is not a numpy array.".format(self))
-            if len(im.shape) != 3:
-                raise ImageError("{}: image is not 3-dimensional.".format(self))
-
-            prob = self.prob * min(1,
-                                   1.0 * sample["curr_iter"] / self.upper_iter)
-
-            for idx in range(gt_bbox.shape[0]):
-                x1, y1, x2, y2 = gt_bbox[idx, :]
-                w = x2 - x1 + 1
-                h = y2 - y1 + 1
-
-                hole_w = int(self.length_ratio * w)
-                hole_h = int(self.length_ratio * h)
-                if hole_w <= 0 or hole_h <= 0 or self.prob <= np.random.rand():
-                    continue
-
-                for n in range(self.n_holes):
-                    y = np.random.randint(h)
-                    x = np.random.randint(w)
-
-                    offset_y1 = np.clip(y - hole_h // 2, 0, h)
-                    offset_y2 = np.clip(y + hole_h // 2, 0, h)
-                    offset_x1 = np.clip(x - hole_w // 2, 0, w)
-                    offset_x2 = np.clip(x + hole_w // 2, 0, w)
-                    im[int(y1 + offset_y1):int(y1 + offset_y2), int(
-                        x1 + offset_x1):int(x1 + offset_x2), :] = 0
-            sample['image'] = im
-
-        sample = samples if batch_input else samples[0]
-        return sample
-
-
-@register_op
 class RandomErasingImage(BaseOperator):
     def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3, upper_iter=60000):
         super(RandomErasingImage, self).__init__()
