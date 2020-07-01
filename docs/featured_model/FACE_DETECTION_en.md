@@ -8,6 +8,7 @@ English | [简体中文](FACE_DETECTION.md)
     - [Data Pipline](#Data-Pipline)
     - [Training and Inference](#Training-and-Inference)
     - [Evaluation](#Evaluation)
+- [Face key-point detection](#Face-key-point-detection)
 - [Algorithm Description](#Algorithm-Description)
 - [Contributing](#Contributing)
 
@@ -155,7 +156,7 @@ Please refer to [READER.md](../advanced_tutorials/READER.md) for details.
 **NOTES:**
 - `BlazeFace` and `FaceBoxes` is trained in 4 GPU with `batch_size=8` per gpu (total batch size as 32)
 and trained 320000 iters.(If your GPU count is not 4, please refer to the rule of training parameters
-in the table of [calculation rules](../tutorials/GETTING_STARTED.html#faq)).
+in the table of [calculation rules](../FAQ.md)).
 - Currently we do not support evaluation in training.
 
 ### Evaluation
@@ -257,6 +258,20 @@ cd dataset/fddb/evaluation
 (2)`OUTPUT_DIR` is the prefix of the FDDB evaluation output file,
 which will generate two files `{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`;  
 (3)The interpretation of the argument can be performed by `./evaluate --help`.
+
+## Face key-point detection
+
+(1)Download face key-point annotation file in WIDER FACE dataset([Link](https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt)), and copy to the folder `wider_face/wider_face_split`:
+
+```shell
+cd dataset/wider_face/wider_face_split/
+wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
+```
+
+(2)Use `configs/face_detection/blazeface_keypoint.yml` configuration file for training and evaluation, the method of use is the same as the previous section.
+
+![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
+
 
 ## Algorithm Description
 
