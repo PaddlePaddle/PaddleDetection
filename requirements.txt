@@ -4,3 +4,4 @@ visualdl>=2.0.0b
 opencv-python
 PyYAML
 shapely
+#test_ci
