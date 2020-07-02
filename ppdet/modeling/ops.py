@@ -495,7 +495,7 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MatrixNMS(object):
-    __op__ = fluid.layers.matrix_nms
+    __op__ = 'paddle.fluid.layers.matrix_nms'
     __append_doc__ = True
 
     def __init__(self,
