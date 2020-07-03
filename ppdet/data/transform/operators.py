@@ -468,6 +468,121 @@ class RandomFlipImage(BaseOperator):
 
 
 @register_op
+class RandomErasingImage(BaseOperator):
+    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+        """
+        Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
+        Args:
+            prob (float): probability to carry out random erasing
+            sl (float): lower limit of the erasing area ratio
+            sh (float): upper limit of the erasing area ratio
+            r1 (float): aspect ratio of the erasing region
+        """
+        super(RandomErasingImage, self).__init__()
+        self.prob = prob
+        self.sl = sl
+        self.sh = sh
+        self.r1 = r1
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+
+            for idx in range(gt_bbox.shape[0]):
+                if self.prob <= np.random.rand():
+                    continue
+
+                x1, y1, x2, y2 = gt_bbox[idx, :]
+                w_bbox = x2 - x1 + 1
+                h_bbox = y2 - y1 + 1
+                area = w_bbox * h_bbox
+
+                target_area = random.uniform(self.sl, self.sh) * area
+                aspect_ratio = random.uniform(self.r1, 1 / self.r1)
+
+                h = int(round(math.sqrt(target_area * aspect_ratio)))
+                w = int(round(math.sqrt(target_area / aspect_ratio)))
+
+                if w < w_bbox and h < h_bbox:
+                    off_y1 = random.randint(0, int(h_bbox - h))
+                    off_x1 = random.randint(0, int(w_bbox - w))
+                    im[int(y1 + off_y1):int(y1 + off_y1 + h), int(x1 + off_x1):
+                       int(x1 + off_x1 + w), :] = 0
+            sample['image'] = im
+
+        sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
+class GridMaskOp(BaseOperator):
+    def __init__(self,
+                 use_h=True,
+                 use_w=True,
+                 rotate=1,
+                 offset=False,
+                 ratio=0.5,
+                 mode=1,
+                 prob=0.7,
+                 upper_iter=360000):
+        """
+        GridMask Data Augmentation, see https://arxiv.org/abs/2001.04086
+        Args:
+            use_h (bool): whether to mask vertically
+            use_w (boo;): whether to mask horizontally
+            rotate (float): angle for the mask to rotate
+            offset (float): mask offset
+            ratio (float): mask ratio
+            mode (int): gridmask mode
+            prob (float): max probability to carry out gridmask
+            upper_iter (int): suggested to be equal to global max_iter
+        """
+        super(GridMaskOp, self).__init__()
+        self.use_h = use_h
+        self.use_w = use_w
+        self.rotate = rotate
+        self.offset = offset
+        self.ratio = ratio
+        self.mode = mode
+        self.prob = prob
+        self.upper_iter = upper_iter
+
+        from .gridmask_utils import GridMask
+        self.gridmask_op = GridMask(
+            use_h,
+            use_w,
+            rotate=rotate,
+            offset=offset,
+            ratio=ratio,
+            mode=mode,
+            prob=prob,
+            upper_iter=upper_iter)
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            sample['image'] = self.gridmask_op(sample['image'],
+                                               sample['curr_iter'])
+        if not batch_input:
+            samples = samples[0]
+        return sample
+
+
+@register_op
 class AutoAugmentImage(BaseOperator):
     def __init__(self, is_normalized=False, autoaug_type="v1"):
         """
