@@ -513,14 +513,14 @@ class RandomErasingImage(BaseOperator):
 @register_op
 class GridMaskOp(BaseOperator):
     def __init__(self,
-                 use_h,
-                 use_w,
+                 use_h=True,
+                 use_w=True,
                  rotate=1,
                  offset=False,
                  ratio=0.5,
                  mode=1,
                  prob=0.7,
-                 upper_iter=60000):
+                 upper_iter=360000):
         """
         GridMask Data Augmentation, see https://arxiv.org/abs/2001.04086
         Args:
@@ -531,6 +531,7 @@ class GridMaskOp(BaseOperator):
             ratio (float): mask ratio
             mode (int): gridmask mode
             prob (float): max probability to carry out gridmask
+            upper_iter (int): suggested to be equal to global max_iter
         """
         super(GridMaskOp, self).__init__()
         self.use_h = use_h

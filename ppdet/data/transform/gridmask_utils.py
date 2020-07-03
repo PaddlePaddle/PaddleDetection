@@ -22,14 +22,14 @@ from PIL import Image
 
 class GridMask(object):
     def __init__(self,
-                 use_h,
-                 use_w,
+                 use_h=True,
+                 use_w=True,
                  rotate=1,
                  offset=False,
                  ratio=0.5,
                  mode=1,
                  prob=0.7,
-                 upper_iter=60000):
+                 upper_iter=360000):
         super(GridMask, self).__init__()
         self.use_h = use_h
         self.use_w = use_w
