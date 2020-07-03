@@ -3,11 +3,10 @@ from __future__ import division
 from __future__ import print_function
 
 from paddle import fluid
-
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
-
 from .meta_arch import BaseArch
+
 __all__ = ['MaskRCNN']
 
 
@@ -24,18 +23,9 @@ class MaskRCNN(BaseArch):
         'mask_head',
     ]
 
-    def __init__(self,
-                 anchor,
-                 proposal,
-                 mask,
-                 backbone,
-                 rpn_head,
-                 bbox_head,
-                 mask_head,
-                 rpn_only=False,
-                 mode='train'):
-        super(MaskRCNN, self).__init__()
-
+    def __init__(self, anchor, proposal, mask, backbone, rpn_head, bbox_head,
+                 mask_head, *args, **kwargs):
+        super(MaskRCNN, self).__init__(*args, **kwargs)
         self.anchor = anchor
         self.proposal = proposal
         self.mask = mask
@@ -43,12 +33,8 @@ class MaskRCNN(BaseArch):
         self.rpn_head = rpn_head
         self.bbox_head = bbox_head
         self.mask_head = mask_head
-        self.mode = mode
 
-    def forward(self, inputs, inputs_keys):
-        self.gbd = self.build_inputs(inputs, inputs_keys)
-        self.gbd['mode'] = mode
-
+    def model_arch(self, ):
         # Backbone
         bb_out = self.backbone(self.gbd)
         self.gbd.update(bb_out)
@@ -62,12 +48,13 @@ class MaskRCNN(BaseArch):
         self.gbd.update(anchor_out)
 
         # Proposal BBox
+        self.gbd['stage'] = 0
         proposal_out = self.proposal(self.gbd)
-        self.gbd.update(proposal_out)
+        self.gbd.update({'proposal_0': proposal_out})
 
         # BBox Head
-        bbox_head_out = self.bbox_head(self.gbd)
-        self.gbd.update(bbox_head_out)
+        bboxhead_out = self.bbox_head(self.gbd)
+        self.gbd.update({'bboxhead_0': bboxhead_out})
 
         if self.gbd['mode'] == 'infer':
             bbox_out = self.proposal.post_process(self.gbd)
@@ -85,19 +72,11 @@ class MaskRCNN(BaseArch):
             mask_out = self.mask.post_process(self.gbd)
             self.gbd.update(mask_out)
 
-        # result  
-        if self.gbd['mode'] == 'train':
-            return self.loss(self.gbd)
-        elif self.gbd['mode'] == 'infer':
-            self.infer(self.gbd)
-        else:
-            raise "Now, only support train or infer mode!"
-
-    def loss(self, inputs):
+    def loss(self, ):
         losses = []
-        rpn_cls_loss, rpn_reg_loss = self.rpn_head.loss(inputs)
-        bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(inputs)
-        mask_loss = self.mask_head.loss(inputs)
+        rpn_cls_loss, rpn_reg_loss = self.rpn_head.loss(self.gbd)
+        bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(self.gbd)
+        mask_loss = self.mask_head.loss(self.gbd)
         losses = [
             rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss, mask_loss
         ]
@@ -112,12 +91,12 @@ class MaskRCNN(BaseArch):
         }
         return out
 
-    def infer(self, inputs):
+    def infer(self, ):
         outs = {
-            'bbox': inputs['predicted_bbox'].numpy(),
-            'bbox_nums': inputs['predicted_bbox_nums'].numpy(),
-            'mask': inputs['predicted_mask'].numpy(),
-            'im_id': inputs['im_id'].numpy(),
-            'im_shape': inputs['im_shape'].numpy()
+            'bbox': self.gbd['predicted_bbox'].numpy(),
+            'bbox_nums': self.gbd['predicted_bbox_nums'].numpy(),
+            'mask': self.gbd['predicted_mask'].numpy(),
+            'im_id': self.gbd['im_id'].numpy(),
+            'im_shape': self.gbd['im_shape'].numpy()
         }
         return inputs

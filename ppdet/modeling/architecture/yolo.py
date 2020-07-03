@@ -2,8 +2,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from paddle import fluid
-
 from ppdet.core.workspace import register
 from .meta_arch import BaseArch
 
@@ -19,17 +17,13 @@ class YOLOv3(BaseArch):
         'yolo_head',
     ]
 
-    def __init__(self, anchor, backbone, yolo_head, mode='train'):
-        super(YOLOv3, self).__init__()
+    def __init__(self, anchor, backbone, yolo_head, *args, **kwargs):
+        super(YOLOv3, self).__init__(*args, **kwargs)
         self.anchor = anchor
         self.backbone = backbone
         self.yolo_head = yolo_head
-        self.mode = mode
 
-    def forward(self, inputs, inputs_keys):
-        self.gbd = self.build_inputs(inputs, inputs_keys)
-        self.gbd['mode'] = self.mode
-
+    def model_arch(self, ):
         # Backbone
         bb_out = self.backbone(self.gbd)
         self.gbd.update(bb_out)
@@ -46,23 +40,15 @@ class YOLOv3(BaseArch):
             bbox_out = self.anchor.post_process(self.gbd)
             self.gbd.update(bbox_out)
 
-        # result  
-        if self.gbd['mode'] == 'train':
-            return self.loss(self.gbd)
-        elif self.gbd['mode'] == 'infer':
-            return self.infer(self.gbd)
-        else:
-            raise "Now, only support train or infer mode!"
-
-    def loss(self, inputs):
-        yolo_loss = self.yolo_head.loss(inputs)
-        out = {'loss': yolo_loss, }
+    def loss(self, ):
+        yolo_loss = self.yolo_head.loss(self.gbd)
+        out = {'loss': yolo_loss}
         return out
 
-    def infer(self, inputs):
+    def infer(self, ):
         outs = {
-            "bbox": inputs['predicted_bbox'].numpy(),
-            "bbox_nums": inputs['predicted_bbox_nums']
+            "bbox": self.gbd['predicted_bbox'].numpy(),
+            "bbox_nums": self.gbd['predicted_bbox_nums']
         }
         print(outs['bbox_nums'])
         return outs

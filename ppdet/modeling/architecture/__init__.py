@@ -9,8 +9,10 @@ from . import meta_arch
 from . import faster_rcnn
 from . import mask_rcnn
 from . import yolo
+from . import cascade_rcnn
 
 from .meta_arch import *
 from .faster_rcnn import *
 from .mask_rcnn import *
 from .yolo import *
+from .cascade_rcnn import *
