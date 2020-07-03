@@ -9,6 +9,7 @@ from ppdet.core.workspace import register, serializable
 
 class ConvBNLayer(Layer):
     def __init__(self,
+                 name_scope,
                  ch_in,
                  ch_out,
                  filter_size,
@@ -26,14 +27,20 @@ class ConvBNLayer(Layer):
             padding=padding,
             groups=1,
             act=act,
-            param_attr=ParamAttr(learning_rate=lr),
-            bias_attr=ParamAttr())
-
+            param_attr=ParamAttr(
+                name=name_scope + "_weights", learning_rate=lr),
+            bias_attr=ParamAttr(name=name_scope + "_bias"))
+        if name_scope == "conv1":
+            bn_name = "bn_" + name_scope
+        else:
+            bn_name = "bn" + name_scope[3:]
         self.bn = BatchNorm(
             num_channels=ch_out,
             act=act,
-            param_attr=ParamAttr(),
-            bias_attr=ParamAttr(), )
+            param_attr=ParamAttr(name=bn_name + '_scale'),
+            bias_attr=ParamAttr(name=bn_name + '_offset'),
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance')
 
     def forward(self, inputs):
         out = self.conv(inputs)
@@ -43,6 +50,7 @@ class ConvBNLayer(Layer):
 
 class ConvAffineLayer(Layer):
     def __init__(self,
+                 name_scope,
                  ch_in,
                  ch_out,
                  filter_size,
@@ -59,19 +67,25 @@ class ConvAffineLayer(Layer):
             stride=stride,
             padding=padding,
             act=None,
-            param_attr=ParamAttr(learning_rate=lr),
+            param_attr=ParamAttr(
+                name=name_scope + "_weights", learning_rate=lr),
             bias_attr=False)
-
+        if name_scope == "conv1":
+            bn_name = "bn_" + name_scope
+        else:
+            bn_name = "bn" + name_scope[3:]
         self.scale = fluid.layers.create_parameter(
             shape=[ch_out],
             dtype='float32',
-            attr=ParamAttr(learning_rate=0.),
+            attr=ParamAttr(
+                name=bn_name + '_scale', learning_rate=0.),
             default_initializer=Constant(1.))
 
         self.offset = fluid.layers.create_parameter(
             shape=[ch_out],
             dtype='float32',
-            attr=ParamAttr(learning_rate=0.),
+            attr=ParamAttr(
+                name=bn_name + '_offset', learning_rate=0.),
             default_initializer=Constant(0.))
 
         self.act = act
@@ -87,6 +101,7 @@ class ConvAffineLayer(Layer):
 
 class BottleNeck(Layer):
     def __init__(self,
+                 name_scope,
                  ch_in,
                  ch_out,
                  stride,
@@ -94,7 +109,7 @@ class BottleNeck(Layer):
                  lr=1.0,
                  norm_type='bn'):
         super(BottleNeck, self).__init__()
-
+        self.name_scope = name_scope
         if norm_type == 'bn':
             atom_block = ConvBNLayer
         elif norm_type == 'affine':
@@ -106,6 +121,7 @@ class BottleNeck(Layer):
         self.shortcut = shortcut
         if not shortcut:
             self.branch1 = atom_block(
+                name_scope + "_branch1",
                 ch_in=ch_in,
                 ch_out=ch_out * 4,
                 filter_size=1,
@@ -115,6 +131,7 @@ class BottleNeck(Layer):
                 lr=lr)
 
         self.branch2a = atom_block(
+            name_scope + "_branch2a",
             ch_in=ch_in,
             ch_out=ch_out,
             filter_size=1,
@@ -123,6 +140,7 @@ class BottleNeck(Layer):
             lr=lr)
 
         self.branch2b = atom_block(
+            name_scope + "_branch2b",
             ch_in=ch_out,
             ch_out=ch_out,
             filter_size=3,
@@ -131,6 +149,7 @@ class BottleNeck(Layer):
             lr=lr)
 
         self.branch2c = atom_block(
+            name_scope + "_branch2c",
             ch_in=ch_out,
             ch_out=ch_out * 4,
             filter_size=1,
@@ -150,9 +169,7 @@ class BottleNeck(Layer):
         out = self.branch2c(out)
 
         out = fluid.layers.elementwise_add(
-            x=short,
-            y=out,
-            act='relu', )
+            x=short, y=out, act='relu', name=self.name_scope + ".add.output.5")
 
         return out
 
@@ -182,6 +199,7 @@ class Blocks(Layer):
             block = self.add_sublayer(
                 name,
                 BottleNeck(
+                    name,
                     ch_in=ch_in if i == 0 else ch_out * 4,
                     ch_out=ch_out,
                     stride=self.stride,
@@ -220,7 +238,7 @@ class ResNet(Layer):
         assert atom_block != None, 'NormType only support BatchNorm and Affine!'
 
         self.conv1 = atom_block(
-            ch_in=3, ch_out=64, filter_size=7, stride=2, padding=3)
+            'conv1', ch_in=3, ch_out=64, filter_size=7, stride=2, padding=3)
 
         self.pool = Pool2D(
             pool_type='max', pool_size=3, pool_stride=2, pool_padding=1)
@@ -253,6 +271,7 @@ class ResNet(Layer):
         x = inputs['image']
 
         conv1 = self.conv1(x)
+
         pool1 = self.pool(conv1)
 
         res2 = self.stage2(pool1)

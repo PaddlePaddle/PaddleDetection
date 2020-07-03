@@ -18,10 +18,11 @@ class RPNFeat(Layer):
             stride=1,
             padding=1,
             act='relu',
-            param_attr=ParamAttr(initializer=Normal(
-                loc=0., scale=0.01)),
+            param_attr=ParamAttr(
+                name="conv_rpn_w", initializer=Normal(
+                    loc=0., scale=0.01)),
             bias_attr=ParamAttr(
-                learning_rate=2., regularizer=L2Decay(0.)))
+                name="conv_rpn_b", learning_rate=2., regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
         x = inputs.get('res4')
@@ -49,10 +50,13 @@ class RPNHead(Layer):
             stride=1,
             padding=0,
             act=None,
-            param_attr=ParamAttr(initializer=Normal(
-                loc=0., scale=0.01)),
+            param_attr=ParamAttr(
+                name="rpn_cls_logits_w", initializer=Normal(
+                    loc=0., scale=0.01)),
             bias_attr=ParamAttr(
-                learning_rate=2., regularizer=L2Decay(0.)))
+                name="rpn_cls_logits_b",
+                learning_rate=2.,
+                regularizer=L2Decay(0.)))
 
         # rpn roi bbox regression deltas
         self.rpn_rois_delta = Conv2D(
@@ -62,10 +66,13 @@ class RPNHead(Layer):
             stride=1,
             padding=0,
             act=None,
-            param_attr=ParamAttr(initializer=Normal(
-                loc=0., scale=0.01)),
+            param_attr=ParamAttr(
+                name="rpn_bbox_pred_w", initializer=Normal(
+                    loc=0., scale=0.01)),
             bias_attr=ParamAttr(
-                learning_rate=2., regularizer=L2Decay(0.)))
+                name="rpn_bbox_pred_b",
+                learning_rate=2.,
+                regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
         outs = self.rpn_feat(inputs)
