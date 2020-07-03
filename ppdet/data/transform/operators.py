@@ -455,13 +455,20 @@ class RandomFlipImage(BaseOperator):
 
 @register_op
 class RandomErasingImage(BaseOperator):
-    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3, upper_iter=60000):
+    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+        """
+        Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
+        Args:
+            prob (float): probability to carry out random erasing
+            sl (float): lower limit of the erasing area ratio
+            sh (float): upper limit of the erasing area ratio
+            r1 (float): aspect ratio of the erasing region
+        """
         super(RandomErasingImage, self).__init__()
         self.prob = prob
         self.sl = sl
         self.sh = sh
         self.r1 = r1
-        self.upper_iter = upper_iter
 
     def __call__(self, sample, context=None):
         samples = sample
@@ -477,10 +484,8 @@ class RandomErasingImage(BaseOperator):
             if len(im.shape) != 3:
                 raise ImageError("{}: image is not 3-dimensional.".format(self))
 
-            prob = self.prob * min(1,
-                                   1.0 * sample["curr_iter"] / self.upper_iter)
             for idx in range(gt_bbox.shape[0]):
-                if prob <= np.random.rand():
+                if self.prob <= np.random.rand():
                     continue
 
                 x1, y1, x2, y2 = gt_bbox[idx, :]
@@ -517,10 +522,15 @@ class GridMaskOp(BaseOperator):
                  prob=0.7,
                  upper_iter=60000):
         """
-        Change the channel.
+        GridMask Data Augmentation, see https://arxiv.org/abs/2001.04086
         Args:
-            to_bgr (bool): confirm whether to convert RGB to BGR
-            channel_first (bool): confirm whether to change channel
+            use_h (bool): whether to mask vertically
+            use_w (boo;): whether to mask horizontally
+            rotate (float): angle for the mask to rotate
+            offset (float): mask offset
+            ratio (float): mask ratio
+            mode (int): gridmask mode
+            prob (float): max probability to carry out gridmask
         """
         super(GridMaskOp, self).__init__()
         self.use_h = use_h
