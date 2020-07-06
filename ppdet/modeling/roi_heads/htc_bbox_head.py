@@ -26,13 +26,13 @@ from ppdet.modeling.ops import ConvNorm
 from ppdet.modeling.losses import SmoothL1Loss
 from ppdet.core.workspace import register
 
-__all__ = ['CascadeBBoxHead']
+__all__ = ['HTCBBoxHead']
 
 
 @register
-class CascadeBBoxHead(object):
+class HTCBBoxHead(object):
     """
-    Cascade RCNN bbox head
+    HTC bbox head
 
     Args:
         head (object): the head module instance
@@ -48,7 +48,7 @@ class CascadeBBoxHead(object):
                  bbox_loss=SmoothL1Loss().__dict__,
                  num_classes=81,
                  lr_ratio=2.0):
-        super(CascadeBBoxHead, self).__init__()
+        super(HTCBBoxHead, self).__init__()
         self.head = head
         self.nms = nms
         self.bbox_loss = bbox_loss
@@ -179,36 +179,34 @@ class CascadeBBoxHead(object):
                row has 6 values: [label, confidence, xmin, ymin, xmax, ymax].
                N is the total number of prediction.
         """
-        self.im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+        repeat_num = 3
+        # cls score 
         boxes_cls_prob_l = []
-
-        rcnn_pred = rcnn_pred_list[-1]  # stage 3
-        repreat_num = 1
-        repreat_num = 3
-        bbox_reg_w = cascade_bbox_reg_weights[-1]
-        for i in range(repreat_num):
-            # cls score
-            if i < 2:
-                cls_score, _ = self.get_output(
-                    roi_feat_list[-1],  # roi_feat_3
-                    name='_' + str(i + 1) if i > 0 else '')
-            else:
-                cls_score = rcnn_pred[0]
+        for i in range(repeat_num):
+            cls_score = rcnn_pred_list[i][0]
             cls_prob = fluid.layers.softmax(cls_score, use_cudnn=False)
             boxes_cls_prob_l.append(cls_prob)
 
-        boxes_cls_prob_mean = (
-            boxes_cls_prob_l[0] + boxes_cls_prob_l[1] + boxes_cls_prob_l[2]
-        ) / 3.0
+        boxes_cls_prob_mean = fluid.layers.sum(boxes_cls_prob_l) / float(
+            len(boxes_cls_prob_l))
 
         # bbox pred
-        proposals_boxes = proposal_list[-1]
-        im_scale_lod = fluid.layers.sequence_expand(self.im_scale,
-                                                    proposals_boxes)
-        proposals_boxes = proposals_boxes / im_scale_lod
-        bbox_pred = rcnn_pred[1]
-        bbox_pred_new = fluid.layers.reshape(bbox_pred,
-                                             (-1, cls_agnostic_bbox_reg, 4))
+        im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
+        bbox_pred_l = []
+        for i in range(repeat_num):
+            if i < 2:
+                continue
+            bbox_reg_w = cascade_bbox_reg_weights[i]
+            proposals_boxes = proposal_list[i]
+            im_scale_lod = fluid.layers.sequence_expand(im_scale,
+                                                        proposals_boxes)
+            proposals_boxes = proposals_boxes / im_scale_lod
+            bbox_pred = rcnn_pred_list[i][1]
+            bbox_pred_new = fluid.layers.reshape(bbox_pred,
+                                                 (-1, cls_agnostic_bbox_reg, 4))
+            bbox_pred_l.append(bbox_pred_new)
+
+        bbox_pred_new = bbox_pred_l[-1]
         if cls_agnostic_bbox_reg == 2:
             # only use fg box delta to decode box
             bbox_pred_new = fluid.layers.slice(
@@ -265,107 +263,3 @@ class CascadeBBoxHead(object):
             return {'bbox': box_out, 'score': sum_cascade_cls_prob}
         pred_result = self.nms(bboxes=box_out, scores=sum_cascade_cls_prob)
         return {"bbox": pred_result}
-
-
-@register
-class CascadeXConvNormHead(object):
-    """
-    RCNN head with serveral convolution layers
-
-    Args:
-        conv_num (int): num of convolution layers for the rcnn head
-        conv_dim (int): num of filters for the conv layers
-        mlp_dim (int): num of filters for the fc layers
-    """
-    __shared__ = ['norm_type', 'freeze_norm']
-
-    def __init__(self,
-                 num_conv=4,
-                 conv_dim=256,
-                 mlp_dim=1024,
-                 norm_type=None,
-                 freeze_norm=False,
-                 lr_ratio=2.0):
-        super(CascadeXConvNormHead, self).__init__()
-        self.conv_dim = conv_dim
-        self.mlp_dim = mlp_dim
-        self.num_conv = num_conv
-        self.norm_type = norm_type
-        self.freeze_norm = freeze_norm
-        self.lr_ratio = lr_ratio
-
-    def __call__(self, roi_feat, wb_scalar=1.0, name=''):
-        conv = roi_feat
-        fan = self.conv_dim * 3 * 3
-        initializer = MSRA(uniform=False, fan_in=fan)
-        for i in range(self.num_conv):
-            name = 'bbox_head_conv' + str(i)
-            conv = ConvNorm(
-                conv,
-                self.conv_dim,
-                3,
-                act='relu',
-                initializer=initializer,
-                norm_type=self.norm_type,
-                freeze_norm=self.freeze_norm,
-                lr_scale=wb_scalar,
-                name=name,
-                norm_name=name)
-        fan = conv.shape[1] * conv.shape[2] * conv.shape[3]
-        head_heat = fluid.layers.fc(input=conv,
-                                    size=self.mlp_dim,
-                                    act='relu',
-                                    name='fc6' + name,
-                                    param_attr=ParamAttr(
-                                        name='fc6%s_w' % name,
-                                        initializer=Xavier(fan_out=fan),
-                                        learning_rate=wb_scalar),
-                                    bias_attr=ParamAttr(
-                                        name='fc6%s_b' % name,
-                                        regularizer=L2Decay(0.),
-                                        learning_rate=wb_scalar *
-                                        self.lr_ratio))
-        return head_heat
-
-
-@register
-class CascadeTwoFCHead(object):
-    """
-    RCNN head with serveral convolution layers
-
-    Args:
-        mlp_dim (int): num of filters for the fc layers
-    """
-
-    def __init__(self, mlp_dim, lr_ratio=2.0):
-        super(CascadeTwoFCHead, self).__init__()
-        self.mlp_dim = mlp_dim
-        self.lr_ratio = lr_ratio
-
-    def __call__(self, roi_feat, wb_scalar=1.0, name=''):
-        fan = roi_feat.shape[1] * roi_feat.shape[2] * roi_feat.shape[3]
-        fc6 = fluid.layers.fc(input=roi_feat,
-                              size=self.mlp_dim,
-                              act='relu',
-                              name='fc6' + name,
-                              param_attr=ParamAttr(
-                                  name='fc6%s_w' % name,
-                                  initializer=Xavier(fan_out=fan),
-                                  learning_rate=wb_scalar),
-                              bias_attr=ParamAttr(
-                                  name='fc6%s_b' % name,
-                                  learning_rate=wb_scalar * self.lr_ratio,
-                                  regularizer=L2Decay(0.)))
-        head_feat = fluid.layers.fc(input=fc6,
-                                    size=self.mlp_dim,
-                                    act='relu',
-                                    name='fc7' + name,
-                                    param_attr=ParamAttr(
-                                        name='fc7%s_w' % name,
-                                        initializer=Xavier(),
-                                        learning_rate=wb_scalar),
-                                    bias_attr=ParamAttr(
-                                        name='fc7%s_b' % name,
-                                        learning_rate=wb_scalar * self.lr_ratio,
-                                        regularizer=L2Decay(0.)))
-        return head_feat

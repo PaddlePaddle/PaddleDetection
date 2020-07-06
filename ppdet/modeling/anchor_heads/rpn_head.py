@@ -50,13 +50,16 @@ class RPNHead(object):
                  rpn_target_assign=RPNTargetAssign().__dict__,
                  train_proposal=GenerateProposals(12000, 2000).__dict__,
                  test_proposal=GenerateProposals().__dict__,
-                 num_classes=1):
+                 num_classes=1,
+                 lr_ratio=2.0):
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
         self.train_proposal = train_proposal
         self.test_proposal = test_proposal
         self.num_classes = num_classes
+        self.lr_ratio = lr_ratio
+
         if isinstance(anchor_generator, dict):
             self.anchor_generator = AnchorGenerator(**anchor_generator)
         if isinstance(rpn_target_assign, dict):
@@ -92,7 +95,9 @@ class RPNHead(object):
                 name="conv_rpn_w", initializer=Normal(
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
-                name="conv_rpn_b", learning_rate=2., regularizer=L2Decay(0.)))
+                name="conv_rpn_b",
+                learning_rate=1.0 * self.lr_ratio,
+                regularizer=L2Decay(0.)))
         # Generate anchors
         self.anchor, self.anchor_var = self.anchor_generator(input=rpn_conv)
         num_anchor = self.anchor.shape[2]
@@ -110,7 +115,7 @@ class RPNHead(object):
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
                 name="rpn_cls_logits_b",
-                learning_rate=2.,
+                learning_rate=1.0 * self.lr_ratio,
                 regularizer=L2Decay(0.)))
         # Proposal bbox regression deltas
         self.rpn_bbox_pred = fluid.layers.conv2d(
@@ -126,7 +131,7 @@ class RPNHead(object):
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
                 name="rpn_bbox_pred_b",
-                learning_rate=2.,
+                learning_rate=1.0 * self.lr_ratio,
                 regularizer=L2Decay(0.)))
         return self.rpn_cls_score, self.rpn_bbox_pred
 
@@ -299,7 +304,8 @@ class FPNRPNHead(RPNHead):
                  num_chan=256,
                  min_level=2,
                  max_level=6,
-                 num_classes=1):
+                 num_classes=1,
+                 lr_ratio=2.0):
         super(FPNRPNHead, self).__init__(anchor_generator, rpn_target_assign,
                                          train_proposal, test_proposal)
         self.anchor_start_size = anchor_start_size
@@ -307,7 +313,7 @@ class FPNRPNHead(RPNHead):
         self.min_level = min_level
         self.max_level = max_level
         self.num_classes = num_classes
-
+        self.lr_ratio = lr_ratio
         self.fpn_rpn_list = []
         self.anchors_list = []
         self.anchor_var_list = []
@@ -349,7 +355,7 @@ class FPNRPNHead(RPNHead):
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
                 name=conv_share_name + '_b',
-                learning_rate=2.,
+                learning_rate=1.0 * self.lr_ratio,
                 regularizer=L2Decay(0.)))
 
         self.anchors, self.anchor_var = self.anchor_generator(
@@ -371,7 +377,7 @@ class FPNRPNHead(RPNHead):
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
                 name=cls_share_name + '_b',
-                learning_rate=2.,
+                learning_rate=1.0 * self.lr_ratio,
                 regularizer=L2Decay(0.)))
         self.rpn_bbox_pred = fluid.layers.conv2d(
             input=conv_rpn_fpn,
@@ -385,7 +391,7 @@ class FPNRPNHead(RPNHead):
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
                 name=bbox_share_name + '_b',
-                learning_rate=2.,
+                learning_rate=1.0 * self.lr_ratio,
                 regularizer=L2Decay(0.)))
         return self.rpn_cls_score, self.rpn_bbox_pred
 
