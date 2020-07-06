@@ -31,7 +31,9 @@ class CascadeRCNN(BaseArch):
                  rpn_head,
                  bbox_head,
                  mask_head,
-                 num_stage=3):
+                 num_stage=3,
+                 *args,
+                 **kwargs):
         super(CascadeRCNN, self).__init__(*args, **kwargs)
         self.anchor = anchor
         self.proposal = proposal
@@ -42,7 +44,7 @@ class CascadeRCNN(BaseArch):
         self.mask_head = mask_head
         self.num_stages = num_stages
 
-    def forward(self, inputs, inputs_keys):
+    def model_arch(self, ):
         # Backbone
         bb_out = self.backbone(self.gbd)
         self.gbd.update(bb_out)
@@ -85,7 +87,7 @@ class CascadeRCNN(BaseArch):
             mask_out = self.mask.post_process(self.gbd)
             self.gbd.update(mask_out)
 
-    def loss(self, inputs):
+    def loss(self, ):
         outs = {}
         losses = []
 
@@ -97,7 +99,7 @@ class CascadeRCNN(BaseArch):
         bbox_cls_loss_list = []
         bbox_reg_loss_list = []
         for i in range(self.num_stages):
-            inputs.update_v('stage', i)
+            self.gbd.update_v('stage', i)
             bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(self.gbd)
             bbox_cls_loss_list.append(bbox_cls_loss)
             bbox_reg_loss_list.append(bbox_reg_loss)
@@ -114,12 +116,12 @@ class CascadeRCNN(BaseArch):
         outs['loss'] = loss
         return outs
 
-    def infer(self, inputs):
+    def infer(self, ):
         outs = {
-            'bbox': inputs['predicted_bbox'].numpy(),
-            'bbox_nums': inputs['predicted_bbox_nums'].numpy(),
-            'mask': inputs['predicted_mask'].numpy(),
-            'im_id': inputs['im_id'].numpy(),
-            'im_shape': inputs['im_shape'].numpy()
+            'bbox': self.gbd['predicted_bbox'].numpy(),
+            'bbox_nums': self.gbd['predicted_bbox_nums'].numpy(),
+            'mask': self.gbd['predicted_mask'].numpy(),
+            'im_id': self.gbd['im_id'].numpy(),
+            'im_shape': self.gbd['im_shape'].numpy()
         }
         return inputs

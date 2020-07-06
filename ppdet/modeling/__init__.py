@@ -1,12 +1,12 @@
 from . import ops
-from . import anchor
+from . import bbox
 from . import mask
 from . import backbone
 from . import head
 from . import architecture
 
 from .ops import *
-from .anchor import *
+from .bbox import *
 from .mask import *
 from .backbone import *
 from .head import *
