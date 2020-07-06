@@ -43,9 +43,7 @@ visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 
 Result on VisualDL is shown below:
 
-<div align="center">
-  <img src='../images/visualdl_fruit.jpg' width='800'>
-</div>
+![](../images/visualdl_fruit.jpg)
 
 Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
@@ -65,13 +63,8 @@ python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
 
 Inference images are shown below:
 
-<div align="center">
-  <img src='../../demo/orange_71.jpg' width='600'>
-</div>
+![](../../demo/orange_71.jpg)
 
-
-<div align="center">
-  <img src='../images/orange_71_detection.jpg' width='600'>
-</div>
+![](../images/orange_71_detection.jpg)
 
 For detailed infomation of training and evalution, please refer to [GETTING_STARTED.md](GETTING_STARTED.md).

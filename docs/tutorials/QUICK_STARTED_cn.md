@@ -47,10 +47,7 @@ visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
 
 VisualDL结果显示如下：
 
-
-<div align="center">
-  <img src='../images/visualdl_fruit.jpg' width='800'>
-</div>
+![](../images/visualdl_fruit.jpg)
 
 训练模型[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
 
@@ -72,15 +69,9 @@ python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
 
 预测图片如下：
 
+![](../../demo/orange_71.jpg)
 
-<div align="center">
-  <img src='../../demo/orange_71.jpg' width='600'>
-</div>
-
-
-<div align="center">
-  <img src='../images/orange_71_detection.jpg' width='600'>
-</div>
+![](../images/orange_71_detection.jpg)
 
 
 更多训练及评估流程，请参考[入门使用文档](GETTING_STARTED_cn.md)。
