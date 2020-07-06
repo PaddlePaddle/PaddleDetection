@@ -47,7 +47,9 @@ class HTCMaskHead(object):
                  resolution=14,
                  dilation=1,
                  num_classes=81,
-                 norm_type=None):
+                 norm_type=None,
+                 lr_ratio=2.0,
+                 share_mask_conv=False):
         super(HTCMaskHead, self).__init__()
         self.num_convs = num_convs
         self.conv_dim = conv_dim
@@ -55,11 +57,20 @@ class HTCMaskHead(object):
         self.dilation = dilation
         self.num_classes = num_classes
         self.norm_type = norm_type
+        self.lr_ratio = lr_ratio
+        self.share_mask_conv = share_mask_conv
 
-    def _mask_conv_head(self, roi_feat, num_convs, norm_type, name=''):
+    def _mask_conv_head(self,
+                        roi_feat,
+                        num_convs,
+                        norm_type,
+                        wb_scalar=1.0,
+                        name=''):
         if norm_type == 'gn':
             for i in range(num_convs):
-                layer_name = "mask_inter_feat_" + str(i + 1) + name
+                layer_name = "mask_inter_feat_" + str(i + 1)
+                if not self.share_mask_conv:
+                    layer_name += name
                 fan = self.conv_dim * 3 * 3
                 initializer = MSRA(uniform=False, fan_in=fan)
                 roi_feat = ConvNorm(
@@ -74,7 +85,9 @@ class HTCMaskHead(object):
                     norm_name=layer_name)
         else:
             for i in range(num_convs):
-                layer_name = "mask_inter_feat_" + str(i + 1) + name
+                layer_name = "mask_inter_feat_" + str(i + 1)
+                if not self.share_mask_conv:
+                    layer_name += name
                 fan = self.conv_dim * 3 * 3
                 initializer = MSRA(uniform=False, fan_in=fan)
                 roi_feat = fluid.layers.conv2d(
@@ -90,7 +103,7 @@ class HTCMaskHead(object):
                         name=layer_name + '_w', initializer=initializer),
                     bias_attr=ParamAttr(
                         name=layer_name + '_b',
-                        learning_rate=2.,
+                        learning_rate=wb_scalar * self.lr_ratio,
                         regularizer=L2Decay(0.)))
         return roi_feat
 
@@ -99,16 +112,16 @@ class HTCMaskHead(object):
                    res_feat=None,
                    return_logits=True,
                    return_feat=False,
+                   wb_scalar=1.0,
                    name=''):
         class_num = self.num_classes
-
         if res_feat is not None:
             res_feat = fluid.layers.conv2d(
                 res_feat, roi_feat.shape[1], 1, name='res_net' + name)
             roi_feat = fluid.layers.sum([roi_feat, res_feat])
         # configure the conv number for FPN if necessary
         head_feat = self._mask_conv_head(roi_feat, self.num_convs,
-                                         self.norm_type, name)
+                                         self.norm_type, wb_scalar, name)
 
         if return_logits:
             fan0 = roi_feat.shape[1] * 2 * 2
@@ -124,7 +137,7 @@ class HTCMaskHead(object):
                         uniform=False, fan_in=fan0)),
                 bias_attr=ParamAttr(
                     name='conv5_mask_b' + name,
-                    learning_rate=2.,
+                    learning_rate=wb_scalar * self.lr_ratio,
                     regularizer=L2Decay(0.)))
 
             fan = class_num
@@ -139,7 +152,7 @@ class HTCMaskHead(object):
                         uniform=False, fan_in=fan)),
                 bias_attr=ParamAttr(
                     name="mask_fcn_logits_b" + name,
-                    learning_rate=2.,
+                    learning_rate=wb_scalar * self.lr_ratio,
                     regularizer=L2Decay(0.)))
             if return_feat:
                 return mask_logits, head_feat

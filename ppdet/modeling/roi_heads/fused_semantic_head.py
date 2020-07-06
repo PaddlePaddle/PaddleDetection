@@ -69,7 +69,7 @@ class FusedSemanticHead(object):
         seg_pred = fluid.layers.conv2d(new_feat, self.semantic_num_class, 1)
         return semantic_feat, seg_pred
 
-    def get_loss(self, logit, label, weight=None, ignore_index=255):
+    def get_loss(self, logit, label, ignore_index=255):
         label = fluid.layers.resize_nearest(label,
                                             fluid.layers.shape(logit)[2:])
         label = fluid.layers.reshape(label, [-1, 1])
@@ -78,48 +78,12 @@ class FusedSemanticHead(object):
         logit = fluid.layers.transpose(logit, [0, 2, 3, 1])
         logit = fluid.layers.reshape(logit, [-1, self.semantic_num_class])
 
-        if weight is None:
-            loss, probs = fluid.layers.softmax_with_cross_entropy(
-                logit, label, ignore_index=ignore_index, return_softmax=True)
-        else:
-            label_one_hot = fluid.layers.one_hot(
-                input=label, depth=self.semantic_num_class)
-            if isinstance(weight, list):
-                assert len(
-                    weight
-                ) == self.semantic_num_class, "weight length must equal num of classes"
-                weight = fluid.layers.assign(
-                    np.array(
-                        [weight], dtype='float32'))
-            elif isinstance(weight, str):
-                assert weight.lower(
-                ) == 'dynamic', 'if weight is string, must be dynamic!'
-                tmp = []
-                total_num = fluid.layers.cast(
-                    fluid.layers.shape(label)[0], 'float32')
-                for i in range(self.semantic_num_class):
-                    cls_pixel_num = fluid.layers.reduce_sum(label_one_hot[:, i])
-                    ratio = total_num / (cls_pixel_num + 1)
-                    tmp.append(ratio)
-                weight = fluid.layers.concat(tmp)
-                weight = weight / fluid.layers.reduce_sum(
-                    weight) * self.semantic_num_class
-            elif isinstance(weight, fluid.layers.Variable):
-                pass
-            else:
-                raise ValueError(
-                    'Expect weight is a list, string or Variable, but receive {}'.
-                    format(type(weight)))
-            weight = fluid.layers.reshape(weight, [1, self.semantic_num_class])
-            weighted_label_one_hot = fluid.layers.elementwise_mul(label_one_hot,
-                                                                  weight)
-            probs = fluid.layers.softmax(logit)
-            loss = fluid.layers.cross_entropy(
-                probs,
-                weighted_label_one_hot,
-                soft_label=True,
-                ignore_index=ignore_index)
-            weighted_label_one_hot.stop_gradient = True
+        loss, probs = fluid.layers.softmax_with_cross_entropy(
+            logit,
+            label,
+            soft_label=False,
+            ignore_index=ignore_index,
+            return_softmax=True)
 
         ignore_mask = (label.astype('int32') != 255).astype('int32')
         if ignore_mask is not None:

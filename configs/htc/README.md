@@ -21,5 +21,6 @@ HTC requires COCO and COCO-stuff dataset for training.
 
 The results on COCO 2017val are shown in the below table. (results on test-dev are usually slightly higher than val)
 
-  | Backbone  | Style   | Lr schd | Mem (GB) | Inf time (fps) | box AP | mask AP | Download |
-  |:---------:|:-------:|:-------:|:--------:|:--------------:|:------:|:-------:|:--------:|
+  | Backbone  | Lr schd | Inf time (fps) | box AP | mask AP | Download | Configs |
+  |:---------:|:-------:|:--------------:|:------:|:-------:|:--------:|:-------:|
+  | R-50-FPN  | 1x      | 11             | 42.0   | 36.3    |          |         |

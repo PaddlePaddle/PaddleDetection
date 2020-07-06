@@ -42,7 +42,7 @@ class HybridTaskCascade(object):
         rpn_head (object): `RPNhead` instance
         bbox_assigner (object): `BBoxAssigner` instance
         roi_extractor (object): ROI extractor instance
-        bbox_head (object): `BBoxHead` instance
+        bbox_head (object): `HTCBBoxHead` instance
         mask_assigner (object): `MaskAssigner` instance
         mask_head (object): `HTCMaskHead` instance
         fpn (object): feature pyramid network instance
@@ -63,7 +63,7 @@ class HybridTaskCascade(object):
                  roi_extractor='FPNRoIAlign',
                  semantic_roi_extractor='RoIAlign',
                  fused_semantic_head='FusedSemanticHead',
-                 bbox_head='CascadeBBoxHead',
+                 bbox_head='HTCBBoxHead',
                  bbox_assigner='CascadeBBoxAssigner',
                  mask_assigner='MaskAssigner',
                  mask_head='HTCMaskHead',
@@ -96,6 +96,7 @@ class HybridTaskCascade(object):
         self.interleaved = True
         self.mask_info_flow = True
         self.with_semantic = True
+        self.use_bias_scalar = True
 
     def build(self, feed_vars, mode='train'):
         if mode == 'train':
@@ -178,7 +179,6 @@ class HybridTaskCascade(object):
                 proposals = refined_bbox
             proposal_list.append(proposals)
 
-            # bbox loops for 3 times
             # extract roi features
             roi_feat = self.roi_extractor(body_feats, proposals, spatial_scale)
             if self.with_semantic:
@@ -197,7 +197,6 @@ class HybridTaskCascade(object):
             cls_score, bbox_pred = self.bbox_head.get_output(
                 roi_feat,
                 wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i],
-                #name='_' + str(i + 1) if i > 0 else ''
                 name='_' + str(i))
             rcnn_pred_list.append((cls_score, bbox_pred))
 
@@ -242,16 +241,24 @@ class HybridTaskCascade(object):
                                 last_feat,
                                 return_logits=False,
                                 return_feat=True,
+                                wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i]
+                                if self.use_bias_scalar else 1.0,
                                 name='_' + str(i) + '_' + str(j))
                         mask_logits = self.mask_head.get_output(
                             mask_feat,
                             last_feat,
                             return_logits=True,
                             return_feat=False,
+                            wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i]
+                            if self.use_bias_scalar else 1.0,
                             name='_' + str(i))
                     else:
                         mask_logits = self.mask_head.get_output(
-                            mask_feat, return_logits=True, name='_' + str(i))
+                            mask_feat,
+                            return_logits=True,
+                            wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i]
+                            if self.use_bias_scalar else 1.0,
+                            name='_' + str(i))
                     mask_logits_list.append(mask_logits)
 
             if i < self.num_stage - 1 and not self.interleaved:
@@ -349,8 +356,6 @@ class HybridTaskCascade(object):
             mask_logits_list = []
             mask_pred_list = []
             for i in range(self.num_stage):
-                if i < 2:
-                    continue
                 if self.mask_info_flow:
                     last_feat = None
                     for j in range(i):
@@ -359,12 +364,16 @@ class HybridTaskCascade(object):
                             last_feat,
                             return_logits=False,
                             return_feat=True,
+                            wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i]
+                            if self.use_bias_scalar else 1.0,
                             name='_' + str(i) + '_' + str(j))
                     mask_logits = self.mask_head.get_output(
                         mask_feat,
                         last_feat,
                         return_logits=True,
                         return_feat=False,
+                        wb_scalar=1.0 / self.cascade_rcnn_loss_weight[i]
+                        if self.use_bias_scalar else 1.0,
                         name='_' + str(i))
                     mask_logits_list.append(mask_logits)
                 else:
