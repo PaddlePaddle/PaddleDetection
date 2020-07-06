@@ -108,7 +108,7 @@ CascadeTwoFCHead:
 
 
 LearningRate:
-  base_lr: 0.00125
+  base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
