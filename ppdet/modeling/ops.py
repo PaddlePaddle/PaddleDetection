@@ -610,7 +610,7 @@ class MultiClassSoftNMS(object):
             res.set_lod([out_offsets])
             if len(pred_res) == 0:
                 pred_res = np.array([[1]], dtype=np.float32)
-            res.set(np.vstack(pred_res), fluid.CPUPlace())
+            res.set(np.vstack(pred_res).astype(np.float32), fluid.CPUPlace())
             return res
 
         pred_result = create_tmp_var(
