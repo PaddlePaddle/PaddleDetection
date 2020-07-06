@@ -1,7 +1,7 @@
 # Linux平台编译指南
 
 ## 说明
-本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_usage/deploy/inference/build_and_install_lib_cn.html#id15)。
+本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
 
 ## 前置条件
 * G++ 4.8.2 ~ 4.9.4
@@ -19,7 +19,7 @@
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_usage/deploy/inference/build_and_install_lib_cn.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)
 
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
@@ -38,6 +38,8 @@ fluid_inference
 ### Step4: 编译
 
 编译`cmake`的命令在`scripts/build.sh`中，请根据实际情况修改主要参数，其主要内容说明如下：
+
+```
 
 # 是否使用GPU(即是否使用 CUDA)
 WITH_GPU=OFF
@@ -83,7 +85,7 @@ make
  ```shell
  sh ./scripts/build.sh
  ```
-
+**注意**: OPENCV依赖OPENBLAS，Ubuntu用户需确认系统是否已存在`libopenblas.so`。如未安装，可执行apt-get install libopenblas-dev进行安装。
 
 ### Step5: 预测及可视化
 编译成功后，预测入口程序为`build/main`其主要命令参数说明如下：
@@ -93,8 +95,10 @@ make
 | image_path  | 要预测的图片文件路径 |
 | video_path  | 要预测的视频文件路径 |
 | use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
+| gpu_id  |  指定进行推理的GPU device id(默认值为0)|
+| --run_mode |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
 
-**注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
+**注意**: 如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
 
 
 `样例一`：
@@ -103,12 +107,12 @@ make
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --image_path=/root/projects/images/test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
 
 
 `样例二`:
 ```shell
-#使用 `GPU`预测视频`/root/projects/videos/test.avi`
-./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.avi --use_gpu=1
+#使用 `GPU`预测视频`/root/projects/videos/test.mp4`
+./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --use_gpu=1
 ```
-视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
+视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。

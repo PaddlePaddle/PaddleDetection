@@ -8,6 +8,7 @@
     - [数据准备](#数据准备)
     - [训练与推理](#训练与推理)
     - [评估](#评估)
+- [人脸关键点检测](#人脸关键点检测)
 - [算法细节](#算法细节)
 - [如何贡献代码](#如何贡献代码)
 
@@ -59,32 +60,35 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 
 #### 推理时间和模型大小比较
 
-| 网络结构 | 类型     | 输入尺寸 | P4(trt32) (ms) | CPU (ms) | 高通骁龙855(armv8) (ms)   | 模型大小(MB) |
-|:------------:|:--------:|:----:|:--------------:|:--------:|:-------------------------------------:|:---------------:|
-| BlazeFace    | 原始版本 | 128  | 1.387          | 23.461   |  6.036                                | 0.777           |
-| BlazeFace    | Lite版本   | 128  | 1.323          | 12.802   |  6.193                                | 0.68            |
-| BlazeFace    | NAS版本    | 128  | 1.03           | 6.714    |  2.7152                               | 0.234           |
-| FaceBoxes    | 原始版本 | 128  | 3.144          | 14.972   |  19.2196                              | 3.6             |
-| FaceBoxes    | Lite版本   | 128  | 2.295          | 11.276   |  8.5278                               | 2               |
-| BlazeFace    | 原始版本 | 320  | 3.01           | 132.408  |  70.6916                              | 0.777           |
-| BlazeFace    | Lite版本   | 320  | 2.535          | 69.964   |  69.9438                              | 0.68            |
-| BlazeFace    | NAS版本    | 320  | 2.392          | 36.962   |  39.8086                              | 0.234           |
-| FaceBoxes    | 原始版本 | 320  | 7.556          | 84.531   |  52.1022                              | 3.6             |
-| FaceBoxes    | Lite版本   | 320  | 18.605         | 78.862   |  59.8996                              | 2               |
-| BlazeFace    | 原始版本 | 640  | 8.885          | 519.364  |  149.896                              | 0.777           |
-| BlazeFace    | Lite版本   | 640  | 6.988          | 284.13   |  149.902                              | 0.68            |
-| BlazeFace    | NAS版本    | 640  | 7.448          | 142.91   |  69.8266                              | 0.234           |
-| FaceBoxes    | 原始版本 | 640  | 78.201         | 394.043  |  169.877                              | 3.6             |
-| FaceBoxes    | Lite版本  | 640  | 59.47          | 313.683  |  139.918                              | 2               |
+| 网络结构 | 类型     | 输入尺寸 | P4(trt32) (ms) | CPU (ms) |  CPU (ms)(enable_mkldmm) | 高通骁龙855(armv8) (ms)   | 模型大小(MB) |
+|:------------:|:--------:|:----:|:--------------:|:--------:|:--------:|:-------------------------------------:|:---------------:|
+| BlazeFace    | 原始版本 | 128  | 1.387          | 23.461   | 4.92 |  6.036                                | 0.777           |
+| BlazeFace    | Lite版本   | 128  | 1.323          | 12.802   | 7.16 | 6.193                                | 0.68            |
+| BlazeFace    | NAS版本    | 128  | 1.03           | 6.714    | 3.641 | 2.7152                               | 0.234           |
+| BlazeFace    | NAS_V2版本    | 128  | 0.909        |   9.58  | 7.903 | 3.499                               | 0.383           |
+| FaceBoxes    | 原始版本 | 128  | 3.144          | 14.972   | 9,852 | 19.2196                              | 3.6             |
+| FaceBoxes    | Lite版本   | 128  | 2.295          | 11.276   | 6.969 | 8.5278                               | 2               |
+| BlazeFace    | 原始版本 | 320  | 3.01           | 132.408  | 20.762 | 70.6916                              | 0.777           |
+| BlazeFace    | Lite版本   | 320  | 2.535          | 69.964   | 35.612 | 69.9438                              | 0.68            |
+| BlazeFace    | NAS版本    | 320  | 2.392          | 36.962   | 14.443 | 39.8086                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 320  | 1.487          | 52.038   | 38.693 | 56.137                              | 0.383           |
+| FaceBoxes    | 原始版本 | 320  | 7.556          | 84.531   | 48.465 | 52.1022                              | 3.6             |
+| FaceBoxes    | Lite版本   | 320  | 18.605         | 78.862   | 46.488 |  59.8996                              | 2               |
+| BlazeFace    | 原始版本 | 640  | 8.885          | 519.364  | 78.825 | 149.896                              | 0.777           |
+| BlazeFace    | Lite版本   | 640  | 6.988          | 284.13   | 131.385 | 149.902                              | 0.68            |
+| BlazeFace    | NAS版本    | 640  | 7.448          | 142.91   | 56.725 | 69.8266                              | 0.234           |
+| BlazeFace    | NAS_V2版本    | 640  | 4.201          | 197.695   | 153.626 | 88.278                             | 0.383           |
+| FaceBoxes    | 原始版本 | 640  | 78.201         | 394.043  |  239.201 | 169.877                              | 3.6             |
+| FaceBoxes    | Lite版本  | 640  | 59.47          | 313.683  | 168.73 | 139.918                              | 2               |
 
 
 **注意:**  
 - CPU: Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz。
-- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.6.1版本。
+- P4(trt32)和CPU的推理时间测试基于PaddlePaddle-1.8.0版本。
 - ARM测试环境:
     - 高通骁龙855(armv8)；
     - 单线程；
-    - Paddle-Lite 2.0.0版本。
+    - Paddle-Lite develop版本。
 
 
 ## 快速开始
@@ -139,7 +143,7 @@ cd dataset/wider_face && ./download.sh
 训练流程与推理流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../tutorials/GETTING_STARTED_cn.md)。  
 **注意:**
 - `BlazeFace`和`FaceBoxes`训练是以每卡`batch_size=8`在4卡GPU上进行训练(总`batch_size`是32),并且训练320000轮
-(如果你的GPU数达不到4，请参考[学习率计算规则表](../tutorials/GETTING_STARTED_cn.html#faq))。
+(如果你的GPU数达不到4，请参考[学习率计算规则表](../FAQ.md))。
 - 人脸检测模型目前我们不支持边训练边评估。
 
 
@@ -238,6 +242,20 @@ cd dataset/fddb/evaluation
 (2)`OUTPUT_DIR`是FDDB评估输出结果文件前缀，会生成两个文件`{OUTPUT_DIR}ContROC.txt`、`{OUTPUT_DIR}DiscROC.txt`；  
 (3)参数用法及注释可通过执行`./evaluate --help`来获取。
 
+
+## 人脸关键点检测
+
+(1)下载PaddleDetection开放的WIDER-FACE数据集人脸关键点标注文件([链接](https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt))，并拷贝至`wider_face/wider_face_split`文件夹中：
+
+```shell
+cd dataset/wider_face/wider_face_split/
+wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
+```
+
+(2)使用`configs/face_detection/blazeface_keypoint.yml`配置文件进行训练与评估，使用方法与上一节内容一致。
+
+![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
+
 ## 算法细节
 
 ### BlazeFace
@@ -254,7 +272,7 @@ cd dataset/fddb/evaluation
 - 原始版本: 参考原始论文复现；
 - Lite版本: 使用3x3卷积替换5x5卷积，更少的网络层数和通道数；
 - NAS版本: 使用神经网络搜索算法构建网络结构，相比于`Lite`版本，NAS版本需要更少的网络层数和通道数。
-- NAS_V2版本1: 基于PaddleSlim中SANAS算法在blazeface-NAS的基础上搜索出来的结构，相比`NAS`版本，NAS_V2版本的精度平均高出3个点，在855芯片上的硬件延时相对`NAS`版本仅增加5%。
+- NAS_V2版本: 基于PaddleSlim中SANAS算法在blazeface-NAS的基础上搜索出来的结构，相比`NAS`版本，NAS_V2版本的精度平均高出3个点，在855芯片上的硬件延时相对`NAS`版本仅增加5%。
 
 ### FaceBoxes
 **简介:**  

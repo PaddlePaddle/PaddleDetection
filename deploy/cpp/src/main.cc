@@ -25,6 +25,8 @@ DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_path, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
+DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
+DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
@@ -43,9 +45,9 @@ void PredictVideo(const std::string& video_path,
 
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "output.avi";
+  std::string video_out_path = "output.mp4";
   video_out.open(video_out_path.c_str(),
-                 CV_FOURCC('M', 'J', 'P', 'G'),
+                 0x00000021,
                  video_fps,
                  cv::Size(video_width, video_height),
                  true);
@@ -59,6 +61,7 @@ void PredictVideo(const std::string& video_path,
   auto colormap = PaddleDetection::GenerateColorMap(labels.size());
   // Capture all frames and do inference
   cv::Mat frame;
+  int frame_id = 0;
   while (capture.read(frame)) {
     if (frame.empty()) {
       break;
@@ -66,7 +69,18 @@ void PredictVideo(const std::string& video_path,
     det->Predict(frame, &result);
     cv::Mat out_im = PaddleDetection::VisualizeResult(
         frame, result, labels, colormap);
+    for (const auto& item : result) {
+      printf("In frame id %d, we detect: class=%d confidence=%.2f rect=[%d %d %d %d]\n",
+        frame_id,
+        item.class_id,
+        item.confidence,
+        item.rect[0],
+        item.rect[1],
+        item.rect[2],
+        item.rect[3]);
+   }   
     video_out.write(out_im);
+    frame_id += 1;
   }
   capture.release();
   video_out.release();
@@ -93,7 +107,10 @@ void PredictImage(const std::string& image_path,
   auto colormap = PaddleDetection::GenerateColorMap(labels.size());
   cv::Mat vis_img = PaddleDetection::VisualizeResult(
       im, result, labels, colormap);
-  cv::imwrite("output.jpeg", vis_img);
+  std::vector<int> compression_params;
+  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+  compression_params.push_back(95);
+  cv::imwrite("output.jpg", vis_img, compression_params);
   printf("Visualized output saved as output.jpeg\n");
 }
 
@@ -102,13 +119,19 @@ int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_model_dir.empty()
       || (FLAGS_image_path.empty() && FLAGS_video_path.empty())) {
-      std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
+    std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
                 << "--image_path=/PATH/TO/INPUT/IMAGE/" << std::endl;
-      return -1;
+    return -1;
+  }
+  if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
+      || FLAGS_run_mode == "trt_fp16")) {
+    std::cout << "run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'.";
+    return -1;
   }
 
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu);
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
+    FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty()) {
     PredictVideo(FLAGS_video_path, &det);

@@ -26,8 +26,10 @@ MobileNetV3:
   scale: 1.0
   model_name: large
   extra_block_filters: [[256, 512], [128, 256], [128, 256], [64, 128]]
-  conv_decay: 0.00004
   feature_maps: [5, 7, 8, 9, 10, 11]
+  lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
+  conv_decay: 0.00004
+  multiplier: 0.5
 
 SSDLiteMultiBoxHead:
   aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.], [2., 3.]]

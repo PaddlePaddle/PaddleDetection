@@ -32,6 +32,7 @@ YOLOv4Head:
     normalized: true
     score_threshold: 0.001
   downsample: [8,16,32]
+  scale_x_y: [1.2, 1.1, 1.05]
 
 YOLOv3Loss:
   # batch_size here is only used for fine grained loss, not used
@@ -42,7 +43,7 @@ YOLOv3Loss:
   ignore_thresh: 0.7
   label_smooth: true
   downsample: [8,16,32]
-  #scale_x_y: [1.2, 1.1, 1.05]
+  scale_x_y: [1.2, 1.1, 1.05]
   iou_loss: IouLoss
   match_score: true
 
@@ -83,7 +84,7 @@ EvalReader:
     !COCODataSet
       image_dir: test2017
       anno_path: annotations/image_info_test-dev2017.json
-      dataset_dir: data/coco
+      dataset_dir: dataset/coco
       with_background: false
   sample_transforms:
     - !DecodeImage

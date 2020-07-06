@@ -60,13 +60,14 @@ fluid_inference
 
 ![step3](https://paddleseg.bj.bcebos.com/inference/vs2019_step4.png)
 
-4. 点击`浏览`，分别设置编译选项指定`CUDA`、`OpenCV`、`Paddle预测库`的路径
+4. 点击`浏览`，分别设置编译选项指定`CUDA`、`CUDNN_LIB`、`OpenCV`、`Paddle预测库`的路径
 
 三个编译参数的含义说明如下（带*表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
 
 |  参数名   | 含义  |
 |  ----  | ----  |
 | *CUDA_LIB  | CUDA的库路径 |
+| CUDNN_LIB | CUDNN的库路径 |
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
 
@@ -85,7 +86,7 @@ fluid_inference
 上述`Visual Studio 2019`编译产出的可执行文件在`out\build\x64-Release`目录下，打开`cmd`，并切换到该目录：
 
 ```
-cd D:\projects\PaddleDetection\inference\out\build\x64-Release
+cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 ```
 可执行文件`main`即为样例的预测程序，其主要的命令行参数如下：
 
@@ -95,6 +96,7 @@ cd D:\projects\PaddleDetection\inference\out\build\x64-Release
 | image_path  | 要预测的图片文件路径 |
 | video_path  | 要预测的视频文件路径 |
 | use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
+| gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 
 **注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
 
@@ -105,13 +107,13 @@ cd D:\projects\PaddleDetection\inference\out\build\x64-Release
 .\main --model_dir=D:\\models\\yolov3_darknet --image_path=D:\\images\\test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`result.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
 
 
 `样例二`:
 ```shell
-#使用`GPU`测试视频 `D:\\videos\\test.avi`  
-.\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.jpeg --use_gpu=1
+#使用`GPU`测试视频 `D:\\videos\\test.mp4`  
+.\main --model_dir=D:\\models\\yolov3_darknet --video_path=D:\\videos\\test.mp4 --use_gpu=1
 ```
 
-视频文件`可视化预测结果`会保存在当前目录下`result.avi`文件中。
+视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。

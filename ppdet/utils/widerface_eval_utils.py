@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     'get_shrink', 'bbox_vote', 'save_widerface_bboxes', 'save_fddb_bboxes',
-    'to_chw_bgr', 'bbox2out', 'get_category_info'
+    'to_chw_bgr', 'bbox2out', 'get_category_info', 'lmk2out'
 ]
 
 
@@ -227,3 +227,58 @@ def widerfaceall_category_info(with_background=True):
     catid2name = {i: name for i, name in enumerate(cats)}
 
     return clsid2catid, catid2name
+
+
+def lmk2out(results, is_bbox_normalized=False):
+    """
+    Args:
+        results: request a dict, should include: `landmark`, `im_id`,
+                 if is_bbox_normalized=True, also need `im_shape`.
+        is_bbox_normalized: whether or not landmark is normalized.
+    """
+    xywh_res = []
+    for t in results:
+        bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
+        im_ids = np.array(t['im_id'][0]).flatten()
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+        face_index = t['face_index'][0]
+        prior_box = t['prior_boxes'][0]
+        predict_lmk = t['landmark'][0]
+        prior = np.reshape(prior_box, (-1, 4))
+        predictlmk = np.reshape(predict_lmk, (-1, 10))
+
+        k = 0
+        for a in range(len(lengths)):
+            num = lengths[a]
+            im_id = int(im_ids[a])
+            for i in range(num):
+                score = bboxes[k][1]
+                theindex = face_index[i][0]
+                me_prior = prior[theindex, :]
+                lmk_pred = predictlmk[theindex, :]
+                prior_w = me_prior[2] - me_prior[0]
+                prior_h = me_prior[3] - me_prior[1]
+                prior_w_center = (me_prior[2] + me_prior[0]) / 2
+                prior_h_center = (me_prior[3] + me_prior[1]) / 2
+                lmk_decode = np.zeros((10))
+                for j in [0, 2, 4, 6, 8]:
+                    lmk_decode[j] = lmk_pred[j] * 0.1 * prior_w + prior_w_center
+                for j in [1, 3, 5, 7, 9]:
+                    lmk_decode[j] = lmk_pred[j] * 0.1 * prior_h + prior_h_center
+                im_shape = t['im_shape'][0][a].tolist()
+                image_h, image_w = int(im_shape[0]), int(im_shape[1])
+                if is_bbox_normalized:
+                    lmk_decode = lmk_decode * np.array([
+                        image_w, image_h, image_w, image_h, image_w, image_h,
+                        image_w, image_h, image_w, image_h
+                    ])
+                lmk_res = {
+                    'image_id': im_id,
+                    'landmark': lmk_decode,
+                    'score': score,
+                }
+                xywh_res.append(lmk_res)
+                k += 1
+    return xywh_res

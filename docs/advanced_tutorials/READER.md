@@ -6,7 +6,7 @@
     - [数据解析](#数据解析)
         - [COCO数据源](#COCO数据源)
         - [Pascal VOC数据源](#Pascal-VOC数据源)
-        - [自定义数据源](#自定义数据源)
+        - [添加新数据源](#添加新数据源)
     - [数据预处理](#数据预处理)
         - [数据增强算子](#数据增强算子)
         - [自定义数据增强算子](#自定义数据增强算子)
@@ -133,8 +133,7 @@ bird
 
   ```
   dataset/voc/
-  ├── train.txt
-  ├── val.txt
+  ├── trainval.txt
   ├── test.txt
   ├── label_list.txt (optional)
   ├── VOCdevkit/VOC2007
@@ -158,30 +157,7 @@ bird
   ```
 在`source/voc.py`中定义并注册了`VOCDataSet`数据源类，它继承自`DataSet`基类，并重写了`load_roidb_and_cname2cid`，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。
 
-#### 自定义数据源
-##### 方式一：将数据集转换为COCO格式
-在`./tools/`中提供了`x2coco.py`用于将labelme标注的数据集或cityscape数据集转换为COCO数据集:
-```bash
-python ./ppdet/data/tools/x2coco.py \
-                --dataset_type labelme \
-                --json_input_dir ./labelme_annos/ \
-                --image_input_dir ./labelme_imgs/ \
-                --output_dir ./cocome/ \
-                --train_proportion 0.8 \
-                --val_proportion 0.2 \
-                --test_proportion 0.0 \
-```
-**参数说明：**
-
-- `--dataset_type`：需要转换的数据格式，目前支持：’labelme‘和’cityscape‘
-- `--json_input_dir`：使用labelme标注的json文件所在文件夹
-- `--image_input_dir`：图像文件所在文件夹
-- `--output_dir`：转换后的COCO格式数据集存放位置
-- `--train_proportion`：标注数据中用于train的比例
-- `--val_proportion`：标注数据中用于validation的比例
-- `--test_proportion`：标注数据中用于infer的比例
-
-##### 方式二：添加新数据源
+#### 添加新数据源
 
 - （1）新建`./source/xxx.py`，定义类`XXXDataSet`继承自`DataSet`基类，完成注册与序列化，并重写`load_roidb_and_cname2cid`方法对`roidbs`与`cname2cid`更新：
 ```python

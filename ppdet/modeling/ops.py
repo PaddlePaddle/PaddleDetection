@@ -547,8 +547,6 @@ class MultiClassSoftNMS(object):
             return dets_final
 
         def _soft_nms(bboxes, scores):
-            bboxes = np.array(bboxes)
-            scores = np.array(scores)
             class_nums = scores.shape[-1]
 
             softnms_thres = self.score_threshold
@@ -562,7 +560,8 @@ class MultiClassSoftNMS(object):
             for j in range(start_idx, class_nums):
                 inds = np.where(scores[:, j] >= softnms_thres)[0]
                 scores_j = scores[inds, j]
-                rois_j = bboxes[inds, j, :]
+                rois_j = bboxes[inds, j, :] if len(
+                    bboxes.shape) > 2 else bboxes[inds, :]
                 dets_j = np.hstack((scores_j[:, np.newaxis], rois_j)).astype(
                     np.float32, copy=False)
                 cls_rank = np.argsort(-dets_j[:, 0])
@@ -584,12 +583,34 @@ class MultiClassSoftNMS(object):
                 keep = np.where(cls_boxes[:, 0] >= image_thresh)[0]
                 pred_result = pred_result[keep, :]
 
-            res = fluid.LoDTensor()
-            res.set_lod([[0, pred_result.shape[0]]])
-            if pred_result.shape[0] == 0:
-                pred_result = np.array([[1]], dtype=np.float32)
-            res.set(pred_result, fluid.CPUPlace())
+            return pred_result
 
+        def _batch_softnms(bboxes, scores):
+            batch_offsets = bboxes.lod()
+            bboxes = np.array(bboxes)
+            scores = np.array(scores)
+            out_offsets = [0]
+            pred_res = []
+            if len(batch_offsets) > 0:
+                batch_offset = batch_offsets[0]
+                for i in range(len(batch_offset) - 1):
+                    s, e = batch_offset[i], batch_offset[i + 1]
+                    pred = _soft_nms(bboxes[s:e], scores[s:e])
+                    out_offsets.append(pred.shape[0] + out_offsets[-1])
+                    pred_res.append(pred)
+            else:
+                assert len(bboxes.shape) == 3
+                assert len(scores.shape) == 3
+                for i in range(bboxes.shape[0]):
+                    pred = _soft_nms(bboxes[i], scores[i])
+                    out_offsets.append(pred.shape[0] + out_offsets[-1])
+                    pred_res.append(pred)
+
+            res = fluid.LoDTensor()
+            res.set_lod([out_offsets])
+            if len(pred_res) == 0:
+                pred_res = np.array([[1]], dtype=np.float32)
+            res.set(np.vstack(pred_res), fluid.CPUPlace())
             return res
 
         pred_result = create_tmp_var(
@@ -599,7 +620,7 @@ class MultiClassSoftNMS(object):
             shape=[-1, 6],
             lod_level=1)
         fluid.layers.py_func(
-            func=_soft_nms, x=[bboxes, scores], out=pred_result)
+            func=_batch_softnms, x=[bboxes, scores], out=pred_result)
         return pred_result
 
 
@@ -1457,7 +1478,8 @@ class SSDOutputDecoder(object):
                  keep_top_k=200,
                  score_threshold=0.01,
                  nms_eta=1.0,
-                 background_label=0):
+                 background_label=0,
+                 return_index=False):
         super(SSDOutputDecoder, self).__init__()
         self.nms_threshold = nms_threshold
         self.background_label = background_label
@@ -1465,6 +1487,7 @@ class SSDOutputDecoder(object):
         self.keep_top_k = keep_top_k
         self.score_threshold = score_threshold
         self.nms_eta = nms_eta
+        self.return_index = return_index
 
 
 @register

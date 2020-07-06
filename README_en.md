@@ -1,5 +1,7 @@
 English | [简体中文](README.md)
 
+Documentation:[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
+
 # PaddleDetection
 
 PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which
@@ -20,6 +22,12 @@ and multi-platform deployment.
 ## Introduction
 
 Features:
+
+- Rich models:
+
+  PaddleDetection provides rich of models, including 100+ pre-trained models
+such as object detection, instance segmentation, face detection etc. It covers
+the champion models, the practical detection models for cloud and edge device.
 
 - Production Ready:
 
@@ -52,12 +60,14 @@ Supported Architectures:
 | Cascade Mask-RCNN   |   ✓    |                             ✗ |     ✗      |   ✓   |     ✗     |   ✗    |  ✗      |
 | Libra R-CNN         |   ✗    |                             ✓ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 | RetinaNet           |   ✓    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
-| YOLOv3              |   ✓    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
+| YOLOv3              |   ✓    |                             ✓ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
 | SSD                 |   ✗    |                             ✗ |     ✗      |   ✗   |     ✓     |   ✗    |  ✗      |
 | BlazeFace           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 | Faceboxes           |   ✗    |                             ✗ |     ✗      |   ✗   |     ✗     |   ✗    |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) models offer much improved accuracy with negligible performance cost.
+
+**NOTE:** ✓ for config file and pretrain model provided in [Model Zoo](docs/MODEL_ZOO.md), ✗ for not provided but is supported generally.
 
 More models:
 
@@ -97,22 +107,24 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 
 ## Tutorials
 
-**News:** Documentation:[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
 
 ### Get Started
 
 - [Installation guide](docs/tutorials/INSTALL.md)
 - [Quick start on small dataset](docs/tutorials/QUICK_STARTED.md)
 - [Train/Evaluation/Inference](docs/tutorials/GETTING_STARTED.md)
-- [FAQ](docs/tutorials/FAQ.md)
+- [How to train a custom dataset](docs/tutorials/Custom_DataSet.md)
+- [FAQ](docs/FAQ.md)
 
 ### Advanced Tutorial
 
-- [Guide to preprocess pipeline and custom dataset](docs/advanced_tutorials/READER.md)
+- [Guide to preprocess pipeline and dataset definition](docs/advanced_tutorials/READER.md)
 - [Models technical](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- [Introduction to the configuration workflow](docs/advanced_tutorials/CONFIG.md)
-- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Transfer learning document](docs/advanced_tutorials/TRANSFER_LEARNING.md)
+- [Parameter configuration](docs/advanced_tutorials/config_doc):
+  - [Introduction to the configuration workflow](docs/advanced_tutorials/config_doc/CONFIG.md)
+  - [Parameter configuration for RCNN model](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
+- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Model compression](slim)
     - [Model compression benchmark](slim)
     - [Quantization](slim/quantization)
@@ -137,13 +149,14 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
+- [Large-scale practical object detection models](docs/featured_model/LARGE_SCALE_DET_MODEL_en.md): Large-scale practical server-side detection pretrained models with 676 categories are provided for most application scenarios, which can be used not only for direct inference but also finetuning on other datasets.
 
 
 ## License
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models, refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
+v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models. For example, the YOLOv3-MobileNetv3 mobile side model is accelerated 3.5 times, the server side has optimized the two-stage model, and the speed and accuracy have high cost performance. We also refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing

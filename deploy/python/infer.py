@@ -16,6 +16,8 @@ import os
 import argparse
 import time
 import yaml
+import ast
+from functools import reduce
 
 from PIL import Image
 import cv2
@@ -286,6 +288,7 @@ class Config():
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
+        self.print_config()
 
     def check_model(self, yml_conf):
         """
@@ -298,6 +301,15 @@ class Config():
         raise ValueError(
             "Unsupported arch: {}, expect SSD, YOLO, RetinaNet, RCNN and Face".
             format(yml_conf['arch']))
+
+    def print_config(self):
+        print('-----------  Model Configuration -----------')
+        print('%s: %s' % ('Model Arch', self.arch))
+        print('%s: %s' % ('Use Padddle Executor', self.use_python_inference))
+        print('%s: ' % ('Transform Order'))
+        for op_info in self.preprocess_infos:
+            print('--%s: %s' % ('transform op', op_info['type']))
+        print('--------------------------------------------')
 
 
 def load_predictor(model_dir,
@@ -318,6 +330,9 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
+    if run_mode == 'trt_int8':
+        raise ValueError("TensorRT int8 mode is not supported now, "
+                         "please use trt_fp32 or trt_fp16 instead.")
     precision_map = {
         'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
@@ -341,7 +356,7 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=run_mode == 'trt_int8')
+            use_calib_mode=False)
 
     # disable print log when predict
     config.disable_glog_info()
@@ -448,7 +463,7 @@ class Detector():
             results['masks'] = np_masks
         return results
 
-    def predict(self, image, threshold=0.5):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
@@ -462,13 +477,19 @@ class Detector():
         inputs, im_info = self.preprocess(image)
         np_boxes, np_masks = None, None
         if self.config.use_python_inference:
+            for i in range(warmup):
+                outs = self.executor.run(self.program,
+                                         feed=inputs,
+                                         fetch_list=self.fecth_targets,
+                                         return_numpy=False)
             t1 = time.time()
-            outs = self.executor.run(self.program,
-                                     feed=inputs,
-                                     fetch_list=self.fecth_targets,
-                                     return_numpy=False)
+            for i in range(repeats):
+                outs = self.executor.run(self.program,
+                                         feed=inputs,
+                                         fetch_list=self.fecth_targets,
+                                         return_numpy=False)
             t2 = time.time()
-            ms = (t2 - t1) * 1000.0
+            ms = (t2 - t1) * 1000.0 / repeats
             print("Inference: {} ms per batch image".format(ms))
 
             np_boxes = np.array(outs[0])
@@ -479,33 +500,55 @@ class Detector():
             for i in range(len(inputs)):
                 input_tensor = self.predictor.get_input_tensor(input_names[i])
                 input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+            for i in range(warmup):
+                self.predictor.zero_copy_run()
+                output_names = self.predictor.get_output_names()
+                boxes_tensor = self.predictor.get_output_tensor(output_names[0])
+                np_boxes = boxes_tensor.copy_to_cpu()
+                if self.config.mask_resolution is not None:
+                    masks_tensor = self.predictor.get_output_tensor(
+                        output_names[1])
+                    np_masks = masks_tensor.copy_to_cpu()
+
             t1 = time.time()
-            self.predictor.zero_copy_run()
+            for i in range(repeats):
+                self.predictor.zero_copy_run()
+                output_names = self.predictor.get_output_names()
+                boxes_tensor = self.predictor.get_output_tensor(output_names[0])
+                np_boxes = boxes_tensor.copy_to_cpu()
+                if self.config.mask_resolution is not None:
+                    masks_tensor = self.predictor.get_output_tensor(
+                        output_names[1])
+                    np_masks = masks_tensor.copy_to_cpu()
             t2 = time.time()
-            ms = (t2 - t1) * 1000.0
+            ms = (t2 - t1) * 1000.0 / repeats
             print("Inference: {} ms per batch image".format(ms))
 
-            output_names = self.predictor.get_output_names()
-            boxes_tensor = self.predictor.get_output_tensor(output_names[0])
-            np_boxes = boxes_tensor.copy_to_cpu()
-            if self.config.mask_resolution is not None:
-                masks_tensor = self.predictor.get_output_tensor(output_names[1])
-                np_masks = masks_tensor.copy_to_cpu()
-        results = self.postprocess(
-            np_boxes, np_masks, im_info, threshold=threshold)
+        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
+            print('[WARNNING] No object detected.')
+            results = {'boxes': np.array([])}
+        else:
+            results = self.postprocess(
+                np_boxes, np_masks, im_info, threshold=threshold)
+
         return results
 
 
 def predict_image():
     detector = Detector(
         FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
-    results = detector.predict(FLAGS.image_file, FLAGS.threshold)
-    visualize(
-        FLAGS.image_file,
-        results,
-        detector.config.labels,
-        mask_resolution=detector.config.mask_resolution,
-        output_dir=FLAGS.output_dir)
+    if FLAGS.run_benchmark:
+        detector.predict(
+            FLAGS.image_file, FLAGS.threshold, warmup=100, repeats=100)
+    else:
+        results = detector.predict(FLAGS.image_file, FLAGS.threshold)
+        visualize(
+            FLAGS.image_file,
+            results,
+            detector.config.labels,
+            mask_resolution=detector.config.mask_resolution,
+            output_dir=FLAGS.output_dir)
 
 
 def predict_video():
@@ -539,6 +582,13 @@ def predict_video():
     writer.release()
 
 
+def print_arguments(args):
+    print('-----------  Running Arguments -----------')
+    for arg, value in sorted(vars(args).items()):
+        print('%s: %s' % (arg, value))
+    print('------------------------------------------')
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -556,9 +606,17 @@ if __name__ == '__main__':
         "--run_mode",
         type=str,
         default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
+        help="mode of running(fluid/trt_fp32/trt_fp16)")
     parser.add_argument(
-        "--use_gpu", default=False, help="Whether to predict with GPU.")
+        "--use_gpu",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to predict with GPU.")
+    parser.add_argument(
+        "--run_benchmark",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to predict a image_file repeatedly for benchmark")
     parser.add_argument(
         "--threshold", type=float, default=0.5, help="Threshold of score.")
     parser.add_argument(
@@ -568,6 +626,8 @@ if __name__ == '__main__':
         help="Directory of output visualization files.")
 
     FLAGS = parser.parse_args()
+    print_arguments(FLAGS)
+
     if FLAGS.image_file != '' and FLAGS.video_file != '':
         assert "Cannot predict image and video at the same time"
     if FLAGS.image_file != '':

@@ -323,7 +323,7 @@ def main():
                 build_strategy=build_strategy,
                 exec_strategy=exec_strategy)
         if FLAGS.eval:
-            compiled_eval_prog = fluid.compiler.CompiledProgram(eval_prog)
+            compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
         train_loader.set_sample_list_generator(train_reader, place)
 

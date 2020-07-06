@@ -45,10 +45,11 @@ class MobileNetV3(object):
         feature_maps (list): index of stages whose feature maps are returned.
         extra_block_filters (list): number of filter for each extra block.
         lr_mult_list (list): learning rate ratio of different blocks, lower learning rate ratio
-                             is need for pretrained model got using distillation(default as 
+                             is need for pretrained model got using distillation(default as
                              [1.0, 1.0, 1.0, 1.0, 1.0]).
-        freeze_norm (bool): freeze normalization layers
-        feature_maps (list): feature maps used in two-stage rcnn models(default as None).
+        freeze_norm (bool): freeze normalization layers.
+        multiplier (float): The multiplier by which to reduce the convolution expansion and
+                            number of channels.
     """
     __shared__ = ['norm_type']
 
@@ -62,7 +63,8 @@ class MobileNetV3(object):
             norm_decay=0.0,
             extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]],
             lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
-            freeze_norm=False, ):
+            freeze_norm=False,
+            multiplier=1.0):
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
 
@@ -121,6 +123,13 @@ class MobileNetV3(object):
             self.cls_ch_expand = 1280
         else:
             raise NotImplementedError
+
+        if multiplier != 1.0:
+            self.cfg[-3][2] = int(self.cfg[-3][2] * multiplier)
+            self.cfg[-2][1] = int(self.cfg[-2][1] * multiplier)
+            self.cfg[-2][2] = int(self.cfg[-2][2] * multiplier)
+            self.cfg[-1][1] = int(self.cfg[-1][1] * multiplier)
+            self.cfg[-1][2] = int(self.cfg[-1][2] * multiplier)
 
     def _conv_bn_layer(self,
                        input,
@@ -279,21 +288,25 @@ class MobileNetV3(object):
             if self.block_stride in self.feature_maps:
                 self.end_points.append(conv0)
 
-        conv1 = self._conv_bn_layer(
-            input=conv0,
-            filter_size=filter_size,
-            num_filters=num_mid_filter,
-            stride=stride,
-            padding=int((filter_size - 1) // 2),
-            if_act=True,
-            act=act,
-            num_groups=num_mid_filter,
-            use_cudnn=False,
-            name=name + '_depthwise')
+        with fluid.name_scope('res_conv1'):
+            conv1 = self._conv_bn_layer(
+                input=conv0,
+                filter_size=filter_size,
+                num_filters=num_mid_filter,
+                stride=stride,
+                padding=int((filter_size - 1) // 2),
+                if_act=True,
+                act=act,
+                num_groups=num_mid_filter,
+                use_cudnn=False,
+                name=name + '_depthwise')
 
         if use_se:
-            conv1 = self._se_block(
-                input=conv1, num_out_filter=num_mid_filter, name=name + '_se')
+            with fluid.name_scope('se_block'):
+                conv1 = self._se_block(
+                    input=conv1,
+                    num_out_filter=num_mid_filter,
+                    name=name + '_se')
 
         conv2 = self._conv_bn_layer(
             input=conv1,
@@ -393,20 +406,22 @@ class MobileNetV3(object):
             self.end_points.append(conv)
 
         # extra block
-        conv_extra = self._conv_bn_layer(
-            conv,
-            filter_size=1,
-            num_filters=self._make_divisible(scale * cfg[-1][1]),
-            stride=1,
-            padding="SAME",
-            num_groups=1,
-            if_act=True,
-            act='hard_swish',
-            name='conv' + str(i + 2))
-        self.block_stride += 1
-        if self.block_stride in self.feature_maps:
-            self.end_points.append(conv_extra)
-        i += 1
+        # check whether conv_extra is needed
+        if self.block_stride < max(self.feature_maps):
+            conv_extra = self._conv_bn_layer(
+                conv,
+                filter_size=1,
+                num_filters=self._make_divisible(scale * cfg[-1][1]),
+                stride=1,
+                padding="SAME",
+                num_groups=1,
+                if_act=True,
+                act='hard_swish',
+                name='conv' + str(i + 2))
+            self.block_stride += 1
+            if self.block_stride in self.feature_maps:
+                self.end_points.append(conv_extra)
+            i += 1
         for block_filter in self.extra_block_filters:
             conv_extra = self._extra_block_dw(conv_extra, block_filter[0],
                                               block_filter[1], 2,

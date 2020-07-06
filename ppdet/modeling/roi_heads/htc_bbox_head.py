@@ -205,7 +205,7 @@ class HTCBBoxHead(object):
             bbox_pred_new = fluid.layers.reshape(bbox_pred,
                                                  (-1, cls_agnostic_bbox_reg, 4))
             bbox_pred_l.append(bbox_pred_new)
-        #bbox_pred_new = fluid.layers.sum(bbox_pred_l) / float(len(bbox_pred_l)) 
+
         bbox_pred_new = bbox_pred_l[-1]
         if cls_agnostic_bbox_reg == 2:
             # only use fg box delta to decode box

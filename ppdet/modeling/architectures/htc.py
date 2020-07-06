@@ -96,7 +96,7 @@ class HybridTaskCascade(object):
         self.interleaved = True
         self.mask_info_flow = True
         self.with_semantic = True
-        self.use_bias_scalar = True
+        self.use_bias_scalar = False
 
     def build(self, feed_vars, mode='train'):
         if mode == 'train':

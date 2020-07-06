@@ -122,7 +122,7 @@ def main():
 
     def test(program):
 
-        compiled_eval_prog = fluid.compiler.CompiledProgram(program)
+        compiled_eval_prog = fluid.CompiledProgram(program)
 
         results = eval_run(
             exe,

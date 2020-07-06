@@ -32,9 +32,10 @@ import logging
 import random
 import math
 import numpy as np
+import os
 
 import cv2
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling.ops import AnchorGrid
@@ -89,22 +90,30 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False, read_semantic=False):
+    def __init__(self,
+                 to_rgb=True,
+                 with_mixup=False,
+                 with_cutmix=False,
+                 read_semantic=False):
         """ Transform the image data to numpy format.
 
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
+            with_cutmix (bool): whether or not to cutmix image and gt_bbbox/gt_score
             read_semantic (bool): whether or not to read semantic label file 
         """
 
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
+        self.with_cutmix = with_cutmix
         self.read_semantic = read_semantic
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
+            raise TypeError("{}: input type is invalid.".format(self))
+        if not isinstance(self.with_cutmix, bool):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
@@ -141,10 +150,16 @@ class DecodeImage(BaseOperator):
         # make default im_info with [h, w, 1]
         sample['im_info'] = np.array(
             [im.shape[0], im.shape[1], 1.], dtype=np.float32)
+
         # decode mixup image
         if self.with_mixup and 'mixup' in sample:
             self.__call__(sample['mixup'], context)
 
+        # decode cutmix image
+        if self.with_cutmix and 'cutmix' in sample:
+            self.__call__(sample['cutmix'], context)
+
+        # decode semantic label 
         if self.read_semantic:
             sem_file = sample['semantic']
             sem = cv2.imread(sem_file, cv2.IMREAD_GRAYSCALE)
@@ -422,6 +437,16 @@ class RandomFlipImage(BaseOperator):
                 flipped_segms.append(_flip_rle(segm, height, width))
         return flipped_segms
 
+    def flip_keypoint(self, gt_keypoint, width):
+        for i in range(gt_keypoint.shape[1]):
+            if i % 2 == 0:
+                old_x = gt_keypoint[:, i].copy()
+                if self.is_normalized:
+                    gt_keypoint[:, i] = 1 - old_x
+                else:
+                    gt_keypoint[:, i] = width - old_x - 1
+        return gt_keypoint
+
     def __call__(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -470,12 +495,131 @@ class RandomFlipImage(BaseOperator):
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
 
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = self.flip_keypoint(
+                        sample['gt_keypoint'], width)
+
                 if self.is_semantic_flip and len(sample['semantic']) != 0:
                     sample['semantic'] = sample['semantic'][:, ::-1]
 
                 sample['flipped'] = True
                 sample['image'] = im
         sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
+class RandomErasingImage(BaseOperator):
+    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+        """
+        Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
+        Args:
+            prob (float): probability to carry out random erasing
+            sl (float): lower limit of the erasing area ratio
+            sh (float): upper limit of the erasing area ratio
+            r1 (float): aspect ratio of the erasing region
+        """
+        super(RandomErasingImage, self).__init__()
+        self.prob = prob
+        self.sl = sl
+        self.sh = sh
+        self.r1 = r1
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            im = sample['image']
+            if not isinstance(im, np.ndarray):
+                raise TypeError("{}: image is not a numpy array.".format(self))
+            if len(im.shape) != 3:
+                raise ImageError("{}: image is not 3-dimensional.".format(self))
+
+            for idx in range(gt_bbox.shape[0]):
+                if self.prob <= np.random.rand():
+                    continue
+
+                x1, y1, x2, y2 = gt_bbox[idx, :]
+                w_bbox = x2 - x1 + 1
+                h_bbox = y2 - y1 + 1
+                area = w_bbox * h_bbox
+
+                target_area = random.uniform(self.sl, self.sh) * area
+                aspect_ratio = random.uniform(self.r1, 1 / self.r1)
+
+                h = int(round(math.sqrt(target_area * aspect_ratio)))
+                w = int(round(math.sqrt(target_area / aspect_ratio)))
+
+                if w < w_bbox and h < h_bbox:
+                    off_y1 = random.randint(0, int(h_bbox - h))
+                    off_x1 = random.randint(0, int(w_bbox - w))
+                    im[int(y1 + off_y1):int(y1 + off_y1 + h), int(x1 + off_x1):
+                       int(x1 + off_x1 + w), :] = 0
+            sample['image'] = im
+
+        sample = samples if batch_input else samples[0]
+        return sample
+
+
+@register_op
+class GridMaskOp(BaseOperator):
+    def __init__(self,
+                 use_h=True,
+                 use_w=True,
+                 rotate=1,
+                 offset=False,
+                 ratio=0.5,
+                 mode=1,
+                 prob=0.7,
+                 upper_iter=360000):
+        """
+        GridMask Data Augmentation, see https://arxiv.org/abs/2001.04086
+        Args:
+            use_h (bool): whether to mask vertically
+            use_w (boo;): whether to mask horizontally
+            rotate (float): angle for the mask to rotate
+            offset (float): mask offset
+            ratio (float): mask ratio
+            mode (int): gridmask mode
+            prob (float): max probability to carry out gridmask
+            upper_iter (int): suggested to be equal to global max_iter
+        """
+        super(GridMaskOp, self).__init__()
+        self.use_h = use_h
+        self.use_w = use_w
+        self.rotate = rotate
+        self.offset = offset
+        self.ratio = ratio
+        self.mode = mode
+        self.prob = prob
+        self.upper_iter = upper_iter
+
+        from .gridmask_utils import GridMask
+        self.gridmask_op = GridMask(
+            use_h,
+            use_w,
+            rotate=rotate,
+            offset=offset,
+            ratio=ratio,
+            mode=mode,
+            prob=prob,
+            upper_iter=upper_iter)
+
+    def __call__(self, sample, context=None):
+        samples = sample
+        batch_input = True
+        if not isinstance(samples, Sequence):
+            batch_input = False
+            samples = [samples]
+        for sample in samples:
+            sample['image'] = self.gridmask_op(sample['image'],
+                                               sample['curr_iter'])
+        if not batch_input:
+            samples = samples[0]
         return sample
 
 
@@ -767,8 +911,17 @@ class ExpandImage(BaseOperator):
                 im = Image.fromarray(im)
                 expand_im.paste(im, (int(w_off), int(h_off)))
                 expand_im = np.asarray(expand_im)
-                gt_bbox, gt_class, _ = filter_and_process(expand_bbox, gt_bbox,
-                                                          gt_class)
+                if 'gt_keypoint' in sample.keys(
+                ) and 'keypoint_ignore' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    gt_bbox, gt_class, _, gt_keypoints = filter_and_process(
+                        expand_bbox, gt_bbox, gt_class, keypoints=keypoints)
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
+                else:
+                    gt_bbox, gt_class, _ = filter_and_process(expand_bbox,
+                                                              gt_bbox, gt_class)
                 sample['image'] = expand_im
                 sample['gt_bbox'] = gt_bbox
                 sample['gt_class'] = gt_class
@@ -842,7 +995,7 @@ class CropImage(BaseOperator):
             sample_bbox = sampled_bbox.pop(idx)
             sample_bbox = clip_bbox(sample_bbox)
             crop_bbox, crop_class, crop_score = \
-                filter_and_process(sample_bbox, gt_bbox, gt_class, gt_score)
+                filter_and_process(sample_bbox, gt_bbox, gt_class, scores=gt_score)
             if self.avoid_no_bbox:
                 if len(crop_bbox) < 1:
                     continue
@@ -945,8 +1098,16 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 idx = int(np.random.uniform(0, len(sampled_bbox)))
                 sample_bbox = sampled_bbox.pop(idx)
 
-                crop_bbox, crop_class, crop_score = filter_and_process(
-                    sample_bbox, gt_bbox, gt_class, gt_score)
+                if 'gt_keypoint' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    crop_bbox, crop_class, crop_score, gt_keypoints = \
+                        filter_and_process(sample_bbox, gt_bbox, gt_class,
+                                scores=gt_score,
+                                keypoints=keypoints)
+                else:
+                    crop_bbox, crop_class, crop_score = filter_and_process(
+                        sample_bbox, gt_bbox, gt_class, scores=gt_score)
                 crop_bbox, crop_class, crop_score = bbox_area_sampling(
                     crop_bbox, crop_class, crop_score, self.target_size,
                     self.min_size)
@@ -960,6 +1121,9 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
                 sample['gt_score'] = crop_score
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
                 return sample
             return sample
 
@@ -981,8 +1145,16 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample_bbox = sampled_bbox.pop(idx)
                 sample_bbox = clip_bbox(sample_bbox)
 
-                crop_bbox, crop_class, crop_score = filter_and_process(
-                    sample_bbox, gt_bbox, gt_class, gt_score)
+                if 'gt_keypoint' in sample.keys():
+                    keypoints = (sample['gt_keypoint'],
+                                 sample['keypoint_ignore'])
+                    crop_bbox, crop_class, crop_score, gt_keypoints = \
+                        filter_and_process(sample_bbox, gt_bbox, gt_class,
+                                scores=gt_score,
+                                keypoints=keypoints)
+                else:
+                    crop_bbox, crop_class, crop_score = filter_and_process(
+                        sample_bbox, gt_bbox, gt_class, scores=gt_score)
                 # sampling bbox according the bbox area
                 crop_bbox, crop_class, crop_score = bbox_area_sampling(
                     crop_bbox, crop_class, crop_score, self.target_size,
@@ -1000,6 +1172,9 @@ class CropImageWithDataAchorSampling(BaseOperator):
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
                 sample['gt_score'] = crop_score
+                if 'gt_keypoint' in sample.keys():
+                    sample['gt_keypoint'] = gt_keypoints[0]
+                    sample['keypoint_ignore'] = gt_keypoints[1]
                 return sample
             return sample
 
@@ -1021,6 +1196,17 @@ class NormalizeBox(BaseOperator):
             gt_bbox[i][2] = gt_bbox[i][2] / width
             gt_bbox[i][3] = gt_bbox[i][3] / height
         sample['gt_bbox'] = gt_bbox
+
+        if 'gt_keypoint' in sample.keys():
+            gt_keypoint = sample['gt_keypoint']
+
+            for i in range(gt_keypoint.shape[1]):
+                if i % 2:
+                    gt_keypoint[:, i] = gt_keypoint[:, i] / height
+                else:
+                    gt_keypoint[:, i] = gt_keypoint[:, i] / width
+            sample['gt_keypoint'] = gt_keypoint
+
         return sample
 
 
@@ -1126,6 +1312,84 @@ class MixupImage(BaseOperator):
         sample['w'] = im.shape[1]
         sample.pop('mixup')
         return sample
+
+
+@register_op
+class CutmixImage(BaseOperator):
+    def __init__(self, alpha=1.5, beta=1.5):
+        """ 
+        CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://https://arxiv.org/abs/1905.04899
+        Cutmix image and gt_bbbox/gt_score
+        Args:
+             alpha (float): alpha parameter of beta distribute
+             beta (float): beta parameter of beta distribute
+        """
+        super(CutmixImage, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        if self.alpha <= 0.0:
+            raise ValueError("alpha shold be positive in {}".format(self))
+        if self.beta <= 0.0:
+            raise ValueError("beta shold be positive in {}".format(self))
+
+        def _rand_bbox(self, img1, img2, factor):
+            """ _rand_bbox """
+            h = max(img1.shape[0], img2.shape[0])
+            w = max(img1.shape[1], img2.shape[1])
+            cut_rat = np.sqrt(1. - factor)
+
+            cut_w = np.int(w * cut_rat)
+            cut_h = np.int(h * cut_rat)
+
+            # uniform
+            cx = np.random.randint(w)
+            cy = np.random.randint(h)
+
+            bbx1 = np.clip(cx - cut_w // 2, 0, w)
+            bby1 = np.clip(cy - cut_h // 2, 0, h)
+            bbx2 = np.clip(cx + cut_w // 2, 0, w)
+            bby2 = np.clip(cy + cut_h // 2, 0, h)
+
+            img_1 = np.zeros((h, w, img1.shape[2]), 'float32')
+            img_1[:img1.shape[0], :img1.shape[1], :] = \
+                img1.astype('float32')
+            img_2 = np.zeros((h, w, img2.shape[2]), 'float32')
+            img_2[:img2.shape[0], :img2.shape[1], :] = \
+                img2.astype('float32')
+            img_1[bby1:bby2, bbx1:bbx2, :] = img2[bby1:bby2, bbx1:bbx2, :]
+            return img_1
+
+        def __call__(self, sample, context=None):
+            if 'cutmix' not in sample:
+                return sample
+            factor = np.random.beta(self.alpha, self.beta)
+            factor = max(0.0, min(1.0, factor))
+            if factor >= 1.0:
+                sample.pop('cutmix')
+                return sample
+            if factor <= 0.0:
+                return sample['cutmix']
+            img1 = sample['image']
+            img2 = sample['cutmix']['image']
+            img = self._rand_bbox(img1, img2, factor)
+            gt_bbox1 = sample['gt_bbox']
+            gt_bbox2 = sample['cutmix']['gt_bbox']
+            gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
+            gt_class1 = sample['gt_class']
+            gt_class2 = sample['cutmix']['gt_class']
+            gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
+            gt_score1 = sample['gt_score']
+            gt_score2 = sample['cutmix']['gt_score']
+            gt_score = np.concatenate(
+                (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
+            sample['image'] = img
+            sample['gt_bbox'] = gt_bbox
+            sample['gt_score'] = gt_score
+            sample['gt_class'] = gt_class
+            sample['h'] = img.shape[0]
+            sample['w'] = img.shape[1]
+            sample.pop('cutmix')
+            return sample
 
 
 @register_op
@@ -1785,7 +2049,6 @@ class BboxXYXY2XYWH(BaseOperator):
         return sample
 
 
-@register_op
 class Lighting(BaseOperator):
     """
     Lighting the imagen by eigenvalues and eigenvectors
@@ -2217,4 +2480,70 @@ class TargetAssign(BaseOperator):
         matched_targets = self.encode(matched_anchors, matched_boxes)
         targets[matched_indices] = matched_targets
         sample['fg_num'] = np.array(len(matched_targets), dtype=np.int32)
+        return sample
+
+
+@register_op
+class DebugVisibleImage(BaseOperator):
+    """
+    In debug mode, visualize images according to `gt_box`.
+    (Currently only supported when not cropping and flipping image.)
+    """
+
+    def __init__(self, output_dir='output/debug', is_normalized=False):
+        super(DebugVisibleImage, self).__init__()
+        self.is_normalized = is_normalized
+        self.output_dir = output_dir
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        if not isinstance(self.is_normalized, bool):
+            raise TypeError("{}: input type is invalid.".format(self))
+
+    def __call__(self, sample, context=None):
+        image = Image.open(sample['im_file']).convert('RGB')
+        out_file_name = sample['im_file'].split('/')[-1]
+        width = sample['w']
+        height = sample['h']
+        gt_bbox = sample['gt_bbox']
+        gt_class = sample['gt_class']
+        draw = ImageDraw.Draw(image)
+        for i in range(gt_bbox.shape[0]):
+            if self.is_normalized:
+                gt_bbox[i][0] = gt_bbox[i][0] * width
+                gt_bbox[i][1] = gt_bbox[i][1] * height
+                gt_bbox[i][2] = gt_bbox[i][2] * width
+                gt_bbox[i][3] = gt_bbox[i][3] * height
+
+            xmin, ymin, xmax, ymax = gt_bbox[i]
+            draw.line(
+                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                 (xmin, ymin)],
+                width=2,
+                fill='green')
+            # draw label
+            text = str(gt_class[i][0])
+            tw, th = draw.textsize(text)
+            draw.rectangle(
+                [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
+            draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+
+        if 'gt_keypoint' in sample.keys():
+            gt_keypoint = sample['gt_keypoint']
+            if self.is_normalized:
+                for i in range(gt_keypoint.shape[1]):
+                    if i % 2:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] * height
+                    else:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] * width
+            for i in range(gt_keypoint.shape[0]):
+                keypoint = gt_keypoint[i]
+                for j in range(int(keypoint.shape[0] / 2)):
+                    x1 = round(keypoint[2 * j]).astype(np.int32)
+                    y1 = round(keypoint[2 * j + 1]).astype(np.int32)
+                    draw.ellipse(
+                        (x1, y1, x1 + 5, y1i + 5),
+                        fill='green',
+                        outline='green')
+        save_path = os.path.join(self.output_dir, out_file_name)
+        image.save(save_path, quality=95)
         return sample

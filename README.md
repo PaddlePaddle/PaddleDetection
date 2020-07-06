@@ -1,4 +1,6 @@
-[English](README_en.md) | 简体中文
+简体中文 | [English](README_en.md)
+
+文档：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
 
 # PaddleDetection
 
@@ -15,6 +17,10 @@
 
 特性：
 
+- 模型丰富：
+
+  PaddleDetection提供了丰富的模型，包含目标检测、实例分割、人脸检测等100+个预训练模型，涵盖多种数据集竞赛冠军方案、适合云端/边缘端设备部署的检测方案。
+
 - 易部署:
 
   PaddleDetection的模型中使用的核心算子均通过C++或CUDA实现，同时基于PaddlePaddle的高性能推理引擎可以方便地部署在多种硬件平台上。
@@ -26,6 +32,7 @@
 - 高性能：
 
   基于PaddlePaddle框架的高性能内核，在模型训练速度、显存占用上有一定的优势。例如，YOLOv3的训练速度快于其他框架，在Tesla V100 16GB环境下，Mask-RCNN(ResNet50)可以单卡Batch Size可以达到4 (甚至到5)。
+
 
 支持的模型结构：
 
@@ -39,12 +46,14 @@
 | Cascade Mask-RCNN  | ✓      |                             ✗ | ✗          | ✓     | ✗         |  ✗     |  ✗      |
 | Libra R-CNN        | ✗      |                             ✓ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 | RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
-| YOLOv3             | ✓      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
+| YOLOv3             | ✓      |                             ✓ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
 | SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
 | BlazeFace          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 | Faceboxes          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型预测速度基本不变的情况下提高了精度。
+
+**说明：** ✓ 为[模型库](docs/MODEL_ZOO_cn.md)中提供了对应配置文件和预训练模型，✗ 为未提供参考配置，但一般都支持。
 
 更多的模型:
 
@@ -85,21 +94,22 @@
 
 ## 文档教程
 
-**最新动态：** 已发布文档教程：[https://paddledetection.readthedocs.io](https://paddledetection.readthedocs.io)
-
 ### 入门教程
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
 - [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
-- [常见问题汇总](docs/tutorials/FAQ.md)
+- [如何训练自定义数据集](docs/tutorials/Custom_DataSet.md)
+- [常见问题汇总](docs/FAQ.md)
 
 ### 进阶教程
-- [数据预处理及自定义数据集](docs/advanced_tutorials/READER.md)
+- [数据预处理及数据集定义](docs/advanced_tutorials/READER.md)
 - [搭建模型步骤](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-- [配置模块设计和介绍](docs/advanced_tutorials/CONFIG_cn.md)
-- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
+- [模型参数配置](docs/advanced_tutorials/config_doc):
+  - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)
+  - [RCNN模型参数说明](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
 - [迁移学习教程](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
+- [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [模型压缩](slim)
     - [压缩benchmark](slim)
     - [量化](slim/quantization)
@@ -124,14 +134,14 @@
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
+- [大规模实用目标检测模型](docs/featured_model/LARGE_SCALE_DET_MODEL.md): 提供了包含676个类别的大规模服务器端实用目标检测模型，适用于绝大部分使用场景，可以直接用来预测，也可以用于微调其他任务。
 
 
 ## 许可证书
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.3.0版本已经在`05/2020`发布，增加anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，重构预测部署功能，提升易用性，修复已知诸多bug等，
-详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.3.0版本已经在`05/2020`发布，增加Anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，例如移动端将YOLOv3-MobileNetv3加速3.5倍，服务器端优化两阶段模型，速度和精度具备较高性价比。重构预测部署功能，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
 

@@ -609,6 +609,7 @@ def coco17_category_info(with_background=True):
 
     if not with_background:
         clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+        catid2name.pop(0)
     else:
         clsid2catid.update({0: 0})
 

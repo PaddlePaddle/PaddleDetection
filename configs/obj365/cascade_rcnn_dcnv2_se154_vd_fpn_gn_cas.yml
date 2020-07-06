@@ -124,8 +124,6 @@ TrainReader:
   - !DecodeImage
     to_rgb: True
   - !RandomFlipImage
-    is_mask_flip: true
-    is_normalized: false
     prob: 0.5
   - !NormalizeImage
     is_channel_first: false
