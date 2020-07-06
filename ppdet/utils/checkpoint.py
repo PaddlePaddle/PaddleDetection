@@ -303,27 +303,58 @@ def load_and_fusebn(exe, prog, path):
         bias.set(new_bias, exe.place)
 
 
-def load_dygraph_ckpt(model, pretrain_ckpt=None, resume_ckpt=None):
-
+def load_dygraph_ckpt(model,
+                      pretrain_ckpt=None,
+                      resume_ckpt=None,
+                      open_debug=False):
     if pretrain_ckpt is not None:
         model_state = model.state_dict()
+        model_keys = model_state.keys()
         w_dict = np.load(pretrain_ckpt)
+        match_num = 0
+        unmatch_weights = []
         for k, v in w_dict.items():
-            for wk in model_state.keys():
-                res = re.search(k, wk)
-                if res is not None:
-                    print("load: ", k, v.shape, np.mean(np.abs(v)), " --> ", wk,
-                          model_state[wk].shape)
-                    model_state[wk] = v
-                    break
-        model.set_dict(model_state)
+            if 'bn' in k:
+                nk = 'res' + k[2:]
+            if 'weights' in k:
+                nk = k[:-7] + 'conv_weight'
+            if 'conv1' in k:
+                if 'bn' in k:
+                    nk = k[3:]
+                elif 'weights' in k:
+                    nk = k[:-7] + 'conv_weight'
 
+            ks = nk.split('_')
+            new_k = ''
+            for i in ks:
+                new_k += i + '.'
+            new_k = new_k[:-1]
+            match_success = False
+            for mk in model_keys:
+                res = re.search(new_k, mk)
+                if res is not None:
+                    if open_debug:
+                        print("load: ", k, " rename: ", new_k, v.shape, " --> ",
+                              mk, model_state[mk].shape)
+                    model_state[mk] = v
+                    match_num += 1
+                    match_success = True
+                    break
+            if not match_success:
+                unmatch_weights.append(k)
+        if open_debug:
+            print("Model: ", model_keys)
+            print("Weight: ", w_dict.files)
+            print("Pretrain weights have {} and match {}".format(
+                len(w_dict.files), match_num))
+            print("Not match weights: ", unmatch_weights)
+
+        model.set_dict(model_state)
     elif resume_ckpt is not None:
         para_state_dict, _ = fluid.load_dygraph(resume_ckpt)
         model.set_dict(para_state_dict)
-
     else:
-        print("Attention: train model from strach!!!")
+        print("Note: train model from strach!!!")
 
     return model
 
