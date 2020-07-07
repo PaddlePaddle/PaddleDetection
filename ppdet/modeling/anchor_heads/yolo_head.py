@@ -21,6 +21,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS
+from ppdet.modeling.ops import MultiClassMatrixNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -56,11 +57,13 @@ class YOLOv3Head(object):
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  drop_block=False,
+                 coord_conv=False,
                  iou_aware=False,
                  iou_aware_factor=0.4,
                  block_size=3,
                  keep_prob=0.9,
                  yolo_loss="YOLOv3Loss",
+                 spp=False,
                  nms=MultiClassNMS(
                      score_threshold=0.01,
                      nms_top_k=1000,
@@ -81,14 +84,32 @@ class YOLOv3Head(object):
         self.prefix_name = weight_prefix_name
         self.drop_block = drop_block
         self.iou_aware = iou_aware
+        self.coord_conv = coord_conv
         self.iou_aware_factor = iou_aware_factor
         self.block_size = block_size
         self.keep_prob = keep_prob
+        self.use_spp = spp
         if isinstance(nms, dict):
-            self.nms = MultiClassNMS(**nms)
+            self.nms = MultiClassMatrixNMS(**nms)
         self.downsample = downsample
         self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
+
+    def _add_coord(self, input):                                                                                               
+        input_shape = fluid.layers.shape(input)                                                                                
+        b = input_shape[0]                                                                                                     
+        h = input_shape[2]                                                                                                     
+        w = input_shape[3]                                                                                                     
+
+        x_range = fluid.layers.range(0, w, 1, 'float32') / (w - 1.)                                                            
+        x_range = x_range * 2. - 1.                                                                                            
+        x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])                                                                   
+        x_range = fluid.layers.expand(x_range, [b, 1, h, 1])                                                                   
+        x_range.stop_gradient = True                                                                                           
+        y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])                                                                
+        y_range.stop_gradient = True                                                                                           
+
+        return fluid.layers.concat([input, x_range, y_range], axis=1) 
 
     def _conv_bn(self,
                  input,
@@ -96,9 +117,12 @@ class YOLOv3Head(object):
                  filter_size,
                  stride,
                  padding,
+                 coord_conv=False,
                  act='leaky',
                  is_test=True,
                  name=None):
+        if coord_conv:
+            input = self._add_coord(input)
         conv = fluid.layers.conv2d(
             input=input,
             num_filters=ch_out,
@@ -117,6 +141,7 @@ class YOLOv3Head(object):
         out = fluid.layers.batch_norm(
             input=conv,
             act=None,
+            is_test=is_test,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
             moving_mean_name=bn_name + '.mean',
@@ -125,6 +150,32 @@ class YOLOv3Head(object):
         if act == 'leaky':
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
+
+    def _spp_module(self, input, is_test=True, name=""):
+        output1 = input
+        output2 = fluid.layers.pool2d(
+                input=output1,
+                pool_size=5,
+                pool_stride=1,
+                pool_padding=2,
+                ceil_mode=False,
+                pool_type='max')
+        output3 = fluid.layers.pool2d(
+                input=output1,
+                pool_size=9,
+                pool_stride=1,
+                pool_padding=4,
+                ceil_mode=False,
+                pool_type='max')
+        output4 = fluid.layers.pool2d(
+                input=output1,
+                pool_size=13,
+                pool_stride=1,
+                pool_padding=6,
+                ceil_mode=False,
+                pool_type='max')
+        output = fluid.layers.concat(input=[output1, output2, output3, output4], axis=1)
+        return output
 
     def _detection_block(self, input, channel, is_test=True, name=None):
         assert channel % 2 == 0, \
@@ -139,8 +190,19 @@ class YOLOv3Head(object):
                 filter_size=1,
                 stride=1,
                 padding=0,
+                coord_conv=True,
                 is_test=is_test,
                 name='{}.{}.0'.format(name, j))
+            if self.use_spp and channel == 512 and j == 1:
+                conv = self._spp_module(conv, is_test=is_test, name="spp")
+                conv = self._conv_bn(
+                   conv,
+                   512,
+                   filter_size=1,
+                   stride=1,
+                   padding=0,
+                   is_test=is_test,
+                   name='{}.{}.spp.conv'.format(name, j))
             conv = self._conv_bn(
                 conv,
                 channel * 2,
@@ -168,6 +230,7 @@ class YOLOv3Head(object):
             filter_size=1,
             stride=1,
             padding=0,
+            coord_conv=True,
             is_test=is_test,
             name='{}.2'.format(name))
         tip = self._conv_bn(
@@ -176,6 +239,7 @@ class YOLOv3Head(object):
             filter_size=3,
             stride=1,
             padding=1,
+            coord_conv=True,
             is_test=is_test,
             name='{}.tip'.format(name))
         return route, tip
@@ -184,7 +248,7 @@ class YOLOv3Head(object):
         out = fluid.layers.resize_nearest(
             input=input, scale=float(scale), name=name)
         return out
-
+   
     def _parse_anchors(self, anchors):
         """
         Check ANCHORS/ANCHOR_MASKS in config and parse mask_anchors
