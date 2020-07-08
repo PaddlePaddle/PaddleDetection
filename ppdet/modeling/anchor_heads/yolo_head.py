@@ -94,6 +94,7 @@ class YOLOv3Head(object):
         self.use_spp = spp
         if isinstance(nms, dict):
             self.nms = MultiClassMatrixNMS(**nms)
+            # self.nms = MultiClassNMS(**nms)
         self.downsample = downsample
         self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
@@ -200,7 +201,7 @@ class YOLOv3Head(object):
                 filter_size=1,
                 stride=1,
                 padding=0,
-                coord_conv=True,
+                coord_conv=self.coord_conv,
                 is_test=is_test,
                 name='{}.{}.0'.format(name, j))
             if self.use_spp and is_first and j == 1:
@@ -240,7 +241,7 @@ class YOLOv3Head(object):
             filter_size=1,
             stride=1,
             padding=0,
-            coord_conv=True,
+            coord_conv=self.coord_conv,
             is_test=is_test,
             name='{}.2'.format(name))
         tip = self._conv_bn(
@@ -249,7 +250,7 @@ class YOLOv3Head(object):
             filter_size=3,
             stride=1,
             padding=1,
-            coord_conv=True,
+            coord_conv=self.coord_conv,
             is_test=is_test,
             name='{}.tip'.format(name))
         return route, tip
@@ -306,7 +307,7 @@ class YOLOv3Head(object):
             route, tip = self._detection_block(
                 block,
                 channel=64 * (2**out_layer_num) // (2**i),
-                is_test=i == 0,
+                is_first=i == 0,
                 is_test=(not is_train),
                 conv_block_num=self.conv_block_num,
                 name=self.prefix_name + "yolo_block.{}".format(i))
@@ -341,6 +342,7 @@ class YOLOv3Head(object):
                     filter_size=1,
                     stride=1,
                     padding=0,
+                    coord_conv=self.coord_conv,
                     is_test=(not is_train),
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 # upsample
