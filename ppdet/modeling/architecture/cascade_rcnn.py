@@ -31,7 +31,7 @@ class CascadeRCNN(BaseArch):
                  rpn_head,
                  bbox_head,
                  mask_head,
-                 num_stage=3,
+                 num_stages=3,
                  *args,
                  **kwargs):
         super(CascadeRCNN, self).__init__(*args, **kwargs)
@@ -92,8 +92,8 @@ class CascadeRCNN(BaseArch):
         losses = []
 
         rpn_cls_loss, rpn_reg_loss = self.rpn_head.loss(self.gbd)
-        outs['loss_rpn_cls'] = rpn_cls_loss,
-        outs['loss_rpn_reg'] = rpn_reg_loss,
+        outs['loss_rpn_cls'] = rpn_cls_loss
+        outs['loss_rpn_reg'] = rpn_reg_loss
         losses.extend([rpn_cls_loss, rpn_reg_loss])
 
         bbox_cls_loss_list = []

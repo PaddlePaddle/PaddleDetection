@@ -23,7 +23,7 @@ class BaseArch(Layer):
         self.gbd.update(self.kwargs)
         assert self.gbd[
             'mode'] is not None, "Please specify mode train or infer in config file!"
-        if self.gbd['open_debug'] is None:
+        if self.kwargs['open_debug'] is None:
             self.gbd['open_debug'] = False
 
         self.build_inputs(inputs, inputs_keys)

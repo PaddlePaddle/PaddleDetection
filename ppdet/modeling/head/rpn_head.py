@@ -35,12 +35,10 @@ class RPNFeat(Layer):
 class RPNHead(Layer):
     __inject__ = ['rpn_feat']
 
-    def __init__(self, anchor_per_position=15, rpn_feat=RPNFeat().__dict__):
+    def __init__(self, rpn_feat, anchor_per_position=15):
         super(RPNHead, self).__init__()
-        self.anchor_per_position = anchor_per_position
         self.rpn_feat = rpn_feat
-        if isinstance(rpn_feat, dict):
-            self.rpn_feat = RPNFeat(**rpn_feat)
+        self.anchor_per_position = anchor_per_position
 
         # rpn roi classification scores
         self.rpn_rois_score = Conv2D(

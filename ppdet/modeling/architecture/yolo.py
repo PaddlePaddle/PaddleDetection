@@ -50,5 +50,4 @@ class YOLOv3(BaseArch):
             "bbox": self.gbd['predicted_bbox'].numpy(),
             "bbox_nums": self.gbd['predicted_bbox_nums']
         }
-        print(outs['bbox_nums'])
         return outs

@@ -12,12 +12,12 @@ class BBoxPostProcess(object):
     __shared__ = ['num_classes', 'num_stages']
 
     def __init__(self,
+                 decode_clip_nms,
                  num_classes=81,
                  num_stages=1,
                  decode=None,
                  clip=None,
-                 nms=None,
-                 decode_clip_nms=DecodeClipNms().__dict__):
+                 nms=None):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.num_stages = num_stages
@@ -25,8 +25,6 @@ class BBoxPostProcess(object):
         self.clip = clip
         self.nms = nms
         self.decode_clip_nms = decode_clip_nms
-        if isinstance(decode_clip_nms, dict):
-            self.decode_clip_nms = DecodeClipNms(**decode_clip_nms)
 
     def __call__(self, inputs):
         # TODO: split into 3 steps
@@ -61,21 +59,13 @@ class BBoxPostProcess(object):
 class BBoxPostProcessYOLO(object):
     __shared__ = ['num_classes']
 
-    def __init__(self,
-                 num_classes=80,
-                 decode=None,
-                 clip=None,
-                 yolo_box=YOLOBox().__dict__,
-                 nms=MultiClassNMS().__dict__):
+    def __init__(self, yolo_box, nms, num_classes=80, decode=None, clip=None):
         super(BBoxPostProcessYOLO, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.clip = clip
+        self.yolo_box = yolo_box
         self.nms = nms
-        if isinstance(yolo_box, dict):
-            self.yolo_box = YOLOBox(**yolo_box)
-        if isinstance(nms, dict):
-            self.nms = MultiClassNMS(**nms)
 
     def __call__(self, inputs):
         # TODO: split yolo_box into 2 steps
@@ -104,18 +94,10 @@ class BBoxPostProcessYOLO(object):
 class AnchorRPN(object):
     __inject__ = ['anchor_generator', 'anchor_target_generator']
 
-    def __init__(self,
-                 anchor_type='rpn',
-                 anchor_generator=AnchorGeneratorRPN().__dict__,
-                 anchor_target_generator=AnchorTargetGeneratorRPN().__dict__):
+    def __init__(self, anchor_generator, anchor_target_generator):
         super(AnchorRPN, self).__init__()
         self.anchor_generator = anchor_generator
         self.anchor_target_generator = anchor_target_generator
-        if isinstance(anchor_generator, dict):
-            self.anchor_generator = AnchorGeneratorRPN(**anchor_generator)
-        if isinstance(anchor_target_generator, dict):
-            self.anchor_target_generator = AnchorTargetGeneratorRPN(
-                **anchor_target_generator)
 
     def __call__(self, inputs):
         outs = self.generate_anchors(inputs)
@@ -163,22 +145,12 @@ class AnchorYOLO(object):
         'anchor_generator', 'anchor_target_generator', 'anchor_post_process'
     ]
 
-    def __init__(self,
-                 anchor_generator=AnchorGeneratorYOLO().__dict__,
-                 anchor_target_generator=AnchorTargetGeneratorYOLO().__dict__,
-                 anchor_post_process=BBoxPostProcessYOLO().__dict__):
+    def __init__(self, anchor_generator, anchor_target_generator,
+                 anchor_post_process):
         super(AnchorYOLO, self).__init__()
         self.anchor_generator = anchor_generator
         self.anchor_target_generator = anchor_target_generator
         self.anchor_post_process = anchor_post_process
-        if isinstance(anchor_generator, dict):
-            self.anchor_generator = AnchorGeneratorYOLO(**anchor_generator)
-        if isinstance(anchor_target_generator, dict):
-            self.anchor_target_generator = AnchorTargetGeneratorYOLO(
-                **anchor_target_generator)
-        if isinstance(anchor_post_process, dict):
-            self.anchor_post_process = BBoxPostProcessYOLO(
-                **anchor_post_process)
 
     def __call__(self, inputs):
         outs = self.generate_anchors(inputs)
@@ -203,22 +175,12 @@ class Proposal(object):
         'proposal_generator', 'proposal_target_generator', 'bbox_post_process'
     ]
 
-    def __init__(
-            self,
-            proposal_generator=ProposalGenerator().__dict__,
-            proposal_target_generator=ProposalTargetGenerator().__dict__,
-            bbox_post_process=BBoxPostProcess().__dict__, ):
+    def __init__(self, proposal_generator, proposal_target_generator,
+                 bbox_post_process):
         super(Proposal, self).__init__()
         self.proposal_generator = proposal_generator
         self.proposal_target_generator = proposal_target_generator
         self.bbox_post_process = bbox_post_process
-        if isinstance(proposal_generator, dict):
-            self.proposal_generator = ProposalGenerator(**proposal_generator)
-        if isinstance(proposal_target_generator, dict):
-            self.proposal_target_generator = ProposalTargetGenerator(
-                **proposal_target_generator)
-        if isinstance(bbox_post_process, dict):
-            self.bbox_post_process = BBoxPostProcess(**bbox_post_process)
 
     def __call__(self, inputs):
         outs = {}

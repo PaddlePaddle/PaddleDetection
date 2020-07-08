@@ -54,7 +54,7 @@ class MaskRCNN(BaseArch):
 
         # BBox Head
         bboxhead_out = self.bbox_head(self.gbd)
-        self.gbd.update({'bboxhead_0': bboxhead_out})
+        self.gbd.update({'bbox_head_0': bboxhead_out})
 
         if self.gbd['mode'] == 'infer':
             bbox_out = self.proposal.post_process(self.gbd)

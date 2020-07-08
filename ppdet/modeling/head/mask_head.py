@@ -75,19 +75,18 @@ class MaskHead(Layer):
     __inject__ = ['mask_feat']
 
     def __init__(self,
+                 mask_feat,
                  feat_in=256,
                  resolution=14,
                  num_classes=81,
-                 mask_feat=MaskFeat().__dict__,
                  num_stages=1):
         super(MaskHead, self).__init__()
+        self.mask_feat = mask_feat
         self.feat_in = feat_in
         self.resolution = resolution
         self.num_classes = num_classes
-        self.mask_feat = mask_feat
-        if isinstance(mask_feat, dict):
-            self.mask_feat = MaskFeat(**mask_feat)
         self.num_stages = num_stages
+
         for i in range(self.num_stages):
             if i == 0:
                 postfix = ''

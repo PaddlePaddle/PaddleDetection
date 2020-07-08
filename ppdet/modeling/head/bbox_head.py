@@ -11,14 +11,14 @@ from ..ops import RoIExtractor
 
 @register
 class BBoxFeat(Layer):
-    __shared__ = ['num_stages']
     __inject__ = ['roi_extractor']
+    __shared__ = ['num_stages']
 
     def __init__(self,
                  feat_in=1024,
                  feat_out=512,
                  roi_extractor=RoIExtractor().__dict__,
-                 num_stages=3):
+                 num_stages=1):
         super(BBoxFeat, self).__init__()
         self.roi_extractor = roi_extractor
         if isinstance(roi_extractor, dict):
@@ -70,22 +70,21 @@ class BBoxFeat(Layer):
 
 @register
 class BBoxHead(Layer):
-    __shared__ = ['num_classes', 'num_stages']
     __inject__ = ['bbox_feat']
+    __shared__ = ['num_classes', 'num_stages']
 
     def __init__(self,
-                 in_feat=2048,
+                 bbox_feat,
+                 feat_in=2048,
                  num_classes=81,
                  cls_agnostic_bbox_reg=81,
-                 bbox_feat=BBoxFeat().__dict__,
-                 num_stages=3):
+                 num_stages=1):
         super(BBoxHead, self).__init__()
+        self.bbox_feat = bbox_feat
         self.num_classes = num_classes
         self.cls_agnostic_bbox_reg = cls_agnostic_bbox_reg
-        self.bbox_feat = bbox_feat
-        if isinstance(bbox_feat, dict):
-            self.bbox_feat = BBoxFeat(**bbox_feat)
         self.num_stages = num_stages
+
         self.bbox_scores = []
         self.bbox_deltas = []
         for i in range(self.num_stages):
@@ -94,7 +93,7 @@ class BBoxHead(Layer):
             else:
                 postfix = '_' + str(i)
             bbox_score = fluid.dygraph.Linear(
-                input_dim=in_feat,
+                input_dim=feat_in,
                 output_dim=1 * self.num_classes,
                 act=None,
                 param_attr=ParamAttr(
@@ -107,7 +106,7 @@ class BBoxHead(Layer):
                     regularizer=L2Decay(0.)))
 
             bbox_delta = fluid.dygraph.Linear(
-                input_dim=in_feat,
+                input_dim=feat_in,
                 output_dim=4 * self.cls_agnostic_bbox_reg,
                 act=None,
                 param_attr=ParamAttr(

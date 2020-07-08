@@ -28,17 +28,17 @@ class MaskPostProcess(object):
 class Mask(object):
     __inject__ = ['mask_target_generator', 'mask_post_process']
 
-    def __init__(self,
-                 mask_target_generator=MaskTargetGenerator().__dict__,
-                 mask_post_process=MaskPostProcess().__dict__):
+    def __init__(self, mask_target_generator, mask_post_process):
         super(Mask, self).__init__()
         self.mask_target_generator = mask_target_generator
         self.mask_post_process = mask_post_process
+        '''
         if isinstance(mask_target_generator, dict):
             self.mask_target_generator = MaskTargetGenerator(
                 **mask_target_generator)
         if isinstance(mask_post_process, dict):
             self.mask_post_process = MaskPostProcess(**mask_post_process)
+        '''
 
     def __call__(self, inputs):
         outs = {}
