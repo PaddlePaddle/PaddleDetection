@@ -258,6 +258,8 @@ class Reader(object):
         self._pos = -1
         self._epoch = -1
 
+        self._curr_iter = 0
+
         # multi-process
         self._worker_num = worker_num
         self._parallel = None
@@ -317,6 +319,7 @@ class Reader(object):
         if self.drained():
             raise StopIteration
         batch = self._load_batch()
+        self._curr_iter += 1
         if self._drop_last and len(batch) < self._batch_size:
             raise StopIteration
         if self._worker_num > -1:
@@ -332,6 +335,7 @@ class Reader(object):
                 break
             pos = self.indexes[self._pos]
             sample = copy.deepcopy(self._roidbs[pos])
+            sample["curr_iter"] = self._curr_iter
             self._pos += 1
 
             if self._drop_empty and self._fields and 'gt_mask' in self._fields:
@@ -354,6 +358,7 @@ class Reader(object):
                 mix_idx = np.random.randint(1, num)
                 mix_idx = self.indexes[(mix_idx + self._pos - 1) % num]
                 sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
+                sample['mixup']["curr_iter"] = self._curr_iter
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
                         'im_file'])
@@ -361,6 +366,7 @@ class Reader(object):
                 num = len(self.indexes)
                 mix_idx = np.random.randint(1, num)
                 sample['cutmix'] = copy.deepcopy(self._roidbs[mix_idx])
+                sample['cutmix']["curr_iter"] = self._curr_iter
                 if self._load_img:
                     sample['cutmix']['image'] = self._load_image(sample[
                         'cutmix']['im_file'])

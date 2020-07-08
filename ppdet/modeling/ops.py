@@ -683,7 +683,7 @@ class MultiClassSoftNMS(object):
             res.set_lod([out_offsets])
             if len(pred_res) == 0:
                 pred_res = np.array([[1]], dtype=np.float32)
-            res.set(np.vstack(pred_res), fluid.CPUPlace())
+            res.set(np.vstack(pred_res).astype(np.float32), fluid.CPUPlace())
             return res
 
         pred_result = create_tmp_var(
@@ -1551,7 +1551,8 @@ class SSDOutputDecoder(object):
                  keep_top_k=200,
                  score_threshold=0.01,
                  nms_eta=1.0,
-                 background_label=0):
+                 background_label=0,
+                 return_index=False):
         super(SSDOutputDecoder, self).__init__()
         self.nms_threshold = nms_threshold
         self.background_label = background_label
@@ -1559,6 +1560,7 @@ class SSDOutputDecoder(object):
         self.keep_top_k = keep_top_k
         self.score_threshold = score_threshold
         self.nms_eta = nms_eta
+        self.return_index = return_index
 
 
 @register

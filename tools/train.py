@@ -231,13 +231,6 @@ def main():
         vdl_loss_step = 0
         vdl_mAP_step = 0
 
-    #check_list = ['conv2d_60.tmp_1@GRAD']
-    #for k in check_list:
-    #    for var in train_prog.list_vars():
-    #        if var.name == k:
-    #            var.persistable = True
-    #            train_values.append(var.name)
-
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
@@ -246,8 +239,6 @@ def main():
         eta_sec = (cfg.max_iters - it) * time_cost
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
         outs = exe.run(compiled_train_prog, fetch_list=train_values)
-        #print('tmp: ', np.array(outs[-1]))
-
         stats = {k: np.array(v).mean() for k, v in zip(train_keys, outs[:-1])}
 
         # use vdl-paddle to log loss

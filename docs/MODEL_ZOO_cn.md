@@ -43,7 +43,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet50-FPN         | Mask           |    1    |   1x    |     15.184     |  37.9  |  34.2   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/mask_rcnn_r50_fpn_1x.yml) |
 | ResNet50-FPN         | Mask           |    1    |   2x    |     15.881     |  38.7  |  34.7   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_fpn_2x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/mask_rcnn_r50_fpn_2x.yml) |
 | ResNet50-FPN         | Cascade Faster |    2    |   1x    |     17.507     |  40.9  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_r50_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/cascade_rcnn_r50_fpn_1x.yml) |
-| ResNet50-FPN         | Cascade Mask   |    1    |   1x    |       -        |  41.3  |  35.5   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_r50_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/cascade_mask_rcnn_r50_fpn_1x.yml) |
+| ResNet50-FPN         | Cascade Mask   |    1    |   1x    |       12.43        |  41.3  |  35.5   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_r50_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/cascade_mask_rcnn_r50_fpn_1x.yml) |
 | ResNet50-vd-FPN      | Faster         |    2    |   2x    |     21.847     |  38.9  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/faster_rcnn_r50_vd_fpn_2x.yml) |
 | ResNet50-vd-FPN      | Mask           |    1    |   2x    |     15.825     |  39.8  |  35.4   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_r50_vd_fpn_2x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/mask_rcnn_r50_vd_fpn_2x.yml) |
 | CBResNet50-vd-FPN         | Faster         |     2     |   1x    |     -     |  39.7  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_cbr50_vd_dual_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/faster_rcnn_cbr50_vd_dual_fpn_1x.yml) |
@@ -80,8 +80,8 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet101-vd-FPN     | Cascade Faster | c3-c5   |    2      |   1x    |      -        |  46.4  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_r101_vd_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_dcn_r101_vd_fpn_1x.yml) |
 | ResNeXt101-vd-FPN    | Cascade Faster | c3-c5   |    2      |   1x    |      -        |  47.3  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_dcn_x101_vd_64x4d_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_dcn_x101_vd_64x4d_fpn_1x.yml) |
 | SENet154-vd-FPN      | Cascade Mask   | c3-c5   |    1      |  1.44x  |      -        |  51.9  |  43.9   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_s1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_s1x.yml) |
-| ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     -     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
-| CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     -     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
+| ResNet200-vd-FPN-Nonlocal   | CascadeClsAware Faster   | c3-c5 |     1     |   2.5x    |     3.103     |  51.7%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
+| CBResNet200-vd-FPN-Nonlocal   | Cascade Faster  | c3-c5 |     1     |   2.5x    |     1.68     |  53.3%(softnms)  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_cbr200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
 
 **注意事项:**  
 
@@ -165,11 +165,11 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### RetinaNet
 
-|   骨架网络        | 每张GPU图片个数 | 学习率策略 | Box AP | 下载  | 配置文件 |
-| :---------------: | :-----: | :-----: | :----: | :-------: | :----: |
-| ResNet50-FPN      |    2    |   1x    |  36.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r50_fpn_1x.yml) |
-| ResNet101-FPN     |    2    |   1x    |  37.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r101_fpn_1x.yml) |
-| ResNeXt101-vd-FPN |    1    |   1x    |  40.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_x101_vd_64x4d_fpn_1x.yml) |
+|   骨架网络        | 每张GPU图片个数 | 学习率策略 | 推理时间(fps) | Box AP | 下载  | 配置文件 |
+| :---------------: | :-----: | :-----: | :----: | :----: | :-------: | :----: |
+| ResNet50-FPN      |    2    |   1x    | - | 36.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r50_fpn_1x.tar)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r50_fpn_1x.yml) |
+| ResNet101-FPN     |    2    |   1x    | - | 37.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_r101_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_r101_fpn_1x.yml) |
+| ResNeXt101-vd-FPN |    1    |   1x    | - | 40.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/retinanet_x101_vd_64x4d_fpn_1x.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/retinanet_x101_vd_64x4d_fpn_1x.yml) |
 
 **注意事项:** RetinaNet系列模型中，在总batch size为16下情况下，初始学习率改为0.01。
 
@@ -185,9 +185,11 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 |  骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略|推理时间(fps) | Box AP | 下载 | 配置文件 |
 | :----------: | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: |
-| MobileNet_v1 | 300 | 64 | 40w | - | 23.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v1.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v1.yml) |
-| MobileNet_v3 small | 320 | 64 | 40w | - | 16.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_small.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small.yml) |
-| MobileNet_v3 large | 320 | 64 | 40w | - | 22.8 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobilenet_v3_ssdlite_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
+| MobileNet_v1 | 300 | 64 | Cosine decay(40w) | - | 23.6 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ssdlite_mobilenet_v1.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v1.yml) |
+| MobileNet_v3 small | 320 | 64 | Cosine decay(40w) | - | 16.2 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small.yml) |
+| MobileNet_v3 large | 320 | 64 | Cosine decay(40w) | - | 23.3 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
+| MobileNet_v3 small w/ FPN | 320 | 64 | Cosine decay(40w) | - | 18.9 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small_fpn.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small_fpn.yml) |
+| MobileNet_v3 large w/ FPN | 320 | 64 | Cosine decay(40w) | - | 24.3 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large_fpn.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large_fpn.yml) |
 
 **注意事项:** SSDLite模型使用学习率余弦衰减策略在8卡GPU下总batch size为512。
 
