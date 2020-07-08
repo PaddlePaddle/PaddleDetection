@@ -7,7 +7,7 @@ log_smooth_window: 20
 log_iter: 20
 metric: WIDERFACE
 save_dir: output
-weights: output/blazeface_nas/model_final
+weights: output/blazeface_nas_v2/model_final
 # 1(label_class) + 1(background)
 num_classes: 2
 
@@ -98,10 +98,6 @@ EvalReader:
   - !DecodeImage
     to_rgb: true
   - !NormalizeBox {}
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false
@@ -111,7 +107,6 @@ EvalReader:
 
 TestReader:
   inputs_def:
-    image_shape: [3,640,640]
     fields: ['image', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
@@ -119,10 +114,6 @@ TestReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false

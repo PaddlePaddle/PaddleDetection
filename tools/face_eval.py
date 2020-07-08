@@ -25,7 +25,7 @@ if parent_path not in sys.path:
 
 import paddle.fluid as fluid
 import numpy as np
-from PIL import Image
+import cv2
 from collections import OrderedDict
 
 import ppdet.utils.checkpoint as checkpoint
@@ -81,9 +81,10 @@ def face_eval_run(exe,
         if eval_mode == 'fddb':
             image_path += '.jpg'
         assert os.path.exists(image_path)
-        image = Image.open(image_path).convert('RGB')
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if multi_scale:
-            shrink, max_shrink = get_shrink(image.size[1], image.size[0])
+            shrink, max_shrink = get_shrink(image.shape[0], image.shape[1])
             det0 = detect_face(exe, compile_program, fetches, image, shrink)
             det1 = flip_test(exe, compile_program, fetches, image, shrink)
             [det2, det3] = multi_scale_test(exe, compile_program, fetches,
@@ -106,10 +107,10 @@ def face_eval_run(exe,
 
 
 def detect_face(exe, compile_program, fetches, image, shrink):
-    image_shape = [3, image.size[1], image.size[0]]
+    image_shape = [3, image.shape[0], image.shape[1]]
     if shrink != 1:
         h, w = int(image_shape[1] * shrink), int(image_shape[2] * shrink)
-        image = image.resize((w, h), Image.ANTIALIAS)
+        image = cv2.resize(image, (w, h))
         image_shape = [3, h, w]
 
     img = face_img_process(image)
@@ -133,13 +134,13 @@ def detect_face(exe, compile_program, fetches, image, shrink):
 
 
 def flip_test(exe, compile_program, fetches, image, shrink):
-    img = image.transpose(Image.FLIP_LEFT_RIGHT)
+    img = cv2.flip(image, 1)
     det_f = detect_face(exe, compile_program, fetches, img, shrink)
     det_t = np.zeros(det_f.shape)
-    # image.size: [width, height]
-    det_t[:, 0] = image.size[0] - det_f[:, 2]
+    img_width = image.shape[1]
+    det_t[:, 0] = img_width - det_f[:, 2]
     det_t[:, 1] = det_f[:, 1]
-    det_t[:, 2] = image.size[0] - det_f[:, 0]
+    det_t[:, 2] = img_width - det_f[:, 0]
     det_t[:, 3] = det_f[:, 3]
     det_t[:, 4] = det_f[:, 4]
     return det_t
