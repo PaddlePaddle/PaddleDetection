@@ -74,9 +74,9 @@ class YOLOv3(object):
             gt_score = feed_vars['gt_score']
 
             # Get targets for splited yolo loss calculation
-            # YOLOv3 supports up to 3 output layers currently
+            num_output_layer = len(self.yolo_head.anchor_masks)
             targets = []
-            for i in range(3):
+            for i in range(num_output_layer):
                 k = 'target{}'.format(i)
                 if k in feed_vars:
                     targets.append(feed_vars[k])
@@ -106,11 +106,15 @@ class YOLOv3(object):
 
         if self.use_fine_grained_loss:
             # yapf: disable
-            targets_def = {
-                'target0':  {'shape': [None, 3, 86, 19, 19],  'dtype': 'float32',   'lod_level': 0},
-                'target1':  {'shape': [None, 3, 86, 38, 38],  'dtype': 'float32',   'lod_level': 0},
-                'target2':  {'shape': [None, 3, 86, 76, 76],  'dtype': 'float32',   'lod_level': 0},
-            }
+            num_output_layer = len(self.yolo_head.anchor_masks)
+            targets_def = {}
+            for i in range(num_output_layer):
+                targets_def['target{}'.format(i)] = {'shape': [None, 3, None, None, None],  'dtype': 'float32',   'lod_level': 0}
+            # targets_def = {
+            #     'target0':  {'shape': [None, 3, 86, 19, 19],  'dtype': 'float32',   'lod_level': 0},
+            #     'target1':  {'shape': [None, 3, 86, 38, 38],  'dtype': 'float32',   'lod_level': 0},
+            #     'target2':  {'shape': [None, 3, 86, 76, 76],  'dtype': 'float32',   'lod_level': 0},
+            # }
             # yapf: enable
 
             downsample = 32
@@ -139,7 +143,10 @@ class YOLOv3(object):
         # will be disabled for YOLOv3 architecture do not calculate loss in
         # eval/infer mode.
         if 'im_size' not in fields and self.use_fine_grained_loss:
-            fields.extend(['target0', 'target1', 'target2'])
+            num_output_layer = len(self.yolo_head.anchor_masks)
+            fields.extend(
+                ['target{}'.format(i) for i in range(num_output_layer)])
+            # fields.extend(['target0', 'target1', 'target2'])
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
