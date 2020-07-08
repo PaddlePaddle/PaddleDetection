@@ -98,10 +98,6 @@ EvalReader:
   - !DecodeImage
     to_rgb: true
   - !NormalizeBox {}
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false
@@ -111,7 +107,6 @@ EvalReader:
 
 TestReader:
   inputs_def:
-    image_shape: [3,640,640]
     fields: ['image', 'im_id', 'im_shape']
   dataset:
     !ImageFolder
@@ -119,10 +114,6 @@ TestReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-  - !ResizeImage
-    interp: 1
-    target_size: 640
-    use_cv2: false
   - !Permute {}
   - !NormalizeImage
     is_scale: false
