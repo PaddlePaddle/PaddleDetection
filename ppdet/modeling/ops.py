@@ -49,13 +49,20 @@ class AnchorTargetGeneratorRPN(object):
         self.negative_overlap = negative_overlap
         self.use_random = use_random
 
-    def __call__(self, cls_logits, bbox_pred, anchor_box, gt_boxes, is_crowd,
-                 im_info):
+    def __call__(self,
+                 cls_logits,
+                 bbox_pred,
+                 anchor_box,
+                 gt_boxes,
+                 is_crowd,
+                 im_info,
+                 open_debug=False):
         anchor_box = anchor_box.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
-
+        if open_debug:
+            self.use_random = False
         loc_indexes, score_indexes, tgt_labels, tgt_bboxes, bbox_inside_weights = generate_rpn_anchor_target(
             anchor_box, gt_boxes, is_crowd, im_info, self.straddle_thresh,
             self.batch_size_per_im, self.positive_overlap,
@@ -191,7 +198,7 @@ class ProposalTargetGenerator(object):
                  bg_thresh_lo=[0., ],
                  bbox_reg_weights=[[0.1, 0.1, 0.2, 0.2]],
                  num_classes=81,
-                 shuffle_before_sample=True,
+                 use_random=True,
                  is_cls_agnostic=False,
                  is_cascade_rcnn=False):
         super(ProposalTargetGenerator, self).__init__()
@@ -202,7 +209,7 @@ class ProposalTargetGenerator(object):
         self.bg_thresh_lo = bg_thresh_lo
         self.bbox_reg_weights = bbox_reg_weights
         self.num_classes = num_classes
-        self.use_random = shuffle_before_sample
+        self.use_random = use_random
         self.is_cls_agnostic = is_cls_agnostic,
         self.is_cascade_rcnn = is_cascade_rcnn
 
@@ -213,13 +220,17 @@ class ProposalTargetGenerator(object):
                  is_crowd,
                  gt_boxes,
                  im_info,
-                 stage=0):
+                 stage=0,
+                 open_debug=False):
         rpn_rois = rpn_rois.numpy()
         rpn_rois_nums = rpn_rois_nums.numpy()
         gt_classes = gt_classes.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
+        if open_debug:
+            self.use_random = False
+
         outs = generate_proposal_target(
             rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
@@ -265,10 +276,10 @@ class MaskTargetGenerator(object):
 @register
 class RoIExtractor(object):
     def __init__(self,
-                 resolution=7,
+                 resolution=14,
                  spatial_scale=1. / 16,
                  sampling_ratio=0,
-                 extractor_type='RoIPool'):
+                 extractor_type='RoIAlign'):
         super(RoIExtractor, self).__init__()
         if isinstance(resolution, Integral):
             resolution = [resolution, resolution]

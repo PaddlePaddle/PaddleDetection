@@ -132,19 +132,11 @@ class YOLOv3Head(Layer):
     __shared__ = ['num_classes']
     __inject__ = ['yolo_feat']
 
-    def __init__(
-            self,
-            num_classes=80,
-            anchor_per_position=3,
-            mode='train',
-            yolo_feat=YOLOFeat().__dict__, ):
+    def __init__(self, yolo_feat, num_classes=80, anchor_per_position=3):
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.anchor_per_position = anchor_per_position
-        self.mode = mode
         self.yolo_feat = yolo_feat
-        if isinstance(yolo_feat, dict):
-            self.yolo_feat = YOLOFeat(**yolo_feat)
 
         self.yolo_outs = []
         for i in range(3):

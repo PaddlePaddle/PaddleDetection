@@ -21,25 +21,44 @@ class BufferDict(dict):
         for k, v in dict(*args, **kwargs).items():
             self[k] = v
 
+    def update_v(self, key, value):
+        if key in self.keys():
+            super(BufferDict, self).__setitem__(key, value)
+        else:
+            raise Exception("The %s is not in global inputs dict" % key)
+
     def get(self, key):
         return self.__getitem__(key)
 
     def set(self, key, value):
-        self.__setitem__(key, value)
+        return self.__setitem__(key, value)
 
-    def debug(self, dshape=True, dtype=False, dvalue=False, name='all'):
-        if name == 'all':
-            ditems = self.items()
-        else:
-            ditems = self.get(name)
+    def debug(self, dshape=True, dvalue=True, dtype=False):
+        if self['open_debug']:
+            if self['debug_names'] is None:
+                ditems = self.keys()
+            else:
+                ditems = self['debug_names']
 
-        for k, v in ditems:
-            info = [k]
-            if dshape == True and hasattr(v, 'shape'):
-                info.append(v.shape)
-            if dtype == True:
-                info.append(type(v))
-            if dvalue == True and hasattr(v, 'numpy'):
-                info.append(np.mean(np.abs(v.numpy())))
+            infos = {}
+            for k in ditems:
+                if type(k) is dict:
+                    i_d = {}
+                    for i, j in k.items():
+                        if type(j) is list:
+                            for jj in j:
+                                i_d[jj] = self.get_debug_info(self[i][jj])
+                        infos[i] = i_d
+                else:
+                    infos[k] = self.get_debug_info(self[k])
+            print(infos)
 
-            print(info)
+    def get_debug_info(self, v, dshape=True, dvalue=True, dtype=False):
+        info = []
+        if dshape == True and hasattr(v, 'shape'):
+            info.append(v.shape)
+        if dvalue == True and hasattr(v, 'numpy'):
+            info.append(np.mean(np.abs(v.numpy())))
+        if dtype == True:
+            info.append(type(v))
+        return info
