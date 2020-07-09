@@ -4,16 +4,14 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D
-
 from ppdet.core.workspace import register
-from ..ops import RPNAnchorTargetGenerator
 
 
 @register
 class RPNFeat(Layer):
     def __init__(self, feat_in=1024, feat_out=1024):
         super(RPNFeat, self).__init__()
-        self.rpn_conv = fluid.dygraph.Conv2D(
+        self.rpn_conv = Conv2D(
             num_channels=1024,
             num_filters=1024,
             filter_size=3,
@@ -21,10 +19,10 @@ class RPNFeat(Layer):
             padding=1,
             act='relu',
             param_attr=ParamAttr(
-                "conv_rpn_w", initializer=Normal(
+                name="conv_rpn_w", initializer=Normal(
                     loc=0., scale=0.01)),
             bias_attr=ParamAttr(
-                "conv_rpn_b", learning_rate=2., regularizer=L2Decay(0.)))
+                name="conv_rpn_b", learning_rate=2., regularizer=L2Decay(0.)))
 
     def forward(self, inputs):
         x = inputs.get('res4')
@@ -37,15 +35,13 @@ class RPNFeat(Layer):
 class RPNHead(Layer):
     __inject__ = ['rpn_feat']
 
-    def __init__(self, anchor_per_position=15, rpn_feat=RPNFeat().__dict__):
+    def __init__(self, rpn_feat, anchor_per_position=15):
         super(RPNHead, self).__init__()
-        self.anchor_per_position = anchor_per_position
         self.rpn_feat = rpn_feat
-        if isinstance(rpn_feat, dict):
-            self.rpn_feat = RPNFeat(**rpn_feat)
+        self.anchor_per_position = anchor_per_position
 
         # rpn roi classification scores
-        self.rpn_rois_score = fluid.dygraph.Conv2D(
+        self.rpn_rois_score = Conv2D(
             num_channels=1024,
             num_filters=1 * self.anchor_per_position,
             filter_size=1,
@@ -61,7 +57,7 @@ class RPNHead(Layer):
                 regularizer=L2Decay(0.)))
 
         # rpn roi bbox regression deltas
-        self.rpn_rois_delta = fluid.dygraph.Conv2D(
+        self.rpn_rois_delta = Conv2D(
             num_channels=1024,
             num_filters=4 * self.anchor_per_position,
             filter_size=1,

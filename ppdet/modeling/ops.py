@@ -9,13 +9,13 @@ from ppdet.py_op.post_process import bbox_post_process
 
 @register
 @serializable
-class AnchorGenerator(object):
+class AnchorGeneratorRPN(object):
     def __init__(self,
                  anchor_sizes=[32, 64, 128, 256, 512],
                  aspect_ratios=[0.5, 1.0, 2.0],
                  stride=[16.0, 16.0],
                  variance=[1.0, 1.0, 1.0, 1.0]):
-        super(AnchorGenerator, self).__init__()
+        super(AnchorGeneratorRPN, self).__init__()
         self.anchor_sizes = anchor_sizes
         self.aspect_ratios = aspect_ratios
         self.stride = stride
@@ -33,7 +33,7 @@ class AnchorGenerator(object):
 
 @register
 @serializable
-class RPNAnchorTargetGenerator(object):
+class AnchorTargetGeneratorRPN(object):
     def __init__(self,
                  batch_size_per_im=256,
                  straddle_thresh=0.,
@@ -41,7 +41,7 @@ class RPNAnchorTargetGenerator(object):
                  positive_overlap=0.7,
                  negative_overlap=0.3,
                  use_random=True):
-        super(RPNAnchorTargetGenerator, self).__init__()
+        super(AnchorTargetGeneratorRPN, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.straddle_thresh = straddle_thresh
         self.fg_fraction = fg_fraction
@@ -49,13 +49,20 @@ class RPNAnchorTargetGenerator(object):
         self.negative_overlap = negative_overlap
         self.use_random = use_random
 
-    def __call__(self, cls_logits, bbox_pred, anchor_box, gt_boxes, is_crowd,
-                 im_info):
+    def __call__(self,
+                 cls_logits,
+                 bbox_pred,
+                 anchor_box,
+                 gt_boxes,
+                 is_crowd,
+                 im_info,
+                 open_debug=False):
         anchor_box = anchor_box.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
-
+        if open_debug:
+            self.use_random = False
         loc_indexes, score_indexes, tgt_labels, tgt_bboxes, bbox_inside_weights = generate_rpn_anchor_target(
             anchor_box, gt_boxes, is_crowd, im_info, self.straddle_thresh,
             self.batch_size_per_im, self.positive_overlap,
@@ -77,6 +84,57 @@ class RPNAnchorTargetGenerator(object):
         pred_bbox_pred = fluid.layers.gather(bbox_pred, loc_indexes)
 
         return pred_cls_logits, pred_bbox_pred, tgt_labels, tgt_bboxes, bbox_inside_weights
+
+
+@register
+@serializable
+class AnchorGeneratorYOLO(object):
+    def __init__(self,
+                 anchors=[
+                     10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90,
+                     156, 198, 373, 326
+                 ],
+                 anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]]):
+        super(AnchorGeneratorYOLO, self).__init__()
+        self.anchors = anchors
+        self.anchor_masks = anchor_masks
+
+    def __call__(self, yolo_outs):
+        mask_anchors = []
+        for i, _ in enumerate(yolo_outs):
+            mask_anchor = []
+            for m in self.anchor_masks[i]:
+                mask_anchor.append(self.anchors[2 * m])
+                mask_anchor.append(self.anchors[2 * m + 1])
+            mask_anchors.append(mask_anchor)
+        outs = {
+            "anchors": self.anchors,
+            "anchor_masks": self.anchor_masks,
+            "mask_anchors": mask_anchors
+        }
+        return outs
+
+
+@register
+@serializable
+class AnchorTargetGeneratorYOLO(object):
+    def __init__(self,
+                 ignore_thresh=0.7,
+                 downsample_ratio=32,
+                 label_smooth=True):
+        super(AnchorTargetGeneratorYOLO, self).__init__()
+        self.ignore_thresh = ignore_thresh
+        self.downsample_ratio = downsample_ratio
+        self.label_smooth = label_smooth
+
+    def __call__(self, ):
+        # TODO: split yolov3_loss into here 
+        outs = {
+            'ignore_thresh': self.ignore_thresh,
+            'downsample_ratio': self.downsample_ratio,
+            'label_smooth': self.label_smooth
+        }
+        return outs
 
 
 @register
@@ -140,7 +198,7 @@ class ProposalTargetGenerator(object):
                  bg_thresh_lo=[0., ],
                  bbox_reg_weights=[[0.1, 0.1, 0.2, 0.2]],
                  num_classes=81,
-                 shuffle_before_sample=True,
+                 use_random=True,
                  is_cls_agnostic=False,
                  is_cascade_rcnn=False):
         super(ProposalTargetGenerator, self).__init__()
@@ -151,7 +209,7 @@ class ProposalTargetGenerator(object):
         self.bg_thresh_lo = bg_thresh_lo
         self.bbox_reg_weights = bbox_reg_weights
         self.num_classes = num_classes
-        self.use_random = shuffle_before_sample
+        self.use_random = use_random
         self.is_cls_agnostic = is_cls_agnostic,
         self.is_cascade_rcnn = is_cascade_rcnn
 
@@ -162,13 +220,17 @@ class ProposalTargetGenerator(object):
                  is_crowd,
                  gt_boxes,
                  im_info,
-                 stage=0):
+                 stage=0,
+                 open_debug=False):
         rpn_rois = rpn_rois.numpy()
         rpn_rois_nums = rpn_rois_nums.numpy()
         gt_classes = gt_classes.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
+        if open_debug:
+            self.use_random = False
+
         outs = generate_proposal_target(
             rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
@@ -214,10 +276,10 @@ class MaskTargetGenerator(object):
 @register
 class RoIExtractor(object):
     def __init__(self,
-                 resolution=7,
+                 resolution=14,
                  spatial_scale=1. / 16,
                  sampling_ratio=0,
-                 extractor_type='RoIPool'):
+                 extractor_type='RoIAlign'):
         super(RoIExtractor, self).__init__()
         if isinstance(resolution, Integral):
             resolution = [resolution, resolution]
@@ -281,6 +343,54 @@ class DecodeClipNms(object):
         outs = [to_variable(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
+        return outs
+
+
+@register
+@serializable
+class MultiClassNMS(object):
+    __op__ = fluid.layers.multiclass_nms
+    __append_doc__ = True
+
+    def __init__(self,
+                 score_threshold=.05,
+                 nms_top_k=-1,
+                 keep_top_k=100,
+                 nms_threshold=.5,
+                 normalized=False,
+                 nms_eta=1.0,
+                 background_label=0):
+        super(MultiClassNMS, self).__init__()
+        self.score_threshold = score_threshold
+        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
+        self.nms_threshold = nms_threshold
+        self.normalized = normalized
+        self.nms_eta = nms_eta
+        self.background_label = background_label
+
+
+@register
+@serializable
+class YOLOBox(object):
+    __shared__ = ['num_classes']
+
+    def __init__(
+            self,
+            num_classes=80,
+            conf_thresh=0.005,
+            downsample_ratio=32,
+            clip_bbox=True, ):
+        self.num_classes = num_classes
+        self.conf_thresh = conf_thresh
+        self.downsample_ratio = downsample_ratio
+        self.clip_bbox = clip_bbox
+
+    def __call__(self, x, img_size, anchors, stage=0, name=None):
+
+        outs = fluid.layers.yolo_box(x, img_size, anchors, self.num_classes,
+                                     self.conf_thresh, self.downsample_ratio //
+                                     2**stage, self.clip_bbox, name)
         return outs
 
 
