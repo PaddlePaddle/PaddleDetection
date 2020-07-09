@@ -47,16 +47,11 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self,
-                 pad_to_stride=0,
-                 use_padded_im_info=True,
-                 pad_gt=False,
-                 pad_mask=False):
+    def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
-        self.pad_mask = pad_mask
 
     def __call__(self, samples, context=None):
         """
@@ -66,9 +61,9 @@ class PadBatch(BaseOperator):
         coarsest_stride = self.pad_to_stride
         if coarsest_stride == 0:
             return samples
+
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
-
         if coarsest_stride > 0:
             max_shape[1] = int(
                 np.ceil(max_shape[1] / coarsest_stride) * coarsest_stride)
@@ -88,13 +83,18 @@ class PadBatch(BaseOperator):
 
         if self.pad_gt:
             gt_num = []
-            if self.pad_mask:
+            if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
+                pad_mask = True
+            else:
+                pad_mask = False
+
+            if pad_mask:
                 poly_num = []
                 poly_part_num = []
                 point_num = []
             for data in samples:
                 gt_num.append(data['gt_bbox'].shape[0])
-                if self.pad_mask:
+                if pad_mask:
                     poly_num.append(len(data['gt_poly']))
                     for poly in data['gt_poly']:
                         poly_part_num.append(int(len(poly)))
@@ -105,7 +105,7 @@ class PadBatch(BaseOperator):
             gt_class_data = np.zeros([gt_num_max])
             is_crowd_data = np.ones([gt_num_max])
 
-            if self.pad_mask:
+            if pad_mask:
                 poly_num_max = max(poly_num)
                 poly_part_num_max = max(poly_part_num)
                 point_num_max = max(point_num)
@@ -117,7 +117,7 @@ class PadBatch(BaseOperator):
                 gt_box_data[0:gt_num, :] = data['gt_bbox']
                 gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
                 is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
-                if self.pad_mask:
+                if pad_mask:
                     for j, poly in enumerate(data['gt_poly']):
                         for k, p_p in enumerate(poly):
                             pp_np = np.array(p_p).reshape(-1, 2)

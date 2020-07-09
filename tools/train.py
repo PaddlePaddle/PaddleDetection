@@ -131,7 +131,7 @@ def run(FLAGS, cfg):
     lr = create('LearningRate')()
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
-    # Data Generator 
+    # Data Reader 
     start_iter = 0
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count(
@@ -173,14 +173,17 @@ def run(FLAGS, cfg):
             log_info += ", {}: {:.6f}".format(k, v.numpy()[0])
         print(log_info)
 
+        # Debug 
         if cfg.open_debug and iter_id > 10:
             break
+
         # Save Stage 
-        if iter_id > 0 and iter_id % cfg.snapshot_iter == 0:
+        if iter_id > 0 and iter_id % int(cfg.snapshot_iter) == 0:
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(
                 iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
             save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
+            save_dygraph_ckpt(model, optimizer, save_dir)
 
 
 def main():

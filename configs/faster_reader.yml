@@ -8,7 +8,7 @@ TrainReader:
     dataset_dir: dataset/coco
   sample_transforms:
   - !DecodeImage
-    to_rgb: true
+    to_rgb: True
   - !RandomFlipImage
     prob: 0.5
   - !NormalizeImage
@@ -26,8 +26,8 @@ TrainReader:
     channel_first: true
   batch_transforms:
   - !PadBatch
-    pad_to_stride: 32
-    use_padded_im_info: false
+    pad_to_stride: 0
+    use_padded_im_info: False
     pad_gt: true
   batch_size: 1
   shuffle: true
@@ -63,7 +63,7 @@ EvalReader:
     pad_to_stride: 32
     use_padded_im_info: false
     pad_gt: True
-  batch_size: 1
+  batch_size: 2
   shuffle: false
   drop_empty: false
   worker_num: 2
