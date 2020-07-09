@@ -140,8 +140,22 @@ def get_registered_modules():
 
 
 def make_partial(cls):
-    op_module = importlib.import_module(cls.__op__.__module__)
-    op = getattr(op_module, cls.__op__.__name__)
+    if isinstance(cls.__op__, str):
+        sep = cls.__op__.split('.')
+        op_name = sep[-1]
+        op_module = importlib.import_module('.'.join(sep[:-1]))
+    else:
+        op_name = cls.__op__.__name__
+        op_module = importlib.import_module(cls.__op__.__module__)
+
+    if not hasattr(op_module, op_name):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warn('{} OP not found, maybe a newer version of paddle '
+                    'is required.'.format(cls.__op__))
+        return cls
+
+    op = getattr(op_module, op_name)
     cls.__category__ = getattr(cls, '__category__', None) or 'op'
 
     def partial_apply(self, *args, **kwargs):
