@@ -115,8 +115,7 @@ class Resize(object):
             padding_im[:im_h, :im_w, :] = im
             im = padding_im
 
-        if self.arch in self.scale_set:
-            im_info['scale'] = im_scale_x
+        im_info['scale'] = [im_scale_x, im_scale_y]
         im_info['resize_shape'] = im.shape[:2]
         return im, im_info
 
@@ -252,18 +251,23 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     inputs['image'] = im
     origin_shape = list(im_info['origin_shape'])
     resize_shape = list(im_info['resize_shape'])
-    scale = im_info['scale']
+    scale_x, scale_y = im_info['scale']
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
         inputs['im_size'] = im_size
     elif 'RetinaNet' in model_arch:
+        scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         inputs['im_info'] = im_info
     elif 'RCNN' in model_arch:
+        scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         im_shape = np.array([origin_shape + [1.]]).astype('float32')
         inputs['im_info'] = im_info
         inputs['im_shape'] = im_shape
+    elif 'TTF' in model_arch:
+        scale_factor = np.array([scale_x, scale_y] * 2).astype('float32')
+        inputs['scale_factor'] = scale_factor
     return inputs
 
 
@@ -272,7 +276,7 @@ class Config():
     Args:
         model_dir (str): root path of model.yml
     """
-    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face']
+    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face', 'TTF']
 
     def __init__(self, model_dir):
         # parsing Yaml config for Preprocess
@@ -298,9 +302,8 @@ class Config():
         for support_model in self.support_models:
             if support_model in yml_conf['arch']:
                 return True
-        raise ValueError(
-            "Unsupported arch: {}, expect SSD, YOLO, RetinaNet, RCNN and Face".
-            format(yml_conf['arch']))
+        raise ValueError("Unsupported arch: {}, expect {}".format(yml_conf[
+            'arch'], self.support_models))
 
     def print_config(self):
         print('-----------  Model Configuration -----------')
@@ -450,7 +453,7 @@ class Detector():
             np_boxes[:, 3] *= w
             np_boxes[:, 4] *= h
             np_boxes[:, 5] *= w
-        expect_boxes = np_boxes[:, 1] > threshold
+        expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
         np_boxes = np_boxes[expect_boxes, :]
         for box in np_boxes:
             print('class_id:{:d}, confidence:{:.2f},'

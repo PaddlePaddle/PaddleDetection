@@ -92,10 +92,6 @@ def get_extra_info(im, arch, shape, scale):
         logger.info('Extra info: im_info, im_shape')
         info.append(im_info)
         info.append(im_shape)
-    elif 'TTF' in arch:
-        scale_factor = np.array(scale * 2).astype('float32')
-        logger.info('Extra info: scale_factor')
-        info.append(scale_factor)
     else:
         logger.error(
             "Unsupported arch: {}, expect YOLO, SSD, RetinaNet, RCNN and Face".
@@ -135,7 +131,6 @@ class Resize(object):
             im_scale_y = float(self.target_size) / float(origin_shape[0])
             resize_w = self.target_size
             resize_h = self.target_size
-            im_scale = [im_scale_x, im_scale_y]
         if self.use_cv2:
             im = cv2.resize(
                 im,
@@ -160,7 +155,7 @@ class Resize(object):
             im_h, im_w = im.shape[:2]
             padding_im[:im_h, :im_w, :] = im
             im = padding_im
-        return im, im_scale
+        return im, im_scale_x
 
 
 class Normalize(object):
@@ -257,7 +252,7 @@ def clip_bbox(bbox):
     return xmin, ymin, xmax, ymax
 
 
-def bbox2out(results, clsid2catid, lengths, is_bbox_normalized=False):
+def bbox2out(results, clsid2catid, is_bbox_normalized=False):
     """
     Args:
         results: request a dict, should include: `bbox`, `im_id`,
@@ -268,6 +263,7 @@ def bbox2out(results, clsid2catid, lengths, is_bbox_normalized=False):
     xywh_res = []
     for t in results:
         bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
 
@@ -277,7 +273,6 @@ def bbox2out(results, clsid2catid, lengths, is_bbox_normalized=False):
             for j in range(num):
                 dt = bboxes[k]
                 clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
-                if clsid < 0: continue
                 catid = (clsid2catid[int(clsid)])
 
                 if is_bbox_normalized:
@@ -323,7 +318,7 @@ def expand_boxes(boxes, scale):
     return boxes_exp
 
 
-def mask2out(results, clsid2catid, lengths, resolution, thresh_binarize=0.5):
+def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
     import pycocotools.mask as mask_util
     scale = (resolution + 2.0) / resolution
 
@@ -331,6 +326,7 @@ def mask2out(results, clsid2catid, lengths, resolution, thresh_binarize=0.5):
 
     for t in results:
         bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
         if len(bboxes.tolist()) == 0:
@@ -470,30 +466,27 @@ def draw_mask(image, masks, threshold, color_list, alpha=0.7):
 
 def get_bbox_result(output, result, conf, clsid2catid):
     is_bbox_normalized = True if conf['arch'] in ['SSD', 'Face'] else False
-    lod = output.lod()
-    lengths = offset_to_lengths(lod) if lod else [len(np.array(output))]
+    lengths = offset_to_lengths(output.lod())
     np_data = np.array(output) if conf[
         'use_python_inference'] else output.copy_to_cpu()
     result['bbox'] = (np_data, lengths)
     result['im_id'] = np.array([[0]])
 
-    bbox_results = bbox2out([result], clsid2catid, lengths, is_bbox_normalized)
+    bbox_results = bbox2out([result], clsid2catid, is_bbox_normalized)
     return bbox_results
 
 
 def get_mask_result(output, result, conf, clsid2catid):
     resolution = conf['mask_resolution']
     bbox_out, mask_out = output
-    lod = bbox_out.lod()
-    lengths = offset_to_lengths(lod) if lod else [len(np.array(bbox_out))]
+    lengths = offset_to_lengths(bbox_out.lod())
     bbox = np.array(bbox_out) if conf[
         'use_python_inference'] else bbox_out.copy_to_cpu()
     mask = np.array(mask_out) if conf[
         'use_python_inference'] else mask_out.copy_to_cpu()
     result['bbox'] = (bbox, lengths)
     result['mask'] = (mask, lengths)
-    mask_results = mask2out([result], clsid2catid, lengths,
-                            conf['mask_resolution'])
+    mask_results = mask2out([result], clsid2catid, conf['mask_resolution'])
     return mask_results
 
 

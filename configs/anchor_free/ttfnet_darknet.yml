@@ -45,7 +45,6 @@ LearningRate:
     steps: 500
 
 OptimizerBuilder:
-  #clip_grad_by_norm: 35
   optimizer:
     momentum: 0.9
     type: Momentum
@@ -55,7 +54,6 @@ OptimizerBuilder:
 
 TrainReader:
   inputs_def:
-    image_shape: [3, 512, 512]
     fields: ['image', 'ttf_heatmap', 'ttf_box_target', 'ttf_reg_weight']
   dataset:
     !COCODataSet
@@ -78,11 +76,10 @@ TrainReader:
   - !Permute
     to_bgr: false
     channel_first: true
-  - !TTFTarget
-    output_size: 512
+  batch_transforms:
+  - !Gt2TTFTarget
     num_classes: 80
     down_ratio: 4
-  batch_transforms:
   - !PadBatch
     pad_to_stride: 32
   batch_size: 12

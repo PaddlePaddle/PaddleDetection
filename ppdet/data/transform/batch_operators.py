@@ -26,7 +26,7 @@ import cv2
 import numpy as np
 
 from .operators import register_op, BaseOperator
-from .op_helper import jaccard_overlap
+from .op_helper import jaccard_overlap, gaussian2D
 
 logger = logging.getLogger(__name__)
 
@@ -495,6 +495,14 @@ class Gt2FCOSTarget(BaseOperator):
 class Gt2TTFTarget(BaseOperator):
     """
     Gt2TTFTarget
+
+    Generate TTFNet targets by ground truth data
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        alpha(float): the alpha parameter to generate gaussian target.
+            0.54 by default.
     """
 
     def __init__(self, num_classes, down_ratio=4, alpha=0.54):
@@ -562,7 +570,7 @@ class Gt2TTFTarget(BaseOperator):
         h, w = 2 * h_radius + 1, 2 * w_radius + 1
         sigma_x = w / 6
         sigma_y = h / 6
-        gaussian = self.gaussian_2d((h, w), sigma_x, sigma_y)
+        gaussian = gaussian2D((h, w), sigma_x, sigma_y)
 
         x, y = int(center[0]), int(center[1])
 
@@ -578,12 +586,3 @@ class Gt2TTFTarget(BaseOperator):
             heatmap[y - top:y + bottom, x - left:x + right] = np.maximum(
                 masked_heatmap, masked_gaussian)
         return heatmap
-
-    def gaussian_2d(self, shape, sigma_x, sigma_y):
-        m, n = [(s - 1.) / 2. for s in shape]
-        y, x = np.ogrid[-m:m + 1, -n:n + 1]
-
-        h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
-                                                                sigma_y)))
-        h[h < np.finfo(h.dtype).eps * h.max()] = 0
-        return h

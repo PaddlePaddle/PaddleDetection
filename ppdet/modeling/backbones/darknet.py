@@ -163,7 +163,7 @@ class DarkNet(object):
                 ch_out=32 * 2**i,
                 count=stage,
                 name=self.prefix_name + "stage.{}".format(i))
-            if self.freeze_at > i:
+            if i < self.freeze_at:
                 block.stop_gradient = True
             blocks.append(block)
             if i < len(stages) - 1:  # do not downsaple in the last stage

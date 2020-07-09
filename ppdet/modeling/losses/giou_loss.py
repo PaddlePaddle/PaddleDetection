@@ -34,6 +34,7 @@ class GiouLoss(object):
         is_cls_agnostic (bool): flag of class-agnostic
         num_classes (int): class num
         do_average (bool): whether to average the loss
+        use_class_weight(bool): whether to use class weight
     '''
     __shared__ = ['num_classes']
 
@@ -134,7 +135,6 @@ class GiouLoss(object):
             iou_weights = outside_weight
 
         if self.do_average:
-            class_weight = 2 if self.is_cls_agnostic else self.num_classes
             miouk = fluid.layers.reduce_mean((1 - miouk) * iou_weights)
         else:
             iou_distance = fluid.layers.elementwise_mul(

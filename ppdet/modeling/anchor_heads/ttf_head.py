@@ -24,7 +24,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, CARAFEUpsample, DropBlock
+from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, DropBlock
 from ppdet.modeling.losses import GiouLoss
 
 __all__ = ['TTFHead']
@@ -34,9 +34,41 @@ __all__ = ['TTFHead']
 class TTFHead(object):
     """
     TTFHead
+
+    Args:
+        head_conv(int): the default channel number of convolution in head. 
+            128 by default.
+        num_classes(int): the number of classes, 80 by default.
+        hm_weight(float): the weight of heatmap branch. 1. by default.
+        wh_weight(float): the weight of wh branch. 5. by default.
+        wh_offset_base(flaot): the base offset of width and height. 
+            16. by default.
+        planes(tuple): the channel number of convolution in each upsample. 
+            (256, 128, 64) by default.
+        shortcut_num(tuple): the number of convolution layers in each shortcut.
+            (1, 2, 3) by default.
+        wh_head_conv_num(int): the number of convolution layers in wh head.
+            2 by default.
+        hm_head_conv_num(int): the number of convolution layers in wh head.
+            2 by default.
+        wh_conv(int): the channel number of convolution in wh head. 
+            64 by default.
+        wh_planes(int): the output channel in wh head. 4 by default.
+        score_thresh(float): the score threshold to get prediction. 
+            0.01 by default.
+        max_per_img(int): the maximum detection per image. 100 by default.
+        base_down_ratio(int): the base down_ratio, the actual down_ratio is 
+            calculated by base_down_ratio and the number of upsample layers.
+            16 by default.
+        wh_loss(object): `GiouLoss` instance.
+        dcn_upsample(bool): whether upsample by dcn. True by default.
+        dcn_head(bool): whether use dcn in head. False by default.
+        drop_block(bool): whether use dropblock. False by default.
+        block_size(int): block_size parameter for drop_block. 3 by default.
+        keep_prob(float): keep_prob parameter for drop_block. 0.9 by default.
     """
 
-    __inject__ = ['wh_loss', 'iou_aware']
+    __inject__ = ['wh_loss']
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -55,11 +87,8 @@ class TTFHead(object):
                  max_per_img=100,
                  base_down_ratio=32,
                  wh_loss='GiouLoss',
-                 upsample_method='bilinear',
                  dcn_upsample=True,
                  dcn_head=False,
-                 iou_aware=None,
-                 iou_aware_factor=0.3,
                  drop_block=False,
                  block_size=3,
                  keep_prob=0.9):
@@ -83,10 +112,7 @@ class TTFHead(object):
         self.wh_weight = wh_weight
         self.wh_loss = wh_loss
         self.dcn_upsample = dcn_upsample
-        self.upsample_method = upsample_method
         self.dcn_head = dcn_head
-        self.iou_aware = iou_aware
-        self.iou_aware_factor = iou_aware_factor
         self.drop_block = drop_block
         self.block_size = block_size
         self.keep_prob = keep_prob
@@ -113,7 +139,7 @@ class TTFHead(object):
                     name=param_name + '.bias'))
         return x
 
-    def upsample(self, x, out_c, name=None, index=-1):
+    def upsample(self, x, out_c, name=None):
         fan_in = x.shape[1] * 3 * 3
         stdv = 1. / math.sqrt(fan_in)
         if self.dcn_upsample:
@@ -133,7 +159,6 @@ class TTFHead(object):
                 param_attr=ParamAttr(initializer=Uniform(-stdv, stdv)),
                 bias_attr=ParamAttr(
                     learning_rate=2., regularizer=L2Decay(0.)))
-            #groups=out_c)
 
         norm_name = name + '.1'
         pattr = ParamAttr(name=norm_name + '.weight', initializer=Constant(1.))
@@ -146,24 +171,8 @@ class TTFHead(object):
             name=norm_name + '.output.1',
             moving_mean_name=norm_name + '.running_mean',
             moving_variance_name=norm_name + '.running_var')
-        if self.upsample_method == 'bilinear' or index > 0:
-            up = fluid.layers.resize_bilinear(
-                bn, scale=2, name=name + '.2.upsample')
-        else:
-            assert isinstance(self.upsample_method,
-                              dict), "Unknown upsample method: {}".format(
-                                  self.upsample_method)
-            upsample = self.upsample_method.copy()
-            assert upsample['type'] in [
-                'carafe'
-            ], 'Unknown upsample type {}'.format(upsample['type'])
-
-            upsample_type = upsample.pop('type')
-            upsample['name'] = name + '2.upsample'
-
-            if upsample_type.lower() == 'carafe':
-                carafe_up = CARAFEUpsample(**upsample)
-                up = carafe_up(bn)
+        up = fluid.layers.resize_bilinear(
+            bn, scale=2, name=name + '.2.upsample')
         return up
 
     def _head(self,
@@ -231,7 +240,7 @@ class TTFHead(object):
         return hm
 
     def wh_head(self, x, name=None):
-        planes = self.wh_planes + (self.iou_aware is not None)
+        planes = self.wh_planes
         wh = self._head(
             x, planes, self.wh_head_conv_num, self.wh_conv, name=name)
         return fluid.layers.relu(wh)
@@ -240,7 +249,7 @@ class TTFHead(object):
         feat = input[-1]
         for i, out_c in enumerate(self.planes):
             feat = self.upsample(
-                feat, out_c, name=name + '.deconv_layers.' + str(i), index=i)
+                feat, out_c, name=name + '.deconv_layers.' + str(i))
             if i < self.shortcut_len:
                 shortcut = self.shortcut(
                     input[-i - 2],
@@ -263,16 +272,6 @@ class TTFHead(object):
         scores = fluid.layers.unsqueeze(scores, [1])
         clses = fluid.layers.unsqueeze(clses, [1])
 
-        if self.iou_aware is not None:
-            ioup = wh[:, 4:5, :, :]
-            ioup_t = fluid.layers.transpose(ioup, [0, 2, 3, 1])
-            ioup = fluid.layers.reshape(ioup_t, [-1, ioup_t.shape[-1]])
-            ioup = fluid.layers.gather(ioup, inds)
-            ioup = fluid.layers.sigmoid(ioup)
-            scores = fluid.layers.pow(scores,
-                                      self.iou_aware_factor) * fluid.layers.pow(
-                                          ioup, self.iou_aware_factor)
-            wh = wh[:, :4, :, :]
         wh_t = fluid.layers.transpose(wh, [0, 2, 3, 1])
         wh = fluid.layers.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = fluid.layers.gather(wh, inds)
@@ -298,7 +297,6 @@ class TTFHead(object):
     def ct_focal_loss(self, pred_hm, target_hm, gamma=2.0):
         fg_map = fluid.layers.cast(target_hm == 1, 'float32')
         fg_map.stop_gradient = True
-        #num_pos = fluid.layers.reduce_sum(fg_map, [1, 2, 3])
         bg_map = fluid.layers.cast(target_hm < 1, 'float32')
         bg_map.stop_gradient = True
 
@@ -315,21 +313,18 @@ class TTFHead(object):
             fg_num + fluid.layers.cast(fg_num == 0, 'float32'))
         return focal_loss
 
-    def filter_box_by_weight(self, pred, target, weight, ioup):
+    def filter_box_by_weight(self, pred, target, weight):
         index = fluid.layers.where(weight > 0)
         index.stop_gradient = True
         weight = fluid.layers.gather_nd(weight, index)
         pred = fluid.layers.gather_nd(pred, index)
         target = fluid.layers.gather_nd(target, index)
-        if ioup is not None:
-            ioup = fluid.layers.gather_nd(ioup, index)
-        return pred, target, weight, ioup
+        return pred, target, weight
 
     def get_loss(self, pred_hm, pred_wh, target_hm, box_target, target_weight):
         pred_hm = paddle.tensor.clamp(
             fluid.layers.sigmoid(pred_hm), 1e-4, 1 - 1e-4)
         hm_loss = self.ct_focal_loss(pred_hm, target_hm) * self.hm_weight
-        #H, W = target_hm.shape[2:]
         shape = fluid.layers.shape(target_hm)
         shape.stop_gradient = True
         H, W = shape[2], shape[3]
@@ -350,24 +345,13 @@ class TTFHead(object):
         pred_boxes = fluid.layers.transpose(pred_boxes, [0, 2, 3, 1])
         boxes = fluid.layers.transpose(box_target, [0, 2, 3, 1])
         boxes.stop_gradient = True
-        ioup = None
-        if self.iou_aware is not None:
-            pred_ioup = pred_wh[:, 4:5, :, :]
-            ioup = fluid.layers.transpose(pred_ioup, [0, 2, 3, 1])
-            ioup = fluid.layers.sigmoid(ioup)
 
-        pred_boxes, boxes, mask, ioup = self.filter_box_by_weight(
-            pred_boxes, boxes, mask, ioup)
+        pred_boxes, boxes, mask = self.filter_box_by_weight(pred_boxes, boxes,
+                                                            mask)
         mask.stop_gradient = True
         wh_loss = self.wh_loss(
             pred_boxes, boxes, outside_weight=mask, use_transform=False)
         wh_loss = wh_loss / avg_factor
 
         ttf_loss = {'hm_loss': hm_loss, 'wh_loss': wh_loss}
-
-        if self.iou_aware is not None:
-            iou_aware_loss = self.iou_aware(ioup, pred_boxes, boxes)
-            iou_aware_loss = fluid.layers.reduce_sum(iou_aware_loss)
-            ttf_loss['iou_aware_loss'] = iou_aware_loss / avg_factor
-
         return ttf_loss

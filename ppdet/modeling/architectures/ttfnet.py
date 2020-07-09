@@ -32,8 +32,9 @@ class TTFNet(object):
     TTFNet network, see https://arxiv.org/abs/1909.00700
 
     Args:
-        backbone (object): an backbone instance
-        ttf_head (object): an `TTFHead` instance
+        backbone (object): backbone instance
+        ttf_head (object): `TTFHead` instance
+        num_classes (int): the number of classes, 80 by default.
     """
 
     __category__ = 'architecture'
