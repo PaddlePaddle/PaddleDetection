@@ -150,6 +150,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | DarkNet53    | 608  |    8    |   270e  |    54.977     |  83.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
 | DarkNet53    | 416  |    8    |   270e  |      -        |  83.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
 | DarkNet53    | 320  |    8    |   270e  |      -        |  82.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
+| DarkNet53 Diou-Loss  | 608  |     8     |  270e   |       -        |  83.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc_diouloss.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc_diouloss.yml) |
 | MobileNet-V1 | 608  |    8    |   270e  |   104.291     |  76.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
 | MobileNet-V1 | 416  |    8    |   270e  |      -        |  76.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
 | MobileNet-V1 | 320  |    8    |   270e  |      -        |  75.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
@@ -161,6 +162,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 - 上表中也提供了原论文[YOLOv3](https://arxiv.org/abs/1804.02767)中YOLOv3-DarkNet53的精度，我们的实现版本主要从在bounding box的宽度和高度回归上使用了L1损失，图像mixup和label smooth等方法优化了其精度。
 - YOLO v3在8卡，总batch size为64下训练270轮。数据增强包括：mixup, 随机颜色失真，随机剪裁，随机扩张，随机插值法，随机翻转。YOLO v3在训练阶段对minibatch采用随机reshape，可以采用相同的模型测试不同尺寸图片，我们分别提供了尺寸为608/416/320大小的测试结果。deformable卷积作用在骨架网络5阶段。
+- 在YOLOv3-DarkNet53模型基础上使用Diou-Loss后，在VOC数据集上该模型平均mAP比原模型高大约2%。
 - YOLO v3增强版模型通过引入可变形卷积，dropblock，IoU loss和Iou aware，将精度进一步提升至43.6， 详情见[YOLOv3增强模型](./featured_model/YOLOv3_ENHANCEMENT.md)
 
 ### RetinaNet
