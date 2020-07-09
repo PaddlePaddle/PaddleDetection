@@ -1,8 +1,8 @@
 import numpy as np
 import paddle.fluid as fluid
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import MaskTargetGenerator
-# TODO: modify here into ppdet.modeling.ops like DecodeClipNms 
+
+# TODO: regitster mask_post_process op 
 from ppdet.py_op.post_process import mask_post_process
 
 
@@ -32,13 +32,6 @@ class Mask(object):
         super(Mask, self).__init__()
         self.mask_target_generator = mask_target_generator
         self.mask_post_process = mask_post_process
-        '''
-        if isinstance(mask_target_generator, dict):
-            self.mask_target_generator = MaskTargetGenerator(
-                **mask_target_generator)
-        if isinstance(mask_post_process, dict):
-            self.mask_post_process = MaskPostProcess(**mask_post_process)
-        '''
 
     def __call__(self, inputs):
         outs = {}

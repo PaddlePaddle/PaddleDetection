@@ -6,28 +6,19 @@ from paddle.fluid.initializer import Normal, MSRA
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D
 from ppdet.core.workspace import register
-from ..ops import RoIExtractor
+# TODO: del it and use inject 
 from ..backbone.resnet import Blocks
 
 
 @register
 class MaskFeat(Layer):
-    #__shared__ = ['num_stages']
-    __inject__ = ['mask_roi_extractor']
-
-    def __init__(self,
-                 feat_in=2048,
-                 feat_out=256,
-                 mask_roi_extractor=RoIExtractor().__dict__,
-                 num_stages=1):
+    def __init__(self, feat_in=2048, feat_out=256, mask_stages=1):
         super(MaskFeat, self).__init__()
         self.feat_in = feat_in
         self.feat_out = feat_out
-        self.mask_roi_extractor = mask_roi_extractor
-        if isinstance(mask_roi_extractor, dict):
-            self.mask_roi_extractor = RoIExtractor(**mask_roi_extractor)
-        self.num_stages = num_stages
-        for i in range(self.num_stages):
+        self.mask_stages = mask_stages
+
+        for i in range(self.mask_stages):
             if i == 0:
                 postfix = ''
             else:
@@ -76,18 +67,18 @@ class MaskHead(Layer):
 
     def __init__(self,
                  mask_feat,
+                 num_classes=81,
                  feat_in=256,
                  resolution=14,
-                 num_classes=81,
-                 num_stages=1):
+                 mask_stages=1):
         super(MaskHead, self).__init__()
         self.mask_feat = mask_feat
         self.feat_in = feat_in
         self.resolution = resolution
         self.num_classes = num_classes
-        self.num_stages = num_stages
+        self.mask_stages = mask_stages
 
-        for i in range(self.num_stages):
+        for i in range(self.mask_stages):
             if i == 0:
                 postfix = ''
             else:

@@ -5,8 +5,8 @@ from paddle.fluid.initializer import Normal, MSRA
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D
 from ppdet.core.workspace import register
+# TODO: del import and use inject
 from ..backbone.resnet import Blocks
-from ..ops import RoIExtractor
 
 
 @register
@@ -14,15 +14,9 @@ class BBoxFeat(Layer):
     __inject__ = ['roi_extractor']
     __shared__ = ['num_stages']
 
-    def __init__(self,
-                 feat_in=1024,
-                 feat_out=512,
-                 roi_extractor=RoIExtractor().__dict__,
-                 num_stages=1):
+    def __init__(self, roi_extractor, feat_in=1024, feat_out=512, num_stages=1):
         super(BBoxFeat, self).__init__()
         self.roi_extractor = roi_extractor
-        if isinstance(roi_extractor, dict):
-            self.roi_extractor = RoIExtractor(**roi_extractor)
         self.num_stages = num_stages
         self.res5s = []
         for i in range(self.num_stages):

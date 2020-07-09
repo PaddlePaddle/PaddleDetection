@@ -1,15 +1,12 @@
 import numpy as np
 import paddle.fluid as fluid
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import (AnchorGeneratorYOLO, AnchorTargetGeneratorYOLO,
-                                AnchorGeneratorRPN, AnchorTargetGeneratorRPN,
-                                ProposalGenerator, ProposalTargetGenerator,
-                                DecodeClipNms, YOLOBox, MultiClassNMS)
 
 
 @register
 class BBoxPostProcess(object):
     __shared__ = ['num_classes', 'num_stages']
+    __inject__ = ['decode_clip_nms']
 
     def __init__(self,
                  decode_clip_nms,
@@ -58,14 +55,15 @@ class BBoxPostProcess(object):
 @register
 class BBoxPostProcessYOLO(object):
     __shared__ = ['num_classes']
+    __inject__ = ['yolo_box', 'nms']
 
     def __init__(self, yolo_box, nms, num_classes=80, decode=None, clip=None):
         super(BBoxPostProcessYOLO, self).__init__()
+        self.yolo_box = yolo_box
+        self.nms = nms
         self.num_classes = num_classes
         self.decode = decode
         self.clip = clip
-        self.yolo_box = yolo_box
-        self.nms = nms
 
     def __call__(self, inputs):
         # TODO: split yolo_box into 2 steps
