@@ -109,6 +109,11 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
+
+_READER_: 'faster_fpn_reader.yml'
+TrainReader:
+  batch_size: 2
+
 EvalReader:
   batch_size: 1
   inputs_def:
