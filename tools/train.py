@@ -19,11 +19,12 @@ from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        "-r",
-        "--resume_checkpoint",
-        default=None,
+        "-ckpt_type",
+        default='pretrain',
         type=str,
-        help="Checkpoint path for resuming training.")
+        help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
+    )
+
     parser.add_argument(
         "--fp16",
         action='store_true',
@@ -99,26 +100,7 @@ def run(FLAGS, cfg):
 
     # Model
     main_arch = cfg.architecture
-    model = create(
-        cfg.architecture,
-        mode='train',
-        open_debug=cfg.open_debug,
-        debug_names=[
-            'im_id', 'image', 'im_info', 'gt_bbox', 'res2', 'res3', 'res4',
-            'rpn_feat', 'rpn_rois_score', 'rpn_rois_delta', 'rpn_rois', {
-                'proposal_0': 'rois'
-            }, {
-                'bbox_head_0':
-                ['rois_feat', 'bbox_feat', 'bbox_score', 'bbox_delta']
-            }
-        ])
-
-    # Init Model  
-    if os.path.isfile(cfg.pretrain_weights):
-        model = load_dygraph_ckpt(
-            model,
-            pretrain_ckpt=cfg.pretrain_weights,
-            open_debug=cfg.open_debug)
+    model = create(cfg.architecture, mode='train', open_debug=cfg.open_debug)
 
     # Parallel Model 
     if FLAGS.use_parallel:
@@ -130,6 +112,15 @@ def run(FLAGS, cfg):
     # Optimizer
     lr = create('LearningRate')()
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
+
+    # Init Model & Optimzer   
+    model = load_dygraph_ckpt(
+        model,
+        optimizer,
+        cfg.pretrain_weights,
+        cfg.weights,
+        FLAGS.ckpt_type,
+        open_debug=cfg.open_debug)
 
     # Data Reader 
     start_iter = 0

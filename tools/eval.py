@@ -10,11 +10,10 @@ import random
 import numpy as np
 import paddle.fluid as fluid
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.reader import create_reader
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.py_op.post_process import get_det_res, get_seg_res
 from ppdet.utils.eval_utils import coco_eval_results
+from ppdet.data.reader import create_reader
 
 
 def parse_args():
