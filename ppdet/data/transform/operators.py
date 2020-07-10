@@ -2008,6 +2008,7 @@ class BboxXYXY2XYWH(BaseOperator):
         return sample
 
 
+@register_op
 class Lighting(BaseOperator):
     """
     Lighting the imagen by eigenvalues and eigenvectors
