@@ -4,8 +4,7 @@ max_iters: 180000
 log_smooth_window: 50
 save_dir: output
 snapshot_iter: 10000
-#pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-pretrain_weights: ../imagenet_resnet50_fusebn_dygraph.npz
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
 weights: output/faster_rcnn_r50_1x/model_final
 num_classes: 81

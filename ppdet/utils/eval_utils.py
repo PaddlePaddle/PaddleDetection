@@ -26,7 +26,10 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             logger.info("{} not exists!".format(v_json))
 
 
-def coco_eval_results(outs_res=None, include_mask=False, batch_size=1):
+def coco_eval_results(outs_res=None,
+                      include_mask=False,
+                      batch_size=1,
+                      dataset=None):
     print("start evaluate bbox using coco api")
     import io
     import six
@@ -34,7 +37,7 @@ def coco_eval_results(outs_res=None, include_mask=False, batch_size=1):
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
     from ppdet.py_op.post_process import get_det_res, get_seg_res
-    anno_file = "/home/ai/dataset/COCO17/annotations/instances_train2017.json"
+    anno_file = os.path.join(dataset.dataset_dir, dataset.anno_path)
     cocoGt = COCO(anno_file)
     catid = {i + 1: v for i, v in enumerate(cocoGt.getCatIds())}
 

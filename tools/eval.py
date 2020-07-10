@@ -68,7 +68,9 @@ def run(FLAGS, cfg):
 
     # Metric 
     coco_eval_results(
-        outs_res, include_mask=True if 'MaskHed' in cfg else False)
+        outs_res,
+        include_mask=True if 'MaskHed' in cfg else False,
+        dataset=cfg['EvalReader']['dataset'])
 
 
 def main():
