@@ -254,6 +254,12 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 
 (2)使用`configs/face_detection/blazeface_keypoint.yml`配置文件进行训练与评估，使用方法与上一节内容一致。
 
+### 模型评估
+
+| 网络结构     | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy Set  | Medium Set | Hard Set  | 下载 | 配置文件 |
+|:------------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
+| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_keypoint.yml) |
+
 ![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
 
 ## 算法细节
@@ -285,7 +291,7 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 - 使用密度先验盒（density_prior_box）可提高检测精度。
 
 **版本信息:**
-- 原始版本: 参考原始论文复现；
+- 原始版本: 参考原始论文进行修改；
 - Lite版本: 使用更少的网络层数和通道数，具体可参考[代码](https://github.com/PaddlePaddle/PaddleDetection/blob/master/ppdet/modeling/architectures/faceboxes.py)。
 
 

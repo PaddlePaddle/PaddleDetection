@@ -270,6 +270,12 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 
 (2)Use `configs/face_detection/blazeface_keypoint.yml` configuration file for training and evaluation, the method of use is the same as the previous section.
 
+### Evaluation
+
+| Architecture  | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download | Configs |
+|:------------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
+| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [download](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_keypoint.yml) |
+
 ![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
 
 
