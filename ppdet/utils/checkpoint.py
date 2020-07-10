@@ -61,11 +61,6 @@ def load_dygraph_ckpt(model,
             fluid.dygraph.save_dygraph(model.backbone.state_dict(),
                                        pretrain_ckpt)
 
-    if 'darknet' in pretrain_ckpt:
-        model_states = model.backbone.state_dict()
-        model_keys = model_states.keys()
-        print("Model: ", model_keys)
-
     if ckpt_type == 'pretrain':
         ckpt = pretrain_ckpt
 
