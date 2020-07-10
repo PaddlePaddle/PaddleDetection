@@ -28,25 +28,13 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_config, check_version
+from ppdet.utils.check import check_config, check_version, check_py_func
 import yaml
 import logging
 from collections import OrderedDict
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
-
-def check_py_func(program):
-    for block in program.blocks:
-        for op in block.ops:
-            if op.type == 'py_func':
-                input_arg = op.input_arg_names
-                output_arg = op.output_arg_names
-                err = "The program contains py_func with input: {}, "\
-                      "output: {}. It is not supported on inference stage,"\
-                      " please replace it by paddle ops.".format(input_arg, output_arg)
-                raise Exception(err)
 
 
 def parse_reader(reader_cfg, metric, arch):

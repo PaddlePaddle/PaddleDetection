@@ -25,7 +25,12 @@ import six
 import paddle.version as fluid_version
 logger = logging.getLogger(__name__)
 
-__all__ = ['check_gpu', 'check_version', 'check_config']
+__all__ = [
+    'check_gpu',
+    'check_version',
+    'check_config',
+    'check_py_func',
+]
 
 
 def check_gpu(use_gpu):
@@ -107,3 +112,17 @@ def check_config(cfg):
                     actual_num_classes))
 
     return cfg
+
+
+def check_py_func(program):
+    for block in program.blocks:
+        for op in block.ops:
+            if op.type == 'py_func':
+                input_arg = op.input_arg_names
+                output_arg = op.output_arg_names
+                err = "The program contains py_func with input: {}, "\
+                      "output: {}. It is not supported in Paddle inference "\
+                      "engine. please replace it by paddle ops. For example, "\
+                      "if you use MultiClassSoftNMS, better to replace it by "\
+                      "MultiClassNMS.".format(input_arg, output_arg)
+                raise Exception(err)
