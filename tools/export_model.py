@@ -37,6 +37,18 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
+def check_py_func(program):
+    for block in program.blocks:
+        for op in block.ops:
+            if op.type == 'py_func':
+                input_arg = op.input_arg_names
+                output_arg = op.output_arg_names
+                err = "The program contains py_func with input: {}, "\
+                      "output: {}. It is not supported on inference stage,"\
+                      " please replace it by paddle ops.".format(input_arg, output_arg)
+                raise Exception(err)
+
+
 def parse_reader(reader_cfg, metric, arch):
     preprocess_list = []
 
@@ -195,6 +207,7 @@ def main():
             feed_vars, _ = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
+    check_py_func(infer_prog)
 
     exe.run(startup_prog)
     checkpoint.load_params(exe, infer_prog, cfg.weights)
