@@ -5,7 +5,7 @@ log_smooth_window: 20
 save_dir: output
 snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+pretrain_weights: https://paddlemodels.bj.bcebos.com/yolo/darknet53.pdparams
 weights: output/yolov3_darknet/model_final
 num_classes: 80
 use_fine_grained_loss: false

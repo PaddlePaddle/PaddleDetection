@@ -8,6 +8,40 @@ import time
 import re
 import numpy as np
 import paddle.fluid as fluid
+from .download import get_weights_path
+
+
+def get_ckpt_path(path):
+    if path.startswith('http://') or path.startswith('https://'):
+        env = os.environ
+        if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
+            trainer_id = int(env['PADDLE_TRAINER_ID'])
+            num_trainers = int(env['PADDLE_TRAINERS_NUM'])
+            if num_trainers <= 1:
+                path = get_weights_path(path)
+            else:
+                from ppdet.utils.download import map_path, WEIGHTS_HOME
+                weight_path = map_path(path, WEIGHTS_HOME)
+                lock_path = weight_path + '.lock'
+                if not os.path.exists(weight_path):
+                    try:
+                        os.makedirs(os.path.dirname(weight_path))
+                    except OSError as e:
+                        if e.errno != errno.EEXIST:
+                            raise
+                    with open(lock_path, 'w'):  # touch    
+                        os.utime(lock_path, None)
+                    if trainer_id == 0:
+                        get_weights_path(path)
+                        os.remove(lock_path)
+                    else:
+                        while os.path.exists(lock_path):
+                            time.sleep(1)
+                path = weight_path
+        else:
+            path = get_weights_path(path)
+
+    return path
 
 
 def load_dygraph_ckpt(model,
@@ -18,52 +52,9 @@ def load_dygraph_ckpt(model,
                       exclude_params=[],
                       open_debug=False):
 
-    if 'npz' in pretrain_ckpt and os.path.exists(pretrain_ckpt):
-        w_dict = np.load(pretrain_ckpt)
-        new_w_dict = {}
-        for k, v in w_dict.items():
-            if 'bn_conv1' in k:
-                nk = k[3:]
-            elif k == 'conv1_weights':
-                nk = 'conv1_conv_weight'
-            elif 'bn' in k and 'conv1' not in k:
-                nk = 'res' + k[2:]
-            elif 'weights' in k:
-                nk = k[:-7] + 'conv_weight'
-            else:
-                nk = k
-
-            ks = nk.split('_')
-            new_k = ''
-            for i in ks:
-                new_k += i + '.'
-            new_k = new_k[:-1]
-
-            if open_debug:
-                print("Rename weight: ", k, " ---> ", new_k)
-
-            new_w_dict[new_k] = v
-
-        weight_keys = new_w_dict.keys()
-        model_states = model.state_dict()
-        model_keys = model_states.keys()
-        for mk in model_keys:
-            for wk in weight_keys:
-                res = re.search(wk, mk)
-                if res is not None:
-                    model_states[mk] = v
-                    if open_debug:
-                        print("Loading weight: ", mk, model_states[mk].shape,
-                              " <--- ", wk, new_w_dict[wk].shape)
-
-        pretrain_ckpt = "./output/resnet50.pdparams"
-        if not os.path.exists(pretrain_ckpt):
-            fluid.dygraph.save_dygraph(model.backbone.state_dict(),
-                                       pretrain_ckpt)
-
     if ckpt_type == 'pretrain':
         ckpt = pretrain_ckpt
-
+    ckpt = get_ckpt_path(ckpt)
     if ckpt is not None and os.path.exists(ckpt):
         param_state_dict, optim_state_dict = fluid.load_dygraph(ckpt)
         if open_debug:
