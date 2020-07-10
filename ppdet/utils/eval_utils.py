@@ -161,6 +161,8 @@ def eval_run(exe,
             if 'Corner' in cfg.architecture and post_config is not None:
                 from ppdet.utils.post_process import corner_post_process
                 corner_post_process(res, post_config, cfg.num_classes)
+            if 'TTFNet' in cfg.architecture:
+                res['bbox'][1].append([len(res['bbox'][0])])
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))

@@ -438,7 +438,8 @@ def gaussian_radius(bbox_size, min_overlap):
 
 def draw_gaussian(heatmap, center, radius, k=1, delte=6):
     diameter = 2 * radius + 1
-    gaussian = gaussian2D((diameter, diameter), sigma=diameter / delte)
+    sigma = diameter / delte
+    gaussian = gaussian2D((diameter, diameter), sigma_x=sigma, sigma_y=sigma)
 
     x, y = center
 
@@ -453,10 +454,11 @@ def draw_gaussian(heatmap, center, radius, k=1, delte=6):
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
 
 
-def gaussian2D(shape, sigma=1):
+def gaussian2D(shape, sigma_x=1, sigma_y=1):
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m + 1, -n:n + 1]
 
-    h = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
+                                                            sigma_y)))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
