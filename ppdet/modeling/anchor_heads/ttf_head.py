@@ -24,7 +24,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ppdet.modeling.ops import DeformConv, SimpleNMS, TopK, DropBlock
+from ppdet.modeling.ops import DeformConv, DropBlock
 from ppdet.modeling.losses import GiouLoss
 
 __all__ = ['TTFHead']
@@ -263,10 +263,37 @@ class TTFHead(object):
 
         return hm, wh
 
+    def _simple_nms(self, heat, kernel=3):
+        pad = (kernel - 1) // 2
+        hmax = fluid.layers.pool2d(heat, kernel, 'max', pool_padding=pad)
+        keep = fluid.layers.cast(hmax == heat, 'float32')
+        return heat * keep
+
+    def _topk(self, scores, k):
+        cat, height, width = scores.shape[1:]
+        # batch size is 1
+        scores_r = fluid.layers.reshape(scores, [cat, -1])
+        topk_scores, topk_inds = fluid.layers.topk(scores_r, k)
+        topk_ys = topk_inds / width
+        topk_xs = topk_inds % width
+
+        topk_score_r = fluid.layers.reshape(topk_scores, [-1])
+        topk_score, topk_ind = fluid.layers.topk(topk_score_r, k)
+        topk_clses = fluid.layers.cast(topk_ind / k, 'float32')
+
+        topk_inds = fluid.layers.reshape(topk_inds, [-1])
+        topk_ys = fluid.layers.reshape(topk_ys, [-1, 1])
+        topk_xs = fluid.layers.reshape(topk_xs, [-1, 1])
+        topk_inds = fluid.layers.gather(topk_inds, topk_ind)
+        topk_ys = fluid.layers.gather(topk_ys, topk_ind)
+        topk_xs = fluid.layers.gather(topk_xs, topk_ind)
+
+        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
+
     def get_bboxes(self, heatmap, wh, scale_factor):
         heatmap = fluid.layers.sigmoid(heatmap)
-        heat = SimpleNMS(heatmap)
-        scores, inds, clses, ys, xs = TopK(heat, self.max_per_img)
+        heat = self._simple_nms(heatmap)
+        scores, inds, clses, ys, xs = self._topk(heat, self.max_per_img)
         ys = fluid.layers.cast(ys, 'float32') * self.down_ratio
         xs = fluid.layers.cast(xs, 'float32') * self.down_ratio
         scores = fluid.layers.unsqueeze(scores, [1])

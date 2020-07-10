@@ -31,37 +31,8 @@ __all__ = [
     'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
     'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
     'DeformConvNorm', 'MultiClassSoftNMS', 'MatrixNMS', 'LibraBBoxAssigner',
-    'DeformConv', 'SimpleNMS', 'TopK'
+    'DeformConv'
 ]
-
-
-def TopK(scores, K):
-    cat, height, width = scores.shape[1:]
-    # batch size is 1
-    scores_r = fluid.layers.reshape(scores, [cat, -1])
-    topk_scores, topk_inds = fluid.layers.topk(scores_r, K)
-    topk_ys = topk_inds / width
-    topk_xs = topk_inds % width
-
-    topk_score_r = fluid.layers.reshape(topk_scores, [-1])
-    topk_score, topk_ind = fluid.layers.topk(topk_score_r, K)
-    topk_clses = fluid.layers.cast(topk_ind / K, 'float32')
-
-    topk_inds = fluid.layers.reshape(topk_inds, [-1])
-    topk_ys = fluid.layers.reshape(topk_ys, [-1, 1])
-    topk_xs = fluid.layers.reshape(topk_xs, [-1, 1])
-    topk_inds = fluid.layers.gather(topk_inds, topk_ind)
-    topk_ys = fluid.layers.gather(topk_ys, topk_ind)
-    topk_xs = fluid.layers.gather(topk_xs, topk_ind)
-
-    return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
-
-
-def SimpleNMS(heat, kernel=3):
-    pad = (kernel - 1) // 2
-    hmax = fluid.layers.pool2d(heat, kernel, 'max', pool_padding=pad)
-    keep = fluid.layers.cast(hmax == heat, 'float32')
-    return heat * keep
 
 
 def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
