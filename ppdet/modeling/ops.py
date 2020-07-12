@@ -507,7 +507,7 @@ class MatrixNMS(object):
                  gaussian_sigma=2.,
                  normalized=False,
                  background_label=0):
-        super(MultiClassNMS, self).__init__()
+        super(MatrixNMS, self).__init__()
         self.score_threshold = score_threshold
         self.post_threshold = post_threshold
         self.nms_top_k = nms_top_k

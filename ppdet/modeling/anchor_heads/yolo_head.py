@@ -20,8 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS
-from ppdet.modeling.ops import MultiClassMatrixNMS
+from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -295,6 +294,9 @@ class YOLOv3Head(object):
         """
 
         outputs = []
+        print("nms", self.nms, self.nms.__dict__)
+        import sys
+        sys.stdout.flush()
 
         # get last out_layer_num blocks in reverse order
         out_layer_num = len(self.anchor_masks)
