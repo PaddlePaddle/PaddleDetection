@@ -32,8 +32,8 @@ __all__ = ['FaceBoxes']
 @register
 class FaceBoxes(object):
     """
-    FaceBoxes: Sub-millisecond Neural Face Detection on Mobile GPUs,
-               see https://https://arxiv.org/abs/1708.05234
+    FaceBoxes: A CPU Real-time Face Detector with High Accuracy.
+               see https://arxiv.org/abs/1708.05234
 
     Args:
         backbone (object): backbone instance
@@ -42,7 +42,8 @@ class FaceBoxes(object):
             this attribute should be a list or tuple of integers.
         fixed_sizes (list|None): the fixed sizes of generated density prior boxes,
             this attribute should a list or tuple of same length with `densities`.
-        num_classes (int): number of output classes
+        num_classes (int): number of output classes.
+        steps (list|None): step size of adjacent prior boxes on each feature map.
     """
 
     __category__ = 'architecture'
@@ -55,7 +56,7 @@ class FaceBoxes(object):
                  densities=[[4, 2, 1], [1], [1]],
                  fixed_sizes=[[32., 64., 128.], [256.], [512.]],
                  num_classes=2,
-                 steps=[8., 16., 32.]):
+                 steps=[16., 32., 64.]):
         super(FaceBoxes, self).__init__()
         self.backbone = backbone
         self.num_classes = num_classes
@@ -116,7 +117,7 @@ class FaceBoxes(object):
                 fixed_ratios=[1.],
                 clip=False,
                 offset=0.5,
-                steps=[self.steps[i]] * 2)
+                steps=[self.steps[i]])
 
             num_boxes = box.shape[2]
 

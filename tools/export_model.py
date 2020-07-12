@@ -28,7 +28,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_config, check_version
+from ppdet.utils.check import check_config, check_version, check_py_func
 import yaml
 import logging
 from collections import OrderedDict
@@ -195,6 +195,7 @@ def main():
             feed_vars, _ = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
+    check_py_func(infer_prog)
 
     exe.run(startup_prog)
     checkpoint.load_params(exe, infer_prog, cfg.weights)
