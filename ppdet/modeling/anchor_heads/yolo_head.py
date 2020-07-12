@@ -93,7 +93,6 @@ class YOLOv3Head(object):
         self.keep_prob = keep_prob
         self.use_spp = spp
         if isinstance(nms, dict):
-            # self.nms = MultiClassMatrixNMS(**nms)
             self.nms = MultiClassNMS(**nms)
         self.downsample = downsample
         self.scale_x_y = scale_x_y
