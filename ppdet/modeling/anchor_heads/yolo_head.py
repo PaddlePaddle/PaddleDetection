@@ -104,8 +104,8 @@ class YOLOv3Head(object):
         h = input_shape[2]
         w = input_shape[3]
 
-        x_range = fluid.layers.range(0, w, 1, 'float32') / (w - 1.)
-        x_range = x_range * 2. - 1.
+        x_range = fluid.layers.range(0, w, 1, 'float32') / (0.5 * (w - 1.))
+        x_range = x_range - 1.
         x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
         x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
         x_range.stop_gradient = True

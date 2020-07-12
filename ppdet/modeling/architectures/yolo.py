@@ -110,11 +110,6 @@ class YOLOv3(object):
             targets_def = {}
             for i in range(num_output_layer):
                 targets_def['target{}'.format(i)] = {'shape': [None, 3, None, None, None],  'dtype': 'float32',   'lod_level': 0}
-            # targets_def = {
-            #     'target0':  {'shape': [None, 3, 86, 19, 19],  'dtype': 'float32',   'lod_level': 0},
-            #     'target1':  {'shape': [None, 3, 86, 38, 38],  'dtype': 'float32',   'lod_level': 0},
-            #     'target2':  {'shape': [None, 3, 86, 76, 76],  'dtype': 'float32',   'lod_level': 0},
-            # }
             # yapf: enable
 
             downsample = 32
@@ -146,7 +141,6 @@ class YOLOv3(object):
             num_output_layer = len(self.yolo_head.anchor_masks)
             fields.extend(
                 ['target{}'.format(i) for i in range(num_output_layer)])
-            # fields.extend(['target0', 'target1', 'target2'])
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
