@@ -121,7 +121,7 @@ class YOLOv3Head(object):
                  act='leaky',
                  is_test=True,
                  name=None):
-        if coord_conv:
+        if coord_conv and self.coord_conv:
             input = self._add_coord(input)
         conv = fluid.layers.conv2d(
             input=input,
