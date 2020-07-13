@@ -164,7 +164,6 @@ def generate_proposal_target(rpn_rois,
     # TODO: modify here
     # rpn_rois = rpn_rois.reshape(batch_size, -1, 4)
     st_num = 0
-    print("debug: ", rpn_rois_nums)
     for im_i in range(len(rpn_rois_nums)):
         rpn_rois_num = rpn_rois_nums[im_i]
         frcn_blobs = _sample_rois(
