@@ -30,8 +30,8 @@ __all__ = [
     'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
     'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
     'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
-    'DeformConvNorm', 'MultiClassSoftNMS', 'MatrixNMS', 'LibraBBoxAssigner',
-    'DeformConv'
+    'DeformConvNorm', 'MultiClassSoftNMS', 'MatrixNMS', 'FastNMS',
+    'MultiClassDiouNMS', 'LibraBBoxAssigner', 'DeformConv'
 ]
 
 
@@ -535,6 +535,105 @@ class MatrixNMS(object):
         self.use_gaussian = use_gaussian
         self.gaussian_sigma = gaussian_sigma
         self.background_label = background_label
+
+
+@register
+@serializable
+class FastNMS(object):
+    def __init__(self, iou_threshold=0.5, top_k=200, second_threshold=False):
+        super(FastNMS, self).__init__()
+        self.iou_threshold = iou_threshold
+        self.top_k = top_k
+        self.second_threshold = second_threshold
+
+    def _intersect_tensor(box_a, box_b):
+
+        n = fluid.layers.shape(box_a)[0]
+        shape_a = fluid.layers.shape(box_a)[1]
+        shape_b = fluid.layers.shape(box_b)[1]
+
+        max_xy = fluid.layers.elementwise_min(
+            fluid.layers.expand(
+                fluid.layers.unsqueeze(box_a[:, :, 2:], 2), [1, 1, shape_b, 1]),
+            fluid.layers.expand(
+                fluid.layers.unsqueeze(box_b[:, :, 2:], 1), [1, shape_a, 1, 1]))
+        min_xy = fluid.layers.elementwise_max(
+            fluid.layers.expand(
+                fluid.layers.unsqueeze(box_a[:, :, :2], 2), [1, 1, shape_b, 1]),
+            fluid.layers.expand(
+                fluid.layers.unsqueeze(box_b[:, :, :2], 1), [1, shape_a, 1, 1]))
+        inter = fluid.layers.clip((max_xy - min_xy), min=0, max=1000)
+        return inter[:, :, :, 0] * inter[:, :, :, 1]
+
+    def _jaccard_tensor(box_a, box_b, iscrowd=False):
+        use_batch = True
+
+        shape_a = fluid.layers.shape(box_a)[1]
+        shape_b = fluid.layers.shape(box_b)[1]
+
+        inter = _intersect_tensor(box_a, box_b)
+        area_a = fluid.layers.expand(
+            fluid.layers.unsqueeze(((box_a[:, :, 2] - box_a[:, :, 0]) *
+                                    (box_a[:, :, 3] - box_a[:, :, 1])), 2),
+            [1, 1, shape_b])
+        area_b = fluid.layers.expand(
+            fluid.layers.unsqueeze(((box_b[:, :, 2] - box_b[:, :, 0]) *
+                                    (box_b[:, :, 3] - box_b[:, :, 1])), 1),
+            [1, shape_a, 1])
+        union = area_a + area_b - inter
+
+        out = inter / (area_a) if iscrowd else inter / (union)
+        return out if use_batch else fluid.layers.squeeze(out, [0])
+
+    def __call__(self, boxes, masks, scores):
+        scores, idx = fluid.layers.argsort(scores, axis=1, descending=True)
+
+        idx = idx[:, :top_k]
+        scores = scores[:, :top_k]
+
+        idx_shape = fluid.layers.shape(idx)
+        num_classes = idx_shape[0]
+        num_dets = idx_shape[1]
+
+        idx = fluid.layers.reshape(idx, [-1])
+
+        boxes = fluid.layers.reshape(
+            fluid.layers.gather(boxes, idx), (num_classes, num_dets, 4))
+        masks = fluid.layers.reshape(
+            fluid.layers.gather(masks, idx), (num_classes, num_dets, -1))
+
+        iou = _jaccard_tensor(boxes, boxes)
+        iou = paddle.tensor.triu(iou, 1)
+        iou_max = fluid.layers.reduce_max(iou, 1)
+
+        keep = (iou_max <= iou_threshold)
+
+        if second_threshold:
+            conf_thresh = 0.05
+            keep *= fluid.layers.cast(scores > conf_thresh, 'float32')
+
+        classes = fluid.layers.expand(
+            fluid.layers.unsqueeze(
+                fluid.layers.range(0, num_classes, 1, 'int32'), 1),
+            (1, num_dets))
+        out = fluid.layers.where(keep)
+
+        classes = fluid.layers.gather_nd(classes, out)
+
+        boxes = fluid.layers.gather_nd(boxes, out)
+        masks = fluid.layers.gather_nd(masks, out)
+        scores = fluid.layers.gather_nd(scores, out)
+
+        scores, idx = fluid.layers.argsort(scores, axis=0, descending=True)
+        max_num_detections = 100
+        idx = idx[:max_num_detections]
+        scores = scores[:max_num_detections]
+
+        classes = fluid.layers.gather(classes, idx)
+        boxes = fluid.layers.gather(boxes, idx)
+        masks = fluid.layers.gather(masks, idx)
+
+        return boxes, masks, classes, scores
 
 
 @register
