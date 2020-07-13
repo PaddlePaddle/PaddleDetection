@@ -35,7 +35,7 @@ class BufferDict(dict):
 
     def debug(self, dshape=True, dvalue=True, dtype=False):
         if self['open_debug']:
-            if self['debug_names'] is None:
+            if 'debug_names' not in self.keys():
                 ditems = self.keys()
             else:
                 ditems = self['debug_names']

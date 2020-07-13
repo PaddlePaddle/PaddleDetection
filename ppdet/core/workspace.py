@@ -199,13 +199,13 @@ def create(cls_or_name, **kwargs):
     config.update(kwargs)
     config.validate()
     cls = getattr(config.pymodule, name)
-
     kwargs = {}
     kwargs.update(global_config[name])
 
     # parse `shared` annoation of registered modules
     if getattr(config, 'shared', None):
         for k in config.shared:
+
             target_key = config[k]
             shared_conf = config.schema[k].default
             assert isinstance(shared_conf, SharedConfig)
@@ -225,9 +225,22 @@ def create(cls_or_name, **kwargs):
             # optional dependency
             if target_key is None:
                 continue
-            # also accept dictionaries and serialized objects
+
             if isinstance(target_key, dict) or hasattr(target_key, '__dict__'):
-                continue
+                if 'name' not in target_key.keys():
+                    continue
+                inject_name = str(target_key['name'])
+                if inject_name not in global_config:
+                    raise ValueError(
+                        "Missing injection name {} and check it's name in cfg file".
+                        format(k))
+                target = global_config[inject_name]
+                for i, v in target_key.items():
+                    if i == 'name':
+                        continue
+                    target[i] = v
+                if isinstance(target, SchemaDict):
+                    kwargs[k] = create(inject_name)
             elif isinstance(target_key, str):
                 if target_key not in global_config:
                     raise ValueError("Missing injection config:", target_key)
@@ -235,10 +248,10 @@ def create(cls_or_name, **kwargs):
                 if isinstance(target, SchemaDict):
                     kwargs[k] = create(target_key)
                 elif hasattr(target, '__dict__'):  # serialized object
-                    kwargs[k] = target
+                    kwargs[k] = new_dict
             else:
                 raise ValueError("Unsupported injection type:", target_key)
     # prevent modification of global config values of reference types
     # (e.g., list, dict) from within the created module instances
-    kwargs = copy.deepcopy(kwargs)
+    #kwargs = copy.deepcopy(kwargs)
     return cls(**kwargs)
