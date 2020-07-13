@@ -42,13 +42,15 @@ class DarkNet(object):
                  depth=53,
                  norm_type='bn',
                  norm_decay=0.,
-                 weight_prefix_name=''):
+                 weight_prefix_name='',
+                 freeze_at=-1):
         assert depth in [53], "unsupported depth value"
         self.depth = depth
         self.norm_type = norm_type
         self.norm_decay = norm_decay
         self.depth_cfg = {53: ([1, 2, 8, 8, 4], self.basicblock)}
         self.prefix_name = weight_prefix_name
+        self.freeze_at = freeze_at
 
     def _conv_norm(self,
                    input,
@@ -161,6 +163,8 @@ class DarkNet(object):
                 ch_out=32 * 2**i,
                 count=stage,
                 name=self.prefix_name + "stage.{}".format(i))
+            if i < self.freeze_at:
+                block.stop_gradient = True
             blocks.append(block)
             if i < len(stages) - 1:  # do not downsaple in the last stage
                 downsample_ = self._downsample(
