@@ -6,7 +6,7 @@ TrainReader:
     !COCODataSet
       image_dir: train2017
       anno_path: annotations/instances_train2017.json
-      dataset_dir: /home/ai/dataset/COCO17
+      dataset_dir: dataset/coco
       with_background: false
   sample_transforms:
     - !DecodeImage
@@ -63,7 +63,7 @@ EvalReader:
     !COCODataSet
       image_dir: val2017
       anno_path: annotations/instances_val2017.json
-      dataset_dir: /home/ai/dataset/COCO17
+      dataset_dir: dataset/coco
       with_background: false
   sample_transforms:
     - !DecodeImage

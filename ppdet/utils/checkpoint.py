@@ -71,7 +71,7 @@ def load_dygraph_ckpt(model,
         else:
             model.set_dict(param_state_dict)
 
-        if type == 'resume':
+        if ckpt_type == 'resume':
             if optim_state_dict is None:
                 print("Can't Resume Last Training's Optimizer State!!!")
             else:
