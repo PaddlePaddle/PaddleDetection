@@ -178,6 +178,8 @@ def main():
             for k, v in zip(keys, outs)
         }
         logger.info('Infer iter {}'.format(iter_id))
+        if 'TTFNet' in cfg.architecture:
+            res['bbox'][1].append([len(res['bbox'][0])])
 
         bbox_results = None
         mask_results = None
