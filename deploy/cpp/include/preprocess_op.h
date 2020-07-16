@@ -39,6 +39,8 @@ class ImageBlob {
   std::vector<float> ori_im_size_f_;
   // Evaluation image width and height
   std::vector<float>  eval_im_size_f_;
+  // Scale factor for image size to origin image size
+  std::vector<float> scale_factor_f_;
 };
 
 // Abstraction of preprocessing opration class
