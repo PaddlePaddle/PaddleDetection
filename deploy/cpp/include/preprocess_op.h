@@ -91,9 +91,11 @@ class Resize : public PreprocessOp {
     arch_ = arch;
     interp_ = item["interp"].as<int>();
     max_size_ = item["max_size"].as<int>();
-    target_size_ = item["target_size"].as<int>();
+  if (item["image_shape"].IsDefined()) {
     image_shape_ = item["image_shape"].as<std::vector<int>>();
-  }
+    }
+    target_size_ = item["target_size"].as<int>();
+ }
 
   // Compute best resize scale for x-dimension, y-dimension
   std::pair<float, float> GenerateScale(const cv::Mat& im);
@@ -156,3 +158,4 @@ class Preprocessor {
 };
 
 }  // namespace PaddleDetection
+
