@@ -42,7 +42,8 @@ class COCODataSet(DataSet):
                  anno_path=None,
                  dataset_dir=None,
                  sample_num=-1,
-                 with_background=True):
+                 with_background=True,
+                 load_semantic=False):
         super(COCODataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
@@ -68,6 +69,7 @@ class COCODataSet(DataSet):
         # a dict used to map category name to class id
         self.cname2cid = None
         self.load_image_only = False
+        self.load_semantic = load_semantic
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -104,11 +106,11 @@ class COCODataSet(DataSet):
             im_w = float(img_anno['width'])
             im_h = float(img_anno['height'])
 
-            im_fname = os.path.join(image_dir,
-                                    im_fname) if image_dir else im_fname
-            if not os.path.exists(im_fname):
+            im_path = os.path.join(image_dir,
+                                   im_fname) if image_dir else im_fname
+            if not os.path.exists(im_path):
                 logger.warn('Illegal image file: {}, and it will be '
-                            'ignored'.format(im_fname))
+                            'ignored'.format(im_path))
                 continue
 
             if im_w < 0 or im_h < 0:
@@ -118,7 +120,7 @@ class COCODataSet(DataSet):
                 continue
 
             coco_rec = {
-                'im_file': im_fname,
+                'im_file': im_path,
                 'im_id': np.array([img_id]),
                 'h': im_h,
                 'w': im_w,
@@ -168,8 +170,13 @@ class COCODataSet(DataSet):
                     'gt_poly': gt_poly,
                 })
 
+                if self.load_semantic:
+                    seg_path = os.path.join(self.dataset_dir, 'stuffthingmaps',
+                                            'train2017', im_fname[:-3] + 'png')
+                    coco_rec.update({'semantic': seg_path})
+
             logger.debug('Load file: {}, im_id: {}, h: {}, w: {}.'.format(
-                im_fname, img_id, im_h, im_w))
+                im_path, img_id, im_h, im_w))
             records.append(coco_rec)
             ct += 1
             if self.sample_num > 0 and ct >= self.sample_num:

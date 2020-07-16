@@ -90,18 +90,24 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False, with_cutmix=False):
+    def __init__(self,
+                 to_rgb=True,
+                 with_mixup=False,
+                 with_cutmix=False,
+                 read_semantic=False):
         """ Transform the image data to numpy format.
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
             with_cutmix (bool): whether or not to cutmix image and gt_bbbox/gt_score
+            read_semantic (bool): whether or not to read semantic label file 
         """
 
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
         self.with_cutmix = with_cutmix
+        self.read_semantic = read_semantic
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
@@ -143,12 +149,20 @@ class DecodeImage(BaseOperator):
         # make default im_info with [h, w, 1]
         sample['im_info'] = np.array(
             [im.shape[0], im.shape[1], 1.], dtype=np.float32)
+
         # decode mixup image
         if self.with_mixup and 'mixup' in sample:
             self.__call__(sample['mixup'], context)
+
         # decode cutmix image
         if self.with_cutmix and 'cutmix' in sample:
             self.__call__(sample['cutmix'], context)
+
+        # decode semantic label 
+        if self.read_semantic:
+            sem_file = sample['semantic']
+            sem = cv2.imread(sem_file, cv2.IMREAD_GRAYSCALE)
+            sample['semantic'] = sem.astype('int32')
 
         return sample
 
@@ -342,6 +356,18 @@ class ResizeImage(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
+            if 'semantic' in sample.keys() and sample['semantic'] is not None:
+                semantic = sample['semantic']
+                semantic = cv2.resize(
+                    semantic.astype('float32'),
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=self.interp)
+                semantic = np.asarray(semantic).astype('int32')
+                semantic = np.expand_dims(semantic, 0)
+                sample['semantic'] = semantic
         else:
             if self.max_size != 0:
                 raise TypeError(
@@ -455,9 +481,15 @@ class RandomFlipImage(BaseOperator):
                 if self.is_mask_flip and len(sample['gt_poly']) != 0:
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
+
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = self.flip_keypoint(
                         sample['gt_keypoint'], width)
+
+                if 'semantic' in sample.keys() and sample[
+                        'semantic'] is not None:
+                    sample['semantic'] = sample['semantic'][:, ::-1]
+
                 sample['flipped'] = True
                 sample['image'] = im
         sample = samples if batch_input else samples[0]
