@@ -50,6 +50,12 @@ class PreprocessOp {
   virtual void Run(cv::Mat* im, ImageBlob* data) = 0;
 };
 
+class InitInfo : public PreprocessOp{
+ public:
+  virtual void Init(const YAML::Node& item, const std::string& arch) {}
+  virtual void Run(cv::Mat* im, ImageBlob* data);
+};
+
 class Normalize : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item, const std::string& arch) {
@@ -127,6 +133,8 @@ class Preprocessor {
  public:
   void Init(const YAML::Node& config_node, const std::string& arch) {
     arch_ = arch;
+    // initialize image info at first
+    ops_["InitInfo"] = std::make_shared<InitInfo>();
     for (const auto& item : config_node) {
       auto op_name = item["type"].as<std::string>();
       ops_[op_name] = CreateOp(op_name);
