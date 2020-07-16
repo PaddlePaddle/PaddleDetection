@@ -96,7 +96,6 @@ class DecodeImage(BaseOperator):
                  with_cutmix=False,
                  read_semantic=False):
         """ Transform the image data to numpy format.
-
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
@@ -179,7 +178,6 @@ class MultiscaleTestResize(BaseOperator):
                  use_flip=True):
         """
         Rescale image to the each size in target size, and capped at max_size.
-
         Args:
             origin_target_size(int): original target size of image's short side.
             origin_max_size(int): original max size of image.
@@ -289,7 +287,6 @@ class ResizeImage(BaseOperator):
         if max_size != 0.
         If target_size is list, selected a scale randomly as the specified
         target size.
-
         Args:
             target_size (int|list): the target size of image's short side,
                 multi-scale training is adopted when type is list.
@@ -1218,7 +1215,6 @@ class Permute(BaseOperator):
         Args:
             to_bgr (bool): confirm whether to convert RGB to BGR
             channel_first (bool): confirm whether to change channel
-
         """
         super(Permute, self).__init__()
         self.to_bgr = to_bgr
@@ -1427,7 +1423,6 @@ class RandomInterpImage(BaseOperator):
 @register_op
 class Resize(BaseOperator):
     """Resize image and bbox.
-
     Args:
         target_dim (int or list): target size, can be a single number or a list
             (for random shape).
@@ -1460,6 +1455,7 @@ class Resize(BaseOperator):
             scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
             sample['gt_bbox'] = np.clip(sample['gt_bbox'] * scale_array, 0,
                                         dim - 1)
+        sample['scale_factor'] = [scale_x, scale_y] * 2
         sample['h'] = resize_h
         sample['w'] = resize_w
 
@@ -1471,7 +1467,6 @@ class Resize(BaseOperator):
 @register_op
 class ColorDistort(BaseOperator):
     """Random color distortion.
-
     Args:
         hue (list): hue settings.
             in [lower, upper, probability] format.
@@ -1483,6 +1478,8 @@ class ColorDistort(BaseOperator):
             in [lower, upper, probability] format.
         random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
             order.
+        hsv_format (bool): whether to convert color from BGR to HSV
+        random_channel (bool): whether to swap channels randomly
     """
 
     def __init__(self,
@@ -1490,13 +1487,17 @@ class ColorDistort(BaseOperator):
                  saturation=[0.5, 1.5, 0.5],
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
-                 random_apply=True):
+                 random_apply=True,
+                 hsv_format=False,
+                 random_channel=False):
         super(ColorDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
         self.contrast = contrast
         self.brightness = brightness
         self.random_apply = random_apply
+        self.hsv_format = hsv_format
+        self.random_channel = random_channel
 
     def apply_hue(self, img):
         low, high, prob = self.hue
@@ -1504,6 +1505,11 @@ class ColorDistort(BaseOperator):
             return img
 
         img = img.astype(np.float32)
+        if self.hsv_format:
+            img[..., 0] += random.uniform(low, high)
+            img[..., 0][img[..., 0] > 360] -= 360
+            img[..., 0][img[..., 0] < 0] += 360
+            return img
 
         # XXX works, but result differ from HSV version
         delta = np.random.uniform(low, high)
@@ -1523,8 +1529,10 @@ class ColorDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-
         img = img.astype(np.float32)
+        if self.hsv_format:
+            img[..., 1] *= delta
+            return img
         gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
         gray = gray.sum(axis=2, keepdims=True)
         gray *= (1.0 - delta)
@@ -1571,12 +1579,24 @@ class ColorDistort(BaseOperator):
 
         if np.random.randint(0, 2):
             img = self.apply_contrast(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
         else:
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
             img = self.apply_saturation(img)
             img = self.apply_hue(img)
+            if self.hsv_format:
+                img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
             img = self.apply_contrast(img)
+
+        if self.random_channel:
+            if np.random.randint(0, 2):
+                img = img[..., np.random.permutation(3)]
         sample['image'] = img
         return sample
 
@@ -1644,7 +1664,6 @@ class CornerRandColor(ColorDistort):
 @register_op
 class NormalizePermute(BaseOperator):
     """Normalize and permute channel order.
-
     Args:
         mean (list): mean values in RGB order.
         std (list): std values in RGB order.
@@ -1674,7 +1693,6 @@ class NormalizePermute(BaseOperator):
 @register_op
 class RandomExpand(BaseOperator):
     """Random expand the canvas.
-
     Args:
         ratio (float): maximum expansion ratio.
         prob (float): probability to expand.
@@ -1766,7 +1784,6 @@ class RandomExpand(BaseOperator):
 @register_op
 class RandomCrop(BaseOperator):
     """Random crop image and bboxes.
-
     Args:
         aspect_ratio (list): aspect ratio of cropped region.
             in [min, max] format.
@@ -1893,11 +1910,23 @@ class RandomCrop(BaseOperator):
             found = False
             for i in range(self.num_attempts):
                 scale = np.random.uniform(*self.scaling)
-                min_ar, max_ar = self.aspect_ratio
-                aspect_ratio = np.random.uniform(
-                    max(min_ar, scale**2), min(max_ar, scale**-2))
-                crop_h = int(h * scale / np.sqrt(aspect_ratio))
-                crop_w = int(w * scale * np.sqrt(aspect_ratio))
+                if self.aspect_ratio is not None:
+                    min_ar, max_ar = self.aspect_ratio
+                    aspect_ratio = np.random.uniform(
+                        max(min_ar, scale**2), min(max_ar, scale**-2))
+                    h_scale = scale / np.sqrt(aspect_ratio)
+                    w_scale = scale * np.sqrt(aspect_ratio)
+                else:
+                    h_scale = np.random.uniform(*self.scaling)
+                    w_scale = np.random.uniform(*self.scaling)
+                crop_h = h * h_scale
+                crop_w = w * w_scale
+                if self.aspect_ratio is None:
+                    if crop_h / crop_w < 0.5 or crop_h / crop_w > 2.0:
+                        continue
+
+                crop_h = int(crop_h)
+                crop_w = int(crop_w)
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
@@ -2288,7 +2317,6 @@ class CornerRatio(BaseOperator):
 class RandomScaledCrop(BaseOperator):
     """Resize image and bbox based on long side (with optional random scaling),
        then crop or pad image to target size.
-
     Args:
         target_dim (int): target size.
         scale_range (list): random scale range.
@@ -2343,7 +2371,6 @@ class RandomScaledCrop(BaseOperator):
 @register_op
 class ResizeAndPad(BaseOperator):
     """Resize image and bbox, then pad image to target size.
-
     Args:
         target_dim (int): target size
         interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
@@ -2382,7 +2409,6 @@ class ResizeAndPad(BaseOperator):
 @register_op
 class TargetAssign(BaseOperator):
     """Assign regression target and labels.
-
     Args:
         image_size (int or list): input image size, a single integer or list of
             [h, w]. Default: 512

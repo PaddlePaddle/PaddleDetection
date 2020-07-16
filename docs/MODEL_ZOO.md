@@ -149,11 +149,12 @@ The backbone models pretrained on ImageNet are available. All backbone models ar
 
 ### YOLO v3 on Pascal VOC
 
-| Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           | Configs |
+| Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP(0.5) |                           Download                           | Configs |
 | :----------- | :--: | :-------: | :-----: | :------------: | :----: | :----------------------------------------------------------: |  :----: |
 | DarkNet53    | 608  |     8     |  270e   |     54.977     |  83.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
 | DarkNet53    | 416  |     8     |  270e   |       -        |  83.6  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
 | DarkNet53    | 320  |     8     |  270e   |       -        |  82.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc.yml) |
+| DarkNet53 Diou-Loss  | 608  |     8     |  270e   |       -        |  83.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_darknet_voc_diouloss.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_darknet_voc_diouloss.yml) |
 | MobileNet-V1 | 608  |     8     |  270e   |    104.291     |  76.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
 | MobileNet-V1 | 416  |     8     |  270e   |       -        |  76.7  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
 | MobileNet-V1 | 320  |     8     |  270e   |       -        |  75.3  | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov3_mobilenet_v1_voc.yml) |
@@ -169,6 +170,7 @@ improved performance mainly by using L1 loss in bounding box width and height re
 randomly color distortion, randomly cropping, randomly expansion, randomly interpolation method, randomly flippling. YOLO v3 used randomly
 reshaped minibatch in training, inferences can be performed on different image sizes with the same model weights, and we provided evaluation
 results of image size 608/416/320 above. Deformable conv is added on stage 5 of backbone.
+- Compared with YOLOv3-DarkNet53, the average AP of YOLOv3-DarkNet53 with Diou-Loss increases about 2% in VOC dataset.
 - YOLO v3 enhanced model improves the precision to 43.6 involved with deformable conv, dropblock, IoU loss and IoU aware. See more details in [YOLOv3_ENHANCEMENT](./featured_model/YOLOv3_ENHANCEMENT.md)
 
 ### RetinaNet
@@ -212,7 +214,7 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 
 ### SSD on Pascal VOC
 
-| Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP |                           Download                           | Configs |
+| Backbone     | Size | Image/gpu | Lr schd | Inf time (fps) | Box AP(0.5) |                           Download                           | Configs |
 | :----------- | :--: | :-------: | :-----: | :------------: | :----: | :----------------------------------------------------------: | :----: |
 | MobileNet v1 | 300  |    32     |  120e   |    159.543     |  73.2  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssd_mobilenet_v1_voc.yml) |
 | VGG16        | 300  |     8     |  240e   |    117.279     |  77.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/ssd_vgg16_300_voc.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssd_vgg16_300_voc.yml) |

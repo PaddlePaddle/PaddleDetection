@@ -12,10 +12,12 @@
 ## 模型库与基线
 下表中展示了PaddleDetection当前支持的网络结构，具体细节请参考[算法细节](#算法细节)。
 
-|                          | ResNet50  | ResNet50-vd | Hourglass104 |
-|:------------------------:|:--------:|:--------------------------:|:------------------------:|
-| [CornerNet-Squeeze](#CornerNet-Squeeze)  | x        |                          ✓ | ✓                        |
-| [FCOS](#FCOS)  | ✓        |                          x | x                        |
+|                          | ResNet50  | ResNet50-vd | Hourglass104 |  DarkNet53
+|:------------------------:|:--------:|:-------------:|:-------------:|:-------------:|
+| [CornerNet-Squeeze](#CornerNet-Squeeze)  | x        |       ✓ | ✓       |x      |
+| [FCOS](#FCOS)  | ✓    |      x | x      | x      |
+| [TTFNet](#TTFNet) | x        |  x      |  x      | ✓      |
+
 
 
 ### 模型库
@@ -31,6 +33,7 @@
 | FCOS    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 39.8 | 18.85      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_1x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_r50_fpn_1x.yml) |
 | FCOS+multiscale_train    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 42.0 | 19.05      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_r50_fpn_multiscale_2x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_r50_fpn_multiscale_2x.yml) |
 | FCOS+DCN    | ResNet50    | 2  |    [ResNet50\_cos\_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)    | 44.4 | 13.66      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/fcos_dcn_r50_fpn_1x.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/fcos_dcn_r50_fpn_1x.yml) |
+| TTFNet  |  DarkNet53   |   12    |    [DarkNet53_pretrained](https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar)  | 32.9 |  85.92 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ttfnet_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/anchor_free/ttfnet_darknet.yml) |
 
 **注意:**
 
@@ -63,6 +66,15 @@
 - 利用FPN结构在不同层预测不同scale的物体框，避免了同一feature map像素点处有多个物体框重叠的情况
 - 通过center-ness单层分支预测当前点是否是目标中心，消除低质量误检
 
+
+## TTFNet
+
+**简介：** [TTFNet](https://arxiv.org/abs/1909.00700)是一种用于实时目标检测且对训练时间友好的网络，对CenterNet收敛速度慢的问题进行改进，提出了利用高斯核生成训练样本的新方法，有效的消除了anchor-free head中存在的模糊性。同时简单轻量化的网络结构也易于进行任务扩展。
+
+**特点：**
+
+- 结构简单，仅需要两个head检测目标位置和大小，并且去除了耗时的后处理操作
+- 训练时间短，基于DarkNet53的骨干网路，V100 8卡仅需要训练2个小时即可达到较好的模型效果
 
 ## 如何贡献代码
 我们非常欢迎您可以为PaddleDetection中的Anchor Free检测模型提供代码，您可以提交PR供我们review；也十分感谢您的反馈，可以提交相应issue，我们会及时解答。

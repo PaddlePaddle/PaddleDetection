@@ -41,6 +41,7 @@ class BlazeFace(object):
         output_decoder (object): `SSDOutputDecoder` instance
         min_sizes (list|None): min sizes of generated prior boxes.
         max_sizes (list|None): max sizes of generated prior boxes. Default: None.
+        steps (list|None): step size of adjacent prior boxes on each feature map.
         num_classes (int): number of output classes
         use_density_prior_box (bool): whether or not use density_prior_box
             instead of prior_box

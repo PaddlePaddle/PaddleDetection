@@ -78,6 +78,12 @@ void Resize::Run(cv::Mat* im, ImageBlob* data) {
     static_cast<float>(im->cols),
     resize_scale.first
   };
+  data->scale_factor_f_ = {
+    resize_scale.first,
+    resize_scale.second,
+    resize_scale.first,
+    resize_scale.second
+  };
 }
 
 std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {

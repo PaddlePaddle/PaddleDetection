@@ -28,7 +28,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_config, check_version
+from ppdet.utils.check import check_config, check_version, check_py_func
 import yaml
 import logging
 from collections import OrderedDict
@@ -76,6 +76,8 @@ def parse_reader(reader_cfg, metric, arch):
             params['max_size'] = max(image_shape[
                 1:]) if arch in scale_set else 0
             params['image_shape'] = image_shape[1:]
+            if 'target_dim' in params:
+                params.pop('target_dim')
         p.update(params)
         preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
@@ -109,6 +111,7 @@ def dump_infer_config(FLAGS, config):
         'RCNN': 40,
         'RetinaNet': 40,
         'Face': 3,
+        'TTFNet': 3,
     }
     infer_arch = config['architecture']
 
@@ -195,6 +198,7 @@ def main():
             feed_vars, _ = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
+    check_py_func(infer_prog)
 
     exe.run(startup_prog)
     checkpoint.load_params(exe, infer_prog, cfg.weights)

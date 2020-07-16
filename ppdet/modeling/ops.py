@@ -30,7 +30,8 @@ __all__ = [
     'GenerateProposals', 'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner',
     'RoIAlign', 'RoIPool', 'MultiBoxHead', 'SSDLiteMultiBoxHead',
     'SSDOutputDecoder', 'RetinaTargetAssign', 'RetinaOutputDecoder', 'ConvNorm',
-    'DeformConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'DeformConvNorm', 'MultiClassSoftNMS', 'MatrixNMS', 'LibraBBoxAssigner',
+    'DeformConv'
 ]
 
 
@@ -43,36 +44,32 @@ def _conv_offset(input, filter_size, stride, padding, act=None, name=None):
         stride=stride,
         padding=padding,
         param_attr=ParamAttr(
-            initializer=fluid.initializer.Constant(value=0),
-            name=name + ".w_0"),
+            initializer=fluid.initializer.Constant(0), name=name + ".w_0"),
         bias_attr=ParamAttr(
-            initializer=fluid.initializer.Constant(value=0),
+            initializer=fluid.initializer.Constant(0),
+            learning_rate=2.,
+            regularizer=L2Decay(0.),
             name=name + ".b_0"),
         act=act,
         name=name)
     return out
 
 
-def DeformConvNorm(input,
-                   num_filters,
-                   filter_size,
-                   stride=1,
-                   groups=1,
-                   norm_decay=0.,
-                   norm_type='affine_channel',
-                   norm_groups=32,
-                   dilation=1,
-                   lr_scale=1,
-                   freeze_norm=False,
-                   act=None,
-                   norm_name=None,
-                   initializer=None,
-                   bias_attr=False,
-                   name=None):
+def DeformConv(input,
+               num_filters,
+               filter_size,
+               stride=1,
+               groups=1,
+               dilation=1,
+               lr_scale=1,
+               initializer=None,
+               bias_attr=False,
+               name=None):
     if bias_attr:
         bias_para = ParamAttr(
             name=name + "_bias",
-            initializer=fluid.initializer.Constant(value=0),
+            initializer=fluid.initializer.Constant(0),
+            regularizer=L2Decay(0.),
             learning_rate=lr_scale * 2)
     else:
         bias_para = False
@@ -108,6 +105,29 @@ def DeformConvNorm(input,
             learning_rate=lr_scale),
         bias_attr=bias_para,
         name=name + ".conv2d.output.1")
+
+    return conv
+
+
+def DeformConvNorm(input,
+                   num_filters,
+                   filter_size,
+                   stride=1,
+                   groups=1,
+                   norm_decay=0.,
+                   norm_type='affine_channel',
+                   norm_groups=32,
+                   dilation=1,
+                   lr_scale=1,
+                   freeze_norm=False,
+                   act=None,
+                   norm_name=None,
+                   initializer=None,
+                   bias_attr=False,
+                   name=None):
+    assert norm_type in ['bn', 'sync_bn', 'affine_channel']
+    conv = DeformConv(input, num_filters, filter_size, stride, groups, dilation,
+                      lr_scale, initializer, bias_attr, name)
 
     norm_lr = 0. if freeze_norm else 1.
     pattr = ParamAttr(
@@ -330,7 +350,6 @@ class AnchorGenerator(object):
 @serializable
 class AnchorGrid(object):
     """Generate anchor grid
-
     Args:
         image_size (int or list): input image size, may be a single integer or
             list of [h, w]. Default: 512
@@ -494,6 +513,32 @@ class MultiClassNMS(object):
 
 @register
 @serializable
+class MatrixNMS(object):
+    __op__ = 'paddle.fluid.layers.matrix_nms'
+    __append_doc__ = True
+
+    def __init__(self,
+                 score_threshold=.05,
+                 post_threshold=.05,
+                 nms_top_k=-1,
+                 keep_top_k=100,
+                 use_gaussian=False,
+                 gaussian_sigma=2.,
+                 normalized=False,
+                 background_label=0):
+        super(MultiClassNMS, self).__init__()
+        self.score_threshold = score_threshold
+        self.post_threshold = post_threshold
+        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
+        self.normalized = normalized
+        self.use_gaussian = use_gaussian
+        self.gaussian_sigma = gaussian_sigma
+        self.background_label = background_label
+
+
+@register
+@serializable
 class MultiClassSoftNMS(object):
     def __init__(
             self,
@@ -610,7 +655,7 @@ class MultiClassSoftNMS(object):
             res.set_lod([out_offsets])
             if len(pred_res) == 0:
                 pred_res = np.array([[1]], dtype=np.float32)
-            res.set(np.vstack(pred_res), fluid.CPUPlace())
+            res.set(np.vstack(pred_res).astype(np.float32), fluid.CPUPlace())
             return res
 
         pred_result = create_tmp_var(

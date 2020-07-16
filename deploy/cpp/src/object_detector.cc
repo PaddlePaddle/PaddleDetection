@@ -140,7 +140,7 @@ void ObjectDetector::Postprocess(
     int ymax = (output_data_[5 + j * 6] * rh);
     int wd = xmax - xmin;
     int hd = ymax - ymin;
-    if (score > threshold_) {
+    if (score > threshold_ && class_id > -1) {
       ObjectResult result_item;
       result_item.rect = {xmin, xmax, ymin, ymax};
       result_item.class_id = class_id;
@@ -172,6 +172,9 @@ void ObjectDetector::Predict(const cv::Mat& im,
     } else if (tensor_name == "im_shape") {
       in_tensor->Reshape({1, 3});
       in_tensor->copy_from_cpu(inputs_.ori_im_size_f_.data());
+    } else if (tensor_name == "scale_factor") {
+      in_tensor->Reshape({1, 4});
+      in_tensor->copy_from_cpu(inputs_.scale_factor_f_.data());
     }
   }
   // Run predictor
