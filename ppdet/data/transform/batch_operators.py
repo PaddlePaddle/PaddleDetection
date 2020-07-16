@@ -48,17 +48,12 @@ class PadBatch(BaseOperator):
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
             height and width is divisible by `pad_to_stride`.
-        pad_semantic (bool): Wether pad the semantic label  
     """
 
-    def __init__(self,
-                 pad_to_stride=0,
-                 use_padded_im_info=True,
-                 pad_semantic=False):
+    def __init__(self, pad_to_stride=0, use_padded_im_info=True):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
-        self.pad_semantic = pad_semantic
 
     def __call__(self, samples, context=None):
         """
@@ -87,7 +82,7 @@ class PadBatch(BaseOperator):
             data['image'] = padding_im
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
-            if self.pad_semantic:
+            if 'semantic' in data.keys() and data['semantic'] is not None:
                 semantic = data['semantic']
                 padding_sem = np.zeros(
                     (1, max_shape[1], max_shape[2]), dtype=np.float32)

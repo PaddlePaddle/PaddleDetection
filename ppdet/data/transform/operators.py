@@ -280,8 +280,7 @@ class ResizeImage(BaseOperator):
                  target_size=0,
                  max_size=0,
                  interp=cv2.INTER_LINEAR,
-                 use_cv2=True,
-                 resize_semantic=False):
+                 use_cv2=True):
         """
         Rescale image to the specified target size, and capped at max_size
         if max_size != 0.
@@ -294,13 +293,11 @@ class ResizeImage(BaseOperator):
             interp (int): the interpolation method
             use_cv2 (bool): use the cv2 interpolation method or use PIL
                 interpolation method
-            resize_semantic (bool): whether or not to resize semantic label
         """
         super(ResizeImage, self).__init__()
         self.max_size = int(max_size)
         self.interp = int(interp)
         self.use_cv2 = use_cv2
-        self.resize_semantic = resize_semantic
         if not (isinstance(target_size, int) or isinstance(target_size, list)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List, now is {}".
@@ -359,7 +356,7 @@ class ResizeImage(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
-            if self.resize_semantic:
+            if 'semantic' in sample.keys() and sample['semantic'] is not None:
                 semantic = sample['semantic']
                 semantic = cv2.resize(
                     semantic.astype('float32'),
@@ -386,27 +383,20 @@ class ResizeImage(BaseOperator):
 
 @register_op
 class RandomFlipImage(BaseOperator):
-    def __init__(self,
-                 prob=0.5,
-                 is_normalized=False,
-                 is_mask_flip=False,
-                 is_semantic_flip=False):
+    def __init__(self, prob=0.5, is_normalized=False, is_mask_flip=False):
         """
         Args:
             prob (float): the probability of flipping image
             is_normalized (bool): whether the bbox scale to [0,1]
             is_mask_flip (bool): whether flip the segmentation
-            is_semantic_flip (bool): whether flip the semantic label 
         """
         super(RandomFlipImage, self).__init__()
         self.prob = prob
         self.is_normalized = is_normalized
         self.is_mask_flip = is_mask_flip
-        self.is_semantic_flip = is_semantic_flip
         if not (isinstance(self.prob, float) and
                 isinstance(self.is_normalized, bool) and
-                isinstance(self.is_mask_flip, bool) and
-                isinstance(self.is_semantic_flip, bool)):
+                isinstance(self.is_mask_flip, bool)):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def flip_segms(self, segms, height, width):
@@ -496,7 +486,8 @@ class RandomFlipImage(BaseOperator):
                     sample['gt_keypoint'] = self.flip_keypoint(
                         sample['gt_keypoint'], width)
 
-                if self.is_semantic_flip and len(sample['semantic']) != 0:
+                if 'semantic' in sample.keys() and sample[
+                        'semantic'] is not None:
                     sample['semantic'] = sample['semantic'][:, ::-1]
 
                 sample['flipped'] = True
