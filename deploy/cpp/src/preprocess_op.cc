@@ -19,6 +19,24 @@
 
 namespace PaddleDetection {
 
+void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
+  data->ori_im_size_ = {
+      static_cast<int>(im->rows),
+      static_cast<int>(im->cols)
+  };
+  data->ori_im_size_f_ = {
+      static_cast<float>(im->rows),
+      static_cast<float>(im->cols),
+      1.0
+  };
+  data->eval_im_size_f_ = {
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
+    1.0
+  };
+  data->scale_factor_f_ = {1., 1., 1., 1.};
+}
+
 void Normalize::Run(cv::Mat* im, ImageBlob* data) {
   double e = 1.0;
   if (is_scale_) {
@@ -44,20 +62,12 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
   (data->im_data_).resize(rc * rh * rw);
   float* base = (data->im_data_).data();
   for (int i = 0; i < rc; ++i) {
-    cv::extractChannel(*im, cv::Mat(rh, rw, CV_32FC1, base + i * rh * rw), i);
+    int cur_c = to_bgr_ ? rc - i - 1 : i;
+    cv::extractChannel(*im, cv::Mat(rh, rw, CV_32FC1, base + cur_c * rh * rw), i);
   }
 }
 
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
-  data->ori_im_size_ = {
-      static_cast<int>(im->rows),
-      static_cast<int>(im->cols)
-  };
-  data->ori_im_size_f_ = {
-      static_cast<float>(im->rows),
-      static_cast<float>(im->cols),
-      1.0
-  };
   auto resize_scale = GenerateScale(*im);
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
@@ -137,7 +147,7 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
 
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {
-  "Resize", "Normalize", "PadStride", "Permute"
+  "InitInfo", "Resize", "Normalize", "PadStride", "Permute"
 };
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
