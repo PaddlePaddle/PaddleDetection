@@ -38,22 +38,11 @@ class FusedSemanticHead(object):
                 out_c=256,
                 num_convs=4,
                 fusion_level='fpn_res3_sum'):
-        r"""Multi-level fused semantic segmentation head.
-        in_1 -> 1x1 conv ---
-                            |
-        in_2 -> 1x1 conv -- |
-                           ||
-        in_3 -> 1x1 conv - ||
-                          |||                  /-> 1x1 conv (mask prediction)
-        in_4 -> 1x1 conv -----> 3x3 convs (*4)
-                            |                  \-> 1x1 conv (feature)
-        in_5 -> 1x1 conv ---
-        """
         new_feat = fpn_feats[fusion_level]
         new_feat_list = [new_feat, ]
         target_shape = fluid.layers.shape(new_feat)[2:]
         for k, v in fpn_feats.items():
-            if k != 'fpn_res3_sum':
+            if k != fusion_level:
                 v = fluid.layers.resize_bilinear(
                     v, target_shape, align_corners=True)
                 v = fluid.layers.conv2d(v, out_c, 1)

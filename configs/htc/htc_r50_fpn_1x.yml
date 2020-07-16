@@ -1,6 +1,6 @@
 architecture: HybridTaskCascade
 use_gpu: true
-max_iters: 180000
+max_iters: 100000
 snapshot_iter: 10000
 log_smooth_window: 50
 save_dir: output
@@ -40,7 +40,6 @@ FPNRPNHead:
   max_level: 6
   min_level: 2
   num_chan: 256
-  lr_ratio: 2.0
   rpn_target_assign:
     rpn_batch_size_per_im: 256
     rpn_fg_fraction: 0.5
@@ -68,7 +67,7 @@ FPNRoIAlign:
   box_resolution: 7
   mask_resolution: 14
 
-# mask roi extractor
+# semantic roi extractor
 RoIAlign:
   resolution: 14
   sampling_ratio: 2
@@ -78,7 +77,7 @@ HTCMaskHead:
   conv_dim: 256
   num_convs: 4
   resolution: 28
-  lr_ratio: 2.0
+  lr_ratio: 1.0
 
 FusedSemanticHead:
   semantic_num_class: 183
@@ -96,23 +95,22 @@ MaskAssigner:
 
 HTCBBoxHead:
   head: CascadeTwoFCHead
-  nms:
-    keep_top_k: 100
-    nms_threshold: 0.6
-    score_threshold: 0.01
-  lr_ratio: 2.0
+  nms: MultiClassSoftNMS
+
+MultiClassSoftNMS:
+  score_threshold: 0.01
+  keep_top_k: 300
+  softnms_sigma: 0.5
 
 CascadeTwoFCHead:
   mlp_dim: 1024
-  lr_ratio: 2.0
-
 
 LearningRate:
   base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
+    milestones: [60000, 80000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
@@ -126,7 +124,7 @@ OptimizerBuilder:
     type: L2
 
 TrainReader:
-  batch_size: 1
+  batch_size: 2
   worker_num: 2
   dataset:
     !COCODataSet

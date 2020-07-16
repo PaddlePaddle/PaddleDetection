@@ -70,7 +70,7 @@ class HybridTaskCascade(object):
                  rpn_only=False,
                  fpn='FPN'):
         super(HybridTaskCascade, self).__init__()
-        assert fpn is not None, "cascade RCNN requires FPN"
+        assert fpn is not None, "HTC requires FPN"
         self.backbone = backbone
         self.fpn = fpn
         self.rpn_head = rpn_head
@@ -115,18 +115,8 @@ class HybridTaskCascade(object):
 
         im_info = feed_vars['im_info']
 
-        mixed_precision_enabled = mixed_precision_global_state() is not None
-        # cast inputs to FP16
-        if mixed_precision_enabled:
-            im = fluid.layers.cast(im, 'float16')
-
         # backbone
         body_feats = self.backbone(im)
-
-        # cast features back to FP32
-        if mixed_precision_enabled:
-            body_feats = OrderedDict((k, fluid.layers.cast(v, 'float32'))
-                                     for k, v in body_feats.items())
 
         loss = {}
         # FPN
@@ -218,13 +208,8 @@ class HybridTaskCascade(object):
                         labels_int32=labels_int32)
                     mask_target_list.append(mask_int32)
 
-                    if self.fpn is None:
-                        bbox_head_feat = self.bbox_head.get_head_feat()
-                        mask_feat = fluid.layers.gather(bbox_head_feat,
-                                                        roi_has_mask_int32)
-                    else:
-                        mask_feat = self.roi_extractor(
-                            body_feats, mask_rois, spatial_scale, is_mask=True)
+                    mask_feat = self.roi_extractor(
+                        body_feats, mask_rois, spatial_scale, is_mask=True)
 
                     if self.with_semantic:
                         semantic_roi_feat = self.semantic_roi_extractor(
@@ -306,8 +291,6 @@ class HybridTaskCascade(object):
                           im_shape=None,
                           use_multi_test=False,
                           semantic_feat=None):
-        if self.fpn is None:
-            last_feat = body_feats[list(body_feats.keys())[-1]]
 
         if not use_multi_test:
             bbox_pred = self.bbox_head.get_prediction(
@@ -338,14 +321,12 @@ class HybridTaskCascade(object):
             im_scale = fluid.layers.slice(im_info, [1], starts=[2], ends=[3])
             im_scale = fluid.layers.sequence_expand(im_scale, bbox)
 
+            bbox = fluid.layers.cast(bbox, dtype='float32')
+            im_scale = fluid.layers.cast(im_scale, dtype='float32')
             mask_rois = bbox * im_scale
 
-            if self.fpn is None:
-                mask_feat = self.roi_extractor(last_feat, mask_rois)
-                mask_feat = self.bbox_head.get_head_feat(mask_feat)
-            else:
-                mask_feat = self.roi_extractor(
-                    body_feats, mask_rois, spatial_scale, is_mask=True)
+            mask_feat = self.roi_extractor(
+                body_feats, mask_rois, spatial_scale, is_mask=True)
 
             if self.with_semantic:
                 semantic_roi_feat = self.semantic_roi_extractor(semantic_feat,
