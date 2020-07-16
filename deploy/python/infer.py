@@ -433,7 +433,7 @@ class Detector():
     def preprocess(self, im):
         # process image by preprocess_ops
         im_info = {
-            'scale': 1.,
+            'scale': [1., 1.],
             'origin_shape': None,
             'resize_shape': None,
         }
