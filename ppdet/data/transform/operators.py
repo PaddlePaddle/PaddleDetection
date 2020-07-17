@@ -90,29 +90,21 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self,
-                 to_rgb=True,
-                 with_mixup=False,
-                 with_cutmix=False,
-                 read_semantic=False):
+    def __init__(self, to_rgb=True, with_mixup=False, with_cutmix=False):
         """ Transform the image data to numpy format.
         Args:
             to_rgb (bool): whether to convert BGR to RGB
             with_mixup (bool): whether or not to mixup image and gt_bbbox/gt_score
             with_cutmix (bool): whether or not to cutmix image and gt_bbbox/gt_score
-            read_semantic (bool): whether or not to read semantic label file 
         """
 
         super(DecodeImage, self).__init__()
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
         self.with_cutmix = with_cutmix
-        self.read_semantic = read_semantic
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
-            raise TypeError("{}: input type is invalid.".format(self))
-        if not isinstance(self.with_cutmix, bool):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
@@ -159,7 +151,7 @@ class DecodeImage(BaseOperator):
             self.__call__(sample['cutmix'], context)
 
         # decode semantic label 
-        if self.read_semantic:
+        if 'semantic' in sample.keys() and sample['semantic'] is not None:
             sem_file = sample['semantic']
             sem = cv2.imread(sem_file, cv2.IMREAD_GRAYSCALE)
             sample['semantic'] = sem.astype('int32')
