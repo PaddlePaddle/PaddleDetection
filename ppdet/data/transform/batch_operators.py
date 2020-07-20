@@ -82,6 +82,13 @@ class PadBatch(BaseOperator):
             data['image'] = padding_im
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
+            if 'semantic' in data.keys() and data['semantic'] is not None:
+                semantic = data['semantic']
+                padding_sem = np.zeros(
+                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_sem[:, :im_h, :im_w] = semantic
+                data['semantic'] = padding_sem
+
         return samples
 
 
