@@ -28,6 +28,7 @@ from . import faceboxes
 from . import fcos
 from . import cornernet_squeeze
 from . import ttfnet
+from . import htc
 
 from .faster_rcnn import *
 from .mask_rcnn import *
@@ -43,3 +44,4 @@ from .faceboxes import *
 from .fcos import *
 from .cornernet_squeeze import *
 from .ttfnet import *
+from .htc import *
