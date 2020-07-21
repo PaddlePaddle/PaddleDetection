@@ -61,10 +61,13 @@ def is_overlap(object_bbox, sample_bbox):
         return True
 
 
-def filter_and_process(sample_bbox, bboxes, labels, scores=None):
+def filter_and_process(sample_bbox, bboxes, labels, scores=None,
+                       keypoints=None):
     new_bboxes = []
     new_labels = []
     new_scores = []
+    new_keypoints = []
+    new_kp_ignore = []
     for i in range(len(bboxes)):
         new_bbox = [0, 0, 0, 0]
         obj_bbox = [bboxes[i][0], bboxes[i][1], bboxes[i][2], bboxes[i][3]]
@@ -84,9 +87,24 @@ def filter_and_process(sample_bbox, bboxes, labels, scores=None):
             new_labels.append([labels[i][0]])
             if scores is not None:
                 new_scores.append([scores[i][0]])
+            if keypoints is not None:
+                sample_keypoint = keypoints[0][i]
+                for j in range(len(sample_keypoint)):
+                    kp_len = sample_height if j % 2 else sample_width
+                    sample_coord = sample_bbox[1] if j % 2 else sample_bbox[0]
+                    sample_keypoint[j] = (
+                        sample_keypoint[j] - sample_coord) / kp_len
+                    sample_keypoint[j] = max(min(sample_keypoint[j], 1.0), 0.0)
+                new_keypoints.append(sample_keypoint)
+                new_kp_ignore.append(keypoints[1][i])
+
     bboxes = np.array(new_bboxes)
     labels = np.array(new_labels)
     scores = np.array(new_scores)
+    if keypoints is not None:
+        keypoints = np.array(new_keypoints)
+        new_kp_ignore = np.array(new_kp_ignore)
+        return bboxes, labels, scores, (keypoints, new_kp_ignore)
     return bboxes, labels, scores
 
 
@@ -420,7 +438,8 @@ def gaussian_radius(bbox_size, min_overlap):
 
 def draw_gaussian(heatmap, center, radius, k=1, delte=6):
     diameter = 2 * radius + 1
-    gaussian = gaussian2D((diameter, diameter), sigma=diameter / delte)
+    sigma = diameter / delte
+    gaussian = gaussian2D((diameter, diameter), sigma_x=sigma, sigma_y=sigma)
 
     x, y = center
 
@@ -435,10 +454,11 @@ def draw_gaussian(heatmap, center, radius, k=1, delte=6):
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
 
 
-def gaussian2D(shape, sigma=1):
+def gaussian2D(shape, sigma_x=1, sigma_y=1):
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m + 1, -n:n + 1]
 
-    h = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
+    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
+                                                            sigma_y)))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h

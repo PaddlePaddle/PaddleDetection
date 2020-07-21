@@ -26,13 +26,17 @@ import cv2
 import numpy as np
 
 from .operators import register_op, BaseOperator
-from .op_helper import jaccard_overlap
+from .op_helper import jaccard_overlap, gaussian2D
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'PadBatch', 'RandomShape', 'PadMultiScaleTest', 'Gt2YoloTarget',
-    'Gt2FCOSTarget'
+    'PadBatch',
+    'RandomShape',
+    'PadMultiScaleTest',
+    'Gt2YoloTarget',
+    'Gt2FCOSTarget',
+    'Gt2TTFTarget',
 ]
 
 
@@ -41,17 +45,15 @@ class PadBatch(BaseOperator):
     """
     Pad a batch of samples so they can be divisible by a stride.
     The layout of each image should be 'CHW'.
-
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
+    def __init__(self, pad_to_stride=0, use_padded_im_info=True):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
-        self.pad_gt = pad_gt
 
     def __call__(self, samples, context=None):
         """
@@ -61,9 +63,9 @@ class PadBatch(BaseOperator):
         coarsest_stride = self.pad_to_stride
         if coarsest_stride == 0:
             return samples
-
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
+
         if coarsest_stride > 0:
             max_shape[1] = int(
                 np.ceil(max_shape[1] / coarsest_stride) * coarsest_stride)
@@ -80,52 +82,6 @@ class PadBatch(BaseOperator):
             data['image'] = padding_im
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
-
-        if self.pad_gt:
-            gt_num = []
-            if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
-                pad_mask = True
-            else:
-                pad_mask = False
-
-            if pad_mask:
-                poly_num = []
-                poly_part_num = []
-                point_num = []
-            for data in samples:
-                gt_num.append(data['gt_bbox'].shape[0])
-                if pad_mask:
-                    poly_num.append(len(data['gt_poly']))
-                    for poly in data['gt_poly']:
-                        poly_part_num.append(int(len(poly)))
-                        for p_p in poly:
-                            point_num.append(int(len(p_p) / 2))
-            gt_num_max = max(gt_num)
-            gt_box_data = np.zeros([gt_num_max, 4])
-            gt_class_data = np.zeros([gt_num_max])
-            is_crowd_data = np.ones([gt_num_max])
-
-            if pad_mask:
-                poly_num_max = max(poly_num)
-                poly_part_num_max = max(poly_part_num)
-                point_num_max = max(point_num)
-                gt_masks_data = -np.ones(
-                    [poly_num_max, poly_part_num_max, point_num_max, 2])
-
-            for i, data in enumerate(samples):
-                gt_num = data['gt_bbox'].shape[0]
-                gt_box_data[0:gt_num, :] = data['gt_bbox']
-                gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
-                is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
-                if pad_mask:
-                    for j, poly in enumerate(data['gt_poly']):
-                        for k, p_p in enumerate(poly):
-                            pp_np = np.array(p_p).reshape(-1, 2)
-                            gt_masks_data[j, k, :pp_np.shape[0], :] = pp_np
-                    data['gt_poly'] = gt_masks_data
-                data['gt_bbox'] = gt_box_data
-                data['gt_class'] = gt_class_data
-                data['is_crowd_data'] = is_crowd_data
         return samples
 
 
@@ -136,13 +92,12 @@ class RandomShape(BaseOperator):
     select one an interpolation algorithm [cv2.INTER_NEAREST, cv2.INTER_LINEAR,
     cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]. If random_inter is
     False, use cv2.INTER_NEAREST.
-
     Args:
         sizes (list): list of int, random choose a size from these
         random_inter (bool): whether to randomly interpolation, defalut true.
     """
 
-    def __init__(self, sizes=[], random_inter=False):
+    def __init__(self, sizes=[], random_inter=False, resize_box=False):
         super(RandomShape, self).__init__()
         self.sizes = sizes
         self.random_inter = random_inter
@@ -153,6 +108,7 @@ class RandomShape(BaseOperator):
             cv2.INTER_CUBIC,
             cv2.INTER_LANCZOS4,
         ] if random_inter else []
+        self.resize_box = resize_box
 
     def __call__(self, samples, context=None):
         shape = np.random.choice(self.sizes)
@@ -166,6 +122,12 @@ class RandomShape(BaseOperator):
             im = cv2.resize(
                 im, None, None, fx=scale_x, fy=scale_y, interpolation=method)
             samples[i]['image'] = im
+            if self.resize_box and 'gt_bbox' in samples[i] and len(samples[0][
+                    'gt_bbox']) > 0:
+                scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
+                samples[i]['gt_bbox'] = np.clip(samples[i]['gt_bbox'] *
+                                                scale_array, 0,
+                                                float(shape) - 1)
         return samples
 
 
@@ -525,3 +487,99 @@ class Gt2FCOSTarget(BaseOperator):
                 sample['centerness{}'.format(lvl)] = np.reshape(
                     ctn_targets_by_level[lvl], newshape=[grid_h, grid_w, 1])
         return samples
+
+
+@register_op
+class Gt2TTFTarget(BaseOperator):
+    """
+    Gt2TTFTarget
+    Generate TTFNet targets by ground truth data
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        alpha(float): the alpha parameter to generate gaussian target.
+            0.54 by default.
+    """
+
+    def __init__(self, num_classes, down_ratio=4, alpha=0.54):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    def __call__(self, samples, context=None):
+        output_size = samples[0]['image'].shape[1]
+        feat_size = output_size // self.down_ratio
+        for sample in samples:
+            heatmap = np.zeros(
+                (self.num_classes, feat_size, feat_size), dtype='float32')
+            box_target = np.ones(
+                (4, feat_size, feat_size), dtype='float32') * -1
+            reg_weight = np.zeros((1, feat_size, feat_size), dtype='float32')
+
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+
+            bbox_w = gt_bbox[:, 2] - gt_bbox[:, 0] + 1
+            bbox_h = gt_bbox[:, 3] - gt_bbox[:, 1] + 1
+            area = bbox_w * bbox_h
+            boxes_areas_log = np.log(area)
+            boxes_ind = np.argsort(boxes_areas_log, axis=0)[::-1]
+            boxes_area_topk_log = boxes_areas_log[boxes_ind]
+            gt_bbox = gt_bbox[boxes_ind]
+            gt_class = gt_class[boxes_ind]
+
+            feat_gt_bbox = gt_bbox / self.down_ratio
+            feat_gt_bbox = np.clip(feat_gt_bbox, 0, feat_size - 1)
+            feat_hs, feat_ws = (feat_gt_bbox[:, 3] - feat_gt_bbox[:, 1],
+                                feat_gt_bbox[:, 2] - feat_gt_bbox[:, 0])
+
+            ct_inds = np.stack(
+                [(gt_bbox[:, 0] + gt_bbox[:, 2]) / 2,
+                 (gt_bbox[:, 1] + gt_bbox[:, 3]) / 2],
+                axis=1) / self.down_ratio
+
+            h_radiuses_alpha = (feat_hs / 2. * self.alpha).astype('int32')
+            w_radiuses_alpha = (feat_ws / 2. * self.alpha).astype('int32')
+
+            for k in range(len(gt_bbox)):
+                cls_id = gt_class[k]
+                fake_heatmap = np.zeros((feat_size, feat_size), dtype='float32')
+                self.draw_truncate_gaussian(fake_heatmap, ct_inds[k],
+                                            h_radiuses_alpha[k],
+                                            w_radiuses_alpha[k])
+
+                heatmap[cls_id] = np.maximum(heatmap[cls_id], fake_heatmap)
+                box_target_inds = fake_heatmap > 0
+                box_target[:, box_target_inds] = gt_bbox[k][:, None]
+
+                local_heatmap = fake_heatmap[box_target_inds]
+                ct_div = np.sum(local_heatmap)
+                local_heatmap *= boxes_area_topk_log[k]
+                reg_weight[0, box_target_inds] = local_heatmap / ct_div
+            sample['ttf_heatmap'] = heatmap
+            sample['ttf_box_target'] = box_target
+            sample['ttf_reg_weight'] = reg_weight
+        return samples
+
+    def draw_truncate_gaussian(self, heatmap, center, h_radius, w_radius):
+        h, w = 2 * h_radius + 1, 2 * w_radius + 1
+        sigma_x = w / 6
+        sigma_y = h / 6
+        gaussian = gaussian2D((h, w), sigma_x, sigma_y)
+
+        x, y = int(center[0]), int(center[1])
+
+        height, width = heatmap.shape[0:2]
+
+        left, right = min(x, w_radius), min(width - x, w_radius + 1)
+        top, bottom = min(y, h_radius), min(height - y, h_radius + 1)
+
+        masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+        masked_gaussian = gaussian[h_radius - top:h_radius + bottom, w_radius -
+                                   left:w_radius + right]
+        if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
+            heatmap[y - top:y + bottom, x - left:x + right] = np.maximum(
+                masked_heatmap, masked_gaussian)
+        return heatmap
