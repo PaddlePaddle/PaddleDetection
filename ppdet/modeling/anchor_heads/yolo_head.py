@@ -98,12 +98,15 @@ class YOLOv3Head(object):
         self.clip_bbox = clip_bbox
 
     def _add_coord(self, input):
+        if not self.coord_conv:
+            return input
+
         input_shape = fluid.layers.shape(input)
         b = input_shape[0]
         h = input_shape[2]
         w = input_shape[3]
 
-        x_range = fluid.layers.range(0, w, 1, 'float32') / (0.5 * (w - 1.))
+        x_range = fluid.layers.range(0, w, 1, 'float32') / ((w - 1.) / 2.)
         x_range = x_range - 1.
         x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
         x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
@@ -119,12 +122,9 @@ class YOLOv3Head(object):
                  filter_size,
                  stride,
                  padding,
-                 coord_conv=False,
                  act='leaky',
                  is_test=True,
                  name=None):
-        if coord_conv:
-            input = self._add_coord(input)
         conv = fluid.layers.conv2d(
             input=input,
             num_filters=ch_out,
@@ -184,7 +184,6 @@ class YOLOv3Head(object):
                          input,
                          channel,
                          conv_block_num=2,
-                         coord_conv=False,
                          is_first=False,
                          is_test=True,
                          name=None):
@@ -194,13 +193,13 @@ class YOLOv3Head(object):
 
         conv = input
         for j in range(conv_block_num):
+            conv = self._add_coord(conv)
             conv = self._conv_bn(
                 conv,
                 channel,
                 filter_size=1,
                 stride=1,
                 padding=0,
-                coord_conv=coord_conv,
                 is_test=is_test,
                 name='{}.{}.0'.format(name, j))
             if self.use_spp and is_first and j == 1:
@@ -234,22 +233,22 @@ class YOLOv3Head(object):
                 block_size=self.block_size,
                 keep_prob=self.keep_prob,
                 is_test=is_test)
+        conv = self._add_coord(conv)
         route = self._conv_bn(
             conv,
             channel,
             filter_size=1,
             stride=1,
             padding=0,
-            coord_conv=coord_conv,
             is_test=is_test,
             name='{}.2'.format(name))
+        new_route = self._add_coord(route)
         tip = self._conv_bn(
-            route,
+            new_route,
             channel * 2,
             filter_size=3,
             stride=1,
             padding=1,
-            coord_conv=coord_conv,
             is_test=is_test,
             name='{}.tip'.format(name))
         return route, tip
@@ -309,7 +308,6 @@ class YOLOv3Head(object):
             route, tip = self._detection_block(
                 block,
                 channel=64 * (2**out_layer_num) // (2**i),
-                coord_conv=self.coord_conv,
                 is_first=i == 0,
                 is_test=(not is_train),
                 conv_block_num=self.conv_block_num,
@@ -345,7 +343,6 @@ class YOLOv3Head(object):
                     filter_size=1,
                     stride=1,
                     padding=0,
-                    coord_conv=self.coord_conv,
                     is_test=(not is_train),
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 # upsample
