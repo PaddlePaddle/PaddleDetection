@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import copy
 import functools
 import collections
@@ -167,6 +168,8 @@ class Reader(object):
             Default True.
         mixup_epoch (int): mixup epoc number. Default is -1, meaning
             not use mixup.
+        cutmix_epoch (int): cutmix epoc number. Default is -1, meaning
+            not use cutmix.
         class_aware_sampling (bool): whether use class-aware sampling or not.
             Default False.
         worker_num (int): number of working threads/processes.
@@ -191,6 +194,7 @@ class Reader(object):
                  drop_last=False,
                  drop_empty=True,
                  mixup_epoch=-1,
+                 cutmix_epoch=-1,
                  class_aware_sampling=False,
                  worker_num=-1,
                  use_process=False,
@@ -241,6 +245,7 @@ class Reader(object):
 
         # sampling
         self._mixup_epoch = mixup_epoch
+        self._cutmix_epoch = cutmix_epoch
         self._class_aware_sampling = class_aware_sampling
 
         self._load_img = False
@@ -252,6 +257,8 @@ class Reader(object):
 
         self._pos = -1
         self._epoch = -1
+
+        self._curr_iter = 0
 
         # multi-process
         self._worker_num = worker_num
@@ -274,6 +281,11 @@ class Reader(object):
     def reset(self):
         """implementation of Dataset.reset
         """
+        if self._epoch < 0:
+            self._epoch = 0
+        else:
+            self._epoch += 1
+
         self.indexes = [i for i in range(self.size())]
         if self._class_aware_sampling:
             self.indexes = np.random.choice(
@@ -283,17 +295,18 @@ class Reader(object):
                 p=self.img_weights)
 
         if self._shuffle:
+            trainer_id = int(os.getenv("PADDLE_TRAINER_ID", 0))
+            np.random.seed(self._epoch + trainer_id)
             np.random.shuffle(self.indexes)
 
         if self._mixup_epoch > 0 and len(self.indexes) < 2:
             logger.debug("Disable mixup for dataset samples "
                          "less than 2 samples")
             self._mixup_epoch = -1
-
-        if self._epoch < 0:
-            self._epoch = 0
-        else:
-            self._epoch += 1
+        if self._cutmix_epoch > 0 and len(self.indexes) < 2:
+            logger.info("Disable cutmix for dataset samples "
+                        "less than 2 samples")
+            self._cutmix_epoch = -1
 
         self._pos = 0
 
@@ -306,6 +319,7 @@ class Reader(object):
         if self.drained():
             raise StopIteration
         batch = self._load_batch()
+        self._curr_iter += 1
         if self._drop_last and len(batch) < self._batch_size:
             raise StopIteration
         if self._worker_num > -1:
@@ -321,6 +335,7 @@ class Reader(object):
                 break
             pos = self.indexes[self._pos]
             sample = copy.deepcopy(self._roidbs[pos])
+            sample["curr_iter"] = self._curr_iter
             self._pos += 1
 
             if self._drop_empty and self._fields and 'gt_mask' in self._fields:
@@ -343,9 +358,18 @@ class Reader(object):
                 mix_idx = np.random.randint(1, num)
                 mix_idx = self.indexes[(mix_idx + self._pos - 1) % num]
                 sample['mixup'] = copy.deepcopy(self._roidbs[mix_idx])
+                sample['mixup']["curr_iter"] = self._curr_iter
                 if self._load_img:
                     sample['mixup']['image'] = self._load_image(sample['mixup'][
                         'im_file'])
+            if self._epoch < self._cutmix_epoch:
+                num = len(self.indexes)
+                mix_idx = np.random.randint(1, num)
+                sample['cutmix'] = copy.deepcopy(self._roidbs[mix_idx])
+                sample['cutmix']["curr_iter"] = self._curr_iter
+                if self._load_img:
+                    sample['cutmix']['image'] = self._load_image(sample[
+                        'cutmix']['im_file'])
 
             batch.append(sample)
             bs += 1
