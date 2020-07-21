@@ -49,7 +49,7 @@ class YOLOv3(object):
         self.yolo_head = yolo_head
         self.use_fine_grained_loss = use_fine_grained_loss
 
-    def build(self, feed_vars, mode='train'):
+    def build(self, feed_vars, mode='train', exclude_nms=False):
         im = feed_vars['image']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -88,7 +88,9 @@ class YOLOv3(object):
             return loss
         else:
             im_size = feed_vars['im_size']
-            return self.yolo_head.get_prediction(body_feats, im_size)
+            # exclude_nms only for benchmark, postprocess(NMS) is not needed
+            return self.yolo_head.get_prediction(
+                body_feats, im_size, exclude_nms=exclude_nms)
 
     def _inputs_def(self, image_shape, num_max_boxes):
         im_shape = [None] + image_shape
@@ -159,8 +161,8 @@ class YOLOv3(object):
     def eval(self, feed_vars):
         return self.build(feed_vars, mode='test')
 
-    def test(self, feed_vars):
-        return self.build(feed_vars, mode='test')
+    def test(self, feed_vars, exclude_nms=False):
+        return self.build(feed_vars, mode='test', exclude_nms=exclude_nms)
 
 
 @register

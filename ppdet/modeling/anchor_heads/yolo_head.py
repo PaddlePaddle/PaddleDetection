@@ -401,7 +401,7 @@ class YOLOv3Head(object):
                               self.mask_anchors, self.num_classes,
                               self.prefix_name)
 
-    def get_prediction(self, input, im_size):
+    def get_prediction(self, input, im_size, exclude_nms=False):
         """
         Get prediction result of YOLOv3 network
 
@@ -441,6 +441,11 @@ class YOLOv3Head(object):
 
         yolo_boxes = fluid.layers.concat(boxes, axis=1)
         yolo_scores = fluid.layers.concat(scores, axis=2)
+
+        # Only for benchmark, postprocess(NMS) is not needed
+        if exclude_nms:
+            return {'bbox': yolo_scores}
+
         if type(self.nms) is MultiClassSoftNMS:
             yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
         pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)

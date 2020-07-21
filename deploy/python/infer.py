@@ -463,7 +463,12 @@ class Detector():
             results['masks'] = np_masks
         return results
 
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+    def predict(self,
+                image,
+                threshold=0.5,
+                warmup=0,
+                repeats=1,
+                run_benchmark=False):
         '''
         Args:
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
@@ -497,7 +502,7 @@ class Detector():
                 np_masks = np.array(outs[1])
         else:
             input_names = self.predictor.get_input_names()
-            for i in range(len(inputs)):
+            for i in range(len(input_names)):
                 input_tensor = self.predictor.get_input_tensor(input_names[i])
                 input_tensor.copy_from_cpu(inputs[input_names[i]])
 
@@ -525,12 +530,15 @@ class Detector():
             ms = (t2 - t1) * 1000.0 / repeats
             print("Inference: {} ms per batch image".format(ms))
 
-        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
-            print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([])}
-        else:
-            results = self.postprocess(
-                np_boxes, np_masks, im_info, threshold=threshold)
+        # do not perform postprocess in benchmark mode
+        results = []
+        if not run_benchmark:
+            if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
+                print('[WARNNING] No object detected.')
+                results = {'boxes': np.array([])}
+            else:
+                results = self.postprocess(
+                    np_boxes, np_masks, im_info, threshold=threshold)
 
         return results
 
@@ -540,7 +548,11 @@ def predict_image():
         FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
     if FLAGS.run_benchmark:
         detector.predict(
-            FLAGS.image_file, FLAGS.threshold, warmup=100, repeats=100)
+            FLAGS.image_file,
+            FLAGS.threshold,
+            warmup=100,
+            repeats=100,
+            run_benchmark=True)
     else:
         results = detector.predict(FLAGS.image_file, FLAGS.threshold)
         visualize(
