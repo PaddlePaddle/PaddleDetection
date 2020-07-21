@@ -16,6 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import numpy as np
+
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
@@ -97,22 +99,51 @@ class YOLOv3Head(object):
         self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
 
-    def _add_coord(self, input):
+    def _create_tensor_from_numpy(self, numpy_array):
+        paddle_array = fluid.layers.create_global_var(
+            shape=numpy_array.shape, value=0., dtype=numpy_array.dtype)
+        fluid.layers.assign(numpy_array, paddle_array)
+        return paddle_array
+
+    def _add_coord(self, input, is_test=True):
         if not self.coord_conv:
             return input
 
-        input_shape = fluid.layers.shape(input)
-        b = input_shape[0]
-        h = input_shape[2]
-        w = input_shape[3]
+        # NOTE: here is used for exporting model for TensorRT inference,
+        #       only support batch_size=1 for input shape should be fixed,
+        #       and we create tensor with fixed shape from numpy array
+        if is_test and input.shape[2] > 0 and input.shape[3] > 0:
+            batch_size = 1
+            grid_x = int(input.shape[3])
+            grid_y = int(input.shape[2])
+            idx_i = np.array(
+                [[i / (grid_x - 1) * 2.0 - 1 for i in range(grid_x)]],
+                dtype='float32')
+            gi_np = np.repeat(idx_i, grid_y, axis=0)
+            gi_np = np.reshape(gi_np, newshape=[1, 1, grid_y, grid_x])
+            gi_np = np.tile(gi_np, reps=[batch_size, 1, 1, 1])
 
-        x_range = fluid.layers.range(0, w, 1, 'float32') / ((w - 1.) / 2.)
-        x_range = x_range - 1.
-        x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
-        x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
-        x_range.stop_gradient = True
-        y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])
-        y_range.stop_gradient = True
+            x_range = self._create_tensor_from_numpy(gi_np.astype(np.float32))
+            x_range.stop_gradient = True
+            y_range = self._create_tensor_from_numpy(
+                gi_np.transpose([0, 1, 3, 2]).astype(np.float32))
+            y_range.stop_gradient = True
+
+        # NOTE: in training mode, H and W is variable for random shape,
+        #       implement add_coord with shape as Variable
+        else:
+            input_shape = fluid.layers.shape(input)
+            b = input_shape[0]
+            h = input_shape[2]
+            w = input_shape[3]
+
+            x_range = fluid.layers.range(0, w, 1, 'float32') / ((w - 1.) / 2.)
+            x_range = x_range - 1.
+            x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
+            x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
+            x_range.stop_gradient = True
+            y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])
+            y_range.stop_gradient = True
 
         return fluid.layers.concat([input, x_range, y_range], axis=1)
 
@@ -193,7 +224,7 @@ class YOLOv3Head(object):
 
         conv = input
         for j in range(conv_block_num):
-            conv = self._add_coord(conv)
+            conv = self._add_coord(conv, is_test=is_test)
             conv = self._conv_bn(
                 conv,
                 channel,
@@ -233,7 +264,7 @@ class YOLOv3Head(object):
                 block_size=self.block_size,
                 keep_prob=self.keep_prob,
                 is_test=is_test)
-        conv = self._add_coord(conv)
+        conv = self._add_coord(conv, is_test=is_test)
         route = self._conv_bn(
             conv,
             channel,
@@ -242,7 +273,7 @@ class YOLOv3Head(object):
             padding=0,
             is_test=is_test,
             name='{}.2'.format(name))
-        new_route = self._add_coord(route)
+        new_route = self._add_coord(route, is_test=is_test)
         tip = self._conv_bn(
             new_route,
             channel * 2,
@@ -293,9 +324,6 @@ class YOLOv3Head(object):
         """
 
         outputs = []
-        print("nms", self.nms, self.nms.__dict__)
-        import sys
-        sys.stdout.flush()
 
         # get last out_layer_num blocks in reverse order
         out_layer_num = len(self.anchor_masks)
