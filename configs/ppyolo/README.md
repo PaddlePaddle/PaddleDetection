@@ -10,9 +10,9 @@
 
 ## 简介
 
-[PPYOLO]()的PaddleDetection中基于YOLOv3模型优化的模型，其COCO数据集mAP和预测速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle1.8.3或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)。
+[PPYOLO]()的PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 1.8.3或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)。
 
-PPYOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32预测速度为72.9 FPS, V100上开启TensorRT下FP16预测速度为129.9 FPS。
+PPYOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
   <img src="../../docs/images/ppyolo_map_fps.png" />
