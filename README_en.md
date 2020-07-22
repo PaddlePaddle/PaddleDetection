@@ -93,14 +93,10 @@ Advanced Features:
 
 **NOTE:** Synchronized batch normalization can only be used on multiple GPU devices, can not be used on CPU devices or single GPU device.
 
-The following is the relationship between COCO mAP and FPS on Tesla V100 of representative models of each architectures and backbones, and the relationship between COCO mAP and FPS on Tesla V100 of SOTA object detecter and PPYOLO, which is faster and has better performance than YOLOv4.
+The following is the relationship between COCO mAP and FPS on Tesla V100 of representative models of each architectures and backbones.
 
 <div align="center">
-  <img src="docs/images/map_fps.png" />
-</div>
-
-<div align="center">
-  <img src="docs/images/ppyolo_map_fps.png" />
+  <img src="docs/images/map_fps.png" width=800 />
 </div>
 
 **NOTE:**
@@ -108,7 +104,12 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - `Cascade-Faster-RCNN` stands for `Cascade-Faster-RCNN-ResNet50vd-DCN`, which has been optimized to 20 FPS inference speed when COCO mAP as 47.8%
 - The enhanced `YOLOv3-ResNet50vd-DCN` is 10.6 absolute percentage points higher than paper on COCO mAP, and inference speed is nearly 70% faster than the darknet framework
 - All these models can be get in [Model Zoo](#Model-Zoo)
-- PPYOLO achieved mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single Test V100. Please refer to [PPYOLO](configs/ppyolo/README.md) for details.
+
+The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA object detecters and PPYOLO, which is faster and has better performance than YOLOv4, and achieved mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single Test V100. Please refer to [PPYOLO](configs/ppyolo/README.md) for details.
+
+<div align="center">
+  <img src="docs/images/ppyolo_map_fps.png" width=600 />
+</div>
 
 ## Tutorials
 
