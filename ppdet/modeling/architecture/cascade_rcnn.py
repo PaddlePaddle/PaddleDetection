@@ -122,6 +122,5 @@ class CascadeRCNN(BaseArch):
             'bbox_nums': self.gbd['predicted_bbox_nums'].numpy(),
             'mask': self.gbd['predicted_mask'].numpy(),
             'im_id': self.gbd['im_id'].numpy(),
-            'im_shape': self.gbd['im_shape'].numpy()
         }
         return inputs

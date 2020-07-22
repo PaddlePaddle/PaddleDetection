@@ -96,7 +96,6 @@ class MaskRCNN(BaseArch):
             'bbox': self.gbd['predicted_bbox'].numpy(),
             'bbox_nums': self.gbd['predicted_bbox_nums'].numpy(),
             'mask': self.gbd['predicted_mask'].numpy(),
-            'im_id': self.gbd['im_id'].numpy(),
-            'im_shape': self.gbd['im_shape'].numpy()
+            'im_id': self.gbd['im_id'].numpy()
         }
         return inputs

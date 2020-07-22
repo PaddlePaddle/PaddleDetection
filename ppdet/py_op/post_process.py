@@ -120,12 +120,7 @@ def mask_post_process(bbox_nums, bboxes, masks, im_info):
 
 
 @jit
-def get_det_res(bbox_nums,
-                bbox,
-                image_id,
-                image_shape,
-                num_id_to_cat_id_map,
-                batch_size=1):
+def get_det_res(bbox_nums, bbox, image_id, num_id_to_cat_id_map, batch_size=1):
     det_res = []
     bbox_v = np.array(bbox)
     if bbox_v.shape == (
@@ -139,8 +134,6 @@ def get_det_res(bbox_nums,
     for i in range(batch_size):
         dt_num_this_img = bbox_nums[i + 1] - bbox_nums[i]
         image_id = int(image_id[i][0])
-        image_width = int(image_shape[i][1])  #int(data[i][-1][1])
-        image_height = int(image_shape[i][2])  #int(data[i][-1][2])
         for j in range(dt_num_this_img):
             dt = bbox_v[k]
             k = k + 1

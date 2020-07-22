@@ -73,7 +73,6 @@ class FasterRCNN(BaseArch):
         outs = {
             "bbox": self.gbd['predicted_bbox'].numpy(),
             "bbox_nums": self.gbd['predicted_bbox_nums'].numpy(),
-            'im_id': self.gbd['im_id'].numpy(),
-            'im_shape': self.gbd['im_shape'].numpy()
+            'im_id': self.gbd['im_id'].numpy()
         }
         return outs
