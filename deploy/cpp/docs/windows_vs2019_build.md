@@ -67,7 +67,7 @@ fluid_inference
 |  参数名   | 含义  |
 |  ----  | ----  |
 | *CUDA_LIB  | CUDA的库路径 |
-| CUDNN_LIB | CUDNN的库路径 |
+| *CUDNN_LIB | CUDNN的库路径 |
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
 
@@ -108,7 +108,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 .\main --model_dir=D:\\models\\yolov3_darknet --image_path=D:\\images\\test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpg`文件中。
 
 
 `样例二`:

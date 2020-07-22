@@ -108,7 +108,7 @@ make
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --image_path=/root/projects/images/test.jpeg
 ```
 
-图片文件`可视化预测结果`会保存在当前目录下`output.jpeg`文件中。
+图片文件`可视化预测结果`会保存在当前目录下`output.jpg`文件中。
 
 
 `样例二`:
