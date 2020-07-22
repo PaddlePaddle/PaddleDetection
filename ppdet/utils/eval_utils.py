@@ -39,7 +39,7 @@ def coco_eval_results(outs_res=None,
     from ppdet.py_op.post_process import get_det_res, get_seg_res
     anno_file = os.path.join(dataset.dataset_dir, dataset.anno_path)
     cocoGt = COCO(anno_file)
-    catid = {i + 1: v for i, v in enumerate(cocoGt.getCatIds())}
+    catid = {i : v for i, v in enumerate(cocoGt.getCatIds())}
 
     if outs_res is not None and len(outs_res) > 0:
         det_res = []
