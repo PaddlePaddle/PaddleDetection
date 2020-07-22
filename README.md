@@ -83,8 +83,8 @@
 以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图，以及PaddleDetection发布的精度和预测速度领先PPYOLO与前沿目标检测算法的COCO数据集精度与单卡Tesla V100预测速度(FPS)关系图。
 
 <div align="center">
-  <img src="docs/images/map_fps.png" width=400 />
-  <img src="docs/images/ppyolo_map_fps.png" width=400 />
+  <img src="docs/images/map_fps.png" height=200 />
+  <img src="docs/images/ppyolo_map_fps.png" height=200 />
 </div>
 
 **说明：**
