@@ -96,8 +96,11 @@ Advanced Features:
 The following is the relationship between COCO mAP and FPS on Tesla V100 of representative models of each architectures and backbones, and the relationship between COCO mAP and FPS on Tesla V100 of SOTA object detecter and PPYOLO, which is faster and has better performance than YOLOv4.
 
 <div align="center">
-  <img src="docs/images/map_fps.png" height=200 />
-  <img src="docs/images/ppyolo_map_fps.png" height=200 />
+  <img src="docs/images/map_fps.png" />
+</div>
+
+<div align="center">
+  <img src="docs/images/ppyolo_map_fps.png" />
 </div>
 
 **NOTE:**
