@@ -48,6 +48,7 @@ class YOLOv3(BaseArch):
     def infer(self, ):
         outs = {
             "bbox": self.gbd['predicted_bbox'].numpy(),
-            "bbox_nums": self.gbd['predicted_bbox_nums']
+            "bbox_nums": self.gbd['predicted_bbox_nums'],
+            'im_id': self.gbd['im_id'].numpy()
         }
         return outs

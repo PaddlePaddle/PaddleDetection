@@ -2,6 +2,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
+
 
 def json_eval_results(metric, json_directory=None, dataset=None):
     """
@@ -39,14 +41,16 @@ def coco_eval_results(outs_res=None,
     from ppdet.py_op.post_process import get_det_res, get_seg_res
     anno_file = os.path.join(dataset.dataset_dir, dataset.anno_path)
     cocoGt = COCO(anno_file)
-    catid = {i + 1: v for i, v in enumerate(cocoGt.getCatIds())}
+    catid = {
+        i + dataset.with_background: v
+        for i, v in enumerate(cocoGt.getCatIds())
+    }
 
     if outs_res is not None and len(outs_res) > 0:
         det_res = []
         for outs in outs_res:
             det_res += get_det_res(outs['bbox_nums'], outs['bbox'],
-                                   outs['im_id'], outs['im_shape'], catid,
-                                   batch_size)
+                                   outs['im_id'], catid, batch_size)
 
         with io.open("bbox_eval.json", 'w') as outfile:
             encode_func = unicode if six.PY2 else str
