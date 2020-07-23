@@ -41,9 +41,8 @@ def run(FLAGS, cfg):
     model = create(cfg.architecture, mode='infer', open_debug=cfg.open_debug)
 
     # Init Model  
-    if os.path.isfile(cfg.weights):
-        param_state_dict, opti_state_dict = fluid.load_dygraph(cfg.weights)
-        model.set_dict(param_state_dict)
+    param_state_dict = fluid.dygraph.load_dygraph(cfg.weights)[0]
+    model.set_dict(param_state_dict)
 
     # Data Reader 
     if FLAGS.use_gpu:
