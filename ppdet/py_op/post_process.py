@@ -6,6 +6,7 @@ from .bbox import delta2bbox, clip_bbox, expand_bbox, nms
 
 
 def bbox_post_process(bboxes,
+                      bbox_nums,
                       bbox_probs,
                       bbox_deltas,
                       im_info,
@@ -14,30 +15,32 @@ def bbox_post_process(bboxes,
                       nms_thresh=0.5,
                       class_nums=81,
                       bbox_reg_weights=[0.1, 0.1, 0.2, 0.2]):
-    bbox_nums = [0, bboxes.shape[0]]
-    bboxes_v = np.array(bboxes)
-    bbox_probs_v = np.array(bbox_probs)
-    bbox_deltas_v = np.array(bbox_deltas)
-    variance_v = np.array(bbox_reg_weights)
-    new_bboxes = [[] for _ in range(len(bbox_nums) - 1)]
-    new_bbox_nums = [0]
-    for i in range(len(bbox_nums) - 1):
-        start = bbox_nums[i]
-        end = bbox_nums[i + 1]
-        if start == end:
-            continue
 
-        bbox_deltas_n = bbox_deltas_v[start:end, :]  # box delta 
-        rois_n = bboxes_v[start:end, :]  # box 
-        rois_n = rois_n / im_info[i][2]  # scale 
-        rois_n = delta2bbox(bbox_deltas_n, rois_n, variance_v)
-        rois_n = clip_bbox(rois_n, im_info[i][:2] / im_info[i][2])
+    new_bboxes = [[] for _ in range(len(bbox_nums))]
+    new_bbox_nums = [0]
+    st_num = 0
+    end_num = 0
+    for i in range(len(bbox_nums)):
+        bbox_num = bbox_nums[i]
+        end_num += bbox_num
+
+        bbox = bboxes[st_num:end_num, :]  # bbox 
+        bbox = bbox / im_info[i][2]  # scale
+        bbox_delta = bbox_deltas[st_num:end_num, :]  # bbox delta 
+
+        # step1: decode 
+        bbox = delta2bbox(bbox_delta, bbox, bbox_reg_weights)
+
+        # step2: clip 
+        bbox = clip_bbox(bbox, im_info[i][:2] / im_info[i][2])
+
+        # step3: nms 
         cls_boxes = [[] for _ in range(class_nums)]
-        scores_n = bbox_probs_v[start:end, :]
+        scores_n = bbox_probs[st_num:end_num, :]
         for j in range(1, class_nums):
             inds = np.where(scores_n[:, j] > score_thresh)[0]
             scores_j = scores_n[inds, j]
-            rois_j = rois_n[inds, j * 4:(j + 1) * 4]
+            rois_j = bbox[inds, j * 4:(j + 1) * 4]
             dets_j = np.hstack((scores_j[:, np.newaxis], rois_j)).astype(
                 np.float32, copy=False)
             keep = nms(dets_j, nms_thresh)
@@ -47,6 +50,8 @@ def bbox_post_process(bboxes,
             nms_dets = np.hstack((label[:, np.newaxis], nms_dets)).astype(
                 np.float32, copy=False)
             cls_boxes[j] = nms_dets
+
+        st_num += bbox_num
 
         # Limit to max_per_image detections **over all classes**
         image_scores = np.hstack(
@@ -58,7 +63,7 @@ def bbox_post_process(bboxes,
                 cls_boxes[j] = cls_boxes[j][keep, :]
         new_bboxes_n = np.vstack([cls_boxes[j] for j in range(1, class_nums)])
         new_bboxes[i] = new_bboxes_n
-        new_bbox_nums.append(len(new_bboxes_n) + new_bbox_nums[-1])
+        new_bbox_nums.append(len(new_bboxes_n))
         labels = new_bboxes_n[:, 0]
         scores = new_bboxes_n[:, 1]
         boxes = new_bboxes_n[:, 2:]
@@ -68,27 +73,29 @@ def bbox_post_process(bboxes,
 
 
 @jit
-def mask_post_process(bbox_nums, bboxes, masks, im_info):
-    bboxes = np.array(bboxes)
-    M = cfg.resolution
-    scale = (M + 2.0) / M
-    masks_v = np.array(masks)
+def mask_post_process(bboxes, bbox_nums, masks, im_info, resolution=14):
+    scale = (resolution + 2.0) / resolution
     boxes = bboxes[:, 2:]
     labels = bboxes[:, 0]
-    segms_results = [[] for _ in range(len(bbox_nums) - 1)]
+    segms_results = [[] for _ in range(len(bbox_nums))]
     sum = 0
-    for i in range(len(bbox_nums) - 1):
-        bboxes_n = bboxes[bbox_nums[i]:bbox_nums[i + 1]]
+    st_num = 0
+    end_num = 0
+    for i in range(len(bbox_nums)):
+        bbox_num = bbox_nums[i]
+        end_num += bbox_num
+
         cls_segms = []
-        masks_n = masks_v[bbox_nums[i]:bbox_nums[i + 1]]
-        boxes_n = boxes[bbox_nums[i]:bbox_nums[i + 1]]
-        labels_n = labels[bbox_nums[i]:bbox_nums[i + 1]]
+        boxes_n = boxes[st_num:end_num]
+        labels_n = labels[st_num:end_num]
+        masks_n = masks[st_num:end_num]
+
         im_h = int(round(im_info[i][0] / im_info[i][2]))
         im_w = int(round(im_info[i][1] / im_info[i][2]))
         boxes_n = expand_boxes(boxes_n, scale)
         boxes_n = boxes_n.astype(np.int32)
         padded_mask = np.zeros((M + 2, M + 2), dtype=np.float32)
-        for j in range(len(bboxes_n)):
+        for j in range(len(boxes_n)):
             class_id = int(labels_n[j])
             padded_mask[1:-1, 1:-1] = masks_n[j, class_id, :, :]
 
@@ -114,28 +121,24 @@ def mask_post_process(bbox_nums, bboxes, masks, im_info):
                     im_mask[:, :, np.newaxis], order='F'))[0]
             cls_segms.append(rle)
         segms_results[i] = np.array(cls_segms)[:, np.newaxis]
-    segms_results = np.vstack([segms_results[k] for k in range(len(lod) - 1)])
+    segms_results = np.vstack([segms_results[k] for k in range(len(bbox_nums))])
     bboxes = np.hstack([segms_results, bboxes])
     return bboxes[:, :3]
 
 
 @jit
-def get_det_res(bbox_nums, bbox, image_id, num_id_to_cat_id_map, batch_size=1):
+def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map,
+                batch_size=1):
     det_res = []
-    bbox_v = np.array(bbox)
-    if bbox_v.shape == (
-            1,
-            1, ):
-        return dts_res
-    assert (len(bbox_nums) == batch_size + 1), \
-      "Error bbox_nums Tensor offset dimension. bbox_nums({}) vs. batch_size({})"\
-                    .format(len(bbox_nums), batch_size)
     k = 0
-    for i in range(batch_size):
-        dt_num_this_img = bbox_nums[i + 1] - bbox_nums[i]
+    for i in range(len(bbox_nums)):
         image_id = int(image_id[i][0])
-        for j in range(dt_num_this_img):
-            dt = bbox_v[k]
+        image_width = int(image_shape[i][1])
+        image_height = int(image_shape[i][2])
+
+        det_nums = bbox_nums[i]
+        for j in range(det_nums):
+            dt = bboxes[k]
             k = k + 1
             num_id, score, xmin, ymin, xmax, ymax = dt.tolist()
             category_id = num_id_to_cat_id_map[num_id]
@@ -153,15 +156,14 @@ def get_det_res(bbox_nums, bbox, image_id, num_id_to_cat_id_map, batch_size=1):
 
 
 @jit
-def get_seg_res(mask_nums, mask, image_id, num_id_to_cat_id_map, batch_size=1):
+def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
     seg_res = []
-    mask_v = np.array(mask)
     k = 0
-    for i in range(batch_size):
+    for i in range(len(mask_nums)):
         image_id = int(image_id[i][0])
-        dt_num_this_img = mask_nums[i + 1] - mask_nums[i]
-        for j in range(dt_num_this_img):
-            dt = mask_v[k]
+        det_nums = mask_nums[i]
+        for j in range(det_nums):
+            dt = masks[k]
             k = k + 1
             sg, num_id, score = dt.tolist()
             cat_id = num_id_to_cat_id_map[num_id]
