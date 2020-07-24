@@ -91,8 +91,15 @@ class YOLOv3Loss(object):
 
             return {'loss': sum(losses)}
 
-    def _get_fine_grained_loss(self, outputs, targets, gt_box, batch_size,
-                               num_classes, mask_anchors, ignore_thresh, eps=1.e-10):
+    def _get_fine_grained_loss(self,
+                               outputs,
+                               targets,
+                               gt_box,
+                               batch_size,
+                               num_classes,
+                               mask_anchors,
+                               ignore_thresh,
+                               eps=1.e-10):
         """
         Calculate fine grained YOLOv3 loss
 
@@ -148,8 +155,10 @@ class YOLOv3Loss(object):
                     y, ty) * tscale_tobj
                 loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
             else:
-                dx = scale_x_y * fluid.layers.sigmoid(x)  - 0.5 * (scale_x_y - 1.0)
-                dy = scale_x_y * fluid.layers.sigmoid(y)  - 0.5 * (scale_x_y - 1.0)
+                dx = scale_x_y * fluid.layers.sigmoid(x) - 0.5 * (scale_x_y -
+                                                                  1.0)
+                dy = scale_x_y * fluid.layers.sigmoid(y) - 0.5 * (scale_x_y -
+                                                                  1.0)
                 loss_x = fluid.layers.abs(dx - tx) * tscale_tobj
                 loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
                 loss_y = fluid.layers.abs(dy - ty) * tscale_tobj
@@ -162,7 +171,8 @@ class YOLOv3Loss(object):
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
             if self._iou_loss is not None:
                 loss_iou = self._iou_loss(x, y, w, h, tx, ty, tw, th, anchors,
-                                          downsample, self._batch_size, scale_x_y)
+                                          downsample, self._batch_size,
+                                          scale_x_y)
                 loss_iou = loss_iou * tscale_tobj
                 loss_iou = fluid.layers.reduce_sum(loss_iou, dim=[1, 2, 3])
                 loss_ious.append(fluid.layers.reduce_mean(loss_iou))
@@ -304,7 +314,7 @@ class YOLOv3Loss(object):
             downsample_ratio=downsample,
             clip_bbox=False,
             scale_x_y=scale_x_y)
-   
+
         # 2. split pred bbox and gt bbox by sample, calculate IoU between pred bbox
         #    and gt bbox in each sample
         if batch_size > 1:
@@ -333,17 +343,17 @@ class YOLOv3Loss(object):
             pred = fluid.layers.squeeze(pred, axes=[0])
             gt = box_xywh2xyxy(fluid.layers.squeeze(gt, axes=[0]))
             ious.append(fluid.layers.iou_similarity(pred, gt))
-      
+
         iou = fluid.layers.stack(ious, axis=0)
         # 3. Get iou_mask by IoU between gt bbox and prediction bbox,
         #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
-        
+
         max_iou = fluid.layers.reduce_max(iou, dim=-1)
         iou_mask = fluid.layers.cast(max_iou <= ignore_thresh, dtype="float32")
         if self.match_score:
             max_prob = fluid.layers.reduce_max(prob, dim=-1)
             iou_mask = iou_mask * fluid.layers.cast(
-                max_prob <= 0.25, dtype="float32")        
+                max_prob <= 0.25, dtype="float32")
         output_shape = fluid.layers.shape(output)
         an_num = len(anchors) // 2
         iou_mask = fluid.layers.reshape(iou_mask, (-1, an_num, output_shape[2],
