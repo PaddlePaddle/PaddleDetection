@@ -456,7 +456,7 @@ class Detector():
         expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
         np_boxes = np_boxes[expect_boxes, :]
         for box in np_boxes:
-            print('class_id:{:d}, confidence:{:.2f},'
+            print('class_id:{:d}, confidence:{:.4f},'
                   'left_top:[{:.2f},{:.2f}],'
                   ' right_bottom:[{:.2f},{:.2f}]'.format(
                       int(box[0]), box[1], box[2], box[3], box[4], box[5]))

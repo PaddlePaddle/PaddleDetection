@@ -11,8 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
-# include "include/object_detector.h"
+#include <sstream>
+// for setprecision
+#include <iomanip>
+#include "include/object_detector.h"
 
 namespace PaddleDetection {
 
@@ -48,7 +50,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           precision,
           false,
           false);
-    }
+   }
   } else {
     config.DisableGpu();
   }
@@ -71,13 +73,15 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[2], w, h);
 
     // Configure color and text size
-    std::string text = lable_list[results[i].class_id];
+    std::ostringstream oss;
+    oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
+    oss << lable_list[results[i].class_id] << " ";
+    oss << results[i].confidence;
+    std::string text = oss.str();
     int c1 = colormap[3 * results[i].class_id + 0];
     int c2 = colormap[3 * results[i].class_id + 1];
     int c3 = colormap[3 * results[i].class_id + 2];
     cv::Scalar roi_color = cv::Scalar(c1, c2, c3);
-    text += " ";
-    text += std::to_string(static_cast<int>(results[i].confidence * 100)) + "%";
     int font_face = cv::FONT_HERSHEY_COMPLEX_SMALL;
     double font_scale = 0.5f;
     float thickness = 0.5;
