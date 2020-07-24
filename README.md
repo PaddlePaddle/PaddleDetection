@@ -151,7 +151,7 @@ PaddleDetection新发布精度速度领先的[PP-YOLO](https://arxiv.org/abs/200
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.4.0版本已经在`07/2020`发布，增加PP-YOLO, TTFNet, HTC等多个模型，新增BlazeFace人脸关键点检测模型，新增移动端SSDLite系列优化模型，新增GridMask，RandomErasing数据增强方法，新增Matrix NMS和EMA训练，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.4.0版本已经在`07/2020`发布，增加PP-YOLO, TTFNet, HTC, ACFPN等多个模型，新增BlazeFace人脸关键点检测模型，新增移动端SSDLite系列优化模型，新增GridMask，RandomErasing数据增强方法，新增Matrix NMS和EMA训练，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
 

@@ -8,14 +8,17 @@
     - 新增TTFNet模型，base版本对齐竞品，COCO数据集精度达到32.9%。
     - 新增HTC模型，base版本对齐竞品，COCO数据集精度达到42.2%。
     - 新增BlazeFace人脸关键点检测模型，在Wider-Face数据集的Easy-Set精度达到85.2%。
+    - 新增ACFPN模型， COCO数据集精度达到39.6%。
+    - 发布服务器端通用目标检测模型（包含676类），相同策略在COCO数据集上，V100为19.5FPS时，COCO mAP可以达到49.4%。
 
   - 移动端模型优化：
     - 新增SSDLite系列优化模型，包括新增GhostNet的Backbone，新增FPN组件等，精度提升0.5%-1.5%。
 
   - 易用性提升机功能组件：
-    - 新增GridMask, RandomErasing数据增强方法
-    - 新增Matrix NMS支持
-    - 新增EMA(Exponential Moving Average)训练支持
+    - 新增GridMask, RandomErasing数据增强方法。
+    - 新增Matrix NMS支持。
+    - 新增EMA(Exponential Moving Average)训练支持。
+    - 新增多机训练方法，两机相对于单机平均加速比80%，多机训练支持待进一步验证。
 
 ### v0.3.0(05/2020)
   - 模型丰富度提升：

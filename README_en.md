@@ -168,7 +168,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.4.0 was released at `05/2020`, add PP-YOLO, TTFNet, HTC, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc.
+v0.4.0 was released at `05/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing
