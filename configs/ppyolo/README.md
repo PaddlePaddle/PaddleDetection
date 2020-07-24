@@ -1,4 +1,4 @@
-# PPYOLO 模型
+# PP-YOLO 模型
 
 ## 内容
 - [简介](#简介)
@@ -9,15 +9,15 @@
 
 ## 简介
 
-[PPYOLO](https://arxiv.org/abs/2007.12099)的PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 1.8.4(2020年8月中旬发布)或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)。
+[PP-YOLO](https://arxiv.org/abs/2007.12099)的PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 1.8.4(2020年8月中旬发布)或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)。
 
-PPYOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
+PP-YOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
-PPYOLO从如下方面优化和提升YOLOv3模型的精度和速度：
+PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 - 更优的骨干网络: ResNet50vd-DCN
 - 更大的训练batch size: 8 GPU，每GPU batch_size=24，对应调整学习率和迭代轮数
@@ -38,17 +38,17 @@ PPYOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 | YOLOv4(AlexyAB)          |    -    |       -       | CSPDarknet |   512    |  43.0  |       83       |          138.4           | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
 | YOLOv4(AlexyAB)          |    -    |       -       | CSPDarknet |   416    |  41.2  |       96       |          164.0           | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
 | YOLOv4(AlexyAB)          |    -    |       -       | CSPDarknet |   320    |  38.0  |      123       |          199.0           | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
-| PPYOLO                   |    8    |      24       | ResNet50vd |   608    |  45.2  |      72.9      |          155.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PPYOLO                   |    8    |      24       | ResNet50vd |   512    |  44.4  |      89.9      |          188.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PPYOLO                   |    8    |      24       | ResNet50vd |   416    |  42.5  |     109.1      |          215.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PPYOLO                   |    8    |      24       | ResNet50vd |   320    |  39.3  |     132.2      |          242.2          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                   |    8    |      24       | ResNet50vd |   608    |  45.2  |      72.9      |          155.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                   |    8    |      24       | ResNet50vd |   512    |  44.4  |      89.9      |          188.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                   |    8    |      24       | ResNet50vd |   416    |  42.5  |     109.1      |          215.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                   |    8    |      24       | ResNet50vd |   320    |  39.3  |     132.2      |          242.2          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 
 **注意:**
 
-- PPYOLO模型使用COCO数据集中train2017作为训练集，使用test2019左右测试集。
-- PPYOLO模型训练过程中使用8GPU，每GPU batch size为24进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
-- PPYOLO模型推理速度测试采用单卡V100，batch size=1进行测试，使用CUDA 10.2, CUDNN 7.5.1，TensorRT推理速度测试使用TensorRT 5.1.2.2。
-- PPYOLO模型推理速度测试数据为使用`tools/export_model.py`脚本导出模型后，使用`deploy/python/infer.py`脚本中的`--run_benchnark`参数使用Paddle预测库进行推理速度benchmark测试结果, 且测试的均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
+- PP-YOLO模型使用COCO数据集中train2017作为训练集，使用test2019左右测试集。
+- PP-YOLO模型训练过程中使用8GPU，每GPU batch size为24进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
+- PP-YOLO模型推理速度测试采用单卡V100，batch size=1进行测试，使用CUDA 10.2, CUDNN 7.5.1，TensorRT推理速度测试使用TensorRT 5.1.2.2。
+- PP-YOLO模型推理速度测试数据为使用`tools/export_model.py`脚本导出模型后，使用`deploy/python/infer.py`脚本中的`--run_benchnark`参数使用Paddle预测库进行推理速度benchmark测试结果, 且测试的均为不包含数据预处理和模型输出后处理(NMS)的数据(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
 - TensorRT FP16的速度测试相比于FP32去除了`yolo_box`(bbox解码)部分耗时，即不包含数据预处理，bbox解码和NMS(与[YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet)测试方法一致)。
 - YOLOv4(AlexyAB)模型精度和V100 FP32推理速度数据使用[YOLOv4 github库](https://github.com/AlexeyAB/darknet)提供的单卡V100上精度速度测试数据，V100 TensorRT FP16推理速度为使用[AlexyAB/darknet]库中tkDNN配置于单卡V100上的测试结果。
 - YOLOv4(AlexyAB)行`模型下载`和`配置文件`为PaddleDetection复现的YOLOv4模型，目前评估精度已对齐，支持finetune，训练精度对齐中，可参见[PaddleDetection YOLOv4 模型](../yolov4/README.md)
@@ -90,7 +90,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/ppyolo/ppyolo.yml -o wei
 
 ### 4. 推理部署与benchmark
 
-PPYOLO模型部署及推理benchmark需要通过`tools/export_model.py`导出模型后使用Paddle预测库进行部署和推理，可通过如下命令一键式启动。
+PP-YOLO模型部署及推理benchmark需要通过`tools/export_model.py`导出模型后使用Paddle预测库进行部署和推理，可通过如下命令一键式启动。
 
 ```bash
 # 导出模型，默认存储于output/ppyolo目录
@@ -100,7 +100,7 @@ python tools/export_model.py -c configs/ppyolo/ppyolo.yml -o weights=https://pad
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo --image_file=demo/000000014439_640x640.jpg --use_gpu=True
 ```
 
-PPYOLO模型benchmark测试为不包含数据预处理和网络输出后处理(NMS)的网络结构部分数据，导出模型时须指定`--exlcude_nms`来裁剪掉模型中后处理的NMS部分，通过如下命令进行模型导出和benchmark测试。
+PP-YOLO模型benchmark测试为不包含数据预处理和网络输出后处理(NMS)的网络结构部分数据，导出模型时须指定`--exlcude_nms`来裁剪掉模型中后处理的NMS部分，通过如下命令进行模型导出和benchmark测试。
 
 ```bash
 # 导出模型，通过--exclude_nms参数裁剪掉模型中的NMS部分，默认存储于output/ppyolo目录
@@ -115,12 +115,12 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo -
 
 ## 未来工作
 
-1. 发布PPYOLO-tiny模型
-2. 发布更多骨干网络的PPYOLO及PPYOLO-tiny模型
+1. 发布PP-YOLO-tiny模型
+2. 发布更多骨干网络的PP-YOLO及PP-YOLO-tiny模型
 
 ## 附录
 
-PPYOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
+PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 
 | 序号 |        模型                  | Box AP | 参数量(M) | FLOPs(G) | V100 FP32 FPS |
 | :--: | :--------------------------- | :----: | :-------: | :------: | :-----------: |

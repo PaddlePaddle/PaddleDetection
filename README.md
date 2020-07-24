@@ -6,7 +6,9 @@
 
 飞桨推出的PaddleDetection是端到端目标检测开发套件，旨在帮助开发者更快更好地完成检测模型的训练、精度速度优化到部署全流程。PaddleDetection以模块化的设计实现了多种主流目标检测算法，并且提供了丰富的数据增强、网络组件、损失函数等模块，集成了模型压缩和跨平台高性能部署能力。目前基于PaddleDetection已经完成落地的项目涉及工业质检、遥感图像检测、无人巡检等多个领域。
 
-**目前检测库下模型均要求使用PaddlePaddle 1.7及以上版本或适当的develop版本。**
+PaddleDetection新发布精度速度领先的[PP-YOLO](https://arxiv.org/abs/2007.12099)模型，COCO数据集精度达到45.2%，单卡Tesla V100预测速度达到72.9 FPS，详细信息见[PP-YOLO模型](configs/ppyolo/README.md)
+
+**目前检测库下模型均要求使用PaddlePaddle 1.8及以上版本或适当的develop版本。**
 
 <div align="center">
   <img src="docs/images/000000570688.jpg" />
@@ -61,6 +63,7 @@
 - FCOS
 - CornerNet-Squeeze
 - YOLOv4
+- PP-YOLO
 
 更多的Backone：
 
@@ -92,7 +95,7 @@
 - PaddleDetection增强版`YOLOv3-ResNet50vd-DCN`在COCO数据集mAP高于原作10.6个绝对百分点，推理速度为61.3FPS，快于原作约70%
 - 图中模型均可在[模型库](#模型库)中获取
 
-以下为PaddleDetection发布的精度和预测速度优于YOLOv4模型的PPYOLO与前沿目标检测算法的COCO数据集精度与单卡Tesla V100预测速度(FPS)关系图， PPYOLO模型在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS，详细信息见[PPYOLO模型](configs/ppyolo/README.md)
+以下为PaddleDetection发布的精度和预测速度优于YOLOv4模型的PP-YOLO与前沿目标检测算法的COCO数据集精度与单卡Tesla V100预测速度(FPS)关系图， PP-YOLO模型在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS，详细信息见[PP-YOLO模型](configs/ppyolo/README.md)
 
 <div align="center">
   <img src="docs/images/ppyolo_map_fps.png" width=600 />
@@ -148,7 +151,7 @@
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。
 
 ## 版本更新
-v0.3.0版本已经在`05/2020`发布，增加Anchor-free、EfficientDet和YOLOv4等多个模型，推出移动端、服务器端实用高效多个模型，例如移动端将YOLOv3-MobileNetv3加速3.5倍，服务器端优化两阶段模型，速度和精度具备较高性价比。重构预测部署功能，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.4.0版本已经在`07/2020`发布，增加PP-YOLO, TTFNet, HTC, ACFPN等多个模型，新增BlazeFace人脸关键点检测模型，新增移动端SSDLite系列优化模型，新增GridMask，RandomErasing数据增强方法，新增Matrix NMS和EMA训练，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 如何贡献代码
 
