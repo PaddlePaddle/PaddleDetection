@@ -320,4 +320,6 @@ class CascadeRCNNClsAware(object):
         return self.build(feed_vars, 'test')
 
     def test(self, feed_vars):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')
