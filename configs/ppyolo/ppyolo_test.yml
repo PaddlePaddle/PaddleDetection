@@ -110,8 +110,8 @@ EvalReader:
       target_size: 608
       interp: 1
     - !NormalizeImage
-      mean: [0., 0., 0.]
-      std: [1., 1., 1.]
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
       is_scale: True
       is_channel_first: false
     - !Permute
@@ -131,8 +131,8 @@ TestReader:
       target_size: 608
       interp: 1
     - !NormalizeImage
-      mean: [0., 0., 0.]
-      std: [1., 1., 1.]
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
       is_scale: True
       is_channel_first: false
     - !Permute
