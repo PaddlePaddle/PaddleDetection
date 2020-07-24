@@ -20,7 +20,7 @@ PPYOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，
 PPYOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 - 更优的骨干网络: ResNet50vd-DCN
-- 更大的batch size: 8 GPU，每GPU batch_size=24，对应调整学习率和迭代轮数
+- 更大的训练batch size: 8 GPU，每GPU batch_size=24，对应调整学习率和迭代轮数
 - [Drop Block](https://arxiv.org/abs/1810.12890)
 - [Exponential Moving Average](https://www.investopedia.com/terms/e/ema.asp)
 - [IoU Loss](https://arxiv.org/pdf/1902.09630.pdf)
@@ -28,7 +28,6 @@ PPYOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 - [Matrix NMS](https://arxiv.org/pdf/2003.10152.pdf)
 - [CoordConv](https://arxiv.org/abs/1807.03247)
 - [Spatial Pyramid Pooling](https://arxiv.org/abs/1406.4729)
-- 更大的训练batch size
 - 更优的预训练模型
 
 ## 模型库
