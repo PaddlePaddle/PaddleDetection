@@ -182,8 +182,8 @@ class IouLoss(object):
             dcx_sig = fluid.layers.sigmoid(dcx)
             dcy_sig = fluid.layers.sigmoid(dcy)
             if (abs(scale_x_y - 1.0) > eps):
-                dcx_sig = scale_x_y * dcx_sig  - 0.5 * (scale_x_y - 1)
-                dcy_sig = scale_x_y * dcy_sig  - 0.5 * (scale_x_y - 1)
+                dcx_sig = scale_x_y * dcx_sig - 0.5 * (scale_x_y - 1)
+                dcy_sig = scale_x_y * dcy_sig - 0.5 * (scale_x_y - 1)
             cx = fluid.layers.elementwise_add(dcx_sig, gi) / grid_x_act
             cy = fluid.layers.elementwise_add(dcy_sig, gj) / grid_y_act
 
