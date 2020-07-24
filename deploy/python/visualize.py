@@ -180,7 +180,7 @@ def draw_box(im, np_boxes, labels):
             fill=color)
 
         # draw label
-        text = "{} {:.2f}".format(labels[clsid], score)
+        text = "{} {:.4f}".format(labels[clsid], score)
         tw, th = draw.textsize(text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
