@@ -5,7 +5,6 @@
 - [模型库与基线](#模型库与基线)
 - [使用说明](#使用说明)
 - [未来工作](#未来工作)
-- [如何贡献代码](#如何贡献代码)
 - [附录](#附录)
 
 ## 简介
@@ -15,12 +14,13 @@
 PPYOLO在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
-  <img src="../../docs/images/ppyolo_map_fps.png" />
+  <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
 PPYOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 - 更优的骨干网络: ResNet50vd-DCN
+- 更大的batch size: 8 GPU，每GPU batch_size=24，对应调整学习率和迭代轮数
 - [Drop Block](https://arxiv.org/abs/1810.12890)
 - [Exponential Moving Average](https://www.investopedia.com/terms/e/ema.asp)
 - [IoU Loss](https://arxiv.org/pdf/1902.09630.pdf)
@@ -119,25 +119,22 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo -
 1. 发布PPYOLO-tiny模型
 2. 发布更多骨干网络的PPYOLO及PPYOLO-tiny模型
 
-## 如何贡献代码
-我们非常欢迎您可以为PaddleDetection提供代码，您可以提交PR供我们review；也十分感谢您的反馈，可以提交相应issue，我们会及时解答。
-
 ## 附录
 
 PPYOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 
-| 序号 |        模型                | Box AP | 参数量(M) | FLOPs(G) | V100 FP32 FPS |
-| :--: | :------------------------- | :----: | :-------: | :------: | :-----------: |
-|  A   | YOLOv3-DarkNet53           |  38.9  |   59.13   |  65.52   |      58.2     |
-|  B   | YOLOv3-ResNet50vd-DCN      |  39.1  |   43.89   |  44.71   |      79.2     |
-|  C   | B + LB + DropBlock + EMA   |  41.4  |   43.89   |  44.71   |      79.2     |
-|  D   | C + IoU Loss               |  41.9  |   43.89   |  44.71   |      79.2     |
-|  E   | D + IoU Aware              |  42.5  |   43.90   |  44.71   |      74.9     |
-|  F   | E + Grid Sensitive         |  42.8  |   43.90   |  44.71   |      74.8     |
-|  G   | F + Matrix NMS             |  43.5  |   43.90   |  44.71   |      74.8     |
-|  H   | G + CoordConv              |  44.0  |   43.93   |  44.76   |      74.1     |
-|  I   | H + SPP                    |  44.3  |   44.93   |  45.12   |      72.9     |
-|  J   | I + Larger Batch Size      |  44.6  |   44.93   |  45.12   |      72.9     |
+| 序号 |        模型                  | Box AP | 参数量(M) | FLOPs(G) | V100 FP32 FPS |
+| :--: | :--------------------------- | :----: | :-------: | :------: | :-----------: |
+|  A   | YOLOv3-DarkNet53             |  38.9  |   59.13   |  65.52   |      58.2     |
+|  B   | YOLOv3-ResNet50vd-DCN        |  39.1  |   43.89   |  44.71   |      79.2     |
+|  C   | B + LB + EMA + DropBlock     |  41.4  |   43.89   |  44.71   |      79.2     |
+|  D   | C + IoU Loss                 |  41.9  |   43.89   |  44.71   |      79.2     |
+|  E   | D + IoU Aware                |  42.5  |   43.90   |  44.71   |      74.9     |
+|  F   | E + Grid Sensitive           |  42.8  |   43.90   |  44.71   |      74.8     |
+|  G   | F + Matrix NMS               |  43.5  |   43.90   |  44.71   |      74.8     |
+|  H   | G + CoordConv                |  44.0  |   43.93   |  44.76   |      74.1     |
+|  I   | H + SPP                      |  44.3  |   44.93   |  45.12   |      72.9     |
+|  J   | I + Better ImageNet Pretrain |  44.6  |   44.93   |  45.12   |      72.9     |
 
 **注意:**
 
