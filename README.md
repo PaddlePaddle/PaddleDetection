@@ -36,49 +36,20 @@
 
 支持的模型结构：
 
-|                    | ResNet | ResNet-vd <sup>[1](#vd)</sup> | ResNeXt-vd | SENet | MobileNet |  HRNet | Res2Net |
-|--------------------|:------:|------------------------------:|:----------:|:-----:|:---------:|:------:| :--:    |
-| Faster R-CNN       | ✓      |                             ✓ | x          | ✓     | ✗         |  ✗     |  ✗      |
-| Faster R-CNN + FPN | ✓      |                             ✓ | ✓          | ✓     | ✗         |  ✓     |  ✓      |
-| Mask R-CNN         | ✓      |                             ✓ | x          | ✓     | ✗         |  ✗     |  ✗      |
-| Mask R-CNN + FPN   | ✓      |                             ✓ | ✓          | ✓     | ✗         |  ✗     |  ✓      |
-| Cascade Faster-RCNN | ✓     |                             ✓ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
-| Cascade Mask-RCNN  | ✓      |                             ✗ | ✗          | ✓     | ✗         |  ✗     |  ✗      |
-| Libra R-CNN        | ✗      |                             ✓ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
-| RetinaNet          | ✓      |                             ✗ | ✓          | ✗     | ✗         |  ✗     |  ✗      |
-| YOLOv3             | ✓      |                             ✓ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
-| SSD                | ✗      |                             ✗ | ✗          | ✗     | ✓         |  ✗     |  ✗      |
-| BlazeFace          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
-| Faceboxes          | ✗      |                             ✗ | ✗          | ✗     | ✗         |  ✗     |  ✗      |
+
+| Backbones      | 算法      | 端侧模型        | 优化组件        | 数据增强     |
+| ---------| -------------------| -------| -----------------| ------------|
+| ResNet/ResNet-vd<br />ResNet-vd/ResNeXt-vd<br />SENet<br />Res2Net<br />HRNet<br />Hourglass<br /><br />CBNet<br />GCNet<br />DarkNet<br />CSPDarkNet<br />VGG<br />MobileNetv1<br />MobileNet2<br /> | Faster R-CNN <br />Mask R-CNN<br />Cascade R-CNN<br />Cascade Mask R-CNN<br />Libra R-CNN<br />Hybrid Task Cascade<br /><br />PSS-DET RCNN <br />LiRetinaNet<br />SSD<br />YOLOv3<br />YOLOv4<br />PP-YOLO<br />EfficentDet<br />CornerNet-Squeeze<br />FCOS<br />TTFNet<br /><br />FaceBoxes<br />BlazeFace<br />BlazeFace-NAS | MobileNetv3-SSDLite<br />MobileNetv3-RCNN<br />Pruned MobileNetv3-YOLOv3 | FP16训练<br />多机训练<br />Sync-BN<br /><br />Group Normalization<br />DCNv2<br />Non-local<br />BIFPN<br /><br />BFP<br />HRFPN<br />ACFPN<br /><br />GIOU/DIoU/CIoU<br />IoU-aware | Random Flipping<br />Random Erasing<br /><br />Random Distort<br />Random Expand<br /><br />Random Crop<br />Random Interp<br />Random Resize<br />MixUp<br />Cutmix<br />Grid Mask<br />Auto Augment<br /> |
+
+
+
+
 
 <a name="vd">[1]</a> [ResNet-vd](https://arxiv.org/pdf/1812.01187) 模型预测速度基本不变的情况下提高了精度。
 
-**说明：** ✓ 为[模型库](docs/MODEL_ZOO_cn.md)中提供了对应配置文件和预训练模型，✗ 为未提供参考配置，但一般都支持。
-
-更多的模型:
-
-- EfficientDet
-- FCOS
-- CornerNet-Squeeze
-- YOLOv4
-
-更多的Backone：
-
-- DarkNet
-- VGG
-- GCNet
-- CBNet
-- Hourglass
-
-扩展特性：
-
-- [x] **Synchronized Batch Norm**
-- [x] **Group Norm**
-- [x] **Modulated Deformable Convolution**
-- [x] **Deformable PSRoI Pooling**
-- [x] **Non-local和GCNet**
-
-**注意:** Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
+**说明：**
+-  ✓ 为[模型库](docs/MODEL_ZOO_cn.md)中提供了对应配置文件和预训练模型，✗ 为未提供参考配置，但一般都支持。
+- Synchronized batch normalization 只能在多GPU环境下使用，不能在CPU环境或者单GPU环境下使用。
 
 以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图。
 
