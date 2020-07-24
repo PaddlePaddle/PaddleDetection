@@ -12,7 +12,11 @@ PaddleDetection supported practical projects such as industrial quality inspecti
 image object detection, and automatic inspection with its practical features such as model compression
 and multi-platform deployment.
 
-**Now all models in PaddleDetection require PaddlePaddle version 1.7 or higher, or suitable develop version.**
+[PP-YOLO](https://arxiv.org/abs/2007.12099), which is faster and has higer performance than YOLOv4,
+has been released, it reached mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single
+Test V100. Please refer to [PPYOLO](configs/ppyolo/README.md) for details.
+
+**Now all models in PaddleDetection require PaddlePaddle version 1.8 or higher, or suitable develop version.**
 
 <div align="center">
   <img src="docs/images/000000570688.jpg" />
@@ -75,6 +79,7 @@ More models:
 - FCOS
 - CornerNet-Squeeze
 - YOLOv4
+- PP-YOLO
 
 More Backbones:
 
@@ -163,7 +168,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
 PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 
 ## Updates
-v0.3.0 was released at `05/2020`, add anchor-free, EfficientDet, YOLOv4, etc. Launched mobile and server-side practical and efficient multiple models. For example, the YOLOv3-MobileNetv3 mobile side model is accelerated 3.5 times, the server side has optimized the two-stage model, and the speed and accuracy have high cost performance. We also refactored predictive deployment functions, and improved ease of use, fix many known bugs, etc.
+v0.4.0 was released at `05/2020`, add PP-YOLO, TTFNet, HTC, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc.
 Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
 
 ## Contributing

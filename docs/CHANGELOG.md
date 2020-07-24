@@ -2,6 +2,21 @@
 
 ## 最新版本信息
 
+### v0.4.0(07/2020)
+  - 模型丰富度提升：
+    - 发布PPYOLO模型，COCO数据集精度达到45.2%，单卡V100预测速度达到72.9 FPS，精度和预测速度优于YOLOv4模型。
+    - 新增TTFNet模型，base版本对齐竞品，COCO数据集精度达到32.9%。
+    - 新增HTC模型，base版本对齐竞品，COCO数据集精度达到42.2%。
+    - 新增BlazeFace人脸关键点检测模型，在Wider-Face数据集的Easy-Set精度达到85.2%。
+
+  - 移动端模型优化：
+    - 新增SSDLite系列优化模型，包括新增GhostNet的Backbone，新增FPN组件等，精度提升0.5%-1.5%。
+
+  - 易用性提升机功能组件：
+    - 新增GridMask, RandomErasing数据增强方法
+    - 新增Matrix NMS支持
+    - 新增EMA(Exponential Moving Average)训练支持
+
 ### v0.3.0(05/2020)
   - 模型丰富度提升：
     - 添加Efficientdet-D0模型，速度与精度优于竞品。
