@@ -63,6 +63,7 @@ class IouLoss(object):
                  anchors,
                  downsample_ratio,
                  batch_size,
+                 scale_x_y=1.,
                  ioup=None,
                  eps=1.e-10):
         '''
@@ -75,9 +76,9 @@ class IouLoss(object):
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
         pred = self._bbox_transform(x, y, w, h, anchors, downsample_ratio,
-                                    batch_size, False)
+                                    batch_size, False, scale_x_y, eps)
         gt = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio,
-                                  batch_size, True)
+                                  batch_size, True, scale_x_y, eps)
         iouk = self._iou(pred, gt, ioup, eps)
         if self.loss_square:
             loss_iou = 1. - iouk * iouk
@@ -145,7 +146,7 @@ class IouLoss(object):
         return diou_term + ciou_term
 
     def _bbox_transform(self, dcx, dcy, dw, dh, anchors, downsample_ratio,
-                        batch_size, is_gt):
+                        batch_size, is_gt, scale_x_y, eps):
         grid_x = int(self._MAX_WI / downsample_ratio)
         grid_y = int(self._MAX_HI / downsample_ratio)
         an_num = len(anchors) // 2
@@ -179,8 +180,11 @@ class IouLoss(object):
             cy.gradient = True
         else:
             dcx_sig = fluid.layers.sigmoid(dcx)
-            cx = fluid.layers.elementwise_add(dcx_sig, gi) / grid_x_act
             dcy_sig = fluid.layers.sigmoid(dcy)
+            if (abs(scale_x_y - 1.0) > eps):
+                dcx_sig = scale_x_y * dcx_sig  - 0.5 * (scale_x_y - 1)
+                dcy_sig = scale_x_y * dcy_sig  - 0.5 * (scale_x_y - 1)
+            cx = fluid.layers.elementwise_add(dcx_sig, gi) / grid_x_act
             cy = fluid.layers.elementwise_add(dcy_sig, gj) / grid_y_act
 
         anchor_w_ = [anchors[i] for i in range(0, len(anchors)) if i % 2 == 0]

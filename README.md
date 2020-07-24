@@ -83,7 +83,7 @@
 以下为选取各模型结构和骨干网络的代表模型COCO数据集精度mAP和单卡Tesla V100上预测速度(FPS)关系图。
 
 <div align="center">
-  <img src="docs/images/map_fps.png" />
+  <img src="docs/images/map_fps.png" width=800 />
 </div>
 
 **说明：**
@@ -91,6 +91,12 @@
 - `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
 - PaddleDetection增强版`YOLOv3-ResNet50vd-DCN`在COCO数据集mAP高于原作10.6个绝对百分点，推理速度为61.3FPS，快于原作约70%
 - 图中模型均可在[模型库](#模型库)中获取
+
+以下为PaddleDetection发布的精度和预测速度优于YOLOv4模型的PPYOLO与前沿目标检测算法的COCO数据集精度与单卡Tesla V100预测速度(FPS)关系图， PPYOLO模型在[COCO](http://cocodataset.org) test2019数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS，详细信息见[PPYOLO模型](configs/ppyolo/README.md)
+
+<div align="center">
+  <img src="docs/images/ppyolo_map_fps.png" width=600 />
+</div>
 
 ## 文档教程
 
@@ -129,6 +135,7 @@
 - [Anchor free模型](configs/anchor_free/README.md)
 - [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
+- [PPYOLO模型](configs/ppyolo/README.md): COCO mAP高达45.3%，单卡Tesla V100预测速度高达72.9 FPS
 - [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)

@@ -54,6 +54,7 @@ class IouAwareLoss(IouLoss):
                  anchors,
                  downsample_ratio,
                  batch_size,
+                 scale_x_y,
                  eps=1.e-10):
         '''
         Args:
@@ -67,9 +68,9 @@ class IouAwareLoss(IouLoss):
         '''
 
         pred = self._bbox_transform(x, y, w, h, anchors, downsample_ratio,
-                                    batch_size, False)
+                                    batch_size, False, scale_x_y, eps)
         gt = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio,
-                                  batch_size, True)
+                                  batch_size, True, scale_x_y, eps)
         iouk = self._iou(pred, gt, ioup, eps)
         iouk.stop_gradient = True
 
