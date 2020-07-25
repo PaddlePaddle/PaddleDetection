@@ -138,7 +138,7 @@ PaddleDetection新发布精度速度领先的[PP-YOLO](https://arxiv.org/abs/200
 - [Anchor free模型](configs/anchor_free/README.md)
 - [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
 - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
-- [PPYOLO模型](configs/ppyolo/README.md): COCO mAP高达45.3%，单卡Tesla V100预测速度高达72.9 FPS
+- [PP-YOLO模型](configs/ppyolo/README.md): COCO mAP高达45.3%，单卡Tesla V100预测速度高达72.9 FPS
 - [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
 - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
