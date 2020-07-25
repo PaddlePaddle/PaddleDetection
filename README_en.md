@@ -14,7 +14,7 @@ and multi-platform deployment.
 
 [PP-YOLO](https://arxiv.org/abs/2007.12099), which is faster and has higer performance than YOLOv4,
 has been released, it reached mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single
-Test V100. Please refer to [PPYOLO](configs/ppyolo/README.md) for details.
+Test V100. Please refer to [PP-YOLO](configs/ppyolo/README.md) for details.
 
 **Now all models in PaddleDetection require PaddlePaddle version 1.8 or higher, or suitable develop version.**
 
@@ -110,7 +110,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of repr
 - The enhanced `YOLOv3-ResNet50vd-DCN` is 10.6 absolute percentage points higher than paper on COCO mAP, and inference speed is nearly 70% faster than the darknet framework
 - All these models can be get in [Model Zoo](#Model-Zoo)
 
-The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA object detecters and PPYOLO, which is faster and has better performance than YOLOv4, and reached mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single Test V100. Please refer to [PPYOLO](configs/ppyolo/README.md) for details.
+The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA object detecters and PP-YOLO, which is faster and has better performance than YOLOv4, and reached mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single Test V100. Please refer to [PP-YOLO](configs/ppyolo/README.md) for details.
 
 <div align="center">
   <img src="docs/images/ppyolo_map_fps.png" width=600 />
@@ -157,7 +157,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
 - [Pretrained models for pedestrian detection](docs/featured_model/CONTRIB.md)
 - [Pretrained models for vehicle detection](docs/featured_model/CONTRIB.md)
 - [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
-- [PPYOLO](configs/ppyolo/README.md): PPYOLO reeached mAP as 45.3% on COCO dataset，and 72.9 FPS on single Tesla V100
+- [PP-YOLO](configs/ppyolo/README.md): PP-YOLO reeached mAP as 45.3% on COCO dataset，and 72.9 FPS on single Tesla V100
 - [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
 - [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 - [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
