@@ -60,10 +60,10 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 |          模型            | GPU个数 | 每GPU图片个数 |  骨干网络  | 输入尺寸 | Box AP | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | 模型下载 | 配置文件 |
 |:------------------------:|:-------:|:-------------:|:----------:| :-------:| :----: | :------------: | :---------------------: | :------: | :------: |
 | PP-YOLO tiny              |    4    |      32      | ResNet18vd |   416    |  47.0  |     401.6      |          724.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
-| PP-YOLO tiny              |    4    |      32      | ResNet18vd |   320    |  43.7  |     478.5      |          724.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
+| PP-YOLO tiny              |    4    |      32      | ResNet18vd |   320    |  43.7  |     478.5      |          791.3          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
 
-- PP-YOLO tiny模型使用COCO数据集中train2017作为训练集，使用test-dev2017左右测试集，`Box AP`为`mAP(IoU=0.5)`评估结果。
-- PP-YOLO tiny模型训练过程中使用8GPU，每GPU batch size为24进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
+- PP-YOLO tiny模型使用COCO数据集中train2017作为训练集，使用val2017左右测试集，`Box AP`为`mAP(IoU=0.5)`评估结果。
+- PP-YOLO tiny模型训练过程中使用4GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
 - PP-YOLO tiny模型推理速度测试环境配置和测试方法与PP-YOLO模型一致。
 
 ## 使用说明
