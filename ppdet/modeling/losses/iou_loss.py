@@ -176,9 +176,9 @@ class IouLoss(object):
         grid_y_act.stop_gradient = True
         if is_gt:
             cx = fluid.layers.elementwise_add(dcx, gi) / grid_x_act
-            cx.gradient = True
+            cx.stop_gradient = True
             cy = fluid.layers.elementwise_add(dcy, gj) / grid_y_act
-            cy.gradient = True
+            cy.stop_gradient = True
         else:
             dcx_sig = fluid.layers.sigmoid(dcx)
             dcy_sig = fluid.layers.sigmoid(dcy)
