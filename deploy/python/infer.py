@@ -556,13 +556,14 @@ def predict_video(camera_id):
         FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
+        video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
+        video_name = os.path.split(FLAGS.video_file)[-1]
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
-    video_name = os.path.split(FLAGS.video_file)[-1]
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
@@ -582,7 +583,7 @@ def predict_video(camera_id):
             mask_resolution=detector.config.mask_resolution)
         im = np.array(im)
         writer.write(im)
-        if use_camera:
+        if camera_id != -1:
             cv2.imshow('Mask Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
@@ -644,5 +645,5 @@ if __name__ == '__main__':
         assert "Cannot predict image and video at the same time"
     if FLAGS.image_file != '':
         predict_image()
-    if FLAGS.video_file != '' or FLAGS.camera_id:
+    if FLAGS.video_file != '' or FLAGS.camera_id != -1:
         predict_video(FLAGS.camera_id)
