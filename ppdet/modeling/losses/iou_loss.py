@@ -100,8 +100,9 @@ class IouLoss(object):
         ykis2 = fluid.layers.elementwise_min(y2, y2g)
 
         intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
-        intsctk = intsctk * fluid.layers.greater_than(
-            xkis2, xkis1) * fluid.layers.greater_than(ykis2, ykis1)
+        intsctk = intsctk * 
+            fluid.layers.cast(fluid.layers.greater_than(xkis2, xkis1), dtype = "float32") * 
+            fluid.layers.cast(fluid.layers.greater_than(ykis2, ykis1), dtype = "float32")
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
