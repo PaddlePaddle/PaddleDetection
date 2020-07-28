@@ -33,8 +33,6 @@ YOLOv3Head:
             [81, 82], [135, 169], [344, 319]]
   norm_decay: 0.
   conv_block_num: 0
-  iou_aware: true
-  iou_aware_factor: 0.4
   scale_x_y: 1.05
   yolo_loss: YOLOv3Loss
   nms: MatrixNMS
@@ -47,15 +45,9 @@ YOLOv3Loss:
   label_smooth: false
   use_fine_grained_loss: true
   iou_loss: IouLoss
-  iou_aware_loss: IouAwareLoss
 
 IouLoss:
   loss_weight: 2.5
-  max_height: 608
-  max_width: 608
-
-IouAwareLoss:
-  loss_weight: 1.0
   max_height: 608
   max_width: 608
 
