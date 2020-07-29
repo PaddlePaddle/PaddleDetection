@@ -1,7 +1,7 @@
 # Linux平台编译指南
 
 ## 说明
-本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
+本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。本文档使用的预置的opencv库是在ubuntu 16.04上用gcc4.8编译的，如果需要在ubuntu 16.04以外的系统环境编译，那么需自行编译opencv库。
 
 ## 前置条件
 * G++ 4.8.2 ~ 4.9.4
