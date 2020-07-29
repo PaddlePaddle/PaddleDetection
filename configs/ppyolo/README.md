@@ -1,12 +1,12 @@
-English | [简体中文](README.md)
+English | [简体中文](README_cn.md)
 
 # PP-YOLO
 
 ## Table of Contents
 - [Introduction](#Introduction)
-- [Model Zoo](#Model Zoo)
-- [Getting Start](#Getting Start)
-- [Future Work](#Future Work)
+- [Model Zoo](#Model_Zoo)
+- [Getting Start](#Getting_Start)
+- [Future Work](#Future_Work)
 - [Appendix](#Appendix)
 
 ## Introduction
