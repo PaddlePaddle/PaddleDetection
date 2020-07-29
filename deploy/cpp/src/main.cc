@@ -94,7 +94,7 @@ void PredictImage(const std::string& image_path,
   std::vector<PaddleDetection::ObjectResult> result;
   det->Predict(im, &result);
   for (const auto& item : result) {
-    printf("class=%d confidence=%.2f rect=[%d %d %d %d]\n",
+    printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
         item.class_id,
         item.confidence,
         item.rect[0],
