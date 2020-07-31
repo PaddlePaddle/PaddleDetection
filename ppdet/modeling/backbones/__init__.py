@@ -34,6 +34,7 @@ from . import efficientnet
 from . import bifpn
 from . import cspdarknet
 from . import acfpn
+from . import ghostnet
 
 from .resnet import *
 from .resnext import *
@@ -55,3 +56,4 @@ from .efficientnet import *
 from .bifpn import *
 from .cspdarknet import *
 from .acfpn import *
+from .ghostnet import *
