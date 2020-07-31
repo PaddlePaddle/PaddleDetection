@@ -66,8 +66,6 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
-READER_KEY = '_READER_'
-
 
 def load_config(file_path):
     """
@@ -84,20 +82,27 @@ def load_config(file_path):
     cfg = AttrDict()
     with open(file_path) as f:
         cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
-
-    if READER_KEY in cfg:
-        reader_cfg = cfg[READER_KEY]
-        if reader_cfg.startswith("~"):
-            reader_cfg = os.path.expanduser(reader_cfg)
-        if not reader_cfg.startswith('/'):
-            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
-
-        with open(reader_cfg) as f:
-            merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[READER_KEY]
-
+    cfg = add_extra_cfg(cfg, file_path)
     merge_config(cfg)
     return global_config
+
+
+EXTRA_KEY = ['_READER_', '_ARCHITECHTURE_', '_OPTIMIZE_']
+
+
+def add_extra_cfg(cfg, file_path):
+    for extra_k in EXTRA_KEY:
+        if extra_k in cfg:
+            extra_cfg = cfg[extra_k]
+            if extra_cfg.startswith("~"):
+                extra_cfg = os.path.expanduser(extra_cfg)
+            if not extra_cfg.startswith('/'):
+                extra_cfg = os.path.join(os.path.dirname(file_path), extra_cfg)
+
+            with open(extra_cfg) as f:
+                merge_config(yaml.load(f, Loader=yaml.Loader))
+            del cfg[extra_k]
+    return cfg
 
 
 def dict_merge(dct, merge_dct):

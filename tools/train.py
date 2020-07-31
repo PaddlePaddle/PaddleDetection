@@ -10,7 +10,6 @@ import random
 import numpy as np
 import paddle.fluid as fluid
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.reader import create_reader
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
@@ -79,7 +78,7 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
     env = os.environ
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
     if FLAGS.dist:
@@ -92,13 +91,20 @@ def run(FLAGS, cfg):
         random.seed(0)
         np.random.seed(0)
 
+    if cfg.use_gpu:
+        devices_num = fluid.core.get_cuda_device_count()
+    else:
+        devices_num = int(os.environ.get('CPU_NUM', 1))
+
+    # Data 
+    train_loader, step_per_epoch = create('TrainReader')(cfg['worker_num'],
+                                                         place)
+
     # Model
-    main_arch = cfg.architecture
     model = create(cfg.architecture, mode='train', open_debug=cfg.open_debug)
 
     # Optimizer
-    lr = create('LearningRate')()
-    optimizer = create('OptimizerBuilder')(lr, model.parameters())
+    optimizer = create('Optimize')(model.parameters(), step_per_epoch)
 
     # Init Model & Optimzer   
     model = load_dygraph_ckpt(
@@ -114,58 +120,51 @@ def run(FLAGS, cfg):
         strategy = fluid.dygraph.parallel.prepare_context()
         model = fluid.dygraph.parallel.DataParallel(model, strategy)
 
-    # Data Reader 
+    # Run Train
     start_iter = 0
-    if cfg.use_gpu:
-        devices_num = fluid.core.get_cuda_device_count()
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
+    avg_time = 0
+    for e_id in range(int(cfg.epoch)):
+        for iter_id, data in enumerate(train_loader):
+            start_time = time.time()
 
-    train_reader = create_reader(
-        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
-        cfg,
-        devices_num=devices_num)
+            # Model Forward
+            model.train()
+            outputs = model(data, cfg['TrainReader']['inputs_def']['fields'])
 
-    # Run Train 
-    for iter_id, data in enumerate(train_reader()):
-        start_time = time.time()
+            # Model Backward
+            loss = outputs['loss']
+            if FLAGS.use_parallel:
+                loss = model.scale_loss(loss)
+                loss.backward()
+                model.apply_collective_grads()
+            else:
+                loss.backward()
+            optimizer.minimize(loss)
+            model.clear_gradients()
 
-        # Model Forward
-        model.train()
-        outputs = model(data, cfg['TrainReader']['inputs_def']['fields'])
+            # Log state 
+            cost_time = time.time() - start_time
+            if iter_id > 500:
+                avg_time += cost_time
+            if iter_id % 1000 == 0:
+                print("avg cost time: ", avg_time)
+            # TODO: check this method   
+            curr_lr = optimizer.current_step_lr()
+            log_info = "epoch: {}, iter: {}, time: {:.4f}, lr: {:.6f}".format(
+                e_id, iter_id, cost_time, curr_lr)
+            for k, v in outputs.items():
+                log_info += ", {}: {:.6f}".format(k, v.numpy()[0])
+            print(log_info)
 
-        # Model Backward
-        loss = outputs['loss']
-        if FLAGS.use_parallel:
-            loss = model.scale_loss(loss)
-            loss.backward()
-            model.apply_collective_grads()
-        else:
-            loss.backward()
-        optimizer.minimize(loss)
-        model.clear_gradients()
-
-        # Log state 
-        cost_time = time.time() - start_time
-        # TODO: check this method   
-        curr_lr = optimizer.current_step_lr()
-        log_info = "iter: {}, time: {:.4f}, lr: {:.6f}".format(
-            iter_id, cost_time, curr_lr)
-        for k, v in outputs.items():
-            log_info += ", {}: {:.6f}".format(k, v.numpy()[0])
-        print(log_info)
-
-        # Debug 
-        if cfg.open_debug and iter_id > 10:
-            break
+            # Debug 
+            if cfg.open_debug and iter_id > 10:
+                break
 
         # Save Stage 
-        if iter_id > 0 and iter_id % int(
-                cfg.snapshot_iter) == 0 and fluid.dygraph.parallel.Env(
-                ).local_rank == 0:
+        if fluid.dygraph.parallel.Env().local_rank == 0:
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-            save_name = str(
-                iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
+            save_name = str(e_id + 1) if e_id + 1 != int(
+                cfg.epoch) else "model_final"
             save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
             save_dygraph_ckpt(model, optimizer, save_dir)
 
@@ -177,13 +176,13 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
-    check_version()
+    #check_version()
 
     place = fluid.CUDAPlace(fluid.dygraph.parallel.Env().dev_id) \
                     if cfg.use_gpu else fluid.CPUPlace()
 
     with fluid.dygraph.guard(place):
-        run(FLAGS, cfg)
+        run(FLAGS, cfg, place)
 
 
 if __name__ == "__main__":

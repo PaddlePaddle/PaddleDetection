@@ -1,24 +1,28 @@
+worker_num: 0
+use_prefetch: False
+
 TrainReader:
   inputs_def:
-    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
   dataset:
     !COCODataSet
+    dataset_dir: dataset/coco
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
   sample_transforms:
   - !DecodeImage
-    to_rgb: True
+    to_rgb: true
   - !RandomFlipImage
     prob: 0.5
+    is_mask_flip: true
   - !NormalizeImage
     is_channel_first: false
     is_scale: true
     mean: [0.485,0.456,0.406]
     std: [0.229, 0.224,0.225]
   - !ResizeImage
-    target_size: 800
-    max_size: 1333
+    target_size: 512
+    max_size: 512
     interp: 1
     use_cv2: true
   - !Permute
@@ -26,19 +30,20 @@ TrainReader:
     channel_first: true
   batch_transforms:
   - !PadBatch
-    pad_to_stride: 0
-    use_padded_im_info: False
-    pad_gt: true
+    pad_to_stride: 32
+    use_padded_im_info: false
+    pad_gt: True
   batch_size: 1
   shuffle: true
-  worker_num: 2
-  use_process: false
+  drop_last: false
 
 EvalReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
+    # for voc
+    #fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
   dataset:
-    !COCODataSet
+    !COCODataset
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
@@ -63,10 +68,10 @@ EvalReader:
     pad_to_stride: 32
     use_padded_im_info: false
     pad_gt: True
-  batch_size: 2
+  batch_size: 1
   shuffle: false
+  drop_last: false
   drop_empty: false
-  worker_num: 2
 
 TestReader:
   inputs_def:
@@ -93,3 +98,4 @@ TestReader:
     to_bgr: false
   batch_size: 1
   shuffle: false
+  drop_last: false

@@ -42,7 +42,7 @@ class BaseArch(Layer):
 
     def build_inputs(self, inputs, inputs_keys):
         for i, k in enumerate(inputs_keys):
-            v = to_variable(np.array([x[i] for x in inputs]))
+            v = to_variable(inputs[i])
             self.gbd.set(k, v)
 
     def model_arch(self, ):

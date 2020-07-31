@@ -99,7 +99,7 @@ def clip_bbox(boxes, im_shape):
 
 
 @jit
-def bbox_overlaps(bboxes1, bboxes2):
+def compute_iou(bboxes1, bboxes2):
     w1 = np.maximum(bboxes1[:, 2] - bboxes1[:, 0] + 1, 0)
     h1 = np.maximum(bboxes1[:, 3] - bboxes1[:, 1] + 1, 0)
     w2 = np.maximum(bboxes2[:, 2] - bboxes2[:, 0] + 1, 0)

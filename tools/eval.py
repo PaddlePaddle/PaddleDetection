@@ -13,7 +13,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import coco_eval_results
-from ppdet.data.reader import create_reader
+from ppdet.data.loader import create_data_loader
 
 
 def parse_args():
@@ -36,24 +36,24 @@ def parse_args():
 
 def run(FLAGS, cfg):
 
+    if FLAGS.use_gpu:
+        devices_num = 1
+    else:
+        devices_num = int(os.environ.get('CPU_NUM', 1))
+
+    # Data 
+    eval_loader, _ = create('EvalReader')(cfg['worker_num'], place)
+
     # Model
-    main_arch = cfg.architecture
     model = create(cfg.architecture, mode='infer', open_debug=cfg.open_debug)
 
     # Init Model  
     param_state_dict = fluid.dygraph.load_dygraph(cfg.weights)[0]
     model.set_dict(param_state_dict)
 
-    # Data Reader 
-    if FLAGS.use_gpu:
-        devices_num = 1
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-    eval_reader = create_reader(cfg.EvalReader, devices_num=devices_num)
-
     # Run Eval
     outs_res = []
-    for iter_id, data in enumerate(eval_reader()):
+    for iter_id, data in enumerate(eval_loader):
         start_time = time.time()
 
         # forward 

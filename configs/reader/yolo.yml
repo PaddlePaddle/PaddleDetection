@@ -1,12 +1,16 @@
+worker_num: 0
+use_prefetch: False
+
 TrainReader:
   inputs_def:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
   dataset:
-    !COCODataSet
+    !COCODataset
+      #dataset_dir: dataset/coco
+      dataset_dir: /home/ai/dataset/COCO17
       image_dir: train2017
       anno_path: annotations/instances_train2017.json
-      dataset_dir: dataset/coco
       with_background: false
   sample_transforms:
     - !DecodeImage
@@ -48,11 +52,7 @@ TrainReader:
     downsample_ratios: [32, 16, 8]
   batch_size: 8
   shuffle: true
-  mixup_epoch: 250
   drop_last: true
-  worker_num: 8
-  bufsize: 16
-  use_process: true
 
 
 EvalReader:
@@ -60,10 +60,11 @@ EvalReader:
     fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 50
   dataset:
-    !COCODataSet
+    !COCODataset
+      #dataset_dir: dataset/coco
+      dataset_dir: /home/ai/dataset/COCO17
       image_dir: val2017
       anno_path: annotations/instances_val2017.json
-      dataset_dir: dataset/coco
       with_background: false
   sample_transforms:
     - !DecodeImage
@@ -83,8 +84,6 @@ EvalReader:
       channel_first: True
   batch_size: 8
   drop_empty: false
-  worker_num: 8
-  bufsize: 16
 
 TestReader:
   inputs_def:
