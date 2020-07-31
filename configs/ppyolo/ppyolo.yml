@@ -1,6 +1,6 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 500000
+max_iters: 250000
 log_smooth_window: 100
 log_iter: 100
 save_dir: output
@@ -70,13 +70,13 @@ MatrixNMS:
     post_threshold: 0.01
 
 LearningRate:
-  base_lr: 0.00333
+  base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 400000
-    - 450000
+    - 150000
+    - 200000
   - !LinearWarmup
     start_factor: 0.
     steps: 4000
