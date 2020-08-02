@@ -437,4 +437,4 @@ class CascadeMaskRCNN(object):
     def test(self, feed_vars, exclude_nms=False):
         assert not exclude_nms, "exclude_nms for {} is not support currently".format(
             self.__class__.__name__)
-        return self.build(feed_vars, 'test', exclude_nms=exclude_nms)
+        return self.build(feed_vars, 'test')
