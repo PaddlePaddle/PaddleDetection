@@ -19,6 +19,7 @@ from __future__ import print_function
 import unittest
 import numpy as np
 
+import paddle
 import paddle.fluid as fluid
 import os
 import sys
@@ -70,6 +71,10 @@ class TestCascadeRCNN(TestFasterRCNN):
         self.cfg_file = 'configs/cascade_rcnn_r50_fpn_1x.yml'
 
 
+@unittest.skipIf(
+    paddle.version.major < "2",
+    "Paddle 2.0 should be used for YOLOv3 takes scale_x_y as inputs, "
+    "disable this unittest for Paddle major version < 2")
 class TestYolov3(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/yolov3_darknet.yml'
