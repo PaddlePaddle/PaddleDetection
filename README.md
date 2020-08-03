@@ -146,7 +146,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
     - [Export model for inference](docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
     - [Python inference](deploy/python)
     - [C++ inference](deploy/cpp)
-    - [Inference benchmark](docs/advanced_tutorials/inference/BENCHMARK_INFER_cn.md)
+    - [Inference benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 
 ## Model Zoo
 
