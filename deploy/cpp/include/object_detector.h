@@ -58,10 +58,14 @@ class ObjectDetector {
                           bool use_gpu=false,
                           const std::string& run_mode="fluid",
                           const int gpu_id=0) {
-    config_.load_config(model_dir);
+    success_init_ = config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
     preprocessor_.Init(config_.preprocess_info_, config_.arch_);
     LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id);
+  }
+
+  bool GetSuccessInit() const {
+    return success_init_;
   }
 
   // Load Paddle inference model
@@ -97,6 +101,7 @@ class ObjectDetector {
   std::vector<float> output_data_;
   float threshold_;
   ConfigPaser config_;
+  bool success_init_;
 };
 
 }  // namespace PaddleDetection

@@ -15,6 +15,12 @@
 // for setprecision
 #include <iomanip>
 #include "include/object_detector.h"
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#else  // Linux/Unix
+#include <unistd.h>
+#endif
 
 namespace PaddleDetection {
 
@@ -28,6 +34,11 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   paddle::AnalysisConfig config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
+  if (access(prog_file.c_str(), 0) < 0 || access(params_file.c_str(), 0) < 0) {
+    std::cerr << "[WARNING] Model file or parameter file can't be found." << std::endl;
+    success_init_ = false;
+    return;
+  }
   config.SetModel(prog_file, params_file);
   if (use_gpu) {
     config.EnableUseGpu(100, gpu_id);

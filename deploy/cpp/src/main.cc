@@ -20,6 +20,22 @@
 
 #include "include/object_detector.h"
 
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#else  // Linux/Unix
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#endif
+
+
+#ifdef _WIN32
+#define OS_PATH_SEP "\\"
+#else
+#define OS_PATH_SEP "/"
+#endif
 
 DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_path, "", "Path of input image");
@@ -27,6 +43,23 @@ DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
+DEFINE_string(output_dir, "output", "Path of saved image or video");
+
+std::string generate_save_path(const std::string& save_dir,
+                               const std::string& file_path) {
+  if (access(save_dir.c_str(), 0) < 0) {
+#ifdef _WIN32
+    mkdir(save_dir.c_str());
+#else
+    if (mkdir(save_dir.c_str(), S_IRWXU) < 0) {
+      std::cerr << "Fail to create " << save_dir << "directory." << std::endl;
+    }
+#endif
+  }
+  int pos = file_path.find_last_of(OS_PATH_SEP);
+  std::string image_name(file_path.substr(pos + 1));
+  return save_dir + OS_PATH_SEP + image_name;
+}
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
@@ -45,7 +78,7 @@ void PredictVideo(const std::string& video_path,
 
   // Create VideoWriter for output
   cv::VideoWriter video_out;
-  std::string video_out_path = "output.mp4";
+  std::string video_out_path = generate_save_path(FLAGS_output_dir, "output.mp4");
   video_out.open(video_out_path.c_str(),
                  0x00000021,
                  video_fps,
@@ -110,7 +143,8 @@ void PredictImage(const std::string& image_path,
   std::vector<int> compression_params;
   compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
   compression_params.push_back(95);
-  cv::imwrite("output.jpg", vis_img, compression_params);
+  std::string output_image_path = generate_save_path(FLAGS_output_dir, "output.jpg");
+  cv::imwrite(output_image_path, vis_img, compression_params);
   printf("Visualized output saved as output.jpeg\n");
 }
 
@@ -133,10 +167,12 @@ int main(int argc, char** argv) {
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
     FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
-  if (!FLAGS_video_path.empty()) {
-    PredictVideo(FLAGS_video_path, &det);
-  } else if (!FLAGS_image_path.empty()) {
-    PredictImage(FLAGS_image_path, &det);
+  if (det.GetSuccessInit()) {
+    if (!FLAGS_video_path.empty()) {
+      PredictVideo(FLAGS_video_path, &det);
+    } else if (!FLAGS_image_path.empty()) {
+      PredictImage(FLAGS_image_path, &det);
+    }
   }
   return 0;
 }
