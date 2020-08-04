@@ -13,7 +13,7 @@
 
 [PP-YOLO](https://arxiv.org/abs/2007.12099)是PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 1.8.4(2020年8月中旬发布)或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)。
 
-PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.2%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
+PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.9%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
@@ -46,6 +46,10 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 | PP-YOLO                   |    8    |      24      | ResNet50vd |   512    |         44.4          |      89.9      |          188.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO                   |    8    |      24      | ResNet50vd |   416    |         42.5          |     109.1      |          215.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO                   |    8    |      24      | ResNet50vd |   320    |         39.3          |     132.2      |          242.2          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_2x                |    8    |      24      | ResNet50vd |   608    |         45.9          |      72.9      |          155.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_2x                |    8    |      24      | ResNet50vd |   512    |         45.0          |      89.9      |          188.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_2x                |    8    |      24      | ResNet50vd |   416    |         43.2          |     109.1      |          215.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_2x                |    8    |      24      | ResNet50vd |   320    |         40.1          |     132.2      |          242.2          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 
 **注意:**
 
