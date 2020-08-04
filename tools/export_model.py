@@ -196,7 +196,8 @@ def main():
             inputs_def = cfg['TestReader']['inputs_def']
             inputs_def['use_dataloader'] = False
             feed_vars, _ = model.build_inputs(**inputs_def)
-            test_fetches = model.test(feed_vars)
+            # postprocess not need in exclude_nms, exclude NMS in exclude_nms mode
+            test_fetches = model.test(feed_vars, exclude_nms=FLAGS.exclude_nms)
     infer_prog = infer_prog.clone(True)
     check_py_func(infer_prog)
 
@@ -214,6 +215,11 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory for storing the output model files.")
+    parser.add_argument(
+        "--exclude_nms",
+        action='store_true',
+        default=False,
+        help="Whether prune NMS for benchmark")
 
     FLAGS = parser.parse_args()
     main()

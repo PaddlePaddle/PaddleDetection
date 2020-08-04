@@ -68,6 +68,9 @@ class MobileNetV3(object):
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
 
+        if norm_type == 'sync_bn' and freeze_norm:
+            raise ValueError(
+                "The norm_type should not be sync_bn when freeze_norm is True")
         self.scale = scale
         self.model_name = model_name
         self.feature_maps = feature_maps
@@ -437,16 +440,15 @@ class MobileNetV3(object):
 
 @register
 class MobileNetV3RCNN(MobileNetV3):
-    def __init__(
-            self,
-            scale=1.0,
-            model_name='large',
-            conv_decay=0.0,
-            norm_type='bn',
-            norm_decay=0.0,
-            freeze_norm=True,
-            feature_maps=[2, 3, 4, 5],
-            lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0], ):
+    def __init__(self,
+                 scale=1.0,
+                 model_name='large',
+                 conv_decay=0.0,
+                 norm_type='bn',
+                 norm_decay=0.0,
+                 freeze_norm=True,
+                 feature_maps=[2, 3, 4, 5],
+                 lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0]):
         super(MobileNetV3RCNN, self).__init__(
             scale=scale,
             model_name=model_name,
@@ -454,7 +456,8 @@ class MobileNetV3RCNN(MobileNetV3):
             norm_type=norm_type,
             norm_decay=norm_decay,
             lr_mult_list=lr_mult_list,
-            feature_maps=feature_maps)
+            feature_maps=feature_maps,
+            freeze_norm=freeze_norm)
         self.curr_stage = 0
         self.block_stride = 1
 

@@ -91,8 +91,15 @@ class YOLOv3Loss(object):
 
             return {'loss': sum(losses)}
 
-    def _get_fine_grained_loss(self, outputs, targets, gt_box, batch_size,
-                               num_classes, mask_anchors, ignore_thresh):
+    def _get_fine_grained_loss(self,
+                               outputs,
+                               targets,
+                               gt_box,
+                               batch_size,
+                               num_classes,
+                               mask_anchors,
+                               ignore_thresh,
+                               eps=1.e-10):
         """
         Calculate fine grained YOLOv3 loss
 
@@ -136,12 +143,27 @@ class YOLOv3Loss(object):
             tx, ty, tw, th, tscale, tobj, tcls = self._split_target(target)
 
             tscale_tobj = tscale * tobj
-            loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
-                x, tx) * tscale_tobj
-            loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
-            loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
-                y, ty) * tscale_tobj
-            loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+
+            scale_x_y = self.scale_x_y if not isinstance(
+                self.scale_x_y, Sequence) else self.scale_x_y[i]
+
+            if (abs(scale_x_y - 1.0) < eps):
+                loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
+                    x, tx) * tscale_tobj
+                loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
+                loss_y = fluid.layers.sigmoid_cross_entropy_with_logits(
+                    y, ty) * tscale_tobj
+                loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+            else:
+                dx = scale_x_y * fluid.layers.sigmoid(x) - 0.5 * (scale_x_y -
+                                                                  1.0)
+                dy = scale_x_y * fluid.layers.sigmoid(y) - 0.5 * (scale_x_y -
+                                                                  1.0)
+                loss_x = fluid.layers.abs(dx - tx) * tscale_tobj
+                loss_x = fluid.layers.reduce_sum(loss_x, dim=[1, 2, 3])
+                loss_y = fluid.layers.abs(dy - ty) * tscale_tobj
+                loss_y = fluid.layers.reduce_sum(loss_y, dim=[1, 2, 3])
+
             # NOTE: we refined loss function of (w, h) as L1Loss
             loss_w = fluid.layers.abs(w - tw) * tscale_tobj
             loss_w = fluid.layers.reduce_sum(loss_w, dim=[1, 2, 3])
@@ -149,7 +171,8 @@ class YOLOv3Loss(object):
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
             if self._iou_loss is not None:
                 loss_iou = self._iou_loss(x, y, w, h, tx, ty, tw, th, anchors,
-                                          downsample, self._batch_size)
+                                          downsample, self._batch_size,
+                                          scale_x_y)
                 loss_iou = loss_iou * tscale_tobj
                 loss_iou = fluid.layers.reduce_sum(loss_iou, dim=[1, 2, 3])
                 loss_ious.append(fluid.layers.reduce_mean(loss_iou))
@@ -157,14 +180,12 @@ class YOLOv3Loss(object):
             if self._iou_aware_loss is not None:
                 loss_iou_aware = self._iou_aware_loss(
                     ioup, x, y, w, h, tx, ty, tw, th, anchors, downsample,
-                    self._batch_size)
+                    self._batch_size, scale_x_y)
                 loss_iou_aware = loss_iou_aware * tobj
                 loss_iou_aware = fluid.layers.reduce_sum(
                     loss_iou_aware, dim=[1, 2, 3])
                 loss_iou_awares.append(fluid.layers.reduce_mean(loss_iou_aware))
 
-            scale_x_y = self.scale_x_y if not isinstance(
-                self.scale_x_y, Sequence) else self.scale_x_y[i]
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
                 output, obj, tobj, gt_box, self._batch_size, anchors,
                 num_classes, downsample, self._ignore_thresh, scale_x_y)

@@ -49,7 +49,7 @@ class YOLOv3(object):
         self.yolo_head = yolo_head
         self.use_fine_grained_loss = use_fine_grained_loss
 
-    def build(self, feed_vars, mode='train'):
+    def build(self, feed_vars, mode='train', exclude_nms=False):
         im = feed_vars['image']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -74,9 +74,9 @@ class YOLOv3(object):
             gt_score = feed_vars['gt_score']
 
             # Get targets for splited yolo loss calculation
-            # YOLOv3 supports up to 3 output layers currently
+            num_output_layer = len(self.yolo_head.anchor_masks)
             targets = []
-            for i in range(3):
+            for i in range(num_output_layer):
                 k = 'target{}'.format(i)
                 if k in feed_vars:
                     targets.append(feed_vars[k])
@@ -88,7 +88,9 @@ class YOLOv3(object):
             return loss
         else:
             im_size = feed_vars['im_size']
-            return self.yolo_head.get_prediction(body_feats, im_size)
+            # exclude_nms only for benchmark, postprocess(NMS) is not needed
+            return self.yolo_head.get_prediction(
+                body_feats, im_size, exclude_nms=exclude_nms)
 
     def _inputs_def(self, image_shape, num_max_boxes):
         im_shape = [None] + image_shape
@@ -106,11 +108,10 @@ class YOLOv3(object):
 
         if self.use_fine_grained_loss:
             # yapf: disable
-            targets_def = {
-                'target0':  {'shape': [None, 3, 86, 19, 19],  'dtype': 'float32',   'lod_level': 0},
-                'target1':  {'shape': [None, 3, 86, 38, 38],  'dtype': 'float32',   'lod_level': 0},
-                'target2':  {'shape': [None, 3, 86, 76, 76],  'dtype': 'float32',   'lod_level': 0},
-            }
+            num_output_layer = len(self.yolo_head.anchor_masks)
+            targets_def = {}
+            for i in range(num_output_layer):
+                targets_def['target{}'.format(i)] = {'shape': [None, 3, None, None, None],  'dtype': 'float32',   'lod_level': 0}
             # yapf: enable
 
             downsample = 32
@@ -139,7 +140,9 @@ class YOLOv3(object):
         # will be disabled for YOLOv3 architecture do not calculate loss in
         # eval/infer mode.
         if 'im_size' not in fields and self.use_fine_grained_loss:
-            fields.extend(['target0', 'target1', 'target2'])
+            num_output_layer = len(self.yolo_head.anchor_masks)
+            fields.extend(
+                ['target{}'.format(i) for i in range(num_output_layer)])
         feed_vars = OrderedDict([(key, fluid.data(
             name=key,
             shape=inputs_def[key]['shape'],
@@ -158,8 +161,8 @@ class YOLOv3(object):
     def eval(self, feed_vars):
         return self.build(feed_vars, mode='test')
 
-    def test(self, feed_vars):
-        return self.build(feed_vars, mode='test')
+    def test(self, feed_vars, exclude_nms=False):
+        return self.build(feed_vars, mode='test', exclude_nms=exclude_nms)
 
 
 @register
