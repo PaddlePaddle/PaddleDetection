@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 
 [PP-YOLO](https://arxiv.org/abs/2007.12099) is a optimized model based on YOLOv3 in PaddleDetection，whose performance(mAP on COCO) and inference spped are better than [YOLOv4](https://arxiv.org/abs/2004.10934)，PaddlePaddle 1.8.4(will release in mid-August 202) or [Daily Version](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev) is required to run this PP-YOLO。
 
-PP-YOLO reached mmAP(IoU=0.5:0.95) as 45.2% on COCO test-dev2017 dataset, and inference speed of FP32 on single V100 is 72.9 FPS, inference speed of FP16 with TensorRT on single V100 is 155.6 FPS.
+PP-YOLO reached mmAP(IoU=0.5:0.95) as 45.9% on COCO test-dev2017 dataset, and inference speed of FP32 on single V100 is 72.9 FPS, inference speed of FP16 with TensorRT on single V100 is 155.6 FPS.
 
 <div align="center">
   <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
@@ -46,6 +46,10 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO                  |     8      |     24    | ResNet50vd  |     512     |         44.4          |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO                  |     8      |     24    | ResNet50vd  |     416     |         42.5          |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO                  |     8      |     24    | ResNet50vd  |     320     |         39.3          |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_2x               |     8      |     24    | ResNet50vd  |     608     |         45.9          |      72.9      |          155.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
+| PP-YOLO_2x               |     8      |     24    | ResNet50vd  |     512     |         45.0          |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
+| PP-YOLO_2x               |     8      |     24    | ResNet50vd  |     416     |         43.2          |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
+| PP-YOLO_2x               |     8      |     24    | ResNet50vd  |     320     |         40.1          |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
 
 **Notes:**
 
