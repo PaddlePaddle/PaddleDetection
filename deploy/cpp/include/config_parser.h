@@ -18,6 +18,12 @@
 #include <vector>
 #include <string>
 #include <map>
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#else  // Linux/Unix
+#include <unistd.h>
+#endif
 
 #include "yaml-cpp/yaml.h"
 
@@ -38,9 +44,15 @@ class ConfigPaser {
 
   bool load_config(const std::string& model_dir,
                    const std::string& cfg = "infer_cfg.yml") {
+    std::string cfg_file = model_dir + OS_PATH_SEP + cfg;
+    if (access(cfg_file.c_str(), 0) < 0) {
+      std::cerr << "[WARNING] Config yaml file is not found, please check "
+                << "whether infer_cfg.yml exists in model_dir" << std::endl;
+      return false;
+    }
     // Load as a YAML::Node
     YAML::Node config;
-    config = YAML::LoadFile(model_dir + OS_PATH_SEP + cfg);
+    config = YAML::LoadFile(cfg_file);
 
     // Get runtime mode : fluid, trt_fp16, trt_fp32
     if (config["mode"].IsDefined()) {
