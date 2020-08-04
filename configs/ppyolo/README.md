@@ -49,7 +49,7 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 **Notes:**
 
-- PP-YOLO is trained on COCO train2017 datast and evaluated on test-dev2017 dataset，`Box AP<sup>test</sup>` is evaluation results as `mAP(IoU=0.5:0.95)`.
+- PP-YOLO is trained on COCO train2017 datast and evaluated on test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLO used 8 GPUs for training and mini-batch size as 24 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO inference speed is tesed on single Tesla V100 with batch size as 1, CUDA 10.2, CUDNN 7.5.1, TensorRT 5.1.2.2 in TensorRT mode.
 - PP-YOLO FP32 inference speed testing uses inference model exported by `tools/export_model.py` and benchmarked by running `depoly/python/infer.py` with `--run_benchmark`. All testing results do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method.
@@ -64,7 +64,7 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO tiny             |     4      |      32    | ResNet18vd |     416     |          47.0          |     401.6      |          724.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
 | PP-YOLO tiny             |     4      |      32    | ResNet18vd |     320     |          43.7          |     478.5      |          791.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
 
-- PP-YOLO tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，`Box AP50<sup>val</sup>` is evaluation results as `mAP(IoU=0.5)`.
+- PP-YOLO tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP50<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
 - PP-YOLO tiny used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO tiny inference speeding testing environment and configuration is same as PP-YOLO above.
 
