@@ -36,20 +36,20 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 ### PP-YOLO
 
-|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
-|:------------------------:|:----------:|:----------:|:----------:| :----------:| :----: | :------------: | :---------------------: | :------: | :-----: |
-| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     608     |  43.5  |       62       |          105.5          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
-| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     512     |  43.0  |       83       |          138.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
-| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     416     |  41.2  |       96       |          164.0          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
-| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     320     |  38.0  |      123       |          199.0          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
-| PP-YOLO                  |     8      |     24    | ResNet50vd  |     608     |  45.2  |      72.9      |          155.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PP-YOLO                  |     8      |     24    | ResNet50vd  |     512     |  44.4  |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PP-YOLO                  |     8      |     24    | ResNet50vd  |     416     |  42.5  |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
-| PP-YOLO                  |     8      |     24    | ResNet50vd  |     320     |  39.3  |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP<sup>test</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
+|:------------------------:|:----------:|:----------:|:----------:| :----------:| :-------------------: | :------------: | :---------------------: | :------: | :-----: |
+| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     608     |         43.5          |       62       |          105.5          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
+| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     512     |         43.0          |       83       |          138.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
+| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     416     |         41.2          |       96       |          164.0          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
+| YOLOv4(AlexyAB)          |     -      |      -     | CSPDarknet |     320     |         38.0          |      123       |          199.0          | [model](https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/yolov4/yolov4_csdarknet.yml)                   |
+| PP-YOLO                  |     8      |     24    | ResNet50vd  |     608     |         45.2          |      72.9      |          155.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                  |     8      |     24    | ResNet50vd  |     512     |         44.4          |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                  |     8      |     24    | ResNet50vd  |     416     |         42.5          |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO                  |     8      |     24    | ResNet50vd  |     320     |         39.3          |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 
 **Notes:**
 
-- PP-YOLO is trained on COCO train2017 datast and evaluated on test-dev2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5:0.95)`.
+- PP-YOLO is trained on COCO train2017 datast and evaluated on test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLO used 8 GPUs for training and mini-batch size as 24 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO inference speed is tesed on single Tesla V100 with batch size as 1, CUDA 10.2, CUDNN 7.5.1, TensorRT 5.1.2.2 in TensorRT mode.
 - PP-YOLO FP32 inference speed testing uses inference model exported by `tools/export_model.py` and benchmarked by running `depoly/python/infer.py` with `--run_benchmark`. All testing results do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method.
@@ -59,12 +59,12 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 ### PP-YOLO tiny
 
-|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
-|:------------------------:|:----------:|:----------:|:----------:| :----------:| :----: | :------------: | :---------------------: | :------: | :-----: |
-| PP-YOLO tiny             |     4      |      32    | ResNet18vd |     416     |  47.0  |     401.6      |          724.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
-| PP-YOLO tiny             |     4      |      32    | ResNet18vd |     320     |  43.7  |     478.5      |          791.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
+|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP50<sup>val</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
+|:------------------------:|:----------:|:----------:|:----------:| :----------:| :--------------------: | :------------: | :---------------------: | :------: | :-----: |
+| PP-YOLO tiny             |     4      |      32    | ResNet18vd |     416     |          47.0          |     401.6      |          724.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
+| PP-YOLO tiny             |     4      |      32    | ResNet18vd |     320     |          43.7          |     478.5      |          791.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
 
-- PP-YOLO tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5)`.
+- PP-YOLO tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP50<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
 - PP-YOLO tiny used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO tiny inference speeding testing environment and configuration is same as PP-YOLO above.
 
@@ -150,22 +150,22 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output/ppyolo -
 
 Optimizing method and ablation experiments of PP-YOLO compared with YOLOv3.
 
-| NO.  |        Model                 | Box AP | Params(M) | FLOPs(G) | V100 FP32 FPS |
-| :--: | :--------------------------- | :----: | :-------: | :------: | :-----------: |
-|  A   | YOLOv3-DarkNet53             |  38.9  |   59.13   |  65.52   |      58.2     |
-|  B   | YOLOv3-ResNet50vd-DCN        |  39.1  |   43.89   |  44.71   |      79.2     |
-|  C   | B + LB + EMA + DropBlock     |  41.4  |   43.89   |  44.71   |      79.2     |
-|  D   | C + IoU Loss                 |  41.9  |   43.89   |  44.71   |      79.2     |
-|  E   | D + IoU Aware                |  42.5  |   43.90   |  44.71   |      74.9     |
-|  F   | E + Grid Sensitive           |  42.8  |   43.90   |  44.71   |      74.8     |
-|  G   | F + Matrix NMS               |  43.5  |   43.90   |  44.71   |      74.8     |
-|  H   | G + CoordConv                |  44.0  |   43.93   |  44.76   |      74.1     |
-|  I   | H + SPP                      |  44.3  |   44.93   |  45.12   |      72.9     |
-|  J   | I + Better ImageNet Pretrain |  44.6  |   44.93   |  45.12   |      72.9     |
+| NO.  |        Model                 | Box AP<sup>val</sup> | Box AP<sup>test</sup> | Params(M) | FLOPs(G) | V100 FP32 FPS |
+| :--: | :--------------------------- | :------------------: |:--------------------: | :-------: | :------: | :-----------: |
+|  A   | YOLOv3-DarkNet53             |         38.9         |           -           |   59.13   |  65.52   |      58.2     |
+|  B   | YOLOv3-ResNet50vd-DCN        |         39.1         |           -           |   43.89   |  44.71   |      79.2     |
+|  C   | B + LB + EMA + DropBlock     |         41.4         |           -           |   43.89   |  44.71   |      79.2     |
+|  D   | C + IoU Loss                 |         41.9         |           -           |   43.89   |  44.71   |      79.2     |
+|  E   | D + IoU Aware                |         42.5         |           -           |   43.90   |  44.71   |      74.9     |
+|  F   | E + Grid Sensitive           |         42.8         |           -           |   43.90   |  44.71   |      74.8     |
+|  G   | F + Matrix NMS               |         43.5         |           -           |   43.90   |  44.71   |      74.8     |
+|  H   | G + CoordConv                |         44.0         |           -           |   43.93   |  44.76   |      74.1     |
+|  I   | H + SPP                      |         44.3         |         45.2          |   44.93   |  45.12   |      72.9     |
+|  J   | I + Better ImageNet Pretrain |         44.6         |         45.2          |   44.93   |  45.12   |      72.9     |
 
 **Notes:**
 
 - Performance and inference spedd are measure with input shape as 608
-- All models are trained on COCO train2017 datast and evaluated on val2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5:0.95)`.
+- All models are trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5:0.95)`.
 - Inference speed is tested on single Tesla V100 with batch size as 1 following test method and environment configuration in benchmark above.
 - [YOLOv3-DarkNet53](../yolov3_darknet.yml) with mAP as 38.9 is optimized YOLOv3 model in PaddleDetection，see [Model Zoo](../../docs/MODEL_ZOO.md) for details.
