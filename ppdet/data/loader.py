@@ -10,7 +10,7 @@ else:
 import numpy as np
 from paddle.io import DataLoader
 from ppdet.core.workspace import register, serializable
-from .sampler import BaseBatchSampler, DistributedBatchSampler
+from .sampler import BaseBatchSampler
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,55 @@ class Compose(object):
         return data
 
 
+class Prefetcher(threading.Thread):
+    def __init__(self, iterator, prefetch_num=1):
+        threading.Thread.__init__(self)
+        self.queue = Queue.Queue(prefetch_num)
+        self.iterator = iterator
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        for item in self.iterator:
+            self.queue.put(item)
+        self.queue.put(None)
+
+    def next(self):
+        next_item = self.queue.get()
+        if next_item is None:
+            raise StopIteration
+        return next_item
+
+    # Python 3 compatibility
+    def __next__(self):
+        return self.next()
+
+    def __iter__(self):
+        return self
+
+
+class DataLoaderPrefetch(DataLoader):
+    def __init__(self,
+                 dataset,
+                 batch_sampler,
+                 collate_fn,
+                 num_workers,
+                 places,
+                 return_list,
+                 prefetch_num=1):
+        super(DataLoaderPrefetch, self).__init__(
+            dataset=dataset,
+            batch_sampler=batch_sampler,
+            collate_fn=collate_fn,
+            num_workers=num_workers,
+            places=places,
+            return_list=return_list)
+        self.prefetch_num = prefetch_num
+
+    def __iter__(self):
+        return Prefetcher(super().__iter__(), self.prefetch_num)
+
+
 class BaseDataLoader(object):
     def __init__(self,
                  inputs_def=None,
@@ -86,14 +135,33 @@ class BaseDataLoader(object):
             shuffle=shuffle,
             drop_last=drop_last)
 
-    def __call__(self, worker_num, device, return_list=False):
-        loader = DataLoader(
-            dataset=self._dataset,
-            batch_sampler=self._batch_sampler,
-            collate_fn=self._batch_transforms,
-            num_workers=worker_num,
-            places=device,
-            return_list=return_list)
+        self.batch_size = batch_size
+
+    def __call__(self,
+                 worker_num,
+                 device,
+                 device_num=1,
+                 return_list=False,
+                 use_prefetch=False,
+                 prefetch_num=None):
+        if use_prefetch:
+            loader = DataLoaderPrefetch(
+                dataset=self._dataset,
+                batch_sampler=self._batch_sampler,
+                collate_fn=self._batch_transforms,
+                num_workers=worker_num,
+                places=device,
+                return_list=return_list,
+                prefetch_num=prefetch_num
+                if prefetch_num is not None else device_num * self.batch_size)
+        else:
+            loader = DataLoader(
+                dataset=self._dataset,
+                batch_sampler=self._batch_sampler,
+                collate_fn=self._batch_transforms,
+                num_workers=worker_num,
+                places=device,
+                return_list=return_list)
 
         return loader, len(self._batch_sampler)
 
@@ -110,14 +178,8 @@ class TrainReader(BaseDataLoader):
                  drop_last=False,
                  drop_empty=True):
         super(TrainReader, self).__init__(
-            inputs_def,
-            dataset,
-            sample_transforms,
-            batch_transforms,
-            batch_size,
-            shuffle,
-            drop_last,
-            drop_empty, )
+            inputs_def, dataset, sample_transforms, batch_transforms,
+            batch_size, shuffle, drop_last, drop_empty)
 
 
 @register
@@ -131,15 +193,9 @@ class EvalReader(BaseDataLoader):
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True):
-        super(EvalReader, self).__init__(
-            inputs_def,
-            dataset,
-            sample_transforms,
-            batch_transforms,
-            batch_size,
-            shuffle,
-            drop_last,
-            drop_empty, )
+        super(EvalReader, self).__init__(inputs_def, dataset, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty)
 
 
 @register
@@ -153,12 +209,6 @@ class TestReader(BaseDataLoader):
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True):
-        super(TestReader, self).__init__(
-            inputs_def,
-            dataset,
-            sample_transforms,
-            batch_transforms,
-            batch_size,
-            shuffle,
-            drop_last,
-            drop_empty, )
+        super(TestReader, self).__init__(inputs_def, dataset, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty)

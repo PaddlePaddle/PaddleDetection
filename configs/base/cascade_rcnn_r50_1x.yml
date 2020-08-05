@@ -5,6 +5,7 @@ weights: output/cascade_rcnn_r50_1x/model_final
 use_gpu: true
 epoch: 24
 worker_num: 0
+use_prefetch: False
 log_smooth_window: 20
 save_dir: output
 metric: COCO

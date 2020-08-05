@@ -3,6 +3,7 @@ pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/re
 weights: output/mask_rcnn_r50_1x/model_final
 use_gpu: true
 epoch: 24
+use_prefetch: False
 worker_num: 0
 log_smooth_window: 20
 save_dir: output

@@ -97,8 +97,8 @@ def run(FLAGS, cfg, place):
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
     # Data 
-    train_loader, step_per_epoch = create('TrainReader')(cfg['worker_num'],
-                                                         place)
+    train_loader, step_per_epoch = create('TrainReader')(
+        cfg['worker_num'], place, devices_num, use_prefetch=cfg['use_prefetch'])
 
     # Model
     model = create(cfg.architecture, mode='train', open_debug=cfg.open_debug)
