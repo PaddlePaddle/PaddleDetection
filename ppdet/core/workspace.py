@@ -68,76 +68,59 @@ global_config = AttrDict()
 
 
 def load_config(file_path):
-    """
-    Load config from file.
+    cfg = load_cfg(file_path)
+    if '_BASE_' in cfg:
+        base_cfg = load_cfg(cfg['_BASE_'])
 
-    Args:
-        file_path (str): Path of the config file to be loaded.
-
-    Returns: global config
-    """
-    _, ext = os.path.splitext(file_path)
-    assert ext in ['.yml', '.yaml'], "only support yaml files for now"
-
-    cfg = AttrDict()
-    with open(file_path) as f:
-        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
-    cfg = add_extra_cfg(cfg, file_path)
+    cfg = merge_config(cfg, base_cfg)
     merge_config(cfg)
+
     return global_config
 
 
-EXTRA_KEY = ['_READER_', '_ARCHITECHTURE_', '_OPTIMIZE_']
-
-
-def add_extra_cfg(cfg, file_path):
-    for extra_k in EXTRA_KEY:
-        if extra_k in cfg:
-            extra_cfg = cfg[extra_k]
-            if extra_cfg.startswith("~"):
-                extra_cfg = os.path.expanduser(extra_cfg)
-            if not extra_cfg.startswith('/'):
-                extra_cfg = os.path.join(os.path.dirname(file_path), extra_cfg)
-
-            with open(extra_cfg) as f:
-                merge_config(yaml.load(f, Loader=yaml.Loader))
-            del cfg[extra_k]
+def load_cfg(file_path):
+    _, ext = os.path.splitext(file_path)
+    assert ext in ['.yml', '.yaml'], "only support yaml files for now"
+    cfg = AttrDict()
+    with open(file_path) as f:
+        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+    cfg = load_part_cfg(cfg, file_path)
     return cfg
 
 
-def dict_merge(dct, merge_dct):
-    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
-    updating only top-level keys, dict_merge recurses down into dicts nested
-    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
-    ``dct``.
-
-    Args:
-        dct: dict onto which the merge is executed
-        merge_dct: dct merged into dct
-
-    Returns: dct
-    """
-    for k, v in merge_dct.items():
-        if (k in dct and isinstance(dct[k], dict) and
-                isinstance(merge_dct[k], collections.Mapping)):
-            dict_merge(dct[k], merge_dct[k])
-        else:
-            dct[k] = merge_dct[k]
-    return dct
+PART_KEY = ['_READER_', '_ARCHITECHTURE_', '_OPTIMIZE_']
 
 
-def merge_config(config, another_cfg=None):
-    """
-    Merge config into global config or another_cfg.
+def load_part_cfg(cfg, file_path):
+    for part_k in PART_KEY:
+        if part_k in cfg:
+            part_cfg = cfg[part_k]
+            if part_cfg.startswith("~"):
+                part_cfg = os.path.expanduser(part_cfg)
+            if not part_cfg.startswith('/'):
+                part_cfg = os.path.join(os.path.dirname(file_path), part_cfg)
 
-    Args:
-        config (dict): Config to be merged.
+            with open(part_cfg) as f:
+                merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+            del cfg[part_k]
 
-    Returns: global config
-    """
+    return cfg
+
+
+def merge_config(config, other_cfg=None):
     global global_config
-    dct = another_cfg if another_cfg is not None else global_config
-    return dict_merge(dct, config)
+    dct = other_cfg if other_cfg is not None else global_config
+    return merge_dict(dct, config)
+
+
+def merge_dict(dct, other_dct):
+    for k, v in other_dct.items():
+        if (k in dct and isinstance(dct[k], dict) and
+                isinstance(other_dct[k], collections.Mapping)):
+            merge_dict(dct[k], other_dct[k])
+        else:
+            dct[k] = other_dct[k]
+    return dct
 
 
 def get_registered_modules():

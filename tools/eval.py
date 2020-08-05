@@ -13,7 +13,6 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import coco_eval_results
-from ppdet.data.loader import create_data_loader
 
 
 def parse_args():

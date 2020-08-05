@@ -11,6 +11,6 @@ num_classes: 81
 open_debug: False
 
 
-_READER_: 'reader/faster_rcnn.yml'
-_ARCHITECHTURE_: 'architechture/faster_rcnn.yml'
-_OPTIMIZE_: 'optimize/rcnn.yml'
+_READER_: '../reader/faster_rcnn.yml'
+_ARCHITECHTURE_: '../architechture/faster_rcnn.yml'
+_OPTIMIZE_: '../optimize/rcnn.yml'

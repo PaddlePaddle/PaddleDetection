@@ -9,8 +9,8 @@ Optimize:
       start_factor: 0.
       steps: 4000
   optimizer:
-    type: Momentum
+    name: Momentum
     momentum: 0.9
   regularizer:
+    name: L2
     factor: 0.0005
-    type: L2

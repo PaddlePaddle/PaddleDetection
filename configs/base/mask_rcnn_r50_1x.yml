@@ -1,7 +1,6 @@
-architecture: CascadeRCNN
-num_stages: 3
+architecture: MaskRCNN
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/resnet50.pdparams
-weights: output/cascade_rcnn_r50_1x/model_final
+weights: output/mask_rcnn_r50_1x/model_final
 use_gpu: true
 epoch: 24
 worker_num: 0
@@ -12,6 +11,6 @@ num_classes: 81
 open_debug: False
 
 
-_READER_: 'reader/mask_rcnn.yml'
-_ARCHITECHTURE_: 'architechture/cascade_mask_rcnn.yml'
-_OPTIMIZE_: 'optimize/rcnn.yml'
+_READER_: '../reader/mask_rcnn.yml'
+_ARCHITECHTURE_: '../architechture/mask_rcnn.yml'
+_OPTIMIZE: '../optimize/rcnn.yml'

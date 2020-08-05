@@ -124,9 +124,9 @@ class Optimize():
     def __init__(
             self,
             learning_rate,
-            optimizer={'type': 'Momentum',
+            optimizer={'name': 'Momentum',
                        'momentum': .9},
-            regularizer={'type': 'L2',
+            regularizer={'name': 'L2',
                          'factor': .0001},
             clip_grad_by_norm=None, ):
         self.learning_rate = LearningRate(**learning_rate)
@@ -141,15 +141,15 @@ class Optimize():
                     clip_norm=self.clip_grad_by_norm))
 
         if self.regularizer:
-            reg_type = self.regularizer['type'] + 'Decay'
+            reg_type = self.regularizer['name'] + 'Decay'
             reg_factor = self.regularizer['factor']
             regularization = getattr(regularizer, reg_type)(reg_factor)
         else:
             regularization = None
 
         optim_args = self.optimizer.copy()
-        optim_type = optim_args['type']
-        del optim_args['type']
+        optim_type = optim_args['name']
+        del optim_args['name']
         op = getattr(optimizer, optim_type)
 
         return op(learning_rate=self.learning_rate(step_per_epoch),
