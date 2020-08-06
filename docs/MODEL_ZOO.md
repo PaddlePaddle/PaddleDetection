@@ -226,12 +226,12 @@ randomly cropping, randomly expansion, randomly flipping.
 
 ### Face Detection
 
-Please refer [face detection models](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/face_detection) for details.
+Please refer [face detection models](featured_model/FACE_DETECTION_en.md) for details.
 
 
 ### Object Detection in Open Images Dataset V5
 
-Please refer [Open Images Dataset V5 Baseline model](featured_model/OIDV5_BASELINE_MODEL.md) for details.
+Please refer [Open Images Dataset V5 Baseline model](featured_model/champion_model/OIDV5_BASELINE_MODEL.md) for details.
 
 ### Anchor Free Models
 
