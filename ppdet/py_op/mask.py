@@ -180,7 +180,7 @@ def polys_to_mask_wrt_box(polygons, box, M):
     return mask
 
 
-@jit
+#@jit
 def expand_mask_targets(masks, mask_class_labels, resolution, num_classes):
     """Expand masks from shape (#masks, resolution ** 2)
     to (#masks, #classes * resolution ** 2) to encode class

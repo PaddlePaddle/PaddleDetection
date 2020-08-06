@@ -45,37 +45,46 @@ def get_ckpt_path(path):
 
 
 def load_dygraph_ckpt(model,
-                      optimizer,
+                      optimizer=None,
                       pretrain_ckpt=None,
                       ckpt=None,
-                      ckpt_type='pretrain',
+                      ckpt_type=None,
                       exclude_params=[],
-                      open_debug=False):
+                      load_static_weights=False):
 
-    if ckpt_type == 'pretrain':
+    assert ckpt_type in ['pretrain', 'resume', 'finetune', None]
+    if ckpt_type == 'pretrain' and ckpt is None:
         ckpt = pretrain_ckpt
     ckpt = get_ckpt_path(ckpt)
-    if ckpt is not None and os.path.exists(ckpt):
-        param_state_dict, optim_state_dict = fluid.load_dygraph(ckpt)
-        if open_debug:
-            print("Loading Weights: ", param_state_dict.keys())
-
-        if len(exclude_params) != 0:
-            for k in exclude_params:
-                param_state_dict.pop(k, None)
-
-        if ckpt_type == 'pretrain':
-            model.backbone.set_dict(param_state_dict)
-        elif ckpt_type == 'finetune':
-            model.set_dict(param_state_dict, use_structured_name=True)
-        else:
-            model.set_dict(param_state_dict)
-
-        if ckpt_type == 'resume':
-            if optim_state_dict is None:
-                print("Can't Resume Last Training's Optimizer State!!!")
+    assert os.path.exists(ckpt), "Path {} does not exist.".format(ckpt)
+    if load_static_weights:
+        pre_state_dict = fluid.load_program_state(ckpt)
+        param_state_dict = {}
+        model_dict = model.state_dict()
+        for key in model_dict.keys():
+            weight_name = model_dict[key].name
+            if weight_name in pre_state_dict.keys():
+                print('Load weight: {}, shape: {}'.format(
+                    weight_name, pre_state_dict[weight_name].shape))
+                param_state_dict[key] = pre_state_dict[weight_name]
             else:
-                optimizer.set_dict(optim_state_dict)
+                param_state_dict[key] = model_dict[key]
+        model.set_dict(param_state_dict)
+        return model
+    param_state_dict, optim_state_dict = fluid.load_dygraph(ckpt)
+
+    if len(exclude_params) != 0:
+        for k in exclude_params:
+            param_state_dict.pop(k, None)
+
+    if ckpt_type == 'pretrain':
+        model.backbone.set_dict(param_state_dict)
+    else:
+        model.set_dict(param_state_dict)
+
+    if ckpt_type == 'resume':
+        assert optim_state_dict, "Can't Resume Last Training's Optimizer State!!!"
+        optimizer.set_dict(optim_state_dict)
     return model
 
 

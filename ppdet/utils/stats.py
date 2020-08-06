@@ -47,7 +47,7 @@ class TrainingStats(object):
 
     def update(self, stats):
         for k, v in self.smoothed_losses_and_metrics.items():
-            v.add_value(stats[k])
+            v.add_value(stats[k].numpy())
 
     def get(self, extras=None):
         stats = collections.OrderedDict()

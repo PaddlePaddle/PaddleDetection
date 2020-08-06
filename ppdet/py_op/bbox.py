@@ -126,12 +126,11 @@ def bbox_overlaps(bboxes1, bboxes2):
 def nms(dets, thresh):
     if dets.shape[0] == 0:
         return []
-    x1 = dets[:, 0]
-    y1 = dets[:, 1]
-    x2 = dets[:, 2]
-    y2 = dets[:, 3]
-    scores = dets[:, 4]
-
+    scores = dets[:, 0]
+    x1 = dets[:, 1]
+    y1 = dets[:, 2]
+    x2 = dets[:, 3]
+    y2 = dets[:, 4]
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
     order = scores.argsort()[::-1]
 
@@ -242,13 +241,13 @@ def compute_bbox_targets(bboxes1, bboxes2, labels, bbox_reg_weights):
         np.float32, copy=False)
 
 
-@jit
+#@jit
 def expand_bbox_targets(bbox_targets_input,
                         class_nums=81,
                         is_cls_agnostic=False):
     class_labels = bbox_targets_input[:, 0]
     fg_inds = np.where(class_labels > 0)[0]
-    if not is_cls_agnostic:
+    if is_cls_agnostic:
         class_nums = 2
     bbox_targets = np.zeros((class_labels.shape[0], 4 * class_nums))
     bbox_inside_weights = np.zeros(bbox_targets.shape)

@@ -14,21 +14,29 @@ class AnchorGeneratorRPN(object):
                  anchor_sizes=[32, 64, 128, 256, 512],
                  aspect_ratios=[0.5, 1.0, 2.0],
                  stride=[16.0, 16.0],
-                 variance=[1.0, 1.0, 1.0, 1.0]):
+                 variance=[1.0, 1.0, 1.0, 1.0],
+                 anchor_start_size=None):
         super(AnchorGeneratorRPN, self).__init__()
         self.anchor_sizes = anchor_sizes
         self.aspect_ratios = aspect_ratios
         self.stride = stride
         self.variance = variance
+        self.anchor_start_size = anchor_start_size
 
-    def __call__(self, inputs):
-        outs = fluid.layers.anchor_generator(
-            input=inputs,
-            anchor_sizes=self.anchor_sizes,
+    def __call__(self, input, level=None):
+        anchor_sizes = self.anchor_sizes if (
+            level is None or self.anchor_start_size is None) else (
+                self.anchor_start_size * 2**level)
+        stride = self.stride if (
+            level is None or self.anchor_start_size is None) else (
+                self.stride[0] * (2.**level), self.stride[1] * (2.**level))
+        anchor, var = fluid.layers.anchor_generator(
+            input=input,
+            anchor_sizes=anchor_sizes,
             aspect_ratios=self.aspect_ratios,
-            stride=self.stride,
+            stride=stride,
             variance=self.variance)
-        return outs
+        return anchor, var
 
 
 @register
@@ -49,20 +57,12 @@ class AnchorTargetGeneratorRPN(object):
         self.negative_overlap = negative_overlap
         self.use_random = use_random
 
-    def __call__(self,
-                 cls_logits,
-                 bbox_pred,
-                 anchor_box,
-                 gt_boxes,
-                 is_crowd,
-                 im_info,
-                 open_debug=False):
+    def __call__(self, cls_logits, bbox_pred, anchor_box, gt_boxes, is_crowd,
+                 im_info):
         anchor_box = anchor_box.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
-        if open_debug:
-            self.use_random = False
         loc_indexes, score_indexes, tgt_labels, tgt_bboxes, bbox_inside_weights = generate_rpn_anchor_target(
             anchor_box, gt_boxes, is_crowd, im_info, self.straddle_thresh,
             self.batch_size_per_im, self.positive_overlap,
@@ -149,8 +149,7 @@ class ProposalGenerator(object):
                  infer_post_nms_top_n=1000,
                  nms_thresh=.5,
                  min_size=.1,
-                 eta=1.,
-                 return_rois_num=True):
+                 eta=1.):
         super(ProposalGenerator, self).__init__()
         self.train_pre_nms_top_n = train_pre_nms_top_n
         self.train_post_nms_top_n = train_post_nms_top_n
@@ -159,7 +158,6 @@ class ProposalGenerator(object):
         self.nms_thresh = nms_thresh
         self.min_size = min_size
         self.eta = eta
-        self.return_rois_num = return_rois_num
 
     def __call__(self,
                  scores,
@@ -170,7 +168,7 @@ class ProposalGenerator(object):
                  mode='train'):
         pre_nms_top_n = self.train_pre_nms_top_n if mode == 'train' else self.infer_pre_nms_top_n
         post_nms_top_n = self.train_post_nms_top_n if mode == 'train' else self.infer_post_nms_top_n
-        outs = fluid.layers.generate_proposals(
+        rpn_rois, rpn_rois_prob, rpn_rois_num = fluid.layers.generate_proposals(
             scores,
             bbox_deltas,
             im_info,
@@ -181,8 +179,8 @@ class ProposalGenerator(object):
             nms_thresh=self.nms_thresh,
             min_size=self.min_size,
             eta=self.eta,
-            return_rois_num=self.return_rois_num)
-        return outs
+            return_rois_num=True)
+        return rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n
 
 
 @register
@@ -210,34 +208,29 @@ class ProposalTargetGenerator(object):
         self.bbox_reg_weights = bbox_reg_weights
         self.num_classes = num_classes
         self.use_random = use_random
-        self.is_cls_agnostic = is_cls_agnostic,
+        self.is_cls_agnostic = is_cls_agnostic
         self.is_cascade_rcnn = is_cascade_rcnn
 
     def __call__(self,
                  rpn_rois,
-                 rpn_rois_nums,
+                 rpn_rois_num,
                  gt_classes,
                  is_crowd,
                  gt_boxes,
                  im_info,
-                 stage=0,
-                 open_debug=False):
+                 stage=0):
         rpn_rois = rpn_rois.numpy()
-        rpn_rois_nums = rpn_rois_nums.numpy()
+        rpn_rois_num = rpn_rois_num.numpy()
         gt_classes = gt_classes.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
-        if open_debug:
-            self.use_random = False
-
         outs = generate_proposal_target(
-            rpn_rois, rpn_rois_nums, gt_classes, is_crowd, gt_boxes, im_info,
+            rpn_rois, rpn_rois_num, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
             self.bg_thresh_hi[stage], self.bg_thresh_lo[stage],
             self.bbox_reg_weights[stage], self.num_classes, self.use_random,
             self.is_cls_agnostic, self.is_cascade_rcnn)
-
         outs = [to_variable(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
@@ -247,25 +240,25 @@ class ProposalTargetGenerator(object):
 @register
 @serializable
 class MaskTargetGenerator(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'mask_resolution']
 
-    def __init__(self, num_classes=81, resolution=14):
+    def __init__(self, num_classes=81, mask_resolution=14):
         super(MaskTargetGenerator, self).__init__()
         self.num_classes = num_classes
-        self.resolution = resolution
+        self.mask_resolution = mask_resolution
 
-    def __call__(self, im_info, gt_classes, is_crowd, gt_segms, rois, rois_nums,
+    def __call__(self, im_info, gt_classes, is_crowd, gt_segms, rois, rois_num,
                  labels_int32):
         im_info = im_info.numpy()
         gt_classes = gt_classes.numpy()
         is_crowd = is_crowd.numpy()
         gt_segms = gt_segms.numpy()
         rois = rois.numpy()
-        rois_nums = rois_nums.numpy()
+        rois_num = rois_num.numpy()
         labels_int32 = labels_int32.numpy()
         outs = generate_mask_target(im_info, gt_classes, is_crowd, gt_segms,
-                                    rois, rois_nums, labels_int32,
-                                    self.num_classes, self.resolution)
+                                    rois, rois_num, labels_int32,
+                                    self.num_classes, self.mask_resolution)
 
         outs = [to_variable(v) for v in outs]
         for v in outs:
@@ -277,41 +270,55 @@ class MaskTargetGenerator(object):
 class RoIExtractor(object):
     def __init__(self,
                  resolution=14,
-                 spatial_scale=1. / 16,
                  sampling_ratio=0,
-                 extractor_type='RoIAlign'):
+                 canconical_level=4,
+                 canonical_size=224,
+                 start_level=0,
+                 end_level=3):
         super(RoIExtractor, self).__init__()
-        if isinstance(resolution, Integral):
-            resolution = [resolution, resolution]
         self.resolution = resolution
-        self.spatial_scale = spatial_scale
         self.sampling_ratio = sampling_ratio
-        self.extractor_type = extractor_type
+        self.canconical_level = canconical_level
+        self.canonical_size = canonical_size
+        self.start_level = start_level
+        self.end_level = end_level
 
-    def __call__(self, feat, rois, rois_nums):
+    def __call__(self, feats, rois, spatial_scale):
+        roi, rois_num = rois
         cur_l = 0
-        new_nums = [cur_l]
-        rois_nums_np = rois_nums.numpy()
-        for l in rois_nums_np:
-            cur_l += l
-            new_nums.append(cur_l)
-        nums_t = to_variable(np.asarray(new_nums))
-        if self.extractor_type == 'RoIAlign':
+        if self.start_level == self.end_level:
             rois_feat = fluid.layers.roi_align(
-                feat,
-                rois,
-                self.resolution[0],
-                self.resolution[1],
-                self.spatial_scale,
-                rois_lod=nums_t)
-        elif self.extractor_type == 'RoIPool':
-            rois_feat = fluid.layers.roi_pool(
-                feat,
-                rois,
-                self.resolution[0],
-                self.resolution[1],
-                self.spatial_scale,
-                rois_lod=nums_t)
+                feats[self.start_level],
+                roi,
+                self.resolution,
+                self.resolution,
+                spatial_scale,
+                rois_num=rois_num)
+            return rois_feat
+        offset = 2
+        k_min = self.start_level + offset
+        k_max = self.end_level + offset
+        rois_dist, restore_index, rois_num_dist = fluid.layers.distribute_fpn_proposals(
+            roi,
+            k_min,
+            k_max,
+            self.canconical_level,
+            self.canonical_size,
+            rois_num=rois_num,
+            return_rois_num=True)
+        rois_feat_list = []
+        for lvl in range(self.start_level, self.end_level + 1):
+            roi_feat = fluid.layers.roi_align(
+                feats[lvl],
+                rois_dist[lvl],
+                self.resolution,
+                self.resolution,
+                spatial_scale[lvl],
+                sampling_ratio=self.sampling_ratio,
+                rois_num=rois_num_dist[lvl])
+            rois_feat_list.append(roi_feat)
+        rois_feat_shuffle = fluid.layers.concat(rois_feat_list)
+        rois_feat = fluid.layers.gather(rois_feat_shuffle, restore_index)
 
         return rois_feat
 
@@ -333,11 +340,13 @@ class DecodeClipNms(object):
         self.score_threshold = score_threshold
         self.nms_threshold = nms_threshold
 
-    def __call__(self, bbox, bbox_prob, bbox_delta, img_info):
-        outs = bbox_post_process(bbox.numpy(),
+    def __call__(self, bboxes, bbox_prob, bbox_delta, im_info):
+        bboxes_np = (i.numpy() for i in bboxes)
+        # bbox, bbox_num
+        outs = bbox_post_process(bboxes_np,
                                  bbox_prob.numpy(),
                                  bbox_delta.numpy(),
-                                 img_info.numpy(), self.keep_top_k,
+                                 im_info.numpy(), self.keep_top_k,
                                  self.score_threshold, self.nms_threshold,
                                  self.num_classes)
         outs = [to_variable(v) for v in outs]

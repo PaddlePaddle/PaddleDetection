@@ -127,7 +127,6 @@ class COCODataSet(DataSet):
             if not self.load_image_only:
                 ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
                 instances = coco.loadAnns(ins_anno_ids)
-
                 bboxes = []
                 for inst in instances:
                     x, y, box_w, box_h = inst['bbox']
@@ -135,6 +134,7 @@ class COCODataSet(DataSet):
                     y1 = max(0, y)
                     x2 = min(im_w - 1, x1 + max(0, box_w - 1))
                     y2 = min(im_h - 1, y1 + max(0, box_h - 1))
+
                     if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
                         inst['clean_bbox'] = [x1, y1, x2, y2]
                         bboxes.append(inst)
@@ -143,6 +143,7 @@ class COCODataSet(DataSet):
                             'Found an invalid bbox in annotations: im_id: {}, '
                             'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
                                 img_id, float(inst['area']), x1, y1, x2, y2))
+
                 num_bbox = len(bboxes)
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)

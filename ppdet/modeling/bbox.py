@@ -5,51 +5,65 @@ from ppdet.core.workspace import register
 
 @register
 class BBoxPostProcess(object):
-    __shared__ = ['num_classes', 'num_stages']
+    __shared__ = ['num_classes']
     __inject__ = ['decode_clip_nms']
 
     def __init__(self,
                  decode_clip_nms,
                  num_classes=81,
-                 num_stages=1,
+                 cls_agnostic=False,
                  decode=None,
                  clip=None,
-                 nms=None):
+                 nms=None,
+                 score_stage=[0, 1, 2],
+                 delta_stage=[2]):
         super(BBoxPostProcess, self).__init__()
         self.num_classes = num_classes
-        self.num_stages = num_stages
         self.decode = decode
         self.clip = clip
         self.nms = nms
         self.decode_clip_nms = decode_clip_nms
+        self.score_stage = score_stage
+        self.delta_stage = delta_stage
+        self.out_dim = 2 if cls_agnostic else num_classes
+        self.cls_agnostic = cls_agnostic
 
-    def __call__(self, inputs):
+    def __call__(self, inputs, bboxheads, rois):
         # TODO: split into 3 steps
         # TODO: modify related ops for deploying
         # decode
         # clip
         # nms
-        if self.num_stages > 0:
-            bbox_prob_list = []
-            for i in range(self.num_stages):
-                bbox_prob_list.append(inputs['bbox_head_' + str(i)][
-                    'bbox_prob'])
-            bbox_prob = fluid.layers.sum(bbox_prob_list) / float(
-                len(bbox_prob_list))
-            bbox_delta = inputs['bbox_head_' + str(i)]['bbox_delta']
-            if inputs['bbox_head_0']['cls_agnostic_bbox_reg'] == 2:
-                bbox_delta = fluid.layers.slice(
-                    bbox_delta, axes=1, starts=[1], ends=[2])
-                bbox_delta = fluid.layers.expand(bbox_delta,
-                                                 [1, self.num_classes, 1])
+        if isinstance(rois, tuple):
+            proposal, proposal_num = rois
+            score, delta = bboxheads[0]
+            bbox_prob = fluid.layers.softmax(score)
+            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
         else:
-            bbox_prob = inputs['bbox_prob']
-            bbox_delta = inputs['bbox_delta']
-
-        outs = self.decode_clip_nms(inputs['rpn_rois'], bbox_prob, bbox_delta,
-                                    inputs['im_info'])
-        outs = {"predicted_bbox_nums": outs[0], "predicted_bbox": outs[1]}
-        return outs
+            num_stage = len(rois)
+            proposal_list = []
+            prob_list = []
+            delta_list = []
+            for stage, (proposals, bboxhead) in zip(rois, bboxheads):
+                score, delta = bboxhead
+                proposal, proposal_num = proposals
+                if stage in self.score_stage:
+                    bbox_prob = fluid.layers.softmax(score)
+                    prob_list.append(bbox_prob)
+                if stage in self.delta_stage:
+                    proposal_list.append(proposal)
+                    delta_list.append(delta)
+            bbox_prob = fluid.layers.mean(prob_list)
+            delta = fluid.layers.mean(delta_list)
+            proposal = fluid.layers.mean(proposal_list)
+            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
+            if self.cls_agnostic:
+                delta = delta[:, 1:2, :]
+                delta = fluid.layers.expand(delta, [1, self.num_classes, 1])
+        bboxes = (proposal, proposal_num)
+        bboxes, bbox_nums = self.decode_clip_nms(bboxes, bbox_prob, delta,
+                                                 inputs['im_info'])
+        return bboxes, bbox_nums
 
 
 @register
@@ -97,36 +111,51 @@ class AnchorRPN(object):
         self.anchor_generator = anchor_generator
         self.anchor_target_generator = anchor_target_generator
 
-    def __call__(self, inputs):
-        outs = self.generate_anchors(inputs)
-        return outs
+    def __call__(self, rpn_feats):
+        anchors = []
+        num_level = len(rpn_feats)
+        for i, rpn_feat in enumerate(rpn_feats):
+            anchor, var = self.anchor_generator(rpn_feat, i)
+            anchors.append((anchor, var))
+        return anchors
 
-    def generate_anchors(self, inputs):
-        # TODO: update here to use int to specify featmap size
-        outs = self.anchor_generator(inputs['rpn_feat'])
-        outs = {'anchor': outs[0], 'anchor_var': outs[1], 'anchor_module': self}
-        return outs
+    def _get_target_input(self, rpn_feats, anchors):
+        rpn_score_list = []
+        rpn_delta_list = []
+        anchor_list = []
+        for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_feats, anchors):
+            rpn_score = fluid.layers.transpose(rpn_score, perm=[0, 2, 3, 1])
+            rpn_delta = fluid.layers.transpose(rpn_delta, perm=[0, 2, 3, 1])
+            rpn_score = fluid.layers.reshape(x=rpn_score, shape=(0, -1, 1))
+            rpn_delta = fluid.layers.reshape(x=rpn_delta, shape=(0, -1, 4))
 
-    def generate_anchors_target(self, inputs):
-        rpn_rois_score = fluid.layers.transpose(
-            inputs['rpn_rois_score'], perm=[0, 2, 3, 1])
-        rpn_rois_delta = fluid.layers.transpose(
-            inputs['rpn_rois_delta'], perm=[0, 2, 3, 1])
-        rpn_rois_score = fluid.layers.reshape(
-            x=rpn_rois_score, shape=(0, -1, 1))
-        rpn_rois_delta = fluid.layers.reshape(
-            x=rpn_rois_delta, shape=(0, -1, 4))
+            anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
+            var = fluid.layers.reshape(var, shape=(-1, 4))
 
-        anchor = fluid.layers.reshape(inputs['anchor'], shape=(-1, 4))
+            rpn_score_list.append(rpn_score)
+            rpn_delta_list.append(rpn_delta)
+            anchor_list.append(anchor)
+
+        rpn_scores = fluid.layers.concat(rpn_score_list, axis=1)
+        rpn_deltas = fluid.layers.concat(rpn_delta_list, axis=1)
+        anchors = fluid.layers.concat(anchor_list)
+        return rpn_scores, rpn_deltas, anchors
+
+    def generate_loss_inputs(self, inputs, rpn_head_out, anchors):
+        assert len(rpn_head_out) == len(
+            anchors
+        ), "rpn_head_out and anchors should have same length, but received rpn_head_out' length is {} and anchors' length is {}".format(
+            len(rpn_head_out), len(anchors))
+        rpn_score, rpn_delta, anchors = self._get_target_input(rpn_head_out,
+                                                               anchors)
 
         score_pred, roi_pred, score_tgt, roi_tgt, roi_weight = self.anchor_target_generator(
-            bbox_pred=rpn_rois_delta,
-            cls_logits=rpn_rois_score,
-            anchor_box=anchor,
+            bbox_pred=rpn_delta,
+            cls_logits=rpn_score,
+            anchor_box=anchors,
             gt_boxes=inputs['gt_bbox'],
             is_crowd=inputs['is_crowd'],
-            im_info=inputs['im_info'],
-            open_debug=inputs['open_debug'])
+            im_info=inputs['im_info'])
         outs = {
             'rpn_score_pred': score_pred,
             'rpn_score_target': score_tgt,
@@ -180,86 +209,108 @@ class Proposal(object):
         self.proposal_target_generator = proposal_target_generator
         self.bbox_post_process = bbox_post_process
 
-    def __call__(self, inputs):
-        outs = {}
-        if inputs['stage'] == 0:
-            proposal_out = self.generate_proposal(inputs)
-            inputs.update(proposal_out)
-        if inputs['mode'] == 'train':
-            proposal_target_out = self.generate_proposal_target(inputs)
-            outs.update(proposal_target_out)
-        return outs
+    def generate_proposal(self, inputs, rpn_head_out, anchor_out):
+        rpn_rois_list = []
+        rpn_prob_list = []
+        rpn_rois_num_list = []
+        for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_head_out,
+                                                         anchor_out):
+            rpn_prob = fluid.layers.sigmoid(rpn_score)
+            rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = self.proposal_generator(
+                scores=rpn_prob,
+                bbox_deltas=rpn_delta,
+                anchors=anchor,
+                variances=var,
+                im_info=inputs['im_info'],
+                mode=inputs['mode'])
+            if len(rpn_head_out) == 1:
+                return rpn_rois, rpn_rois_num
+            rpn_rois_list.append(rpn_rois)
+            rpn_prob_list.append(rpn_rois_prob)
+            rpn_rois_num_list.append(rpn_rois_num)
 
-    def generate_proposal(self, inputs):
-        rpn_rois_prob = fluid.layers.sigmoid(
-            inputs['rpn_rois_score'], name='rpn_rois_prob')
-        outs = self.proposal_generator(
-            scores=rpn_rois_prob,
-            bbox_deltas=inputs['rpn_rois_delta'],
-            anchors=inputs['anchor'],
-            variances=inputs['anchor_var'],
-            im_info=inputs['im_info'],
-            mode=inputs['mode'])
-        outs = {
-            'rpn_rois': outs[0],
-            'rpn_rois_probs': outs[1],
-            'rpn_rois_nums': outs[2]
-        }
-        return outs
+        start_level = 2
+        end_level = start_level + len(rpn_head_out)
+        rois_collect, rois_num_collect = fluid.layers.collect_fpn_proposals(
+            rpn_rois_list,
+            rpn_prob_list,
+            start_level,
+            end_level,
+            post_nms_top_n,
+            multi_rois_num=rpn_rois_num_list,
+            return_rois_num=True)
+        return rois_collect, rois_num_collect
 
-    def generate_proposal_target(self, inputs):
-        if inputs['stage'] == 0:
-            rois = inputs['rpn_rois']
-            rois_num = inputs['rpn_rois_nums']
-        elif inputs['stage'] > 0:
-            last_proposal_out = inputs['proposal_' + str(inputs['stage'] - 1)]
-            rois = last_proposal_out['refined_bbox']
-            rois_num = last_proposal_out['rois_nums']
-
+    def generate_proposal_target(self, inputs, rois, rois_num, stage=0):
         outs = self.proposal_target_generator(
             rpn_rois=rois,
-            rpn_rois_nums=rois_num,
+            rpn_rois_num=rois_num,
             gt_classes=inputs['gt_class'],
             is_crowd=inputs['is_crowd'],
             gt_boxes=inputs['gt_bbox'],
             im_info=inputs['im_info'],
-            stage=inputs['stage'],
-            open_debug=inputs['open_debug'])
-        outs = {
-            'rois': outs[0],
+            stage=stage)
+        rois = outs[0]
+        rois_num = outs[-1]
+        targets = {
             'labels_int32': outs[1],
             'bbox_targets': outs[2],
             'bbox_inside_weights': outs[3],
-            'bbox_outside_weights': outs[4],
-            'rois_nums': outs[5]
+            'bbox_outside_weights': outs[4]
         }
-        return outs
+        return rois, rois_num, targets
 
-    def refine_bbox(self, inputs):
-        if inputs['mode'] == 'train':
-            rois = inputs['proposal_' + str(inputs['stage'])]['rois']
-        else:
-            rois = inputs['rpn_rois']
-        bbox_head_out = inputs['bbox_head_' + str(inputs['stage'])]
-
-        bbox_delta_r = fluid.layers.reshape(
-            bbox_head_out['bbox_delta'],
-            (-1, inputs['bbox_head_0']['cls_agnostic_bbox_reg'], 4))
+    def refine_bbox(self, rois, bbox_delta, stage=0):
+        out_dim = bbox_delta.shape[1] / 4
+        bbox_delta_r = fluid.layers.reshape(bbox_delta, (-1, out_dim, 4))
         bbox_delta_s = fluid.layers.slice(
             bbox_delta_r, axes=[1], starts=[1], ends=[2])
 
         refined_bbox = fluid.layers.box_coder(
             prior_box=rois,
             prior_box_var=self.proposal_target_generator.bbox_reg_weights[
-                inputs['stage']],
+                stage],
             target_box=bbox_delta_s,
             code_type='decode_center_size',
             box_normalized=False,
             axis=1)
         refined_bbox = fluid.layers.reshape(refined_bbox, shape=[-1, 4])
-        outs = {'refined_bbox': refined_bbox}
-        return outs
+        return refined_bbox
 
-    def post_process(self, inputs):
-        outs = self.bbox_post_process(inputs)
-        return outs
+    def __call__(self,
+                 inputs,
+                 rpn_head_out,
+                 anchor_out,
+                 stage=0,
+                 proposal_out=None,
+                 bbox_head_outs=None,
+                 refined=False):
+        if refined:
+            assert proposal_out is not None, "If proposal has been refined, proposal_out should not be None."
+            return proposal_out
+        if stage == 0:
+            roi, rois_num = self.generate_proposal(inputs, rpn_head_out,
+                                                   anchor_out)
+            self.proposals_list = []
+            self.targets_list = []
+
+        else:
+            bbox_delta = bbox_head_outs[stage][0]
+            roi = self.refine_bbox(proposal_out[0], bbox_delta, stage - 1)
+            rois_num = proposal_out[1]
+        if inputs['mode'] == 'train':
+            roi, rois_num, targets = self.generate_proposal_target(
+                inputs, roi, rois_num, stage)
+            self.targets_list.append(targets)
+        self.proposals_list.append((roi, rois_num))
+        return roi, rois_num
+
+    def get_targets(self):
+        return self.targets_list
+
+    def get_proposals(self):
+        return self.proposals_list
+
+    def post_process(self, inputs, bbox_head_out, rois):
+        bboxes = self.bbox_post_process(inputs, bbox_head_out, rois)
+        return bboxes

@@ -89,7 +89,7 @@ def generate_rpn_anchor_target(anchors,
 
 @jit
 def label_anchor(anchors, gt_boxes):
-    iou = compute_iou(anchors, gt_boxes)
+    iou = bbox_overlaps(anchors, gt_boxes)
 
     # every gt's anchor's index
     gt_bbox_anchor_inds = iou.argmax(axis=0)
@@ -150,7 +150,7 @@ def sample_anchor(anchor_gt_bbox_iou,
 
 @jit
 def generate_proposal_target(rpn_rois,
-                             rpn_rois_nums,
+                             rpn_rois_num,
                              gt_classes,
                              is_crowd,
                              gt_boxes,
@@ -171,12 +171,12 @@ def generate_proposal_target(rpn_rois,
     tgt_deltas = []
     rois_inside_weights = []
     rois_outside_weights = []
-    rois_nums = []
+    new_rois_num = []
     st_num = 0
     end_num = 0
-    for im_i in range(len(rpn_rois_nums)):
-        rpn_rois_num = rpn_rois_nums[im_i]
-        end_num += rpn_rois_num
+    for im_i in range(len(rpn_rois_num)):
+        length = rpn_rois_num[im_i]
+        end_num += length
 
         rpn_roi = rpn_rois[st_num:end_num]
         im_scale = im_info[im_i][2]
@@ -220,10 +220,10 @@ def generate_proposal_target(rpn_rois,
             bbox_inside_weights > 0, dtype=bbox_inside_weights.dtype)
 
         roi = sampled_boxes * im_scale
-        st_num += rpn_rois_num
+        st_num += length
 
         rois.append(roi)
-        rois_nums.append(roi.shape[0])
+        new_rois_num.append(roi.shape[0])
         tgt_labels.append(sampled_labels)
         tgt_deltas.append(sampled_deltas)
         rois_inside_weights.append(bbox_inside_weights)
@@ -237,9 +237,8 @@ def generate_proposal_target(rpn_rois,
         rois_inside_weights, axis=0).astype(np.float32)
     rois_outside_weights = np.concatenate(
         rois_outside_weights, axis=0).astype(np.float32)
-    rois_nums = np.asarray(rois_nums, np.int32)
-
-    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, rois_nums
+    new_rois_num = np.asarray(new_rois_num, np.int32)
+    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, new_rois_num
 
 
 @jit
@@ -250,7 +249,7 @@ def label_bbox(boxes,
                class_nums=81,
                is_cascade_rcnn=False):
 
-    iou = compute_iou(boxes, gt_boxes)
+    iou = bbox_overlaps(boxes, gt_boxes)
 
     # every roi's gt box's index  
     roi_gt_bbox_inds = np.zeros((boxes.shape[0]), dtype=np.int32)
@@ -318,15 +317,16 @@ def sample_bbox(roi_gt_bbox_iou,
 
 @jit
 def generate_mask_target(im_info, gt_classes, is_crowd, gt_segms, rois,
-                         rois_nums, labels_int32, num_classes, resolution):
+                         rois_num, labels_int32, num_classes, resolution):
     mask_rois = []
+    mask_rois_num = []
     rois_has_mask_int32 = []
     mask_int32 = []
     st_num = 0
     end_num = 0
-    for k in range(len(rois_nums)):
-        rois_num = rois_nums[k]
-        end_num += rois_num
+    for k in range(len(rois_num)):
+        length = rois_num[k]
+        end_num += length
 
         # remove padding
         gt_polys = gt_segms[k]
@@ -345,37 +345,32 @@ def generate_mask_target(im_info, gt_classes, is_crowd, gt_segms, rois,
                 if len(new_poly) > 0:
                     gt_segs.append(new_poly)
             new_gt_polys.append(gt_segs)
-
         im_scale = im_info[k][2]
         boxes = rois[st_num:end_num] / im_scale
 
         bbox_fg, bbox_has_mask, masks = sample_mask(
-            boxes, new_gt_polys, labels_int32[st_num:rois_num], gt_classes[k],
+            boxes, new_gt_polys, labels_int32[st_num:end_num], gt_classes[k],
             is_crowd[k], num_classes, resolution)
 
-        st_num += rois_num
+        st_num += length
 
         mask_rois.append(bbox_fg * im_scale)
+        mask_rois_num.append(len(bbox_fg))
         rois_has_mask_int32.append(bbox_has_mask)
         mask_int32.append(masks)
 
     mask_rois = np.concatenate(mask_rois, axis=0).astype(np.float32)
+    mask_rois_num = np.array(mask_rois_num).astype(np.int32)
     rois_has_mask_int32 = np.concatenate(
         rois_has_mask_int32, axis=0).astype(np.int32)
     mask_int32 = np.concatenate(mask_int32, axis=0).astype(np.int32)
 
-    return mask_rois, rois_has_mask_int32, mask_int32
+    return mask_rois, mask_rois_num, rois_has_mask_int32, mask_int32
 
 
 @jit
-def sample_mask(
-        boxes,
-        gt_polys,
-        label_int32,
-        gt_classes,
-        is_crowd,
-        num_classes,
-        resolution, ):
+def sample_mask(boxes, gt_polys, label_int32, gt_classes, is_crowd, num_classes,
+                resolution):
 
     gt_polys_inds = np.where((gt_classes > 0) & (is_crowd == 0))[0]
     _gt_polys = [gt_polys[i] for i in gt_polys_inds]
@@ -405,7 +400,5 @@ def sample_mask(
         masks_fg = -np.ones((1, resolution**2), dtype=np.int32)
         labels_fg = np.zeros((1, ))
         bbox_has_mask = np.append(bbox_has_mask, 0)
-
     masks = expand_mask_targets(masks_fg, labels_fg, resolution, num_classes)
-
     return bbox_fg, bbox_has_mask, masks
