@@ -46,7 +46,7 @@ class ConfigPaser {
                    const std::string& cfg = "infer_cfg.yml") {
     std::string cfg_file = model_dir + OS_PATH_SEP + cfg;
     if (access(cfg_file.c_str(), 0) < 0) {
-      std::cerr << "[WARNING] Config yaml file is not found, please check "
+      std::cerr << "[ERROR] Config yaml file is not found, please check "
                 << "whether infer_cfg.yml exists in model_dir" << std::endl;
       return false;
     }

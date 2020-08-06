@@ -35,7 +35,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
   if (access(prog_file.c_str(), 0) < 0 || access(params_file.c_str(), 0) < 0) {
-    std::cerr << "[WARNING] Model file or parameter file can't be found." << std::endl;
+    std::cerr << "[ERROR] Model file or parameter file can't be found." << std::endl;
     success_init_ = false;
     return;
   }
