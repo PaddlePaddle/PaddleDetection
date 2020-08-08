@@ -127,6 +127,7 @@ class YOLOv3Loss(object):
         assert len(outputs) == len(targets), \
             "YOLOv3 output layer number not equal target number"
 
+        targets = [target * 1.0 for target in targets]
         loss_xys, loss_whs, loss_objs, loss_clss = [], [], [], []
         if self._iou_loss is not None:
             loss_ious = []
