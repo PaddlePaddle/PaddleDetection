@@ -1,19 +1,32 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 # ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
 import random
+import datetime
 import numpy as np
+from collections import deque
 import paddle.fluid as fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
+from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from paddle.fluid.dygraph.parallel import ParallelEnv
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -24,7 +37,6 @@ def parse_args():
         type=str,
         help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
     )
-
     parser.add_argument(
         "--fp16",
         action='store_true',
@@ -63,11 +75,6 @@ def parse_args():
         "This flag is only used for internal test.")
     parser.add_argument(
         "--use_gpu", action='store_true', default=False, help="data parallel")
-    parser.add_argument(
-        "--use_parallel",
-        action='store_true',
-        default=False,
-        help="data parallel")
 
     parser.add_argument(
         '--is_profiler',
@@ -88,13 +95,13 @@ def run(FLAGS, cfg):
         random.seed(local_seed)
         np.random.seed(local_seed)
 
-    if FLAGS.enable_ce or cfg.open_debug:
+    if FLAGS.enable_ce:
         random.seed(0)
         np.random.seed(0)
 
     # Model
     main_arch = cfg.architecture
-    model = create(cfg.architecture, mode='train', open_debug=cfg.open_debug)
+    model = create(cfg.architecture)
 
     # Optimizer
     lr = create('LearningRate')()
@@ -105,12 +112,11 @@ def run(FLAGS, cfg):
         model,
         optimizer,
         cfg.pretrain_weights,
-        cfg.weights,
-        FLAGS.ckpt_type,
-        open_debug=cfg.open_debug)
+        ckpt_type=FLAGS.ckpt_type,
+        load_static_weights=cfg.load_static_weights)
 
     # Parallel Model 
-    if FLAGS.use_parallel:
+    if ParallelEnv().nranks > 1:
         strategy = fluid.dygraph.parallel.prepare_context()
         model = fluid.dygraph.parallel.DataParallel(model, strategy)
 
@@ -122,21 +128,29 @@ def run(FLAGS, cfg):
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
     train_reader = create_reader(
-        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
-        cfg,
-        devices_num=devices_num)
+        cfg.TrainReader, (cfg.max_iters - start_iter), cfg, devices_num=1)
 
+    time_stat = deque(maxlen=cfg.log_smooth_window)
+    start_time = time.time()
+    end_time = time.time()
     # Run Train 
     for iter_id, data in enumerate(train_reader()):
-        start_time = time.time()
+
+        start_time = end_time
+        end_time = time.time()
+        time_stat.append(end_time - start_time)
+        time_cost = np.mean(time_stat)
+        eta_sec = (cfg.max_iters - iter_id) * time_cost
+        eta = str(datetime.timedelta(seconds=int(eta_sec)))
 
         # Model Forward
         model.train()
-        outputs = model(data, cfg['TrainReader']['inputs_def']['fields'])
+        outputs = model(data, cfg['TrainReader']['inputs_def']['fields'],
+                        'train')
 
         # Model Backward
         loss = outputs['loss']
-        if FLAGS.use_parallel:
+        if ParallelEnv().nranks > 1:
             loss = model.scale_loss(loss)
             loss.backward()
             model.apply_collective_grads()
@@ -144,30 +158,27 @@ def run(FLAGS, cfg):
             loss.backward()
         optimizer.minimize(loss)
         model.clear_gradients()
-
-        # Log state 
-        cost_time = time.time() - start_time
-        # TODO: check this method   
         curr_lr = optimizer.current_step_lr()
-        log_info = "iter: {}, time: {:.4f}, lr: {:.6f}".format(
-            iter_id, cost_time, curr_lr)
-        for k, v in outputs.items():
-            log_info += ", {}: {:.6f}".format(k, v.numpy()[0])
-        print(log_info)
 
-        # Debug 
-        if cfg.open_debug and iter_id > 10:
-            break
-
-        # Save Stage 
-        if iter_id > 0 and iter_id % int(
-                cfg.snapshot_iter) == 0 and fluid.dygraph.parallel.Env(
-                ).local_rank == 0:
-            cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-            save_name = str(
-                iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
-            save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
-            save_dygraph_ckpt(model, optimizer, save_dir)
+        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+            # Log state 
+            if iter_id == 0:
+                train_stats = TrainingStats(cfg.log_smooth_window,
+                                            outputs.keys())
+            train_stats.update(outputs)
+            logs = train_stats.log()
+            if iter_id % cfg.log_iter == 0:
+                strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
+                    iter_id, curr_lr, logs, time_cost, eta)
+                logger.info(strs)
+            # Save Stage 
+            if iter_id > 0 and iter_id % int(
+                    cfg.snapshot_iter) == 0 or iter_id == cfg.max_iters - 1:
+                cfg_name = os.path.basename(FLAGS.config).split('.')[0]
+                save_name = str(
+                    iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
+                save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
+                save_dygraph_ckpt(model, optimizer, save_dir)
 
 
 def main():
@@ -179,7 +190,7 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = fluid.CUDAPlace(fluid.dygraph.parallel.Env().dev_id) \
+    place = fluid.CUDAPlace(ParallelEnv().dev_id) \
                     if cfg.use_gpu else fluid.CPUPlace()
 
     with fluid.dygraph.guard(place):

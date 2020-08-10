@@ -122,7 +122,6 @@ class DecodeImage(BaseOperator):
         if self.to_rgb:
             im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
         sample['image'] = im
-
         if 'h' not in sample:
             sample['h'] = im.shape[0]
         elif sample['h'] != im.shape[0]:
@@ -333,7 +332,6 @@ class ResizeImage(BaseOperator):
 
             resize_w = selected_size
             resize_h = selected_size
-
         if self.use_cv2:
             im = cv2.resize(
                 im,
