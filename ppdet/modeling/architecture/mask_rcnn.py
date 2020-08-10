@@ -23,9 +23,16 @@ class MaskRCNN(BaseArch):
         'mask_head',
     ]
 
-    def __init__(self, anchor, proposal, mask, backbone, neck, rpn_head,
-                 bbox_head, mask_head, *args, **kwargs):
-        super(MaskRCNN, self).__init__(*args, **kwargs)
+    def __init__(self,
+                 anchor,
+                 proposal,
+                 mask,
+                 backbone,
+                 rpn_head,
+                 bbox_head,
+                 mask_head,
+                 neck=None):
+        super(MaskRCNN, self).__init__()
         self.anchor = anchor
         self.proposal = proposal
         self.mask = mask
@@ -46,7 +53,8 @@ class MaskRCNN(BaseArch):
 
         # RPN
         # rpn_head returns two list: rpn_feat, rpn_head_out 
-        # each element in rpn_feats contains 
+        # each element in rpn_feats contains rpn feature on each level,
+        # and the length is 1 when the neck is not applied.
         # each element in rpn_head_out contains (rpn_rois_score, rpn_rois_delta)
         rpn_feat, self.rpn_head_out = self.rpn_head(self.inputs, body_feats)
 
