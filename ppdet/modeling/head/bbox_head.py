@@ -1,7 +1,7 @@
 import paddle.fluid as fluid
 from paddle.fluid.dygraph import Layer
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, MSRA, Xavier
+from paddle.fluid.initializer import Normal, Xavier
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D, Linear
 from ppdet.core.workspace import register
@@ -106,7 +106,7 @@ class BBoxHead(Layer):
                     param_attr=ParamAttr(
                         #name='cls_score_w', 
                         initializer=Normal(
-                            loc=0.0, scale=0.001)),
+                            loc=0.0, scale=0.01)),
                     bias_attr=ParamAttr(
                         #name='cls_score_b',
                         learning_rate=2.,
@@ -121,7 +121,7 @@ class BBoxHead(Layer):
                     param_attr=ParamAttr(
                         #name='bbox_pred_w', 
                         initializer=Normal(
-                            loc=0.0, scale=0.01)),
+                            loc=0.0, scale=0.001)),
                     bias_attr=ParamAttr(
                         #name='bbox_pred_b',
                         learning_rate=2.,

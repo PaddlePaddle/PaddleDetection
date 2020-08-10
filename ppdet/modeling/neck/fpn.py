@@ -3,7 +3,7 @@ import paddle.fluid as fluid
 from paddle.fluid.dygraph import Layer
 from paddle.fluid.dygraph import Conv2D, Pool2D, BatchNorm
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Constant, Xavier
+from paddle.fluid.initializer import Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 

@@ -304,8 +304,7 @@ class RoIExtractor(object):
             k_max,
             self.canconical_level,
             self.canonical_size,
-            rois_num=rois_num,
-            return_rois_num=True)
+            rois_num=rois_num)
         rois_feat_list = []
         for lvl in range(self.start_level, self.end_level + 1):
             roi_feat = fluid.layers.roi_align(

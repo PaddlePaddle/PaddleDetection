@@ -22,6 +22,7 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from paddle.fluid.dygraph.parallel import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -74,11 +75,6 @@ def parse_args():
         "This flag is only used for internal test.")
     parser.add_argument(
         "--use_gpu", action='store_true', default=False, help="data parallel")
-    parser.add_argument(
-        "--use_parallel",
-        action='store_true',
-        default=False,
-        help="data parallel")
 
     parser.add_argument(
         '--is_profiler',
@@ -120,7 +116,7 @@ def run(FLAGS, cfg):
         load_static_weights=cfg.load_static_weights)
 
     # Parallel Model 
-    if FLAGS.use_parallel:
+    if ParallelEnv().nranks > 1:
         strategy = fluid.dygraph.parallel.prepare_context()
         model = fluid.dygraph.parallel.DataParallel(model, strategy)
 
@@ -132,9 +128,7 @@ def run(FLAGS, cfg):
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
     train_reader = create_reader(
-        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
-        cfg,
-        devices_num=devices_num)
+        cfg.TrainReader, (cfg.max_iters - start_iter), cfg, devices_num=1)
 
     time_stat = deque(maxlen=cfg.log_smooth_window)
     start_time = time.time()
@@ -156,7 +150,7 @@ def run(FLAGS, cfg):
 
         # Model Backward
         loss = outputs['loss']
-        if FLAGS.use_parallel:
+        if ParallelEnv().nranks > 1:
             loss = model.scale_loss(loss)
             loss.backward()
             model.apply_collective_grads()
@@ -166,24 +160,25 @@ def run(FLAGS, cfg):
         model.clear_gradients()
         curr_lr = optimizer.current_step_lr()
 
-        # Log state 
-        if iter_id == 0:
-            train_stats = TrainingStats(cfg.log_smooth_window, outputs.keys())
-        train_stats.update(outputs)
-        logs = train_stats.log()
-        if iter_id % cfg.log_iter == 0:
-            strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                iter_id, curr_lr, logs, time_cost, eta)
-            logger.info(strs)
-        # Save Stage 
-        if iter_id > 0 and iter_id % int(
-                cfg.snapshot_iter) == 0 and fluid.dygraph.parallel.Env(
-                ).local_rank == 0:
-            cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-            save_name = str(
-                iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
-            save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
-            save_dygraph_ckpt(model, optimizer, save_dir)
+        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+            # Log state 
+            if iter_id == 0:
+                train_stats = TrainingStats(cfg.log_smooth_window,
+                                            outputs.keys())
+            train_stats.update(outputs)
+            logs = train_stats.log()
+            if iter_id % cfg.log_iter == 0:
+                strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
+                    iter_id, curr_lr, logs, time_cost, eta)
+                logger.info(strs)
+            # Save Stage 
+            if iter_id > 0 and iter_id % int(
+                    cfg.snapshot_iter) == 0 or iter_id == cfg.max_iters - 1:
+                cfg_name = os.path.basename(FLAGS.config).split('.')[0]
+                save_name = str(
+                    iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
+                save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
+                save_dygraph_ckpt(model, optimizer, save_dir)
 
 
 def main():
@@ -195,7 +190,7 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = fluid.CUDAPlace(fluid.dygraph.parallel.Env().dev_id) \
+    place = fluid.CUDAPlace(ParallelEnv().dev_id) \
                     if cfg.use_gpu else fluid.CPUPlace()
 
     with fluid.dygraph.guard(place):

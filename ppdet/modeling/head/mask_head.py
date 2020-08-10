@@ -2,7 +2,7 @@ import paddle.fluid as fluid
 from paddle.fluid.dygraph import Layer, Sequential
 
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, MSRA
+from paddle.fluid.initializer import MSRA
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D, Conv2DTranspose
 from ppdet.core.workspace import register
@@ -113,7 +113,8 @@ class MaskHead(Layer):
                         filter_size=1,
                         param_attr=ParamAttr(
                             #name='mask_fcn_logits_w', 
-                            initializer=MSRA(uniform=False)),
+                            initializer=MSRA(
+                                uniform=False, fan_in=self.num_classes)),
                         bias_attr=ParamAttr(
                             #name='mask_fcn_logits_b',
                             learning_rate=2.,
@@ -180,9 +181,10 @@ class MaskHead(Layer):
     def loss(self, mask_head_out, mask_target):
         mask_logits = fluid.layers.flatten(mask_head_out)
         mask_label = fluid.layers.cast(x=mask_target, dtype='float32')
+        mask_label.stop_gradient = True
 
         loss_mask = fluid.layers.sigmoid_cross_entropy_with_logits(
             x=mask_logits, label=mask_label, ignore_index=-1, normalize=True)
-        loss_mask = fluid.layers.reduce_sum(loss_mask, name='loss_mask')
+        loss_mask = fluid.layers.reduce_sum(loss_mask)
 
         return {'loss_mask': loss_mask}

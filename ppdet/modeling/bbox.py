@@ -237,8 +237,7 @@ class Proposal(object):
             start_level,
             end_level,
             post_nms_top_n,
-            multi_rois_num=rpn_rois_num_list,
-            return_rois_num=True)
+            rois_num_per_level=rpn_rois_num_list)
         return rois_collect, rois_num_collect
 
     def generate_proposal_target(self, inputs, rois, rois_num, stage=0):

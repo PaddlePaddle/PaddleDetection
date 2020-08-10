@@ -89,15 +89,19 @@ class RPNHead(Layer):
         # cls loss
         score_tgt = fluid.layers.cast(
             x=loss_inputs['rpn_score_target'], dtype='float32')
+        score_tgt.stop_gradient = True
         loss_rpn_cls = fluid.layers.sigmoid_cross_entropy_with_logits(
             x=loss_inputs['rpn_score_pred'], label=score_tgt)
         loss_rpn_cls = fluid.layers.reduce_mean(
             loss_rpn_cls, name='loss_rpn_cls')
 
         # reg loss
+        loc_tgt = fluid.layers.cast(
+            x=loss_inputs['rpn_rois_target'], dtype='float32')
+        loc_tgt.stop_gradient = True
         loss_rpn_reg = fluid.layers.smooth_l1(
             x=loss_inputs['rpn_rois_pred'],
-            y=loss_inputs['rpn_rois_target'],
+            y=loc_tgt,
             sigma=3.0,
             inside_weight=loss_inputs['rpn_rois_weight'],
             outside_weight=loss_inputs['rpn_rois_weight'])

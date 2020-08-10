@@ -45,13 +45,15 @@ class ConvNormLayer(Layer):
         param_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=bn_name + "_scale")
+            name=bn_name + "_scale",
+            trainable=False if freeze_norm else True)
         bias_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=bn_name + "_offset")
+            name=bn_name + "_offset",
+            trainable=False if freeze_norm else True)
 
-        if norm_type == 'bn':
+        if norm_type in ['bn', 'sync_bn']:
             global_stats = True if freeze_norm else False
             self.norm = BatchNorm(
                 num_channels=ch_out,
@@ -98,7 +100,7 @@ class BottleNeck(Layer):
                  shortcut,
                  name_adapter,
                  name,
-                 variant='a',
+                 variant='b',
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
@@ -227,7 +229,7 @@ ResNet_cfg = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}
 class ResNet(Layer):
     def __init__(self,
                  depth=50,
-                 variant='a',
+                 variant='b',
                  lr_mult=1.,
                  norm_type='bn',
                  norm_decay=0,
@@ -237,7 +239,10 @@ class ResNet(Layer):
                  num_stages=4):
         super(ResNet, self).__init__()
         self.depth = depth
+        self.variant = variant
         self.norm_type = norm_type
+        self.norm_decay = norm_decay
+        self.freeze_norm = freeze_norm
         self.freeze_at = freeze_at
         if isinstance(return_idx, Integral):
             return_idx = [return_idx]
