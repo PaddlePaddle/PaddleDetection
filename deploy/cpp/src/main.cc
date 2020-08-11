@@ -44,6 +44,7 @@ DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_string(output_dir, "output", "Path of saved image or video");
+DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 
 std::string generate_save_path(const std::string& save_dir,
                                const std::string& file_path) {
@@ -65,7 +66,11 @@ void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
   // Open video
   cv::VideoCapture capture;
-  capture.open(video_path.c_str());
+  if (FLAGS_camera_id != -1){
+    capture.open(FLAGS_camera_id);
+  }else{
+    capture.open(video_path.c_str());
+  }
   if (!capture.isOpened()) {
     printf("can not open video : %s\n", video_path.c_str());
     return;
@@ -168,7 +173,7 @@ int main(int argc, char** argv) {
     FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
   if (det.GetSuccessInit()) {
-    if (!FLAGS_video_path.empty()) {
+    if (!FLAGS_video_path.empty() or FLAGS_camera_id != -1) {
       PredictVideo(FLAGS_video_path, &det);
     } else if (!FLAGS_image_path.empty()) {
       PredictImage(FLAGS_image_path, &det);
