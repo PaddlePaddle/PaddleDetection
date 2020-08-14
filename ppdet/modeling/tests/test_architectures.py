@@ -72,7 +72,7 @@ class TestCascadeRCNN(TestFasterRCNN):
 
 
 @unittest.skipIf(
-    paddle.version.major < "2",
+    paddle.version.full_version < "1.8.4",
     "Paddle 2.0 should be used for YOLOv3 takes scale_x_y as inputs, "
     "disable this unittest for Paddle major version < 2")
 class TestYolov3(TestFasterRCNN):
