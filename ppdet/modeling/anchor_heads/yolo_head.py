@@ -77,6 +77,7 @@ class YOLOv3Head(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.0,
                  clip_bbox=True):
+        check_version("1.8.4")
         self.conv_block_num = conv_block_num
         self.norm_decay = norm_decay
         self.num_classes = num_classes
