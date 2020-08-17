@@ -33,7 +33,6 @@ import random
 import math
 import numpy as np
 import os
-import jpeg4py as jpeg
 import cv2
 from PIL import Image, ImageEnhance, ImageDraw
 
@@ -114,7 +113,6 @@ class DecodeImage(BaseOperator):
         if 'image' not in sample:
             with open(sample['im_file'], 'rb') as f:
                 sample['image'] = f.read()
-            #sample['image'] = jpeg.JPEG(sample['im_file']).decode()
 
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')

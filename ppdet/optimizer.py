@@ -79,6 +79,8 @@ class LinearWarmup(object):
             value.append(lr)
             if i > 0:
                 boundary.append(i)
+        boundary.append(self.steps)
+        value.append(base_lr)
         return boundary, value
 
 

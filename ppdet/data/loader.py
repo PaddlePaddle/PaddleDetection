@@ -10,7 +10,7 @@ else:
 import numpy as np
 from paddle.io import DataLoader
 from ppdet.core.workspace import register, serializable
-from .sampler import BaseBatchSampler
+from .sampler import DistributedBatchSampler
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class BaseDataLoader(object):
             self._batch_transforms = Compose(batch_transforms, self._fields)
 
         # batch sampler  
-        self._batch_sampler = BaseBatchSampler(
+        self._batch_sampler = DistributedBatchSampler(
             self._dataset,
             batch_size=batch_size,
             shuffle=shuffle,

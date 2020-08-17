@@ -15,17 +15,6 @@ from paddle.fluid.dygraph.parallel import ParallelEnv, ParallelStrategy
 _parallel_context_initialized = False
 
 
-class BaseBatchSampler(BatchSampler):
-    def __init__(self,
-                 dataset=None,
-                 indices=None,
-                 shuffle=None,
-                 batch_size=1,
-                 drop_last=False):
-        super(BaseBatchSampler, self).__init__(dataset, indices, shuffle,
-                                               batch_size, drop_last)
-
-
 class DistributedBatchSampler(BatchSampler):
     def __init__(self, dataset, batch_size, shuffle=False, drop_last=False):
         self.dataset = dataset

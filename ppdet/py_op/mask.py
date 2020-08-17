@@ -122,7 +122,7 @@ def polys_to_boxes(polys):
 
 
 @jit
-def bbox_overlaps_mask(boxes, query_boxes):
+def compute_iou_mask(boxes, query_boxes):
     N = boxes.shape[0]
     K = query_boxes.shape[0]
     overlaps = np.zeros((N, K), dtype=boxes.dtype)
@@ -180,7 +180,7 @@ def polys_to_mask_wrt_box(polygons, box, M):
     return mask
 
 
-@jit
+#@jit
 def expand_mask_targets(masks, mask_class_labels, resolution, num_classes):
     """Expand masks from shape (#masks, resolution ** 2)
     to (#masks, #classes * resolution ** 2) to encode class

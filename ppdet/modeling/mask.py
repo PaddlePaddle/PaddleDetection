@@ -8,20 +8,22 @@ from ppdet.py_op.post_process import mask_post_process
 
 @register
 class MaskPostProcess(object):
-    __shared__ = ['num_classes']
+    __shared__ = ['mask_resolution']
 
-    def __init__(self, num_classes=81):
+    def __init__(self, mask_resolution=28, binary_thresh=0.5):
         super(MaskPostProcess, self).__init__()
-        self.num_classes = num_classes
+        self.mask_resolution = mask_resolution
+        self.binary_thresh = binary_thresh
 
-    def __call__(self, inputs):
+    def __call__(self, bboxes, mask_head_out, im_info):
         # TODO: modify related ops for deploying
-        outs = mask_post_process(inputs['predicted_bbox_nums'].numpy(),
-                                 inputs['predicted_bbox'].numpy(),
-                                 inputs['mask_logits'].numpy(),
-                                 inputs['im_info'].numpy())
-        outs = {'predicted_mask': outs}
-        return outs
+        bboxes_np = (i.numpy() for i in bboxes)
+        mask = mask_post_process(bboxes_np,
+                                 mask_head_out.numpy(),
+                                 im_info.numpy(), self.mask_resolution,
+                                 self.binary_thresh)
+        mask = {'mask': mask}
+        return mask
 
 
 @register
@@ -33,29 +35,28 @@ class Mask(object):
         self.mask_target_generator = mask_target_generator
         self.mask_post_process = mask_post_process
 
-    def __call__(self, inputs):
-        outs = {}
-        if inputs['mode'] == 'train':
-            outs = self.generate_mask_target(inputs)
-        return outs
+    def __call__(self, inputs, rois, targets):
+        mask_rois, rois_has_mask_int32 = self.generate_mask_target(inputs, rois,
+                                                                   targets)
+        return mask_rois, rois_has_mask_int32
 
-    def generate_mask_target(self, inputs):
-        proposal_out = inputs['proposal_' + str(inputs['stage'])]
-        outs = self.mask_target_generator(
+    def generate_mask_target(self, inputs, rois, targets):
+        labels_int32 = targets['labels_int32']
+        proposals, proposals_num = rois
+        mask_rois, mask_rois_num, self.rois_has_mask_int32, self.mask_int32 = self.mask_target_generator(
             im_info=inputs['im_info'],
             gt_classes=inputs['gt_class'],
             is_crowd=inputs['is_crowd'],
-            gt_segms=inputs['gt_mask'],
-            rois=proposal_out['rois'],
-            rois_nums=proposal_out['rois_nums'],
-            labels_int32=proposal_out['labels_int32'])
-        outs = {
-            'mask_rois': outs[0],
-            'rois_has_mask_int32': outs[1],
-            'mask_int32': outs[2]
-        }
-        return outs
+            gt_segms=inputs['gt_poly'],
+            rois=proposals,
+            rois_num=proposals_num,
+            labels_int32=labels_int32)
+        self.mask_rois = (mask_rois, mask_rois_num)
+        return self.mask_rois, self.rois_has_mask_int32
 
-    def post_process(self, inputs):
-        outs = self.mask_post_process(inputs)
-        return outs
+    def get_targets(self):
+        return self.mask_int32
+
+    def post_process(self, bboxes, mask_head_out, im_info):
+        mask = self.mask_post_process(bboxes, mask_head_out, im_info)
+        return mask

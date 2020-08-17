@@ -1,7 +1,12 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import time
 # ignore numba warning
 import warnings
@@ -13,6 +18,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import coco_eval_results
+from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 
 
 def parse_args():
@@ -44,11 +50,11 @@ def run(FLAGS, cfg):
     eval_loader, _ = create('EvalReader')(cfg['worker_num'], place)
 
     # Model
-    model = create(cfg.architecture, mode='infer', open_debug=cfg.open_debug)
+    main_arch = cfg.architecture
+    model = create(cfg.architecture)
 
     # Init Model  
-    param_state_dict = fluid.dygraph.load_dygraph(cfg.weights)[0]
-    model.set_dict(param_state_dict)
+    model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
     # Run Eval
     outs_res = []
@@ -57,7 +63,7 @@ def run(FLAGS, cfg):
 
         # forward 
         model.eval()
-        outs = model(data, cfg['EvalReader']['inputs_def']['fields'])
+        outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
         outs_res.append(outs)
 
         # log 
@@ -67,7 +73,7 @@ def run(FLAGS, cfg):
     # Metric 
     coco_eval_results(
         outs_res,
-        include_mask=True if 'MaskHed' in cfg else False,
+        include_mask=True if 'MaskHead' in cfg else False,
         dataset=cfg['EvalReader']['dataset'])
 
 
