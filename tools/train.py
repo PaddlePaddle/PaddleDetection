@@ -53,7 +53,9 @@ logger = logging.getLogger(__name__)
 
 def main():
     env = os.environ
-    FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
+    FLAGS.dist = 'PADDLE_TRAINER_ID' in env \
+                    and 'PADDLE_TRAINERS_NUM' in env \
+                    and int(env['PADDLE_TRAINERS_NUM']) > 1
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         local_seed = (99 + trainer_id)
