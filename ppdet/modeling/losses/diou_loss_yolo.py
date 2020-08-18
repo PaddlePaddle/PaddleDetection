@@ -65,9 +65,10 @@ class DiouLossYolo(IouLoss):
             eps (float): the decimal to prevent the denominator eqaul zero
         '''
         x1, y1, x2, y2 = self._bbox_transform(
-            x, y, w, h, anchors, downsample_ratio, batch_size, False)
-        x1g, y1g, x2g, y2g = self._bbox_transform(
-            tx, ty, tw, th, anchors, downsample_ratio, batch_size, True)
+            x, y, w, h, anchors, downsample_ratio, batch_size, False, 1.0, eps)
+        x1g, y1g, x2g, y2g = self._bbox_transform(tx, ty, tw, th, anchors,
+                                                  downsample_ratio, batch_size,
+                                                  True, 1.0, eps)
 
         #central coordinates
         cx = (x1 + x2) / 2
