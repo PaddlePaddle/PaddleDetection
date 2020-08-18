@@ -11,9 +11,12 @@ MaskRCNN:
   mask_head: MaskHead
 
 ResNet:
-  norm_type: 'affine'
+  # index 0 stands for res2
   depth: 50
-  freeze_at: 'res2'
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [2]
+  num_stages: 3
 
 RPNHead:
   rpn_feat:
@@ -29,20 +32,23 @@ BBoxHead:
       name: RoIExtractor
       resolution: 14
       sampling_ratio: 0
-      spatial_scale: 0.0625
-      extractor_type: 'RoIAlign'
-    feat_in: 1024
-    feat_out: 512
+      start_level: 0
+      end_level: 0
+    head_feat:
+      name: Res5Feat
+      feat_in: 1024
+      feat_out: 512
+  with_pool: true
+  in_feat: 2048
 
 MaskHead:
   mask_feat:
     name: MaskFeat
+    num_convs: 0
     feat_in: 2048
     feat_out: 256
-    mask_stages: 1
+    share_bbox_feat: true
   feat_in: 256
-  resolution: 14
-  mask_stages: 1
 
 AnchorRPN:
   anchor_generator:
@@ -68,7 +74,6 @@ Proposal:
     train_post_nms_top_n: 2000
     infer_pre_nms_top_n: 12000
     infer_post_nms_top_n: 2000
-    return_rois_num: True
   proposal_target_generator:
     name: ProposalTargetGenerator
     batch_size_per_im: 512
@@ -89,6 +94,7 @@ Proposal:
 Mask:
   mask_target_generator:
     name: MaskTargetGenerator
-    resolution: 14
+    mask_resolution: 14
   mask_post_process:
     name: MaskPostProcess
+    mask_resolution: 14

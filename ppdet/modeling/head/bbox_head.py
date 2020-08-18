@@ -5,10 +5,37 @@ from paddle.fluid.initializer import Normal, Xavier
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D, Linear
 from ppdet.core.workspace import register
+from ..backbone.name_adapter import NameAdapter
+from ..backbone.resnet import Blocks
 
 
 @register
-class TwoFCHead(Layer):
+class Res5Feat(Layer):
+    __shared__ = ['num_stages']
+
+    def __init__(self, feat_in=1024, feat_out=512, num_stages=1):
+        super(Res5Feat, self).__init__()
+        na = NameAdapter(self)
+        self.res5_conv = []
+        for i in range(num_stages):
+            if i == 0:
+                postfix = ''
+            else:
+                postfix = '_' + str(i)
+            res5 = self.add_sublayer(
+                'res5_roi_feat' + postfix,
+                Blocks(
+                    feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
+            self.res5_conv.append(res5)
+        self.feat_out = feat_out * 4
+
+    def forward(self, roi_feat, stage=0):
+        y = self.res5_conv[stage](roi_feat)
+        return y
+
+
+@register
+class TwoFCFeat(Layer):
 
     __shared__ = ['num_stages']
 
@@ -94,6 +121,7 @@ class BBoxHead(Layer):
         self.bbox_score_list = []
         self.bbox_delta_list = []
         self.with_pool = with_pool
+
         for stage in range(num_stages):
             score_name = 'bbox_score_{}'.format(stage)
             delta_name = 'bbox_delta_{}'.format(stage)
@@ -132,11 +160,14 @@ class BBoxHead(Layer):
     def forward(self, body_feats, rois, spatial_scale, stage=0):
         bbox_feat = self.bbox_feat(body_feats, rois, spatial_scale, stage)
         if self.with_pool:
-            bbox_feat = fluid.layers.pool2d(
+            bbox_feat_ = fluid.layers.pool2d(
                 bbox_feat, pool_type='avg', global_pooling=True)
+            bbox_feat_ = fluid.layers.squeeze(bbox_feat_, axes=[2, 3])
+        else:
+            bbox_feat_ = bbox_feat
         bbox_head_out = []
-        scores = self.bbox_score_list[stage](bbox_feat)
-        deltas = self.bbox_delta_list[stage](bbox_feat)
+        scores = self.bbox_score_list[stage](bbox_feat_)
+        deltas = self.bbox_delta_list[stage](bbox_feat_)
         bbox_head_out.append((scores, deltas))
         return bbox_feat, bbox_head_out
 

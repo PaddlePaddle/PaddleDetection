@@ -9,9 +9,8 @@ log_smooth_window: 20
 save_dir: output
 metric: COCO
 num_classes: 81
-open_debug: False
-
+load_static_weights: true
 
 _READER_: '../reader/mask_rcnn.yml'
 _ARCHITECHTURE_: '../architechture/mask_rcnn.yml'
-_OPTIMIZE: '../optimize/rcnn.yml'
+_OPTIMIZE_: '../optimize/rcnn.yml'

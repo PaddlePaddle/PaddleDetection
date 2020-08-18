@@ -42,10 +42,10 @@ BBoxHead:
       resolution: 7
       sampling_ratio: 2
     head_feat:
-      name: TwoFCHead
+      name: TwoFCFeat
       in_dim: 256
       mlp_dim: 1024
-  in_feat: 1024
+  #in_feat: 1024
 
 MaskHead:
   mask_feat:
