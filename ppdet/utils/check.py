@@ -91,17 +91,15 @@ def check_config(cfg):
     train_dataset = cfg['TrainReader']['dataset']
     eval_dataset = cfg['EvalReader']['dataset']
     test_dataset = cfg['TestReader']['dataset']
-    assert train_dataset.with_background == eval_dataset.with_background, \
-        "'with_background' of TrainReader is not equal to EvalReader."
-    assert train_dataset.with_background == test_dataset.with_background, \
-        "'with_background' of TrainReader is not equal to TestReader."
+    #assert train_dataset.with_background == eval_dataset.with_background, \
+    #    "'with_background' of TrainReader is not equal to EvalReader."
+    #assert train_dataset.with_background == test_dataset.with_background, \
+    #    "'with_background' of TrainReader is not equal to TestReader."
 
-    actual_num_classes = int(cfg.num_classes) - int(
-        train_dataset.with_background)
-    logger.debug("The 'num_classes'(number of classes) you set is {}, " \
-                "and 'with_background' in 'dataset' sets {}.\n" \
-                "So please note the actual number of categories is {}."
-                .format(cfg.num_classes, train_dataset.with_background,
-                    actual_num_classes))
+    #actual_num_classes = int(cfg.num_classes) - int(
+    #    train_dataset.with_background)
+    #logger.debug("The 'num_classes'(number of classes) you set is {}, " \
+    #            "and 'with_background' in 'dataset' sets {}."
+    #            .format(cfg.num_classes, train_dataset.with_background))
 
     return cfg

@@ -1,16 +1,20 @@
 Optimize:
   learning_rate:
+    name: BaseLR
     base_lr: 0.01
-    schedulers:
-    - !PiecewiseDecay
+    decay:
+      name: PiecewiseDecay
       gamma: 0.1
       milestones: [16, 22]
-    - !LinearWarmup
+    warmup:
+      name: LinearWarmup
       start_factor: 0.3333333333333333
       steps: 500
+
   optimizer:
     name: Momentum
     momentum: 0.9
+
   regularizer:
     name: L2
     factor: 0.0001

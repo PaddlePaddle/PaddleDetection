@@ -20,7 +20,7 @@ class COCODataset(DetDataset):
                                           with_background, sample_num)
         self.load_image_only = False
         self.load_semantic = False
-        self.parse_dataset()
+        #self.parse_dataset()
 
     def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)

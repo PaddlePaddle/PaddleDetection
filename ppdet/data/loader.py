@@ -9,7 +9,7 @@ else:
     import Queue
 import numpy as np
 from paddle.io import DataLoader
-from ppdet.core.workspace import register, serializable
+from ppdet.core.workspace import register, serializable, create
 from .sampler import DistributedBatchSampler
 
 logger = logging.getLogger(__name__)
@@ -105,6 +105,8 @@ class DataLoaderPrefetch(DataLoader):
 
 
 class BaseDataLoader(object):
+    __inject__ = ['dataset']
+
     def __init__(self,
                  inputs_def=None,
                  dataset=None,
@@ -115,7 +117,8 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True):
         # dataset 
-        self._dataset = dataset
+        self._dataset = dataset  #create(dataset['name'])
+        self._dataset.parse_dataset()
         # out fields 
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
@@ -140,7 +143,6 @@ class BaseDataLoader(object):
     def __call__(self,
                  worker_num,
                  device,
-                 device_num=1,
                  return_list=False,
                  use_prefetch=False,
                  prefetch_num=None):
@@ -153,7 +155,7 @@ class BaseDataLoader(object):
                 places=device,
                 return_list=return_list,
                 prefetch_num=prefetch_num
-                if prefetch_num is not None else device_num * self.batch_size)
+                if prefetch_num is not None else self.batch_size)
         else:
             loader = DataLoader(
                 dataset=self._dataset,

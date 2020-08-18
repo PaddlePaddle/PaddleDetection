@@ -172,12 +172,9 @@ def prepare_distributed_context(place=None):
             exe = fluid.Executor(place)
             exe.run(communicator_prog)
 
-        if fluid.in_dygraph_mode():
-            fluid.disable_dygraph()
-            _init_context()
-            fluid.enable_dygraph(place)
-        else:
-            _init_context()
+        fluid.disable_dygraph()
+        _init_context()
+        fluid.enable_dygraph(place)
 
     else:
         assert ("Only support CUDAPlace for now.")

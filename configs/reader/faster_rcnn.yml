@@ -2,7 +2,7 @@ TrainReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   dataset:
-    !COCODataset
+    name: COCODataset
     dataset_dir: /home/ai/dataset/COCO17/
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
@@ -26,7 +26,7 @@ TrainReader:
     channel_first: true
   batch_transforms:
   - !PadBatch
-    pad_to_stride: 32
+    pad_to_stride: 0
     use_padded_im_info: False
     pad_gt: true
   batch_size: 1
@@ -36,7 +36,7 @@ EvalReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    !COCODataset
+    name: COCODataset
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: /home/ai/dataset/COCO17
@@ -69,7 +69,7 @@ TestReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    !ImageFolder
+    name: ImageFolder
     anno_path: annotations/instances_val2017.json
   sample_transforms:
   - !DecodeImage

@@ -69,12 +69,14 @@ global_config = AttrDict()
 
 def load_config(file_path):
     cfg = load_cfg(file_path)
-    if '_BASE_' in cfg:
+    if '_BASE_' in cfg.keys():
         base_cfg = load_cfg(cfg['_BASE_'])
+        del cfg['_BASE_']
+        # merge cfg into base_cfg
+        cfg = merge_config(cfg, base_cfg)
 
-    cfg = merge_config(cfg, base_cfg)
+    # merge cfg int global_config
     merge_config(cfg)
-
     return global_config
 
 

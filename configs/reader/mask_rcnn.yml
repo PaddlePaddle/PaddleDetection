@@ -5,9 +5,8 @@ TrainReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
   dataset:
-    !COCODataset
-    #dataset_dir: dataset/coco
-    dataset_dir: /home/ai/dataset/COCO17
+    name: COCODataset
+    dataset_dir: dataset/coco
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
   sample_transforms:
@@ -42,9 +41,8 @@ EvalReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    !COCODataset
-    #dataset_dir: dataset/coco
-    dataset_dir: /home/ai/dataset/COCO17
+    name: COCODataset
+    dataset_dir: dataset/coco
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
   sample_transforms:
@@ -77,7 +75,7 @@ TestReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'im_shape']
   dataset:
-    !ImageFolder
+    name: ImageFolder
     anno_path: annotations/instances_val2017.json
   sample_transforms:
   - !DecodeImage

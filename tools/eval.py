@@ -39,7 +39,7 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
 
     if FLAGS.use_gpu:
         devices_num = 1
@@ -90,7 +90,7 @@ def main():
                             .dev_id) if cfg.use_gpu else fluid.CPUPlace()
 
     with fluid.dygraph.guard(place):
-        run(FLAGS, cfg)
+        run(FLAGS, cfg, place)
 
 
 if __name__ == '__main__':

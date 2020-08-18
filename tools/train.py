@@ -98,14 +98,9 @@ def run(FLAGS, cfg, place):
         random.seed(0)
         np.random.seed(0)
 
-    if cfg.use_gpu:
-        devices_num = fluid.core.get_cuda_device_count()
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-
     # Data 
     train_loader, step_per_epoch = create('TrainReader')(
-        cfg['worker_num'], place, devices_num, use_prefetch=cfg['use_prefetch'])
+        cfg['worker_num'], place, use_prefetch=cfg['use_prefetch'])
 
     # Model
     main_arch = cfg.architecture
@@ -186,7 +181,7 @@ def main():
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
-    #check_version()
+    check_version()
 
     place = fluid.CUDAPlace(ParallelEnv().dev_id) \
                     if cfg.use_gpu else fluid.CPUPlace()
