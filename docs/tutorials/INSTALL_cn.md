@@ -14,7 +14,7 @@
 
 这份文档介绍了如何安装PaddleDetection及其依赖项(包括PaddlePaddle)，以及COCO和Pascal VOC数据集。
 
-PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/).
+PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/README.md).
 
 
 ## PaddlePaddle
