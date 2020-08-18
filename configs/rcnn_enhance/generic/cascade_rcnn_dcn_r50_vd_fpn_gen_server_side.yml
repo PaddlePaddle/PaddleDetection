@@ -109,7 +109,7 @@ OptimizerBuilder:
     type: Momentum
   regularizer:
     factor: 0.0001
-    type: L
+    type: L2
 
 TrainReader:
   inputs_def:
