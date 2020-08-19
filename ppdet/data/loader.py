@@ -24,7 +24,6 @@ class Compose(object):
         self.transforms_cls = []
         for t in self.transforms:
             for k, v in t.items():
-                print(k, v)
                 op_cls = getattr(from_, k)
                 self.transforms_cls.append(op_cls(**v))
                 if hasattr(op_cls, 'num_classes'):
@@ -131,7 +130,7 @@ class BaseDataLoader(object):
                  drop_empty=True,
                  num_classes=81):
         # dataset 
-        self._dataset = dataset  #create(dataset['name'])
+        self._dataset = dataset
         self._dataset.parse_dataset()
         # out fields 
         self._fields = copy.deepcopy(inputs_def[

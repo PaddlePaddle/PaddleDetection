@@ -41,11 +41,6 @@ def parse_args():
 
 def run(FLAGS, cfg, place):
 
-    if FLAGS.use_gpu:
-        devices_num = 1
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-
     # Data 
     eval_loader, _ = create('EvalReader')(cfg['worker_num'], place)
 

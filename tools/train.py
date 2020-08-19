@@ -166,7 +166,7 @@ def run(FLAGS, cfg, place):
                     logger.info(strs)
 
         # Save Stage 
-        if fluid.dygraph.parallel.Env().local_rank == 0:
+        if ParallelEnv().local_rank == 0:
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(e_id + 1) if e_id + 1 != int(
                 cfg.epoch) else "model_final"

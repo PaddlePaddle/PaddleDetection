@@ -7,6 +7,8 @@ log_smooth_window: 20
 save_dir: output
 metric: COCO
 num_classes: 81
+load_static_weights: true
+log_iter: 20
 
 TrainReader:
   inputs_def:

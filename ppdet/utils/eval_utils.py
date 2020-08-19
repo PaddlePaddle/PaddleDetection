@@ -11,7 +11,7 @@ def json_eval_results(metric, json_directory=None, dataset=None):
     """
     assert metric == 'COCO'
     from ppdet.utils.coco_eval import cocoapi_eval
-    anno_file = dataset.get_anno()
+    anno_file = os.path.join(dataset['dataset_dir'], dataset['anno_path'])
     json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
     if json_directory:
         assert os.path.exists(
@@ -36,10 +36,10 @@ def coco_eval_results(outs_res=None, include_mask=False, dataset=None):
     from pycocotools.coco import COCO
     from pycocotools.cocoeval import COCOeval
     from ppdet.py_op.post_process import get_det_res, get_seg_res
-    anno_file = os.path.join(dataset.dataset_dir, dataset.anno_path)
+    anno_file = os.path.join(dataset['dataset_dir'], dataset['anno_path'])
     cocoGt = COCO(anno_file)
     catid = {
-        i + dataset.with_background: v
+        i + 1 if dataset['with_background'] else 0: v
         for i, v in enumerate(cocoGt.getCatIds())
     }
 

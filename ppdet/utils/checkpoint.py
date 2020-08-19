@@ -59,8 +59,8 @@ def load_dygraph_ckpt(model,
     assert os.path.exists(ckpt), "Path {} does not exist.".format(ckpt)
     if load_static_weights:
         pre_state_dict = fluid.load_program_state(ckpt)
-        param_state_dict = {}
         model_dict = model.state_dict()
+        param_state_dict = {}
         for key in model_dict.keys():
             weight_name = model_dict[key].name
             if weight_name in pre_state_dict.keys():

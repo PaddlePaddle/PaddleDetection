@@ -8,6 +8,7 @@ save_dir: output
 metric: COCO
 num_classes: 81
 weights: output/mask_r50_fpn_1x/model_final.pdparams
+
 EvalReader:
   dataset:
     dataset_dir: /home/ai/dataset/COCO17
