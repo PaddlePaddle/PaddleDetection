@@ -235,4 +235,5 @@ class IouLoss(object):
             dtype=numpy_array.dtype,
             default_initializer=NumpyArrayInitializer(numpy_array))
         paddle_array.stop_gradient = True
+        paddle_array.persistable = False
         return paddle_array
