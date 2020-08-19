@@ -1,16 +1,3 @@
-architecture: CascadeRCNN
-use_gpu: true
-max_iters: 180000
-log_smooth_window: 50
-save_dir: output
-snapshot_iter: 10000
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/resnet50.pdparams
-metric: COCO
-weights: output/cascade_rcnn_r50_1x/model_final
-num_classes: 81
-num_stages: 3
-open_debug: False
-
 # Model Achitecture
 CascadeRCNN:
   # model anchor info flow
@@ -102,24 +89,3 @@ Mask:
     resolution: 14
   mask_post_process:
     name: MaskPostProcess
-
-# Train
-LearningRate:
-  base_lr: 0.01
-  schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones: [120000, 160000]
-  - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 500
-
-OptimizerBuilder:
-  optimizer:
-    momentum: 0.9
-    type: Momentum
-  regularizer:
-    factor: 0.0001
-    type: L2
-
-_READER_: 'mask_reader.yml'

@@ -89,7 +89,7 @@ def generate_rpn_anchor_target(anchors,
 
 @jit
 def label_anchor(anchors, gt_boxes):
-    iou = bbox_overlaps(anchors, gt_boxes)
+    iou = compute_iou(anchors, gt_boxes)
 
     # every gt's anchor's index
     gt_bbox_anchor_inds = iou.argmax(axis=0)
@@ -249,7 +249,7 @@ def label_bbox(boxes,
                class_nums=81,
                is_cascade_rcnn=False):
 
-    iou = bbox_overlaps(boxes, gt_boxes)
+    iou = compute_iou(boxes, gt_boxes)
 
     # every roi's gt box's index  
     roi_gt_bbox_inds = np.zeros((boxes.shape[0]), dtype=np.int32)
@@ -384,7 +384,7 @@ def sample_mask(boxes, gt_polys, label_int32, gt_classes, is_crowd, num_classes,
         masks_fg = np.zeros((fg_inds.shape[0], resolution**2), dtype=np.int32)
         bbox_fg = boxes[fg_inds]
 
-        iou = bbox_overlaps_mask(bbox_fg, boxes_from_polys)
+        iou = compute_iou_mask(bbox_fg, boxes_from_polys)
         fg_polys_inds = np.argmax(iou, axis=1)
 
         for i in range(bbox_fg.shape[0]):

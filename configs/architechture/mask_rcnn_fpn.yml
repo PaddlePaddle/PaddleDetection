@@ -1,15 +1,3 @@
-architecture: MaskRCNN
-use_gpu: true
-max_iters: 180000
-log_smooth_window: 20
-save_dir: output
-snapshot_iter: 10000
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-metric: COCO
-weights: output/mask_rcnn_r50_fpn_1x/model_final
-num_classes: 81
-load_static_weights: True
-
 # Model Achitecture
 MaskRCNN:
   # model anchor info flow
@@ -38,7 +26,6 @@ FPN:
   max_level: 4
   spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
 
-
 RPNHead:
   rpn_feat:
     name: RPNFeat
@@ -55,10 +42,10 @@ BBoxHead:
       resolution: 7
       sampling_ratio: 2
     head_feat:
-      name: TwoFCHead
+      name: TwoFCFeat
       in_dim: 256
       mlp_dim: 1024
-  in_feat: 1024
+  #in_feat: 1024
 
 MaskHead:
   mask_feat:
@@ -78,7 +65,7 @@ AnchorRPN:
     name: AnchorGeneratorRPN
     aspect_ratios: [0.5, 1.0, 2.0]
     anchor_start_size: 32
-    stride: [4., 4.]
+    stride: [4.0, 4.0]
   anchor_target_generator:
     name: AnchorTargetGeneratorRPN
     batch_size_per_im: 256
@@ -120,25 +107,3 @@ Mask:
   mask_post_process:
     name: MaskPostProcess
     mask_resolution: 28
-
-
-# Train
-LearningRate:
-  base_lr: 0.01
-  schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones: [120000, 160000]
-  - !LinearWarmup
-    start_factor: 0.3333
-    steps: 500
-
-OptimizerBuilder:
-  optimizer:
-    momentum: 0.9
-    type: Momentum
-  regularizer:
-    factor: 0.0001
-    type: L2
-
-_READER_: 'mask_reader.yml'

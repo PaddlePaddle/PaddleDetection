@@ -18,7 +18,6 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import coco_eval_results
-from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 
 
@@ -40,7 +39,15 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
+
+    if FLAGS.use_gpu:
+        devices_num = 1
+    else:
+        devices_num = int(os.environ.get('CPU_NUM', 1))
+
+    # Data 
+    eval_loader, _ = create('EvalReader')(cfg['worker_num'], place)
 
     # Model
     main_arch = cfg.architecture
@@ -49,16 +56,9 @@ def run(FLAGS, cfg):
     # Init Model  
     model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
-    # Data Reader 
-    if FLAGS.use_gpu:
-        devices_num = 1
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-    eval_reader = create_reader(cfg.EvalReader, devices_num=devices_num)
-
     # Run Eval
     outs_res = []
-    for iter_id, data in enumerate(eval_reader()):
+    for iter_id, data in enumerate(eval_loader):
         start_time = time.time()
 
         # forward 
@@ -82,7 +82,6 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
-    check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
 
@@ -90,7 +89,7 @@ def main():
                             .dev_id) if cfg.use_gpu else fluid.CPUPlace()
 
     with fluid.dygraph.guard(place):
-        run(FLAGS, cfg)
+        run(FLAGS, cfg, place)
 
 
 if __name__ == '__main__':

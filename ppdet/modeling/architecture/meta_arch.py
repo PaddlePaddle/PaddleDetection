@@ -29,20 +29,14 @@ class BaseArch(Layer):
             raise "Now, only support train or infer mode!"
         return out
 
-    def build_inputs(self, data, input_def):
-        inputs = {}
-        for name in input_def:
-            inputs[name] = []
-        batch_size = len(data)
-        for bs in range(batch_size):
-            for name, input in zip(input_def, data[bs]):
-                input_v = np.array(input)[np.newaxis, ...]
-                inputs[name].append(input_v)
-        for name in input_def:
-            inputs[name] = to_variable(np.concatenate(inputs[name]))
-        return inputs
+    def build_inputs(self, inputs, inputs_keys):
+        out = {}
+        for i, k in enumerate(inputs_keys):
+            v = to_variable(inputs[i])
+            out[k] = v
+        return out
 
-    def model_arch(self, mode):
+    def model_arch(self, ):
         raise NotImplementedError("Should implement model_arch method!")
 
     def loss(self, ):

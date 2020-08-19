@@ -1,17 +1,3 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -28,12 +14,13 @@ from paddle.fluid.layers.ops import cos
 
 from ppdet.core.workspace import register, serializable
 
-__all__ = ['LearningRate', 'OptimizerBuilder']
+__all__ = ['Optimize']
 
 logger = logging.getLogger(__name__)
 
 
 @serializable
+@register
 class PiecewiseDecay(object):
     """
     Multi step learning rate decay
@@ -43,7 +30,7 @@ class PiecewiseDecay(object):
         milestones (list): steps at which to decay learning rate
     """
 
-    def __init__(self, gamma=[0.1, 0.01], milestones=[60000, 80000]):
+    def __init__(self, gamma=[0.1, 0.01], milestones=[8, 11]):
         super(PiecewiseDecay, self).__init__()
         if type(gamma) is not list:
             self.gamma = []
@@ -53,9 +40,13 @@ class PiecewiseDecay(object):
             self.gamma = gamma
         self.milestones = milestones
 
-    def __call__(self, base_lr=None, boundary=None, value=None):
+    def __call__(self,
+                 base_lr=None,
+                 boundary=None,
+                 value=None,
+                 step_per_epoch=None):
         if boundary is not None:
-            boundary.extend(self.milestones)
+            boundary.extend(self.milestones * int(step_per_epoch))
 
         if value is not None:
             for i in self.gamma:
@@ -65,6 +56,7 @@ class PiecewiseDecay(object):
 
 
 @serializable
+@register
 class LinearWarmup(object):
     """
     Warm up learning rate linearly
@@ -89,11 +81,14 @@ class LinearWarmup(object):
             value.append(lr)
             if i > 0:
                 boundary.append(i)
+        boundary.append(self.steps)
+        value.append(base_lr)
         return boundary, value
 
 
+@serializable
 @register
-class LearningRate(object):
+class BaseLR(object):
     """
     Learning Rate configuration
 
@@ -101,26 +96,24 @@ class LearningRate(object):
         base_lr (float): base learning rate
         schedulers (list): learning rate schedulers
     """
-    __category__ = 'optim'
+    __inject__ = ['decay', 'warmup']
 
-    def __init__(self,
-                 base_lr=0.01,
-                 schedulers=[PiecewiseDecay(), LinearWarmup()]):
-        super(LearningRate, self).__init__()
+    def __init__(self, base_lr=0.01, decay=None, warmup=None):
+        super(BaseLR, self).__init__()
         self.base_lr = base_lr
-        self.schedulers = schedulers
+        self.decay = decay
+        self.warmup = warmup
 
-    def __call__(self):
-        # TODO: split warmup & decay 
+    def __call__(self, step_per_epoch):
         # warmup
-        boundary, value = self.schedulers[1](self.base_lr)
+        boundary, value = self.warmup(self.base_lr)
         # decay
-        decay_lr = self.schedulers[0](self.base_lr, boundary, value)
+        decay_lr = self.decay(self.base_lr, boundary, value, step_per_epoch)
         return decay_lr
 
 
 @register
-class OptimizerBuilder():
+class Optimize():
     """
     Build optimizer handles
 
@@ -129,35 +122,40 @@ class OptimizerBuilder():
         optimizer (object): an `Optimizer` instance
     """
     __category__ = 'optim'
+    __inject__ = ['learning_rate']
 
     def __init__(self,
-                 clip_grad_by_norm=None,
-                 regularizer={'type': 'L2',
-                              'factor': .0001},
-                 optimizer={'type': 'Momentum',
-                            'momentum': .9}):
-        self.clip_grad_by_norm = clip_grad_by_norm
-        self.regularizer = regularizer
+                 learning_rate,
+                 optimizer={'name': 'Momentum',
+                            'momentum': 0.9},
+                 regularizer={'name': 'L2',
+                              'factor': 0.0001},
+                 clip_grad_by_norm=None):
+        self.learning_rate = learning_rate
         self.optimizer = optimizer
+        self.regularizer = regularizer
+        self.clip_grad_by_norm = clip_grad_by_norm
 
-    def __call__(self, learning_rate, params=None):
-        if self.clip_grad_by_norm is not None:
-            fluid.clip.set_gradient_clip(
-                clip=fluid.clip.GradientClipByGlobalNorm(
-                    clip_norm=self.clip_grad_by_norm))
+    def __call__(self, params=None, step_per_epoch=1):
 
         if self.regularizer:
-            reg_type = self.regularizer['type'] + 'Decay'
+            reg_type = self.regularizer['name'] + 'Decay'
             reg_factor = self.regularizer['factor']
             regularization = getattr(regularizer, reg_type)(reg_factor)
         else:
             regularization = None
 
+        if self.clip_grad_by_norm is not None:
+            fluid.clip.set_gradient_clip(
+                clip=fluid.clip.GradientClipByGlobalNorm(
+                    clip_norm=self.clip_grad_by_norm))
+
         optim_args = self.optimizer.copy()
-        optim_type = optim_args['type']
-        del optim_args['type']
+        optim_type = optim_args['name']
+        del optim_args['name']
         op = getattr(optimizer, optim_type)
-        return op(learning_rate=learning_rate,
+
+        return op(learning_rate=self.learning_rate(step_per_epoch),
                   parameter_list=params,
                   regularization=regularization,
                   **optim_args)

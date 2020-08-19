@@ -1,0 +1,18 @@
+architecture: YOLOv3
+pretrain_weights: https://paddlemodels.bj.bcebos.com/yolo/darknet53.pdparams
+weights: output/yolov3_darknet/model_final
+use_gpu: true
+worker_num: 0
+use_prefetch: False
+epoch: 300
+log_smooth_window: 20
+save_dir: output
+metric: COCO
+num_classes: 80
+use_fine_grained_loss: false
+open_debug: False
+
+
+_READER_: '../reader/yolo.yml'
+_ARCHITECHTURE_: '../architechture/yolov3.yml'
+_OPTIMIZE_: '../optimize/yolo.yml'

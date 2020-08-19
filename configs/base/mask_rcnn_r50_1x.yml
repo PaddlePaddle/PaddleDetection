@@ -1,0 +1,16 @@
+architecture: MaskRCNN
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/resnet50.pdparams
+weights: output/mask_rcnn_r50_1x/model_final
+use_gpu: true
+epoch: 24
+use_prefetch: False
+worker_num: 0
+log_smooth_window: 20
+save_dir: output
+metric: COCO
+num_classes: 81
+load_static_weights: true
+
+_READER_: '../reader/mask_rcnn.yml'
+_ARCHITECHTURE_: '../architechture/mask_rcnn.yml'
+_OPTIMIZE_: '../optimize/rcnn.yml'

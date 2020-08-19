@@ -13,7 +13,7 @@ class MaskFeat(Layer):
     __inject__ = ['mask_roi_extractor']
 
     def __init__(self,
-                 mask_roi_extractor,
+                 mask_roi_extractor=None,
                  num_convs=1,
                  feat_in=2048,
                  feat_out=256,

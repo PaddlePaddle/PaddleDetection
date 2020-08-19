@@ -47,7 +47,7 @@ class Mask(object):
             im_info=inputs['im_info'],
             gt_classes=inputs['gt_class'],
             is_crowd=inputs['is_crowd'],
-            gt_segms=inputs['gt_mask'],
+            gt_segms=inputs['gt_poly'],
             rois=proposals,
             rois_num=proposals_num,
             labels_int32=labels_int32)

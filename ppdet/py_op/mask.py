@@ -122,7 +122,7 @@ def polys_to_boxes(polys):
 
 
 @jit
-def bbox_overlaps_mask(boxes, query_boxes):
+def compute_iou_mask(boxes, query_boxes):
     N = boxes.shape[0]
     K = query_boxes.shape[0]
     overlaps = np.zeros((N, K), dtype=boxes.dtype)

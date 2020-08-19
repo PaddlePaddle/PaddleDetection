@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -24,6 +23,7 @@ except Exception:
 import logging
 import cv2
 import numpy as np
+
 from .operators import register_op, BaseOperator
 from .op_helper import jaccard_overlap, gaussian2D
 
@@ -41,28 +41,15 @@ __all__ = [
 
 @register_op
 class PadBatch(BaseOperator):
-    """
-    Pad a batch of samples so they can be divisible by a stride.
-    The layout of each image should be 'CHW'.
-    Args:
-        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
-            height and width is divisible by `pad_to_stride`.
-    """
-
     def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
 
-    def __call__(self, samples, context=None):
-        """
-        Args:
-            samples (list): a batch of sample, each is dict.
-        """
+    def __call__(self, samples):
+
         coarsest_stride = self.pad_to_stride
-        #if coarsest_stride == 0:
-        #    return samples
 
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
@@ -82,9 +69,10 @@ class PadBatch(BaseOperator):
             data['image'] = padding_im
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
+
         if self.pad_gt:
             gt_num = []
-            if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
+            if 'gt_poly' in data.keys():
                 pad_mask = True
             else:
                 pad_mask = False
@@ -93,6 +81,7 @@ class PadBatch(BaseOperator):
                 poly_num = []
                 poly_part_num = []
                 point_num = []
+
             for data in samples:
                 gt_num.append(data['gt_bbox'].shape[0])
                 if pad_mask:
@@ -127,7 +116,6 @@ class PadBatch(BaseOperator):
                 data['gt_bbox'] = gt_box_data
                 data['gt_class'] = gt_class_data
                 data['is_crowd'] = is_crowd_data
-
         return samples
 
 
@@ -156,7 +144,7 @@ class RandomShape(BaseOperator):
         ] if random_inter else []
         self.resize_box = resize_box
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         shape = np.random.choice(self.sizes)
         method = np.random.choice(self.interps) if self.random_inter \
             else cv2.INTER_NEAREST
@@ -191,7 +179,7 @@ class PadMultiScaleTest(BaseOperator):
         super(PadMultiScaleTest, self).__init__()
         self.pad_to_stride = pad_to_stride
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         coarsest_stride = self.pad_to_stride
         if coarsest_stride == 0:
             return samples
@@ -247,7 +235,7 @@ class Gt2YoloTarget(BaseOperator):
         self.num_classes = num_classes
         self.iou_thresh = iou_thresh
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         assert len(self.anchor_masks) == len(self.downsample_ratios), \
             "anchor_masks', and 'downsample_ratios' should have same length."
 
@@ -430,7 +418,7 @@ class Gt2FCOSTarget(BaseOperator):
         inside_gt_box = np.min(clipped_box_reg_targets, axis=2) > 0
         return inside_gt_box
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         assert len(self.object_sizes_of_interest) == len(self.downsample_ratios), \
             "object_sizes_of_interest', and 'downsample_ratios' should have same length."
 
@@ -554,7 +542,7 @@ class Gt2TTFTarget(BaseOperator):
         self.num_classes = num_classes
         self.alpha = alpha
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         output_size = samples[0]['image'].shape[1]
         feat_size = output_size // self.down_ratio
         for sample in samples:
