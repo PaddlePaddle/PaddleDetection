@@ -176,9 +176,9 @@ python slim/quantization/infer.py --not_quant_pattern yolo_output \
 | MobileNetV1      |  ImageNet  |   post   |   608    |  27.9   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
 | MobileNetV1      |  ImageNet  |   post   |   416    |  28.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
 | MobileNetV1      |  ImageNet  |   post   |   320    |  26.0   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_post.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   608    |  28.1   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   416    |  28.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
-| MobileNetV1      |  ImageNet  |  aware   |   320    |  25.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   608    |  28.1   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   416    |  28.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
+| MobileNetV1      |  ImageNet  |  aware   |   320    |  25.8   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenet_coco_quant_aware.tar) |
 | ResNet34         |  ImageNet  |   post   |   608    |  35.7   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_post.tar) |
 | ResNet34         |  ImageNet  |  aware   |   608    |  35.2   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_aware.tar) |
 | ResNet34         |  ImageNet  |  aware   |   416    |  33.3   | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_r34_coco_quant_aware.tar) |
