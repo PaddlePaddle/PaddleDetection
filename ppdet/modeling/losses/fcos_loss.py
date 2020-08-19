@@ -76,14 +76,14 @@ class FCOSLoss(object):
         Return:
             loss (Varialbes): location loss
         """
-        plw = pred[:, 0] * positive_mask
-        pth = pred[:, 1] * positive_mask
-        prw = pred[:, 2] * positive_mask
-        pbh = pred[:, 3] * positive_mask
-        tlw = targets[:, 0] * positive_mask
-        tth = targets[:, 1] * positive_mask
-        trw = targets[:, 2] * positive_mask
-        tbh = targets[:, 3] * positive_mask
+        plw = fluid.layers.elementwise_mul(pred[:, 0], positive_mask, axis=0)
+        pth = fluid.layers.elementwise_mul(pred[:, 1], positive_mask, axis=0)
+        prw = fluid.layers.elementwise_mul(pred[:, 2], positive_mask, axis=0)
+        pbh = fluid.layers.elementwise_mul(pred[:, 3], positive_mask, axis=0)
+        tlw = fluid.layers.elementwise_mul(targets[:, 0], positive_mask, axis=0)
+        tth = fluid.layers.elementwise_mul(targets[:, 1], positive_mask, axis=0)
+        trw = fluid.layers.elementwise_mul(targets[:, 2], positive_mask, axis=0)
+        tbh = fluid.layers.elementwise_mul(targets[:, 3], positive_mask, axis=0)
         tlw.stop_gradient = True
         trw.stop_gradient = True
         tth.stop_gradient = True
@@ -101,7 +101,7 @@ class FCOSLoss(object):
         area_inter = (ilw + irw) * (ith + ibh)
         ious = (area_inter + 1.0) / (
             area_predict + area_target - area_inter + 1.0)
-        ious = ious * positive_mask
+        ious = fluid.layers.elementwise_mul(ious, positive_mask, axis=0)
         if self.iou_loss_type.lower() == "linear_iou":
             loss = 1.0 - ious
         elif self.iou_loss_type.lower() == "giou":
@@ -187,16 +187,20 @@ class FCOSLoss(object):
         normalize_sum.stop_gradient = True
         normalize_sum = fluid.layers.reduce_sum(mask_positive_float *
                                                 normalize_sum)
+
         normalize_sum.stop_gradient = True
         cls_loss = fluid.layers.sigmoid_focal_loss(
             cls_logits_flatten, tag_labels_flatten,
             num_positive_int32) / num_positive_fp32
-        reg_loss = self.__iou_loss(
-            bboxes_reg_flatten, tag_bboxes_flatten, mask_positive_float,
-            tag_center_flatten) * mask_positive_float / normalize_sum
+        reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten,
+                                   mask_positive_float, tag_center_flatten)
+        reg_loss = fluid.layers.elementwise_mul(
+            reg_loss, mask_positive_float, axis=0) / normalize_sum
         ctn_loss = fluid.layers.sigmoid_cross_entropy_with_logits(
             x=centerness_flatten,
             label=tag_center_flatten) * mask_positive_float / num_positive_fp32
+        ctn_loss = fluid.layers.elementwise_mul(
+            ctn_loss, mask_positive_float, axis=0) / normalize_sum
         loss_all = {
             "loss_centerness": fluid.layers.reduce_sum(ctn_loss),
             "loss_cls": fluid.layers.reduce_sum(cls_loss),
