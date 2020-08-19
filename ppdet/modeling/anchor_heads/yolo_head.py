@@ -154,7 +154,6 @@ class YOLOv3Head(object):
                  stride,
                  padding,
                  act='leaky',
-                 is_test=True,
                  name=None):
         conv = fluid.layers.conv2d(
             input=input,
@@ -174,7 +173,6 @@ class YOLOv3Head(object):
         out = fluid.layers.batch_norm(
             input=conv,
             act=None,
-            is_test=is_test,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
             moving_mean_name=bn_name + '.mean',
@@ -184,7 +182,7 @@ class YOLOv3Head(object):
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
 
-    def _spp_module(self, input, is_test=True, name=""):
+    def _spp_module(self, input, name=""):
         output1 = input
         output2 = fluid.layers.pool2d(
             input=output1,
@@ -231,17 +229,15 @@ class YOLOv3Head(object):
                 filter_size=1,
                 stride=1,
                 padding=0,
-                is_test=is_test,
                 name='{}.{}.0'.format(name, j))
             if self.use_spp and is_first and j == 1:
-                conv = self._spp_module(conv, is_test=is_test, name="spp")
+                conv = self._spp_module(conv, name="spp")
                 conv = self._conv_bn(
                     conv,
                     512,
                     filter_size=1,
                     stride=1,
                     padding=0,
-                    is_test=is_test,
                     name='{}.{}.spp.conv'.format(name, j))
             conv = self._conv_bn(
                 conv,
@@ -249,7 +245,6 @@ class YOLOv3Head(object):
                 filter_size=3,
                 stride=1,
                 padding=1,
-                is_test=is_test,
                 name='{}.{}.1'.format(name, j))
             if self.drop_block and j == 0 and not is_first:
                 conv = DropBlock(
@@ -271,7 +266,6 @@ class YOLOv3Head(object):
             filter_size=1,
             stride=1,
             padding=0,
-            is_test=is_test,
             name='{}.2'.format(name))
         new_route = self._add_coord(route, is_test=is_test)
         tip = self._conv_bn(
@@ -280,7 +274,6 @@ class YOLOv3Head(object):
             filter_size=3,
             stride=1,
             padding=1,
-            is_test=is_test,
             name='{}.tip'.format(name))
         return route, tip
 
@@ -371,7 +364,6 @@ class YOLOv3Head(object):
                     filter_size=1,
                     stride=1,
                     padding=0,
-                    is_test=(not is_train),
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 # upsample
                 route = self._upsample(route)
