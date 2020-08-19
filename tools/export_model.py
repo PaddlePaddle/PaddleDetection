@@ -112,6 +112,8 @@ def dump_infer_config(FLAGS, config):
         'RetinaNet': 40,
         'Face': 3,
         'TTFNet': 3,
+        'FCOS': 3,
+        'EfficientDet': 40
     }
     infer_arch = config['architecture']
 
