@@ -4,7 +4,7 @@ weights: output/yolov3_darknet/model_final
 use_gpu: true
 worker_num: 0
 use_prefetch: False
-epoch: 300
+epoch: 270
 log_smooth_window: 20
 save_dir: output
 metric: COCO

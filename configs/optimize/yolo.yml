@@ -5,7 +5,7 @@ Optimize:
     decay:
       name: PiecewiseDecay
       gamma: 0.1
-      milestones: [200, 250]
+      milestones: [210, 240]
     warmup:
       name: LinearWarmup
       start_factor: 0.
