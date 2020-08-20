@@ -82,6 +82,12 @@ class COCODataset(DetDataset):
 
                 bboxes = []
                 for inst in instances:
+                    # check gt bbox
+                    if 'bbox' not in inst.keys():
+                        continue
+                    else:
+                        if not any(np.array(inst['bbox'])):
+                            continue
                     x, y, box_w, box_h = inst['bbox']
                     x1 = max(0, x)
                     y1 = max(0, y)
@@ -109,8 +115,15 @@ class COCODataset(DetDataset):
                     gt_class[i][0] = catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
+                    # check RLE format 
+                    if box['iscrowd'] == 1:
+                        gt_poly[i] = [[0.0, 0.0], ]
+                        continue
                     if 'segmentation' in box:
                         gt_poly[i] = box['segmentation']
+
+                if not any(gt_poly):
+                    continue
 
                 coco_rec.update({
                     'is_crowd': is_crowd,
