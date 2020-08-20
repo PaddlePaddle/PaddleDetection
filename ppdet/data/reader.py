@@ -201,7 +201,7 @@ class Reader(object):
                  use_fine_grained_loss=False,
                  num_classes=80,
                  bufsize=-1,
-                 memsize='3G',
+                 memsize='500M',
                  inputs_def=None,
                  devices_num=1):
         self._dataset = dataset

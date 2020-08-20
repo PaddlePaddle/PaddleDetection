@@ -17,38 +17,34 @@ class YOLOv3(BaseArch):
         'yolo_head',
     ]
 
-    def __init__(self, anchor, backbone, yolo_head, *args, **kwargs):
-        super(YOLOv3, self).__init__(*args, **kwargs)
+    def __init__(self, anchor, backbone, yolo_head):
+        super(YOLOv3, self).__init__()
         self.anchor = anchor
         self.backbone = backbone
         self.yolo_head = yolo_head
 
     def model_arch(self, ):
         # Backbone
-        bb_out = self.backbone(self.gbd)
-        self.gbd.update(bb_out)
+        body_feats = self.backbone(self.inputs)
 
         # YOLO Head
-        yolo_head_out = self.yolo_head(self.gbd)
-        self.gbd.update(yolo_head_out)
+        self.yolo_head_out = self.yolo_head(body_feats)
 
         # Anchor
-        anchor_out = self.anchor(self.gbd)
-        self.gbd.update(anchor_out)
-
-        if self.gbd['mode'] == 'infer':
-            bbox_out = self.anchor.post_process(self.gbd)
-            self.gbd.update(bbox_out)
+        self.anchors, self.anchor_masks, self.mask_anchors = self.anchor()
 
     def loss(self, ):
-        yolo_loss = self.yolo_head.loss(self.gbd)
-        out = {'loss': yolo_loss}
-        return out
+        yolo_loss = self.yolo_head.loss(self.inputs, self.yolo_head_out,
+                                        self.anchors, self.anchor_masks,
+                                        self.mask_anchors)
+        return yolo_loss
 
     def infer(self, ):
+        bbox, bbox_num = self.anchor.post_process(
+            self.inputs['im_size'], self.yolo_head_out, self.mask_anchors)
         outs = {
-            "bbox": self.gbd['predicted_bbox'].numpy(),
-            "bbox_nums": self.gbd['predicted_bbox_nums'],
-            'im_id': self.gbd['im_id'].numpy()
+            "bbox": bbox.numpy(),
+            "bbox_num": bbox_num,
+            'im_id': self.inputs['im_id'].numpy()
         }
         return outs

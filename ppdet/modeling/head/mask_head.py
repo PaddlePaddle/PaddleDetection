@@ -37,7 +37,7 @@ class MaskFeat(Layer):
                 mask_conv.add_sublayer(
                     conv_name,
                     Conv2D(
-                        num_channels=feat_in if j == 1 else feat_out,
+                        num_channels=feat_in if j == 0 else feat_out,
                         num_filters=feat_out,
                         filter_size=3,
                         act='relu',

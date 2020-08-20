@@ -99,20 +99,16 @@ class AnchorGeneratorYOLO(object):
         self.anchors = anchors
         self.anchor_masks = anchor_masks
 
-    def __call__(self, yolo_outs):
+    def __call__(self):
+        anchor_num = len(self.anchors)
         mask_anchors = []
-        for i, _ in enumerate(yolo_outs):
+        for i in range(len(self.anchor_masks)):
             mask_anchor = []
             for m in self.anchor_masks[i]:
-                mask_anchor.append(self.anchors[2 * m])
-                mask_anchor.append(self.anchors[2 * m + 1])
+                assert m < anchor_num, "anchor mask index overflow"
+                mask_anchor.extend(self.anchors[2 * m:2 * m + 2])
             mask_anchors.append(mask_anchor)
-        outs = {
-            "anchors": self.anchors,
-            "anchor_masks": self.anchor_masks,
-            "mask_anchors": mask_anchors
-        }
-        return outs
+        return self.anchors, self.anchor_masks, mask_anchors
 
 
 @register
@@ -305,6 +301,7 @@ class RoIExtractor(object):
             self.canconical_level,
             self.canonical_size,
             rois_num=rois_num)
+
         rois_feat_list = []
         for lvl in range(self.start_level, self.end_level + 1):
             roi_feat = fluid.layers.roi_align(
@@ -381,24 +378,19 @@ class MultiClassNMS(object):
 @register
 @serializable
 class YOLOBox(object):
-    __shared__ = ['num_classes']
-
     def __init__(
             self,
-            num_classes=80,
             conf_thresh=0.005,
             downsample_ratio=32,
             clip_bbox=True, ):
-        self.num_classes = num_classes
         self.conf_thresh = conf_thresh
         self.downsample_ratio = downsample_ratio
         self.clip_bbox = clip_bbox
 
-    def __call__(self, x, img_size, anchors, stage=0, name=None):
-
-        outs = fluid.layers.yolo_box(x, img_size, anchors, self.num_classes,
+    def __call__(self, x, img_size, anchors, num_classes, stage=0):
+        outs = fluid.layers.yolo_box(x, img_size, anchors, num_classes,
                                      self.conf_thresh, self.downsample_ratio //
-                                     2**stage, self.clip_bbox, name)
+                                     2**stage, self.clip_bbox)
         return outs
 
 

@@ -20,6 +20,10 @@ from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import coco_eval_results
 from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
 
 
 def parse_args():
@@ -58,22 +62,26 @@ def run(FLAGS, cfg):
 
     # Run Eval
     outs_res = []
+    start_time = time.time()
+    sample_num = 0
     for iter_id, data in enumerate(eval_reader()):
-        start_time = time.time()
-
         # forward 
         model.eval()
         outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
         outs_res.append(outs)
 
         # log 
-        cost_time = time.time() - start_time
-        print("Eval iter: {}, time: {}".format(iter_id, cost_time))
+        sample_num += len(data)
+        if iter_id % 100 == 0:
+            logger.info("Eval iter: {}".format(iter_id))
 
+    cost_time = time.time() - start_time
+    logger.info('Total sample number: {}, averge FPS: {}'.format(
+        sample_num, sample_num / cost_time))
     # Metric 
     coco_eval_results(
         outs_res,
-        include_mask=True if 'MaskHead' in cfg else False,
+        include_mask=True if getattr(cfg, 'MaskHead', None) else False,
         dataset=cfg['EvalReader']['dataset'])
 
 

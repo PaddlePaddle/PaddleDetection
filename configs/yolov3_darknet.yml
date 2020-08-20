@@ -3,13 +3,13 @@ use_gpu: true
 max_iters: 500000
 log_smooth_window: 20
 save_dir: output
-snapshot_iter: 10000
+snapshot_iter: 50000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/yolo/darknet53.pdparams
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet/model_final
 num_classes: 80
 use_fine_grained_loss: false
-open_debug: False
+load_static_weights: True
 
 YOLOv3:
   anchor: AnchorYOLO
@@ -18,11 +18,15 @@ YOLOv3:
 
 DarkNet:
   depth: 53
+  return_idx: [2, 3, 4]
 
 YOLOv3Head:
   yolo_feat:
     name: YOLOFeat
     feat_in_list: [1024, 768, 384]
+  ignore_thresh: 0.7
+  downsample: 32
+  label_smooth: true
   anchor_per_position: 3
 
 AnchorYOLO:
@@ -30,11 +34,6 @@ AnchorYOLO:
     name: AnchorGeneratorYOLO
     anchors: [10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90, 156, 198, 373, 326]
     anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
-  anchor_target_generator:
-    name: AnchorTargetGeneratorYOLO
-    ignore_thresh: 0.7
-    downsample_ratio: 32
-    label_smooth: true
   anchor_post_process:
     name: BBoxPostProcessYOLO
     # decode -> clip

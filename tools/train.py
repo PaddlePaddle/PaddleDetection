@@ -113,7 +113,7 @@ def run(FLAGS, cfg):
         optimizer,
         cfg.pretrain_weights,
         ckpt_type=FLAGS.ckpt_type,
-        load_static_weights=cfg.load_static_weights)
+        load_static_weights=cfg.get('load_static_weights', False))
 
     # Parallel Model 
     if ParallelEnv().nranks > 1:
@@ -177,8 +177,8 @@ def run(FLAGS, cfg):
                 cfg_name = os.path.basename(FLAGS.config).split('.')[0]
                 save_name = str(
                     iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
-                save_dir = os.path.join(cfg.save_dir, cfg_name, save_name)
-                save_dygraph_ckpt(model, optimizer, save_dir)
+                save_dir = os.path.join(cfg.save_dir, cfg_name)
+                save_dygraph_ckpt(model, optimizer, save_dir, save_name)
 
 
 def main():

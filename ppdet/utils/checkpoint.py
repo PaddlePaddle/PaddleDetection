@@ -3,10 +3,12 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import errno
 import os
 import time
 import re
 import numpy as np
+import paddle
 import paddle.fluid as fluid
 from .download import get_weights_path
 
@@ -88,9 +90,10 @@ def load_dygraph_ckpt(model,
     return model
 
 
-def save_dygraph_ckpt(model, optimizer, save_dir):
+def save_dygraph_ckpt(model, optimizer, save_dir, save_name):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    fluid.dygraph.save_dygraph(model.state_dict(), save_dir)
-    fluid.dygraph.save_dygraph(optimizer.state_dict(), save_dir)
+    save_path = os.path.join(save_dir, save_name)
+    fluid.dygraph.save_dygraph(model.state_dict(), save_path)
+    fluid.dygraph.save_dygraph(optimizer.state_dict(), save_path)
     print("Save checkpoint:", save_dir)

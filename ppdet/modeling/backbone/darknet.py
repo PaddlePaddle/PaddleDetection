@@ -16,7 +16,8 @@ class ConvBNLayer(Layer):
                  stride=1,
                  groups=1,
                  padding=0,
-                 act="leaky"):
+                 act="leaky",
+                 name=None):
         super(ConvBNLayer, self).__init__()
 
         self.conv = Conv2D(
@@ -26,18 +27,18 @@ class ConvBNLayer(Layer):
             stride=stride,
             padding=padding,
             groups=groups,
-            param_attr=ParamAttr(
-                initializer=fluid.initializer.Normal(0., 0.02)),
+            param_attr=ParamAttr(name=name + '.conv.weights'),
             bias_attr=False,
             act=None)
+        bn_name = name + '.bn'
         self.batch_norm = BatchNorm(
             num_channels=ch_out,
             param_attr=ParamAttr(
-                initializer=fluid.initializer.Normal(0., 0.02),
-                regularizer=L2Decay(0.)),
+                name=bn_name + '.scale', regularizer=L2Decay(0.)),
             bias_attr=ParamAttr(
-                initializer=fluid.initializer.Constant(0.0),
-                regularizer=L2Decay(0.)))
+                name=bn_name + '.offset', regularizer=L2Decay(0.)),
+            moving_mean_name=bn_name + '.mean',
+            moving_variance_name=bn_name + '.var')
 
         self.act = act
 
@@ -50,7 +51,13 @@ class ConvBNLayer(Layer):
 
 
 class DownSample(Layer):
-    def __init__(self, ch_in, ch_out, filter_size=3, stride=2, padding=1):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 filter_size=3,
+                 stride=2,
+                 padding=1,
+                 name=None):
 
         super(DownSample, self).__init__()
 
@@ -59,7 +66,8 @@ class DownSample(Layer):
             ch_out=ch_out,
             filter_size=filter_size,
             stride=stride,
-            padding=padding)
+            padding=padding,
+            name=name)
         self.ch_out = ch_out
 
     def forward(self, inputs):
@@ -68,13 +76,23 @@ class DownSample(Layer):
 
 
 class BasicBlock(Layer):
-    def __init__(self, ch_in, ch_out):
+    def __init__(self, ch_in, ch_out, name=None):
         super(BasicBlock, self).__init__()
 
         self.conv1 = ConvBNLayer(
-            ch_in=ch_in, ch_out=ch_out, filter_size=1, stride=1, padding=0)
+            ch_in=ch_in,
+            ch_out=ch_out,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            name=name + '.0')
         self.conv2 = ConvBNLayer(
-            ch_in=ch_out, ch_out=ch_out * 2, filter_size=3, stride=1, padding=1)
+            ch_in=ch_out,
+            ch_out=ch_out * 2,
+            filter_size=3,
+            stride=1,
+            padding=1,
+            name=name + '.1')
 
     def forward(self, inputs):
         conv1 = self.conv1(inputs)
@@ -84,14 +102,16 @@ class BasicBlock(Layer):
 
 
 class Blocks(Layer):
-    def __init__(self, ch_in, ch_out, count):
+    def __init__(self, ch_in, ch_out, count, name=None):
         super(Blocks, self).__init__()
 
-        self.basicblock0 = BasicBlock(ch_in, ch_out)
+        self.basicblock0 = BasicBlock(ch_in, ch_out, name=name + '.0')
         self.res_out_list = []
         for i in range(1, count):
-            res_out = self.add_sublayer("basic_block_%d" % (i),
-                                        BasicBlock(ch_out * 2, ch_out))
+            block_name = '{}.{}'.format(name, i)
+            res_out = self.add_sublayer(
+                block_name, BasicBlock(
+                    ch_out * 2, ch_out, name=block_name))
             self.res_out_list.append(res_out)
         self.ch_out = ch_out
 
@@ -108,31 +128,46 @@ DarkNet_cfg = {53: ([1, 2, 8, 8, 4])}
 @register
 @serializable
 class DarkNet(Layer):
-    def __init__(self, depth=53, mode='train'):
+    def __init__(self,
+                 depth=53,
+                 freeze_at=-1,
+                 return_idx=[2, 3, 4],
+                 num_stages=5):
         super(DarkNet, self).__init__()
         self.depth = depth
-        self.mode = mode
-        self.stages = DarkNet_cfg[self.depth][0:5]
+        self.freeze_at = freeze_at
+        self.return_idx = return_idx
+        self.num_stages = num_stages
+        self.stages = DarkNet_cfg[self.depth][0:num_stages]
 
         self.conv0 = ConvBNLayer(
-            ch_in=3, ch_out=32, filter_size=3, stride=1, padding=1)
+            ch_in=3,
+            ch_out=32,
+            filter_size=3,
+            stride=1,
+            padding=1,
+            name='yolo_input')
 
-        self.downsample0 = DownSample(ch_in=32, ch_out=32 * 2)
+        self.downsample0 = DownSample(
+            ch_in=32, ch_out=32 * 2, name='yolo_input.downsample')
 
-        self.darknet53_conv_block_list = []
+        self.darknet_conv_block_list = []
         self.downsample_list = []
         ch_in = [64, 128, 256, 512, 1024]
         for i, stage in enumerate(self.stages):
-            conv_block = self.add_sublayer("stage_%d" % (i),
-                                           Blocks(
-                                               int(ch_in[i]), 32 * (2**i),
-                                               stage))
-            self.darknet53_conv_block_list.append(conv_block)
-        for i in range(len(self.stages) - 1):
+            name = 'stage.{}'.format(i)
+            conv_block = self.add_sublayer(
+                name, Blocks(
+                    int(ch_in[i]), 32 * (2**i), stage, name=name))
+            self.darknet_conv_block_list.append(conv_block)
+        for i in range(num_stages - 1):
+            down_name = 'stage.{}.downsample'.format(i)
             downsample = self.add_sublayer(
-                "stage_%d_downsample" % i,
+                down_name,
                 DownSample(
-                    ch_in=32 * (2**(i + 1)), ch_out=32 * (2**(i + 2))))
+                    ch_in=32 * (2**(i + 1)),
+                    ch_out=32 * (2**(i + 2)),
+                    name=down_name))
             self.downsample_list.append(downsample)
 
     def forward(self, inputs):
@@ -141,10 +176,12 @@ class DarkNet(Layer):
         out = self.conv0(x)
         out = self.downsample0(out)
         blocks = []
-        for i, conv_block_i in enumerate(self.darknet53_conv_block_list):
+        for i, conv_block_i in enumerate(self.darknet_conv_block_list):
             out = conv_block_i(out)
-            blocks.append(out)
-            if i < len(self.stages) - 1:
+            if i == self.freeze_at:
+                out.stop_gradient = True
+            if i in self.return_idx:
+                blocks.append(out)
+            if i < self.num_stages - 1:
                 out = self.downsample_list[i](out)
-        outs = {'darknet_outs': blocks[-1:-4:-1]}
-        return outs
+        return blocks
