@@ -6,10 +6,11 @@ epoch: 12
 use_prefetch: False
 worker_num: 0
 log_smooth_window: 20
+log_iter: 20
 save_dir: output
 metric: COCO
 num_classes: 81
-load_static_weights: false
+load_static_weights: true
 
 _READER_: '../reader/mask_rcnn.yml'
 _ARCHITECHTURE_: '../architechture/mask_rcnn_fpn.yml'

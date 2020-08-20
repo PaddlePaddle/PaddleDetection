@@ -11,10 +11,10 @@ log_iter: 20
 epoch: 12
 
 TrainReader:
-  batch_size: 1
+  batch_size: 2
   shuffle: true
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
   dataset:
     name: COCODataset
-    dataset_dir: /dataset/coco
+    dataset_dir: /home/ai/dataset/COCO17

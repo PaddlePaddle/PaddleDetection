@@ -6,12 +6,12 @@ worker_num: 0
 use_prefetch: False
 epoch: 270
 log_smooth_window: 20
+log_iter: 20
 save_dir: output
 metric: COCO
 num_classes: 80
 use_fine_grained_loss: false
-open_debug: False
-
+load_static_weights: true
 
 _READER_: '../reader/yolo.yml'
 _ARCHITECHTURE_: '../architechture/yolov3.yml'
