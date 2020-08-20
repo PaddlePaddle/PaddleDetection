@@ -107,7 +107,8 @@ def run(FLAGS, cfg, place):
     model = create(cfg.architecture)
 
     # Optimizer
-    optimizer = create('Optimize')(model.parameters(), step_per_epoch)
+    optimizer = create('Optimize')(model.parameters(), int(
+        step_per_epoch / int(ParallelEnv().nranks)))
 
     # Init Model & Optimzer   
     model = load_dygraph_ckpt(

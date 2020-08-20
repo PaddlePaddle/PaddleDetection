@@ -57,7 +57,7 @@ def load_dygraph_ckpt(model,
         ckpt = pretrain_ckpt
     ckpt = get_ckpt_path(ckpt)
     assert os.path.exists(ckpt), "Path {} does not exist.".format(ckpt)
-    if load_static_weights:
+    if load_static_weights and ckpt_type == 'pretrain':
         pre_state_dict = fluid.load_program_state(ckpt)
         model_dict = model.state_dict()
         param_state_dict = {}

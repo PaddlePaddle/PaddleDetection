@@ -11,4 +11,4 @@ weights: output/mask_r50_fpn_1x/model_final.pdparams
 
 EvalReader:
   dataset:
-    dataset_dir: /home/ai/dataset/COCO17
+    dataset_dir: /dataset/coco

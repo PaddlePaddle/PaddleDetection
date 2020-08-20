@@ -2,14 +2,14 @@ architecture: MaskRCNN
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 weights: output/mask_rcnn_r50_1x/model_final
 use_gpu: true
-epoch: 24
+epoch: 12
 use_prefetch: False
 worker_num: 0
 log_smooth_window: 20
 save_dir: output
 metric: COCO
 num_classes: 81
-load_static_weights: false
+load_static_weights: true
 
 _READER_: '../reader/mask_rcnn.yml'
 _ARCHITECHTURE_: '../architechture/mask_rcnn.yml'

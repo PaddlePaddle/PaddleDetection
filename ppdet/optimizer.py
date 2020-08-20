@@ -11,7 +11,6 @@ import paddle.fluid.optimizer as optimizer
 import paddle.fluid.regularizer as regularizer
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.layers.ops import cos
-
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['Optimize']
@@ -46,12 +45,11 @@ class PiecewiseDecay(object):
                  value=None,
                  step_per_epoch=None):
         if boundary is not None:
-            boundary.extend(self.milestones * int(step_per_epoch))
+            boundary.extend([int(step_per_epoch) * i for i in self.milestones])
 
         if value is not None:
             for i in self.gamma:
                 value.append(base_lr * i)
-
         return fluid.dygraph.PiecewiseDecay(boundary, value, begin=0, step=1)
 
 

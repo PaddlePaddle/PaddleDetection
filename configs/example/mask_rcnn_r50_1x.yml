@@ -2,17 +2,19 @@ _BASE_: "configs/base/mask_rcnn_r50_1x.yml"
 
 use_gpu: true
 worker_num: 0
-epoch: 24
 log_smooth_window: 20
 save_dir: output
 metric: COCO
 num_classes: 81
-load_static_weights: true
 log_iter: 20
 
+epoch: 12
+
 TrainReader:
+  batch_size: 1
+  shuffle: true
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']
   dataset:
     name: COCODataset
-    dataset_dir: /home/ai/dataset/COCO17
+    dataset_dir: /dataset/coco
