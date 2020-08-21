@@ -140,7 +140,7 @@ TestReader:
     interp: 1
     max_size: 0
     target_size: 300
-    use_cv2: false
+    use_cv2: true
   - !Permute
     to_bgr: false
   - !NormalizeImage
