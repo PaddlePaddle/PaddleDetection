@@ -1,6 +1,6 @@
 architecture: HybridTaskCascade
 use_gpu: true
-max_iters: 100000
+max_iters: 180000
 snapshot_iter: 10000
 log_smooth_window: 50
 save_dir: output
@@ -110,12 +110,13 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [60000, 80000]
+    milestones: [120000, 160000]
   - !LinearWarmup
     start_factor: 0.1
     steps: 1000
 
 OptimizerBuilder:
+  clip_grad_by_norm: 35.0
   optimizer:
     momentum: 0.9
     type: Momentum
@@ -124,8 +125,9 @@ OptimizerBuilder:
     type: L2
 
 TrainReader:
-  batch_size: 2
+  batch_size: 1
   worker_num: 2
+  shuffle: true
   dataset:
     !COCODataSet
     dataset_dir: dataset/coco
