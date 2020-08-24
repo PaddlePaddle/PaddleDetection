@@ -125,7 +125,7 @@ OptimizerBuilder:
     type: L2
 
 TrainReader:
-  batch_size: 2
+  batch_size: 1
   worker_num: 2
   shuffle: true
   dataset:
