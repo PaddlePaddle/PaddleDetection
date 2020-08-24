@@ -229,11 +229,7 @@ class IouLoss(object):
         return x1, y1, x2, y2
 
     def _create_tensor_from_numpy(self, numpy_array):
-        paddle_array = fluid.layers.create_parameter(
-            attr=ParamAttr(),
-            shape=numpy_array.shape,
-            dtype=numpy_array.dtype,
-            default_initializer=NumpyArrayInitializer(numpy_array))
-        paddle_array.stop_gradient = True
-        paddle_array.persistable = False
+        paddle_array = fluid.layers.create_global_var(
+            shape=numpy_array.shape, value=0., dtype=numpy_array.dtype)
+        fluid.layers.assign(numpy_array, paddle_array)
         return paddle_array
