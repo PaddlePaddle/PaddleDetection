@@ -23,4 +23,4 @@ The results on COCO 2017val are shown in the below table. (results on test-dev a
 
   | Backbone  | Lr schd | Inf time (fps) | box AP | mask AP | Download |
   |:---------:|:-------:|:--------------:|:------:|:-------:|:--------:|
-  | R-50-FPN  | 1x      | 11             | 42.2   | 36.5    | [model](https://paddlemodels.bj.bcebos.com/object_detection/htc_r50_fpn_1x.pdparams ) |
+  | R-50-FPN  | 1x      | 11             | 42.7   | 36.8    | [model](https://paddlemodels.bj.bcebos.com/object_detection/htc_r50_fpn_1x.pdparams ) |
