@@ -338,16 +338,16 @@ class Reader(object):
             sample["curr_iter"] = self._curr_iter
             self._pos += 1
 
-            if self._drop_empty and self._fields and 'gt_mask' in self._fields:
-                if _has_empty(_segm(sample)):
-                    #logger.warn('gt_mask is empty or not valid in {}'.format(
-                    #    sample['im_file']))
-                    continue
-            if self._drop_empty and self._fields and 'gt_bbox' in self._fields:
+            if self._drop_empty and self._fields and 'gt_bbox' in sample:
                 if _has_empty(sample['gt_bbox']):
                     #logger.warn('gt_bbox {} is empty or not valid in {}, '
                     #   'drop this sample'.format(
                     #    sample['im_file'], sample['gt_bbox']))
+                    continue
+            if self._drop_empty and self._fields and 'gt_poly' in sample:
+                if _has_empty(_segm(sample)):
+                    #logger.warn('gt_mask is empty or not valid in {}'.format(
+                    #    sample['im_file']))
                     continue
 
             if self._load_img:
