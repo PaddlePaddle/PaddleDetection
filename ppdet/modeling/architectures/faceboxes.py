@@ -56,7 +56,7 @@ class FaceBoxes(object):
                  densities=[[4, 2, 1], [1], [1]],
                  fixed_sizes=[[32., 64., 128.], [256.], [512.]],
                  num_classes=2,
-                 steps=[16., 32., 64.]):
+                 steps=[8., 16., 32.]):
         super(FaceBoxes, self).__init__()
         self.backbone = backbone
         self.num_classes = num_classes
@@ -117,7 +117,7 @@ class FaceBoxes(object):
                 fixed_ratios=[1.],
                 clip=False,
                 offset=0.5,
-                steps=[self.steps[i]])
+                steps=[self.steps[i]] * 2)
 
             num_boxes = box.shape[2]
 

@@ -95,7 +95,7 @@ CascadeTwoFCHead:
   mlp_dim: 128
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.02
   schedulers:
   - !CosineDecay
     max_iters: 500000
