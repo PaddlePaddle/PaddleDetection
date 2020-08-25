@@ -21,7 +21,7 @@
 
 ### 训练策略
 
-- 剪裁模型训练时使用[PaddleDetection模型库](https://paddledetection.readthedocs.io/zh/latest/MODEL_ZOO_cn.html)发布的模型权重作为预训练权重。
+- 剪裁模型训练时使用[PaddleDetection模型库](https://paddledetection.readthedocs.io/MODEL_ZOO_cn.html)发布的模型权重作为预训练权重。
 - 剪裁训练使用模型默认配置，即除`pretrained_weights`外配置不变。
 - 剪裁模型全部为基于敏感度的卷积通道剪裁。
 - YOLOv3模型主要剪裁`yolo_head`部分，即剪裁参数如下。

@@ -125,7 +125,7 @@ def DeformConvNorm(input,
                    initializer=None,
                    bias_attr=False,
                    name=None):
-    assert norm_type in ['bn', 'sync_bn', 'affine_channel']
+    assert norm_type in ['bn', 'sync_bn', 'affine_channel', 'gn']
     conv = DeformConv(input, num_filters, filter_size, stride, groups, dilation,
                       lr_scale, initializer, bias_attr, name)
 
