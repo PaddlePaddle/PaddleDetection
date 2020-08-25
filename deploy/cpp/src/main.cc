@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
     FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
   if (det.GetSuccessInit()) {
-    if (!FLAGS_video_path.empty() or FLAGS_camera_id != -1) {
+    if (!FLAGS_video_path.empty() || FLAGS_camera_id != -1) {
       PredictVideo(FLAGS_video_path, &det);
     } else if (!FLAGS_image_path.empty()) {
       PredictImage(FLAGS_image_path, &det);
