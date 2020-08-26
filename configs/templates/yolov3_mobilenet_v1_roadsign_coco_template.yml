@@ -150,7 +150,7 @@ TrainReader:
     #│   ├── xxx2.png
     #│   ├── xxx3.png
     #│   |   ...
-    
+
     # 数据集相对路径
     dataset_dir: dataset/roadsign_coco
     # 图片文件夹相对路径
@@ -190,7 +190,7 @@ TrainReader:
   # 数据预处理和数据增强部分，此部分设置要特别注意###
   # 不同算法对数据的预处理流程不同，建议使用对应算法默认的数据处理流程。
   # 比如，YOLO、FPN算法，要求输入图像尺寸必须是32的整数倍
-  
+
   # 以下是对一个batch中的每单张图片做的数据增强
   sample_transforms:
   # 读取Image图像为numpy数组
@@ -265,7 +265,7 @@ EvalReader:
     #│   ├── xxx2.png
     #│   ├── xxx3.png
     #│   |   ...
-    
+
     # 数据集相对路径
     dataset_dir: dataset/roadsign_coco
     # 图片文件夹相对路径
@@ -320,7 +320,7 @@ TestReader:
     # 预测时需要读取字段
     # fields 字段
     fields: ['image', 'im_size', 'im_id']
-  
+
   dataset:
     # 预测数据
     !ImageFolder

@@ -421,4 +421,3 @@ TestReader:
     - !Permute
       to_bgr: false
       channel_first: true
-
