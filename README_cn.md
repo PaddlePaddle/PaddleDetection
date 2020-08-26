@@ -130,21 +130,30 @@ PaddleDetection新发布精度速度领先的[PP-YOLO](https://arxiv.org/abs/200
     - [Python端推理部署](deploy/python)
     - [C++端推理部署](deploy/cpp)
     - [推理Benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
+    - [PaddeServing](https://github.com/PaddlePaddle/Serving) :服务端使用PaddleServering部署，请参考[PaddeServing](https://github.com/PaddlePaddle/Serving) 部署成服务。
+        PaddleServing yolov4 部署示例[PaddleServer yolov4 部署](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/yolov4)  
+    - [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :移动端使用Paddle-Lite部署，请参考[PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 部署到移动端。
+        Paddle-Lite 检测模型在android、iOS、armlinux上部署示例:[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
+        注意：Lite框架目前支持的模型结构为PaddlePaddle深度学习框架产出的模型格式。可以使用[X2Paddle](https://github.com/PaddlePaddle/X2Paddle) 将其他框架模型转换成PaddlePaddle格式。再通过Paddle-Lite提供的opt工具转换成Paddle-Lite格式。
+    - [嵌入式端部署](../../configs/mobile/README.md) 
 
 ## 模型库
 
 - [模型库](docs/MODEL_ZOO_cn.md)
+- 单阶段高性能模型
+    - [PP-YOLO模型](configs/ppyolo/README_cn.md): COCO mAP高达45.3%，单卡Tesla V100预测速度高达72.9 FPS
+    - [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%  
 - [移动端模型](configs/mobile/README.md)
 - [Anchor free模型](configs/anchor_free/README.md)
-- [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
-- [YOLOv3增强模型](docs/featured_model/YOLOv3_ENHANCEMENT.md): COCO mAP高达43.6%，原论文精度为33.0%
-- [PP-YOLO模型](configs/ppyolo/README_cn.md): COCO mAP高达45.3%，单卡Tesla V100预测速度高达72.9 FPS
-- [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
-- [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
-- [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
-- [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
-- [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
-- [大规模实用目标检测模型](docs/featured_model/LARGE_SCALE_DET_MODEL.md): 提供了包含676个类别的大规模服务器端实用目标检测模型，适用于绝大部分使用场景，可以直接用来预测，也可以用于微调其他任务。
+- [特色垂类检测模型](docs/featured_model/CONTRIB_cn.md)
+    - [人脸检测模型](docs/featured_model/FACE_DETECTION.md)
+    - [行人检测预训练模型](docs/featured_model/CONTRIB_cn.md)
+    - [车辆检测预训练模型](docs/featured_model/CONTRIB_cn.md)
+- 竞赛夺冠模型和实用模型
+    - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
+    - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+    - [服务器端实用目标检测模型](configs/rcnn_enhance/README.md): V100上速度20FPS时，COCO mAP高达47.8%。
+    - [大规模实用目标检测模型](docs/featured_model/LARGE_SCALE_DET_MODEL.md): 提供了包含676个类别的大规模服务器端实用目标检测模型，适用于绝大部分使用场景，可以直接用来预测，也可以用于微调其他任务。
 
 
 ## 许可证书

@@ -147,21 +147,30 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
     - [Python inference](deploy/python)
     - [C++ inference](deploy/cpp)
     - [Inference benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
+    - [PaddeServing](https://github.com/PaddlePaddle/Serving) : Deploy Server using PaddleServing, please refer [PaddeServing](https://github.com/PaddlePaddle/Serving) 。
+        PaddleServing yolov4 demo [PaddleServer yolov4 部署](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/yolov4)  
+    - [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :Deploy using Paddle-Lite，please refer [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 。
+        Paddle-Lite support deploy on android、iOS、armlinux, please refer :[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
+        Note: [X2Paddle](https://github.com/PaddlePaddle/X2Paddle) is a tool that can other format models to Paddle-Lite format。
+    - [嵌入式端部署](../../configs/mobile/README.md) 
 
 ## Model Zoo
 
 - Pretrained models are available in the [PaddleDetection model zoo](docs/MODEL_ZOO.md).
+- OneStage models
+    - [PP-YOLO](configs/ppyolo/README.md): PP-YOLO reeached mAP as 45.3% on COCO dataset，and 72.9 FPS on single Tesla V100
+    - [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
 - [Mobile models](configs/mobile/README.md)
 - [Anchor free models](configs/anchor_free/README.md)
-- [Face detection models](docs/featured_model/FACE_DETECTION_en.md)
-- [Pretrained models for pedestrian detection](docs/featured_model/CONTRIB.md)
-- [Pretrained models for vehicle detection](docs/featured_model/CONTRIB.md)
-- [YOLOv3 enhanced model](docs/featured_model/YOLOv3_ENHANCEMENT.md): Compared to MAP of 33.0% in paper, enhanced YOLOv3 reaches the MAP of 43.6%, and inference speed is improved as well
-- [PP-YOLO](configs/ppyolo/README.md): PP-YOLO reeached mAP as 45.3% on COCO dataset，and 72.9 FPS on single Tesla V100
-- [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
-- [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
-- [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
-- [Large-scale practical object detection models](docs/featured_model/LARGE_SCALE_DET_MODEL_en.md): Large-scale practical server-side detection pretrained models with 676 categories are provided for most application scenarios, which can be used not only for direct inference but also finetuning on other datasets.
+- [Models on some scenes](docs/featured_model/CONTRIB.md)
+    - [Face detection models](docs/featured_model/FACE_DETECTION_en.md)
+    - [Pretrained models for pedestrian detection](docs/featured_model/CONTRIB.md)
+    - [Pretrained models for vehicle detection](docs/featured_model/CONTRIB.md)
+- Champion models and practical object detection models
+    - [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
+    - [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
+    - [Practical Server-side detection method](configs/rcnn_enhance/README_en.md): Inference speed on single V100 GPU can reach 20FPS when COCO mAP is 47.8%.
+    - [Large-scale practical object detection models](docs/featured_model/LARGE_SCALE_DET_MODEL_en.md): Large-scale practical server-side detection pretrained models with 676 categories are provided for most application scenarios, which can be used not only for direct inference but also finetuning on other datasets.
 
 
 ## License

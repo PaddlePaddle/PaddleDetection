@@ -299,11 +299,12 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
 训练得到满足要求的模型后，首先导出预测模型和预测配置文件，然后通过以下几种方式进行部署，详细请参考文档[推理部署](docs/tutorials/deploy)
 - [Python端推理部署(支持 Linux 和 Windows)](deploy/python)
 - [C++端推理部署(支持 Linux 和 Windows)](deploy/cpp)
-- 服务端使用PaddleServering部署，请参考[PaddeServing](https://github.com/PaddlePaddle/Serving) 部署成服务。
+- [PaddeServing](https://github.com/PaddlePaddle/Serving) :服务端使用PaddleServering部署，请参考[PaddeServing](https://github.com/PaddlePaddle/Serving) 部署成服务。
     PaddleServing yolov4 部署示例[PaddleServer yolov4 部署](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/yolov4)  
-- 移动端使用Paddle-Lite部署，请参考[PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 部署到移动端。
+- [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :移动端使用Paddle-Lite部署，请参考[PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 部署到移动端。
     Paddle-Lite 检测模型在android、iOS、armlinux上部署示例:[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
     注意：Lite框架目前支持的模型结构为PaddlePaddle深度学习框架产出的模型格式。可以使用[X2Paddle](https://github.com/PaddlePaddle/X2Paddle) 将其他框架模型转换成PaddlePaddle格式。再通过Paddle-Lite提供的opt工具转换成Paddle-Lite格式。
+- [嵌入式端部署](../../configs/mobile/README.md) 
     
 部署服务时，首先需要导出预测的模型和预测配置文件，通过`tools/export_model.py`可以导出模型和名为`infer_cfg.yml`的配置文件。详细请参考[模型导出教程](docs/tutorials/deploy/EXPORT_MODEL_cn.md)
 
