@@ -1,0 +1,424 @@
+#####################################基础配置#####################################
+# 检测算法使用FasterRCNN，backbone使用Resnet50，数据集使用roadsign_voc的配置文件模板，本配置文件默认使用单卡，单卡的batch_size=1
+# 检测模型的名称
+architecture: FasterRCNN
+use_gpu: true
+# ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
+max_iters: 9600
+# log平滑参数
+log_smooth_window: 20
+# 模型保存文件夹
+save_dir: output
+# 每隔多少迭代保存模型
+snapshot_iter: 200
+# ### mAP 评估方式，mAP评估方式可以选择COCO和VOC或WIDERFACE，其中VOC有11point和integral两种评估方法
+metric: COCO
+# ### pretrain_weights 可以是imagenet的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重
+# 模型配置文件和权重文件可参考[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md)
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar
+weights: output/faster_rcnn_r50_roadsign_coco_1x_template/best_model
+# ### 根据用户数据设置类别数，FasterRCNN类别数加1
+num_classes: 5
+# finetune时忽略的参数，按照正则化匹配，匹配上的参数会被忽略掉
+finetune_exclude_pretrained_params: ['cls_score, bbox_pred']
+
+# FasterRCNN检测模型的结构
+FasterRCNN:
+  backbone: ResNet
+  rpn_head: RPNHead
+  roi_extractor: RoIAlign
+  bbox_head: BBoxHead
+  bbox_assigner: BBoxAssigner
+
+# 检测模型的backbone
+ResNet:
+  # norm_type
+  norm_type: affine_channel
+  # depth
+  depth: 50
+  # feature_maps
+  feature_maps: 4
+  # freeze_at
+  freeze_at: 2
+
+# ResNetC5
+ResNetC5:
+  # depth
+  depth: 50
+  # norm_type
+  norm_type: affine_channel
+
+# 检测模型的RPNHead
+RPNHead:
+  # 根据特征图尺寸，在特征图的每个位置生成N个大小、长宽比各不同anchor
+  # N = len(anchor_sizes) * len(aspect_ratios)
+  # 具体实现参考[API](fluid.layers.anchor_generator)
+  anchor_generator:
+    # 生成anchor的anchor大小，以绝对像素的形式表示，以正方形边长表示面积
+    anchor_sizes: [32, 64, 128, 256, 512]
+    # 生成anchor的高宽比
+    aspect_ratios: [0.5, 1.0, 2.0]
+    #  anchor在宽度和高度方向上的步长
+    stride: [16.0, 16.0]
+    # 在框回归delta中使用
+    variance: [1.0, 1.0, 1.0, 1.0]
+
+  # 具体实现参考[API](fluid.layers.rpn_target_assign)
+  rpn_target_assign:
+    # 每个图像中RPN示例总数
+    rpn_batch_size_per_im: 256
+    # 标记为foreground boxes的数量占batch内总体boxes的比例
+    rpn_fg_fraction: 0.5
+    # 和任何ground-truth boxes的IoU都低于阈值 rpn_negative_overlap 的anchor被判定为负类别
+    rpn_negative_overlap: 0.3
+    # 和任意一个groundtruth box的 IoU 超出了阈值 rpn_positive_overlap 的anchor被判定为正类别
+    rpn_positive_overlap: 0.7
+    # 超出图像外部 straddle_thresh 个像素的RPN anchors会被删除
+    rpn_straddle_thresh: 0.0
+    # 是否使用随机采样来选择foreground boxes和background boxes
+    use_random: true
+
+  # 训练阶段时 propose 产生阈值
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 12000
+    post_nms_top_n: 2000
+
+  # 测试阶段时 propose 产生阈值
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 6000
+    post_nms_top_n: 1000
+
+# RoIAlign
+# 具体实现参考[API](paddle.fluid.layers.roi_align)
+RoIAlign:
+  # ???
+  resolution: 14
+  # 插值格中采样点的数目
+  sampling_ratio: 0
+  # 乘法性质空间标尺因子，池化时，将RoI坐标变换至运算采用的标度，默认值为1.0
+  spatial_scale: 0.0625
+
+# BBoxAssigner
+# 求rpn生成的roi跟gt bbox之间的iou，然后根据阈值进行过滤，保留一定数量的roi
+# 再根据gt bbox的标签，对roi进行标签赋值，即得到每个roi的类别
+# 具体实现参考[API](fluid.layers.generate_proposal_labels)
+BBoxAssigner:
+  # 每张图片抽取出的的RoIs的数目
+  batch_size_per_im: 512
+  # Box 回归权重
+  bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
+  # box与某个groundtruth的IOU 在[bg_thresh_lo, bg_thresh_hi]区间，则该box被标记为background
+  bg_thresh_hi: 0.5
+  bg_thresh_lo: 0.0
+  # 在单张图片中，foreground boxes占所有boxes的比例
+  fg_fraction: 0.25
+  # foreground重叠阀值，用于筛选foreground boxes
+  fg_thresh: 0.5
+
+# BBoxHead
+BBoxHead:
+  # BBoxHead(head=None, box_coder=BoxCoder, nms=MultiClassNMS, bbox_loss=SmoothL1Loss, num_classes=81)
+  # 具体实现参考[code](ppdet.modeling.roi_heads.bbox_head.BBoxHead)
+  head: ResNetC5
+  # nms
+  # 具体实现参考[API](fluid.layers.multiclass_nms)
+  nms:
+    # 基于 score_threshold 的过滤检测后，根据置信度保留的最大检测次数
+    keep_top_k: 100
+    # 在NMS中用于剔除检测框IOU的阈值，默认值：0.3
+    nms_threshold: 0.5
+    # 过滤掉低置信度分数的边界框的阈值。如果没有提供，请考虑所有边界框
+    score_threshold: 0.05
+
+LearningRate:
+  # ### 学习率设置 参考 https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98
+  # base_lr 由于预训练模型使用的是在COCO上的预训练模型。若loss出现nan，请将学习率再设置小一些试试。
+  base_lr: 0.0001
+  # 学习率规划器
+  # 具体实现参考[API](fluid.layers.piecewise_decay)
+  schedulers:
+  # 学习率衰减策略
+  - !PiecewiseDecay
+    gamma: 0.1
+    # milestones
+    milestones:
+    # ### 参考 https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98
+    # ### 8/12 11/12
+    - 6400
+    - 8800
+  # 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率
+  # linear_step = end_lr - start_lr
+  # lr = start_lr + linear_step * (global_step / warmup_steps)
+  # 具体实现参考[API](fluid.layers.linear_lr_warmup)
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
+
+OptimizerBuilder:
+  # 默认使用SGD+Momentum进行训练
+  # 具体实现参考[API](fluid.optimizer)
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  # 默认使用SGD+Momentum进行训练
+  # 具体实现参考[API](fluid.optimizer)
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+#####################################数据配置#####################################
+
+# 模型训练集设置参考
+# 训练、验证、测试使用的数据配置主要区别在数据路径、模型输入、数据增强参数设置
+# 如果使用 faster_reader.yml，下面的参数设置优先级高，faster_reader.yml中的参数设置，对于用自定义数据建议将数据配置文件写到下面。
+# _READER_: 'faster_reader.yml'
+
+
+TrainReader:
+  # 训练过程中模型的输入设置
+  # 包括图片，图片长宽高等基本信息，图片id，标记的目标框，类别等信息
+  # 不同算法，不同数据集 inputs_def 不同，有的算法需要限制输入图像尺寸，有的不需要###
+  inputs_def:
+    # FasterRCNN 不限制输入图像尺寸
+    # 不同算法，不同数据集 fields 不同###
+    # YOLO系列 VOC格式数据： ['image', 'gt_bbox', 'gt_class', 'gt_score']，且需要设置num_max_boxes
+    # YOLO系列 COCO格式数据：['image', 'gt_bbox', 'gt_class', 'gt_score']，且需要设置num_max_boxes
+
+    # FasterRCNN 系列 COCO格式数据：['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+
+    # MaskRCNN 系列 COCO格式数据：['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_mask']
+
+    # AnchorFree 系列 COCO格式数据：['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_masks']
+
+    # VOC数据格式需要读取的字段，注意与COCO不同。注意TrainReader、EvalReader、TestReader字段略有不同
+
+    # FasterRCNN
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+
+  # 训练数据集路径
+  dataset:
+    # 指定数据集格式
+    !COCODataSet
+    #dataset/xxx/
+    #├── annotations
+    #│   ├── train.json
+    #│   ├── valid.json
+    #├── images
+    #│   ├── xxx1.png
+    #│   ├── xxx2.png
+    #│   ├── xxx3.png
+    #│   |   ...
+
+    # 数据集相对路径
+    dataset_dir: dataset/roadsign_coco
+    # 图片文件夹相对路径
+    image_dir: images
+    # anno_path
+    anno_path: annotations/train.json
+
+    # 对于VOC、COCO等比赛数据集，可以不指定类别标签文件，use_default_label可以是true。
+    # 对于用户自定义数据，如果是VOC格式数据，use_default_label必须要设置成false，且需要提供label_list.txt。如果是COCO格式数据，不需要设置这个参数。
+    # use_default_label: false
+
+    # 是否包含背景类，若with_background=true，num_classes需要+1
+    # YOLO 系列with_background必须是false，FasterRCNN系列是true ### 
+    with_background: true
+
+
+  # 1个GPU的batch size，默认为1。需要注意：每个iter迭代会运行batch_size * device_num张图片
+  batch_size: 1
+  # 共享内存bufsize，若内存有限，请设置小一些。
+  bufsize: 2
+  # 选择是否打乱所有样本的顺序
+  shuffle: true
+  # drop_empty 建议设置为true
+  drop_empty: true
+  # drop_last 如果最后一个batch的图片数量为奇数，选择是否丢掉这个batch不进行训练。
+  # 注意，在某些情况下，drop_last=false时训练过程中可能会出错，建议训练时都设置为true
+  drop_last: true
+  # mixup_epoch
+  mixup_epoch: -1
+  # 选择是否使用多进程，默认为false
+  use_process: false
+  # 若选用多进程，设置使用多进程/线程的数目，默认为4，建议与CPU核数一致
+  # 开启多进程后，占用内存会成倍增加，根据内存设置###
+  worker_num: 4
+
+
+  # 数据预处理和数据增强部分，此部分设置要特别注意###
+  # 不同算法对数据的预处理流程不同，建议使用对应算法默认的数据处理流程。
+  # 比如，YOLO、FPN算法，要求输入图像尺寸必须是32的整数倍
+  
+  # 以下是对一个batch中的每单张图片做的数据增强
+  sample_transforms:
+    # 读取Image图像为numpy数组
+    # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
+    - !DecodeImage
+      to_rgb: true
+    # 以prob概率随机反转
+    - !RandomFlipImage
+      is_normalized: true
+      prob: 0.5
+    # 归一化
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: true
+      is_channel_first: false
+    # ResizeImage
+    - !ResizeImage
+      target_size: 800
+      max_size: 1333
+      interp: 1
+      use_cv2: true    
+    # channel_first    
+    - !Permute
+      channel_first: true
+      to_bgr: false
+
+  # 对一个batch中的所有图片做的数据增强
+  batch_transforms:
+    - !PadBatch
+        pad_to_stride: -1.
+        use_padded_im_info: false
+
+
+EvalReader:
+  # 评估过程中模型的输入设置
+  # 1个GPU的batch size，默认为1。需要注意：每个iter迭代会运行batch_size * device_num张图片
+  batch_size: 1
+  # 共享内存bufsize，共享内存中训练样本数量是： bufsize * batch_size * 2 张图
+  bufsize: 1
+  # shuffle=false
+  shuffle: false
+  # 一般的评估时，batch_size=1，drop_empty可设置成 false
+  drop_empty: false
+  # 一般的评估时，batch_size=1，drop_last可设置成 false
+  drop_last: false
+  # 选择是否使用多进程，默认为false
+  use_process: false
+  # 若选用多进程，设置使用多进程/线程的数目，默认为4，建议与CPU核数一致
+  # 开启多进程后，占用内存会成倍增加，根据内存设置 ###
+  worker_num: 1
+
+  inputs_def:
+    # VOC数据格式需要读取的字段，注意与COCO不同
+    # 不同算法，不同数据集 fields 不同 ###
+    # YOLO系列 VOC格式数据： ['image', 'gt_bbox', 'gt_class', 'gt_score', 'is_difficult']，且需要设置num_max_boxes
+    # YOLO系列 COCO格式数据：['image', 'gt_bbox', 'gt_class', 'gt_score']，且需要设置num_max_boxes
+
+    ### fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class'] 
+    
+    # FasterRCNN
+    fields: ['image', 'im_info', 'im_id', 'im_shape'] 
+  
+  # 评估数据集路径
+  dataset:
+    # 指定数据集格式
+    !COCODataSet
+    #dataset/xxx/
+    #├── annotations
+    #│   ├── train.json
+    #│   ├── valid.json
+    #├── images
+    #│   ├── xxx1.png
+    #│   ├── xxx2.png
+    #│   ├── xxx3.png
+    #│   |   ...
+    
+    # 数据集相对路径
+    dataset_dir: dataset/roadsign_coco
+    # 图片文件夹相对路径
+    image_dir: images
+    # anno_path
+    anno_path: annotations/valid.json
+
+    # 对于VOC、COCO等比赛数据集，可以不指定类别标签文件，use_default_label可以是true。
+    # 对于用户自定义数据，如果是VOC格式数据，use_default_label必须要设置成false，且需要提供label_list.txt。如果是COCO格式数据，不需要设置这个参数。
+    # use_default_label: false
+
+    # 是否包含背景类，若with_background=true，num_classes需要+1
+    # YOLO 系列with_background必须是false，FasterRCNN系列是true ### 
+    with_background: true
+
+  # 单张图的 transforms
+  sample_transforms:
+  # DecodeImage
+  - !DecodeImage
+    to_rgb: true
+  # 图像归一化
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  # ResizeImage
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+    use_cv2: true   
+  # Permute
+  - !Permute
+    to_bgr: false
+    channel_first: true
+      
+TestReader:
+  # 测试过程中模型的输入设置
+  # 预测时 batch_size设置为1
+  batch_size: 1
+  # 一般的预测时，batch_size=1，drop_empty可设置成 false
+  drop_empty: false
+  # 一般的预测时，batch_size=1，drop_last可设置成 false
+  drop_last: false
+
+
+  inputs_def:
+    # FasterRCNN不限制输入图像尺寸
+    # image_shape
+    # 预测时需要读取字段
+    # fields 字段
+    fields: ['image', 'im_info', 'im_id']
+  
+  dataset:
+    # 预测数据
+    !ImageFolder
+    anno_path: annotations/valid.json
+    
+    # 对于VOC、COCO等比赛数据集，可以不指定类别标签文件，use_default_label可以是true。
+    # 对于用户自定义数据，如果是VOC格式数据，use_default_label必须要设置成false，且需要提供label_list.txt。如果是COCO格式数据，不需要设置这个参数。
+    # use_default_label: false
+
+    # 是否包含背景类，若with_background=true，num_classes需要+1
+    # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
+    with_background: true
+
+
+  # 单张图的 transforms
+  sample_transforms:
+    # DecodeImage
+    - !DecodeImage
+      to_rgb: true
+      # with_mixup default=false
+      with_mixup: false
+    # NormalizeImage
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: true
+      is_channel_first: false
+    # ResizeImage
+    - !ResizeImage
+      target_size: 800
+      max_size: 1333
+      interp: 1
+      use_cv2: true  
+    # Permute
+    - !Permute
+      to_bgr: false
+      channel_first: true
+    
