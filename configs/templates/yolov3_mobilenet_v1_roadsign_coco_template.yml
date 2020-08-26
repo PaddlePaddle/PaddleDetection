@@ -4,7 +4,7 @@
 architecture: YOLOv3
 # 根据硬件选择是否使用GPU
 use_gpu: true
-# ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
+  # ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
 max_iters: 1200
 # log平滑参数
 log_smooth_window: 20
@@ -319,7 +319,7 @@ TestReader:
     image_shape: [3, 608, 608]
     # 预测时需要读取字段
     # fields 字段
-    fields: ['image', 'im_info', 'im_id']
+    fields: ['image', 'im_size', 'im_id']
   
   dataset:
     # 预测数据
@@ -342,7 +342,7 @@ TestReader:
       to_rgb: true
     # 注意与上面图像尺寸保持一致
     - !ResizeImage
-      target_size: 320
+      target_size: 608
       interp: 2
     # NormalizeImage
     - !NormalizeImage

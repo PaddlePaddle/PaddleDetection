@@ -135,7 +135,7 @@ PaddleDetection新发布精度速度领先的[PP-YOLO](https://arxiv.org/abs/200
     - [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :移动端使用Paddle-Lite部署，请参考[PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 部署到移动端。
         Paddle-Lite 检测模型在android、iOS、armlinux上部署示例:[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
         注意：Lite框架目前支持的模型结构为PaddlePaddle深度学习框架产出的模型格式。可以使用[X2Paddle](https://github.com/PaddlePaddle/X2Paddle) 将其他框架模型转换成PaddlePaddle格式。再通过Paddle-Lite提供的opt工具转换成Paddle-Lite格式。
-    - [嵌入式端部署](../../configs/mobile/README.md) 
+    - [嵌入式端部署](./configs/mobile/README.md)
 
 ## 模型库
 

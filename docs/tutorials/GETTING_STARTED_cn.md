@@ -8,9 +8,9 @@
 关于配置运行环境，请参考[安装指南](INSTALL_cn.md)  
 PaddleDetection 和 PaddlePaddle 版本关系
 **提示:**  
-  1. PaddleDetection v0.4需要PaddlePaddle>=1.8.4   
+  1. PaddleDetection v0.4需要PaddlePaddle>=1.8.4  
   2. [AI Studio](https://aistudio.baidu.com/aistudio/index) 平台有预装好的开发环境，且提供免费的硬件资源，欢迎使用。  
-     [AI Studio PaddleDetection快速开始演示](https://aistudio.baidu.com/aistudio/projectdetail/724548).   
+     [AI Studio PaddleDetection快速开始演示](https://aistudio.baidu.com/aistudio/projectdetail/724548).  
 
 
 ## 二、准备数据
@@ -20,7 +20,7 @@ PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://
 
     ```
     最终数据集文件组织结构为：
-    
+
     ├── annotations
     │   ├── road0.xml
     │   ├── road1.xml
@@ -35,41 +35,41 @@ PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://
     ├── test.txt
     ├── train.txt
     └── valid.txt
-  
+
     # label_list.txt 是类别名称列表，文件名必须是 label_list.txt
     cat label_list.txt
-  
+
     crosswalk
     speedlimit
     stop
     trafficlight
-    
+
     # train.txt 是训练数据集文件列表
     cat train.txt
-  
+
     ./JPEGImages/road839.png ./Annotations/road839.xml
     ./JPEGImages/road363.png ./Annotations/road363.xml
     ...
-    
+
     # valid.txt 是测试数据集文件列表
     cat valid.txt
-  
+
     ./JPEGImages/road218.png ./Annotations/road218.xml
     ./JPEGImages/road681.png ./Annotations/road681.xml
     ```
-    
+
     也可以下载准备好的数据，([下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip) ，解压到`dataset/`文件夹下重命名为`roadsign`即可。  
     准备好数据后，一般的我们要对数据有所了解，比如图像量，图像尺寸，每一类目标区域个数，目标区域大小等。如有必要，还要对数据进行清洗。  
     roadsign数据集统计:
-    
+
     |    数据    |    图片数量    |
     | :--------: | :-----------: |
     |   train    |     701       |  
     |   valid    |     176       |  
-    
-    
-**说明：**（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash    
-（2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试    
+
+
+**说明：**（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash  
+（2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试  
 
 ## 四、模型选择
 
@@ -108,28 +108,28 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
 | :----------------: | :-------------------: |
 |      use_gpu       | 根据硬件选择是否使用GPU  |  
 |     max_iters      |  训练轮数，每个iter会运行`batch_size * device_num`张图片  |  
-|    num_classes     |        类别数量         | 
+|    num_classes     |        类别数量         |
 |  pretrain_weights  |     于训练权重文件      |  
 |      weights       |     best模型保存位置      |  
-|      base_lr       |  跟batch_size配合设置   | 
-|     schedulers     | 跟batch_size、max_iters配合设置 | 
+|      base_lr       |  跟batch_size配合设置   |
+|     schedulers     | 跟batch_size、max_iters配合设置 |
 | TrainReader/dataset_dir |  训练数据路径，以$(ppdet_root)为当前目录,如"dataset/xxx"|  
 |  TrainReader/anno_path   |  训练数据列表和对应标签路径，$(dataset_dir)下的路径，如"train.txt"，详细参考上面数据格式说明|
-|  use_default_label   | 是否使用数据集默认的类别名称列表。对于自定义数据集(非VOC、COCO)必须是`false`，且必须提供`label_list.txt`文件| 
+|  use_default_label   | 是否使用数据集默认的类别名称列表。对于自定义数据集(非VOC、COCO)必须是`false`，且必须提供`label_list.txt`文件|
 
-**配置文件中重要参数设置:** 
+**配置文件中重要参数设置:**
 配置文件设计思路请参考文档[配置模块设计与介绍](./config_doc/CONFIG_cn.md)  
-如何新增模型请参考文档[新增模型算法](./MODEL_TECHNICAL_cn.md)    
+如何新增模型请参考文档[新增模型算法](./MODEL_TECHNICAL_cn.md)  
 
 - 1、batch_size  
-    **特别注意的是，当使用PP-YOLO时，`use_fine_grained_loss=true`，`YOLOv3Loss`里`的batch_size`必须要和`TrainReader`的b`atch_size`保持一致**   
+    **特别注意的是，当使用PP-YOLO时，`use_fine_grained_loss=true`，`YOLOv3Loss`里`的batch_size`必须要和`TrainReader`的b`atch_size`保持一致**  
     batch_size根据硬件内存或显存大小设置，例如设置为1。  
     可参考[模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，可依据实际硬件情况，选择合适的batch_size  
     注意：在多线程时，需要内存较多。reader中`bufsize`是设置共享内存大小，也会影响内存的使用量。  
-    
+
 - 2、num_classes
     num_classes 数据中类别数量。注意在FasterRCNN中，需要将 `with_background=true 且 num_classes+1`  
-    
+
 - 3、dataset路径设置
     ```
     # 指定数据集格式
@@ -153,10 +153,10 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     # 对于VOC、COCO等数据集，可以不指定类别标签文件，use_default_label可以是true，用户自定义数据需要设置成false，且需要提供label_list.txt
     use_default_label: false
     ```
-  
+
 - 4、inputs_def 设置
     inputs_def 使用配置文件中的默认设置
-    
+
 - 5、max_iters  
     training schedule，1x表示训练约12epoch(1个epoch表示把所有训练数据都跑一遍)，在约第[8, 11]th epochs时改变学习率  
     max_iters为最大迭代次数，而一个iter会运行`batch_size * device_num`张图片，训练中的训练中的batch_size（即TrainReader.batch_size）例如设置为1  
@@ -166,24 +166,24 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
 - 6、预训练模型权重 pretrain_weights
     在训练用户自定义数据集时，对预训练模型进行选择性加载。pretrain_weights 可以是imagenet的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重。
     可参考[检测模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，预训练模型配置文件和权重下载地址。Paddle分类模型请参考[PaddleModels](https://github.com/PaddlePaddle/models)  
-    支持如下两种加载方式： 
-    
+    支持如下两种加载方式：
+
     (1)、直接加载预训练权重（**推荐方式**），通过配置pretrain_weights参数，模型中和预训练模型中对应参数形状不同的参数将自动被忽略。也可以通过`-o`参数指定:
     ```
     python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --eval \
                            -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
     ```
-  
-    (2)、通过设置 finetune_exclude_pretrained_params 参数显示指定训练过程中忽略参数的名字，任何参数名均可加入`finetune_exclude_pretrained_params`中，如果参数名通过通配符匹配方式能够匹配上`finetune_exclude_pretrained_params`设置的参数字段，则在模型加载时忽略该参数。 
+
+    (2)、通过设置 finetune_exclude_pretrained_params 参数显示指定训练过程中忽略参数的名字，任何参数名均可加入`finetune_exclude_pretrained_params`中，如果参数名通过通配符匹配方式能够匹配上`finetune_exclude_pretrained_params`设置的参数字段，则在模型加载时忽略该参数。
     也可以通过`-o`参数指定:
     ```
     python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --eval \
                            -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar \
                               finetune_exclude_pretrained_params=['yolo_output']
     ```
-                              
+
     如果用户需要利用自己的数据进行finetune，模型结构不变，只需要忽略与类别数相关的参数，不同模型类型所对应的忽略参数字段如下表所示:  
-    
+
     |      模型类型      |             忽略参数字段                  |
     | :----------------: | :---------------------------------------: |
     |     Faster RCNN    |          cls\_score, bbox\_pred           |
@@ -193,13 +193,13 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     |      RetinaNet     |           retnet\_cls\_pred\_fpn          |
     |        SSD         |                ^conv2d\_                  |
     |       YOLOv3       |              yolo\_output                 |
-        
+
 
 - 7、base_lr 配合 batch_size调整，参考 [学习率调整策略](../FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)  
     在使用imagenet的预训练模型时，训练时使用1张卡，单卡batch_size=1, base_lr=0.00125，base_lr随着`(batch_size * GPU卡数)` 等比例变化。  
     如果是检测预训练模型上fine-turn，学习率可以设置小一些，如设置为0.0001。
-    
-    **若loss出现nan，请将学习率再设置小一些试试。**    
+
+    **若loss出现nan，请将学习率再设置小一些试试。**  
 
 - 8、sample_transforms 详细请参考[数据处理模块](./READER_cn.md).  
     sample_transforms为数据预处理、数据增强，是针对单张图像的操作。基于YOLOv3算法可以使用模板中默认配置，详细参考文档[数据处理模块](READER_cn.md)  
@@ -212,7 +212,7 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     - NormalizeImage: 以mean、std归一化图像
     - PadBox: 如果 bboxes 数量小于 num_max_boxes，填充值为0的 box
     - BboxXYXY2XYWH: 坐标格式从 XYXY格式 转换成 XYWH 格式
-    
+
 - 9、batch_transforms
     batch_transforms是针对一个batch数据的操作。基于YOLOv3算法可以使用模板中默认配置，详细参考文档[数据处理模块](READER_cn.md)  
     `configs中的batch_transforms`，各个函数说明请参考`ppdet/data/transform/batch_operators.py`
@@ -220,8 +220,8 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
 
 **注意：**  
 (1) YOLOv3、PP-YOLO、FPN、RetinaNet预测导出时，输入图像尺寸必须是32的整数倍。  
-(2) ResizeImage是把图像短边resize到目标尺寸，ExpandImage是   
-(3) 注意预处理顺序，一般的顺序：读取图片 -> 图片的各类变形、变色操作(用到cv2, PIL库的) -> Flip/Permute等 -> 归一化操作。 注意，不合理的顺序会引起错误。 
+(2) ResizeImage是把图像短边resize到目标尺寸，ExpandImage是  
+(3) 注意预处理顺序，一般的顺序：读取图片 -> 图片的各类变形、变色操作(用到cv2, PIL库的) -> Flip/Permute等 -> 归一化操作。 注意，不合理的顺序会引起错误。
 
 拷贝好的`configs/yolov3_mobilenet_v1_roadsign_voc.yml`已经适配roadsign数据集，可以直接开始训练。
 
@@ -289,7 +289,7 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
 |        --use_vdl          |   train/infer   |  是否使用[VisualDL](https://github.com/paddlepaddle/visualdl)记录数据，进而在VisualDL面板中显示  |  False  |  VisualDL需Python>=3.5    |
 |        --vdl\_log_dir     |   train/infer   |  指定 VisualDL 记录数据的存储路径  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL需Python>=3.5   |
 
-**注意:** 
+**注意:**
 **参数设置优先级， 命令行 -o 选项参数设置的优先级 > 配置文件参数设置优先级 > 配置文件中的__READER__.yml中的参数设置优先级，高优先级会覆盖低优先级的参数设置**
 
 
@@ -304,8 +304,8 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
 - [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :移动端使用Paddle-Lite部署，请参考[PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 部署到移动端。
     Paddle-Lite 检测模型在android、iOS、armlinux上部署示例:[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
     注意：Lite框架目前支持的模型结构为PaddlePaddle深度学习框架产出的模型格式。可以使用[X2Paddle](https://github.com/PaddlePaddle/X2Paddle) 将其他框架模型转换成PaddlePaddle格式。再通过Paddle-Lite提供的opt工具转换成Paddle-Lite格式。
-- [嵌入式端部署](../../configs/mobile/README.md) 
-    
+- [嵌入式端部署](../../configs/mobile/README.md)
+
 部署服务时，首先需要导出预测的模型和预测配置文件，通过`tools/export_model.py`可以导出模型和名为`infer_cfg.yml`的配置文件。详细请参考[模型导出教程](docs/tutorials/deploy/EXPORT_MODEL_cn.md)
 
 如果想测试模型的推理Benchmark，请参考文档[推理Benchmark](./deploy/BENCHMARK_INFER_cn.md)
@@ -316,8 +316,8 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     `pip install paddle-serving-client`
 - (2)导出模型
     训练得到一个满足要求的模型后，如果想要将该模型接入到C++预测库或者Serving服务，需要通过`tools/export_model.py`导出该模型。同时，会导出预测时使用的配置文件，路径与模型保存路径相同, 配置文件名为`infer_cfg.yml`。
-    不同模型导出时，输入到模型中的数据预处理不同，详细请参考文档[模型导出](deploy/EXPORT_MODEL_cn.md)      
-    
+    不同模型导出时，输入到模型中的数据预处理不同，详细请参考文档[模型导出](deploy/EXPORT_MODEL_cn.md)  
+
     ```
     python tools/export_serving_model.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml \
             --output_dir=./inference_model
@@ -342,7 +342,7 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     │   │   │   ├── conv1_bn_scale
     │   │   │   ├── ...
     ```
-    
+
     `serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息
     `serving_client_conf.prototxt`文件内容为：
     ```
@@ -378,7 +378,7 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     # CPU
     python -m paddle_serving_server.serve --model serving_server --port 9393
     ```
-    
+
     测试部署的服务
     ```
     # 进入到导出模型文件夹
@@ -387,10 +387,10 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     cp ../../dataset/roadsign_voc/label_list.txt .
     ```
     将 [test_client.py](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/yolov4/test_client.py) 拷贝到当前文件夹下  
-    将代码中`yolov4_client/serving_client_conf.prototxt`路径改成 
+    将代码中`yolov4_client/serving_client_conf.prototxt`路径改成
     `serving_client/serving_client_conf.prototxt`  
-    将代码中`fetch=["save_infer_model/scale_0.tmp_0"])` 改成 `fetch=["multiclass_nms_0.tmp_0"])` 
-    
+    将代码中`fetch=["save_infer_model/scale_0.tmp_0"])` 改成 `fetch=["multiclass_nms_0.tmp_0"])`
+
     文件组织结构如下
     ```
     inference_model
@@ -407,11 +407,11 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     │   │   │   ├── ...
     │   │   ├── test_client.py
     ```
-    
+
     测试
     ```
     # 测试代码 test_client.py 会自动创建output文件夹，并在output下生成`bbox.json`和`road554.png`两个文件
     python test_client.py ../../demo/road554.png
     ```
-  
+
 **如仍有疑惑，欢迎给我们提issue。**

@@ -226,7 +226,7 @@ TrainReader:
     # use_default_label: false
 
     # 是否包含背景类，若with_background=true，num_classes需要+1
-    # YOLO 系列with_background必须是false，FasterRCNN系列是true ### 
+    # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
     with_background: true
 
 
@@ -253,7 +253,7 @@ TrainReader:
   # 数据预处理和数据增强部分，此部分设置要特别注意###
   # 不同算法对数据的预处理流程不同，建议使用对应算法默认的数据处理流程。
   # 比如，YOLO、FPN算法，要求输入图像尺寸必须是32的整数倍
-  
+
   # 以下是对一个batch中的每单张图片做的数据增强
   sample_transforms:
     # 读取Image图像为numpy数组
@@ -275,8 +275,8 @@ TrainReader:
       target_size: 800
       max_size: 1333
       interp: 1
-      use_cv2: true    
-    # channel_first    
+      use_cv2: true
+    # channel_first
     - !Permute
       channel_first: true
       to_bgr: false
@@ -312,11 +312,11 @@ EvalReader:
     # YOLO系列 VOC格式数据： ['image', 'gt_bbox', 'gt_class', 'gt_score', 'is_difficult']，且需要设置num_max_boxes
     # YOLO系列 COCO格式数据：['image', 'gt_bbox', 'gt_class', 'gt_score']，且需要设置num_max_boxes
 
-    ### fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class'] 
-    
+    ### fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class']
+
     # FasterRCNN
-    fields: ['image', 'im_info', 'im_id', 'im_shape'] 
-  
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+
   # 评估数据集路径
   dataset:
     # 指定数据集格式
@@ -330,7 +330,7 @@ EvalReader:
     #│   ├── xxx2.png
     #│   ├── xxx3.png
     #│   |   ...
-    
+
     # 数据集相对路径
     dataset_dir: dataset/roadsign_coco
     # 图片文件夹相对路径
@@ -343,7 +343,7 @@ EvalReader:
     # use_default_label: false
 
     # 是否包含背景类，若with_background=true，num_classes需要+1
-    # YOLO 系列with_background必须是false，FasterRCNN系列是true ### 
+    # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
     with_background: true
 
   # 单张图的 transforms
@@ -362,12 +362,12 @@ EvalReader:
     target_size: 800
     max_size: 1333
     interp: 1
-    use_cv2: true   
+    use_cv2: true
   # Permute
   - !Permute
     to_bgr: false
     channel_first: true
-      
+
 TestReader:
   # 测试过程中模型的输入设置
   # 预测时 batch_size设置为1
@@ -383,12 +383,12 @@ TestReader:
     # 预测时需要读取字段
     # fields 字段
     fields: ['image', 'im_info', 'im_id', 'im_shape']
-  
+
   dataset:
     # 预测数据
     !ImageFolder
     anno_path: annotations/valid.json
-    
+
     # 对于VOC、COCO等比赛数据集，可以不指定类别标签文件，use_default_label可以是true。
     # 对于用户自定义数据，如果是VOC格式数据，use_default_label必须要设置成false，且需要提供label_list.txt。如果是COCO格式数据，不需要设置这个参数。
     # use_default_label: false
@@ -416,9 +416,9 @@ TestReader:
       target_size: 800
       max_size: 1333
       interp: 1
-      use_cv2: true  
+      use_cv2: true
     # Permute
     - !Permute
       to_bgr: false
       channel_first: true
-    
+

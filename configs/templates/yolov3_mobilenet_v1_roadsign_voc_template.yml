@@ -157,7 +157,7 @@ TrainReader:
     #├── label_list.txt (用户自定义必须提供，且文件名称必须是label_list.txt。当使用VOC数据且use_default_label=true时，可不提供 )
     #├── train.txt (训练数据集文件列表, ./images/xxx1.png ./Annotations/xxx1.xml)
     #└── valid.txt (测试数据集文件列表)
-    
+
     # 数据集相对路径
     dataset_dir: dataset/roadsign_voc
     # 标记文件名
@@ -195,7 +195,7 @@ TrainReader:
   # 数据预处理和数据增强部分，此部分设置要特别注意###
   # 不同算法对数据的预处理流程不同，建议使用对应算法默认的数据处理流程。
   # 比如，YOLO、FPN算法，要求输入图像尺寸必须是32的整数倍
-  
+
   # 以下是对一个batch中的每单张图片做的数据增强
   sample_transforms:
   # 读取Image图像为numpy数组

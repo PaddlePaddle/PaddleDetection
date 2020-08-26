@@ -152,7 +152,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
     - [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) :Deploy using Paddle-Lite，please refer [PaddleLite](https://github.com/PaddlePaddle/Paddle-Lite) 。
         Paddle-Lite support deploy on android、iOS、armlinux, please refer :[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
         Note: [X2Paddle](https://github.com/PaddlePaddle/X2Paddle) is a tool that can other format models to Paddle-Lite format。
-    - [嵌入式端部署](../../configs/mobile/README.md) 
+    - [Deploy on Embeding Device](./configs/mobile/README_en.md). 
 
 ## Model Zoo
 
