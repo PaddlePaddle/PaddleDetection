@@ -17,7 +17,7 @@ metric: COCO
 # ### pretrain_weights 可以是imagenet的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重
 # 模型配置文件和权重文件可参考[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md)
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar
-weights: output/faster_rcnn_r50_vd_fpn_roadsign_coco_1x_template/best_model
+weights: output/faster_rcnn_r50_vd_fpn_roadsign_coco_template/best_model
 # ### 根据用户数据设置类别数，FasterRCNN类别数加1
 num_classes: 5
 # finetune时忽略的参数，按照正则化匹配，匹配上的参数会被忽略掉
@@ -423,10 +423,9 @@ TestReader:
 
   inputs_def:
     # FasterRCNN不限制输入图像尺寸
-    # image_shape
     # 预测时需要读取字段
     # fields 字段
-    fields: ['image', 'im_info', 'im_id']
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   
   dataset:
     # 预测数据
@@ -447,7 +446,7 @@ TestReader:
   # DecodeImage
   - !DecodeImage
     to_rgb: true
-    # with_mixup default=false
+    # with_mixup
     with_mixup: false
   # NormalizeImage
   - !NormalizeImage

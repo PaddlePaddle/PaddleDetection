@@ -67,9 +67,10 @@ PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://
     |   train    |     701       |  
     |   valid    |     176       |  
     
-    **说明：**（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash    
-    （2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试    
     
+**说明：**（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash    
+（2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试    
+
 ## 四、模型选择
 
 PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，您可依据实际部署算力的情况，选择合适的模型:
@@ -196,7 +197,7 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
 
 - 7、base_lr 配合 batch_size调整，参考 [学习率调整策略](../FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)  
     在使用imagenet的预训练模型时，训练时使用1张卡，单卡batch_size=1, base_lr=0.00125，base_lr随着`(batch_size * GPU卡数)` 等比例变化。  
-    基于是再检测预训练模型上fine-turn，学习率可以设置小一些，如设置为0.0001。
+    如果是检测预训练模型上fine-turn，学习率可以设置小一些，如设置为0.0001。
     
     **若loss出现nan，请将学习率再设置小一些试试。**    
 

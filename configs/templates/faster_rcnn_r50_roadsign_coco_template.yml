@@ -2,6 +2,7 @@
 # 检测算法使用FasterRCNN，backbone使用Resnet50，数据集使用roadsign_voc的配置文件模板，本配置文件默认使用单卡，单卡的batch_size=1
 # 检测模型的名称
 architecture: FasterRCNN
+# 根据硬件选择是否使用GPU
 use_gpu: true
 # ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
 max_iters: 9600
