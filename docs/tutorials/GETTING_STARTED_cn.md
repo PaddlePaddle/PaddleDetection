@@ -92,20 +92,16 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 
 在[`configs/templates/`](../../configs/templates) 文件夹下，提供了常用算法的配置文件模板，您可以根据需要选择合适模板，每个配置文件模板都对各个参数的进行详细注释，方便您修改参数。
 
+**[yolov3_mobilenet_v1_roadsign_voc_template.yml](configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml)** 是以YOLOv3算法使用roadsign VOC格式数据集为例的配置模板。  
+
 ```
 # 在yolov3 voc 数据格式的配置文件模板上修改，configs/yolov3_mobilenet_v1_roadsign_voc_template.yml中对参数有详细注释
-cp configs/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov3_mobilenet_v1_roadsign_voc.yml
+cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov3_mobilenet_v1_roadsign_voc.yml
 ```
+将`configs/yolov3_mobilenet_v1_roadsign_voc.yml`中`weights`改为`output/yolov3_mobilenet_v1_roadsign_voc/best_model`  
 
-|        模型        |          配置文件模板路径          |
-| :----------------: | :-------------------: |
-|      YOLOv3       | 根据硬件选择是否使用GPU  |  
-|     max_iters      |  训练轮数，每个iter会运行`batch_size * device_num`张图片  |  
-|    num_classes     |        类别数量         | 
 
-**[YOLOv3算法以roadsign VOC格式数据集为例的配置模板，内含详细参数说明](configs/yolov3_mobilenet_v1_roadsign_voc_template.yml)**
-
-若用户自定义数据，与用户自定义数据相关的参数如下：
+配置文件中与用户自定义数据相关的参数如下：
 
 |        参数        |          说明          |
 | :----------------: | :-------------------: |
@@ -125,7 +121,7 @@ cp configs/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov3_mobilene
 如何新增模型请参考文档[新增模型算法](./MODEL_TECHNICAL_cn.md)    
 
 - 1、batch_size  
-    **特别注意的是，当使用PP-YOLO时，`use_fine_grained_loss=true`，`YOLOv3Loss`里`的batch_size`必须要和`TrainReader`的b`atch_size`保持一致，否则会出错！**   
+    **特别注意的是，当使用PP-YOLO时，`use_fine_grained_loss=true`，`YOLOv3Loss`里`的batch_size`必须要和`TrainReader`的b`atch_size`保持一致**   
     batch_size根据硬件内存或显存大小设置，例如设置为1。  
     可参考[模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，可依据实际硬件情况，选择合适的batch_size  
     注意：在多线程时，需要内存较多。reader中`bufsize`是设置共享内存大小，也会影响内存的使用量。  
@@ -226,30 +222,7 @@ cp configs/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov3_mobilene
 (2) ResizeImage是把图像短边resize到目标尺寸，ExpandImage是   
 (3) 注意预处理顺序，一般的顺序：读取图片 -> 图片的各类变形、变色操作(用到cv2, PIL库的) -> Flip/Permute等 -> 归一化操作。 注意，不合理的顺序会引起错误。 
 
-
-`tools/train.py`训练参数列表
-以下列表可以通过`--help`查看
-
-|         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
-| :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../tutorials/config_doc/CONFIG_cn.md)** |
-|          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
-|   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
-|        --eval            |     train      |  是否边训练边测试  |  False  |    |
-|      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
-|       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
-|       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
-|       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
-|       --output_dir       |      infer     |  输出预测后可视化文件  |  `./output`  |  `--output_dir output`  |
-|    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
-|      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    |
-|      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
-|        --use_vdl          |   train/infer   |  是否使用[VisualDL](https://github.com/paddlepaddle/visualdl)记录数据，进而在VisualDL面板中显示  |  False  |  VisualDL需Python>=3.5    |
-|        --vdl\_log_dir     |   train/infer   |  指定 VisualDL 记录数据的存储路径  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL需Python>=3.5   |
-
-**注意:** 
-**参数设置优先级， 命令行 -o 选项参数设置的优先级 > 配置文件参数设置优先级 > 配置文件中的__READER__.yml中的参数设置优先级，高优先级会覆盖低优先级的参数设置**
-
+拷贝好的`configs/yolov3_mobilenet_v1_roadsign_voc.yml`已经适配roadsign数据集，可以直接开始训练。
 
 ```bash
 # 如果有GPU硬件，先设置显卡
@@ -281,7 +254,7 @@ python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml
 '''
 
 # 指定模型评估
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model
+python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml -o weights=output/yolov3_mobilenet_v1_roadsign_voc/best_model
 
 # 保存评估结果：设置 save_prediction_only=true 或者通过 -o 参数设置，会在当前文件夹下生成 bbox.json
 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml -o save_prediction_only=true
@@ -292,6 +265,32 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
 
 预测结果如下图：  
 ![](../images/road554.png)
+
+
+可以通过命令行`tools/train.py`设置参数，其中的`-o`参数可以设置修改配置文件里的参数。  
+`tools/train.py`训练参数列表
+以下列表可以通过`--help`查看
+
+|         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
+| :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
+|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../tutorials/config_doc/CONFIG_cn.md)** |
+|          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
+|   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
+|        --eval            |     train      |  是否边训练边测试  |  False  |    |
+|      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
+|       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
+|       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
+|       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
+|       --output_dir       |      infer     |  输出预测后可视化文件  |  `./output`  |  `--output_dir output`  |
+|    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
+|      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    |
+|      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
+|        --use_vdl          |   train/infer   |  是否使用[VisualDL](https://github.com/paddlepaddle/visualdl)记录数据，进而在VisualDL面板中显示  |  False  |  VisualDL需Python>=3.5    |
+|        --vdl\_log_dir     |   train/infer   |  指定 VisualDL 记录数据的存储路径  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL需Python>=3.5   |
+
+**注意:** 
+**参数设置优先级， 命令行 -o 选项参数设置的优先级 > 配置文件参数设置优先级 > 配置文件中的__READER__.yml中的参数设置优先级，高优先级会覆盖低优先级的参数设置**
+
 
 
 ## 七、模型部署
@@ -325,7 +324,7 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     ```
     python tools/export_serving_model.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml \
             --output_dir=./inference_model \
-            -o weights=output/yolov3_mobilenet_v1_roadsign/best_model
+            -o weights=output/yolov3_mobilenet_v1_roadsign_voc/best_model
     ```
     以上命令会在./inference_model文件夹下生成一个 yolov3_mobilenet_v1_roadsign 文件夹
     ```
@@ -383,7 +382,7 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --infer_im
     # 进入到导出模型文件夹
     cd inference_model/yolov3_mobilenet_v1_roadsign_voc/
     # 将数据集对应的label_list.txt文件拷贝到当前文件夹下
-    cp ../../../dataset/roadsign_voc/label_list.txt .
+    cp ../../dataset/roadsign_voc/label_list.txt .
     ```
     将 [test_client.py](https://github.com/PaddlePaddle/Serving/tree/develop/python/examples/yolov4/test_client.py) 拷贝到当前文件夹下  
     将代码中`yolov4_client/serving_client_conf.prototxt`路径改成 
