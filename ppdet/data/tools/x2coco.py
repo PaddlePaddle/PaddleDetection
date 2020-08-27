@@ -154,17 +154,19 @@ def deal_json(ds_type, img_path, json_path):
                         categories_list.append(categories(label, labels_list))
                         labels_list.append(label)
                         label_to_num[label] = len(labels_list)
-                    points = shapes['points']
                     p_type = shapes['shape_type']
                     if p_type == 'polygon':
+                        points = shapes['points']
                         annotations_list.append(
                             annotations_polygon(data['imageHeight'], data[
                                 'imageWidth'], points, label, image_num,
                                                 object_num, label_to_num))
 
                     if p_type == 'rectangle':
-                        points.append([points[0][0], points[1][1]])
-                        points.append([points[1][0], points[0][1]])
+                        (x1, y1), (x2, y2) = shapes['points']
+                        x1, x2 = sorted([x1, x2])
+                        y1, y2 = sorted([y1, y2])
+                        points = [[x1, y1], [x2, y2], [x1, y2], [x2, y1]]
                         annotations_list.append(
                             annotations_rectangle(points, label, image_num,
                                                   object_num, label_to_num))
