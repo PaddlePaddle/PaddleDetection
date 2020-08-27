@@ -202,12 +202,44 @@ class Reader(object):
                  use_fine_grained_loss=False,
                  num_classes=80,
                  bufsize=-1,
+                 target_size=640,
+                 rect=False,
+                 pad=0.5,
+                 stride=32,
                  memsize='3G',
                  inputs_def=None,
                  devices_num=1,
                  num_trainers=1):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
+        if rect:
+            n = len(self._roidbs)
+            bi = np.floor(np.arange(n) / batch_size).astype(np.int)
+            nb = bi[-1] + 1
+            s = []
+            for i, rec in enumerate(self._roidbs):
+                s.append([rec['h'], rec['w']])
+            
+            s = np.array(s)
+            ar = s[:, 0] / s[:, 1] # h / w
+            irect = ar.argsort()
+            ar = ar[irect]
+
+            shapes = [[1, 1]] * nb
+            for i in range(nb):
+                ari = ar[bi == i]
+                mini, maxi = ari.min(), ari.max()
+                if maxi < 1:
+                    shapes[i] = [maxi, 1]
+                elif mini > 1:
+                    shapes[i] = [1, 1 / mini]
+            
+            batch_shapes = np.ceil(np.array(shapes) * target_size / stride + pad) * stride
+            new_roidbs = [self._roidbs[j] for j in irect]
+            self._roidbs = new_roidbs
+            for i, j in enumerate(bi):
+                self._roidbs[i].update({'new_shape': batch_shapes[j]})            
+                
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
 

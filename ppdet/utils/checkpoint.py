@@ -146,7 +146,8 @@ def load_params(exe, prog, path, ignore_params=[]):
     if len(ignore_set) > 0:
         for k in ignore_set:
             if k in state:
-                logger.warning('variable {} not used'.format(k))
+                logger.warning('variable {}: state shape {}, param shape {}'.format(k, state[k].shape, all_var_shape[k]))
+                # logger.warning('variable {} not used'.format(k))
                 del state[k]
     fluid.io.set_program_state(prog, state)
 

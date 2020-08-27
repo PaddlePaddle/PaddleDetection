@@ -137,6 +137,7 @@ def main():
 
     # load model
     exe.run(startup_prog)
+    checkpoint.save(exe, startup_prog, 'weights/initial')
     if 'weights' in cfg:
         checkpoint.load_params(exe, startup_prog, cfg.weights)
 
