@@ -1,4 +1,4 @@
-# 如何训练部署自定义数据 
+# 如何训练部署自定义数据
 目标检测就是在图像中找到感兴趣区域的位置和目标类别。PaddleDetection是基于PaddlePaddle的目标检测库。
 
 本教程以路标数据集roadsign为例，使用YOLOv3算法详细说明了如何使用PaddleDetection训练一个目标检测模型，并对模型进行评估和部署。
@@ -166,7 +166,7 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     在训练用户自定义数据集时，对预训练模型进行选择性加载。pretrain_weights 可以是ImageN   et的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重。
     可参考[检测模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，预训练模型配置文件和权重下载地址。Paddle分类模型请参考[PaddleModels](https://github.com/PaddlePaddle/models)  
     通过配置pretrain_weights参数，模型中和预训练模型中对应参数形状不同的参数将自动被忽略。
- 
+
 - 7、base_lr 配合 batch_size调整，参考 [学习率调整策略](../FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)  
     在使用ImageNet的预训练模型时，训练时使用1张卡，单卡batch_size=1, base_lr=0.00125，base_lr随着`(batch_size * GPU卡数)` 等比例变化。  
     如果是检测预训练模型上fine-turn，学习率可以设置小一些，如设置为0.0001。
