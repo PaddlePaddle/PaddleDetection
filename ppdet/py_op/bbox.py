@@ -190,7 +190,7 @@ def nms_with_decode(bboxes,
         rois_n = bboxes_v[start:end, :]  # box 
         rois_n = rois_n / im_info[i][2]  # scale 
         rois_n = delta2bbox(bbox_deltas_n, rois_n, variance_v)
-        rois_n = clip_bbox(rois_n, im_info[i][:2] / im_info[i][2])
+        rois_n = clip_bbox(rois_n, np.round(im_info[i][:2] / im_info[i][2]))
         cls_boxes = [[] for _ in range(class_nums)]
         scores_n = bbox_probs_v[start:end, :]
         for j in range(1, class_nums):

@@ -79,27 +79,25 @@ class BBoxPostProcessYOLO(object):
         self.decode = decode
         self.clip = clip
 
-    def __call__(self, inputs):
+    def __call__(self, im_size, yolo_head_out, mask_anchors):
         # TODO: split yolo_box into 2 steps
         # decode
         # clip
         boxes_list = []
         scores_list = []
-        for i, out in enumerate(inputs['yolo_outs']):
-            boxes, scores = self.yolo_box(out, inputs['im_size'],
-                                          inputs['mask_anchors'][i], i,
-                                          "yolo_box_" + str(i))
+        for i, head_out in enumerate(yolo_head_out):
+            boxes, scores = self.yolo_box(head_out, im_size, mask_anchors[i],
+                                          self.num_classes, i)
 
             boxes_list.append(boxes)
             scores_list.append(fluid.layers.transpose(scores, perm=[0, 2, 1]))
         yolo_boxes = fluid.layers.concat(boxes_list, axis=1)
         yolo_scores = fluid.layers.concat(scores_list, axis=2)
-        nmsed_bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
+        bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         # TODO: parse the lod of nmsed_bbox
         # default batch size is 1
-        bbox_nums = np.array([0, int(nmsed_bbox.shape[0])], dtype=np.int32)
-        outs = {"predicted_bbox_nums": bbox_nums, "predicted_bbox": nmsed_bbox}
-        return outs
+        bbox_num = np.array([int(bbox.shape[0])], dtype=np.int32)
+        return bbox, bbox_num
 
 
 @register
@@ -168,32 +166,18 @@ class AnchorRPN(object):
 
 @register
 class AnchorYOLO(object):
-    __inject__ = [
-        'anchor_generator', 'anchor_target_generator', 'anchor_post_process'
-    ]
+    __inject__ = ['anchor_generator', 'anchor_post_process']
 
-    def __init__(self, anchor_generator, anchor_target_generator,
-                 anchor_post_process):
+    def __init__(self, anchor_generator, anchor_post_process):
         super(AnchorYOLO, self).__init__()
         self.anchor_generator = anchor_generator
-        self.anchor_target_generator = anchor_target_generator
         self.anchor_post_process = anchor_post_process
 
-    def __call__(self, inputs):
-        outs = self.generate_anchors(inputs)
-        return outs
+    def __call__(self):
+        return self.anchor_generator()
 
-    def generate_anchors(self, inputs):
-        outs = self.anchor_generator(inputs['yolo_outs'])
-        outs['anchor_module'] = self
-        return outs
-
-    def generate_anchors_target(self, inputs):
-        outs = self.anchor_target_generator()
-        return outs
-
-    def post_process(self, inputs):
-        return self.anchor_post_process(inputs)
+    def post_process(self, im_size, yolo_head_out, mask_anchors):
+        return self.anchor_post_process(im_size, yolo_head_out, mask_anchors)
 
 
 @register

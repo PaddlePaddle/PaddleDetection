@@ -82,7 +82,7 @@ class LinearWarmup(object):
     def __call__(self, base_lr):
         boundary = []
         value = []
-        for i in range(self.steps):
+        for i in range(self.steps + 1):
             alpha = i / self.steps
             factor = self.start_factor * (1 - alpha) + alpha
             lr = base_lr * factor

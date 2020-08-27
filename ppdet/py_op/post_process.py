@@ -136,7 +136,8 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
     k = 0
     for i in range(len(bbox_nums)):
         image_id = int(image_id[i][0])
-
+        if bboxes.shape == (1, 1):
+            continue
         det_nums = bbox_nums[i]
         for j in range(det_nums):
             dt = bboxes[k]
