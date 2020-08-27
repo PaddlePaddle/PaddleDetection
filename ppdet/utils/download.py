@@ -78,6 +78,14 @@ DATASETS = {
         'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit.tar',
         'baa8806617a54ccf3685fa7153388ae6', ), ],
               ['Annotations', 'JPEGImages']),
+    'roadsign_voc': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar',
+        '7e965874909e8935ad6040a484e00c35', ), ],
+              ['annotations', 'images']),
+    'roadsign_coco': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
+        '8dc9b8115ebb70110b0b4f612dd1f02b', ), ],
+              ['annotations', 'images']),
     'objects365': (),
 }
 

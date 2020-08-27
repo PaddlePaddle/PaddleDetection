@@ -25,4 +25,4 @@ from ppdet.utils.download import download_dataset
 logging.basicConfig(level=logging.INFO)
 
 download_path = osp.split(osp.realpath(sys.argv[0]))[0]
-download_dataset(download_path, 'fruit')
+download_dataset(download_path, 'roadsign_voc')

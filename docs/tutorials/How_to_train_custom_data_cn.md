@@ -1,4 +1,4 @@
-# PaddleDetection教程
+# 如何训练部署自定义数据 
 目标检测就是在图像中找到感兴趣区域的位置和目标类别。PaddleDetection是基于PaddlePaddle的目标检测库。
 
 本教程以路标数据集roadsign为例，使用YOLOv3算法详细说明了如何使用PaddleDetection训练一个目标检测模型，并对模型进行评估和部署。
@@ -11,7 +11,6 @@ PaddleDetection 和 PaddlePaddle 版本关系
   1. PaddleDetection v0.4需要PaddlePaddle>=1.8.4  
   2. [AI Studio](https://aistudio.baidu.com/aistudio/index) 平台有预装好的开发环境，且提供免费的硬件资源，欢迎使用。  
      [AI Studio PaddleDetection快速开始演示](https://aistudio.baidu.com/aistudio/projectdetail/724548).  
-
 
 ## 二、准备数据
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
@@ -164,59 +163,20 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     **注意：batch_size（即TrainReader.batch_size）batch_size 和 YOLOv3Loss.batch_size 不一样，YOLOv3Loss.batch_size是仅当use_fine_grained_loss=true时计算Loss时使用，且需要设置成一样**  
 
 - 6、预训练模型权重 pretrain_weights
-    在训练用户自定义数据集时，对预训练模型进行选择性加载。pretrain_weights 可以是imagenet的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重。
+    在训练用户自定义数据集时，对预训练模型进行选择性加载。pretrain_weights 可以是ImageN   et的预训练好的分类模型权重，也可以是在VOC或COCO数据集上的预训练的检测模型权重。
     可参考[检测模型库](../MODEL_ZOO_cn.md)中查看各个模型的指标，预训练模型配置文件和权重下载地址。Paddle分类模型请参考[PaddleModels](https://github.com/PaddlePaddle/models)  
-    支持如下两种加载方式：
-
-    (1)、直接加载预训练权重（**推荐方式**），通过配置pretrain_weights参数，模型中和预训练模型中对应参数形状不同的参数将自动被忽略。也可以通过`-o`参数指定:
-    ```
-    python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --eval \
-                           -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
-    ```
-
-    (2)、通过设置 finetune_exclude_pretrained_params 参数显示指定训练过程中忽略参数的名字，任何参数名均可加入`finetune_exclude_pretrained_params`中，如果参数名通过通配符匹配方式能够匹配上`finetune_exclude_pretrained_params`设置的参数字段，则在模型加载时忽略该参数。
-    也可以通过`-o`参数指定:
-    ```
-    python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --eval \
-                           -o pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar \
-                              finetune_exclude_pretrained_params=['yolo_output']
-    ```
-
-    如果用户需要利用自己的数据进行finetune，模型结构不变，只需要忽略与类别数相关的参数，不同模型类型所对应的忽略参数字段如下表所示:  
-
-    |      模型类型      |             忽略参数字段                  |
-    | :----------------: | :---------------------------------------: |
-    |     Faster RCNN    |          cls\_score, bbox\_pred           |
-    |     Cascade RCNN   |          cls\_score, bbox\_pred           |
-    |       Mask RCNN    | cls\_score, bbox\_pred, mask\_fcn\_logits |
-    |  Cascade-Mask RCNN | cls\_score, bbox\_pred, mask\_fcn\_logits |
-    |      RetinaNet     |           retnet\_cls\_pred\_fpn          |
-    |        SSD         |                ^conv2d\_                  |
-    |       YOLOv3       |              yolo\_output                 |
-
-
+    通过配置pretrain_weights参数，模型中和预训练模型中对应参数形状不同的参数将自动被忽略。
+ 
 - 7、base_lr 配合 batch_size调整，参考 [学习率调整策略](../FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)  
-    在使用imagenet的预训练模型时，训练时使用1张卡，单卡batch_size=1, base_lr=0.00125，base_lr随着`(batch_size * GPU卡数)` 等比例变化。  
+    在使用ImageNet的预训练模型时，训练时使用1张卡，单卡batch_size=1, base_lr=0.00125，base_lr随着`(batch_size * GPU卡数)` 等比例变化。  
     如果是检测预训练模型上fine-turn，学习率可以设置小一些，如设置为0.0001。
 
     **若loss出现nan，请将学习率再设置小一些试试。**  
 
-- 8、sample_transforms 详细请参考[数据处理模块](./READER_cn.md).  
-    sample_transforms为数据预处理、数据增强，是针对单张图像的操作。基于YOLOv3算法可以使用模板中默认配置，详细参考文档[数据处理模块](READER_cn.md)  
-    `configs中的sample_transforms`，各个函数说明请参考`ppdet/data/transform/operators.py`
-    - DecodeImage: 读图，可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
-    - NormalizeBox: 将坐标归一化到[0,1]区间
-    - ExpandImage: 以prob大小概率进行扩充，max_ratio为最大扩充倍数，mean为扩充区域的均值
-    - RandomInterpImage: 随机选择一种插值方法 reisze image
-    - RandomFlipImage: 以prob概率随机反转
-    - NormalizeImage: 以mean、std归一化图像
-    - PadBox: 如果 bboxes 数量小于 num_max_boxes，填充值为0的 box
-    - BboxXYXY2XYWH: 坐标格式从 XYXY格式 转换成 XYWH 格式
-
-- 9、batch_transforms
-    batch_transforms是针对一个batch数据的操作。基于YOLOv3算法可以使用模板中默认配置，详细参考文档[数据处理模块](READER_cn.md)  
-    `configs中的batch_transforms`，各个函数说明请参考`ppdet/data/transform/batch_operators.py`
-    - RandomShape: 随机选择一个尺寸，对整个batch进行reszie。如果random_inter为True，会同时随机选择一个插值方法resize。
+- 8、sample_transforms and batch_transforms  
+    sample_transforms是针对单张图像的操作，batch_transforms是针对一个batch数据的操作。文档请参考[数据处理模块](./READER_cn.md).  
+    `configs中的sample_transforms`，各个函数说明请参考`ppdet/data/transform/operators.py`  
+    `configs中的batch_transforms`，各个函数说明请参考`ppdet/data/transform/batch_operators.py`  
 
 **注意：**  
 (1) YOLOv3、PP-YOLO、FPN、RetinaNet预测导出时，输入图像尺寸必须是32的整数倍。  
@@ -226,9 +186,6 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
 拷贝好的`configs/yolov3_mobilenet_v1_roadsign_voc.yml`已经适配roadsign数据集，可以直接开始训练。
 
 ```bash
-# 如果有GPU硬件，先设置显卡
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-
 # 边训练边测试
 python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign_voc.yml --eval
 
