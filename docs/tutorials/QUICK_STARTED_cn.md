@@ -4,7 +4,7 @@
 ## 二、快速体验
 ```
 # 如果有GPU
-export CUDA_VISIBLE_DEVICES=0 
+export CUDA_VISIBLE_DEVICES=0
 python tools/infer.py -c configs/yolov3_mobilenet_v1.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar --infer_img=demo/000000014439_640x640.jpg
 ```
 结果如下图：
@@ -14,8 +14,8 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1.yml -o use_gpu=true weights
 
 ## 三、准备数据
 数据集参考[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) ，包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。  
-将数据划分为训练集701张图和测试集176张图，[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip). 
-    
+将数据划分为训练集701张图和测试集176张图，[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip).
+
 ```
 # 准备数据shell脚本
 cd dataset
@@ -69,5 +69,5 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign_demo.yml -o use_gp
 
 ![](../images/road554.png)
 
-  
+
 **如仍有疑惑，欢迎给我们提issue。**
