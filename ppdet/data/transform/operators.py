@@ -372,6 +372,71 @@ class ResizeImage(BaseOperator):
         sample['image'] = im
         return sample
 
+@register_op
+class ResizeAndKeepRatio(BaseOperator):
+    def __init__(self, target_size, augment=False):
+        super(ResizeAndKeepRatio, self).__init__()
+        self.target_size = target_size
+        self.augment = augment
+
+    def __call__(self, sample, context=None):
+        im = sample['image']
+        h0, w0 = im.shape[:2]
+        r = self.target_size / max(h0, w0)
+        if r != 1:
+            interp = cv2.INTER_AREA if r < 1 and not self.augment else cv2.INTER_LINEAR
+            im = cv2.resize(im, (int(w0 * r), int(h0 * r)), interpolation=interp)
+        
+        sample['image'] = im
+        sample['im_size'] = [float(h0), float(w0)]
+        sample['im_scale'] = [1. / r, 1. / r]
+        return sample
+
+
+@register_op
+class LetterBox(BaseOperator):
+    def __init__(self, target_size, rect=True, color=(114, 114, 114), auto=True, scaleFill=False, augment=True):
+        super(LetterBox, self).__init__()
+        if isinstance(target_size, int):
+            target_size = (target_size, target_size)
+        self.target_size = target_size
+        self.color = color
+        self.auto = auto
+        self.scaleFill = scaleFill
+        self.augment = augment
+        self.rect = rect
+    
+    def __call__(self, sample, context=None):
+        im = sample['image']
+        shape = im.shape[:2]
+        new_shape = sample['new_shape'] if self.rect else self.target_size
+        r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+        if not self.augment:
+            r = min(r, 1.0)
+        
+        ratio = r, r
+        new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+        dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+        if self.auto:  # minimum rectangle
+            dw, dh = np.mod(dw, 64), np.mod(dh, 64)  # wh padding
+        elif self.scaleFill:  # stretch
+            dw, dh = 0.0, 0.0
+            new_unpad = (new_shape[1], new_shape[0])
+            ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
+
+        dw /= 2  # divide padding into 2 sides
+        dh /= 2
+
+        if shape[::-1] != new_unpad:  # resize
+            im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
+        top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+        left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+        im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=self.color)  # add border
+        sample['image'] = im
+        sample['im_pad'] = [dh, dw] 
+
+        return sample
+        
 
 @register_op
 class RandomFlipImage(BaseOperator):

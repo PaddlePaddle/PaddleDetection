@@ -1,0 +1,104 @@
+architecture: YOLOv5
+use_gpu: true
+max_iters: 85000
+log_smooth_window: 1
+save_dir: output
+snapshot_iter: 5000
+metric: COCO
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar
+weights: output/yolov3_r50vd_dcn_db_iouaware_obj365_pretrained_coco/model_final
+use_fine_grained_loss: false
+num_classes: 80
+
+YOLOv5:
+  backbone: CSPYolo
+  yolo_head: YOLOv5Head
+  use_fine_grained_loss: false
+
+CSPYolo:
+  depth_multiple: 1.33
+  width_multiple: 1.25
+  act: 'mish'
+  yolov5: false
+  save: [22, 26, 30]
+  weight_prefix_name: 'model'
+  layers: [
+   [-1, 1, 'Conv', [32, 3, 1]],  # 0
+   [-1, 1, 'Conv', [64, 3, 2]],  # 1-P1/2
+   [-1, 1, 'Bottleneck', [64]],
+   [-1, 1, 'Conv', [128, 3, 2]],  # 3-P2/4
+   [-1, 2, 'BottleneckCSP', [128]],
+   [-1, 1, 'Conv', [256, 3, 2]],  # 5-P3/8
+   [-1, 8, 'BottleneckCSP', [256]],
+   [-1, 1, 'Conv', [512, 3, 2]],  # 7-P4/16
+   [-1, 8, 'BottleneckCSP', [512]],
+   [-1, 1, 'Conv', [1024, 3, 2]], # 9-P5/32
+   [-1, 4, 'BottleneckCSP', [1024]],  # 10
+  ]
+  neck: [
+   [-1, 1, 'SPPCSP', [512]], # 11
+   [-1, 1, 'Conv', [256, 1, 1]],
+   [-1, 1, 'Upsample', ['None', 2, 'nearest']],
+   [8, 1, 'Conv', [256, 1, 1]], # route backbone P4
+   [[-1, -2], 1, 'Concat', [1]],
+   [-1, 2, 'BottleneckCSP2', [256]], # 16 
+   [-1, 1, 'Conv', [128, 1, 1]],
+   [-1, 1, 'Upsample', ['None', 2, 'nearest']],
+   [6, 1, 'Conv', [128, 1, 1]], # route backbone P3
+   [[-1, -2], 1, 'Concat', [1]],
+   [-1, 2, 'BottleneckCSP2', [128]], # 21
+   [-1, 1, 'Conv', [256, 3, 1]],
+   [-2, 1, 'Conv', [256, 3, 2]],
+   [[-1, 16], 1, 'Concat', [1]],  # cat
+   [-1, 2, 'BottleneckCSP2', [256]], # 25
+   [-1, 1, 'Conv', [512, 3, 1]],
+   [-2, 1, 'Conv', [512, 3, 2]],
+   [[-1, 11], 1, 'Concat', [1]],  # cat
+   [-1, 2, 'BottleneckCSP2', [512]], # 29
+   [-1, 1, 'Conv', [1024, 3, 1]]
+  ]
+
+YOLOv5Head:
+  anchors: [[12, 16], [19, 36], [40, 28], [36, 75], [76, 55],
+            [72, 146], [142, 110], [192, 243], [459, 401]]
+  anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+  yolo_loss: YOLOv3Loss
+  stride: [8, 16, 32]
+  start: 31
+  nms:
+    background_label: -1
+    keep_top_k: 300
+    nms_threshold: 0.65 #0.45
+    nms_top_k: -1
+    normalized: false
+    score_threshold: 0.001 #0.001
+  weight_prefix_name: 'model'
+
+
+YOLOv3Loss:
+  batch_size: 4
+  ignore_thresh: 0.7
+  label_smooth: false
+  use_fine_grained_loss: false
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 55000
+    - 75000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+_READER_: 'yolov5_reader.yml'

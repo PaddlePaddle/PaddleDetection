@@ -36,6 +36,7 @@ from .cascade_rcnn import *
 from .cascade_mask_rcnn import *
 from .cascade_rcnn_cls_aware import *
 from .yolo import *
+from .yolov5 import *
 from .ssd import *
 from .retinanet import *
 from .efficientdet import *
