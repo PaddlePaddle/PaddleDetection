@@ -31,7 +31,7 @@ ppdet_root=$(pwd)
 
 - VOC格式
     VOC格式的数据是指，每个图像文件对应一个xml文件，xml文件中标记物体框的坐标和类别等信息。  
-    [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛数据详细说明请参考官方网站[(http://host.robots.ox.ac.uk/pascal/VOC/](http://host.robots.ox.ac.uk/pascal/VOC/)  。  
+    VOC格式是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛的数据格式。Pascal VOC 比赛  
     自定义的VOC格式数据，可根据需要仅标记物体检测必须使用的标签。  
     Pascal VOC数据准备如下。  
     `dataset/voc/`最初文件组织结构
@@ -85,7 +85,7 @@ ppdet_root=$(pwd)
     ├── generic_det_label_list_zh.txt
     ├── label_list.txt (可选，配置文件中 use_default_label=true 可不提供该文件)
     ├── VOCdevkit/VOC2007
-    │   ├── Annotations
+    │   ├── annotations
     │       ├── 001789.xml
     │       |   ...
     │   ├── JPEGImages
@@ -194,18 +194,18 @@ ppdet_root=$(pwd)
 
     ```
     dataset/xxx/
-    ├── Annotations
+    ├── annotations
     │   ├── xxx1.xml
     │   ├── xxx2.xml
     │   ├── xxx3.xml
     │   |   ...
-    ├── JPEGImages
+    ├── images
     │   ├── xxx1.jpg
     │   ├── xxx2.jpg
     │   ├── xxx3.jpg
     │   |   ...
     ├── label_list.txt (必须提供，且文件名称必须是label_list.txt )
-    ├── train.txt (训练数据集文件列表, ./JPEGImages/xxx1.jpg ./Annotations/xxx1.xml)
+    ├── train.txt (训练数据集文件列表, ./images/xxx1.jpg ./annotations/xxx1.xml)
     └── valid.txt (测试数据集文件列表)
 
     # label_list.txt 是类别名称列表，改文件名必须是这个
@@ -216,13 +216,13 @@ ppdet_root=$(pwd)
 
     # train.txt 是训练数据文件列表
     cat train.txt
-    ./JPEGImages/xxx1.jpg ./Annotations/xxx1.xml
-    ./JPEGImages/xxx2.jpg ./Annotations/xxx2.xml
+    ./images/xxx1.jpg ./annotations/xxx1.xml
+    ./images/xxx2.jpg ./annotations/xxx2.xml
     ...
 
-    # valid.txt 是测试数据文件列表
+    # valid.txt 是验证数据文件列表
     cat valid.txt
-    ./JPEGImages/xxx3.jpg ./Annotations/xxx3.xml
+    ./images/xxx3.jpg ./annotations/xxx3.xml
     ...
     ```
 
@@ -294,15 +294,15 @@ ppdet_root=$(pwd)
     # train.txt 是训练数据集文件列表
     cat train.txt
 
-    ./JPEGImages/road839.png ./Annotations/road839.xml
-    ./JPEGImages/road363.png ./Annotations/road363.xml
+    ./images/road839.png ./annotations/road839.xml
+    ./images/road363.png ./annotations/road363.xml
     ...
 
-    # valid.txt 是测试数据集文件列表
+    # valid.txt 是验证数据集文件列表
     cat valid.txt
 
-    ./JPEGImages/road218.png ./Annotations/road218.xml
-    ./JPEGImages/road681.png ./Annotations/road681.xml
+    ./images/road218.png ./annotations/road218.xml
+    ./images/road681.png ./annotations/road681.xml
     ```
 
     也可以下载准备好的数据，([下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip) ，解压到`dataset/`文件夹下重命名为`roadsign`即可。  

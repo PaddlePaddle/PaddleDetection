@@ -1,4 +1,4 @@
-# 如何训练部署自定义数据
+# 目标检测全流程教程
 目标检测就是在图像中找到感兴趣区域的位置和目标类别。PaddleDetection是基于PaddlePaddle的目标检测库。
 
 本教程以路标数据集roadsign为例，使用YOLOv3算法详细说明了如何使用PaddleDetection训练一个目标检测模型，并对模型进行评估和部署。
@@ -15,7 +15,6 @@ PaddleDetection 和 PaddlePaddle 版本关系
 ## 二、准备数据
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
 同时还支持自定义数据源。数据准备详细内容请参考[如何准备训练数据](./PrepareDataSet.md) 。
-
 
     ```
     最终数据集文件组织结构为：
@@ -154,7 +153,7 @@ cp configs/templates/yolov3_mobilenet_v1_roadsign_voc_template.yml configs/yolov
     ```
 
 - 4、inputs_def 设置
-    inputs_def 使用配置文件中的默认设置
+    inputs_def 使用`configs/templates/xxx.yml`配置文件中的默认设置
 
 - 5、max_iters  
     training schedule，1x表示训练约12epoch(1个epoch表示把所有训练数据都跑一遍)，在约第[8, 11]th epochs时改变学习率  
