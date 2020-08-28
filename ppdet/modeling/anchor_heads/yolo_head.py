@@ -125,8 +125,14 @@ class YOLOv3Head(object):
 
             x_range = self._create_tensor_from_numpy(gi_np.astype(np.float32))
             x_range.stop_gradient = True
-            y_range = self._create_tensor_from_numpy(
-                gi_np.transpose([0, 1, 3, 2]).astype(np.float32))
+
+            idx_j = np.array(
+                [[j / (grid_y - 1) * 2.0 - 1 for j in range(grid_y)]],
+                dtype='float32')
+            gj_np = np.repeat(idx_j, grid_x, axis=1)
+            gj_np = np.reshape(gj_np, newshape=[1, 1, grid_y, grid_x])
+            gj_np = np.tile(gi_np, reps=[batch_size, 1, 1, 1])
+            y_range = self._create_tensor_from_numpy(gj_np.astype(np.float32))
             y_range.stop_gradient = True
 
         # NOTE: in training mode, H and W is variable for random shape,
@@ -142,7 +148,11 @@ class YOLOv3Head(object):
             x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
             x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
             x_range.stop_gradient = True
-            y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])
+
+            y_range = fluid.layers.range(0, h, 1, 'float32') / ((h - 1.) / 2.)
+            y_range = y_range - 1.
+            y_range = fluid.layers.unsqueeze(y_range, [0, 1, 3])
+            y_range = fluid.layers.expand(y_range, [b, 1, 1, w])
             y_range.stop_gradient = True
 
         return fluid.layers.concat([input, x_range, y_range], axis=1)
