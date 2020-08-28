@@ -298,7 +298,8 @@ def _download(url, path, md5sum=None):
         content_md5 = req.headers.get('content-md5')
         if not content_md5 or _md5check(
                 tmp_fullname,
-                binascii.hexlify(base64.b64decode(content_md5.strip('"')))):
+                binascii.hexlify(base64.b64decode(content_md5.strip(
+                    '"'))).decode()):
             shutil.move(tmp_fullname, fullname)
             return fullname
         else:
