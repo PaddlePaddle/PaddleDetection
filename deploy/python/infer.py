@@ -67,7 +67,8 @@ class Resize(object):
                  max_size,
                  use_cv2=True,
                  image_shape=None,
-                 interp=cv2.INTER_LINEAR):
+                 interp=cv2.INTER_LINEAR,
+                 resize_bbox=False):
         self.target_size = target_size
         self.max_size = max_size
         self.image_shape = image_shape,
@@ -276,7 +277,9 @@ class Config():
     Args:
         model_dir (str): root path of model.yml
     """
-    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face', 'TTF']
+    support_models = [
+        'YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face', 'TTF', 'SOLOv2'
+    ]
 
     def __init__(self, model_dir):
         # parsing Yaml config for Preprocess

@@ -164,6 +164,46 @@ def mask_eval(results,
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
 
 
+def segm_eval(results, anno_file, outfile, save_only=False):
+    assert 'segm' in results[0]
+    assert outfile.endswith('.json')
+    from pycocotools.coco import COCO
+    coco_gt = COCO(anno_file)
+    clsid2catid = {i: v for i, v in enumerate(coco_gt.getCatIds())}
+    segm_results = []
+    for t in results:
+        im_id = int(t['im_id'][0][0])
+        segs = t['segm']
+        for mask in segs:
+            catid = int(clsid2catid[mask[0]])
+            masks = mask[1]
+            mask_score = masks[1]
+            segm = masks[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': mask_score
+            }
+            segm_results.append(coco_res)
+
+    if len(segm_results) == 0:
+        logger.warning("The number of valid mask detected is zero.\n \
+            Please use reasonable model and check input data.")
+        return
+
+    with open(outfile, 'w') as f:
+        json.dump(segm_results, f)
+
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
+    cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+
+
 def cocoapi_eval(jsonfile,
                  style,
                  coco_gt=None,

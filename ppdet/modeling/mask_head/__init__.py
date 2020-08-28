@@ -14,21 +14,6 @@
 
 from __future__ import absolute_import
 
-# XXX for triggering decorators
-from . import anchor_heads
-from . import architectures
-from . import backbones
-from . import roi_extractors
-from . import roi_heads
-from . import ops
-from . import target_assigners
-from . import mask_head
+from . import solo_mask_head
 
-from .anchor_heads import *
-from .architectures import *
-from .backbones import *
-from .roi_extractors import *
-from .roi_heads import *
-from .ops import *
-from .target_assigners import *
-from .mask_head import *
+from .solo_mask_head import *

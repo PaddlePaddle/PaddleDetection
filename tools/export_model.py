@@ -113,7 +113,8 @@ def dump_infer_config(FLAGS, config):
         'Face': 3,
         'TTFNet': 3,
         'FCOS': 3,
-        'EfficientDet': 40
+        'EfficientDet': 40,
+        'SOLOv2': 3,
     }
     infer_arch = config['architecture']
 
