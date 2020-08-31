@@ -25,6 +25,7 @@ import numpy as np
 import logging
 
 from ppdet.core.workspace import register, serializable
+from paddle.fluid.dygraph.parallel import ParallelEnv
 
 from .parallel_map import ParallelMap
 from .transform.batch_operators import Gt2YoloTarget
@@ -244,8 +245,8 @@ class Reader(object):
         self._drop_empty = drop_empty
 
         # sampling
-        self._mixup_epoch = mixup_epoch
-        self._cutmix_epoch = cutmix_epoch
+        self._mixup_epoch = mixup_epoch // ParallelEnv().nranks
+        self._cutmix_epoch = cutmix_epoch // ParallelEnv().nranks
         self._class_aware_sampling = class_aware_sampling
 
         self._load_img = False
