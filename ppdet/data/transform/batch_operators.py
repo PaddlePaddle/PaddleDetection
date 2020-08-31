@@ -626,8 +626,6 @@ class Gt2Solov2Target(BaseOperator):
     def _scale_size(self, im, scale):
         h, w = im.shape[:2]
         new_size = (int(w * float(scale) + 0.5), int(h * float(scale) + 0.5))
-        #resized_img = cv2.resize(
-        #        im, new_size, dst=None, interpolation=cv2.INTER_LINEAR)
         resized_img = cv2.resize(
             im, None, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
         return resized_img

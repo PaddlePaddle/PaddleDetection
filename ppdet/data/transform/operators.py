@@ -2584,6 +2584,7 @@ class DebugVisibleImage(BaseOperator):
         return sample
 
 
+@register_op
 class Poly2Mask(BaseOperator):
     """
     gt poly to mask annotations

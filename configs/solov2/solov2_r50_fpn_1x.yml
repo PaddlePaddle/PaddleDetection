@@ -154,3 +154,7 @@ TestReader:
   - !Permute
     channel_first: true
     to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false

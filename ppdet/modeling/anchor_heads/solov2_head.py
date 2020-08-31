@@ -166,14 +166,13 @@ class SOLOv2Head(object):
                     align_corners=False,
                     align_mode=0))
 
-    def get_outputs(self, input, is_eval=False, batch_size=1):
+    def get_outputs(self, input, is_eval=False):
         """
         Get SOLOv2 head output
 
         Args:
             input (list): List of Variables, output of backbone or neck stages
             is_eval (bool): whether in train or test mode
-            batch_size (int): batch size
         Returns:
             cate_pred_list (list): Variables of each category branch layer
             kernel_pred_list (list): Variables of each kernel branch layer
@@ -183,13 +182,13 @@ class SOLOv2Head(object):
         kernel_pred_list = []
         for idx in range(len(self.seg_num_grids)):
             cate_pred, kernel_pred = self._get_output_single(
-                feats[idx], idx, is_eval=is_eval, batch_size=batch_size)
+                feats[idx], idx, is_eval=is_eval)
             cate_pred_list.append(cate_pred)
             kernel_pred_list.append(kernel_pred)
 
         return cate_pred_list, kernel_pred_list
 
-    def _get_output_single(self, input, idx, is_eval=False, batch_size=1):
+    def _get_output_single(self, input, idx, is_eval=False):
         ins_kernel_feat = input
         # CoordConv
         x_range = paddle.linspace(
@@ -199,8 +198,10 @@ class SOLOv2Head(object):
         y, x = paddle.tensor.meshgrid([y_range, x_range])
         x = fluid.layers.unsqueeze(x, [0, 1])
         y = fluid.layers.unsqueeze(y, [0, 1])
-        y = fluid.layers.expand(y, expand_times=[batch_size, 1, 1, 1])
-        x = fluid.layers.expand(x, expand_times=[batch_size, 1, 1, 1])
+        y = fluid.layers.expand(
+            y, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
+        x = fluid.layers.expand(
+            x, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
         coord_feat = fluid.layers.concat([x, y], axis=1)
         ins_kernel_feat = fluid.layers.concat(
             [ins_kernel_feat, coord_feat], axis=1)
@@ -295,7 +296,6 @@ class SOLOv2Head(object):
             b_mask_pred = []
             for idx, kernel_pred in enumerate(b_kernel_pred):
                 cur_ins_pred = ins_pred[idx]
-                m = fluid.layers.shape(kernel_pred)[1]
                 cur_ins_pred = fluid.layers.unsqueeze(cur_ins_pred, 0)
                 kernel_pred = fluid.layers.transpose(kernel_pred, [1, 0])
                 kernel_pred = fluid.layers.unsqueeze(kernel_pred, [2, 3])
@@ -367,7 +367,7 @@ class SOLOv2Head(object):
         cate_scores_list = []
         cate_preds = [cate_pred * 1.0 for cate_pred in cate_preds]
         kernel_preds = [kernel_pred * 1.0 for kernel_pred in kernel_preds]
-        # batch size == 1
+        # Currently only supports batch size == 1
         for idx in range(1):
             cate_pred_list = [
                 fluid.layers.reshape(

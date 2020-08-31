@@ -1577,7 +1577,7 @@ class MaskMatrixNMS(object):
         kernel (str):  'linear' or 'gaussian'
         sigma (float): std in gaussian method
     Input:
-        seg_masks (Variable): shape (n, h, w)
+        seg_masks (Variable): shape (n, h, w), segmentation feature maps
         cate_labels (Variable): shape (n), mask labels in descending order
         cate_scores (Variable): shape (n), mask scores in descending order
         sum_masks (Variable): The sum of seg_masks

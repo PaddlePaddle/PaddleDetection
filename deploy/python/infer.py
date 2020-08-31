@@ -68,7 +68,7 @@ class Resize(object):
                  use_cv2=True,
                  image_shape=None,
                  interp=cv2.INTER_LINEAR,
-                 resize_bbox=False):
+                 resize_box=False):
         self.target_size = target_size
         self.max_size = max_size
         self.image_shape = image_shape,

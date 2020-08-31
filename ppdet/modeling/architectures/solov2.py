@@ -97,8 +97,7 @@ class SOLOv2(object):
                 if grid_order in feed_vars:
                     grid_orders.append(feed_vars[grid_order])
 
-            cate_preds, kernel_preds = self.bbox_head.get_outputs(
-                body_feats, batch_size=self.batch_size)
+            cate_preds, kernel_preds = self.bbox_head.get_outputs(body_feats)
 
             losses = self.bbox_head.get_loss(
                 cate_preds, kernel_preds, mask_feat_pred, ins_labels,
