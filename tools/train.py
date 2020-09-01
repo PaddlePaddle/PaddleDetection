@@ -56,6 +56,7 @@ def main():
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env \
                     and 'PADDLE_TRAINERS_NUM' in env \
                     and int(env['PADDLE_TRAINERS_NUM']) > 1
+    num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         local_seed = (99 + trainer_id)
@@ -203,7 +204,8 @@ def main():
     train_reader = create_reader(
         cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
         cfg,
-        devices_num=devices_num)
+        devices_num=devices_num,
+        num_trainers=num_trainers)
     train_loader.set_sample_list_generator(train_reader, place)
 
     # whether output bbox is normalized in model output layer
