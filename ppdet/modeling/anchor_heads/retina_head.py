@@ -404,5 +404,5 @@ class RetinaHead(object):
             inside_weight=bbox_weight,
             outside_weight=bbox_weight)
         loss_bbox = fluid.layers.reduce_sum(loss_bbox, name='loss_bbox')
-        loss_bbox = loss_bbox / fg_num
+        loss_bbox = loss_bbox / fluid.layers.cast(fg_num, loss_bbox.dtype)
         return {'loss_cls': loss_cls, 'loss_bbox': loss_bbox}
