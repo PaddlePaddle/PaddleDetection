@@ -15,26 +15,42 @@
 
 ### 方式一：将数据集转换为COCO格式
 
-在`./tools/`中提供了`x2coco.py`用于将labelme标注的数据集或cityscape数据集转换为COCO数据集:
+在`./tools/`中提供了`x2coco.py`用于将voc格式数据集、labelme标注的数据集或cityscape数据集转换为COCO数据集，例如:
+
+（1）labelmes数据转换为COCO格式：
 ```bash
-python ./ppdet/data/tools/x2coco.py \
+python tools/x2coco.py \
                 --dataset_type labelme \
                 --json_input_dir ./labelme_annos/ \
                 --image_input_dir ./labelme_imgs/ \
                 --output_dir ./cocome/ \
                 --train_proportion 0.8 \
                 --val_proportion 0.2 \
-                --test_proportion 0.0 \
+                --test_proportion 0.0
 ```
+（2）voc数据转换为COCO格式：
+```bash
+python tools/x2coco.py \
+        --dataset_type voc \
+        --voc_anno_dir path/to/VOCdevkit/VOC2007/Annotations/ \
+        --voc_anno_list path/to/VOCdevkit/VOC2007/ImageSets/Main/trainval.txt \
+        --voc_label_list dataset/voc/label_list.txt \
+        --voc_out_name voc_train.json
+```
+
 **参数说明：**
 
-- `--dataset_type`：需要转换的数据格式，目前支持：’labelme‘和’cityscape‘
+- `--dataset_type`：需要转换的数据格式，目前支持：’voc‘、’labelme‘和’cityscape‘
 - `--json_input_dir`：使用labelme标注的json文件所在文件夹
 - `--image_input_dir`：图像文件所在文件夹
 - `--output_dir`：转换后的COCO格式数据集存放位置
 - `--train_proportion`：标注数据中用于train的比例
 - `--val_proportion`：标注数据中用于validation的比例
 - `--test_proportion`：标注数据中用于infer的比例
+- `--voc_anno_dir`：VOC数据转换为COCO数据集时的voc数据集标注文件路径
+- `--voc_anno_list`：VOC数据转换为COCO数据集时的标注列表文件，一般是`ImageSets/Main`下trainval.txt和test.txt文件
+- `--voc_label_list`：VOC数据转换为COCO数据集时的类别列表文件，文件中每一行表示一种物体类别
+- `--voc_out_name`：VOC数据转换为COCO数据集时的输出的COCO数据集格式json文件名
 
 ### 方式二：将数据集转换为VOC格式
 
