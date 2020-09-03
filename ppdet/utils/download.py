@@ -80,12 +80,10 @@ DATASETS = {
               ['Annotations', 'JPEGImages']),
     'roadsign_voc': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar',
-        '8d629c0f880dd8b48de9aeff44bf1f3e', ), ],
-              ['annotations', 'images']),
+        '8d629c0f880dd8b48de9aeff44bf1f3e', ), ], ['annotations', 'images']),
     'roadsign_coco': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
-        '49ce5a9b5ad0d6266163cd01de4b018e', ), ],
-              ['annotations', 'images']),
+        '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
     'objects365': (),
 }
 
@@ -147,10 +145,11 @@ def get_dataset_path(path, annotation, image_dir):
             return data_dir
 
     # not match any dataset in DATASETS
-    raise ValueError("Dataset {} is not valid and cannot parse dataset type "
-                     "'{}' for automaticly downloading, which only supports "
-                     "'voc' , 'coco', 'wider_face', 'fruit' and 'roadsign_voc' currently".
-                     format(path, osp.split(path)[-1]))
+    raise ValueError(
+        "Dataset {} is not valid and cannot parse dataset type "
+        "'{}' for automaticly downloading, which only supports "
+        "'voc' , 'coco', 'wider_face', 'fruit' and 'roadsign_voc' currently".
+        format(path, osp.split(path)[-1]))
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
