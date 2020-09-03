@@ -16,6 +16,8 @@
 ### 方式一：将数据集转换为COCO格式
 
 在`./tools/`中提供了`x2coco.py`用于将voc格式数据集、labelme标注的数据集或cityscape数据集转换为COCO数据集，例如:
+
+（1）labelmes数据转换为COCO格式：
 ```bash
 python tools/x2coco.py \
                 --dataset_type labelme \
@@ -24,8 +26,18 @@ python tools/x2coco.py \
                 --output_dir ./cocome/ \
                 --train_proportion 0.8 \
                 --val_proportion 0.2 \
-                --test_proportion 0.0 \
+                --test_proportion 0.0
 ```
+（2）voc数据转换为COCO格式：
+```bash
+python tools/x2coco.py \
+        --dataset_type voc \
+        --voc_anno_dir path/to/VOCdevkit/VOC2007/Annotations/ \
+        --voc_anno_list path/to/VOCdevkit/VOC2007/ImageSets/Main/trainval.txt \
+        --voc_label_list dataset/voc/label_list.txt \
+        --voc_out_name voc_train.json
+```
+
 **参数说明：**
 
 - `--dataset_type`：需要转换的数据格式，目前支持：’voc‘、’labelme‘和’cityscape‘
