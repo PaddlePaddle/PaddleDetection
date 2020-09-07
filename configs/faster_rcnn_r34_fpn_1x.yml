@@ -4,7 +4,7 @@ use_gpu: true
 snapshot_iter: 10000
 log_smooth_window: 20
 save_dir: output
-pretrain_weights: ResNet34_pretrained
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 metric: COCO
 weights: output/faster_rcnn_r34_fpn_1x/model_final
 num_classes: 81
