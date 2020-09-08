@@ -74,7 +74,7 @@ class Resize(object):
         self.arch = arch
         self.use_cv2 = use_cv2
         self.interp = interp
-        self.scale_set = {'RCNN', 'RetinaNet'}
+        self.scale_set = {'RCNN', 'RetinaNet', 'FCOS'}
 
     def __call__(self, im, im_info):
         """
@@ -259,7 +259,7 @@ def create_inputs(im, im_info, model_arch='YOLO'):
         scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         inputs['im_info'] = im_info
-    elif 'RCNN' in model_arch:
+    elif ('RCNN' in model_arch) or ('FCOS' in model_arch):
         scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         im_shape = np.array([origin_shape + [1.]]).astype('float32')
@@ -276,7 +276,15 @@ class Config():
     Args:
         model_dir (str): root path of model.yml
     """
-    support_models = ['YOLO', 'SSD', 'RetinaNet', 'RCNN', 'Face', 'TTF']
+    support_models = [
+        'YOLO',
+        'SSD',
+        'RetinaNet',
+        'RCNN',
+        'Face',
+        'TTF',
+        'FCOS',
+    ]
 
     def __init__(self, model_dir):
         # parsing Yaml config for Preprocess
