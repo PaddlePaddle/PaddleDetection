@@ -25,6 +25,24 @@ import numpy as np
 import paddle.fluid as fluid
 from visualize import visualize_box_mask
 
+# Global dictionary
+RESIZE_SCALE_SET = {
+    'RCNN',
+    'RetinaNet',
+    'FCOS',
+}
+
+SUPPORT_MODELS = {
+    'YOLO',
+    'SSD',
+    'RetinaNet',
+    'EfficientDet',
+    'RCNN',
+    'Face',
+    'TTF',
+    'FCOS',
+}
+
 
 def decode_image(im_file, im_info):
     """read rgb image
@@ -70,11 +88,10 @@ class Resize(object):
                  interp=cv2.INTER_LINEAR):
         self.target_size = target_size
         self.max_size = max_size
-        self.image_shape = image_shape,
+        self.image_shape = image_shape
         self.arch = arch
         self.use_cv2 = use_cv2
         self.interp = interp
-        self.scale_set = {'RCNN', 'RetinaNet', 'FCOS'}
 
     def __call__(self, im, im_info):
         """
@@ -124,12 +141,12 @@ class Resize(object):
         Args:
             im (np.ndarray): image (np.ndarray)
         Returns:
-            im_scale_x: the resize ratio of X 
-            im_scale_y: the resize ratio of Y 
+            im_scale_x: the resize ratio of X
+            im_scale_y: the resize ratio of Y
         """
         origin_shape = im.shape[:2]
         im_c = im.shape[2]
-        if self.max_size != 0 and self.arch in self.scale_set:
+        if self.max_size != 0 and self.arch in RESIZE_SCALE_SET:
             im_size_min = np.min(origin_shape[0:2])
             im_size_max = np.max(origin_shape[0:2])
             im_scale = float(self.target_size) / float(im_size_min)
@@ -255,7 +272,7 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
         inputs['im_size'] = im_size
-    elif 'RetinaNet' in model_arch:
+    elif 'RetinaNet' or 'EfficientDet' in model_arch:
         scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         inputs['im_info'] = im_info
@@ -276,15 +293,6 @@ class Config():
     Args:
         model_dir (str): root path of model.yml
     """
-    support_models = [
-        'YOLO',
-        'SSD',
-        'RetinaNet',
-        'RCNN',
-        'Face',
-        'TTF',
-        'FCOS',
-    ]
 
     def __init__(self, model_dir):
         # parsing Yaml config for Preprocess
@@ -307,11 +315,11 @@ class Config():
         Raises:
             ValueError: loaded model not in supported model type 
         """
-        for support_model in self.support_models:
+        for support_model in SUPPORT_MODELS:
             if support_model in yml_conf['arch']:
                 return True
         raise ValueError("Unsupported arch: {}, expect {}".format(yml_conf[
-            'arch'], self.support_models))
+            'arch'], SUPPORT_MODELS))
 
     def print_config(self):
         print('-----------  Model Configuration -----------')
