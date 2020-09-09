@@ -36,13 +36,29 @@ FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
+# Global dictionary
+TRT_MIN_SUBGRAPH = {
+    'YOLO': 3,
+    'SSD': 3,
+    'RCNN': 40,
+    'RetinaNet': 40,
+    'EfficientDet': 40,
+    'Face': 3,
+    'TTFNet': 3,
+    'FCOS': 3,
+}
+RESIZE_SCALE_SET = {
+    'RCNN',
+    'RetinaNet',
+    'FCOS',
+}
+
 
 def parse_reader(reader_cfg, metric, arch):
     preprocess_list = []
 
     image_shape = reader_cfg['inputs_def'].get('image_shape', [3, None, None])
     has_shape_def = not None in image_shape
-    scale_set = {'RCNN', 'RetinaNet'}
 
     dataset = reader_cfg['dataset']
     anno_file = dataset.get_anno()
@@ -72,9 +88,9 @@ def parse_reader(reader_cfg, metric, arch):
         params.pop('_id')
         if p['type'] == 'Resize' and has_shape_def:
             params['target_size'] = min(image_shape[
-                1:]) if arch in scale_set else image_shape[1]
+                1:]) if arch in RESIZE_SCALE_SET else image_shape[1]
             params['max_size'] = max(image_shape[
-                1:]) if arch in scale_set else 0
+                1:]) if arch in RESIZE_SCALE_SET else 0
             params['image_shape'] = image_shape[1:]
             if 'target_dim' in params:
                 params.pop('target_dim')
@@ -114,19 +130,9 @@ def dump_infer_config(FLAGS, config):
         'draw_threshold': 0.5,
         'metric': config['metric']
     })
-    trt_min_subgraph = {
-        'YOLO': 3,
-        'SSD': 3,
-        'RCNN': 40,
-        'RetinaNet': 40,
-        'Face': 3,
-        'TTFNet': 3,
-        'FCOS': 3,
-    }
     infer_arch = config['architecture']
-    infer_arch = 'RetinaNet' if infer_arch == 'EfficientDet' else infer_arch
 
-    for arch, min_subgraph_size in trt_min_subgraph.items():
+    for arch, min_subgraph_size in TRT_MIN_SUBGRAPH.items():
         if arch in infer_arch:
             infer_cfg['arch'] = arch
             infer_cfg['min_subgraph_size'] = min_subgraph_size
