@@ -51,12 +51,16 @@ python -c "import paddle; print(paddle.__version__)"
 
     git clone https://github.com/cocodataset/cocoapi.git
     cd cocoapi/PythonAPI
+    
     # 若Cython未安装，请安装Cython
     pip install Cython
+    
     # 安装至全局site-packages
     make install
+    
     # 若您没有权限或更倾向不安装至全局site-packages
     python setup.py install --user
+    
     # 或者使用pip安装
     pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
