@@ -87,16 +87,16 @@ def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
     return f.lower().endswith(extensions)
 
 
-def _make_dataset(dir):
-    dir = os.path.expanduser(dir)
-    if not os.path.isdir(d):
-        raise ('{} should be a dir'.format(dir))
+def _make_dataset(data_dir):
+    data_dir = os.path.expanduser(data_dir)
+    if not os.path.isdir(data_dir):
+        raise ('{} should be a dir'.format(data_dir))
     images = []
-    for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
+    for root, _, fnames in sorted(os.walk(data_dir, followlinks=True)):
         for fname in sorted(fnames):
-            path = os.path.join(root, fname)
-            if is_valid_file(path):
-                images.append(path)
+            file_path = os.path.join(root, fname)
+            if _is_valid_file(file_path):
+                images.append(file_path)
     return images
 
 
