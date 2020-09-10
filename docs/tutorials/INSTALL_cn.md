@@ -112,6 +112,7 @@ OK (skipped=2)
 使用预训练模型预测图像，快速体验模型预测效果：
 
 ```
+# use_gpu参数设置是否使用GPU
 python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439_640x640.jpg
 ```
 
