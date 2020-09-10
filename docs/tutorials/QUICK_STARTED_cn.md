@@ -1,77 +1,75 @@
 [English](QUICK_STARTED.md) | 简体中文
-
 # 快速开始
+为了使得用户能够在很短时间内快速产出模型，掌握PaddleDetection的使用方式，这篇教程通过一个预训练检测模型对小数据集进行finetune。在较短时间内即可产出一个效果不错的模型。实际业务中，建议用户根据需要选择合适模型配置文件进行适配。
 
-为了使得用户能够在很短的时间内快速产出模型，掌握PaddleDetection的使用方式，这篇教程通过一个预训练检测模型对小数据集进行finetune。在P40上单卡大约20min即可产出一个效果不错的模型。
 
-- **注：在开始前，如果有GPU设备，指定GPU设备号。**
+## 一、快速体验
+```
+# 用PP-YOLO算法在COCO数据集上预训练模型预测一张图片
+python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
+```
+结果如下图：
 
-```bash
-export CUDA_VISIBLE_DEVICES=0
+![](../images/000000014439.jpg)
+
+
+## 二、准备数据
+数据集参考[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) ，包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。  
+将数据划分为训练集701张图和测试集176张图，[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
+
+```
+# 注意：可跳过这步下载，后面训练会自动下载
+python dataset/roadsign_voc/download_roadsign_voc.py
 ```
 
-## 数据准备
-
-数据集参考[Kaggle数据集](https://www.kaggle.com/mbkinaci/fruit-images-for-object-detection)，其中训练数据集240张图片，测试数据集60张图片，数据类别为3类：苹果，橘子，香蕉。[下载链接](https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar)。数据下载后分别解压即可, 数据准备脚本位于[download_fruit.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dataset/fruit/download_fruit.py)。下载数据方式如下：
-
-```bash
-python dataset/fruit/download_fruit.py
+## 三、训练、评估、预测
+### 1、训练
+```
+# 边训练边测试 CPU需要约1小时(use_gpu=false)，1080Ti GPU需要约5分钟。
+# -c 参数表示指定使用哪个配置文件
+# -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置），这里设置使用gpu，
+# --eval 参数表示边训练边评估，会自动保存一个评估结果最的名为best_model.pdmodel的模型
+python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true
 ```
 
-## 开始训练
+如果想通过VisualDL实时观察loss变化去去曲线，在训练命令种添加--use_vdl=true，以及通过--vdl_log_dir设置日志保存路径。
 
-训练命令如下：
+**但注意VisualDL需Python>=3.5**
 
-```bash
-python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml --eval
+首先安装VisualDL
+```
+python -m pip install visualdl -i https://mirror.baidu.com/pypi/simple
 ```
 
-训练使用`yolov3_mobilenet_v1`基于COCO数据集训练好的模型进行finetune。
-
-
-如果想通过VisualDL实时观察loss和精度值，启动命令添加`--use_vdl=True`，以及通过`--vdl_log_dir`设置日志保存路径，但注意**VisualDL需Python>=3.5**：
-
-
-```bash
-python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_vdl=True \
-                        --vdl_log_dir=vdl_fruit_dir/scalar \
+```
+python -u tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml \
+                        --use_vdl=true \
+                        --vdl_log_dir=vdl_dir/scalar \
                         --eval
 ```
+通过visualdl命令实时查看变化曲线：
 
-通过`visualdl`命令实时查看变化曲线：
+visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 
-```bash
-visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+
+### 2、评估
+```
+# 评估 默认使用训练过程中保存的best_model
+# -c 参数表示指定使用哪个配置文件
+# -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置）
+python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
 ```
 
-VisualDL结果显示如下：
 
-![](../images/visualdl_fruit.jpg)
-
-训练模型[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
-
-## 评估预测
-
-评估命令如下：
-
-```bash
-python -u tools/eval.py -c configs/yolov3_mobilenet_v1_fruit.yml
+### 3、预测
+```
+# -c 参数表示指定使用哪个配置文件
+# -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置）
+# --infer_img 参数指定预测图像路径
+# 预测结束后会在output文件夹中生成一张画有预测结果的同名图像
+python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true --infer_img=demo/road554.png
 ```
 
-预测命令如下
+结果如下图：
 
-```bash
-python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar \
-                         --infer_img=demo/orange_71.jpg
-```
-
-预测图片如下：
-
-![](../../demo/orange_71.jpg)
-
-![](../images/orange_71_detection.jpg)
-
-
-更多训练及评估流程，请参考[入门使用文档](GETTING_STARTED_cn.md)。
+![](../images/road554.png)
