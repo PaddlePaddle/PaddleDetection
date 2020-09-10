@@ -68,6 +68,7 @@ python -c "import paddle; print(paddle.__version__)"
 
     # 若Cython未安装，请安装Cython
     pip install Cython
+    
     # 由于原版cocoapi不支持windows，采用第三方实现版本，该版本仅支持Python3
     pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
 
