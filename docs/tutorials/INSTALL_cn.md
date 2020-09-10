@@ -119,6 +119,4 @@ python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https
 
 结果如下图：
 
-<div align="center">
-  <img src="../../output/000000014439_640x640.jpg" />
-</div>
+![](../images/000000014439_640x640.jpg)
