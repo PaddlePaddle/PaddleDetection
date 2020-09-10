@@ -4,7 +4,7 @@
 ## 目录
 
 - [简介](#简介)
-- [安装PaddlePaddle](#paddlepaddle)
+- [安装PaddlePaddle](#安装PaddlePaddle)
 - [其他依赖安装](#其他依赖安装)
 - [PaddleDetection](#PaddleDetection)
 
