@@ -29,6 +29,9 @@ DEFINE_bool(use_camera, false, "Use camera or not");
 DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
+DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
+DEFINE_double(threshold, 0.5, "Threshold of score.");
+DEFINE_string(output_dir, "output", "Directory of output visualization files.");
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
@@ -72,7 +75,7 @@ void PredictVideo(const std::string& video_path,
     if (frame.empty()) {
       break;
     }
-    det->Predict(frame, &result);
+    det->Predict(frame, 0.5, 0, 1, false, &result);
     cv::Mat out_im = PaddleDetection::VisualizeResult(
         frame, result, labels, colormap);
     for (const auto& item : result) {
@@ -93,31 +96,40 @@ void PredictVideo(const std::string& video_path,
 }
 
 void PredictImage(const std::string& image_path,
-                  PaddleDetection::ObjectDetector* det) {
+                  const double threshold,
+                  const bool run_benchmark,
+                  PaddleDetection::ObjectDetector* det,
+                  const std::string& output_dir = "output") {
   // Open input image as an opencv cv::Mat object
   cv::Mat im = cv::imread(image_path, 1);
   // Store all detected result
   std::vector<PaddleDetection::ObjectResult> result;
-  det->Predict(im, &result);
-  for (const auto& item : result) {
-    printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
-        item.class_id,
-        item.confidence,
-        item.rect[0],
-        item.rect[1],
-        item.rect[2],
-        item.rect[3]);
+  if (run_benchmark)
+  {
+    det->Predict(im, threshold, 100, 100, run_benchmark, &result);
+  }else
+  {
+    det->Predict(im, 0.5, 0, 1, run_benchmark, &result);
+    for (const auto& item : result) {
+      printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
+          item.class_id,
+          item.confidence,
+          item.rect[0],
+          item.rect[1],
+          item.rect[2],
+          item.rect[3]);
+    }
+    // Visualization result
+    auto labels = det->GetLabelList();
+    auto colormap = PaddleDetection::GenerateColorMap(labels.size());
+    cv::Mat vis_img = PaddleDetection::VisualizeResult(
+        im, result, labels, colormap);
+    std::vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
+    compression_params.push_back(95);
+    cv::imwrite(output_dir + "/output.jpg", vis_img, compression_params);
+    printf("Visualized output saved as output.jpg\n");
   }
-  // Visualization result
-  auto labels = det->GetLabelList();
-  auto colormap = PaddleDetection::GenerateColorMap(labels.size());
-  cv::Mat vis_img = PaddleDetection::VisualizeResult(
-      im, result, labels, colormap);
-  std::vector<int> compression_params;
-  compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
-  compression_params.push_back(95);
-  cv::imwrite("output.jpg", vis_img, compression_params);
-  printf("Visualized output saved as output.jpg\n");
 }
 
 int main(int argc, char** argv) {
@@ -139,10 +151,10 @@ int main(int argc, char** argv) {
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
     FLAGS_run_mode, FLAGS_gpu_id);
   // Do inference on input video or image
-  if (!FLAGS_video_path.empty() or FLAGS_use_camera) {
+  if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);
   } else if (!FLAGS_image_path.empty()) {
-    PredictImage(FLAGS_image_path, &det);
+    PredictImage(FLAGS_image_path, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
 }
