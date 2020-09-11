@@ -18,11 +18,34 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 ## 安装PaddlePaddle
 
+**环境需求:**
+
+- Python2 or Python3 (windows系统仅支持Python3)
+- CUDA >= 8.0
+- cuDNN >= 5.0
+- nccl >= 2.1.2
+
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 **PaddleDetection v0.4需要PaddlePaddle>=1.8.4**
 
-PaddlePaddle安装请按照[安装文档](http://www.paddlepaddle.org.cn/)中的说明进行操作。
+```
+pip install --upgrade pip
+
+# paddlepaddle -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+
+# 如果您的机器安装的是CUDA9，请运行以下命令安装
+python -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
+
+如果您的机器安装的是CUDA10，请运行以下命令安装
+python -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
+
+如果您的机器是CPU，请运行以下命令安装
+
+python -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
+```
+更多的版本需求，请参照[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
 
 请确保您的PaddlePaddle安装成功并且版本不低于需求版本。使用以下命令进行验证。
 
@@ -34,13 +57,6 @@ PaddlePaddle安装请按照[安装文档](http://www.paddlepaddle.org.cn/)中的
 # 确认PaddlePaddle版本
 python -c "import paddle; print(paddle.__version__)"
 ```
-
-**环境需求:**
-
-- Python2 or Python3 (windows系统仅支持Python3)
-- CUDA >= 8.0
-- cuDNN >= 5.0
-- nccl >= 2.1.2
 
 
 ## 其他依赖安装
@@ -74,6 +90,14 @@ python -c "import paddle; print(paddle.__version__)"
 
 ## PaddleDetection
 
+**安装Python依赖库：**
+
+Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
+
+```
+pip install -r requirements.txt
+```
+
 **克隆PaddleDetection库：**
 
 您可以通过以下命令克隆PaddleDetection：
@@ -88,14 +112,6 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
 cd <path/to/clone/PaddleDetection>
 git clone https://gitee.com/paddlepaddle/PaddleDetection
-```
-
-**安装Python依赖库：**
-
-Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
-
-```
-pip install -r requirements.txt
 ```
 
 **确认测试通过：**
