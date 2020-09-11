@@ -19,9 +19,7 @@ EfficientDet:
   box_loss_weight: 50.
 
 EfficientNet:
-  # norm_type: sync_bn
-  # TODO
-  norm_type: bn
+  norm_type: sync_bn
   scale: b0
   use_se: true
 
@@ -39,9 +37,9 @@ EfficientHead:
   alpha: 0.25
   delta: 0.1
   output_decoder:
-    score_thresh: 0.05   # originally 0.
+    score_thresh: 0.0
     nms_thresh: 0.5
-    pre_nms_top_n: 1000  # originally 5000
+    pre_nms_top_n: 5000
     detections_per_im: 100
     nms_eta: 1.0
 
