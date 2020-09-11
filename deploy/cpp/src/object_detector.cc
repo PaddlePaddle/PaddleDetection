@@ -39,7 +39,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
         printf("TensorRT int8 mode is not supported now, "
                "please use 'trt_fp32' or 'trt_fp16' instead");
       } else {
-        if (run_mode != "trt_32") {
+        if (run_mode != "trt_fp32") {
           printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
         }
       }
@@ -56,6 +56,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   }
   config.SwitchUseFeedFetchOps(false);
   config.SwitchSpecifyInputNames(true);
+  config.DisableGlogInfo();
   // Memory optimization
   config.EnableMemoryOptim();
   predictor_ = std::move(CreatePaddlePredictor(config));
@@ -155,7 +156,11 @@ void ObjectDetector::Postprocess(
 }
 
 void ObjectDetector::Predict(const cv::Mat& im,
-                                  std::vector<ObjectResult>* result) {
+      const double threshold,
+      const int warmup,
+      const int repeats,
+      const bool run_benchmark,
+      std::vector<ObjectResult>* result) {
   // Preprocess image
   Preprocess(im);
   // Prepare input tensor
@@ -182,24 +187,53 @@ void ObjectDetector::Predict(const cv::Mat& im,
     }
   }
   // Run predictor
-  predictor_->ZeroCopyRun();
-  // Get output tensor
-  auto output_names = predictor_->GetOutputNames();
-  auto out_tensor = predictor_->GetOutputTensor(output_names[0]);
-  std::vector<int> output_shape = out_tensor->shape();
-  // Calculate output length
-  int output_size = 1;
-  for (int j = 0; j < output_shape.size(); ++j) {
-    output_size *= output_shape[j];
+  for (int i = 0; i < warmup; i++)
+  {
+    predictor_->ZeroCopyRun();
+    // Get output tensor
+    auto output_names = predictor_->GetOutputNames();
+    auto out_tensor = predictor_->GetOutputTensor(output_names[0]);
+    std::vector<int> output_shape = out_tensor->shape();
+    // Calculate output length
+    int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+
+    if (output_size < 6) {
+      std::cerr << "[WARNING] No object detected." << std::endl;
+    }
+    output_data_.resize(output_size);
+    out_tensor->copy_to_cpu(output_data_.data()); 
   }
 
-  if (output_size < 6) {
-    std::cerr << "[WARNING] No object detected." << std::endl;
+  std::clock_t start = clock();
+  for (int i = 0; i < repeats; i++)
+  {
+    predictor_->ZeroCopyRun();
+    // Get output tensor
+    auto output_names = predictor_->GetOutputNames();
+    auto out_tensor = predictor_->GetOutputTensor(output_names[0]);
+    std::vector<int> output_shape = out_tensor->shape();
+    // Calculate output length
+    int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+
+    if (output_size < 6) {
+      std::cerr << "[WARNING] No object detected." << std::endl;
+    }
+    output_data_.resize(output_size);
+    out_tensor->copy_to_cpu(output_data_.data()); 
   }
-  output_data_.resize(output_size);
-  out_tensor->copy_to_cpu(output_data_.data());
+  std::clock_t end = clock();
+  float ms = static_cast<float>(end - start) / CLOCKS_PER_SEC / repeats * 1000.;
+  printf("Inference: %f ms per batch image\n", ms);
   // Postprocessing result
-  Postprocess(im,  result);
+  if(!run_benchmark) {
+    Postprocess(im,  result);
+  }
 }
 
 std::vector<int> GenerateColorMap(int num_class) {
