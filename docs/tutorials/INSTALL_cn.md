@@ -20,10 +20,13 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 **环境需求:**
 
-- Python2 or Python3 (windows系统仅支持Python3)
-- CUDA >= 8.0
-- cuDNN >= 5.0
-- nccl >= 2.1.2
+- OS 64位操作系统
+- Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64位版本
+- pip/pip3(9.0.1+)，64位版本操作系统是
+- CUDA >= 9.0
+- cuDNN >= 7.6
+
+如果需要 GPU 多卡训练，请先安装nccl (Windows暂不支持nccl)。
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
@@ -74,11 +77,8 @@ python -c "import paddle; print(paddle.__version__)"
     # 安装至全局site-packages
     make install
 
-    # 若您没有权限或更倾向不安装至全局site-packages
-    python setup.py install --user
-
-    # 或者使用pip安装
-    pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
+    # 安装pycocotools
+    pip install pycocotools
 
 **windows用户安装COCO-API方式：**
 
