@@ -20,7 +20,7 @@ metric: COCO
 # 模型配置文件和权重文件可参考[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md)
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
 # 模型保存文件夹，如果开启了--eval，会在这个文件夹下保存best_model
-weights: output/yolov3_mobilenet_v1_roadsign_coco_template/best_model
+weights: output/yolov3_mobilenet_v1_roadsign_coco_template/
 # ### 根据用户数据设置类别数，注意这里不含背景类
 num_classes: 4
 # finetune时忽略的参数，按照正则化匹配，匹配上的参数会被忽略掉
@@ -36,7 +36,6 @@ YOLOv3:
 
 # 检测模型的backbone
 MobileNet:
-  norm_type: sync_bn
   norm_decay: 0.
   conv_group_scale: 1
   with_extra_blocks: false
@@ -61,7 +60,7 @@ YOLOv3Head:
     nms_threshold: 0.45
     # 基于 score_threshold 的过滤检测后，根据置信度保留的最大检测次数。
     nms_top_k: 1000
-    # 检测是否已经经过正则化。默认值：True 。
+    # 是否归一化，默认值：True 。
     normalized: false
     #  过滤掉低置信度分数的边界框的阈值。
     score_threshold: 0.01
