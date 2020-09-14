@@ -1266,8 +1266,8 @@ class MixupImage(BaseOperator):
         if factor <= 0.0:
             return sample['mixup']
         im = self._mixup_img(sample['image'], sample['mixup']['image'], factor)
-        gt_bbox1 = sample['gt_bbox']
-        gt_bbox2 = sample['mixup']['gt_bbox']
+        gt_bbox1 = sample['gt_bbox'].reshape((-1, 4))
+        gt_bbox2 = sample['mixup']['gt_bbox'].reshape((-1, 4))
         gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
         gt_class1 = sample['gt_class']
         gt_class2 = sample['mixup']['gt_class']
