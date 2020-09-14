@@ -33,17 +33,17 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 pip install --upgrade pip
 
 # paddlepaddle -i https://mirror.baidu.com/pypi/simple
-python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+python3 -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 
 # 如果您的机器安装的是CUDA9，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
+python3 -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
 
 如果您的机器安装的是CUDA10，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
+python3 -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
 
 如果您的机器是CPU，请运行以下命令安装
 
-python -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
+python3 -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
 ```
 更多的版本需求，请参照[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
 
@@ -67,16 +67,16 @@ python -c "import paddle; print(paddle.__version__)"
 
     git clone https://github.com/cocodataset/cocoapi.git
     cd cocoapi/PythonAPI
-    
+
     # 若Cython未安装，请安装Cython
     pip install Cython
-    
+
     # 安装至全局site-packages
     make install
-    
+
     # 若您没有权限或更倾向不安装至全局site-packages
     python setup.py install --user
-    
+
     # 或者使用pip安装
     pip install "git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI"
 
@@ -84,7 +84,7 @@ python -c "import paddle; print(paddle.__version__)"
 
     # 若Cython未安装，请安装Cython
     pip install Cython
-    
+
     # 由于原版cocoapi不支持windows，采用第三方实现版本，该版本仅支持Python3
     pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
 
