@@ -1,5 +1,7 @@
+
+```yml
 #####################################基础配置#####################################
-# 检测算法使用YOLOv3，backbone使用MobileNet_v1，数据集使用roadsign_voc的配置文件模板，本配置文件默认使用单卡，单卡的batch_size=1
+# 检测算法使用YOLOv3，backbone使用MobileNet_v1，数据集使用roadsign_voc的配置文件模板，本配置文件默认使用单卡
 # 检测模型的名称
 architecture: YOLOv3
 # 根据硬件选择是否使用GPU
@@ -347,3 +349,5 @@ TestReader:
     - !Permute
       to_bgr: false
       channel_first: true
+
+```
