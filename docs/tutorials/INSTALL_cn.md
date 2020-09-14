@@ -26,13 +26,13 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
-如果需要 GPU 多卡训练，请先安装NCCL (Windows暂不支持nccl)。
+如果需要 GPU 多卡训练，请先安装NCCL(Windows暂不支持nccl)。
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
-| PaddleDetection版本 | PaddlePaddle版本  |   备注   |
+| PaddleDetection版本 | PaddlePaddle版本  |    备注    |
 | :----------------: | :---------------: | :-------: |
-|      v0.3          |        >=1.7      |  -- |
+|      v0.3          |        >=1.7      |     --    |
 |      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
 
 
