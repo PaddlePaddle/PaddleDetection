@@ -68,15 +68,6 @@ python -c "import paddle; print(paddle.__version__)"
 
 运行需要COCO-API，安装方式如下：
 
-    git clone https://github.com/cocodataset/cocoapi.git
-    cd cocoapi/PythonAPI
-
-    # 若Cython未安装，请安装Cython
-    pip install Cython
-
-    # 安装至全局site-packages
-    make install
-
     # 安装pycocotools
     pip install pycocotools
 
