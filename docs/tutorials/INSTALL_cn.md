@@ -26,29 +26,31 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
-如果需要 GPU 多卡训练，请先安装nccl (Windows暂不支持nccl)。
+如果需要 GPU 多卡训练，请先安装NCCL (Windows暂不支持nccl)。
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
-**PaddleDetection v0.4需要PaddlePaddle>=1.8.4**
+| PaddleDetection版本 | PaddlePaddle版本  |   备注   |
+| :----------------: | :---------------: | :-------: |
+|      v0.3          |        >=1.7      |  -- |
+|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
+
 
 ```
-pip install --upgrade pip
-
-# paddlepaddle -i https://mirror.baidu.com/pypi/simple
-python3 -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+# install paddlepaddle
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 
 # 如果您的机器安装的是CUDA9，请运行以下命令安装
-python3 -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
 
 如果您的机器安装的是CUDA10，请运行以下命令安装
-python3 -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
 
 如果您的机器是CPU，请运行以下命令安装
 
-python3 -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
 ```
-更多的版本需求，请参照[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
+更多的安装方式如conda, docker安装，请参考[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
 
 请确保您的PaddlePaddle安装成功并且版本不低于需求版本。使用以下命令进行验证。
 
