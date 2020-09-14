@@ -190,7 +190,16 @@ TrainReader:
   # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
   - !DecodeImage
     to_rgb: true
-    with_mixup: false
+    with_mixup: true
+  # MixupImage
+  - !MixupImage
+    alpha: 1.5
+    beta: 1.5
+  # ColorDistort
+  - !ColorDistort {}
+  - !RandomExpand
+    fill_value: [123.675, 116.28, 103.53]
+    ratio: 1.5
   # box 坐标归一化，仅仅YOLO系列算法需要
   - !NormalizeBox {}
   # 以prob概率随机反转
