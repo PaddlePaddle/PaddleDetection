@@ -77,6 +77,9 @@ class SOLOv2(object):
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
 
+        if not mode == 'train':
+            self.batch_size = 1
+
         mask_feat_pred = self.mask_head.get_output(body_feats, self.batch_size)
 
         if mode == 'train':
@@ -97,7 +100,8 @@ class SOLOv2(object):
                 if grid_order in feed_vars:
                     grid_orders.append(feed_vars[grid_order])
 
-            cate_preds, kernel_preds = self.bbox_head.get_outputs(body_feats)
+            cate_preds, kernel_preds = self.bbox_head.get_outputs(
+                body_feats, batch_size=self.batch_size)
 
             losses = self.bbox_head.get_loss(
                 cate_preds, kernel_preds, mask_feat_pred, ins_labels,

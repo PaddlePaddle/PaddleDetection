@@ -201,7 +201,8 @@ def segm_eval(results, anno_file, outfile, save_only=False):
                     'evaluate the mAP.'.format(outfile))
         return
 
-    cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+    map_stats = cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+    return map_stats
 
 
 def cocoapi_eval(jsonfile,
@@ -411,6 +412,43 @@ def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
                     'score': score
                 }
                 segm_res.append(coco_res)
+    return segm_res
+
+
+def segm2out(results, clsid2catid, thresh_binarize=0.5):
+    import pycocotools.mask as mask_util
+    segm_res = []
+
+    # for each batch
+    for t in results:
+        segms = t['segm'][0]
+        clsid_labels = t['cate_label'][0]
+        clsid_scores = t['cate_score'][0]
+        lengths = segms.shape[0]
+        im_id = int(t['im_id'][0][0])
+        im_shape = t['im_shape'][0][0]
+        if lengths == 0 or segms is None:
+            continue
+        # for each sample
+        for i in range(lengths - 1):
+            im_h = int(im_shape[0])
+            im_w = int(im_shape[1])
+
+            clsid = int(clsid_labels[i])
+            catid = clsid2catid[clsid]
+            score = clsid_scores[i]
+            mask = segms[i]
+            segm = mask_util.encode(
+                np.array(
+                    mask[:, :, np.newaxis], order='F'))[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': score
+            }
+            segm_res.append(coco_res)
     return segm_res
 
 

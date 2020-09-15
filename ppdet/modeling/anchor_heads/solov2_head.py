@@ -46,7 +46,7 @@ class SOLOv2Head(object):
         ins_loss_weight (float): Weight of instance loss.
         focal_loss_gamma (float): Gamma parameter for focal loss.
         focal_loss_alpha (float): Alpha parameter for focal loss.
-        use_dcn_in_tower (bool): Whether to use dcn in tower or not.
+        dcn_v2_stages (list): Which stage use dcn v2 in tower.
         segm_strides (list[int]): List of segmentation area stride.
         score_threshold (float): Threshold of categroy score.
         update_threshold (float): Updated threshold of categroy score in second time.
@@ -66,7 +66,7 @@ class SOLOv2Head(object):
                  ins_loss_weight=3.0,
                  focal_loss_gamma=2.0,
                  focal_loss_alpha=0.25,
-                 use_dcn_in_tower=False,
+                 dcn_v2_stages=[],
                  segm_strides=[8, 8, 16, 32, 32],
                  score_threshold=0.1,
                  mask_threshold=0.5,
@@ -85,7 +85,7 @@ class SOLOv2Head(object):
         self.ins_loss_weight = ins_loss_weight
         self.focal_loss_gamma = focal_loss_gamma
         self.focal_loss_alpha = focal_loss_alpha
-        self.use_dcn_in_tower = use_dcn_in_tower
+        self.dcn_v2_stages = dcn_v2_stages
         self.segm_strides = segm_strides
         self.mask_nms = mask_nms
         self.score_threshold = score_threshold
@@ -98,10 +98,11 @@ class SOLOv2Head(object):
             self.mask_nms = MaskMatrixNMS(**mask_nms)
 
     def _conv_pred(self, conv_feat, num_filters, name, name_feat=None):
-        conv_func = self.conv_type[0]
-        if self.use_dcn_in_tower:
-            conv_func = self.conv_type[1]
         for i in range(self.stacked_convs):
+            if i in self.dcn_v2_stages:
+                conv_func = self.conv_type[1]
+            else:
+                conv_func = self.conv_type[0]
             conv_feat = conv_func(
                 input=conv_feat,
                 num_filters=self.seg_feat_channels,
@@ -155,24 +156,25 @@ class SOLOv2Head(object):
     def _split_feats(self, feats):
         return (paddle.nn.functional.interpolate(
             feats[0],
-            scale=0.5,
+            scale_factor=0.5,
             align_corners=False,
             align_mode=0,
-            resample='BILINEAR'), feats[1], feats[2], feats[3],
+            mode='bilinear'), feats[1], feats[2], feats[3],
                 paddle.nn.functional.interpolate(
                     feats[4],
-                    out_shape=fluid.layers.shape(feats[3])[-2:],
-                    resample='BILINEAR',
+                    size=fluid.layers.shape(feats[3])[-2:],
+                    mode='bilinear',
                     align_corners=False,
                     align_mode=0))
 
-    def get_outputs(self, input, is_eval=False):
+    def get_outputs(self, input, is_eval=False, batch_size=1):
         """
         Get SOLOv2 head output
 
         Args:
             input (list): List of Variables, output of backbone or neck stages
             is_eval (bool): whether in train or test mode
+            batch_size (int): batch size
         Returns:
             cate_pred_list (list): Variables of each category branch layer
             kernel_pred_list (list): Variables of each kernel branch layer
@@ -182,13 +184,13 @@ class SOLOv2Head(object):
         kernel_pred_list = []
         for idx in range(len(self.seg_num_grids)):
             cate_pred, kernel_pred = self._get_output_single(
-                feats[idx], idx, is_eval=is_eval)
+                feats[idx], idx, is_eval=is_eval, batch_size=batch_size)
             cate_pred_list.append(cate_pred)
             kernel_pred_list.append(kernel_pred)
 
         return cate_pred_list, kernel_pred_list
 
-    def _get_output_single(self, input, idx, is_eval=False):
+    def _get_output_single(self, input, idx, is_eval=False, batch_size=1):
         ins_kernel_feat = input
         # CoordConv
         x_range = paddle.linspace(
@@ -198,10 +200,8 @@ class SOLOv2Head(object):
         y, x = paddle.tensor.meshgrid([y_range, x_range])
         x = fluid.layers.unsqueeze(x, [0, 1])
         y = fluid.layers.unsqueeze(y, [0, 1])
-        y = fluid.layers.expand(
-            y, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
-        x = fluid.layers.expand(
-            x, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
+        y = fluid.layers.expand(y, expand_times=[batch_size, 1, 1, 1])
+        x = fluid.layers.expand(x, expand_times=[batch_size, 1, 1, 1])
         coord_feat = fluid.layers.concat([x, y], axis=1)
         ins_kernel_feat = fluid.layers.concat(
             [ins_kernel_feat, coord_feat], axis=1)
@@ -211,8 +211,8 @@ class SOLOv2Head(object):
         seg_num_grid = self.seg_num_grids[idx]
         kernel_feat = paddle.nn.functional.interpolate(
             kernel_feat,
-            out_shape=[seg_num_grid, seg_num_grid],
-            resample='BILINEAR',
+            size=[seg_num_grid, seg_num_grid],
+            mode='bilinear',
             align_corners=False,
             align_mode=0)
         cate_feat = kernel_feat[:, :-2, :, :]
@@ -308,7 +308,7 @@ class SOLOv2Head(object):
             b_mask_pred = fluid.layers.concat(b_mask_pred, axis=0)
             ins_pred_list.append(b_mask_pred)
 
-        num_ins = fluid.layers.sum(fg_num)
+        num_ins = fluid.layers.reduce_sum(fg_num)
 
         # Ues dice_loss to calculate instance loss
         loss_ins = []
@@ -423,7 +423,8 @@ class SOLOv2Head(object):
         inds_end = fluid.layers.unsqueeze(
             fluid.layers.concat([ind_a, ind_b]), 0)
         inds = fluid.layers.concat([inds, inds_end])
-        kernel_preds_end = fluid.layers.ones(shape=[1, 256], dtype='float32')
+        kernel_preds_end = fluid.layers.ones(
+            shape=[1, self.kernel_out_channels], dtype='float32')
         kernel_preds = fluid.layers.concat([kernel_preds, kernel_preds_end])
         cate_preds = fluid.layers.concat(
             [cate_preds, fluid.layers.zeros(
@@ -436,13 +437,12 @@ class SOLOv2Head(object):
                                                       cate_labels)
         cate_scores = fluid.layers.gather(cate_preds, index=cate_score_idx)
 
-        size_trans = np.power(self.seg_num_grids, 2).astype("int32")
-        strides = paddle.ones(shape=[size_trans[-1]], dtype='int32')
+        size_trans = np.power(self.seg_num_grids, 2)
         strides = []
         for _ind in range(len(self.segm_strides)):
             strides.append(
                 fluid.layers.fill_constant(
-                    shape=[size_trans[_ind]],
+                    shape=[int(size_trans[_ind])],
                     dtype="int32",
                     value=self.segm_strides[_ind]))
         strides = fluid.layers.concat(strides)
@@ -515,17 +515,17 @@ class SOLOv2Head(object):
         ori_shape = fluid.layers.cast(ori_shape, 'int32')
         seg_preds = paddle.nn.functional.interpolate(
             fluid.layers.unsqueeze(seg_preds, 0),
-            out_shape=upsampled_size_out,
-            resample='BILINEAR',
+            size=upsampled_size_out,
+            mode='bilinear',
             align_corners=False,
             align_mode=0)[:, :, :h, :w]
         seg_masks = fluid.layers.squeeze(
             paddle.nn.functional.interpolate(
                 seg_preds,
-                out_shape=ori_shape[:2],
-                resample='BILINEAR',
+                size=ori_shape[:2],
+                mode='bilinear',
                 align_corners=False,
                 align_mode=0),
             axes=[0])
-        seg_masks = fluid.layers.cast(seg_masks > self.mask_threshold, 'uint8')
+        seg_masks = fluid.layers.cast(seg_masks > self.mask_threshold, 'int32')
         return seg_masks, cate_labels, cate_scores

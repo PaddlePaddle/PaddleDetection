@@ -95,7 +95,7 @@ class PadBatch(BaseOperator):
                 padding_segm = np.zeros(
                     (gt_segm.shape[0], max_shape[1], max_shape[2]),
                     dtype=np.uint8)
-                padding_segm[:gt_segm.shape[0], :im_h, :im_w] = gt_segm
+                padding_segm[:, :im_h, :im_w] = gt_segm
                 data['gt_segm'] = padding_segm
 
         return samples
@@ -634,7 +634,7 @@ class Gt2Solov2Target(BaseOperator):
         for sample in samples:
             gt_bboxes_raw = sample['gt_bbox']
             gt_labels_raw = sample['gt_class']
-            im_h, im_w = sample['im_info'][:2]
+            im_c, im_h, im_w = sample['image'].shape[:]
             gt_masks_raw = sample['gt_segm'].astype(np.uint8)
             mask_feat_size = [
                 int(im_h / self.sampling_ratio), int(im_w / self.sampling_ratio)
@@ -723,14 +723,23 @@ class Gt2Solov2Target(BaseOperator):
                             ins_label.append(cur_ins_label)
                             ins_ind_label[label] = True
                             grid_order.append(label)
-                ins_label = np.stack(ins_label, axis=0)
-
-                ins_ind_label_list.append(ins_ind_label)
-                sample['cate_label{}'.format(idx)] = cate_label.flatten()
-                sample['ins_label{}'.format(idx)] = ins_label
-                sample['grid_order{}'.format(idx)] = np.asarray(grid_order)
-                assert len(grid_order) > 0
-                grid_offset.append(len(grid_order))
+                if ins_label == []:
+                    ins_label = np.zeros(
+                        [1, mask_feat_size[0], mask_feat_size[1]],
+                        dtype=np.uint8)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray([0])
+                    grid_offset.append(1)
+                else:
+                    ins_label = np.stack(ins_label, axis=0)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(grid_order)
+                    assert len(grid_order) > 0
+                    grid_offset.append(len(grid_order))
                 idx += 1
             ins_ind_labels = np.concatenate([
                 ins_ind_labels_level_img

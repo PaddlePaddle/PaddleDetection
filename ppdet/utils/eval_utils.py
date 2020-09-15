@@ -250,7 +250,10 @@ def eval_results(results,
             output = 'segm.json'
             if output_directory:
                 output = os.path.join(output_directory, output)
-            segm_eval(results, anno_file, output, save_only=save_only)
+            mask_ap_stats = segm_eval(
+                results, anno_file, output, save_only=save_only)
+            if len(box_ap_stats) == 0:
+                box_ap_stats = mask_ap_stats
     else:
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])

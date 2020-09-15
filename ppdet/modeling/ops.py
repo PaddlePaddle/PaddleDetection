@@ -1616,7 +1616,7 @@ class MaskMatrixNMS(object):
         label_matrix = paddle.tensor.triu(label_matrix, diagonal=1)
 
         # IoU compensation
-        compensate_iou = paddle.max((iou_matrix * label_matrix), dim=0)
+        compensate_iou = paddle.max((iou_matrix * label_matrix), axis=0)
         compensate_iou = fluid.layers.reshape(
             fluid.layers.expand(
                 compensate_iou, expand_times=[n_samples]),
@@ -1632,10 +1632,10 @@ class MaskMatrixNMS(object):
             compensate_matrix = fluid.layers.exp(-1 * self.sigma *
                                                  (compensate_iou**2))
             decay_coefficient = paddle.min(decay_matrix / compensate_matrix,
-                                           dim=0)
+                                           axis=0)
         elif self.kernel == 'linear':
             decay_matrix = (1 - decay_iou) / (1 - compensate_iou)
-            decay_coefficient = paddle.min(decay_matrix, dim=0)
+            decay_coefficient = paddle.min(decay_matrix, axis=0)
         else:
             raise NotImplementedError
 

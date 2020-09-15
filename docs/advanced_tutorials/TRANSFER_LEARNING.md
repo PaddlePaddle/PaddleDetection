@@ -8,7 +8,7 @@ In transfer learning, if different dataset and the number of classes is used, th
 
 ### Use custom dataset
 
-Transfer learning needs custom dataset and annotation in COCO-format and VOC-format is supported now. The script converts the annotation from labelme or cityscape to COCO is provided in ```ppdet/data/tools/x2coco.py```. More details please refer to [READER](READER.md). After data preparation, update the data parameters in configuration file.
+Transfer learning needs custom dataset and annotation in COCO-format and VOC-format is supported now. The script converts the annotation from voc, labelme or cityscape to COCO is provided in ```tools/x2coco.py```. More details please refer to [READER](READER.md). After data preparation, update the data parameters in configuration file.
 
 
 1. COCO-format dataset, take [yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66) for example, modify the COCODataSet in yolov3\_reader:

@@ -1,7 +1,7 @@
 architecture: SOLOv2
 use_gpu: true
-max_iters: 180000
-snapshot_iter: 20000
+max_iters: 90000
+snapshot_iter: 10000
 log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
@@ -14,7 +14,7 @@ SOLOv2:
   fpn: FPN
   bbox_head: SOLOv2Head
   mask_head: SOLOv2MaskHead
-  batch_size: 1
+  batch_size: 2
 
 ResNet:
   depth: 50
@@ -42,14 +42,14 @@ SOLOv2MaskHead:
   num_classes: 256
 
 LearningRate:
-  base_lr: 0.005
+  base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [120000, 160000]
+    milestones: [60000, 80000]
   - !LinearWarmup
-    start_factor: 0.01
-    steps: 500
+    start_factor: 0.
+    steps: 1000
 
 OptimizerBuilder:
   optimizer:
@@ -59,102 +59,4 @@ OptimizerBuilder:
     factor: 0.0001
     type: L2
 
-TrainReader:
-  batch_size: 1
-  worker_num: 2
-  inputs_def:
-    fields: ['image', 'im_id', 'gt_segm']
-  dataset:
-    !COCODataSet
-    dataset_dir: dataset/coco
-    anno_path: annotations/instances_train2017.json
-    image_dir: train2017
-  sample_transforms:
-  - !DecodeImage
-    to_rgb: true
-  - !Poly2Mask {}
-  - !ResizeImage
-    target_size: 800
-    max_size: 1333
-    interp: 1
-    use_cv2: true
-    resize_box: true
-  - !RandomFlipImage
-    prob: 0.5
-  - !NormalizeImage
-    is_channel_first: false
-    is_scale: true
-    mean: [0.485,0.456,0.406]
-    std: [0.229, 0.224,0.225]
-  - !Permute
-    to_bgr: false
-    channel_first: true
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-  - !Gt2Solov2Target
-    num_grids: [40, 36, 24, 16, 12]
-    scale_ranges: [[1, 96], [48, 192], [96, 384], [192, 768], [384, 2048]]
-    coord_sigma: 0.2
-  shuffle: True
-
-EvalReader:
-  inputs_def:
-    fields: ['image', 'im_info', 'im_id']
-  dataset:
-    !COCODataSet
-    image_dir: val2017
-    anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
-  sample_transforms:
-  - !DecodeImage
-    to_rgb: true
-  - !ResizeImage
-    interp: 1
-    max_size: 1333
-    target_size: 800
-    use_cv2: true
-  - !NormalizeImage
-    is_channel_first: false
-    is_scale: true
-    mean: [0.485,0.456,0.406]
-    std: [0.229, 0.224,0.225]
-  - !Permute
-    channel_first: true
-    to_bgr: false
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-    use_padded_im_info: false
-  batch_size: 1
-  shuffle: false
-  drop_last: false
-  drop_empty: false
-  worker_num: 2
-
-TestReader:
-  inputs_def:
-    fields: ['image', 'im_info', 'im_id', 'im_shape']
-  dataset:
-    !ImageFolder
-    anno_path: annotations/instances_val2017.json
-  sample_transforms:
-  - !DecodeImage
-    to_rgb: true
-  - !ResizeImage
-    interp: 1
-    max_size: 1333
-    target_size: 800
-    use_cv2: true
-  - !NormalizeImage
-    is_channel_first: false
-    is_scale: true
-    mean: [0.485,0.456,0.406]
-    std: [0.229, 0.224,0.225]
-  - !Permute
-    channel_first: true
-    to_bgr: false
-  batch_transforms:
-  - !PadBatch
-    pad_to_stride: 32
-    use_padded_im_info: false
+_READER_: 'solov2_reader.yml'

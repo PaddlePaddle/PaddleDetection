@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <ctime>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -74,9 +75,12 @@ class ObjectDetector {
     const int gpu_id=0);
 
   // Run predictor
-  void Predict(
-      const cv::Mat& img,
-      std::vector<ObjectResult>* result);
+  void Predict(const cv::Mat& im,
+      const double threshold = 0.5,
+      const int warmup = 0,
+      const int repeats = 1,
+      const bool run_benchmark = false,
+      std::vector<ObjectResult>* result = nullptr);
 
   // Get Model Label list
   const std::vector<std::string>& GetLabelList() const {
