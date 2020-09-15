@@ -272,7 +272,7 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
         inputs['im_size'] = im_size
-    elif 'RetinaNet' or 'EfficientDet' in model_arch:
+    elif 'RetinaNet' in model_arch or 'EfficientDet' in model_arch:
         scale = scale_x
         im_info = np.array([resize_shape + [scale]]).astype('float32')
         inputs['im_info'] = im_info
