@@ -30,6 +30,7 @@ RESIZE_SCALE_SET = {
     'RCNN',
     'RetinaNet',
     'FCOS',
+    'SOLOv2',
 }
 
 SUPPORT_MODELS = {
@@ -41,6 +42,7 @@ SUPPORT_MODELS = {
     'Face',
     'TTF',
     'FCOS',
+    'SOLOv2',
 }
 
 
@@ -85,7 +87,8 @@ class Resize(object):
                  max_size,
                  use_cv2=True,
                  image_shape=None,
-                 interp=cv2.INTER_LINEAR):
+                 interp=cv2.INTER_LINEAR,
+                 resize_box=False):
         self.target_size = target_size
         self.max_size = max_size
         self.image_shape = image_shape
@@ -251,7 +254,7 @@ class PadStride(object):
         pad_w = int(np.ceil(float(im_w) / coarsest_stride) * coarsest_stride)
         padding_im = np.zeros((im_c, pad_h, pad_w), dtype=np.float32)
         padding_im[:, :im_h, :im_w] = im
-        im_info['resize_shape'] = padding_im.shape[1:]
+        im_info['pad_shape'] = padding_im.shape[1:]
         return padding_im, im_info
 
 
@@ -268,23 +271,29 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     inputs['image'] = im
     origin_shape = list(im_info['origin_shape'])
     resize_shape = list(im_info['resize_shape'])
+    pad_shape = list(im_info['pad_shape']) if 'pad_shape' in im_info else list(
+        im_info['resize_shape'])
     scale_x, scale_y = im_info['scale']
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
         inputs['im_size'] = im_size
-    elif 'RetinaNet' or 'EfficientDet' in model_arch:
+    elif 'RetinaNet' in model_arch or 'EfficientDet' in model_arch:
         scale = scale_x
-        im_info = np.array([resize_shape + [scale]]).astype('float32')
+        im_info = np.array([pad_shape + [scale]]).astype('float32')
         inputs['im_info'] = im_info
     elif ('RCNN' in model_arch) or ('FCOS' in model_arch):
         scale = scale_x
-        im_info = np.array([resize_shape + [scale]]).astype('float32')
+        im_info = np.array([pad_shape + [scale]]).astype('float32')
         im_shape = np.array([origin_shape + [1.]]).astype('float32')
         inputs['im_info'] = im_info
         inputs['im_shape'] = im_shape
     elif 'TTF' in model_arch:
         scale_factor = np.array([scale_x, scale_y] * 2).astype('float32')
         inputs['scale_factor'] = scale_factor
+    elif 'SOLOv2' in model_arch:
+        scale = scale_x
+        im_info = np.array([resize_shape + [scale]]).astype('float32')
+        inputs['im_info'] = im_info
     return inputs
 
 
@@ -405,10 +414,15 @@ def visualize(image_file,
               results,
               labels,
               mask_resolution=14,
-              output_dir='output/'):
+              output_dir='output/',
+              threshold=0.5):
     # visualize the predict result
     im = visualize_box_mask(
-        image_file, results, labels, mask_resolution=mask_resolution)
+        image_file,
+        results,
+        labels,
+        mask_resolution=mask_resolution,
+        threshold=threshold)
     img_name = os.path.split(image_file)[-1]
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -516,6 +530,11 @@ class Detector():
             ms = (t2 - t1) * 1000.0 / repeats
             print("Inference: {} ms per batch image".format(ms))
 
+            if self.config.arch == 'SOLOv2':
+                return dict(
+                    segm=np.array(outs[2]),
+                    label=np.array(outs[0]),
+                    score=np.array(outs[1]))
             np_boxes = np.array(outs[0])
             if self.config.mask_resolution is not None:
                 np_masks = np.array(outs[1])
@@ -539,6 +558,13 @@ class Detector():
             for i in range(repeats):
                 self.predictor.zero_copy_run()
                 output_names = self.predictor.get_output_names()
+                if self.config.arch == 'SOLOv2':
+                    np_label = self.predictor.get_output_tensor(output_names[
+                        0]).copy_to_cpu()
+                    np_score = self.predictor.get_output_tensor(output_names[
+                        1]).copy_to_cpu()
+                    np_segms = self.predictor.get_output_tensor(output_names[
+                        2]).copy_to_cpu()
                 boxes_tensor = self.predictor.get_output_tensor(output_names[0])
                 np_boxes = boxes_tensor.copy_to_cpu()
                 if self.config.mask_resolution is not None:
@@ -552,6 +578,9 @@ class Detector():
         # do not perform postprocess in benchmark mode
         results = []
         if not run_benchmark:
+            if self.config.arch == 'SOLOv2':
+                return dict(segm=np_segms, label=np_label, score=np_score)
+
             if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
                 print('[WARNNING] No object detected.')
                 results = {'boxes': np.array([])}
@@ -579,7 +608,8 @@ def predict_image():
             results,
             detector.config.labels,
             mask_resolution=detector.config.mask_resolution,
-            output_dir=FLAGS.output_dir)
+            output_dir=FLAGS.output_dir,
+            threshold=FLAGS.threshold)
 
 
 def predict_video(camera_id):
