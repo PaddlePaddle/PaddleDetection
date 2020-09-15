@@ -83,6 +83,8 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppyolo.yml --eval
 ```
 
+**注意：** 如果想在训练、评估、预测过程中不改变图像的长宽比，可以参考`configs/ppyolo/ppyolo_reader_keep_ratio.yml`
+
 ### 2. 评估
 
 使用单GPU通过如下命令一键式评估模型在COCO val2017数据集效果

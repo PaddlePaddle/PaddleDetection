@@ -80,6 +80,7 @@ class PadBatch(BaseOperator):
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
             padding_im[:, :im_h, :im_w] = im
             data['image'] = padding_im
+            data['h'], data['w'] = data['image'].shape[1:3]
             if self.use_padded_im_info:
                 data['im_info'][:2] = max_shape[1:3]
             if 'semantic' in data.keys() and data['semantic'] is not None:
@@ -101,12 +102,20 @@ class RandomShape(BaseOperator):
     False, use cv2.INTER_NEAREST.
     Args:
         sizes (list): list of int, random choose a size from these
+        ratios (list): list of float, random choose a ratio to resize image.
         random_inter (bool): whether to randomly interpolation, defalut true.
     """
 
-    def __init__(self, sizes=[], random_inter=False, resize_box=False):
+    def __init__(self,
+                 sizes=[],
+                 ratios=[],
+                 random_inter=False,
+                 resize_box=False):
         super(RandomShape, self).__init__()
+        assert len(sizes) == 0 or len(ratios) == 0, \
+                "'sizes' and 'ratios' only one can be set"
         self.sizes = sizes
+        self.ratios = ratios
         self.random_inter = random_inter
         self.interps = [
             cv2.INTER_NEAREST,
@@ -118,14 +127,23 @@ class RandomShape(BaseOperator):
         self.resize_box = resize_box
 
     def __call__(self, samples, context=None):
-        shape = np.random.choice(self.sizes)
         method = np.random.choice(self.interps) if self.random_inter \
             else cv2.INTER_NEAREST
+        if len(self.sizes) > 0:
+            shape = np.random.choice(self.sizes)
+        elif len(self.ratios) > 0:
+            ratio = np.random.choice(self.ratios)
         for i in range(len(samples)):
             im = samples[i]['image']
             h, w = im.shape[:2]
-            scale_x = float(shape) / w
-            scale_y = float(shape) / h
+
+            if len(self.sizes) > 0:
+                scale_x = float(shape) / w
+                scale_y = float(shape) / h
+            elif len(self.ratios) > 0:
+                scale_x = ratio
+                scale_y = ratio
+
             im = cv2.resize(
                 im, None, None, fx=scale_x, fy=scale_y, interpolation=method)
             samples[i]['image'] = im
