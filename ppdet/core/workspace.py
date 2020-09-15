@@ -102,8 +102,9 @@ def load_config(file_path):
     #       batch size config to global, models can get batch size config
     #       from global config when building model.
     #       batch size in evaluation or inference can also be added here
-    global_config['train_batch_size'] = global_config['TrainReader'][
-        'batch_size']
+    if 'TrainReader' in global_config:
+        global_config['train_batch_size'] = global_config['TrainReader'][
+            'batch_size']
 
     return global_config
 
