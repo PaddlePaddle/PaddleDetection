@@ -82,6 +82,8 @@ Training PP-YOLO on 8 GPUs with following command(all commands should be run und
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppyolo.yml --eval
 ```
 
+**Notes:** If you want to preserve the aspect ratio of images during training/evaluation/inference, please see `configs/ppyolo/ppyolo_reader_keep_ratio.yml`
+
 ### 2. Evaluation
 
 Evaluating PP-YOLO on COCO val2017 dataset in single GPU with following commands:
