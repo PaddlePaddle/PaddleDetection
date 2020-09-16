@@ -11,7 +11,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 经过长时间产业实践打磨，PaddleDetection已拥有顺畅、卓越的使用体验，被工业质检、遥感图像检测、无人巡检、新零售、互联网、科研等十多个行业的开发者广泛应用。
 
 <div align="center">
-  <img src="docs/images/football.gif" width='400'/>
+  <img src="docs/images/football.gif" width='800'/>
 </div>
 
 ### 产品动态
