@@ -1,21 +1,21 @@
 # 如何准备训练数据
 ## 目录
-- [目标检测数据格式说明](#目标检测数据格式说明)
+- [目标检测数据说明](#目标检测数据说明)
 - [准备训练数据方式](#准备训练数据方式)
-    - [VOC数据格式](#VOC数据格式)
+    - [VOC数据数据](#VOC数据数据)
         - [VOC数据集下载](#VOC数据集下载)
-        - [VOC数据标注格式介绍](#VOC数据标注格式介绍)
-    - [COCO数据格式](#COCO数据格式)
+        - [VOC数据标注文件介绍](#VOC数据标注文件介绍)
+    - [COCO数据数据](#COCO数据数据)
         - [COCO数据集下载](#COCO数据下载)
-        - [COCO数据标注格式介绍](#COCO数据标注格式介绍)
+        - [COCO数据标注文件介绍](#COCO数据标注文件介绍)
     - [用户数据](#用户数据)
-        - [用户数据转成VOC格式](#用户数据转成VOC格式)
-        - [用户数据转成COCO格式](#用户数据转成COCO格式)
+        - [用户数据转成VOC数据](#用户数据转成VOC数据)
+        - [用户数据转成COCO数据](#用户数据转成COCO数据)
         - [用户数据自定义reader](#用户数据自定义reader)
-    - [用户数据格式转换示例](#用户数据格式转换示例)
+    - [用户数据数据转换示例](#用户数据数据转换示例)
 
-### 目标检测数据格式说明  
-目标检测的数据格式比分类复杂，一张图像中，需要标记出各个目标区域的位置和类别。
+### 目标检测数据说明  
+目标检测的数据比分类复杂，一张图像中，需要标记出各个目标区域的位置和类别。
 
 一般的目标区域位置用一个矩形框来表示，一般用以下3种方式表达：
 
@@ -31,9 +31,9 @@
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
 同时还支持自定义数据源，包括：  
 
-(1)自定义数据格式转换成VOC格式；  
-(2)自定义数据格式转换成COCO格式；  
-(3)自定义新的数据源，增加自定义的reader。
+(1) 自定义数据数据转换成VOC数据；  
+(2) 自定义数据数据转换成COCO数据；  
+(3) 自定义新的数据源，增加自定义的reader。
 
 
 首先进入到`PaddleDetection`根目录下
@@ -42,9 +42,9 @@ cd PaddleDetection/
 ppdet_root=$(pwd)
 ```
 
-#### VOC数据格式  
-VOC格式是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛使用的数据格式。Pascal VOC比赛不仅包含图像分类分类任务，还包含图像目标检测、图像分割等任务，其标注文件中包含多个任务的标注内容。
-VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC格式数据，xml文件中的非必须字段，请根据实际情况选择是否标注或是否使用默认值。
+#### VOC数据数据  
+VOC数据是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛使用的数据。Pascal VOC比赛不仅包含图像分类分类任务，还包含图像目标检测、图像分割等任务，其标注文件中包含多个任务的标注内容。
+VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数据，xml文件中的非必须字段，请根据实际情况选择是否标注或是否使用默认值。
 ##### VOC数据集下载  
 
 - 通过代码自动化下载VOC数据集  
@@ -82,8 +82,10 @@ VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC格�
     │   ├── ImageSets
     │       |   ...
     |   ...
+    ```
 
-    # 各个文件说明
+    各个文件说明
+    ```
     # label_list.txt 是类别名称列表，文件名必须是 label_list.txt。若使用VOC数据集，config文件中use_default_label为true时不需要这个文件
     >>cat label_list.txt
     aeroplane
@@ -111,8 +113,8 @@ VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC格�
 - 已下载VOC数据集  
     按照如上数据文件组织结构组织文件即可。
 
-##### VOC数据标注格式介绍  
-VOC数据格式的目标检测数据，是指每个图像文件对应一个同名的xml文件，xml文件中标记物体框的坐标和类别等信息。例如图像`2007_002055.jpg`：
+##### VOC数据标注文件介绍  
+VOC数据是每个图像文件对应一个同名的xml文件，xml文件中标记物体框的坐标和类别等信息。例如图像`2007_002055.jpg`：
 ![](../images/2007_002055.jpg)
 
 图片对应的xml文件内包含对应图片的基本信息，比如文件名、来源、图像尺寸以及图像中包含的物体区域信息和类别信息等。
@@ -138,9 +140,9 @@ xml文件中包含以下字段：
     |   bndbox子标签    |  (xmin,ymin) 左上角坐标，(xmax,ymax) 右下角坐标，  |  
 
 
-#### COCO数据格式  
-COCO格式是[COCO](http://cocodataset.org) 比赛使用的数据格式。同样的，COCO比赛数也包含多个比赛任务，其标注文件中包含多个任务的标注内容。
-COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO格式数据，json文件中的一些字段，请根据实际情况选择是否标注或是否使用默认值。
+#### COCO数据  
+COCO数据是[COCO](http://cocodataset.org) 比赛使用的数据。同样的，COCO比赛数也包含多个比赛任务，其标注文件中包含多个任务的标注内容。
+COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO数据，json文件中的一些字段，请根据实际情况选择是否标注或是否使用默认值。
 
 
 ##### COCO数据下载  
@@ -172,8 +174,8 @@ COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO格式�
 - 已下载COCO数据集  
     按照如上数据文件组织结构组织文件即可。  
 
-##### COCO数据标注格式介绍  
-COCO数据格式，是指将所有训练图像的标注都存放到一个json文件中。数据以字典嵌套的形式存放。
+##### COCO数据标注介绍  
+COCO数据标注是将所有训练图像的标注都存放到一个json文件中。数据以字典嵌套的形式存放。
 
 json文件中包含以下key：  
 - info，表示标注文件info。
@@ -208,7 +210,7 @@ json文件中包含以下key：
     ```
 
     ```
-    # 查看COCO格式注释文件
+    # 查看COCO标注文件
     import json
     coco_anno = json.load(open('./annotations/instances_train2017.json'))
 
@@ -238,12 +240,12 @@ json文件中包含以下key：
 
 #### 用户数据  
 对于用户数据有3种处理方法：  
-(1)将用户数据转成VOC格式(根据需要仅包含物体检测所必须的标签即可)  
-(2)将用户数据转成COCO格式(根据需要仅包含物体检测所必须的标签即可)  
-(3)自定义一个用户数据的reader(较复杂数据格式，需要自定义reader)  
+(1) 将用户数据转成VOC数据(根据需要仅包含物体检测所必须的标签即可)  
+(2) 将用户数据转成COCO数据(根据需要仅包含物体检测所必须的标签即可)  
+(3) 自定义一个用户数据的reader(较复杂数据，需要自定义reader)  
 
-##### 用户数据转成VOC格式  
-用户数据集转成VOC格式后目录结构如下（注意数据集中路径名、文件名尽量不要使用中文，避免中文编码问题导致出错）：
+##### 用户数据转成VOC数据  
+用户数据集转成VOC数据后目录结构如下（注意数据集中路径名、文件名尽量不要使用中文，避免中文编码问题导致出错）：
 
 ```
 dataset/xxx/
@@ -260,7 +262,10 @@ dataset/xxx/
 ├── label_list.txt (必须提供，且文件名称必须是label_list.txt )
 ├── train.txt (训练数据集文件列表, ./images/xxx1.jpg ./annotations/xxx1.xml)
 └── valid.txt (测试数据集文件列表)
+```
 
+各个文件说明
+```
 # label_list.txt 是类别名称列表，改文件名必须是这个
 >>cat label_list.txt
 classname1
@@ -279,10 +284,10 @@ classname2
 ...
 ```
 
-##### 用户数据转成COCO格式  
-在`./tools/`中提供了`x2coco.py`用于将VOC格式数据集、labelme标注的数据集或cityscape数据集转换为COCO数据格式，例如:
+##### 用户数据转成COCO  
+在`./tools/`中提供了`x2coco.py`用于将VOC数据集、labelme标注的数据集或cityscape数据集转换为COCO数据，例如:
 
-（1）labelmes数据转换为COCO格式：
+（1）labelmes数据转换为COCO数据：
 ```bash
 python tools/x2coco.py \
                 --dataset_type labelme \
@@ -293,7 +298,7 @@ python tools/x2coco.py \
                 --val_proportion 0.2 \
                 --test_proportion 0.0
 ```
-（2）voc数据转换为COCO格式：
+（2）voc数据转换为COCO数据：
 ```bash
 python tools/x2coco.py \
         --dataset_type voc \
@@ -303,12 +308,12 @@ python tools/x2coco.py \
         --voc_out_name voc_train.json
 ```
 
-用户数据集转成COCO格式后目录结构如下（注意数据集中路径名、文件名尽量不要使用中文，避免中文编码问题导致出错）：
+用户数据集转成COCO数据后目录结构如下（注意数据集中路径名、文件名尽量不要使用中文，避免中文编码问题导致出错）：
 ```
 dataset/xxx/
 ├── annotations
-│   ├── train.json  # coco格式数据的标注文件
-│   ├── valid.json  # coco格式数据的标注文件
+│   ├── train.json  # coco数据的标注文件
+│   ├── valid.json  # coco数据的标注文件
 ├── images
 │   ├── xxx1.jpg
 │   ├── xxx2.jpg
@@ -318,10 +323,10 @@ dataset/xxx/
 ```
 
 ##### 用户数据自定义reader  
-如果数据集有新的格式需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#添加新数据源)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
+如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#添加新数据源)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
 
 
-#### 用户数据格式转换示例  
+#### 用户数据数据转换示例  
 
 以[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据为例，说明如何准备自定义数据。
 Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。
