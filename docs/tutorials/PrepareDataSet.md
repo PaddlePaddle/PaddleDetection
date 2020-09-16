@@ -1,7 +1,7 @@
 # 如何准备训练数据
 ## 目录
 - [目标检测数据说明](#目标检测数据说明)
-- [准备训练数据方式](#准备训练数据方式)
+- [准备训练数据](#准备训练数据)
     - [VOC数据数据](#VOC数据数据)
         - [VOC数据集下载](#VOC数据集下载)
         - [VOC数据标注文件介绍](#VOC数据标注文件介绍)
@@ -27,7 +27,7 @@
 
 常见的目标检测数据集如Pascal VOC和COCO，采用的是第一种 `x1,y1,x2,y2` 表示物体的bounding box.  
 
-### 准备训练数据方式  
+### 准备训练数据  
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
 同时还支持自定义数据源，包括：  
 
