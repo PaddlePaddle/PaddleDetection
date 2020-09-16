@@ -29,6 +29,8 @@ python dataset/roadsign_voc/download_roadsign_voc.py
 # -c 参数表示指定使用哪个配置文件
 # -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置），这里设置使用gpu，
 # --eval 参数表示边训练边评估，会自动保存一个评估结果最的名为best_model.pdmodel的模型
+
+
 python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true
 ```
 
@@ -36,7 +38,7 @@ python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml --eval -o use_
 
 **但注意VisualDL需Python>=3.5**
 
-首先安装VisualDL
+首先安装[VisualDL](https://github.com/PaddlePaddle/VisualDL)
 ```
 python -m pip install visualdl -i https://mirror.baidu.com/pypi/simple
 ```
@@ -48,9 +50,9 @@ python -u tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml \
                         --eval
 ```
 通过visualdl命令实时查看变化曲线：
-
+```
 visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
-
+```
 
 ### 2、评估
 ```
@@ -67,6 +69,8 @@ python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
 # -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置）
 # --infer_img 参数指定预测图像路径
 # 预测结束后会在output文件夹中生成一张画有预测结果的同名图像
+
+
 python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true --infer_img=demo/road554.png
 ```
 
