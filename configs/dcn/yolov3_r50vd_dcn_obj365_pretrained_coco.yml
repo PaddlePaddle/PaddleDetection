@@ -8,12 +8,10 @@ metric: COCO
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar
 weights: output/yolov3_r50vd_dcn_db_obj365_pretrained_coco/model_final
 num_classes: 80
-use_fine_grained_loss: true
 
 YOLOv3:
   backbone: ResNet
   yolo_head: YOLOv3Head
-  use_fine_grained_loss: true
 
 ResNet:
   norm_type: sync_bn
@@ -48,7 +46,6 @@ YOLOv3Loss:
   batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
-  use_fine_grained_loss: true
 
 LearningRate:
   base_lr: 0.001

@@ -8,7 +8,6 @@ metric: COCO
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/CSPDarkNet53_pretrained.pdparams
 weights: output/yolov4_cspdarknet_coco/model_final
 num_classes: 80
-use_fine_grained_loss: true
 
 YOLOv4:
   backbone: CSPDarkNet

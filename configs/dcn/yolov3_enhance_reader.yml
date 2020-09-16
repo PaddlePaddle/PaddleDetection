@@ -2,7 +2,6 @@ TrainReader:
   inputs_def:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
-  use_fine_grained_loss: true
   dataset:
     !COCODataSet
     image_dir: train2017

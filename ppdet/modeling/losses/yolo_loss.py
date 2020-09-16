@@ -45,7 +45,7 @@ class YOLOv3Loss(object):
                  batch_size=8,
                  ignore_thresh=0.7,
                  label_smooth=True,
-                 use_fine_grained_loss=False,
+                 use_fine_grained_loss=True,
                  iou_loss=None,
                  iou_aware_loss=None,
                  downsample=[32, 16, 8],

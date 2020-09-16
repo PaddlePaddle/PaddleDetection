@@ -199,7 +199,7 @@ class Reader(object):
                  class_aware_sampling=False,
                  worker_num=-1,
                  use_process=False,
-                 use_fine_grained_loss=False,
+                 use_fine_grained_loss=True,
                  num_classes=80,
                  bufsize=-1,
                  memsize='3G',

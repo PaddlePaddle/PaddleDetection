@@ -8,7 +8,6 @@ metric: VOC
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov4_cspdarknet.pdparams
 weights: output/yolov4_cspdarknet_voc/model_final
 num_classes: 20
-use_fine_grained_loss: true
 
 YOLOv4:
   backbone: CSPDarkNet

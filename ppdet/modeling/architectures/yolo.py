@@ -43,7 +43,7 @@ class YOLOv3(object):
     def __init__(self,
                  backbone,
                  yolo_head='YOLOv3Head',
-                 use_fine_grained_loss=False):
+                 use_fine_grained_loss=True):
         super(YOLOv3, self).__init__()
         self.backbone = backbone
         self.yolo_head = yolo_head
@@ -182,7 +182,7 @@ class YOLOv4(YOLOv3):
     def __init__(self,
                  backbone,
                  yolo_head='YOLOv4Head',
-                 use_fine_grained_loss=False):
+                 use_fine_grained_loss=True):
         super(YOLOv4, self).__init__(
             backbone=backbone,
             yolo_head=yolo_head,

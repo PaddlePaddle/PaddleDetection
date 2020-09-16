@@ -9,14 +9,12 @@ metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_vd_pretrained.tar
 weights: output/ppyolo_tiny/model_final
 num_classes: 80
-use_fine_grained_loss: true
 use_ema: true
 ema_decay: 0.9998
 
 YOLOv3:
   backbone: ResNet
   yolo_head: YOLOv3Head
-  use_fine_grained_loss: true
 
 ResNet:
   norm_type: sync_bn
@@ -43,7 +41,6 @@ YOLOv3Loss:
   ignore_thresh: 0.7
   scale_x_y: 1.05
   label_smooth: false
-  use_fine_grained_loss: true
   iou_loss: IouLoss
 
 IouLoss:
