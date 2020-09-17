@@ -62,9 +62,8 @@ def main():
         categories_list = [cat['name'] for cat in anno['categories']]
 
         with open(args.outfile_path, 'w') as f:
-            for cat in categories_list[0:-1]:
+            for cat in categories_list:
                 f.write(cat + '\n')
-            f.write(categories_list[-1])
         print('lable_list file: {} create done!'.format(args.outfile_path))
 
     if args.dataset_type == 'voc' or args.dataset_type == 'VOC':
@@ -88,9 +87,8 @@ def main():
         categories_list = sorted(categories_list)
 
         with open(args.outfile_path, 'w') as f:
-            for cat in categories_list[0:-1]:
+            for cat in categories_list:
                 f.write(cat + '\n')
-            f.write(categories_list[-1])
         print('lable_list file: {} create done!'.format(args.outfile_path))
 
 
