@@ -16,7 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os, sys
+import os
+import sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
@@ -107,10 +108,8 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
                  cache,
                  iters=1000,
                  verbose=True):
-        super(YOLOv2AnchorCluster, self).__init__(n,
-                                                  cache_path,
-                                                  cache,
-                                                  verbose=verbose)
+        super(YOLOv2AnchorCluster, self).__init__(
+            n, cache_path, cache, verbose=verbose)
         """
         YOLOv2 Anchor Cluster
 
@@ -171,8 +170,8 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
         pbar = tqdm(range(iters), desc='Cluster anchors with k-means algorithm')
         for _ in pbar:
             # E step
-            converged, assignments = self.kmeans_expectation(
-                whs, centers, assignments)
+            converged, assignments = self.kmeans_expectation(whs, centers,
+                                                             assignments)
             if converged:
                 break
             # M step
@@ -195,10 +194,8 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
                  gen_iters=1000,
                  thresh=0.25,
                  verbose=True):
-        super(YOLOv5AnchorCluster, self).__init__(n,
-                                                  cache_path,
-                                                  cache,
-                                                  verbose=verbose)
+        super(YOLOv5AnchorCluster, self).__init__(
+            n, cache_path, cache, verbose=verbose)
         """
         YOLOv5 Anchor Cluster
 
@@ -226,8 +223,8 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         whs = self.whs
         centers = centers[np.argsort(centers.prod(1))]
         x, best = self.metric(whs, centers)
-        bpr, aat = (best >
-                    self.thresh).mean(), (x > self.thresh).mean() * self.n
+        bpr, aat = (
+            best > self.thresh).mean(), (x > self.thresh).mean() * self.n
         logger.info(
             'thresh=%.2f: %.4f best possible recall, %.2f anchors past thr' %
             (self.thresh, bpr, aat))
@@ -266,8 +263,9 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         centers *= s
 
         f, sh, mp, s = self.fitness(wh, centers), centers.shape, 0.9, 0.1
-        pbar = tqdm(range(self.gen_iters),
-                    desc='Evolving anchors with Genetic Algorithm')
+        pbar = tqdm(
+            range(self.gen_iters),
+            desc='Evolving anchors with Genetic Algorithm')
         for _ in pbar:
             v = np.ones(sh)
             while (v == 1).all():
@@ -284,48 +282,44 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
 
 def main():
     parser = ArgsParser()
-    parser.add_argument('--n',
-                        '-n',
-                        default=9,
-                        type=int,
-                        help='num of clusters')
-    parser.add_argument('--iters',
-                        '-i',
-                        default=1000,
-                        type=int,
-                        help='num of iterations for kmeans')
-    parser.add_argument('--gen_iters',
-                        '-gi',
-                        default=1000,
-                        type=int,
-                        help='num of iterations for genetic algorithm')
-    parser.add_argument('--thresh',
-                        '-t',
-                        default=0.25,
-                        type=float,
-                        help='anchor scale threshold')
-    parser.add_argument('--verbose',
-                        '-v',
-                        default=True,
-                        type=bool,
-                        help='whether print result')
-    parser.add_argument('--size',
-                        '-s',
-                        default=None,
-                        type=str,
-                        help='image size: w,h, using comma as delimiter')
-    parser.add_argument('--method',
-                        '-m',
-                        default='v2',
-                        type=str,
-                        help='cluster method, [v2, v5] are supported now')
-    parser.add_argument('--cache_path',
-                        default='cache',
-                        type=str,
-                        help='cache path')
-    parser.add_argument('--cache',
-                        action='store_true',
-                        help='whether use cache')
+    parser.add_argument(
+        '--n', '-n', default=9, type=int, help='num of clusters')
+    parser.add_argument(
+        '--iters',
+        '-i',
+        default=1000,
+        type=int,
+        help='num of iterations for kmeans')
+    parser.add_argument(
+        '--gen_iters',
+        '-gi',
+        default=1000,
+        type=int,
+        help='num of iterations for genetic algorithm')
+    parser.add_argument(
+        '--thresh',
+        '-t',
+        default=0.25,
+        type=float,
+        help='anchor scale threshold')
+    parser.add_argument(
+        '--verbose', '-v', default=True, type=bool, help='whether print result')
+    parser.add_argument(
+        '--size',
+        '-s',
+        default=None,
+        type=str,
+        help='image size: w,h, using comma as delimiter')
+    parser.add_argument(
+        '--method',
+        '-m',
+        default='v2',
+        type=str,
+        help='cluster method, [v2, v5] are supported now')
+    parser.add_argument(
+        '--cache_path', default='cache', type=str, help='cache path')
+    parser.add_argument(
+        '--cache', action='store_true', help='whether use cache')
     FLAGS = parser.parse_args()
 
     cfg = load_config(FLAGS.config)
