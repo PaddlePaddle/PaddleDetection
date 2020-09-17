@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,12 @@ from tqdm import tqdm
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.core.workspace import load_config, merge_config, create
+
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+
 
 class BaseAnchorCluster(object):
     def __init__(self, n, cache_path, cache, verbose=True):
@@ -125,9 +131,9 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
         self.iters = iters
 
     def print_result(self, centers):
-        print('%d anchor cluster result: [w, h]' % self.n)
+        logger.info('%d anchor cluster result: [w, h]' % self.n)
         for w, h in centers:
-            print('[%d, %d]' % (round(w), round(h)))
+            logger.info('[%d, %d]' % (round(w), round(h)))
 
     def metric(self, whs, centers):
         wh1 = whs[:, None]
@@ -153,7 +159,8 @@ class YOLOv2AnchorCluster(BaseAnchorCluster):
         self.whs = self.whs * np.array([self.size])
         # random select k centers
         whs, n, iters = self.whs, self.n, self.iters
-        print('Running kmeans for %d anchors on %d points...' % (n, len(whs)))
+        logger.info('Running kmeans for %d anchors on %d points...' %
+                    (n, len(whs)))
         idx = np.random.choice(whs.shape[0], size=n, replace=False)
         centers = whs[idx]
         assignments = np.zeros(whs.shape[0:1]) * -1
@@ -221,15 +228,16 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         x, best = self.metric(whs, centers)
         bpr, aat = (best >
                     self.thresh).mean(), (x > self.thresh).mean() * self.n
-        print('thresh=%.2f: %.4f best possible recall, %.2f anchors past thr' %
-              (self.thresh, bpr, aat))
-        print(
+        looger.info(
+            'thresh=%.2f: %.4f best possible recall, %.2f anchors past thr' %
+            (self.thresh, bpr, aat))
+        logger.info(
             'n=%g, img_size=%s, metric_all=%.3f/%.3f-mean/best, past_thresh=%.3f-mean: '
             % (self.n, self.size, x.mean(), best.mean(),
                x[x > self.thresh].mean()))
-        print('%d anchor cluster result: [w, h]' % self.n)
+        logger.info('%d anchor cluster result: [w, h]' % self.n)
         for w, h in centers:
-            print('[%d, %d]' % (round(w), round(h)))
+            logger.info('[%d, %d]' % (round(w), round(h)))
 
     def metric(self, whs, centers):
         r = whs[:, None] / centers[None]
@@ -246,12 +254,13 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         wh0 = self.whs
         i = (wh0 < 3.0).any(1).sum()
         if i:
-            print('WARNING: Extremely small objects found. %d of %d'
-                  'labels are < 3 pixels in width or height' % (i, len(wh0)))
+            logger.warn('Extremely small objects found. %d of %d'
+                        'labels are < 3 pixels in width or height' %
+                        (i, len(wh0)))
 
         wh = wh0[(wh0 >= 2.0).any(1)]
-        print('Running kmeans for %g anchors on %g points...' %
-              (self.n, len(wh)))
+        logger.info('Running kmeans for %g anchors on %g points...' %
+                    (self.n, len(wh)))
         s = wh.std(0)
         centers, dist = kmeans(wh / s, self.n, iter=self.iters)
         centers *= s
@@ -332,6 +341,7 @@ def main():
     if FLAGS.size:
         if ',' in FLAGS.size:
             size = list(map(int, FLAGS.size.split(',')))
+            assert len(size) == 2, "the format of size is incorrect"
         else:
             size = int(FLAGS.size)
             size = [size, size]
