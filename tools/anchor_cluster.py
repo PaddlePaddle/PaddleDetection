@@ -228,7 +228,7 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         x, best = self.metric(whs, centers)
         bpr, aat = (best >
                     self.thresh).mean(), (x > self.thresh).mean() * self.n
-        looger.info(
+        logger.info(
             'thresh=%.2f: %.4f best possible recall, %.2f anchors past thr' %
             (self.thresh, bpr, aat))
         logger.info(
