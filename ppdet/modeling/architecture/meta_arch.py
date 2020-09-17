@@ -3,8 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from paddle.fluid.dygraph import Layer
-from paddle.fluid.dygraph.base import to_variable
+import paddle
+import paddle.nn as nn
 from ppdet.core.workspace import register
 from ppdet.utils.data_structure import BufferDict
 
@@ -12,7 +12,7 @@ __all__ = ['BaseArch']
 
 
 @register
-class BaseArch(Layer):
+class BaseArch(nn.Layer):
     def __init__(self):
         super(BaseArch, self).__init__()
 
@@ -39,10 +39,10 @@ class BaseArch(Layer):
                 input_v = np.array(input)[np.newaxis, ...]
                 inputs[name].append(input_v)
         for name in input_def:
-            inputs[name] = to_variable(np.concatenate(inputs[name]))
+            inputs[name] = paddle.to_tensor(np.concatenate(inputs[name]))
         return inputs
 
-    def model_arch(self, mode):
+    def model_arch(self):
         raise NotImplementedError("Should implement model_arch method!")
 
     def loss(self, ):

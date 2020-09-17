@@ -1,5 +1,7 @@
 import numpy as np
-import paddle.fluid as fluid
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
 
@@ -37,8 +39,8 @@ class BBoxPostProcess(object):
         if isinstance(rois, tuple):
             proposal, proposal_num = rois
             score, delta = bboxheads[0]
-            bbox_prob = fluid.layers.softmax(score)
-            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
+            bbox_prob = F.softmax(score)
+            delta = paddle.reshape(delta, (-1, self.out_dim, 4))
         else:
             num_stage = len(rois)
             proposal_list = []
@@ -48,18 +50,18 @@ class BBoxPostProcess(object):
                 score, delta = bboxhead
                 proposal, proposal_num = proposals
                 if stage in self.score_stage:
-                    bbox_prob = fluid.layers.softmax(score)
+                    bbox_prob = F.softmax(score)
                     prob_list.append(bbox_prob)
                 if stage in self.delta_stage:
                     proposal_list.append(proposal)
                     delta_list.append(delta)
-            bbox_prob = fluid.layers.mean(prob_list)
-            delta = fluid.layers.mean(delta_list)
-            proposal = fluid.layers.mean(proposal_list)
-            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
+            bbox_prob = paddle.mean(prob_list)
+            delta = paddle.mean(delta_list)
+            proposal = paddle.mean(proposal_list)
+            delta = paddle.reshape(delta, (-1, self.out_dim, 4))
             if self.cls_agnostic:
                 delta = delta[:, 1:2, :]
-                delta = fluid.layers.expand(delta, [1, self.num_classes, 1])
+                delta = paddle.expand(delta, [1, self.num_classes, 1])
         bboxes = (proposal, proposal_num)
         bboxes, bbox_nums = self.decode_clip_nms(bboxes, bbox_prob, delta,
                                                  inputs['im_info'])
@@ -90,9 +92,9 @@ class BBoxPostProcessYOLO(object):
                                           self.num_classes, i)
 
             boxes_list.append(boxes)
-            scores_list.append(fluid.layers.transpose(scores, perm=[0, 2, 1]))
-        yolo_boxes = fluid.layers.concat(boxes_list, axis=1)
-        yolo_scores = fluid.layers.concat(scores_list, axis=2)
+            scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
+        yolo_boxes = paddle.concat(boxes_list, axis=1)
+        yolo_scores = paddle.concat(scores_list, axis=2)
         bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         # TODO: parse the lod of nmsed_bbox
         # default batch size is 1
@@ -122,21 +124,21 @@ class AnchorRPN(object):
         rpn_delta_list = []
         anchor_list = []
         for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_feats, anchors):
-            rpn_score = fluid.layers.transpose(rpn_score, perm=[0, 2, 3, 1])
-            rpn_delta = fluid.layers.transpose(rpn_delta, perm=[0, 2, 3, 1])
-            rpn_score = fluid.layers.reshape(x=rpn_score, shape=(0, -1, 1))
-            rpn_delta = fluid.layers.reshape(x=rpn_delta, shape=(0, -1, 4))
+            rpn_score = paddle.transpose(rpn_score, perm=[0, 2, 3, 1])
+            rpn_delta = paddle.transpose(rpn_delta, perm=[0, 2, 3, 1])
+            rpn_score = paddle.reshape(x=rpn_score, shape=(0, -1, 1))
+            rpn_delta = paddle.reshape(x=rpn_delta, shape=(0, -1, 4))
 
-            anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
-            var = fluid.layers.reshape(var, shape=(-1, 4))
+            anchor = paddle.reshape(anchor, shape=(-1, 4))
+            var = paddle.reshape(var, shape=(-1, 4))
 
             rpn_score_list.append(rpn_score)
             rpn_delta_list.append(rpn_delta)
             anchor_list.append(anchor)
 
-        rpn_scores = fluid.layers.concat(rpn_score_list, axis=1)
-        rpn_deltas = fluid.layers.concat(rpn_delta_list, axis=1)
-        anchors = fluid.layers.concat(anchor_list)
+        rpn_scores = paddle.concat(rpn_score_list, axis=1)
+        rpn_deltas = paddle.concat(rpn_delta_list, axis=1)
+        anchors = paddle.concat(anchor_list)
         return rpn_scores, rpn_deltas, anchors
 
     def generate_loss_inputs(self, inputs, rpn_head_out, anchors):
@@ -199,7 +201,7 @@ class Proposal(object):
         rpn_rois_num_list = []
         for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_head_out,
                                                          anchor_out):
-            rpn_prob = fluid.layers.sigmoid(rpn_score)
+            rpn_prob = F.sigmoid(rpn_score)
             rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = self.proposal_generator(
                 scores=rpn_prob,
                 bbox_deltas=rpn_delta,
@@ -215,7 +217,7 @@ class Proposal(object):
 
         start_level = 2
         end_level = start_level + len(rpn_head_out)
-        rois_collect, rois_num_collect = fluid.layers.collect_fpn_proposals(
+        rois_collect, rois_num_collect = F.collect_fpn_proposals(
             rpn_rois_list,
             rpn_prob_list,
             start_level,
@@ -245,11 +247,11 @@ class Proposal(object):
 
     def refine_bbox(self, rois, bbox_delta, stage=0):
         out_dim = bbox_delta.shape[1] / 4
-        bbox_delta_r = fluid.layers.reshape(bbox_delta, (-1, out_dim, 4))
-        bbox_delta_s = fluid.layers.slice(
+        bbox_delta_r = paddle.reshape(bbox_delta, (-1, out_dim, 4))
+        bbox_delta_s = paddle.slice(
             bbox_delta_r, axes=[1], starts=[1], ends=[2])
 
-        refined_bbox = fluid.layers.box_coder(
+        refined_bbox = F.box_coder(
             prior_box=rois,
             prior_box_var=self.proposal_target_generator.bbox_reg_weights[
                 stage],
@@ -257,7 +259,7 @@ class Proposal(object):
             code_type='decode_center_size',
             box_normalized=False,
             axis=1)
-        refined_bbox = fluid.layers.reshape(refined_bbox, shape=[-1, 4])
+        refined_bbox = paddle.reshape(refined_bbox, shape=[-1, 4])
         return refined_bbox
 
     def __call__(self,

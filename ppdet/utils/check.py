@@ -18,8 +18,8 @@ from __future__ import print_function
 
 import sys
 
-import paddle.fluid as fluid
-
+import paddle
+from paddle import fluid
 import logging
 import six
 import paddle.version as fluid_version
@@ -65,9 +65,13 @@ def check_version(version='1.7.0'):
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))
+    flag = False
     for i in six.moves.range(length):
-        if version_installed[i] < version_split[i]:
-            raise Exception(err)
+        if version_installed[i] > version_split[i]:
+            flag = True
+            break
+    if not flag:
+        raise Exception(err)
 
 
 def check_config(cfg):
