@@ -82,6 +82,12 @@ Training PP-YOLO on 8 GPUs with following command(all commands should be run und
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppyolo.yml --eval
 ```
 
+optional: Run `tools/anchor_cluster.py` to get anchors suitable for your dataset, and modify the anchor setting in `configs/ppyolo/ppyolo.yml`.
+
+``` bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -m v2 -i 1000
+```
+
 ### 2. Evaluation
 
 Evaluating PP-YOLO on COCO val2017 dataset in single GPU with following commands:

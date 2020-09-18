@@ -21,6 +21,21 @@
 - label_smooth
 - grid_sensitive
 
+目前支持YOLO系列的Anchor聚类算法
+``` bash
+python tools/anchor_cluster.py -c ${config} -m ${method} -s ${size}
+```
+主要参数配置参考下表
+|    参数    |    用途    |    默认值    |    备注    |
+|:------:|:------:|:------:|:------:|
+| -c/--config | 模型的配置文件 | 无默认值 | 必须指定 |
+| -n/--n | 聚类的簇数 | 9 | Anchor的数目 |
+| -s/--size | 图片的输入尺寸 | None | 若指定，则使用指定的尺寸，如果不指定, 则尝试从配置文件中读取图片尺寸 |
+|  -m/--method  |  使用的Anchor聚类方法  |  v2  |  目前只支持yolov2/v5的聚类算法  |
+|  -i/--iters  |  kmeans聚类算法的迭代次数  |  1000  | kmeans算法收敛或者达到迭代次数后终止 |
+| -gi/--gen_iters |  遗传算法的迭代次数  | 1000 |  该参数只用于yolov5的Anchor聚类算法  |
+| -t/--thresh|  Anchor尺度的阈值  | 0.25 | 该参数只用于yolov5的Anchor聚类算法 |
+
 ## 模型库
 下表中展示了当前支持的网络结构。
 
