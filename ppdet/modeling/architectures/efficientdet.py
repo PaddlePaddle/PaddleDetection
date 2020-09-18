@@ -64,7 +64,7 @@ class EfficientDet(object):
         mixed_precision_enabled = mixed_precision_global_state() is not None
         if mixed_precision_enabled:
             im = fluid.layers.cast(im, 'float16')
-        body_feats = self.backbone(im, mode)
+        body_feats = self.backbone(im)
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(f, 'float32') for f in body_feats]
         body_feats = self.fpn(body_feats)

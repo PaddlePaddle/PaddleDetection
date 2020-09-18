@@ -83,9 +83,7 @@ class BiFPNCell(object):
             default_initializer=fluid.initializer.Constant(1.))
         self.eps = 1e-4
 
-    def __call__(self, inputs, cell_name='', is_first_time=False, p4_2_p5_2=[]):
-        assert len(inputs) == self.levels
-        assert ((is_first_time) and (len(p4_2_p5_2) != 0)) or ((not is_first_time) and (len(p4_2_p5_2) == 0))
+    def __call__(self, inputs, cell_name=''):
 
         def upsample(feat):
             return fluid.layers.resize_nearest(feat, scale=2.)
@@ -108,7 +106,8 @@ class BiFPNCell(object):
         bigates /= fluid.layers.reduce_sum(
             bigates, dim=1, keep_dim=True) + self.eps
 
-        feature_maps = list(inputs)  # make a copy        # top down path
+        # top down path
+        feature_maps = list(inputs[:self.levels])  # make a copy
         for l in range(self.levels - 1):
             p = self.levels - l - 2
             w1 = fluid.layers.slice(
@@ -133,7 +132,8 @@ class BiFPNCell(object):
                 feature_maps[p] = fuse_conv(
                     w1 * below + w2 * inputs[p], name=name)
             else:
-                if is_first_time:
+                # For the first loop in BiFPN
+                if len(inputs) != self.levels:
                     if p < self.inputs_layer_num:
                         w1 = fluid.layers.slice(
                             trigates, axes=[0, 1], starts=[p - 1, 0], ends=[p, 1])
@@ -141,7 +141,7 @@ class BiFPNCell(object):
                             trigates, axes=[0, 1], starts=[p - 1, 1], ends=[p, 2])
                         w3 = fluid.layers.slice(trigates, axes=[0, 1], starts=[p - 1, 2], ends=[p, 3])
                         feature_maps[p] = fuse_conv(
-                            w1 * feature_maps[p] + w2 * below + w3 * p4_2_p5_2[p - 1], name=name)
+                            w1 * feature_maps[p] + w2 * below + w3 * inputs[p - 1 + self.levels], name=name)
                     else:  # For P6"
                         w1 = fluid.layers.slice(
                             trigates, axes=[0, 1], starts=[p - 1, 0], ends=[p, 1])
@@ -233,7 +233,6 @@ class BiFPN(object):
                 name='resample_downsample_{}'.format(idx))
             feats.append(feat)
         # Handle the p4_2 and p5_2 with another 1x1 conv & bn layer
-        p4_2_p5_2 = []
         for idx in range(1, len(inputs)):
             feat = fluid.layers.conv2d(
                 inputs[idx],
@@ -250,13 +249,10 @@ class BiFPN(object):
                 param_attr=ParamAttr(initializer=Constant(1.0), regularizer=L2Decay(0.)),
                 bias_attr=ParamAttr(regularizer=L2Decay(0.)),
                 name='resample2_bn_{}'.format(idx))
-            p4_2_p5_2.append(feat)
+            feats.append(feat)
 
         biFPN = BiFPNCell(self.num_chan, self.levels, len(inputs))
         for r in range(self.repeat):
-            if r == 0:
-                feats = biFPN(feats, cell_name='bifpn_{}'.format(r), is_first_time=True, p4_2_p5_2=p4_2_p5_2)
-            else:
                 feats = biFPN(feats, cell_name='bifpn_{}'.format(r))
 
         return feats
