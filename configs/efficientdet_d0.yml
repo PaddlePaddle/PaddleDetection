@@ -39,7 +39,7 @@ EfficientHead:
   output_decoder:
     score_thresh: 0.0
     nms_thresh: 0.5
-    pre_nms_top_n: 5000
+    pre_nms_top_n: 1000  # originally 5000
     detections_per_im: 100
     nms_eta: 1.0
 
