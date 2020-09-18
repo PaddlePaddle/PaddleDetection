@@ -27,6 +27,11 @@ import xml.etree.ElementTree as ET
 from tqdm import tqdm
 import re
 
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+
 
 def main():
     """
@@ -49,13 +54,16 @@ def main():
         default='output/label_list.txt')
 
     args = parser.parse_args()
+    args.dataset_type = args.dataset_type.lower()
+    assert args.dataset_type in ['coco', 'voc']
 
-    if args.dataset_type == 'coco' or args.dataset_type == 'COCO':
+    if args.dataset_type == 'coco':
         assert args.dataset_type and args.json_path
         try:
             assert os.path.exists(args.json_path)
         except AssertionError as e:
-            print('The json file: {} does not exist!'.format(args.json_path))
+            logger.error('The json file: {} does not exist!'.format(
+                args.json_path))
             os._exit(0)
 
         anno = json.load(open(args.json_path))
@@ -66,12 +74,12 @@ def main():
                 f.write(cat + '\n')
         print('lable_list file: {} create done!'.format(args.outfile_path))
 
-    if args.dataset_type == 'voc' or args.dataset_type == 'VOC':
+    if args.dataset_type == 'voc':
         assert args.dataset_type and args.xml_dir
         try:
             assert os.path.exists(args.xml_dir)
         except AssertionError as e:
-            print('The xml_dir: {} does not exist!'.format(args.xml_dir))
+            logger.error('The xml_dir: {} does not exist!'.format(args.xml_dir))
             os._exit(0)
 
         categories_list = set()
@@ -89,7 +97,8 @@ def main():
         with open(args.outfile_path, 'w') as f:
             for cat in categories_list:
                 f.write(cat + '\n')
-        print('lable_list file: {} create done!'.format(args.outfile_path))
+        logger.info('lable_list file: {} create done!'.format(
+            args.outfile_path))
 
 
 if __name__ == '__main__':
