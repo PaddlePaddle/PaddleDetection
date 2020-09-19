@@ -108,7 +108,7 @@ def bbox_eval(results,
     detection_map.accumulate()
     map_stat = 100. * detection_map.get_map()
     logger.info("mAP({:.2f}, {}) = {:.2f}%".format(overlap_thresh, map_type,
-                                                  map_stat))
+                                                   map_stat))
     return map_stat
 
 
