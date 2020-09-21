@@ -6,8 +6,9 @@
     - [将数据集转换为VOC格式](#方式二将数据集转换为VOC格式)
     - [添加新数据源](#方式三添加新数据源)
 - [2.选择模型](#2选择模型)
-- [3.修改参数配置](#3修改参数配置)
-- [4.开始训练与部署](#4开始训练与部署)
+- [3.生成Anchor](#3生成Anchor)
+- [4.修改参数配置](#4修改参数配置)
+- [5.开始训练与部署](#5开始训练与部署)
 - [附：一个自定义数据集demo](#附一个自定义数据集demo)
 
 ## 1.准备数据
@@ -97,8 +98,23 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 同时也可以尝试PaddleDetection中开发的[YOLOv3增强模型](../featured_model/YOLOv3_ENHANCEMENT.md)、[YOLOv4模型](../featured_model/YOLO_V4.md)与[Anchor Free模型](../featured_model/ANCHOR_FREE_DETECTION.md)等。
 
 
+## 3.生成Anchor
+在yolo系列模型中，可以运行`tools/anchor_cluster.py`来得到适用于你的数据集Anchor，使用方法如下：
+``` bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
+```
+目前`tools/anchor_cluster.py`支持的主要参数配置如下表所示：
+|    参数    |    用途    |    默认值    |    备注    |
+|:------:|:------:|:------:|:------:|
+| -c/--config | 模型的配置文件 | 无默认值 | 必须指定 |
+| -n/--n | 聚类的簇数 | 9 | Anchor的数目 |
+| -s/--size | 图片的输入尺寸 | None | 若指定，则使用指定的尺寸，如果不指定, 则尝试从配置文件中读取图片尺寸 |
+|  -m/--method  |  使用的Anchor聚类方法  |  v2  |  目前只支持yolov2/v5的聚类算法  |
+|  -i/--iters  |  kmeans聚类算法的迭代次数  |  1000  | kmeans算法收敛或者达到迭代次数后终止 |
+| -gi/--gen_iters |  遗传算法的迭代次数  | 1000 |  该参数只用于yolov5的Anchor聚类算法  |
+| -t/--thresh|  Anchor尺度的阈值  | 0.25 | 该参数只用于yolov5的Anchor聚类算法 |
 
-## 3.修改参数配置
+## 4.修改参数配置
 
 选择好模型后，需要在`configs`目录中找到对应的配置文件，为了适配在自定义数据集上训练，需要对参数配置做一些修改：
 
@@ -133,7 +149,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 
 - 预训练模型配置：通过在yaml配置文件中的`pretrain_weights: path/to/weights`参数可以配置路径，可以是链接或权重文件路径。可直接沿用配置文件中给出的在ImageNet数据集上的预训练模型。同时我们支持训练在COCO或Obj365数据集上的模型权重作为预训练模型，做迁移学习，详情可参考[迁移学习文档](../advanced_tutorials/TRANSFER_LEARNING_cn.md)。
 
-## 4.开始训练与部署
+## 5.开始训练与部署
 
 - 参数配置完成后，就可以开始训练模型了，具体可参考[训练/评估/预测](GETTING_STARTED_cn.md)入门文档。
 - 训练测试完成后，根据需要可以进行模型部署：首先需要导出可预测的模型，可参考[导出模型教程](../advanced_tutorials/deploy/EXPORT_MODEL.md)；导出模型后就可以进行[C++预测部署](../advanced_tutorials/deploy/DEPLOY_CPP.md)或者[python端预测部署](../advanced_tutorials/deploy/DEPLOY_PY.md)。
