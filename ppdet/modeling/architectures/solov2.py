@@ -36,24 +36,25 @@ class SOLOv2(object):
         fpn (object): feature pyramid network instance
         bbox_head (object): an `SOLOv2Head` instance
         mask_head (object): an `SOLOv2MaskHead` instance
-        batch_size (int): batch size.
+        train_batch_size (int): training batch size.
     """
 
     __category__ = 'architecture'
     __inject__ = ['backbone', 'fpn', 'bbox_head', 'mask_head']
+    __shared__ = ['train_batch_size']
 
     def __init__(self,
                  backbone,
                  fpn=None,
                  bbox_head='SOLOv2Head',
                  mask_head='SOLOv2MaskHead',
-                 batch_size=1):
+                 train_batch_size=1):
         super(SOLOv2, self).__init__()
         self.backbone = backbone
         self.fpn = fpn
         self.bbox_head = bbox_head
         self.mask_head = mask_head
-        self.batch_size = batch_size
+        self.train_batch_size = train_batch_size
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
@@ -79,6 +80,8 @@ class SOLOv2(object):
 
         if not mode == 'train':
             self.batch_size = 1
+        else:
+            self.batch_size = self.train_batch_size
 
         mask_feat_pred = self.mask_head.get_output(body_feats, self.batch_size)
 
@@ -103,9 +106,10 @@ class SOLOv2(object):
             cate_preds, kernel_preds = self.bbox_head.get_outputs(
                 body_feats, batch_size=self.batch_size)
 
-            losses = self.bbox_head.get_loss(
-                cate_preds, kernel_preds, mask_feat_pred, ins_labels,
-                cate_labels, grid_orders, fg_num, grid_offset, self.batch_size)
+            losses = self.bbox_head.get_loss(cate_preds, kernel_preds,
+                                             mask_feat_pred, ins_labels,
+                                             cate_labels, grid_orders, fg_num,
+                                             grid_offset, self.train_batch_size)
             total_loss = fluid.layers.sum(list(losses.values()))
             losses.update({'loss': total_loss})
             return losses
