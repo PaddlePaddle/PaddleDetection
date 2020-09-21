@@ -130,9 +130,8 @@ TrainReader:
   shuffle: true
   mixup_epoch: 500
   drop_last: true
-  worker_num: 16
-  bufsize: 16
-  memsize: 8G
+  worker_num: 8
+  bufsize: 4
   use_process: true
 
 EvalReader:
