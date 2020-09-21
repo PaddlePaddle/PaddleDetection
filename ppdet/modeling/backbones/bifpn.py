@@ -206,7 +206,6 @@ class BiFPN(object):
             feats.append(feat)
         # Build additional input features that are not from backbone.
         # P_7 layer we just use pool2d without conv layer & bn, for the same channel with P_6.
-        # https://github.com/google/automl/blob/master/efficientdet/keras/efficientdet_keras.py#L820
         for idx in range(len(inputs), self.levels):
             if feats[-1].shape[1] != self.num_chan:
                 feat = fluid.layers.conv2d(
