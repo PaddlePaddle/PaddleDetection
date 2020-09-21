@@ -32,17 +32,17 @@ class YOLOv3Loss(object):
     Combined loss for YOLOv3 network
 
     Args:
-        batch_size (int): training batch size
+        train_batch_size (int): training batch size
         ignore_thresh (float): threshold to ignore confidence loss
         label_smooth (bool): whether to use label smoothing
         use_fine_grained_loss (bool): whether use fine grained YOLOv3 loss
                                       instead of fluid.layers.yolov3_loss
     """
     __inject__ = ['iou_loss', 'iou_aware_loss']
-    __shared__ = ['use_fine_grained_loss']
+    __shared__ = ['use_fine_grained_loss', 'train_batch_size']
 
     def __init__(self,
-                 batch_size=8,
+                 train_batch_size=8,
                  ignore_thresh=0.7,
                  label_smooth=True,
                  use_fine_grained_loss=False,
@@ -51,7 +51,7 @@ class YOLOv3Loss(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.,
                  match_score=False):
-        self._batch_size = batch_size
+        self._train_batch_size = train_batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
         self._use_fine_grained_loss = use_fine_grained_loss
@@ -65,7 +65,7 @@ class YOLOv3Loss(object):
                  anchor_masks, mask_anchors, num_classes, prefix_name):
         if self._use_fine_grained_loss:
             return self._get_fine_grained_loss(
-                outputs, targets, gt_box, self._batch_size, num_classes,
+                outputs, targets, gt_box, self._train_batch_size, num_classes,
                 mask_anchors, self._ignore_thresh)
         else:
             losses = []
@@ -95,7 +95,7 @@ class YOLOv3Loss(object):
                                outputs,
                                targets,
                                gt_box,
-                               batch_size,
+                               train_batch_size,
                                num_classes,
                                mask_anchors,
                                ignore_thresh,
@@ -108,7 +108,7 @@ class YOLOv3Loss(object):
             targets ([Variables]): List of Variables, The targets for yolo
                                    loss calculatation.
             gt_box (Variable): The ground-truth boudding boxes.
-            batch_size (int): The training batch size
+            train_batch_size (int): The training batch size
             num_classes (int): class num of dataset
             mask_anchors ([[float]]): list of anchors in each output layer
             ignore_thresh (float): prediction bbox overlap any gt_box greater
@@ -171,7 +171,7 @@ class YOLOv3Loss(object):
             loss_h = fluid.layers.reduce_sum(loss_h, dim=[1, 2, 3])
             if self._iou_loss is not None:
                 loss_iou = self._iou_loss(x, y, w, h, tx, ty, tw, th, anchors,
-                                          downsample, self._batch_size,
+                                          downsample, self._train_batch_size,
                                           scale_x_y)
                 loss_iou = loss_iou * tscale_tobj
                 loss_iou = fluid.layers.reduce_sum(loss_iou, dim=[1, 2, 3])
@@ -180,14 +180,14 @@ class YOLOv3Loss(object):
             if self._iou_aware_loss is not None:
                 loss_iou_aware = self._iou_aware_loss(
                     ioup, x, y, w, h, tx, ty, tw, th, anchors, downsample,
-                    self._batch_size, scale_x_y)
+                    self._train_batch_size, scale_x_y)
                 loss_iou_aware = loss_iou_aware * tobj
                 loss_iou_aware = fluid.layers.reduce_sum(
                     loss_iou_aware, dim=[1, 2, 3])
                 loss_iou_awares.append(fluid.layers.reduce_mean(loss_iou_aware))
 
             loss_obj_pos, loss_obj_neg = self._calc_obj_loss(
-                output, obj, tobj, gt_box, self._batch_size, anchors,
+                output, obj, tobj, gt_box, self._train_batch_size, anchors,
                 num_classes, downsample, self._ignore_thresh, scale_x_y)
 
             loss_cls = fluid.layers.sigmoid_cross_entropy_with_logits(cls, tcls)
