@@ -135,6 +135,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
 - [Parameter configuration](docs/advanced_tutorials/config_doc):
   - [Introduction to the configuration workflow](docs/advanced_tutorials/config_doc/CONFIG.md)
   - [Parameter configuration for RCNN model](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
+  - [Parameter configuration for YOLOv3 model](docs/advanced_tutorials/config_doc/yolov3_mobilenet_v1.md)
 - [IPython Notebook demo](demo/mask_rcnn_demo.ipynb)
 - [Model compression](slim)
     - [Model compression benchmark](slim)
