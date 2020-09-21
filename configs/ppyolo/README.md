@@ -85,7 +85,7 @@ CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppy
 optional: Run `tools/anchor_cluster.py` to get anchors suitable for your dataset, and modify the anchor setting in `configs/ppyolo/ppyolo.yml`.
 
 ``` bash
-python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -m v2 -i 1000
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
 ```
 
 ### 2. Evaluation
