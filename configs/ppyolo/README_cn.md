@@ -82,9 +82,9 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppyolo.yml --eval
 ```
-可选：在训练之前使用tools/anchor_cluster.py得到适用于你的数据集的anchor，并修改configs/ppyolo/ppyolo.yml中的anchor设置
+可选：在训练之前使用`tools/anchor_cluster.py`得到适用于你的数据集的anchor，并修改`configs/ppyolo/ppyolo.yml`中的anchor设置
 ```bash
-python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -m v2 -i 1000
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
 ```
 
 ### 2. 评估
