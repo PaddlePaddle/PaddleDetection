@@ -44,7 +44,6 @@ YOLOv3Head:
   drop_block: true
 
 YOLOv3Loss:
-  batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
   use_fine_grained_loss: true
