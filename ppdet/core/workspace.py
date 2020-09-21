@@ -97,6 +97,15 @@ def load_config(file_path):
         del cfg[READER_KEY]
 
     merge_config(cfg)
+
+    # NOTE: training batch size defined only in TrainReader, sychornized
+    #       batch size config to global, models can get batch size config
+    #       from global config when building model.
+    #       batch size in evaluation or inference can also be added here
+    if 'TrainReader' in global_config:
+        global_config['train_batch_size'] = global_config['TrainReader'][
+            'batch_size']
+
     return global_config
 
 
