@@ -41,7 +41,7 @@ class DataSet(object):
                  anno_path=None,
                  sample_num=-1,
                  with_background=True,
-                 use_default_label=None,
+                 use_default_label=False,
                  **kwargs):
         super(DataSet, self).__init__()
         self.anno_path = anno_path
@@ -117,7 +117,7 @@ class ImageFolder(DataSet):
                  anno_path=None,
                  sample_num=-1,
                  with_background=True,
-                 use_default_label=None,
+                 use_default_label=False,
                  **kwargs):
         super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
                                           sample_num, with_background,

@@ -78,6 +78,12 @@ DATASETS = {
         'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit.tar',
         'baa8806617a54ccf3685fa7153388ae6', ), ],
               ['Annotations', 'JPEGImages']),
+    'roadsign_voc': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar',
+        '8d629c0f880dd8b48de9aeff44bf1f3e', ), ], ['annotations', 'images']),
+    'roadsign_coco': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
+        '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
     'objects365': (),
 }
 
@@ -117,7 +123,7 @@ def get_dataset_path(path, annotation, image_dir):
                     "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
-            if name == 'voc' or name == 'fruit':
+            if name == 'voc' or name == 'fruit' or name == 'roadsign_voc':
                 exists = True
                 for sub_dir in dataset[1]:
                     check_dir = osp.join(data_dir, sub_dir)
@@ -129,7 +135,7 @@ def get_dataset_path(path, annotation, image_dir):
                     return data_dir
 
             # voc exist is checked above, voc is not exist here
-            check_exist = name != 'voc' and name != 'fruit'
+            check_exist = name != 'voc' and name != 'fruit' and name != 'roadsign_voc'
             for url, md5sum in dataset[0]:
                 get_path(url, data_dir, md5sum, check_exist)
 
@@ -139,10 +145,11 @@ def get_dataset_path(path, annotation, image_dir):
             return data_dir
 
     # not match any dataset in DATASETS
-    raise ValueError("Dataset {} is not valid and cannot parse dataset type "
-                     "'{}' for automaticly downloading, which only supports "
-                     "'voc' , 'coco', 'wider_face' and 'fruit' currently".
-                     format(path, osp.split(path)[-1]))
+    raise ValueError(
+        "Dataset {} is not valid and cannot parse dataset type "
+        "'{}' for automaticly downloading, which only supports "
+        "'voc' , 'coco', 'wider_face', 'fruit' and 'roadsign_voc' currently".
+        format(path, osp.split(path)[-1]))
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
@@ -232,13 +239,19 @@ def _dataset_exists(path, annotation, image_dir):
 
     if annotation:
         annotation_path = osp.join(path, annotation)
+        if not osp.exists(annotation_path):
+            logger.error("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isfile(annotation_path):
-            logger.debug("Config annotation {} is not a "
-                         "file, dataset config is not "
-                         "valid".format(annotation_path))
+            logger.warning("Config annotation {} is not a "
+                           "file, dataset config is not "
+                           "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
+        if not osp.exists(image_path):
+            logger.warning("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isdir(image_path):
             logger.warning("Config image_dir {} is not a "
                            "directory, dataset config is not "

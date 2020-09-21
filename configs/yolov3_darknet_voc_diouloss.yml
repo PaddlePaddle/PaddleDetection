@@ -36,7 +36,6 @@ YOLOv3Head:
     score_threshold: 0.01
 
 YOLOv3Loss:
-  batch_size: 8
   ignore_thresh: 0.7
   label_smooth: false
   iou_loss: DiouLossYolo
