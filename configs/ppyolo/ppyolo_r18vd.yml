@@ -39,7 +39,6 @@ YOLOv3Head:
   drop_block: true
 
 YOLOv3Loss:
-  batch_size: 32
   ignore_thresh: 0.7
   scale_x_y: 1.05
   label_smooth: false
