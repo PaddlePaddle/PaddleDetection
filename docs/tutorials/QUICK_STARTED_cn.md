@@ -59,9 +59,9 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 # -c 参数表示指定使用哪个配置文件
 # -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置）
 
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
+python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
-
+![](../images/visualdl_roadsign.png)
 
 ### 3、预测
 ```
