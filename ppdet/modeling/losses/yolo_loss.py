@@ -41,16 +41,18 @@ class YOLOv3Loss(object):
     __inject__ = ['iou_loss', 'iou_aware_loss']
     __shared__ = ['use_fine_grained_loss', 'train_batch_size']
 
-    def __init__(self,
-                 train_batch_size=8,
-                 ignore_thresh=0.7,
-                 label_smooth=True,
-                 use_fine_grained_loss=False,
-                 iou_loss=None,
-                 iou_aware_loss=None,
-                 downsample=[32, 16, 8],
-                 scale_x_y=1.,
-                 match_score=False):
+    def __init__(
+            self,
+            train_batch_size=8,
+            batch_size=8,  # stub for backward compatable
+            ignore_thresh=0.7,
+            label_smooth=True,
+            use_fine_grained_loss=False,
+            iou_loss=None,
+            iou_aware_loss=None,
+            downsample=[32, 16, 8],
+            scale_x_y=1.,
+            match_score=False):
         self._train_batch_size = train_batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
