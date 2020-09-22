@@ -20,7 +20,7 @@ map_type: integral
 # 模型配置文件和权重文件可参考[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md)
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
 # 模型保存文件夹，如果开启了--eval，会在这个文件夹下保存best_model
-weights: output/yolov3_mobilenet_v1_roadsign/
+weights: output/yolov3_mobilenet_v1_roadsign/best_model
 # ### 根据用户数据设置类别数，注意这里不含背景类
 num_classes: 4
 # finetune时忽略的参数，按照正则化匹配，匹配上的参数会被忽略掉
