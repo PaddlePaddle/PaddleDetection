@@ -43,6 +43,7 @@ class YOLOv3Loss(object):
 
     def __init__(self,
                  train_batch_size=8,
+                 batch_size=8, # stub for backward compatable
                  ignore_thresh=0.7,
                  label_smooth=True,
                  use_fine_grained_loss=False,
