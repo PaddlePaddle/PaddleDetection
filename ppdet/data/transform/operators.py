@@ -44,7 +44,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, gaussian_radius, draw_gaussian)
+                        is_poly, gaussian_radius, draw_gaussian, transform_bbox,
+                        clip_bbox)
 
 logger = logging.getLogger(__name__)
 
@@ -139,8 +140,8 @@ class DecodeImage(BaseOperator):
             sample['w'] = im.shape[1]
 
         # make default im_info with [h, w, 1]
-        sample['im_info'] = np.array(
-            [im.shape[0], im.shape[1], 1.], dtype=np.float32)
+        sample['im_info'] = np.array([im.shape[0], im.shape[1], 1.],
+                                     dtype=np.float32)
 
         # decode mixup image
         if self.with_mixup and 'mixup' in sample:
@@ -150,7 +151,7 @@ class DecodeImage(BaseOperator):
         if self.with_cutmix and 'cutmix' in sample:
             self.__call__(sample['cutmix'], context)
 
-        # decode semantic label 
+        # decode semantic label
         if 'semantic' in sample.keys() and sample['semantic'] is not None:
             sem_file = sample['semantic']
             sem = cv2.imread(sem_file, cv2.IMREAD_GRAYSCALE)
@@ -226,19 +227,18 @@ class MultiscaleTestResize(BaseOperator):
 
             resize_w = np.round(im_scale_x * float(im_shape[1]))
             resize_h = np.round(im_scale_y * float(im_shape[0]))
-            im_resize = cv2.resize(
-                origin_ims[base_name],
-                None,
-                None,
-                fx=im_scale_x,
-                fy=im_scale_y,
-                interpolation=self.interp)
+            im_resize = cv2.resize(origin_ims[base_name],
+                                   None,
+                                   None,
+                                   fx=im_scale_x,
+                                   fy=im_scale_y,
+                                   interpolation=self.interp)
 
             sample[base_name] = im_resize
             info_name = 'im_info' if base_name == 'image' else 'im_info_image_flip'
             sample[base_name] = im_resize
-            sample[info_name] = np.array(
-                [resize_h, resize_w, im_scale], dtype=np.float32)
+            sample[info_name] = np.array([resize_h, resize_w, im_scale],
+                                         dtype=np.float32)
             for i, size in enumerate(self.target_size):
                 im_scale = float(size) / float(im_size_min)
                 if np.round(im_scale * im_size_max) > self.max_size:
@@ -247,13 +247,12 @@ class MultiscaleTestResize(BaseOperator):
                 im_scale_y = im_scale
                 resize_w = np.round(im_scale_x * float(im_shape[1]))
                 resize_h = np.round(im_scale_y * float(im_shape[0]))
-                im_resize = cv2.resize(
-                    origin_ims[base_name],
-                    None,
-                    None,
-                    fx=im_scale_x,
-                    fy=im_scale_y,
-                    interpolation=self.interp)
+                im_resize = cv2.resize(origin_ims[base_name],
+                                       None,
+                                       None,
+                                       fx=im_scale_x,
+                                       fy=im_scale_y,
+                                       interpolation=self.interp)
 
                 im_info = [resize_h, resize_w, im_scale]
                 # hard-code here, must be consistent with
@@ -261,8 +260,8 @@ class MultiscaleTestResize(BaseOperator):
                 name = base_name + '_scale_' + str(i)
                 info_name = 'im_info_' + name
                 sample[name] = im_resize
-                sample[info_name] = np.array(
-                    [resize_h, resize_w, im_scale], dtype=np.float32)
+                sample[info_name] = np.array([resize_h, resize_w, im_scale],
+                                             dtype=np.float32)
         return sample
 
 
@@ -292,11 +291,11 @@ class ResizeImage(BaseOperator):
         self.use_cv2 = use_cv2
         if not (isinstance(target_size, int) or isinstance(target_size, list)):
             raise TypeError(
-                "Type of target_size is invalid. Must be Integer or List, now is {}".
-                format(type(target_size)))
+                "Type of target_size is invalid. Must be Integer or List, now is {}"
+                .format(type(target_size)))
         self.target_size = target_size
-        if not (isinstance(self.max_size, int) and isinstance(self.interp,
-                                                              int)):
+        if not (isinstance(self.max_size, int)
+                and isinstance(self.interp, int)):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def __call__(self, sample, context=None):
@@ -329,8 +328,8 @@ class ResizeImage(BaseOperator):
             resize_h = im_scale_y * float(im_shape[0])
             im_info = [resize_h, resize_w, im_scale]
             if 'im_info' in sample and sample['im_info'][2] != 1.:
-                sample['im_info'] = np.append(
-                    list(sample['im_info']), im_info).astype(np.float32)
+                sample['im_info'] = np.append(list(sample['im_info']),
+                                              im_info).astype(np.float32)
             else:
                 sample['im_info'] = np.array(im_info).astype(np.float32)
         else:
@@ -341,22 +340,20 @@ class ResizeImage(BaseOperator):
             resize_h = selected_size
 
         if self.use_cv2:
-            im = cv2.resize(
-                im,
-                None,
-                None,
-                fx=im_scale_x,
-                fy=im_scale_y,
-                interpolation=self.interp)
+            im = cv2.resize(im,
+                            None,
+                            None,
+                            fx=im_scale_x,
+                            fy=im_scale_y,
+                            interpolation=self.interp)
             if 'semantic' in sample.keys() and sample['semantic'] is not None:
                 semantic = sample['semantic']
-                semantic = cv2.resize(
-                    semantic.astype('float32'),
-                    None,
-                    None,
-                    fx=im_scale_x,
-                    fy=im_scale_y,
-                    interpolation=self.interp)
+                semantic = cv2.resize(semantic.astype('float32'),
+                                      None,
+                                      None,
+                                      fx=im_scale_x,
+                                      fy=im_scale_y,
+                                      interpolation=self.interp)
                 semantic = np.asarray(semantic).astype('int32')
                 semantic = np.expand_dims(semantic, 0)
                 sample['semantic'] = semantic
@@ -372,6 +369,7 @@ class ResizeImage(BaseOperator):
         sample['image'] = im
         return sample
 
+
 @register_op
 class ResizeAndKeepRatio(BaseOperator):
     def __init__(self, target_size, augment=False):
@@ -385,8 +383,9 @@ class ResizeAndKeepRatio(BaseOperator):
         r = self.target_size / max(h0, w0)
         if r != 1:
             interp = cv2.INTER_AREA if r < 1 and not self.augment else cv2.INTER_LINEAR
-            im = cv2.resize(im, (int(w0 * r), int(h0 * r)), interpolation=interp)
-        
+            im = cv2.resize(im, (int(w0 * r), int(h0 * r)),
+                            interpolation=interp)
+
         sample['image'] = im
         sample['im_size'] = [float(h0), float(w0)]
         sample['im_scale'] = [1. / r, 1. / r]
@@ -395,7 +394,13 @@ class ResizeAndKeepRatio(BaseOperator):
 
 @register_op
 class LetterBox(BaseOperator):
-    def __init__(self, target_size, rect=True, color=(114, 114, 114), auto=True, scaleFill=False, augment=True):
+    def __init__(self,
+                 target_size,
+                 rect=True,
+                 color=(114, 114, 114),
+                 auto=True,
+                 scaleFill=False,
+                 augment=True):
         super(LetterBox, self).__init__()
         if isinstance(target_size, int):
             target_size = (target_size, target_size)
@@ -405,7 +410,7 @@ class LetterBox(BaseOperator):
         self.scaleFill = scaleFill
         self.augment = augment
         self.rect = rect
-    
+
     def __call__(self, sample, context=None):
         im = sample['image']
         shape = im.shape[:2]
@@ -1331,8 +1336,8 @@ class MixupImage(BaseOperator):
         if factor <= 0.0:
             return sample['mixup']
         im = self._mixup_img(sample['image'], sample['mixup']['image'], factor)
-        gt_bbox1 = sample['gt_bbox'].reshape((-1, 4))
-        gt_bbox2 = sample['mixup']['gt_bbox'].reshape((-1, 4))
+        gt_bbox1 = sample['gt_bbox']
+        gt_bbox2 = sample['mixup']['gt_bbox']
         gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
         gt_class1 = sample['gt_class']
         gt_class2 = sample['mixup']['gt_class']
@@ -2616,7 +2621,9 @@ class DebugVisibleImage(BaseOperator):
                     x1 = round(keypoint[2 * j]).astype(np.int32)
                     y1 = round(keypoint[2 * j + 1]).astype(np.int32)
                     draw.ellipse(
-                        (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
+                        (x1, y1, x1 + 5, y1i + 5),
+                        fill='green',
+                        outline='green')
         save_path = os.path.join(self.output_dir, out_file_name)
         image.save(save_path, quality=95)
         return sample
