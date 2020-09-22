@@ -5,7 +5,7 @@ architecture: YOLOv3
 # 根据硬件选择是否使用GPU
 use_gpu: true
   # ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
-max_iters: 1200
+max_iters: 3600
 # log平滑参数，平滑窗口大小，会从取历史窗口中取log_smooth_window大小的loss求平均值
 log_smooth_window: 20
 # 模型保存文件夹
@@ -20,7 +20,7 @@ map_type: integral
 # 模型配置文件和权重文件可参考[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/MODEL_ZOO.md)
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
 # 模型保存文件夹，如果开启了--eval，会在这个文件夹下保存best_model
-weights: output/yolov3_mobilenet_v1_roadsign_coco_template/
+weights: output/yolov3_mobilenet_v1_roadsign/
 # ### 根据用户数据设置类别数，注意这里不含背景类
 num_classes: 4
 # finetune时忽略的参数，按照正则化匹配，匹配上的参数会被忽略掉
@@ -66,9 +66,6 @@ YOLOv3Head:
     score_threshold: 0.01
 
 YOLOv3Loss:
-  # 这里的batch_size与训练中的batch_size（即TrainReader.batch_size）不同.
-  # 仅且当use_fine_grained_loss=true时，计算Loss时使用，且必须要与TrainReader.batch_size设置成一样
-  batch_size: 8
   # 忽略样本的阈值 ignore_thresh
   ignore_thresh: 0.7
   # 是否使用label_smooth
@@ -87,8 +84,8 @@ LearningRate:
     milestones:
     # ### 参考 https://github.com/PaddlePaddle/PaddleDetection/blob/release/0.4/docs/FAQ.md#faq%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98
     # ### 8/12 11/12
-    - 800
-    - 1100
+    - 2400
+    - 3300
   # 在训练开始时，调低学习率为base_lr * start_factor，然后逐步增长到base_lr，这个过程叫学习率热身，按照以下公式更新学习率
   # linear_step = end_lr - start_lr
   # lr = start_lr + linear_step * (global_step / warmup_steps)
@@ -148,6 +145,8 @@ TrainReader:
       # 是否包含背景类，若with_background=true，num_classes需要+1
       # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
       with_background: false
+      # use_default_label=false, use label_list.txt
+      use_default_label: false
   sample_transforms:
     # 读取Image图像为numpy数组
     # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
@@ -233,6 +232,8 @@ EvalReader:
       # 是否包含背景类，若with_background=true，num_classes需要+1
       # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
       with_background: false
+      # use_default_label=false, use label_list.txt
+      use_default_label: false
   sample_transforms:
     # 读取Image图像为numpy数组
     # 可以选择将图片从BGR转到RGB，可以选择对一个batch中的图片做mixup增强
@@ -280,6 +281,8 @@ TestReader:
       # 是否包含背景类，若with_background=true，num_classes需要+1
       # YOLO 系列with_background必须是false，FasterRCNN系列是true ###
       with_background: false
+      # use_default_label=false, use label_list.txt
+      use_default_label: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True
