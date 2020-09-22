@@ -25,7 +25,7 @@ python dataset/roadsign_voc/download_roadsign_voc.py
 ## 三、训练、评估、预测
 ### 1、训练
 ```
-# 边训练边测试 CPU需要约1小时(use_gpu=false)，1080Ti GPU需要约5分钟。
+# 边训练边测试，GPU硬件下训练过程约在半小时内结束
 # -c 参数表示指定使用哪个配置文件
 # -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），这里设置使用gpu，
 # --eval 参数表示边训练边评估，会自动保存一个评估结果最好的名为best_model.pdmodel的模型
@@ -53,6 +53,8 @@ python -u tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml \
 visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
+![](../images/visualdl_roadsign.png)
+
 ### 2、评估
 ```
 # 评估 默认使用训练过程中保存的best_model
@@ -61,7 +63,6 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 
 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
-![](../images/visualdl_roadsign.png)
 
 ### 3、预测
 ```
