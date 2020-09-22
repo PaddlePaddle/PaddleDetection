@@ -12,22 +12,27 @@ TrainReader:
   sample_transforms:
     - !DecodeImage
       to_rgb: True
-      # with_mosaic: True
-    # - !MosaicImage
-    #   offset: 0.3
-    #   mosaic_scale: [0.8, 1.0]
-    #   sample_scale: [0.8, 1.0]
-    #   sample_flip: 0.5
-    #   use_cv2: true
-    #   interp: 2
-    - !NormalizeBox {}
+      with_mosaic: True
+    - !Mosaic
+      target_size: 640
+    - !RandomPerspective
+      degree: 0
+      translate: 0.1
+      scale: 0.5
+      shear: 0.0
+      perspective: 0.0
+      border: [-320, -320]
+    - !RandomFlipImage
+      prob: 0.5
+      is_normalized: false
+    - !RandomHSV
+      hgain: 0.015
+      sgain: 0.7
+      vgain: 0.4
     - !PadBox
       num_max_boxes: 50
     - !BboxXYXY2XYWH {}
   batch_transforms:
-    - !RandomShape
-      sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640]
-      random_inter: True
     - !NormalizeImage
       mean: [0.0, 0.0, 0.0]
       std: [1.0, 1.0, 1.0]
@@ -37,10 +42,6 @@ TrainReader:
       to_bgr: false
       channel_first: True
       # focus: false
-    - !Gt2YoloTarget
-      anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-      anchors: [[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
-            [59, 119], [116, 90], [156, 198], [373, 326]]
       downsample_ratios: [8, 16, 32]
   batch_size: 2
   mosaic_prob: 0.3
@@ -49,6 +50,9 @@ TrainReader:
   drop_last: true
   worker_num: 8
   bufsize: 16
+  target_size: 640
+  rect: false
+  pad: 0.5
   use_process: true
 
 EvalReader:

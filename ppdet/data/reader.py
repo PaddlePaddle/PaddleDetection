@@ -21,6 +21,7 @@ import copy
 import functools
 import collections
 import traceback
+import random
 import numpy as np
 import logging
 
@@ -209,7 +210,8 @@ class Reader(object):
                  memsize='3G',
                  inputs_def=None,
                  devices_num=1,
-                 num_trainers=1):
+                 num_trainers=1,
+                 mosaic=False):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
         if rect:
@@ -219,9 +221,9 @@ class Reader(object):
             s = []
             for i, rec in enumerate(self._roidbs):
                 s.append([rec['h'], rec['w']])
-            
+
             s = np.array(s)
-            ar = s[:, 0] / s[:, 1] # h / w
+            ar = s[:, 0] / s[:, 1]  # h / w
             irect = ar.argsort()
             ar = ar[irect]
 
@@ -233,15 +235,18 @@ class Reader(object):
                     shapes[i] = [maxi, 1]
                 elif mini > 1:
                     shapes[i] = [1, 1 / mini]
-            
-            batch_shapes = np.ceil(np.array(shapes) * target_size / stride + pad) * stride
+
+            batch_shapes = np.ceil(
+                np.array(shapes) * target_size / stride + pad) * stride
             new_roidbs = [self._roidbs[j] for j in irect]
             self._roidbs = new_roidbs
             for i, j in enumerate(bi):
-                self._roidbs[i].update({'new_shape': batch_shapes[j]})            
-                
+                self._roidbs[i].update({'new_shape': batch_shapes[j]})
+
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
+
+        self.mosaic = mosaic
 
         # transform
         self._sample_transforms = Compose(sample_transforms,
@@ -386,6 +391,17 @@ class Reader(object):
 
             if self._load_img:
                 sample['image'] = self._load_image(sample['im_file'])
+
+            if self.mosaic:
+                sample['mosaic'] = []
+                for idx in [
+                        random.randint(0, len(self.indexes) - 1)
+                        for _ in range(3)
+                ]:
+                    rec = copy.deepcopy(self._roidbs[idx])
+                    if self._load_img:
+                        rec['image'] = self._load_image(rec['im_file'])
+                    sample['mosaic'].append(rec)
 
             if self._epoch < self._mixup_epoch:
                 num = len(self.indexes)
