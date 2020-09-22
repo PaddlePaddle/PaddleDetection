@@ -2551,9 +2551,7 @@ class DebugVisibleImage(BaseOperator):
                     x1 = round(keypoint[2 * j]).astype(np.int32)
                     y1 = round(keypoint[2 * j + 1]).astype(np.int32)
                     draw.ellipse(
-                        (x1, y1, x1 + 5, y1i + 5),
-                        fill='green',
-                        outline='green')
+                        (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
         save_path = os.path.join(self.output_dir, out_file_name)
         image.save(save_path, quality=95)
         return sample
