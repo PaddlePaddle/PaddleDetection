@@ -67,7 +67,8 @@ class YOLOv3Loss(object):
         self.match_score = match_score
 
         if batch_size != -1:
-            logger.warn("config YOLOv3Loss.batch_size is deprecated, "
+            logger.warn(
+                "config YOLOv3Loss.batch_size is deprecated, "
                 "training batch size should be set by TrainReader.batch_size")
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
