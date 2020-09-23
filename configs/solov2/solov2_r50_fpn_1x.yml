@@ -14,7 +14,6 @@ SOLOv2:
   fpn: FPN
   bbox_head: SOLOv2Head
   mask_head: SOLOv2MaskHead
-  batch_size: 2
 
 ResNet:
   depth: 50
