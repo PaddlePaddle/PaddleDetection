@@ -464,12 +464,24 @@ def gaussian2D(shape, sigma_x=1, sigma_y=1):
     return h
 
 
-def transform_bbox(bbox, M, w, h, area_thr=0.25, perspective=False):
+def transform_bbox(bbox,
+                   label,
+                   M,
+                   w,
+                   h,
+                   area_thr=0.25,
+                   wh_thr=2,
+                   ar_thr=20,
+                   perspective=False):
+    """
+    Transfrom bbox according to tranformation matrix M
+    """
     # rotate bbox
     n = len(bbox)
     xy = np.ones((n * 4, 3), dtype=np.float32)
     xy[:, :2] = bbox[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)
-    xy = xy @ M.T
+    # xy = xy @ M.T
+    xy = np.matmul(xy, M.T)
     if perspective:
         xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)
     else:
@@ -477,12 +489,18 @@ def transform_bbox(bbox, M, w, h, area_thr=0.25, perspective=False):
     # get new bboxes
     x = xy[:, [0, 2, 4, 6]]
     y = xy[:, [1, 3, 5, 7]]
-    new_bbox = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+    new_bbox = np.concatenate(
+        (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
     # clip boxes
-    new_bbox = clip_bbox(new_bbox, w, h, area_thr)
-    return new_bbox
+    new_bbox, mask = clip_bbox(new_bbox, w, h, area_thr)
+    new_label = label[mask]
+    return new_bbox, new_label
 
-def clip_bbox(bbox, w, h, area_thr=0.25):
+
+def clip_bbox(bbox, w, h, area_thr=0.25, wh_thr=2, ar_thr=20):
+    """
+    clip bbox according to w and h
+    """
     # clip boxes
     area1 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
     bbox[:, [0, 2]] = bbox[:, [0, 2]].clip(0, w)
@@ -490,6 +508,10 @@ def clip_bbox(bbox, w, h, area_thr=0.25):
     # compute
     area2 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
     area_ratio = area2 / (area1 + 1e-16)
-    mask = area_ratio > self.area_thr
+    wh = bbox[:, 2:4] - bbox[:, 0:2]
+    ar_ratio = np.maximum(wh[:, 1] / (wh[:, 0] + 1e-16),
+                          wh[:, 0] / (wh[:, 1] + 1e-16))
+    mask = (area_ratio > area_thr) & (
+        (wh > wh_thr).all(1)) & (ar_ratio < ar_thr)
     bbox = bbox[mask]
-    return bbox
+    return bbox, mask
