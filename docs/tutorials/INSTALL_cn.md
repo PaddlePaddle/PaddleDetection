@@ -5,7 +5,7 @@
 
 - [简介](#简介)
 - [安装PaddlePaddle](#安装PaddlePaddle)
-- [其他依赖安装](#其他依赖安装)
+- [安装COCO-API](#安装COCO-API)
 - [PaddleDetection](#PaddleDetection)
 
 
@@ -64,28 +64,49 @@ python -c "import paddle; print(paddle.__version__)"
 ```
 
 
-## 其他依赖安装
+## 安装COCO-API
 
-[COCO-API](https://github.com/cocodataset/cocoapi):
+`PaddleDetection`在评估时若使用COCO评估标准，则需要安装[COCO-API](https://github.com/cocodataset/cocoapi) ，安装方式如下：
 
-运行需要COCO-API，安装方式如下：
-
-    # 安装pycocotools
+    # 安装pycocotools。若使用了虚拟环境，请使用虚拟环境中的pip，或者指定pip绝对路径进行安装
     pip install pycocotools
 
-**windows用户安装COCO-API方式：**
+**如果windows用户按照上面方式安装COCO-API出错，可参考以下方式：**
 
+- 安装 pycocotools-windows
+    ```
+    # pip install pycocotools-windows
+    pip install pycocotools-windows
+    ```
+
+    - 如果您遇到ssl问题，请参考[conda issue #8273](https://github.com/conda/conda/issues/8273)  
+    - 如果您的网络无法下载安装包：  
+        - 设置pip源[pip issue #1736](https://github.com/pypa/pip/issues/1736) 。  
+        - 将安装包下载到本地安装。从[pycocotools-windows](https://pypi.org/project/pycocotools-windows/#files) 下载对应安装包，在本地安装：  
+        ```
+        # 例如安装 pycocotools_windows-2.0.0.2-cp37-cp37m-win_amd64.whl
+        pip install pycocotools_windows-2.0.0.2-cp37-cp37m-win_amd64.whl
+        ```
+
+- 从`pycocotools`源码安装
+    ```
     # 若Cython未安装，请安装Cython
     pip install Cython
 
     # 由于原版cocoapi不支持windows，采用第三方实现版本，该版本仅支持Python3
     pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
+    ```
+
+安装完成后，验证是否安装成功：
+```
+python -c "import pycocotools"
+```
 
 ## PaddleDetection
 
 **安装Python依赖库：**
 
-Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
+Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt) 中给出，可通过如下命令安装：
 
 ```
 pip install -r requirements.txt
@@ -134,4 +155,4 @@ python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https
 
 结果如下图：
 
-![](../images/000000014439_640x640.jpg)
+![](../images/000000014439.jpg)
