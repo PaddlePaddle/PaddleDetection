@@ -61,10 +61,7 @@ def is_overlap(object_bbox, sample_bbox):
         return True
 
 
-def filter_and_process(sample_bbox,
-                       bboxes,
-                       labels,
-                       scores=None,
+def filter_and_process(sample_bbox, bboxes, labels, scores=None,
                        keypoints=None):
     new_bboxes = []
     new_labels = []
@@ -95,8 +92,8 @@ def filter_and_process(sample_bbox,
                 for j in range(len(sample_keypoint)):
                     kp_len = sample_height if j % 2 else sample_width
                     sample_coord = sample_bbox[1] if j % 2 else sample_bbox[0]
-                    sample_keypoint[j] = (sample_keypoint[j] -
-                                          sample_coord) / kp_len
+                    sample_keypoint[j] = (
+                        sample_keypoint[j] - sample_coord) / kp_len
                     sample_keypoint[j] = max(min(sample_keypoint[j], 1.0), 0.0)
                 new_keypoints.append(sample_keypoint)
                 new_kp_ignore.append(keypoints[1][i])
@@ -264,12 +261,12 @@ def jaccard_overlap(sample_bbox, object_bbox):
     intersect_ymin = max(sample_bbox[1], object_bbox[1])
     intersect_xmax = min(sample_bbox[2], object_bbox[2])
     intersect_ymax = min(sample_bbox[3], object_bbox[3])
-    intersect_size = (intersect_xmax - intersect_xmin) * (intersect_ymax -
-                                                          intersect_ymin)
+    intersect_size = (intersect_xmax - intersect_xmin) * (
+        intersect_ymax - intersect_ymin)
     sample_bbox_size = bbox_area(sample_bbox)
     object_bbox_size = bbox_area(object_bbox)
-    overlap = intersect_size / (sample_bbox_size + object_bbox_size -
-                                intersect_size)
+    overlap = intersect_size / (
+        sample_bbox_size + object_bbox_size - intersect_size)
     return overlap
 
 
@@ -279,10 +276,8 @@ def intersect_bbox(bbox1, bbox2):
         intersection_box = [0.0, 0.0, 0.0, 0.0]
     else:
         intersection_box = [
-            max(bbox1[0], bbox2[0]),
-            max(bbox1[1], bbox2[1]),
-            min(bbox1[2], bbox2[2]),
-            min(bbox1[3], bbox2[3])
+            max(bbox1[0], bbox2[0]), max(bbox1[1], bbox2[1]),
+            min(bbox1[2], bbox2[2]), min(bbox1[3], bbox2[3])
         ]
     return intersection_box
 
@@ -406,8 +401,8 @@ def crop_image_sampling(img, sample_bbox, image_width, image_height,
     sample_img[roi_y1: roi_y2, roi_x1: roi_x2] = \
         img[cross_y1: cross_y2, cross_x1: cross_x2]
 
-    sample_img = cv2.resize(sample_img, (target_size, target_size),
-                            interpolation=cv2.INTER_AREA)
+    sample_img = cv2.resize(
+        sample_img, (target_size, target_size), interpolation=cv2.INTER_AREA)
 
     return sample_img
 
@@ -454,8 +449,8 @@ def draw_gaussian(heatmap, center, radius, k=1, delte=6):
     top, bottom = min(y, radius), min(height - y, radius + 1)
 
     masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
-    masked_gaussian = gaussian[radius - top:radius + bottom,
-                               radius - left:radius + right]
+    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:
+                               radius + right]
     np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
 
 
@@ -463,8 +458,8 @@ def gaussian2D(shape, sigma_x=1, sigma_y=1):
     m, n = [(ss - 1.) / 2. for ss in shape]
     y, x = np.ogrid[-m:m + 1, -n:n + 1]
 
-    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y /
-                 (2 * sigma_y * sigma_y)))
+    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
+                                                            sigma_y)))
     h[h < np.finfo(h.dtype).eps * h.max()] = 0
     return h
 
@@ -482,6 +477,7 @@ def transform_bbox(bbox,
     n = len(bbox)
     xy = np.ones((n * 4, 3), dtype=np.float32)
     xy[:, :2] = bbox[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)
+    # xy = xy @ M.T
     xy = np.matmul(xy, M.T)
     if perspective:
         xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)
