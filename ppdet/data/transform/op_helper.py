@@ -473,6 +473,9 @@ def transform_bbox(bbox,
                    wh_thr=2,
                    ar_thr=20,
                    perspective=False):
+    """
+    Transfrom bbox according to tranformation matrix M
+    """
     # rotate bbox
     n = len(bbox)
     xy = np.ones((n * 4, 3), dtype=np.float32)
@@ -495,6 +498,9 @@ def transform_bbox(bbox,
 
 
 def clip_bbox(bbox, w, h, area_thr=0.25, wh_thr=2, ar_thr=20):
+    """
+    clip bbox according to w and h
+    """
     # clip boxes
     area1 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
     bbox[:, [0, 2]] = bbox[:, [0, 2]].clip(0, w)

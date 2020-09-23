@@ -2559,6 +2559,15 @@ class DebugVisibleImage(BaseOperator):
 
 @register_op
 class Rotate(BaseOperator):
+    """Rotate image and bboxes
+    Args:
+        degree (int, float): the angle of rotation in degrees
+        scale (float): scale factor
+        center (tuple): center of the rotation in the source image
+        area_thr (float): the area threshold of bbox to be kept after rotation, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114) 
+    """
+
     def __init__(self,
                  degree,
                  scale=1.0,
@@ -2599,6 +2608,16 @@ class Rotate(BaseOperator):
 
 @register_op
 class RandomRotate(BaseOperator):
+    """Rotate image and bboxes randomly
+    Args:
+        degree (int, float, list, tuple): if（int, float), the rotation degree will be uniformly sampled uniformly in [-abs(degree), abs(degree)]
+            if (list, tuple), the rotation degree will be uniformly sampled in [degree[0], degree[1]]
+        scale (float): the scale factor will be uniformly sampled in [1 - scale, 1 + scale]
+        center (tuple): center of the rotation in the source image
+        area_thr (float): the area threshold of bbox to be kept after rotation, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114) 
+    """
+
     def __init__(self,
                  degree,
                  scale=0.0,
@@ -2630,6 +2649,14 @@ class RandomRotate(BaseOperator):
 
 @register_op
 class Shear(BaseOperator):
+    """Shear image and bboxes
+    Args:
+        shear (int, float, list, tuple): if (int, float), shear_x and shear_y are both equal to shear,
+            if (list, tuple), it means [shear_x, shear_y], the shear is in the format of degrees
+        area_thr (float): the area threshold of bbox to be kept after sheared, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self, shear, area_thr=0.25, border_value=(114, 114, 114)):
         super(Shear, self).__init__()
         if isinstance(shear, (int, float)):
@@ -2670,6 +2697,16 @@ class Shear(BaseOperator):
 
 @register_op
 class RandomShear(BaseOperator):
+    """Shear image and bboxes randomly
+    Args:
+        shear_x (int, float, list, tuple): if (int, float), shear_x will be uniformly sampled in [-abs(shear_x), abs(shear_x)],
+            if (list, tuple), shear_x will be uniformly sampled in [shear_x[0], shear_x[1]], the shear_x is in the format of degrees
+        shear_y (int, float, list, tuple): if (int, float), shear_y will be uniformly sampled in [-abs(shear_y), abs(shear_y)],
+            if (list, tuple), shear_y will be uniformly sampled in [shear_y[0], shear_y[1]], the shear_y is in the format of degrees
+        area_thr (float): the area threshold of bbox to be kept after sheared, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self,
                  shear_x,
                  shear_y,
@@ -2706,6 +2743,14 @@ class RandomShear(BaseOperator):
 
 @register_op
 class Translate(BaseOperator):
+    """Translate image and bboxes
+    Args:
+        translate (int, float, list, tuple): if (int, float), translate_x and translate_y are both equal to translate,
+            if (list, tuple), it means [translate_x, translate_y], translate is the fraction relative to original shape
+        area_thr (float): the area threshold of bbox to be kept after translation, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self, translate, area_thr=0.25, border_value=(114, 114, 114)):
         super(Translate, self).__init__()
         if isinstance(translate, (int, float)):
@@ -2761,6 +2806,18 @@ class Translate(BaseOperator):
 
 @register_op
 class RandomTranslate(BaseOperator):
+    """Translate image and bboxes randomly
+    Args:
+        translate_x (int, float, list, tuple): if (int, float), translate_x will be unifromly sampled in [-abs(translate_x), abs(translate_x)],
+            if (list, tuple), translate_x will be unifromly sampled in [translate_x[0], translate_x[1]], 
+            translate_x is the fraction relative to original shape
+        translate_y (int, float, list, tuple): if (int, float), translate_y will be unifromly sampled in [-abs(translate_y), abs(translate_y)],
+            if (list, tuple), translate_y will be unifromly sampled in [translate_y[0], translate_y[1]], 
+            translate_y is the fraction relative to original shape
+        area_thr (float): the area threshold of bbox to be kept after translation, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self,
                  translate_x,
                  translate_y,
@@ -2798,6 +2855,14 @@ class RandomTranslate(BaseOperator):
 
 @register_op
 class Scale(BaseOperator):
+    """Scale image and bboxes
+    Args:
+        scale (int, float, list, tuple): if (int, float), scale_x and scale_y are both equal to scale,
+            if (list, tuple), it means [scale_x, scale_y]
+        area_thr (float): the area threshold of bbox to be kept after scaled, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self, scale, area_thr=0.25, border_value=(114, 114, 114)):
         super(Scale, self).__init__()
         if isinstance(scale, (int, float)):
@@ -2844,6 +2909,16 @@ class Scale(BaseOperator):
 
 @register_op
 class RandomScale(BaseOperator):
+    """Scale image and bboxes randomly
+    Args:
+        scale_x (int, float, list, tuple): if (int, float), scale_x will be uniformly sampled in [0, scale_x],
+            if (list, tuple), scale_x will be uniformly sampled in [scale_x[0], scale_x[1]]
+        scale_y (int, float, list, tuple): if (int, float), scale_y will be uniformly sampled in [0, scale_y],
+            if (list, tuple), scale_y will be uniformly sampled in [scale_y[0], scale_y[1]]
+        area_thr (float): the area threshold of bbox to be kept after scaled, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self,
                  scale_x,
                  scale_y,
@@ -2880,6 +2955,18 @@ class RandomScale(BaseOperator):
 
 @register_op
 class RandomPerspective(BaseOperator):
+    """Rotate, tranlate, scale, shear and perspect image and bboxes randomly
+    Args:
+        degree (int): rotation degree, uniformly sampled in [-degree, degree]
+        translate (float): translate fraction, translate_x and translate_y are uniformly sampled 
+            in [0.5 - translate, 0.5 + translate]
+        scale (float): scale factor, uniformly sampled in [1 - scale, 1 + scale]
+        shear (int): shear degree, shear_x and shear_y are uniformly sampled in [-shear, shear]
+        perspective (float): perspective_x and perspective_y are uniformly sampled in [-perspective, perspective]
+        area_thr (float): the area threshold of bbox to be kept after transformation, default 0.25
+        border_value (tuple): value used in case of a constant border, default (114, 114, 114)
+    """
+
     def __init__(self,
                  degree=10,
                  translate=0.1,
