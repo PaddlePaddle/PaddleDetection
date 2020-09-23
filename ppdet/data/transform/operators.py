@@ -2919,7 +2919,10 @@ class RandomPerspective(BaseOperator):
         T[1, 2] = random.uniform(0.5 - self.translate, 0.5 + self.translate) * height
 
         # matmul
-        M = T @ S @ R @ P @ C
+        # M = T @ S @ R @ P @ C
+        M = np.eye(3)
+        for cM in [T, S, R, P, C]:
+            M = np.matmul(M, cM)
         if (self.border[0] != 0) or (self.border[1] != 0) or (M != np.eye(3)).any():
             if self.perspective:
                 im = cv2.warpPerspective(im, M, dsize=(width, height), borderValue=self.border_value)

@@ -482,7 +482,7 @@ def transform_bbox(bbox,
     n = len(bbox)
     xy = np.ones((n * 4, 3), dtype=np.float32)
     xy[:, :2] = bbox[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)
-    xy = xy @ M.T
+    xy = np.matmul(xy, M.T)
     if perspective:
         xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)
     else:
