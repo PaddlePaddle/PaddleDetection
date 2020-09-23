@@ -68,7 +68,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 `PaddleDetection`在评估时若使用COCO评估标准，则需要安装[COCO-API](https://github.com/cocodataset/cocoapi) ，安装方式如下：
 
-    # 安装pycocotools
+    # 安装pycocotools。若使用了虚拟环境，请使用虚拟环境中的pip，或者指定pip绝对路径进行安装
     pip install pycocotools
 
 **如果windows用户按照上面方式安装COCO-API出错，可参考以下方式：**
