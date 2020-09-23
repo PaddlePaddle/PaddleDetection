@@ -40,11 +40,11 @@ from PIL import Image, ImageEnhance, ImageDraw
 from ppdet.core.workspace import serializable
 from ppdet.modeling.ops import AnchorGrid
 
-from .op_helper import (satisfy_sample_constraint, filter_and_process,
-                        generate_sample_bbox, clip_bbox, data_anchor_sampling,
-                        satisfy_sample_constraint_coverage, crop_image_sampling,
-                        generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, gaussian_radius, draw_gaussian, transform_bbox, clip_bbox)
+from .op_helper import (
+    satisfy_sample_constraint, filter_and_process, generate_sample_bbox,
+    clip_bbox, data_anchor_sampling, satisfy_sample_constraint_coverage,
+    crop_image_sampling, generate_sample_bbox_square, bbox_area_sampling,
+    is_poly, gaussian_radius, draw_gaussian, transform_bbox, clip_bbox)
 
 logger = logging.getLogger(__name__)
 
@@ -2556,6 +2556,7 @@ class DebugVisibleImage(BaseOperator):
         image.save(save_path, quality=95)
         return sample
 
+
 @register_op
 class Rotate(BaseOperator):
     def __init__(self,
@@ -2581,18 +2582,18 @@ class Rotate(BaseOperator):
         if self.center is None:
             self.center = (width // 2, height // 2)
         M = cv2.getRotationMatrix2D(self.center, self.degree, self.scale)
-        im = cv2.warpAffine(im,
-                            M, (width, height),
-                            borderValue=self.border_value)
+        im = cv2.warpAffine(
+            im, M, (width, height), borderValue=self.border_value)
 
         # rotate bbox
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(bbox, label, M, width, height, self.area_thr)
+            new_bbox, new_label = transform_bbox(bbox, label, M, width, height,
+                                                 self.area_thr)
         else:
             new_bbox, new_label = bbox, label
         sample['image'] = im
         sample['gt_bbox'] = new_bbox.astype(np.float32)
-        sample['gt_class'] = new_label.astype(np.int32) 
+        sample['gt_class'] = new_label.astype(np.int32)
         return sample
 
 
@@ -2618,11 +2619,12 @@ class RandomRotate(BaseOperator):
         self.center = center
         self.area_thr = area_thr
         self.border_value = border_value
-    
+
     def __call__(self, sample, context=None):
         degree = random.uniform(*self.degree)
         scale = random.uniform(1 - self.scale, 1 + self.scale)
-        rotate = Rotate(degree, scale, self.center, self.area_thr, self.border_value)
+        rotate = Rotate(degree, scale, self.center, self.area_thr,
+                        self.border_value)
         return rotate(sample, context)
 
 
@@ -2651,13 +2653,13 @@ class Shear(BaseOperator):
         shear_x = math.tan(self.shear[0] * math.pi / 180)
         shear_y = math.tan(self.shear[1] * math.pi / 180)
         M = np.array([[1, shear_x, 0], [shear_y, 1, 0]])
-        im = cv2.warpAffine(im,
-                            M, (width, height),
-                            borderValue=self.border_value)
+        im = cv2.warpAffine(
+            im, M, (width, height), borderValue=self.border_value)
 
         # shear box
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(bbox, label, M, width, height, self.area_thr)
+            new_bbox, new_label = transform_bbox(bbox, label, M, width, height,
+                                                 self.area_thr)
         else:
             new_bbox, new_label = bbox, label
         sample['image'] = im
@@ -2689,12 +2691,12 @@ class RandomShear(BaseOperator):
             assert len(shear_y) == 2, 'len of shear_y is not equal to 2'
         else:
             raise ValueError('shear_y is not reasonable')
-        
+
         self.shear_x = shear_x
         self.shear_y = shear_y
         self.area_thr = area_thr
         self.border_value = border_value
-    
+
     def __call__(self, sample, context=None):
         shear_x = random.uniform(*self.shear_x)
         shear_y = random.uniform(*self.shear_y)
@@ -2712,8 +2714,9 @@ class Translate(BaseOperator):
             assert len(translate) == 2, 'len of translate is not equal to 2'
         else:
             raise ValueError('translate is not reasonable')
-        
-        assert abs(translate[0]) < 1 and abs(translate[1]) < 1, 'translate should be in (-1, 1)'
+
+        assert abs(translate[0]) < 1 and abs(translate[
+            1]) < 1, 'translate should be in (-1, 1)'
 
         self.translate = translate
         self.area_thr = area_thr
@@ -2730,24 +2733,21 @@ class Translate(BaseOperator):
         translate_y = int(self.translate[1] * height)
 
         dst_cords = [
-            max(0, translate_y),
-            max(0, translate_x),
-            min(height, translate_y + height),
-            min(width, translate_x + width)
+            max(0, translate_y), max(0, translate_x),
+            min(height, translate_y + height), min(width, translate_x + width)
         ]
         src_cords = [
-            max(-translate_y, 0),
-            max(-translate_x, 0),
-            min(-translate_y + height, height),
-            min(-translate_x + width, width)
+            max(-translate_y, 0), max(-translate_x, 0),
+            min(-translate_y + height, height), min(-translate_x + width, width)
         ]
         canvas = np.ones(im.shape, dtype=np.uint8) * self.border_value
-        canvas[dst_cords[0]:dst_cords[2],
-               dst_cords[1]:dst_cords[3], :] = im[src_cords[0]:src_cords[2],
-                                                  src_cords[1]:src_cords[3], :]
+        canvas[dst_cords[0]:dst_cords[2], dst_cords[1]:dst_cords[3], :] = im[
+            src_cords[0]:src_cords[2], src_cords[1]:src_cords[3], :]
 
         if bbox.shape[0] > 0:
-            new_bbox = bbox + [translate_x, translate_y, translate_x, translate_y]
+            new_bbox = bbox + [
+                translate_x, translate_y, translate_x, translate_y
+            ]
             # compute
             new_bbox, mask = clip_bbox(new_bbox, width, height, self.area_thr)
             new_label = label[mask]
@@ -2782,17 +2782,19 @@ class RandomTranslate(BaseOperator):
             assert len(translate_y) == 2, 'len of translate_y is not equal to 2'
         else:
             raise ValueError('translate_y is not reasonable')
-        
+
         self.translate_x = translate_x
         self.translate_y = translate_y
         self.area_thr = area_thr
         self.border_value = border_value
-    
+
     def __call__(self, sample, context=None):
         translate_x = random.uniform(*self.translate_x)
         translate_y = random.uniform(*self.translate_y)
-        translate = Translate((translate_x, translate_y), self.area_thr, self.border_value)
+        translate = Translate((translate_x, translate_y), self.area_thr,
+                              self.border_value)
         return translate(sample, context)
+
 
 @register_op
 class Scale(BaseOperator):
@@ -2826,7 +2828,9 @@ class Scale(BaseOperator):
         canvas[:y_lim, :x_lim, :] = dst_img[:y_lim, :x_lim, :]
         # scale bbox
         if bbox.shape[0] > 0:
-            new_bbox = bbox * [self.scale[0], self.scale[1], self.scale[0], self.scale[1]]
+            new_bbox = bbox * [
+                self.scale[0], self.scale[1], self.scale[0], self.scale[1]
+            ]
             new_bbox, mask = clip_bbox(new_bbox, width, height, self.area_thr)
             new_label = label[mask]
         else:
@@ -2840,7 +2844,11 @@ class Scale(BaseOperator):
 
 @register_op
 class RandomScale(BaseOperator):
-    def __init__(self, scale_x, scale_y, area_thr=0.25, border_value=(114, 114, 114)):
+    def __init__(self,
+                 scale_x,
+                 scale_y,
+                 area_thr=0.25,
+                 border_value=(114, 114, 114)):
         super(RandomScale, self).__init__()
         if isinstance(scale_x, (int, float)):
             assert scale_x > 0., 'scale_x should be great than 0'
@@ -2857,21 +2865,30 @@ class RandomScale(BaseOperator):
             assert len(scale_y) == 2, 'len of scale_y is not equal to 2'
         else:
             raise ValueError('scale_y is not reasonable')
-        
+
         self.scale_x = scale_x
         self.scale_y = scale_y
         self.area_thr = area_thr
         self.border_value = border_value
-    
+
     def __call__(self, sample, context=None):
         scale_x = random.uniform(*self.scale_x)
         scale_y = random.uniform(*self.scale_y)
         scale = Scale((scale_x, scale_y), self.area_thr, self.border_value)
         return scale(sample, context)
-        
+
+
 @register_op
 class RandomPerspective(BaseOperator):
-    def __init__(self, degree=10, translate=0.1, scale=0.1, shear=10, perspective=0.0, border=(0, 0), area_thr=0.25, border_value=(114,114,114)):
+    def __init__(self,
+                 degree=10,
+                 translate=0.1,
+                 scale=0.1,
+                 shear=10,
+                 perspective=0.0,
+                 border=(0, 0),
+                 area_thr=0.25,
+                 border_value=(114, 114, 114)):
         super(RandomPerspective, self).__init__()
         self.degree = degree
         self.translate = translate
@@ -2881,7 +2898,7 @@ class RandomPerspective(BaseOperator):
         self.border = border
         self.area_thr = area_thr
         self.border_value = border_value
-    
+
     def __call__(self, sample, context=None):
         im = sample['image']
         bbox = sample['gt_bbox']
@@ -2909,38 +2926,50 @@ class RandomPerspective(BaseOperator):
         # Shear
         S = np.eye(3)
         # shear x (deg)
-        S[0, 1] = math.tan(random.uniform(-self.shear, self.shear) * math.pi / 180)
+        S[0, 1] = math.tan(
+            random.uniform(-self.shear, self.shear) * math.pi / 180)
         # shear y (deg)
-        S[1, 0] = math.tan(random.uniform(-self.shear, self.shear) * math.pi / 180)
+        S[1, 0] = math.tan(
+            random.uniform(-self.shear, self.shear) * math.pi / 180)
 
         # Translation
         T = np.eye(3)
-        T[0, 2] = random.uniform(0.5 - self.translate, 0.5 + self.translate) * width
-        T[1, 2] = random.uniform(0.5 - self.translate, 0.5 + self.translate) * height
+        T[0, 2] = random.uniform(0.5 - self.translate,
+                                 0.5 + self.translate) * width
+        T[1, 2] = random.uniform(0.5 - self.translate,
+                                 0.5 + self.translate) * height
 
         # matmul
         # M = T @ S @ R @ P @ C
         M = np.eye(3)
         for cM in [T, S, R, P, C]:
             M = np.matmul(M, cM)
-        if (self.border[0] != 0) or (self.border[1] != 0) or (M != np.eye(3)).any():
+
+        if (self.border[0] != 0) or (self.border[1] != 0) or (
+                M != np.eye(3)).any():
             if self.perspective:
-                im = cv2.warpPerspective(im, M, dsize=(width, height), borderValue=self.border_value)
+                im = cv2.warpPerspective(
+                    im, M, dsize=(width, height), borderValue=self.border_value)
             else:
-                im = cv2.warpAffine(im, M[:2], dsize=(width, height), borderValue=self.border_value)
-            
+                im = cv2.warpAffine(
+                    im,
+                    M[:2],
+                    dsize=(width, height),
+                    borderValue=self.border_value)
+
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(bbox, label, M, width, height, area_thr=self.area_thr, perspective=self.perspective)
+            new_bbox, new_label = transform_bbox(
+                bbox,
+                label,
+                M,
+                width,
+                height,
+                area_thr=self.area_thr,
+                perspective=self.perspective)
         else:
             new_bbox, new_label = bbox, label
-        
+
         sample['image'] = im
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
         return sample
-        
-
-
-
-
-
