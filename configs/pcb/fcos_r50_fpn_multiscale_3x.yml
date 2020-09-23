@@ -1,13 +1,13 @@
 architecture: FCOS
-max_iters: 3558
+max_iters: 11000
 use_gpu: true
 snapshot_iter: 1000
 log_smooth_window: 20
 log_iter: 20
 save_dir: output
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
 metric: COCO
-weights: output/fcos_r50_fpn_1x/model_final
+weights: output/fcos_r50_fpn_multiscale_2x/model_final
 num_classes: 6
 
 FCOS:
@@ -16,11 +16,13 @@ FCOS:
   fcos_head: FCOSHead
 
 ResNet:
-  norm_type: affine_channel
+  norm_type: bn
   norm_decay: 0.
   depth: 50
   feature_maps: [3, 4, 5]
   freeze_at: 2
+  dcn_v2_stages: [3, 4, 5]
+  variant: d
 
 FPN:
   min_level: 3
@@ -38,7 +40,7 @@ FCOSHead:
   fcos_loss: FCOSLoss
   norm_reg_targets: True
   centerness_on_reg: True
-  use_dcn_in_tower: False
+  use_dcn_in_tower: True
   nms: MultiClassNMS
 
 MultiClassNMS:
@@ -59,7 +61,7 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [2372, 3261]
+    milestones: [7122, 9800]
   - !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 500
@@ -92,7 +94,7 @@ TrainReader:
     mean: [0.485,0.456,0.406]
     std: [0.229, 0.224,0.225]
   - !ResizeImage
-    target_size: 800
+    target_size: [640, 672, 704, 736, 768, 800]
     max_size: 1333
     interp: 1
     use_cv2: true

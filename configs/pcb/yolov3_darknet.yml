@@ -1,6 +1,6 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 1780
+max_iters: 11000
 log_smooth_window: 20
 save_dir: output
 snapshot_iter: 1000
@@ -21,9 +21,9 @@ DarkNet:
 
 YOLOv3Head:
   anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
-  anchors: [[10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45], [59, 119],
-            [116, 90], [156, 198], [373, 326]]
+  anchors: [[12, 22], [19, 20], [30, 20],
+            [22, 28], [16, 41], [45, 22],
+            [26, 43], [36, 34], [53, 53]]
   norm_decay: 0.
   yolo_loss: YOLOv3Loss
   nms:
@@ -35,11 +35,6 @@ YOLOv3Head:
     score_threshold: 0.01
 
 YOLOv3Loss:
-  # batch_size here is only used for fine grained loss, not used
-  # for training batch_size setting, training batch_size setting
-  # is in configs/yolov3_reader.yml TrainReader.batch_size, batch
-  # size here should be set as same value as TrainReader.batch_size
-  batch_size: 8
   ignore_thresh: 0.7
   label_smooth: true
 
@@ -49,8 +44,8 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones:
-    - 1180
-    - 1630
+    - 7122
+    - 9800
   - !LinearWarmup
     start_factor: 0.
     steps: 500
@@ -63,4 +58,102 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: 'yolov3_reader.yml'
+TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
+  dataset:
+    !COCODataSet
+      image_dir: images
+      anno_path: Annotations/train.json
+      dataset_dir: /home/aistudio/work/PCB_DATASET/
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !NormalizeBox {}
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
+  batch_transforms:
+  - !RandomShape
+    sizes: [640, 704, 768, 832, 896, 960]
+    random_inter: True
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: True
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: True
+  # Gt2YoloTarget is only used when use_fine_grained_loss set as true,
+  # this operator will be deleted automatically if use_fine_grained_loss
+  # is set as false
+  - !Gt2YoloTarget
+    anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+    anchors: [[12, 22], [19, 20], [30, 20],
+            [22, 28], [16, 41], [45, 22],
+            [26, 43], [36, 34], [53, 53]]
+    downsample_ratios: [32, 16, 8]
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  worker_num: 8
+  bufsize: 4
+  use_process: true
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_size', 'im_id']
+    num_max_boxes: 50
+  dataset:
+    !COCODataSet
+      image_dir: images
+      anno_path: Annotations/val.json
+      dataset_dir: /home/aistudio/work/PCB_DATASET/
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 896
+      interp: 2
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: True
+      is_channel_first: false
+    - !PadBox
+      num_max_boxes: 50
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 2
+  drop_empty: false
+  worker_num: 8
+  bufsize: 4
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 896, 896]
+    fields: ['image', 'im_size', 'im_id']
+  dataset:
+    !ImageFolder
+      anno_path: /home/aistudio/work/PCB_DATASET/Annotations/val.json
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 896
+      interp: 2
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: True
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
