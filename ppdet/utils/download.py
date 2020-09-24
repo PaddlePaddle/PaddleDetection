@@ -239,13 +239,19 @@ def _dataset_exists(path, annotation, image_dir):
 
     if annotation:
         annotation_path = osp.join(path, annotation)
+        if not osp.exists(annotation_path):
+            logger.error("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isfile(annotation_path):
-            logger.debug("Config annotation {} is not a "
-                         "file, dataset config is not "
-                         "valid".format(annotation_path))
+            logger.warning("Config annotation {} is not a "
+                           "file, dataset config is not "
+                           "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
+        if not osp.exists(image_path):
+            logger.warning("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isdir(image_path):
             logger.warning("Config image_dir {} is not a "
                            "directory, dataset config is not "
