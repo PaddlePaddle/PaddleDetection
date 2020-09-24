@@ -28,6 +28,7 @@ import random
 import datetime
 import six
 from collections import deque
+import paddle
 from paddle.fluid import profiler
 
 from paddle import fluid
@@ -307,7 +308,6 @@ def main():
 
 
 if __name__ == '__main__':
-    import paddle
     paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(

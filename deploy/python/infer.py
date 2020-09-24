@@ -22,6 +22,7 @@ from functools import reduce
 from PIL import Image
 import cv2
 import numpy as np
+import paddle
 import paddle.fluid as fluid
 from visualize import visualize_box_mask
 
@@ -629,6 +630,7 @@ def print_arguments(args):
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",
