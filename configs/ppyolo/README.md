@@ -73,6 +73,16 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 - PP-YOLO_r18vd used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO_r18vd inference speeding testing environment and configuration is same as PP-YOLO above.
 
+### PP-YOLO on Pascal VOC
+
+PP-YOLO trained on Pascal VOC dataset as follows:
+
+|       Model        | GPU number | images/GPU |  backbone  | input shape | Box AP50<sup>val</sup> | download | config  |
+|:------------------:|:----------:|:----------:|:----------:| :----------:| :--------------------: | :------: | :-----: |
+| PP-YOLO            |     8      |      12    | ResNet50vd |     608     |          84.9          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_voc.yml)                   |
+| PP-YOLO            |     8      |      12    | ResNet50vd |     416     |          84.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_voc.yml)                   |
+| PP-YOLO            |     8      |      12    | ResNet50vd |     320     |          82.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_voc.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_voc.yml)                   |
+
 ## Getting Start
 
 ### 1. Training
