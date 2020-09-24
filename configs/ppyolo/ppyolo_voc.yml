@@ -92,7 +92,7 @@ _READER_: 'ppyolo_reader.yml'
 TrainReader:                                                                                                                                       
   dataset:                                                                                                                                         
     !VOCDataSet                                                                                                                                    
-    dataset_dir: train_data/dataset/voc                                                                                                            
+    dataset_dir: dataset/voc                                                                                                            
     anno_path: trainval.txt                                                                                                                        
     use_default_label: true                                                                                                                        
     with_background: false                                                                                                                         
@@ -105,7 +105,7 @@ EvalReader:
     num_max_boxes: 50                                                                                                                              
   dataset:                                                                                                                                         
     !VOCDataSet                                                                                                                                    
-    dataset_dir: train_data/dataset/voc                                                                                                            
+    dataset_dir: dataset/voc                                                                                                            
     anno_path: test.txt                                                                                                                            
     use_default_label: true                                                                                                                        
     with_background: false                                                                                                                         
