@@ -119,7 +119,6 @@ def run(FLAGS, cfg):
     # Parallel Model 
     if ParallelEnv().nranks > 1:
         strategy = paddle.distributed.init_parallel_env()
-        #strategy = paddle.distributed.prepare_context()
         model = paddle.DataParallel(model, strategy)
 
     logger.info("success!")

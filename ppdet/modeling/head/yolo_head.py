@@ -129,9 +129,9 @@ class YOLOv3Head(nn.Layer):
             yolo_out = self.add_sublayer(
                 name,
                 nn.Conv2d(
-                    1024 // (2**i),
-                    num_filters,
-                    1,
+                    in_channels=1024 // (2**i),
+                    out_channels=num_filters,
+                    kernel_size=1,
                     stride=1,
                     padding=0,
                     weight_attr=ParamAttr(name=name + '.conv.weights'),

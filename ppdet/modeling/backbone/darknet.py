@@ -21,9 +21,9 @@ class ConvBNLayer(nn.Layer):
         super(ConvBNLayer, self).__init__()
 
         self.conv = nn.Conv2d(
-            ch_in,
-            ch_out,
-            filter_size,
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=filter_size,
             stride=stride,
             padding=padding,
             groups=groups,
