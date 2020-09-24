@@ -164,6 +164,8 @@ def main():
 
 
 if __name__ == '__main__':
+    import paddle
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--json_eval",
