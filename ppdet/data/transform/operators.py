@@ -90,7 +90,11 @@ class BaseOperator(object):
 
 @register_op
 class DecodeImage(BaseOperator):
-    def __init__(self, to_rgb=True, with_mixup=False, with_cutmix=False):
+    def __init__(self,
+                 to_rgb=True,
+                 with_mixup=False,
+                 with_cutmix=False,
+                 with_mosaic=False):
         """ Transform the image data to numpy format.
         Args:
             to_rgb (bool): whether to convert BGR to RGB
@@ -102,6 +106,7 @@ class DecodeImage(BaseOperator):
         self.to_rgb = to_rgb
         self.with_mixup = with_mixup
         self.with_cutmix = with_cutmix
+        self.with_mosaic = with_mosaic
         if not isinstance(self.to_rgb, bool):
             raise TypeError("{}: input type is invalid.".format(self))
         if not isinstance(self.with_mixup, bool):
@@ -149,6 +154,10 @@ class DecodeImage(BaseOperator):
         # decode cutmix image
         if self.with_cutmix and 'cutmix' in sample:
             self.__call__(sample['cutmix'], context)
+
+        if self.with_mosaic and 'mosaic' in sample:
+            for x in sample['mosaic']:
+                self.__call__(x, context)
 
         # decode semantic label
         if 'semantic' in sample.keys() and sample['semantic'] is not None:
@@ -375,13 +384,15 @@ class ResizeImage(BaseOperator):
 
 @register_op
 class ResizeAndKeepRatio(BaseOperator):
-    def __init__(self, target_size, augment=False):
+    def __init__(self, target_size, augment=False, with_mosaic=False):
         super(ResizeAndKeepRatio, self).__init__()
         self.target_size = target_size
         self.augment = augment
 
     def __call__(self, sample, context=None):
         im = sample['image']
+        bbox = sample['gt_bbox']
+
         h0, w0 = im.shape[:2]
         r = self.target_size / max(h0, w0)
         if r != 1:
@@ -389,9 +400,18 @@ class ResizeAndKeepRatio(BaseOperator):
             im = cv2.resize(
                 im, (int(w0 * r), int(h0 * r)), interpolation=interp)
 
+        bbox = bbox * (r, r, r, r)
+        bbox = bbox.clip(h0, w0)
+
         sample['image'] = im
         sample['im_size'] = [float(h0), float(w0)]
         sample['im_scale'] = [1. / r, 1. / r]
+        sample['gt_bbox'] = bbox
+
+        if self.with_mosaic and mosaic in sample:
+            for x in sample['mosaic']:
+                self.__call__(x, context)
+
         return sample
 
 
@@ -421,16 +441,18 @@ class LetterBox(BaseOperator):
         r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
         if not self.augment:
             r = min(r, 1.0)
-        
+
         ratio = r, r
         new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
-        dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+        dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[
+            1]  # wh padding
         if self.auto:  # minimum rectangle
             dw, dh = np.mod(dw, 64), np.mod(dh, 64)  # wh padding
         elif self.scaleFill:  # stretch
             dw, dh = 0.0, 0.0
             new_unpad = (new_shape[1], new_shape[0])
-            ratio = new_shape[1] / shape[1], new_shape[0] / shape[0]  # width, height ratios
+            ratio = new_shape[1] / shape[1], new_shape[0] / shape[
+                0]  # width, height ratios
 
         dw /= 2  # divide padding into 2 sides
         dh /= 2
@@ -439,14 +461,6 @@ class LetterBox(BaseOperator):
             im = cv2.resize(im, new_unpad, interpolation=cv2.INTER_LINEAR)
         top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
         left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
-<<<<<<< HEAD
-        im = cv2.copyMakeBorder(im, top, bottom, left, right, cv2.BORDER_CONSTANT, value=self.color)  # add border
-        sample['image'] = im
-        sample['im_pad'] = [dh, dw] 
-
-        return sample
-        
-=======
         im = cv2.copyMakeBorder(
             im, top, bottom, left, right, cv2.BORDER_CONSTANT,
             value=self.color)  # add border
@@ -455,7 +469,6 @@ class LetterBox(BaseOperator):
 
         return sample
 
->>>>>>> delete data aug ops
 
 @register_op
 class RandomFlipImage(BaseOperator):
@@ -3143,6 +3156,88 @@ class RandomPerspective(BaseOperator):
             new_bbox, new_label = bbox, label
 
         sample['image'] = im
+        sample['gt_bbox'] = new_bbox.astype(np.float32)
+        sample['gt_class'] = new_label.astype(np.int32)
+        return sample
+
+
+@register_op
+class RandomHSV(BaseOperator):
+    def __init__(self, hgain=0.5, sgain=0.5, vgain=0.5):
+        super(RandomHSV, self).__init__()
+        self.gains = [hgain, sgain, vgain]
+
+    def __call__(self, sample, context=None):
+        im = sample['image']
+        r = np.random.uniform(-1, 1, 3) * self.gains + 1
+        hue, sat, val = cv2.split(cv2.cvtColor(im, cv2.COLOR_BGR2HSV))
+        x = np.arange(0, 256, dtype=np.int16)
+        lut_hue = ((x * r[0]) % 180).astype(np.uint8)
+        lut_sat = np.clip(x * r[1], 0, 255).astype(np.uint8)
+        lut_val = np.clip(x * r[2], 0, 255).astype(np.uint8)
+        im_hsv = cv2.merge((cv2.LUT(hue, lut_hue), cv2.LUT(sat, lut_sat),
+                            cv2.LUT(val, lut_val))).astype(np.uint8)
+        im = cv2.cvtColor(im_hsv, cv2.COLOR_HSV2BGR)
+        sample['image'] = im
+        return sample
+
+
+@register_op
+class Mosaic(BaseOperator):
+    def __init__(self,
+                 target_size,
+                 mosaic_border=None,
+                 border_value=(114, 114, 114)):
+        super(Mosaic, self).__init__()
+        self.target_size = target_size
+        if mosaic_border is None:
+            mosaic_border = (-target_size // 2, target_size // 2)
+        self.mosaic_border = mosaic_border
+        self.border_value = border_value
+
+    def __call__(self, sample, context=None):
+        s = self.target_size
+        ims, bboxes, labels = [sample['image']], [sample['gt_bbox']
+                                                  ], [sample['gt_class']]
+        for x in sample['mosaic']:
+            ims.append(x['image'])
+            bboxes.append(x['gt_bbox'])
+            labels.append(x['gt_class'])
+        yc, xc = [
+            int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border
+        ]
+        new_im = np.ones(
+            (s * 2, s * 2, ims[0].shape[2]), dtype=np.uint8) * self.border_value
+        n = len(ims)
+        for i in range(n):
+            im = ims[i]
+            h, w, _ = im.shape
+            if i == 0:  # top left
+                # xmin, ymin, xmax, ymax (dst image)
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc
+                # xmin, ymin, xmax, ymax (src image)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h
+            elif i == 1:  # top right
+                x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
+                x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
+            elif i == 2:  # bottom left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, max(xc, w), min(
+                    y2a - y1a, h)
+            elif i == 3:  # bottom right
+                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2,
+                                                                     yc + h)
+                x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
+
+            new_im[y1a:y2a, x1a:x2a] = im[y1b:y2b, x1b:x2b]
+            padw = x1a - x1b
+            padh = y1a - y1b
+
+            bboxes[i] = bboxes[i] + (padw, padh, padw, padh)
+
+        new_bbox = np.vstack(bboxes)
+        new_label = np.vstack(labels)
+        sample['image'] = new_im.astype(np.uint8)
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
         return sample
