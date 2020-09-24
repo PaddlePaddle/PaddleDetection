@@ -1,5 +1,8 @@
 import numpy as np
 import paddle.fluid as fluid
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
 
@@ -90,9 +93,9 @@ class BBoxPostProcessYOLO(object):
                                           self.num_classes, i)
 
             boxes_list.append(boxes)
-            scores_list.append(fluid.layers.transpose(scores, perm=[0, 2, 1]))
-        yolo_boxes = fluid.layers.concat(boxes_list, axis=1)
-        yolo_scores = fluid.layers.concat(scores_list, axis=2)
+            scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
+        yolo_boxes = paddle.concat(boxes_list, axis=1)
+        yolo_scores = paddle.concat(scores_list, axis=2)
         bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         # TODO: parse the lod of nmsed_bbox
         # default batch size is 1

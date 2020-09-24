@@ -248,7 +248,7 @@ def create(cls_or_name, **kwargs):
                 if isinstance(target, SchemaDict):
                     kwargs[k] = create(target_key)
                 elif hasattr(target, '__dict__'):  # serialized object
-                    kwargs[k] = new_dict
+                    kwargs[k] = target
             else:
                 raise ValueError("Unsupported injection type:", target_key)
     # prevent modification of global config values of reference types

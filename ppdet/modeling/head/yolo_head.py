@@ -1,16 +1,14 @@
 import paddle.fluid as fluid
 import paddle
-from paddle.fluid.dygraph import Layer
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal
+import paddle.nn as nn
+import paddle.nn.functional as F
+from paddle import ParamAttr
 from paddle.fluid.regularizer import L2Decay
-from paddle.fluid.dygraph.nn import Conv2D, BatchNorm
-from paddle.fluid.dygraph import Sequential
 from ppdet.core.workspace import register
 from ..backbone.darknet import ConvBNLayer
 
 
-class YoloDetBlock(Layer):
+class YoloDetBlock(nn.Layer):
     def __init__(self, ch_in, channel, name):
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
@@ -26,7 +24,7 @@ class YoloDetBlock(Layer):
             #['tip', channel, channel * 2, 3],
         ]
 
-        self.conv_module = Sequential()
+        self.conv_module = nn.Sequential()
         for idx, (conv_name, ch_in, ch_out, filter_size,
                   post_name) in enumerate(conv_def):
             self.conv_module.add_sublayer(
@@ -52,7 +50,7 @@ class YoloDetBlock(Layer):
 
 
 @register
-class YOLOFeat(Layer):
+class YOLOFeat(nn.Layer):
     __shared__ = ['num_levels']
 
     def __init__(self, feat_in_list=[1024, 768, 384], num_levels=3):
@@ -88,19 +86,19 @@ class YOLOFeat(Layer):
         yolo_feats = []
         for i, block in enumerate(body_feats):
             if i > 0:
-                block = fluid.layers.concat(input=[route, block], axis=1)
+                block = paddle.concat([route, block], axis=1)
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
             if i < self.num_levels - 1:
                 route = self.route_blocks[i](route)
-                route = fluid.layers.resize_nearest(route, scale=2.)
+                route = F.resize_nearest(route, scale=2.)
 
         return yolo_feats
 
 
 @register
-class YOLOv3Head(Layer):
+class YOLOv3Head(nn.Layer):
     __shared__ = ['num_classes', 'num_levels', 'use_fine_grained_loss']
     __inject__ = ['yolo_feat']
 
@@ -130,14 +128,13 @@ class YOLOv3Head(Layer):
             name = 'yolo_output.{}'.format(i)
             yolo_out = self.add_sublayer(
                 name,
-                Conv2D(
-                    num_channels=1024 // (2**i),
-                    num_filters=num_filters,
-                    filter_size=1,
+                nn.Conv2d(
+                    in_channels=1024 // (2**i),
+                    out_channels=num_filters,
+                    kernel_size=1,
                     stride=1,
                     padding=0,
-                    act=None,
-                    param_attr=ParamAttr(name=name + '.conv.weights'),
+                    weight_attr=ParamAttr(name=name + '.conv.weights'),
                     bias_attr=ParamAttr(
                         name=name + '.conv.bias', regularizer=L2Decay(0.))))
             self.yolo_out_list.append(yolo_out)

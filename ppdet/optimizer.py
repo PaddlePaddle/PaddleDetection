@@ -19,12 +19,12 @@ from __future__ import print_function
 import math
 import logging
 
-from paddle import fluid
+import paddle
+import paddle.nn as nn
 
-import paddle.fluid.optimizer as optimizer
+import paddle.optimizer as optimizer
 import paddle.fluid.regularizer as regularizer
-from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
-from paddle.fluid.layers.ops import cos
+from paddle import cos
 
 from ppdet.core.workspace import register, serializable
 
@@ -61,7 +61,7 @@ class PiecewiseDecay(object):
             for i in self.gamma:
                 value.append(base_lr * i)
 
-        return fluid.dygraph.PiecewiseDecay(boundary, value, begin=0, step=1)
+        return optimizer.lr_scheduler.PiecewiseLR(boundary, value)
 
 
 @serializable
@@ -142,9 +142,10 @@ class OptimizerBuilder():
 
     def __call__(self, learning_rate, params=None):
         if self.clip_grad_by_norm is not None:
-            fluid.clip.set_gradient_clip(
-                clip=fluid.clip.GradientClipByGlobalNorm(
-                    clip_norm=self.clip_grad_by_norm))
+            grad_clip = nn.GradientClipByGlobalNorm(
+                clip_norm=self.clip_grad_by_norm)
+        else:
+            grad_clip = None
 
         if self.regularizer:
             reg_type = self.regularizer['type'] + 'Decay'
@@ -158,6 +159,7 @@ class OptimizerBuilder():
         del optim_args['type']
         op = getattr(optimizer, optim_type)
         return op(learning_rate=learning_rate,
-                  parameter_list=params,
-                  regularization=regularization,
+                  parameters=params,
+                  weight_decay=regularization,
+                  grad_clip=grad_clip,
                   **optim_args)

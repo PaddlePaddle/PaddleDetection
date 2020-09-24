@@ -13,7 +13,8 @@ import warnings
 warnings.filterwarnings('ignore')
 import random
 import numpy as np
-import paddle.fluid as fluid
+import paddle
+from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
@@ -50,10 +51,10 @@ def run(FLAGS, cfg):
     main_arch = cfg.architecture
     model = create(cfg.architecture)
 
-    # Init Model  
+    # Init Model
     model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
-    # Data Reader 
+    # Data Reader
     if FLAGS.use_gpu:
         devices_num = 1
     else:
@@ -65,12 +66,12 @@ def run(FLAGS, cfg):
     start_time = time.time()
     sample_num = 0
     for iter_id, data in enumerate(eval_reader()):
-        # forward 
+        # forward
         model.eval()
         outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
         outs_res.append(outs)
 
-        # log 
+        # log
         sample_num += len(data)
         if iter_id % 100 == 0:
             logger.info("Eval iter: {}".format(iter_id))
@@ -78,7 +79,7 @@ def run(FLAGS, cfg):
     cost_time = time.time() - start_time
     logger.info('Total sample number: {}, averge FPS: {}'.format(
         sample_num, sample_num / cost_time))
-    # Metric 
+    # Metric
     coco_eval_results(
         outs_res,
         include_mask=True if getattr(cfg, 'MaskHead', None) else False,
@@ -94,11 +95,10 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = fluid.CUDAPlace(fluid.dygraph.parallel.Env()
-                            .dev_id) if cfg.use_gpu else fluid.CPUPlace()
-
-    with fluid.dygraph.guard(place):
-        run(FLAGS, cfg)
+    place = paddle.CUDAPlace(ParallelEnv()
+                             .dev_id) if cfg.use_gpu else paddle.CPUPlace()
+    paddle.disable_static(place)
+    run(FLAGS, cfg)
 
 
 if __name__ == '__main__':

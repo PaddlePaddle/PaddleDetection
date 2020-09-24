@@ -1,14 +1,14 @@
-import paddle.fluid as fluid
-from paddle.fluid.dygraph import Layer
-from paddle.fluid.param_attr import ParamAttr
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
+from paddle import ParamAttr
 from paddle.fluid.regularizer import L2Decay
-from paddle.fluid.dygraph.nn import Conv2D, BatchNorm
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['DarkNet', 'ConvBNLayer']
 
 
-class ConvBNLayer(Layer):
+class ConvBNLayer(nn.Layer):
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -20,25 +20,22 @@ class ConvBNLayer(Layer):
                  name=None):
         super(ConvBNLayer, self).__init__()
 
-        self.conv = Conv2D(
-            num_channels=ch_in,
-            num_filters=ch_out,
-            filter_size=filter_size,
+        self.conv = nn.Conv2d(
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=filter_size,
             stride=stride,
             padding=padding,
             groups=groups,
-            param_attr=ParamAttr(name=name + '.conv.weights'),
-            bias_attr=False,
-            act=None)
+            weight_attr=ParamAttr(name=name + '.conv.weights'),
+            bias_attr=False)
         bn_name = name + '.bn'
-        self.batch_norm = BatchNorm(
-            num_channels=ch_out,
-            param_attr=ParamAttr(
+        self.batch_norm = nn.BatchNorm2d(
+            ch_out,
+            weight_attr=ParamAttr(
                 name=bn_name + '.scale', regularizer=L2Decay(0.)),
             bias_attr=ParamAttr(
-                name=bn_name + '.offset', regularizer=L2Decay(0.)),
-            moving_mean_name=bn_name + '.mean',
-            moving_variance_name=bn_name + '.var')
+                name=bn_name + '.offset', regularizer=L2Decay(0.)))
 
         self.act = act
 
@@ -46,11 +43,11 @@ class ConvBNLayer(Layer):
         out = self.conv(inputs)
         out = self.batch_norm(out)
         if self.act == 'leaky':
-            out = fluid.layers.leaky_relu(x=out, alpha=0.1)
+            out = F.leaky_relu(out, 0.1)
         return out
 
 
-class DownSample(Layer):
+class DownSample(nn.Layer):
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -75,7 +72,7 @@ class DownSample(Layer):
         return out
 
 
-class BasicBlock(Layer):
+class BasicBlock(nn.Layer):
     def __init__(self, ch_in, ch_out, name=None):
         super(BasicBlock, self).__init__()
 
@@ -97,11 +94,11 @@ class BasicBlock(Layer):
     def forward(self, inputs):
         conv1 = self.conv1(inputs)
         conv2 = self.conv2(conv1)
-        out = fluid.layers.elementwise_add(x=inputs, y=conv2, act=None)
+        out = paddle.add(x=inputs, y=conv2)
         return out
 
 
-class Blocks(Layer):
+class Blocks(nn.Layer):
     def __init__(self, ch_in, ch_out, count, name=None):
         super(Blocks, self).__init__()
 
@@ -127,7 +124,7 @@ DarkNet_cfg = {53: ([1, 2, 8, 8, 4])}
 
 @register
 @serializable
-class DarkNet(Layer):
+class DarkNet(nn.Layer):
     def __init__(self,
                  depth=53,
                  freeze_at=-1,
