@@ -72,9 +72,17 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO_MobileNetV3_large    |     4      |      32    |    18MB    |     320     |         22.0         |      14.1      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
 | PP-YOLO_MobileNetV3_small    |     4      |      32    |    11MB    |     320     |         16.8         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
+**Notes:**
+
 - PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLO_MobileNetV3 used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO_MobileNetV3 inference speed is tested on Kirin 990 with 1 thread.
+
+### Slim PP-YOLO
+
+|            Model             | GPU number | images/GPU | Prune Ratio |        Teacher Model      | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
+|:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.1MB    |     320     |         14.4         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
 ## Getting Start
 
