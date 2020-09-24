@@ -74,7 +74,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(cfg.EvalReader, devices_num=1)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
 
     dataset = cfg['EvalReader']['dataset']
 

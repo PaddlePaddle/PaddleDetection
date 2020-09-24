@@ -149,7 +149,8 @@ def main():
     start_iter = 0
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
-    train_loader.set_sample_list_generator(train_reader, place)
+    # When iterable mode, set set_sample_list_generator(train_reader, place)
+    train_loader.set_sample_list_generator(train_reader)
 
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, fluid.default_startup_program()):
@@ -161,7 +162,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     eval_reader = create_reader(cfg.EvalReader)
-    eval_loader.set_sample_list_generator(eval_reader, place)
+    # When iterable mode, set set_sample_list_generator(eval_reader, place)
+    eval_loader.set_sample_list_generator(eval_reader)
 
     teacher_cfg = load_config(FLAGS.teacher_config)
     merge_config(FLAGS.opt)

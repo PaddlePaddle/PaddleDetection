@@ -406,7 +406,7 @@ reader = create_reader(cfg.EvalReader)
 # infer
 reader = create_reader(cfg.TestReader)
 # 将reader设置为DataLoader数据源
-loader.set_sample_list_generator(reader, place)
+loader.set_sample_list_generator(reader)
 ```
 在运行程序中设置完数据处理模块后，就可以开始训练、评估与测试了，具体请参考相应运行程序python源码。
 

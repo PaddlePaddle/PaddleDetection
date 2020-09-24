@@ -296,7 +296,8 @@ def main():
                     fetches = archs(feed_vars, 'eval', cfg)
             eval_prog = eval_prog.clone(True)
 
-            eval_loader.set_sample_list_generator(eval_reader, place)
+            # When iterable mode, set set_sample_list_generator(eval_reader, place)
+            eval_loader.set_sample_list_generator(eval_reader)
             extra_keys = ['im_id', 'im_shape', 'gt_bbox']
             eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                              extra_keys)
@@ -324,8 +325,8 @@ def main():
                 exec_strategy=exec_strategy)
         if FLAGS.eval:
             compiled_eval_prog = fluid.CompiledProgram(eval_prog)
-
-        train_loader.set_sample_list_generator(train_reader, place)
+        # When iterable mode, set set_sample_list_generator(train_reader, place)
+        train_loader.set_sample_list_generator(train_reader)
 
         train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
         train_loader.start()
