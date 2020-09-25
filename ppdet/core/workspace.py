@@ -133,15 +133,14 @@ def merge_config(config, another_cfg=None):
     """
     global global_config
     dct = another_cfg if another_cfg is not None else global_config
-    dct = dict_merge(dct, config) 
-    
+    dct = dict_merge(dct, config)
+
     # NOTE: training batch size defined only in TrainReader, sychornized
     #       batch size config to global, models can get batch size config
     #       from global config when building model.
     #       batch size in evaluation or inference can also be added here
     if 'TrainReader' in dct:
-        dct['train_batch_size'] = dct['TrainReader'][
-            'batch_size']
+        dct['train_batch_size'] = dct['TrainReader']['batch_size']
 
     return dct
 
