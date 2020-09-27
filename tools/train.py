@@ -15,14 +15,15 @@ import random
 import datetime
 import numpy as np
 from collections import deque
-import paddle.fluid as fluid
+import paddle
+from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
-from paddle.fluid.dygraph.parallel import ParallelEnv
+from paddle.distributed import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -117,9 +118,10 @@ def run(FLAGS, cfg):
 
     # Parallel Model 
     if ParallelEnv().nranks > 1:
-        strategy = fluid.dygraph.parallel.prepare_context()
-        model = fluid.dygraph.parallel.DataParallel(model, strategy)
+        strategy = paddle.distributed.init_parallel_env()
+        model = paddle.DataParallel(model, strategy)
 
+    logger.info("success!")
     # Data Reader 
     start_iter = 0
     if cfg.use_gpu:
@@ -157,8 +159,10 @@ def run(FLAGS, cfg):
         else:
             loss.backward()
         optimizer.minimize(loss)
-        model.clear_gradients()
-        curr_lr = optimizer.current_step_lr()
+        optimizer.step()
+        curr_lr = optimizer.get_lr()
+        lr.step()
+        optimizer.clear_grad()
 
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
             # Log state 
@@ -190,11 +194,11 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = fluid.CUDAPlace(ParallelEnv().dev_id) \
-                    if cfg.use_gpu else fluid.CPUPlace()
+    place = paddle.CUDAPlace(ParallelEnv().dev_id) \
+                    if cfg.use_gpu else paddle.CPUPlace()
+    paddle.disable_static(place)
 
-    with fluid.dygraph.guard(place):
-        run(FLAGS, cfg)
+    run(FLAGS, cfg)
 
 
 if __name__ == "__main__":
