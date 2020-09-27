@@ -23,6 +23,9 @@ try:
 except Exception:
     from collections import Sequence
 
+import logging
+logger = logging.getLogger(__name__)
+
 __all__ = ['YOLOv3Loss']
 
 
@@ -41,16 +44,18 @@ class YOLOv3Loss(object):
     __inject__ = ['iou_loss', 'iou_aware_loss']
     __shared__ = ['use_fine_grained_loss', 'train_batch_size']
 
-    def __init__(self,
-                 train_batch_size=8,
-                 ignore_thresh=0.7,
-                 label_smooth=True,
-                 use_fine_grained_loss=False,
-                 iou_loss=None,
-                 iou_aware_loss=None,
-                 downsample=[32, 16, 8],
-                 scale_x_y=1.,
-                 match_score=False):
+    def __init__(
+            self,
+            train_batch_size=8,
+            batch_size=-1,  # stub for backward compatable
+            ignore_thresh=0.7,
+            label_smooth=True,
+            use_fine_grained_loss=False,
+            iou_loss=None,
+            iou_aware_loss=None,
+            downsample=[32, 16, 8],
+            scale_x_y=1.,
+            match_score=False):
         self._train_batch_size = train_batch_size
         self._ignore_thresh = ignore_thresh
         self._label_smooth = label_smooth
@@ -60,6 +65,11 @@ class YOLOv3Loss(object):
         self.downsample = downsample
         self.scale_x_y = scale_x_y
         self.match_score = match_score
+
+        if batch_size != -1:
+            logger.warn(
+                "config YOLOv3Loss.batch_size is deprecated, "
+                "training batch size should be set by TrainReader.batch_size")
 
     def __call__(self, outputs, gt_box, gt_label, gt_score, targets, anchors,
                  anchor_masks, mask_anchors, num_classes, prefix_name):
