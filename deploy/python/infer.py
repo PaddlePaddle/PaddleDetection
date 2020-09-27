@@ -565,6 +565,7 @@ class Detector():
                         1]).copy_to_cpu()
                     np_segms = self.predictor.get_output_tensor(output_names[
                         2]).copy_to_cpu()
+                    continue
                 boxes_tensor = self.predictor.get_output_tensor(output_names[0])
                 np_boxes = boxes_tensor.copy_to_cpu()
                 if self.config.mask_resolution is not None:

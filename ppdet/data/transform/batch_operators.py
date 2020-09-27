@@ -631,6 +631,7 @@ class Gt2Solov2Target(BaseOperator):
         return resized_img
 
     def __call__(self, samples, context=None):
+        sample_id = 0
         for sample in samples:
             gt_bboxes_raw = sample['gt_bbox']
             gt_labels_raw = sample['gt_class']
@@ -642,7 +643,6 @@ class Gt2Solov2Target(BaseOperator):
             gt_areas = np.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
                                (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
             ins_ind_label_list = []
-            grid_offset = []
             idx = 0
             for (lower_bound, upper_bound), num_grid \
                     in zip(self.scale_ranges, self.num_grids):
@@ -663,8 +663,8 @@ class Gt2Solov2Target(BaseOperator):
                     ins_ind_label_list.append(ins_ind_label)
                     sample['cate_label{}'.format(idx)] = cate_label.flatten()
                     sample['ins_label{}'.format(idx)] = ins_label
-                    sample['grid_order{}'.format(idx)] = np.asarray([0])
-                    grid_offset.append(1)
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
                     idx += 1
                     continue
                 gt_bboxes = gt_bboxes_raw[hit_indices]
@@ -722,7 +722,8 @@ class Gt2Solov2Target(BaseOperator):
                                 1]] = seg_mask
                             ins_label.append(cur_ins_label)
                             ins_ind_label[label] = True
-                            grid_order.append(label)
+                            grid_order.append(
+                                [sample_id * num_grid * num_grid + label])
                 if ins_label == []:
                     ins_label = np.zeros(
                         [1, mask_feat_size[0], mask_feat_size[1]],
@@ -730,8 +731,8 @@ class Gt2Solov2Target(BaseOperator):
                     ins_ind_label_list.append(ins_ind_label)
                     sample['cate_label{}'.format(idx)] = cate_label.flatten()
                     sample['ins_label{}'.format(idx)] = ins_label
-                    sample['grid_order{}'.format(idx)] = np.asarray([0])
-                    grid_offset.append(1)
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
                 else:
                     ins_label = np.stack(ins_label, axis=0)
                     ins_ind_label_list.append(ins_ind_label)
@@ -739,7 +740,6 @@ class Gt2Solov2Target(BaseOperator):
                     sample['ins_label{}'.format(idx)] = ins_label
                     sample['grid_order{}'.format(idx)] = np.asarray(grid_order)
                     assert len(grid_order) > 0
-                    grid_offset.append(len(grid_order))
                 idx += 1
             ins_ind_labels = np.concatenate([
                 ins_ind_labels_level_img
@@ -747,6 +747,6 @@ class Gt2Solov2Target(BaseOperator):
             ])
             fg_num = np.sum(ins_ind_labels)
             sample['fg_num'] = fg_num
-            sample['grid_offset'] = np.asarray(grid_offset).astype(np.int32)
+            sample_id += 1
 
         return samples

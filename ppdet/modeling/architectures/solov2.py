@@ -36,25 +36,21 @@ class SOLOv2(object):
         fpn (object): feature pyramid network instance
         bbox_head (object): an `SOLOv2Head` instance
         mask_head (object): an `SOLOv2MaskHead` instance
-        train_batch_size (int): training batch size.
     """
 
     __category__ = 'architecture'
     __inject__ = ['backbone', 'fpn', 'bbox_head', 'mask_head']
-    __shared__ = ['train_batch_size']
 
     def __init__(self,
                  backbone,
                  fpn=None,
                  bbox_head='SOLOv2Head',
-                 mask_head='SOLOv2MaskHead',
-                 train_batch_size=1):
+                 mask_head='SOLOv2MaskHead'):
         super(SOLOv2, self).__init__()
         self.backbone = backbone
         self.fpn = fpn
         self.bbox_head = bbox_head
         self.mask_head = mask_head
-        self.train_batch_size = train_batch_size
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
@@ -78,19 +74,13 @@ class SOLOv2(object):
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
 
-        if not mode == 'train':
-            self.batch_size = 1
-        else:
-            self.batch_size = self.train_batch_size
-
-        mask_feat_pred = self.mask_head.get_output(body_feats, self.batch_size)
+        mask_feat_pred = self.mask_head.get_output(body_feats)
 
         if mode == 'train':
             ins_labels = []
             cate_labels = []
             grid_orders = []
             fg_num = feed_vars['fg_num']
-            grid_offset = feed_vars['grid_offset']
 
             for i in range(5):
                 ins_label = 'ins_label{}'.format(i)
@@ -103,20 +93,17 @@ class SOLOv2(object):
                 if grid_order in feed_vars:
                     grid_orders.append(feed_vars[grid_order])
 
-            cate_preds, kernel_preds = self.bbox_head.get_outputs(
-                body_feats, batch_size=self.batch_size)
+            cate_preds, kernel_preds = self.bbox_head.get_outputs(body_feats)
 
             losses = self.bbox_head.get_loss(cate_preds, kernel_preds,
                                              mask_feat_pred, ins_labels,
-                                             cate_labels, grid_orders, fg_num,
-                                             grid_offset, self.train_batch_size)
+                                             cate_labels, grid_orders, fg_num)
             total_loss = fluid.layers.sum(list(losses.values()))
             losses.update({'loss': total_loss})
             return losses
         else:
             im_info = feed_vars['im_info']
-            outs = self.bbox_head.get_outputs(
-                body_feats, is_eval=True, batch_size=self.batch_size)
+            outs = self.bbox_head.get_outputs(body_feats, is_eval=True)
             seg_inputs = outs + (mask_feat_pred, im_info)
             return self.bbox_head.get_prediction(*seg_inputs)
 
@@ -148,7 +135,6 @@ class SOLOv2(object):
                 'grid_order3': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
                 'grid_order4': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
                 'fg_num':      {'shape': [None],             'dtype': 'int32', 'lod_level': 0},
-                'grid_offset': {'shape': [None, 5], 'dtype': 'int32', 'lod_level': 0},
             }
             # yapf: enable
             inputs_def.update(targets_def)
@@ -163,7 +149,7 @@ class SOLOv2(object):
         inputs_def = self._inputs_def(image_shape, fields)
         if 'gt_segm' in fields:
             fields.remove('gt_segm')
-            fields.extend(['fg_num', 'grid_offset'])
+            fields.extend(['fg_num'])
             for i in range(5):
                 fields.extend([
                     'ins_label%d' % i, 'cate_label%d' % i, 'grid_order%d' % i

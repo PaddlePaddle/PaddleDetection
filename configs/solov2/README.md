@@ -1,22 +1,29 @@
-# SOLOv2 (Segmenting Objects by Locations) for instance segmentation
+# SOLOv2 for instance segmentation
 
 ## Introduction
 
-- SOLOv2 is a fast instance segmentation framework with strong performance: [https://arxiv.org/abs/2003.10152](https://arxiv.org/abs/2003.10152)
+- SOLOv2 (Segmenting Objects by Locations) is a fast instance segmentation framework with strong performance. We reproduced the model of the paper, and improved and optimized the accuracy and speed of the SOLOv2.Among them, `Light-R50-VD-DCN-FPN` model reached 38.6 FPS on single Tesla V100, and mask ap on the COCO-val reached 38.8.
 
-```
-@misc{wang2020solov2,
-    title={SOLOv2: Dynamic, Faster and Stronger},
-    author={Xinlong Wang and Rufeng Zhang and Tao Kong and Lei Li and Chunhua Shen},
-    year={2020},
-    eprint={2003.10152},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV}
-}
-```
 
 ## Model Zoo
 
-| Backbone                | Multi-scale training  | Lr schd | Inf time (fps) | Mask AP |         Download                  | Configs |
+| Backbone                | Multi-scale training  | Lr schd | Inf time (V100) | Mask AP |         Download                  | Configs |
 | :---------------------: | :-------------------: | :-----: | :------------: | :-----: | :---------: | :------------------------: |
-| R50-FPN                 |  False                |   1x    |     -          |  34.7   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r50_fpn_1x.yml) |
+| R50-FPN                 |  False                |   1x    |     45.7ms          |  35.6   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r50_fpn_1x.yml) |
+| R50-FPN                 |  True                |   3x    |     45.7ms          |  37.9   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r50_fpn_3x.yml) |
+| R101-VD-FPN                 |  True               |   3x    |     -          |  42.6   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r101_vd_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r101_vd_fpn_3x.yml) |
+
+## Enhance model
+| Backbone                | Input size  | Lr schd | Inf time (V100) | Mask AP |         Download                  | Configs |
+| :---------------------: | :-------------------: | :-----: | :------------: | :-----: | :---------: | :------------------------: |
+| Light-R50-VD-DCN-FPN          |  512     |   3x    |     25.9ms          |  38.8   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_light_r50_vd_fpn_dcn_512_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_light_r50_vd_fpn_dcn_512_3x.yml) |
+
+## Citations
+```
+@article{wang2020solov2,
+  title={SOLOv2: Dynamic, Faster and Stronger},
+  author={Wang, Xinlong and Zhang, Rufeng and  Kong, Tao and Li, Lei and Shen, Chunhua},
+  journal={arXiv preprint arXiv:2003.10152},
+  year={2020}
+}
+```

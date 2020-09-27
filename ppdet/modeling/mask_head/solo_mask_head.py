@@ -113,13 +113,12 @@ class SOLOv2MaskHead(object):
 
         return conv_feat
 
-    def get_output(self, inputs, batch_size=1):
+    def get_output(self, inputs):
         """
         Get SOLOv2MaskHead output.
 
         Args:
             inputs(list[Variable]): feature map from each necks with shape of [N, C, H, W]
-            batch_size (int): batch size
         Returns:
             ins_pred(Variable): Output of SOLOv2MaskHead head
         """
@@ -137,8 +136,12 @@ class SOLOv2MaskHead(object):
                 y, x = paddle.tensor.meshgrid([y_range, x_range])
                 x = fluid.layers.unsqueeze(x, [0, 1])
                 y = fluid.layers.unsqueeze(y, [0, 1])
-                y = fluid.layers.expand(y, expand_times=[batch_size, 1, 1, 1])
-                x = fluid.layers.expand(x, expand_times=[batch_size, 1, 1, 1])
+                y = fluid.layers.expand(
+                    y,
+                    expand_times=[fluid.layers.shape(input_feat)[0], 1, 1, 1])
+                x = fluid.layers.expand(
+                    x,
+                    expand_times=[fluid.layers.shape(input_feat)[0], 1, 1, 1])
                 coord_feat = fluid.layers.concat([x, y], axis=1)
                 input_p = fluid.layers.concat([input_p, coord_feat], axis=1)
             feature_add_all_level = fluid.layers.elementwise_add(

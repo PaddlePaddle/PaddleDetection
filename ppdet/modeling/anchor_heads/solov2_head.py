@@ -21,7 +21,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import ConvNorm, DeformConvNorm, MaskMatrixNMS
+from ppdet.modeling.ops import ConvNorm, DeformConvNorm, MaskMatrixNMS, DropBlock
 from ppdet.core.workspace import register
 
 from ppdet.utils.check import check_version
@@ -53,6 +53,7 @@ class SOLOv2Head(object):
         pre_nms_top_n (int): Number of total instance to be kept per image before NMS
         post_nms_top_n (int): Number of total instance to be kept per image after NMS.
         mask_nms (object): MaskMatrixNMS instance.
+        drop_block (bool): Whether use drop_block or not.
     """
     __inject__ = []
     __shared__ = ['num_classes']
@@ -74,7 +75,8 @@ class SOLOv2Head(object):
                  pre_nms_top_n=500,
                  post_nms_top_n=100,
                  mask_nms=MaskMatrixNMS(
-                     kernel='gaussian', sigma=2.0).__dict__):
+                     kernel='gaussian', sigma=2.0).__dict__,
+                 drop_block=False):
         check_version('2.0.0')
         self.num_classes = num_classes
         self.seg_num_grids = num_grids
@@ -93,11 +95,12 @@ class SOLOv2Head(object):
         self.update_threshold = update_threshold
         self.pre_nms_top_n = pre_nms_top_n
         self.post_nms_top_n = post_nms_top_n
+        self.drop_block = drop_block
         self.conv_type = [ConvNorm, DeformConvNorm]
         if isinstance(mask_nms, dict):
             self.mask_nms = MaskMatrixNMS(**mask_nms)
 
-    def _conv_pred(self, conv_feat, num_filters, name, name_feat=None):
+    def _conv_pred(self, conv_feat, num_filters, is_test, name, name_feat=None):
         for i in range(self.stacked_convs):
             if i in self.dcn_v2_stages:
                 conv_func = self.conv_type[1]
@@ -122,6 +125,11 @@ class SOLOv2Head(object):
                 initializer=fluid.initializer.Constant(value=bias_init))
         else:
             bias_attr = ParamAttr(name="{}.bias".format(name_feat))
+
+        if self.drop_block:
+            conv_feat = DropBlock(
+                conv_feat, block_size=3, keep_prob=0.9, is_test=is_test)
+
         conv_feat = fluid.layers.conv2d(
             input=conv_feat,
             num_filters=num_filters,
@@ -167,14 +175,13 @@ class SOLOv2Head(object):
                     align_corners=False,
                     align_mode=0))
 
-    def get_outputs(self, input, is_eval=False, batch_size=1):
+    def get_outputs(self, input, is_eval=False):
         """
         Get SOLOv2 head output
 
         Args:
             input (list): List of Variables, output of backbone or neck stages
             is_eval (bool): whether in train or test mode
-            batch_size (int): batch size
         Returns:
             cate_pred_list (list): Variables of each category branch layer
             kernel_pred_list (list): Variables of each kernel branch layer
@@ -184,13 +191,13 @@ class SOLOv2Head(object):
         kernel_pred_list = []
         for idx in range(len(self.seg_num_grids)):
             cate_pred, kernel_pred = self._get_output_single(
-                feats[idx], idx, is_eval=is_eval, batch_size=batch_size)
+                feats[idx], idx, is_eval=is_eval)
             cate_pred_list.append(cate_pred)
             kernel_pred_list.append(kernel_pred)
 
         return cate_pred_list, kernel_pred_list
 
-    def _get_output_single(self, input, idx, is_eval=False, batch_size=1):
+    def _get_output_single(self, input, idx, is_eval=False):
         ins_kernel_feat = input
         # CoordConv
         x_range = paddle.linspace(
@@ -200,8 +207,10 @@ class SOLOv2Head(object):
         y, x = paddle.tensor.meshgrid([y_range, x_range])
         x = fluid.layers.unsqueeze(x, [0, 1])
         y = fluid.layers.unsqueeze(y, [0, 1])
-        y = fluid.layers.expand(y, expand_times=[batch_size, 1, 1, 1])
-        x = fluid.layers.expand(x, expand_times=[batch_size, 1, 1, 1])
+        y = fluid.layers.expand(
+            y, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
+        x = fluid.layers.expand(
+            x, expand_times=[fluid.layers.shape(ins_kernel_feat)[0], 1, 1, 1])
         coord_feat = fluid.layers.concat([x, y], axis=1)
         ins_kernel_feat = fluid.layers.concat(
             [ins_kernel_feat, coord_feat], axis=1)
@@ -220,6 +229,7 @@ class SOLOv2Head(object):
         kernel_pred = self._conv_pred(
             kernel_feat,
             self.kernel_out_channels,
+            is_eval,
             name='bbox_head.kernel_convs',
             name_feat='bbox_head.solo_kernel')
 
@@ -227,6 +237,7 @@ class SOLOv2Head(object):
         cate_pred = self._conv_pred(
             cate_feat,
             self.cate_out_channels,
+            is_eval,
             name='bbox_head.cate_convs',
             name_feat='bbox_head.solo_cate')
 
@@ -236,16 +247,8 @@ class SOLOv2Head(object):
             cate_pred = fluid.layers.transpose(cate_pred, [0, 2, 3, 1])
         return cate_pred, kernel_pred
 
-    def get_loss(self,
-                 cate_preds,
-                 kernel_preds,
-                 ins_pred,
-                 ins_labels,
-                 cate_labels,
-                 grid_order_list,
-                 fg_num,
-                 grid_offset,
-                 batch_size=1):
+    def get_loss(self, cate_preds, kernel_preds, ins_pred, ins_labels,
+                 cate_labels, grid_order_list, fg_num):
         """
         Get loss of network of SOLOv2.
 
@@ -257,56 +260,49 @@ class SOLOv2Head(object):
             cate_labels (list): List of categroy labels pre batch.
             grid_order_list (list): List of index in pre grid.
             fg_num (int): Number of positive samples in a mini-batch.
-            grid_offset (list): List of offset of pre grid.
-            batch_size: Batch size.
         Returns:
             loss_ins (Variable): The instance loss Variable of SOLOv2 network.
             loss_cate (Variable): The category loss Variable of SOLOv2 network.
         """
         new_kernel_preds = []
-        grid_offset_list = fluid.layers.split(
-            grid_offset, num_or_sections=len(grid_order_list), dim=1)
-        pred_weight_list = []
-        for kernel_preds_level, grid_orders_level, grid_offset_level in zip(
-                kernel_preds, grid_order_list, grid_offset_list):
-            tmp_list = []
-            kernel_pred_weight = []
-            start_order_num = fluid.layers.zeros(shape=[1], dtype='int32')
-            for i in range(batch_size):
-                reshape_pred = fluid.layers.reshape(
-                    kernel_preds_level[i],
-                    shape=(int(kernel_preds_level[i].shape[0]), -1))
-                end_order_num = start_order_num + grid_offset_level[i]
-                grid_order_img = fluid.layers.slice(
-                    grid_orders_level,
-                    axes=[0],
-                    starts=[start_order_num],
-                    ends=[end_order_num])
-                start_order_num = end_order_num
-                reshape_pred = fluid.layers.transpose(reshape_pred, [1, 0])
-                reshape_pred = fluid.layers.gather(
-                    reshape_pred, index=grid_order_img)
-                reshape_pred = fluid.layers.transpose(reshape_pred, [1, 0])
-                tmp_list.append(reshape_pred)
-            new_kernel_preds.append(tmp_list)
+        pad_length_list = []
+        for kernel_preds_level, grid_orders_level in zip(kernel_preds,
+                                                         grid_order_list):
+            reshape_pred = fluid.layers.reshape(
+                kernel_preds_level,
+                shape=(fluid.layers.shape(kernel_preds_level)[0],
+                       fluid.layers.shape(kernel_preds_level)[1], -1))
+            reshape_pred = fluid.layers.transpose(reshape_pred, [0, 2, 1])
+            reshape_pred = fluid.layers.reshape(
+                reshape_pred, shape=(-1, fluid.layers.shape(reshape_pred)[2]))
+            gathered_pred = fluid.layers.gather(
+                reshape_pred, index=grid_orders_level)
+            gathered_pred = fluid.layers.lod_reset(gathered_pred,
+                                                   grid_orders_level)
+            pad_value = fluid.layers.assign(input=np.array(
+                [0.0], dtype=np.float32))
+            pad_pred, pad_length = fluid.layers.sequence_pad(
+                gathered_pred, pad_value=pad_value)
+            new_kernel_preds.append(pad_pred)
+            pad_length_list.append(pad_length)
 
         # generate masks
         ins_pred_list = []
-        for b_kernel_pred in new_kernel_preds:
-            b_mask_pred = []
-            for idx, kernel_pred in enumerate(b_kernel_pred):
-                cur_ins_pred = ins_pred[idx]
-                cur_ins_pred = fluid.layers.unsqueeze(cur_ins_pred, 0)
-                kernel_pred = fluid.layers.transpose(kernel_pred, [1, 0])
-                kernel_pred = fluid.layers.unsqueeze(kernel_pred, [2, 3])
-
-                ins_pred_conv = paddle.nn.functional.conv2d(cur_ins_pred,
-                                                            kernel_pred)
-                cur_ins_pred = ins_pred_conv[0]
-                b_mask_pred.append(cur_ins_pred)
-
-            b_mask_pred = fluid.layers.concat(b_mask_pred, axis=0)
-            ins_pred_list.append(b_mask_pred)
+        for kernel_pred, pad_length in zip(new_kernel_preds, pad_length_list):
+            cur_ins_pred = ins_pred
+            cur_ins_pred = fluid.layers.reshape(
+                cur_ins_pred,
+                shape=(fluid.layers.shape(cur_ins_pred)[0],
+                       fluid.layers.shape(cur_ins_pred)[1], -1))
+            ins_pred_conv = paddle.matmul(kernel_pred, cur_ins_pred)
+            cur_ins_pred = fluid.layers.reshape(
+                ins_pred_conv,
+                shape=(fluid.layers.shape(ins_pred_conv)[0],
+                       fluid.layers.shape(ins_pred_conv)[1],
+                       fluid.layers.shape(ins_pred)[-2],
+                       fluid.layers.shape(ins_pred)[-1]))
+            cur_ins_pred = fluid.layers.sequence_unpad(cur_ins_pred, pad_length)
+            ins_pred_list.append(cur_ins_pred)
 
         num_ins = fluid.layers.reduce_sum(fg_num)
 
