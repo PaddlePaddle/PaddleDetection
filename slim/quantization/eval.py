@@ -73,7 +73,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(cfg.EvalReader)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
 
     # eval already exists json file
     if FLAGS.json_eval:

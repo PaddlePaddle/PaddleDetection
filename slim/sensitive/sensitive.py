@@ -84,7 +84,8 @@ def main():
         return
 
     eval_reader = create_reader(cfg.EvalReader)
-    eval_loader.set_sample_list_generator(eval_reader, place)
+    # When iterable mode, set set_sample_list_generator(eval_reader, place)
+    eval_loader.set_sample_list_generator(eval_reader)
 
     # parse eval fetches
     extra_keys = []

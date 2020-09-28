@@ -13,6 +13,9 @@ __pycache__/
 # json file
 *.json
 
+# log file
+*.log
+
 # Distribution / packaging
 /bin/
 /build/

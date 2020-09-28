@@ -146,7 +146,8 @@ def main():
         eval_prog = eval_prog.clone(True)
 
         eval_reader = create_reader(cfg.EvalReader, devices_num=1)
-        eval_loader.set_sample_list_generator(eval_reader, place)
+        # When iterable mode, set set_sample_list_generator(eval_reader, place)
+        eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
         extra_keys = []
@@ -206,7 +207,8 @@ def main():
         cfg,
         devices_num=devices_num,
         num_trainers=num_trainers)
-    train_loader.set_sample_list_generator(train_reader, place)
+    # When iterable mode, set set_sample_list_generator(train_reader, place)
+    train_loader.set_sample_list_generator(train_reader)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
