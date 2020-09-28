@@ -147,8 +147,7 @@ def main():
     logger.info("pruned FLOPS: {}".format(
         float(base_flops - pruned_flops) / base_flops))
     reader = create_reader(cfg.TestReader, devices_num=1)
-    # When iterable mode, set set_sample_list_generator(reader, place)
-    loader.set_sample_list_generator(reader)
+    loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
     if cfg.weights:

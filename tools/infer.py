@@ -120,8 +120,7 @@ def main():
     infer_prog = infer_prog.clone(True)
 
     reader = create_reader(cfg.TestReader, devices_num=1)
-    # When iterable mode, set set_sample_list_generator(reader, place)
-    loader.set_sample_list_generator(reader)
+    loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
     if cfg.weights:
