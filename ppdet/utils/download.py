@@ -22,6 +22,8 @@ import shutil
 import requests
 import tqdm
 import hashlib
+import binascii
+import base64
 import tarfile
 import zipfile
 
@@ -304,9 +306,20 @@ def _download(url, path, md5sum=None):
                 for chunk in req.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
-        shutil.move(tmp_fullname, fullname)
 
-    return fullname
+        # check md5 after download in Content-MD5 in req.headers
+        content_md5 = req.headers.get('content-md5')
+        if not content_md5 or _md5check(
+                tmp_fullname,
+                binascii.hexlify(base64.b64decode(content_md5.strip(
+                    '"'))).decode()):
+            shutil.move(tmp_fullname, fullname)
+            return fullname
+        else:
+            logger.warn(
+                "Download from url imcomplete, try downloading again...")
+            os.remove(tmp_fullname)
+            continue
 
 
 def _md5check(fullname, md5sum=None):
