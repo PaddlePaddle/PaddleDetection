@@ -78,7 +78,8 @@ def main():
 
     exe.run(startup_prog)
     reader = create_reader(cfg.EvalReader)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
 
     dataset = cfg['EvalReader']['dataset']
 
