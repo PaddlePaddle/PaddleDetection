@@ -219,14 +219,14 @@ def main():
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
 
-    train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+    train_stats = TrainingStats(cfg.log_iter, train_keys)
     train_loader.start()
     start_time = time.time()
     end_time = time.time()
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use VisualDL to log data
