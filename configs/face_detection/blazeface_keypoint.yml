@@ -4,7 +4,6 @@ pretrain_weights:
 use_gpu: true
 snapshot_iter: 10000
 log_iter: 20
-log_iter: 20
 metric: WIDERFACE
 save_dir: output
 weights: output/blazeface_keypoint/model_final.pdparams
