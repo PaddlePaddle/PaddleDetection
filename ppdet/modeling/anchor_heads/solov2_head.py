@@ -43,19 +43,14 @@ class SOLOv2Head(object):
         stacked_convs (int): Times of convolution operation.
         num_grids (list[int]): List of feature map grids size.
         kernel_out_channels (int): Number of output channels in kernel branch.
-        ins_loss_weight (float): Weight of instance loss.
-        focal_loss_gamma (float): Gamma parameter for focal loss.
-        focal_loss_alpha (float): Alpha parameter for focal loss.
         dcn_v2_stages (list): Which stage use dcn v2 in tower.
         segm_strides (list[int]): List of segmentation area stride.
+        solov2_loss (object): SOLOv2Loss instance.
         score_threshold (float): Threshold of categroy score.
-        update_threshold (float): Updated threshold of categroy score in second time.
-        pre_nms_top_n (int): Number of total instance to be kept per image before NMS
-        post_nms_top_n (int): Number of total instance to be kept per image after NMS.
         mask_nms (object): MaskMatrixNMS instance.
         drop_block (bool): Whether use drop_block or not.
     """
-    __inject__ = []
+    __inject__ = ['solov2_loss', 'mask_nms']
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -64,18 +59,17 @@ class SOLOv2Head(object):
                  stacked_convs=4,
                  num_grids=[40, 36, 24, 16, 12],
                  kernel_out_channels=256,
-                 ins_loss_weight=3.0,
-                 focal_loss_gamma=2.0,
-                 focal_loss_alpha=0.25,
                  dcn_v2_stages=[],
                  segm_strides=[8, 8, 16, 32, 32],
+                 solov2_loss=None,
                  score_threshold=0.1,
                  mask_threshold=0.5,
-                 update_threshold=0.05,
-                 pre_nms_top_n=500,
-                 post_nms_top_n=100,
                  mask_nms=MaskMatrixNMS(
-                     kernel='gaussian', sigma=2.0).__dict__,
+                     update_threshold=0.05,
+                     pre_nms_top_n=500,
+                     post_nms_top_n=100,
+                     kernel='gaussian',
+                     sigma=2.0).__dict__,
                  drop_block=False):
         check_version('2.0.0')
         self.num_classes = num_classes
@@ -84,17 +78,12 @@ class SOLOv2Head(object):
         self.seg_feat_channels = seg_feat_channels
         self.stacked_convs = stacked_convs
         self.kernel_out_channels = kernel_out_channels
-        self.ins_loss_weight = ins_loss_weight
-        self.focal_loss_gamma = focal_loss_gamma
-        self.focal_loss_alpha = focal_loss_alpha
         self.dcn_v2_stages = dcn_v2_stages
         self.segm_strides = segm_strides
+        self.solov2_loss = solov2_loss
         self.mask_nms = mask_nms
         self.score_threshold = score_threshold
         self.mask_threshold = mask_threshold
-        self.update_threshold = update_threshold
-        self.pre_nms_top_n = pre_nms_top_n
-        self.post_nms_top_n = post_nms_top_n
         self.drop_block = drop_block
         self.conv_type = [ConvNorm, DeformConvNorm]
         if isinstance(mask_nms, dict):
@@ -148,18 +137,6 @@ class SOLOv2Head(object):
             input=heat, pool_size=kernel, pool_type='max', pool_padding=1)
         keep = fluid.layers.cast((hmax[:, :, :-1, :-1] == heat), 'float32')
         return heat * keep
-
-    def dice_loss(self, input, target):
-        input = fluid.layers.reshape(
-            input, shape=(fluid.layers.shape(input)[0], -1))
-        target = fluid.layers.reshape(
-            target, shape=(fluid.layers.shape(target)[0], -1))
-        target = fluid.layers.cast(target, 'float32')
-        a = fluid.layers.reduce_sum(input * target, dim=1)
-        b = fluid.layers.reduce_sum(input * input, dim=1) + 0.001
-        c = fluid.layers.reduce_sum(target * target, dim=1) + 0.001
-        d = (2 * a) / (b + c)
-        return 1 - d
 
     def _split_feats(self, feats):
         return (paddle.nn.functional.interpolate(
@@ -305,24 +282,6 @@ class SOLOv2Head(object):
             ins_pred_list.append(cur_ins_pred)
 
         num_ins = fluid.layers.reduce_sum(fg_num)
-
-        # Ues dice_loss to calculate instance loss
-        loss_ins = []
-        total_weights = fluid.layers.zeros(shape=[1], dtype='float32')
-        for input, target in zip(ins_pred_list, ins_labels):
-            weights = fluid.layers.cast(
-                fluid.layers.reduce_sum(
-                    target, dim=[1, 2]) > 0, 'float32')
-            input = fluid.layers.sigmoid(input)
-            dice_out = fluid.layers.elementwise_mul(
-                self.dice_loss(input, target), weights)
-            total_weights += fluid.layers.reduce_sum(weights)
-            loss_ins.append(dice_out)
-        loss_ins = fluid.layers.reduce_sum(fluid.layers.concat(
-            loss_ins)) / total_weights
-        loss_ins = loss_ins * self.ins_loss_weight
-
-        # Ues sigmoid_focal_loss to calculate category loss
         cate_preds = [
             fluid.layers.reshape(
                 fluid.layers.transpose(cate_pred, [0, 2, 3, 1]),
@@ -332,13 +291,8 @@ class SOLOv2Head(object):
         new_cate_labels = []
         cate_labels = fluid.layers.concat(cate_labels)
         cate_labels = fluid.layers.unsqueeze(cate_labels, 1)
-        loss_cate = fluid.layers.sigmoid_focal_loss(
-            x=flatten_cate_preds,
-            label=cate_labels,
-            fg_num=num_ins + 1,
-            gamma=self.focal_loss_gamma,
-            alpha=self.focal_loss_alpha)
-        loss_cate = fluid.layers.reduce_sum(loss_cate)
+        loss_ins, loss_cate = self.solov2_loss(
+            ins_pred_list, ins_labels, flatten_cate_preds, cate_labels, num_ins)
 
         return {'loss_ins': loss_ins, 'loss_cate': loss_cate}
 
@@ -388,20 +342,6 @@ class SOLOv2Head(object):
             'cate_label': cate_labels,
             'cate_score': cate_scores
         }
-
-    def sort_score(self, scores, top_num):
-        self.case_scores = scores
-
-        def fn_1():
-            return fluid.layers.topk(self.case_scores, top_num)
-
-        def fn_2():
-            return fluid.layers.argsort(self.case_scores, descending=True)
-
-        sort_inds = fluid.layers.case(
-            pred_fn_pairs=[(fluid.layers.shape(scores)[0] > top_num, fn_1)],
-            default=fn_2)
-        return sort_inds
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,
                        im_info):
@@ -476,37 +416,10 @@ class SOLOv2Head(object):
         seg_scores = fluid.layers.reduce_sum(seg_mul, dim=[1, 2]) / sum_masks
         cate_scores *= seg_scores
 
-        # sort and keep top nms_pre
-        sort_inds = self.sort_score(cate_scores, self.pre_nms_top_n)
-
-        seg_masks = fluid.layers.gather(seg_masks, index=sort_inds[1])
-        seg_preds = fluid.layers.gather(seg_preds, index=sort_inds[1])
-        sum_masks = fluid.layers.gather(sum_masks, index=sort_inds[1])
-        cate_scores = sort_inds[0]
-        cate_labels = fluid.layers.gather(cate_labels, index=sort_inds[1])
-
         # Matrix NMS
-        cate_scores = self.mask_nms(
-            seg_masks, cate_labels, cate_scores, sum_masks=sum_masks)
+        seg_preds, cate_scores, cate_labels = self.mask_nms(
+            seg_preds, seg_masks, cate_labels, cate_scores, sum_masks=sum_masks)
 
-        keep = fluid.layers.where(cate_scores >= self.update_threshold)
-        keep = fluid.layers.squeeze(keep, axes=[1])
-        # Prevent empty and increase fake data
-        keep = fluid.layers.concat([
-            keep, fluid.layers.cast(
-                fluid.layers.shape(cate_scores)[0] - 1, 'int64')
-        ])
-
-        seg_preds = fluid.layers.gather(seg_preds, index=keep)
-        cate_scores = fluid.layers.gather(cate_scores, index=keep)
-        cate_labels = fluid.layers.gather(cate_labels, index=keep)
-
-        # sort and keep top_k
-        sort_inds = self.sort_score(cate_scores, self.post_nms_top_n)
-
-        seg_preds = fluid.layers.gather(seg_preds, index=sort_inds[1])
-        cate_scores = sort_inds[0]
-        cate_labels = fluid.layers.gather(cate_labels, index=sort_inds[1])
         ori_shape = im_info[:2] / im_scale + 0.5
         ori_shape = fluid.layers.cast(ori_shape, 'int32')
         seg_preds = paddle.nn.functional.interpolate(
@@ -523,5 +436,6 @@ class SOLOv2Head(object):
                 align_corners=False,
                 align_mode=0),
             axes=[0])
+        # TODO: convert uint8
         seg_masks = fluid.layers.cast(seg_masks > self.mask_threshold, 'int32')
         return seg_masks, cate_labels, cate_scores

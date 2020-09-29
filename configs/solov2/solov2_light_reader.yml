@@ -68,6 +68,7 @@ EvalReader:
   - !PadBatch
     pad_to_stride: 32
     use_padded_im_info: false
+  # only support batch_size=1 when evaluation
   batch_size: 1
   shuffle: false
   drop_last: false

@@ -1978,6 +1978,12 @@ class RandomCrop(BaseOperator):
                         sample['gt_poly'] = valid_polys
                     else:
                         sample['gt_poly'] = crop_polys
+
+                if 'gt_segm' in sample:
+                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
+                                                        crop_box)
+                    sample['gt_segm'] = np.take(
+                        sample['gt_segm'], valid_ids, axis=0)
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
@@ -2024,6 +2030,10 @@ class RandomCrop(BaseOperator):
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
+
+    def _crop_segm(self, segm, crop):
+        x1, y1, x2, y2 = crop
+        return segm[:, y1:y2, x1:x2]
 
 
 @register_op

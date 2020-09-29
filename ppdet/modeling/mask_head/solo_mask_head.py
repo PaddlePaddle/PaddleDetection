@@ -28,29 +28,28 @@ __all__ = ['SOLOv2MaskHead']
 @register
 class SOLOv2MaskHead(object):
     """
-    SOLOv2MaskHead
+    MaskHead of SOLOv2
 
     Args:
+        in_channels (int): The channel number of input variable.
         out_channels (int): The channel number of output variable.
         start_level (int): The position where the input starts.
         end_level (int): The position where the input ends.
-        num_classes (int): Number of classes in SOLOv2MaskHead output.
         use_dcn_in_tower: Whether to use dcn in tower or not.
     """
-    __shared__ = ['num_classes']
 
     def __init__(self,
+                 in_channels=128,
                  out_channels=128,
                  start_level=0,
                  end_level=3,
-                 num_classes=81,
                  use_dcn_in_tower=False):
         super(SOLOv2MaskHead, self).__init__()
         assert start_level >= 0 and end_level >= start_level
         self.out_channels = out_channels
         self.start_level = start_level
         self.end_level = end_level
-        self.num_classes = num_classes
+        self.in_channels = in_channels
         self.use_dcn_in_tower = use_dcn_in_tower
         self.conv_type = [ConvNorm, DeformConvNorm]
 
@@ -62,7 +61,7 @@ class SOLOv2MaskHead(object):
         if level == 0:
             return conv_func(
                 input=conv_feat,
-                num_filters=self.out_channels,
+                num_filters=self.in_channels,
                 filter_size=3,
                 stride=1,
                 norm_type='gn',
@@ -76,7 +75,7 @@ class SOLOv2MaskHead(object):
         for j in range(level):
             conv_feat = conv_func(
                 input=conv_feat,
-                num_filters=self.out_channels,
+                num_filters=self.in_channels,
                 filter_size=3,
                 stride=1,
                 norm_type='gn',
@@ -100,7 +99,7 @@ class SOLOv2MaskHead(object):
             conv_func = self.conv_type[1]
         conv_feat = conv_func(
             input=conv_feat,
-            num_filters=self.num_classes,
+            num_filters=self.out_channels,
             filter_size=1,
             stride=1,
             norm_type='gn',
@@ -127,7 +126,7 @@ class SOLOv2MaskHead(object):
             inputs[0], 0, name='mask_feat_head.convs_all_levels.0')
         for i in range(1, range_level):
             input_p = inputs[i]
-            if i == 3:
+            if i == (range_level - 1):
                 input_feat = input_p
                 x_range = paddle.linspace(
                     -1, 1, fluid.layers.shape(input_feat)[-1], dtype='float32')

@@ -111,6 +111,10 @@ def mask_eval(results,
               resolution,
               thresh_binarize=0.5,
               save_only=False):
+    """
+    Format the output of mask and get mask ap by coco api evaluation.
+    It will be used in Mask-RCNN.
+    """
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -165,6 +169,11 @@ def mask_eval(results,
 
 
 def segm_eval(results, anno_file, outfile, save_only=False):
+    """
+    Format the output of segmentation, category_id and score in mask.josn, and
+    get mask ap by coco api evaluation. It will be used in instance segmentation
+    networks, such as: SOLOv2.
+    """
     assert 'segm' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO

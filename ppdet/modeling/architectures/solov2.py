@@ -107,7 +107,7 @@ class SOLOv2(object):
             seg_inputs = outs + (mask_feat_pred, im_info)
             return self.bbox_head.get_prediction(*seg_inputs)
 
-    def _inputs_def(self, image_shape, fields):
+    def _inputs_def(self, image_shape, fields, num_level):
         im_shape = [None] + image_shape
         # yapf: disable
         inputs_def = {
@@ -118,23 +118,15 @@ class SOLOv2(object):
         }
 
         if 'gt_segm' in fields:
+            for i in range(num_level):
+                targets_def = {
+                    'ins_label%d' % i:  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
+                    'cate_label%d' % i: {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
+                    'grid_order%d' % i: {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
+                }
+                inputs_def.update(targets_def)
             targets_def = {
-                'ins_label0':  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                'ins_label1':  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                'ins_label2':  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                'ins_label3':  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                'ins_label4':  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                'cate_label0': {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                'cate_label1': {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                'cate_label2': {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                'cate_label3': {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                'cate_label4': {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                'grid_order0': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                'grid_order1': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                'grid_order2': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                'grid_order3': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                'grid_order4': {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                'fg_num':      {'shape': [None],             'dtype': 'int32', 'lod_level': 0},
+                'fg_num': {'shape': [None], 'dtype': 'int32', 'lod_level': 0},
             }
             # yapf: enable
             inputs_def.update(targets_def)
@@ -144,13 +136,14 @@ class SOLOv2(object):
             self,
             image_shape=[3, None, None],
             fields=['image', 'im_id', 'gt_segm'],  # for train
+            num_level=5,
             use_dataloader=True,
             iterable=False):
-        inputs_def = self._inputs_def(image_shape, fields)
+        inputs_def = self._inputs_def(image_shape, fields, num_level)
         if 'gt_segm' in fields:
             fields.remove('gt_segm')
             fields.extend(['fg_num'])
-            for i in range(5):
+            for i in range(num_level):
                 fields.extend([
                     'ins_label%d' % i, 'cate_label%d' % i, 'grid_order%d' % i
                 ])
