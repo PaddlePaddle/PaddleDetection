@@ -231,10 +231,10 @@ class CornerHead(object):
         num_dets(int): num of detections, 1000 by default
         top_k(int): choose top_k pair of corners in prediction, 100 by default 
     """
-    __shared__ = ['num_classes', 'stack']
+    __shared__ = ['num_classes', 'stack', 'train_batch_size']
 
     def __init__(self,
-                 train_batch_size,
+                 train_batch_size=14,
                  test_batch_size=1,
                  num_classes=80,
                  stack=2,
