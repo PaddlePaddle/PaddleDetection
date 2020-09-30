@@ -16,6 +16,14 @@ from PIL import Image
 import cv2
 import numpy as np
 
+# Global dictionary
+RESIZE_SCALE_SET = {
+    'RCNN',
+    'RetinaNet',
+    'FCOS',
+    'SOLOv2',
+}
+
 
 def decode_image(im_file, im_info):
     """read rgb image

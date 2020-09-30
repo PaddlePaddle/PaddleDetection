@@ -23,17 +23,10 @@ from PIL import Image
 import cv2
 import numpy as np
 import paddle.fluid as fluid
-from preprocess import preprocess
+from preprocess import preprocess, Resize, Normalize, Permute, PadStride
 from visualize import visualize_box_mask
 
 # Global dictionary
-RESIZE_SCALE_SET = {
-    'RCNN',
-    'RetinaNet',
-    'FCOS',
-    'SOLOv2',
-}
-
 SUPPORT_MODELS = {
     'YOLO',
     'SSD',
@@ -63,12 +56,7 @@ class Detector():
                  use_gpu=False,
                  run_mode='fluid',
                  threshold=0.5):
-        self.preprocess_ops = []
-        for op_info in self.config.preprocess_infos:
-            op_type = op_info.pop('type')
-            if op_type == 'Resize':
-                op_info['arch'] = self.config.arch
-            self.preprocess_ops.append(eval(op_type)(**op_info))
+        self.config = config
         if self.config.use_python_inference:
             self.executor, self.program, self.fecth_targets = load_executor(
                 model_dir, use_gpu=use_gpu)
@@ -80,7 +68,13 @@ class Detector():
                 use_gpu=use_gpu)
 
     def preprocess(self, im):
-        im, im_info = preprocess(im, self.preprocess_ops)
+        preprocess_ops = []
+        for op_info in self.config.preprocess_infos:
+            op_type = op_info.pop('type')
+            if op_type == 'Resize':
+                op_info['arch'] = self.config.arch
+            preprocess_ops.append(eval(op_type)(**op_info))
+        im, im_info = preprocess(im, preprocess_ops)
         inputs = create_inputs(im, im_info, self.config.arch)
         return inputs, im_info
 
@@ -273,8 +267,8 @@ def create_inputs(im, im_info, model_arch='YOLO'):
     inputs['image'] = im
     origin_shape = list(im_info['origin_shape'])
     resize_shape = list(im_info['resize_shape'])
-    pad_shape = list(im_info['pad_shape']) if 'pad_shape' in im_info else list(
-        im_info['resize_shape'])
+    pad_shape = list(im_info['pad_shape']) if im_info[
+        'pad_shape'] is not None else list(im_info['resize_shape'])
     scale_x, scale_y = im_info['scale']
     if 'YOLO' in model_arch:
         im_size = np.array([origin_shape]).astype('int32')
@@ -497,7 +491,7 @@ def predict_video(detector, camera_id):
 
 
 def main():
-    config = Config(model_dir)
+    config = Config(FLAGS.model_dir)
     detector = Detector(
         config, FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
     if config.arch == 'SOLOv2':

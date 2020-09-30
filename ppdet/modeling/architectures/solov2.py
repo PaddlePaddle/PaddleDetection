@@ -82,7 +82,7 @@ class SOLOv2(object):
             grid_orders = []
             fg_num = feed_vars['fg_num']
 
-            for i in range(5):
+            for i in range(self.num_level):
                 ins_label = 'ins_label{}'.format(i)
                 if ins_label in feed_vars:
                     ins_labels.append(feed_vars[ins_label])
@@ -107,7 +107,7 @@ class SOLOv2(object):
             seg_inputs = outs + (mask_feat_pred, im_info)
             return self.bbox_head.get_prediction(*seg_inputs)
 
-    def _inputs_def(self, image_shape, fields, num_level):
+    def _inputs_def(self, image_shape, fields):
         im_shape = [None] + image_shape
         # yapf: disable
         inputs_def = {
@@ -118,7 +118,7 @@ class SOLOv2(object):
         }
 
         if 'gt_segm' in fields:
-            for i in range(num_level):
+            for i in range(self.num_level):
                 targets_def = {
                     'ins_label%d' % i:  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
                     'cate_label%d' % i: {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
@@ -139,7 +139,8 @@ class SOLOv2(object):
             num_level=5,
             use_dataloader=True,
             iterable=False):
-        inputs_def = self._inputs_def(image_shape, fields, num_level)
+        self.num_level = num_level
+        inputs_def = self._inputs_def(image_shape, fields)
         if 'gt_segm' in fields:
             fields.remove('gt_segm')
             fields.extend(['fg_num'])
@@ -166,5 +167,7 @@ class SOLOv2(object):
     def eval(self, feed_vars):
         return self.build(feed_vars, mode='test')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, mode='test')

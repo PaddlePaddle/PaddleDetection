@@ -230,8 +230,6 @@ def draw_segm(im,
         im[idx[0], idx[1], :] += alpha * color_mask
         center_y, center_x = ndimage.measurements.center_of_mass(mask)
         label_text = "{}".format(labels[clsid])
-        print(label_text)
-        print(center_y, center_x)
         vis_pos = (max(int(center_x) - 10, 0), int(center_y))
         cv2.putText(im, label_text, vis_pos, cv2.FONT_HERSHEY_COMPLEX, 0.3,
                     (255, 255, 255))
