@@ -17,6 +17,7 @@ from numbers import Integral
 import math
 import six
 
+import paddle
 from paddle import fluid
 from paddle.fluid.layer_helper import LayerHelper
 from paddle.fluid.initializer import NumpyArrayInitializer
@@ -1263,27 +1264,27 @@ class LibraBBoxAssigner(object):
 
         rois = create_tmp_var(
             fluid.default_main_program(),
-            name=None,  #'rois', 
+            name=None,
             dtype='float32',
             shape=[-1, 4], )
         bbox_inside_weights = create_tmp_var(
             fluid.default_main_program(),
-            name=None,  #'bbox_inside_weights', 
+            name=None,
             dtype='float32',
             shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
         bbox_outside_weights = create_tmp_var(
             fluid.default_main_program(),
-            name=None,  #'bbox_outside_weights', 
+            name=None,
             dtype='float32',
             shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
         bbox_targets = create_tmp_var(
             fluid.default_main_program(),
-            name=None,  #'bbox_targets', 
+            name=None,
             dtype='float32',
             shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
         labels_int32 = create_tmp_var(
             fluid.default_main_program(),
-            name=None,  #'labels_int32', 
+            name=None,
             dtype='int32',
             shape=[-1, 1], )
 
@@ -1565,3 +1566,138 @@ class RetinaOutputDecoder(object):
         self.nms_top_k = pre_nms_top_n
         self.keep_top_k = detections_per_im
         self.nms_eta = nms_eta
+
+
+@register
+@serializable
+class MaskMatrixNMS(object):
+    """
+    Matrix NMS for multi-class masks.
+    Args:
+        update_threshold (float): Updated threshold of categroy score in second time.
+        pre_nms_top_n (int): Number of total instance to be kept per image before NMS
+        post_nms_top_n (int): Number of total instance to be kept per image after NMS.
+        kernel (str):  'linear' or 'gaussian'.
+        sigma (float): std in gaussian method.
+    Input:
+        seg_preds (Variable): shape (n, h, w), segmentation feature maps
+        seg_masks (Variable): shape (n, h, w), segmentation feature maps
+        cate_labels (Variable): shape (n), mask labels in descending order
+        cate_scores (Variable): shape (n), mask scores in descending order
+        sum_masks (Variable): a float tensor of the sum of seg_masks
+    Returns:
+        Variable: cate_scores, tensors of shape (n)
+    """
+
+    def __init__(self,
+                 update_threshold=0.05,
+                 pre_nms_top_n=500,
+                 post_nms_top_n=100,
+                 kernel='gaussian',
+                 sigma=2.0):
+        super(MaskMatrixNMS, self).__init__()
+        self.update_threshold = update_threshold
+        self.pre_nms_top_n = pre_nms_top_n
+        self.post_nms_top_n = post_nms_top_n
+        self.kernel = kernel
+        self.sigma = sigma
+
+    def _sort_score(self, scores, top_num):
+        self.case_scores = scores
+
+        def fn_1():
+            return fluid.layers.topk(self.case_scores, top_num)
+
+        def fn_2():
+            return fluid.layers.argsort(self.case_scores, descending=True)
+
+        sort_inds = fluid.layers.case(
+            pred_fn_pairs=[(fluid.layers.shape(scores)[0] > top_num, fn_1)],
+            default=fn_2)
+        return sort_inds
+
+    def __call__(self,
+                 seg_preds,
+                 seg_masks,
+                 cate_labels,
+                 cate_scores,
+                 sum_masks=None):
+        # sort and keep top nms_pre
+        sort_inds = self._sort_score(cate_scores, self.pre_nms_top_n)
+
+        seg_masks = fluid.layers.gather(seg_masks, index=sort_inds[1])
+        seg_preds = fluid.layers.gather(seg_preds, index=sort_inds[1])
+        sum_masks = fluid.layers.gather(sum_masks, index=sort_inds[1])
+        cate_scores = sort_inds[0]
+        cate_labels = fluid.layers.gather(cate_labels, index=sort_inds[1])
+
+        seg_masks = paddle.flatten(seg_masks, start_axis=1, stop_axis=-1)
+        # inter.
+        inter_matrix = paddle.mm(seg_masks,
+                                 fluid.layers.transpose(seg_masks, [1, 0]))
+        n_samples = fluid.layers.shape(cate_labels)
+        # union.
+        sum_masks_x = fluid.layers.reshape(
+            fluid.layers.expand(
+                sum_masks, expand_times=[n_samples]),
+            shape=[n_samples, n_samples])
+        # iou.
+        iou_matrix = (inter_matrix / (sum_masks_x + fluid.layers.transpose(
+            sum_masks_x, [1, 0]) - inter_matrix))
+        iou_matrix = paddle.triu(iou_matrix, diagonal=1)
+        # label_specific matrix.
+        cate_labels_x = fluid.layers.reshape(
+            fluid.layers.expand(
+                cate_labels, expand_times=[n_samples]),
+            shape=[n_samples, n_samples])
+        label_matrix = fluid.layers.cast(
+            (cate_labels_x == fluid.layers.transpose(cate_labels_x, [1, 0])),
+            'float32')
+        label_matrix = paddle.triu(label_matrix, diagonal=1)
+
+        # IoU compensation
+        compensate_iou = paddle.max((iou_matrix * label_matrix), axis=0)
+        compensate_iou = fluid.layers.reshape(
+            fluid.layers.expand(
+                compensate_iou, expand_times=[n_samples]),
+            shape=[n_samples, n_samples])
+        compensate_iou = fluid.layers.transpose(compensate_iou, [1, 0])
+
+        # IoU decay
+        decay_iou = iou_matrix * label_matrix
+
+        # matrix nms
+        if self.kernel == 'gaussian':
+            decay_matrix = fluid.layers.exp(-1 * self.sigma * (decay_iou**2))
+            compensate_matrix = fluid.layers.exp(-1 * self.sigma *
+                                                 (compensate_iou**2))
+            decay_coefficient = paddle.min(decay_matrix / compensate_matrix,
+                                           axis=0)
+        elif self.kernel == 'linear':
+            decay_matrix = (1 - decay_iou) / (1 - compensate_iou)
+            decay_coefficient = paddle.min(decay_matrix, axis=0)
+        else:
+            raise NotImplementedError
+
+        # update the score.
+        cate_scores = cate_scores * decay_coefficient
+
+        keep = fluid.layers.where(cate_scores >= self.update_threshold)
+        keep = fluid.layers.squeeze(keep, axes=[1])
+        # Prevent empty and increase fake data
+        keep = fluid.layers.concat([
+            keep, fluid.layers.cast(
+                fluid.layers.shape(cate_scores)[0] - 1, 'int64')
+        ])
+
+        seg_preds = fluid.layers.gather(seg_preds, index=keep)
+        cate_scores = fluid.layers.gather(cate_scores, index=keep)
+        cate_labels = fluid.layers.gather(cate_labels, index=keep)
+
+        # sort and keep top_k
+        sort_inds = self._sort_score(cate_scores, self.post_nms_top_n)
+
+        seg_preds = fluid.layers.gather(seg_preds, index=sort_inds[1])
+        cate_scores = sort_inds[0]
+        cate_labels = fluid.layers.gather(cate_labels, index=sort_inds[1])
+        return seg_preds, cate_scores, cate_labels

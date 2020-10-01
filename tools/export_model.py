@@ -46,11 +46,13 @@ TRT_MIN_SUBGRAPH = {
     'Face': 3,
     'TTFNet': 3,
     'FCOS': 3,
+    'SOLOv2': 3,
 }
 RESIZE_SCALE_SET = {
     'RCNN',
     'RetinaNet',
     'FCOS',
+    'SOLOv2',
 }
 
 
