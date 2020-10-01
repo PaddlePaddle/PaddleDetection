@@ -272,7 +272,8 @@ class ResizeImage(BaseOperator):
                  target_size=0,
                  max_size=0,
                  interp=cv2.INTER_LINEAR,
-                 use_cv2=True):
+                 use_cv2=True,
+                 resize_box=False):
         """
         Rescale image to the specified target size, and capped at max_size
         if max_size != 0.
@@ -285,11 +286,13 @@ class ResizeImage(BaseOperator):
             interp (int): the interpolation method
             use_cv2 (bool): use the cv2 interpolation method or use PIL
                 interpolation method
+            resize_box (bool): whether resize ground truth bbox annotations.
         """
         super(ResizeImage, self).__init__()
         self.max_size = int(max_size)
         self.interp = int(interp)
         self.use_cv2 = use_cv2
+        self.resize_box = resize_box
         if not (isinstance(target_size, int) or isinstance(target_size, list)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List, now is {}".
@@ -348,18 +351,6 @@ class ResizeImage(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
-            if 'semantic' in sample.keys() and sample['semantic'] is not None:
-                semantic = sample['semantic']
-                semantic = cv2.resize(
-                    semantic.astype('float32'),
-                    None,
-                    None,
-                    fx=im_scale_x,
-                    fy=im_scale_y,
-                    interpolation=self.interp)
-                semantic = np.asarray(semantic).astype('int32')
-                semantic = np.expand_dims(semantic, 0)
-                sample['semantic'] = semantic
         else:
             if self.max_size != 0:
                 raise TypeError(
@@ -370,6 +361,38 @@ class ResizeImage(BaseOperator):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
         sample['image'] = im
+        sample['scale_factor'] = [im_scale_x, im_scale_y] * 2
+        if 'gt_bbox' in sample and self.resize_box and len(sample[
+                'gt_bbox']) > 0:
+            bboxes = sample['gt_bbox'] * sample['scale_factor']
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, resize_w - 1)
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, resize_h - 1)
+            sample['gt_bbox'] = bboxes
+        if 'semantic' in sample.keys() and sample['semantic'] is not None:
+            semantic = sample['semantic']
+            semantic = cv2.resize(
+                semantic.astype('float32'),
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            semantic = np.asarray(semantic).astype('int32')
+            semantic = np.expand_dims(semantic, 0)
+            sample['semantic'] = semantic
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.resize(
+                    gt_segm,
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=cv2.INTER_NEAREST)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
         return sample
 
 
@@ -473,7 +496,6 @@ class RandomFlipImage(BaseOperator):
                 if self.is_mask_flip and len(sample['gt_poly']) != 0:
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
-
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = self.flip_keypoint(
                         sample['gt_keypoint'], width)
@@ -481,6 +503,9 @@ class RandomFlipImage(BaseOperator):
                 if 'semantic' in sample.keys() and sample[
                         'semantic'] is not None:
                     sample['semantic'] = sample['semantic'][:, ::-1]
+
+                if 'gt_segm' in sample.keys() and sample['gt_segm'] is not None:
+                    sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
 
                 sample['flipped'] = True
                 sample['image'] = im
@@ -1953,6 +1978,12 @@ class RandomCrop(BaseOperator):
                         sample['gt_poly'] = valid_polys
                     else:
                         sample['gt_poly'] = crop_polys
+
+                if 'gt_segm' in sample:
+                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
+                                                        crop_box)
+                    sample['gt_segm'] = np.take(
+                        sample['gt_segm'], valid_ids, axis=0)
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
@@ -1999,6 +2030,10 @@ class RandomCrop(BaseOperator):
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
+
+    def _crop_segm(self, segm, crop):
+        x1, y1, x2, y2 = crop
+        return segm[:, y1:y2, x1:x2]
 
 
 @register_op
@@ -2554,4 +2589,42 @@ class DebugVisibleImage(BaseOperator):
                         (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
         save_path = os.path.join(self.output_dir, out_file_name)
         image.save(save_path, quality=95)
+        return sample
+
+
+@register_op
+class Poly2Mask(BaseOperator):
+    """
+    gt poly to mask annotations
+    """
+
+    def __init__(self):
+        super(Poly2Mask, self).__init__()
+        import pycocotools.mask as maskUtils
+        self.maskutils = maskUtils
+
+    def _poly2mask(self, mask_ann, img_h, img_w):
+        if isinstance(mask_ann, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+            rle = self.maskutils.merge(rles)
+        elif isinstance(mask_ann['counts'], list):
+            # uncompressed RLE
+            rle = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+        else:
+            # rle
+            rle = mask_ann
+        mask = self.maskutils.decode(rle)
+        return mask
+
+    def __call__(self, sample, context=None):
+        assert 'gt_poly' in sample
+        im_h = sample['h']
+        im_w = sample['w']
+        masks = [
+            self._poly2mask(gt_poly, im_h, im_w)
+            for gt_poly in sample['gt_poly']
+        ]
+        sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
         return sample
