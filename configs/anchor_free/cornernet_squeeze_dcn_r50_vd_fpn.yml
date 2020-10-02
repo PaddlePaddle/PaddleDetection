@@ -31,7 +31,6 @@ FPN:
   spatial_scale: [0.03125, 0.0625, 0.125]
 
 CornerHead:
-  train_batch_size: 14
   test_batch_size: 1
   ae_threshold: 0.5
   num_dets: 100
