@@ -24,6 +24,7 @@ except Exception:
 import logging
 import cv2
 import numpy as np
+from scipy import ndimage
 
 from .operators import register_op, BaseOperator
 from .op_helper import jaccard_overlap, gaussian2D
@@ -37,6 +38,7 @@ __all__ = [
     'Gt2YoloTarget',
     'Gt2FCOSTarget',
     'Gt2TTFTarget',
+    'Gt2Solov2Target',
 ]
 
 
@@ -88,6 +90,13 @@ class PadBatch(BaseOperator):
                     (1, max_shape[1], max_shape[2]), dtype=np.float32)
                 padding_sem[:, :im_h, :im_w] = semantic
                 data['semantic'] = padding_sem
+            if 'gt_segm' in data.keys() and data['gt_segm'] is not None:
+                gt_segm = data['gt_segm']
+                padding_segm = np.zeros(
+                    (gt_segm.shape[0], max_shape[1], max_shape[2]),
+                    dtype=np.uint8)
+                padding_segm[:, :im_h, :im_w] = gt_segm
+                data['gt_segm'] = padding_segm
 
         return samples
 
@@ -590,3 +599,154 @@ class Gt2TTFTarget(BaseOperator):
             heatmap[y - top:y + bottom, x - left:x + right] = np.maximum(
                 masked_heatmap, masked_gaussian)
         return heatmap
+
+
+@register_op
+class Gt2Solov2Target(BaseOperator):
+    """Assign mask target and labels in SOLOv2 network.
+    Args:
+        num_grids (list): The list of feature map grids size.
+        scale_ranges (list): The list of mask boundary range.
+        coord_sigma (float): The coefficient of coordinate area length.
+        sampling_ratio (float): The ratio of down sampling.
+    """
+
+    def __init__(self,
+                 num_grids=[40, 36, 24, 16, 12],
+                 scale_ranges=[[1, 96], [48, 192], [96, 384], [192, 768],
+                               [384, 2048]],
+                 coord_sigma=0.2,
+                 sampling_ratio=4.0):
+        super(Gt2Solov2Target, self).__init__()
+        self.num_grids = num_grids
+        self.scale_ranges = scale_ranges
+        self.coord_sigma = coord_sigma
+        self.sampling_ratio = sampling_ratio
+
+    def _scale_size(self, im, scale):
+        h, w = im.shape[:2]
+        new_size = (int(w * float(scale) + 0.5), int(h * float(scale) + 0.5))
+        resized_img = cv2.resize(
+            im, None, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+        return resized_img
+
+    def __call__(self, samples, context=None):
+        sample_id = 0
+        for sample in samples:
+            gt_bboxes_raw = sample['gt_bbox']
+            gt_labels_raw = sample['gt_class']
+            im_c, im_h, im_w = sample['image'].shape[:]
+            gt_masks_raw = sample['gt_segm'].astype(np.uint8)
+            mask_feat_size = [
+                int(im_h / self.sampling_ratio), int(im_w / self.sampling_ratio)
+            ]
+            gt_areas = np.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
+                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+            ins_ind_label_list = []
+            idx = 0
+            for (lower_bound, upper_bound), num_grid \
+                    in zip(self.scale_ranges, self.num_grids):
+
+                hit_indices = ((gt_areas >= lower_bound) &
+                               (gt_areas <= upper_bound)).nonzero()[0]
+                num_ins = len(hit_indices)
+
+                ins_label = []
+                grid_order = []
+                cate_label = np.zeros([num_grid, num_grid], dtype=np.int64)
+                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool)
+
+                if num_ins == 0:
+                    ins_label = np.zeros(
+                        [1, mask_feat_size[0], mask_feat_size[1]],
+                        dtype=np.uint8)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
+                    idx += 1
+                    continue
+                gt_bboxes = gt_bboxes_raw[hit_indices]
+                gt_labels = gt_labels_raw[hit_indices]
+                gt_masks = gt_masks_raw[hit_indices, ...]
+
+                half_ws = 0.5 * (
+                    gt_bboxes[:, 2] - gt_bboxes[:, 0]) * self.coord_sigma
+                half_hs = 0.5 * (
+                    gt_bboxes[:, 3] - gt_bboxes[:, 1]) * self.coord_sigma
+
+                for seg_mask, gt_label, half_h, half_w in zip(
+                        gt_masks, gt_labels, half_hs, half_ws):
+                    if seg_mask.sum() == 0:
+                        continue
+                    # mass center
+                    upsampled_size = (mask_feat_size[0] * 4,
+                                      mask_feat_size[1] * 4)
+                    center_h, center_w = ndimage.measurements.center_of_mass(
+                        seg_mask)
+                    coord_w = int(
+                        (center_w / upsampled_size[1]) // (1. / num_grid))
+                    coord_h = int(
+                        (center_h / upsampled_size[0]) // (1. / num_grid))
+
+                    # left, top, right, down
+                    top_box = max(0,
+                                  int(((center_h - half_h) / upsampled_size[0])
+                                      // (1. / num_grid)))
+                    down_box = min(num_grid - 1,
+                                   int(((center_h + half_h) / upsampled_size[0])
+                                       // (1. / num_grid)))
+                    left_box = max(0,
+                                   int(((center_w - half_w) / upsampled_size[1])
+                                       // (1. / num_grid)))
+                    right_box = min(num_grid - 1,
+                                    int(((center_w + half_w) /
+                                         upsampled_size[1]) // (1. / num_grid)))
+
+                    top = max(top_box, coord_h - 1)
+                    down = min(down_box, coord_h + 1)
+                    left = max(coord_w - 1, left_box)
+                    right = min(right_box, coord_w + 1)
+
+                    cate_label[top:(down + 1), left:(right + 1)] = gt_label
+                    seg_mask = self._scale_size(
+                        seg_mask, scale=1. / self.sampling_ratio)
+                    for i in range(top, down + 1):
+                        for j in range(left, right + 1):
+                            label = int(i * num_grid + j)
+                            cur_ins_label = np.zeros(
+                                [mask_feat_size[0], mask_feat_size[1]],
+                                dtype=np.uint8)
+                            cur_ins_label[:seg_mask.shape[0], :seg_mask.shape[
+                                1]] = seg_mask
+                            ins_label.append(cur_ins_label)
+                            ins_ind_label[label] = True
+                            grid_order.append(
+                                [sample_id * num_grid * num_grid + label])
+                if ins_label == []:
+                    ins_label = np.zeros(
+                        [1, mask_feat_size[0], mask_feat_size[1]],
+                        dtype=np.uint8)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
+                else:
+                    ins_label = np.stack(ins_label, axis=0)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(grid_order)
+                    assert len(grid_order) > 0
+                idx += 1
+            ins_ind_labels = np.concatenate([
+                ins_ind_labels_level_img
+                for ins_ind_labels_level_img in ins_ind_label_list
+            ])
+            fg_num = np.sum(ins_ind_labels)
+            sample['fg_num'] = fg_num
+            sample_id += 1
+
+        return samples

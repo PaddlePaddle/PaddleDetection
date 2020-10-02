@@ -258,8 +258,8 @@ def main():
         logs = train_stats.log()
         if it % cfg.log_iter == 0 and (not FLAGS.dist or trainer_id == 0):
             ips = float(cfg['TrainReader']['batch_size']) / time_cost
-            strs = 'iter: {}, lr: {:.6f}, {}, batch_cost: {:.5f} s, eta: {}, ips: {:.5f} images/sec'.format(
-                it, np.mean(outs[-1]), logs, time_cost, eta, ips)
+            strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                it, np.mean(outs[-1]), logs, eta, time_cost, ips)
             logger.info(strs)
 
         # NOTE : profiler tools, used for benchmark

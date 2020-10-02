@@ -111,6 +111,10 @@ def mask_eval(results,
               resolution,
               thresh_binarize=0.5,
               save_only=False):
+    """
+    Format the output of mask and get mask ap by coco api evaluation.
+    It will be used in Mask-RCNN.
+    """
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -162,6 +166,52 @@ def mask_eval(results,
         return
 
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+
+
+def segm_eval(results, anno_file, outfile, save_only=False):
+    """
+    Format the output of segmentation, category_id and score in mask.josn, and
+    get mask ap by coco api evaluation. It will be used in instance segmentation
+    networks, such as: SOLOv2.
+    """
+    assert 'segm' in results[0]
+    assert outfile.endswith('.json')
+    from pycocotools.coco import COCO
+    coco_gt = COCO(anno_file)
+    clsid2catid = {i: v for i, v in enumerate(coco_gt.getCatIds())}
+    segm_results = []
+    for t in results:
+        im_id = int(t['im_id'][0][0])
+        segs = t['segm']
+        for mask in segs:
+            catid = int(clsid2catid[mask[0]])
+            masks = mask[1]
+            mask_score = masks[1]
+            segm = masks[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': mask_score
+            }
+            segm_results.append(coco_res)
+
+    if len(segm_results) == 0:
+        logger.warning("The number of valid mask detected is zero.\n \
+            Please use reasonable model and check input data.")
+        return
+
+    with open(outfile, 'w') as f:
+        json.dump(segm_results, f)
+
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
+    map_stats = cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+    return map_stats
 
 
 def cocoapi_eval(jsonfile,
@@ -371,6 +421,43 @@ def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
                     'score': score
                 }
                 segm_res.append(coco_res)
+    return segm_res
+
+
+def segm2out(results, clsid2catid, thresh_binarize=0.5):
+    import pycocotools.mask as mask_util
+    segm_res = []
+
+    # for each batch
+    for t in results:
+        segms = t['segm'][0]
+        clsid_labels = t['cate_label'][0]
+        clsid_scores = t['cate_score'][0]
+        lengths = segms.shape[0]
+        im_id = int(t['im_id'][0][0])
+        im_shape = t['im_shape'][0][0]
+        if lengths == 0 or segms is None:
+            continue
+        # for each sample
+        for i in range(lengths - 1):
+            im_h = int(im_shape[0])
+            im_w = int(im_shape[1])
+
+            clsid = int(clsid_labels[i])
+            catid = clsid2catid[clsid]
+            score = clsid_scores[i]
+            mask = segms[i]
+            segm = mask_util.encode(
+                np.array(
+                    mask[:, :, np.newaxis], order='F'))[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': score
+            }
+            segm_res.append(coco_res)
     return segm_res
 
 

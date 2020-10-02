@@ -1,0 +1,103 @@
+TrainReader:
+  batch_size: 2
+  worker_num: 2
+  inputs_def:
+    fields: ['image', 'im_id', 'gt_segm']
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/coco
+    anno_path: annotations/instances_train2017.json
+    image_dir: train2017
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !Poly2Mask {}
+  - !ColorDistort {}
+  - !RandomCrop
+    is_mask_crop: True
+  - !ResizeImage
+    target_size: [352, 384, 416, 448, 480, 512]
+    max_size: 852
+    interp: 1
+    use_cv2: true
+    resize_box: true
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+  - !Gt2Solov2Target
+    num_grids: [40, 36, 24, 16, 12]
+    scale_ranges: [[1, 64], [32, 128], [64, 256], [128, 512], [256, 2048]]
+    coord_sigma: 0.2
+  shuffle: True
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !ResizeImage
+    interp: 1
+    max_size: 852
+    target_size: 512
+    use_cv2: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
+  # only support batch_size=1 when evaluation
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+  drop_empty: false
+  worker_num: 2
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+  dataset:
+    !ImageFolder
+    anno_path: dataset/coco/annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !ResizeImage
+    interp: 1
+    max_size: 852
+    target_size: 512
+    use_cv2: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
