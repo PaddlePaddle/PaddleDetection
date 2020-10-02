@@ -122,8 +122,11 @@ def parse_reader(reader_cfg, metric, arch):
 
 
 def dump_infer_config(FLAGS, config):
+    arch_state = 0
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
     infer_cfg = OrderedDict({
@@ -138,7 +141,13 @@ def dump_infer_config(FLAGS, config):
         if arch in infer_arch:
             infer_cfg['arch'] = arch
             infer_cfg['min_subgraph_size'] = min_subgraph_size
+            arch_state = 1
             break
+    if not arch_state:
+        logger.error(
+            'Architecture: {} is not supported for exporting model now'.format(
+                infer_arch))
+        os._exit(0)
 
     if 'Mask' in config['architecture']:
         infer_cfg['mask_resolution'] = config['MaskHead']['resolution']
@@ -223,8 +232,8 @@ def main():
     exe.run(startup_prog)
     checkpoint.load_params(exe, infer_prog, cfg.weights)
 
-    save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
     dump_infer_config(FLAGS, cfg)
+    save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
 
 if __name__ == '__main__':
