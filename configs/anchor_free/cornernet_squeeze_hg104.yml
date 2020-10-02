@@ -20,7 +20,6 @@ Hourglass:
   modules: [2, 2, 2, 2, 4]
 
 CornerHead:
-  train_batch_size: 14
   test_batch_size: 1
   ae_threshold: 0.5
   num_dets: 100
