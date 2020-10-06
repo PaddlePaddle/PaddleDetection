@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 
 from . import yolo_loss
+from . import yolov5_loss
 from . import smooth_l1_loss
 from . import giou_loss
 from . import diou_loss
@@ -27,6 +28,7 @@ from . import ssd_with_lmk_loss
 
 from .iou_aware_loss import *
 from .yolo_loss import *
+from .yolov5_loss import *
 from .smooth_l1_loss import *
 from .giou_loss import *
 from .diou_loss import *

@@ -135,26 +135,25 @@ class CSPYolo(object):
     def _mish(self, x):
         return x * fluid.layers.tanh(self._softplus(x))
 
-    def _conv(self, x, c_out, k=1, s=1, p=None, g=1, act='none', name=None): 
-        x = fluid.layers.conv2d(x,
-                                c_out,
-                                k,
-                                stride=s,
-                                padding=autopad(k, p),
-                                groups=g,
-                                param_attr=ParamAttr(
-                                    regularizer=L2Decay(self.conv_decay),
-                                    name=name + '.conv.weight'),
-                                bias_attr=False)
+    def _conv(self, x, c_out, k=1, s=1, p=None, g=1, act='none', name=None):
+        x = fluid.layers.conv2d(
+            x,
+            c_out,
+            k,
+            stride=s,
+            padding=autopad(k, p),
+            groups=g,
+            param_attr=ParamAttr(name=name + '.conv.weight'),
+            bias_attr=False)
         x = self._bn(x, name=name)
         x = self.act_cfg[act](x)
         return x
 
     def _bn(self, x, name=None):
-        param_attr = ParamAttr(regularizer=L2Decay(self.norm_decay),
-                               name=name + '.{}.weight'.format(self.norm_type))
-        bias_attr = ParamAttr(regularizer=L2Decay(self.norm_decay),
-                              name=name + '.{}.bias'.format(self.norm_type))
+        param_attr = ParamAttr(name=name + '.{}.weight'.format(self.norm_type))
+        bias_attr = ParamAttr(
+            regularizer=L2Decay(self.norm_decay),
+            name=name + '.{}.bias'.format(self.norm_type))
 
         x = fluid.layers.batch_norm(
             input=x,
@@ -162,16 +161,18 @@ class CSPYolo(object):
             param_attr=param_attr,
             bias_attr=bias_attr,
             moving_mean_name=name + '.{}.running_mean'.format(self.norm_type),
-            moving_variance_name=name + '.{}.running_var'.format(self.norm_type))
+            moving_variance_name=name +
+            '.{}.running_var'.format(self.norm_type))
 
         return x
 
     def _focus(self, x, c_out, k=1, s=1, p=None, g=1, act='none', name=None):
-        x = fluid.layers.concat([
-            x[:, :, 0::2, 0::2], x[:, :, 1::2, 0::2], x[:, :, 0::2, 1::2],
-            x[:, :, 1::2, 1::2]
-        ],
-                                axis=1)
+        x = fluid.layers.concat(
+            [
+                x[:, :, 0::2, 0::2], x[:, :, 1::2, 0::2], x[:, :, 0::2, 1::2],
+                x[:, :, 1::2, 1::2]
+            ],
+            axis=1)
         x = self._conv(x, c_out, k, s, p, g, act, name + '.conv')
         return x
 
@@ -201,31 +202,28 @@ class CSPYolo(object):
                        name=None):
         c_h = int(c_out * e)
         # left branch
-        
+
         y1 = self._conv(x, c_h, 1, 1, act=act, name=name + '.cv1')
         # n bottle neck
         bottleneck = self._bottleneck
         for i in six.moves.xrange(n):
             y1 = bottleneck(y1, c_h, shortcut, g, 1.0, act,
-                                  name + '.m.{}'.format(i))
+                            name + '.m.{}'.format(i))
         y1 = fluid.layers.conv2d(
             y1,
             c_h,
             1,
             1,
-            param_attr=ParamAttr(regularizer=L2Decay(self.conv_decay),
-                                 name=name +
-                                 '.cv3.weight'),
+            param_attr=ParamAttr(name=name + '.cv3.weight'),
             bias_attr=False)
         # right branch
-        y2 = fluid.layers.conv2d(x,
-                                 c_h,
-                                 1,
-                                 1,
-                                 param_attr=ParamAttr(
-                                     regularizer=L2Decay(self.conv_decay),
-                                     name=name + '.cv2.weight'),
-                                 bias_attr=False)
+        y2 = fluid.layers.conv2d(
+            x,
+            c_h,
+            1,
+            1,
+            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)
         # bn + act
@@ -253,14 +251,13 @@ class CSPYolo(object):
             y1 = self._bottleneck(y1, c_h, shortcut, g, 1.0, act,
                                   name + '.m.{}'.format(i))
         # right_branch
-        y2 = fluid.layers.conv2d(x,
-                                 c_h,
-                                 1,
-                                 1,
-                                 param_attr=ParamAttr(
-                                     regularizer=L2Decay(self.conv_decay),
-                                     name=name + '.cv2.weight'),
-                                 bias_attr=False)
+        y2 = fluid.layers.conv2d(
+            x,
+            c_h,
+            1,
+            1,
+            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)
         # bn + act
@@ -284,13 +281,7 @@ class CSPYolo(object):
         y = self._conv(y, c_out, 1, 1, act=act, name=name + '.cv2')
         return y
 
-    def _sppcsp(self,
-                x,
-                c_out,
-                k=(5, 9, 13),
-                e=0.5,
-                act='none',
-                name=None):
+    def _sppcsp(self, x, c_out, k=(5, 9, 13), e=0.5, act='none', name=None):
         c_h = int(2 * c_out * e)
         # left branch
         y1 = self._conv(x, c_h, 1, 1, act=act, name=name + '.cv1')
@@ -305,14 +296,13 @@ class CSPYolo(object):
         y1 = self._conv(y1, c_h, 1, 1, act=act, name=name + '.cv5')
         y1 = self._conv(y1, c_h, 3, 1, act=act, name=name + '.cv6')
         # right_branch
-        y2 = fluid.layers.conv2d(x,
-                                 c_h,
-                                 1,
-                                 1,
-                                 param_attr=ParamAttr(
-                                     regularizer=L2Decay(self.conv_decay),
-                                     name=name + '.cv2.weight'),
-                                 bias_attr=False)
+        y2 = fluid.layers.conv2d(
+            x,
+            c_h,
+            1,
+            1,
+            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)
         y = self._bn(y, name=name)
@@ -337,7 +327,7 @@ class CSPYolo(object):
         fluid.layers.Print(fluid.layers.reduce_min(x))
         fluid.layers.Print(fluid.layers.reduce_mean(x))
         fluid.layers.Print(fluid.layers.reduce_mean(fluid.layers.abs(x)))
-        
+
     def __call__(self, x):
         prefix = self.weight_prefix_name
         gw, gd = self.width_multiple, self.depth_multiple
@@ -361,14 +351,11 @@ class CSPYolo(object):
                     args.insert(1, n)
 
             if m in ['Upsample', 'Concat']:
-                layers.append(self.layer_cfg[m](inputs,
-                                            *args,
-                                            name=prefix + '.{}'.format(i)))
+                layers.append(self.layer_cfg[m](
+                    inputs, *args, name=prefix + '.{}'.format(i)))
             else:
-                layers.append(self.layer_cfg[m](inputs,
-                                            *args,
-                                            act=self.act,
-                                            name=prefix + '.{}'.format(i)))
+                layers.append(self.layer_cfg[m](
+                    inputs, *args, act=self.act, name=prefix + '.{}'.format(i)))
             if i in self.save:
                 outputs.append(layers[i])
         return outputs

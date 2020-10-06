@@ -121,12 +121,15 @@ class CosineDecay(object):
             the max_iter is much larger than the warmup iter
     """
 
-    def __init__(self, max_iters=180000):
+    def __init__(self, max_iters=180000, bias=0.2, step_each_epoch=1):
         self.max_iters = max_iters
+        self.bias = 0.2
+        self.step_each_epoch = step_each_epoch
 
     def __call__(self, base_lr=None, learning_rate=None):
         assert base_lr is not None, "either base LR or values should be provided"
-        lr = fluid.layers.cosine_decay(base_lr, 1, self.max_iters)
+        lr = (1 - self.bias) * fluid.layers.cosine_decay(
+            base_lr, self.step_each_epoch, self.max_iters) + self.bias
         return lr
 
 

@@ -58,7 +58,7 @@ class YOLOv5(object):
         if mixed_precision_enabled:
             im = fluid.layers.cast(im, 'float16')
 
-        body_feats  = self.backbone(im)
+        body_feats = self.backbone(im)
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(body_feats.keys())
             body_feats = [body_feats[name] for name in body_feat_names]
@@ -89,7 +89,8 @@ class YOLOv5(object):
             im_size = feed_vars['im_size']
             im_pad = feed_vars['im_pad']
             im_scale = feed_vars['im_scale']
-            return self.yolo_head.get_prediction(body_feats, im_size, im_scale, im_pad, exclude_nms=False)
+            return self.yolo_head.get_prediction(
+                body_feats, im_size, im_scale, im_pad, exclude_nms=False)
 
     def _inputs_def(self, image_shape, num_max_boxes):
         im_shape = [None] + image_shape
@@ -119,7 +120,7 @@ class YOLOv5(object):
             downsample = 32
             for k, mask in zip(targets_def.keys(), self.yolo_head.anchor_masks):
                 targets_def[k]['shape'][1] = len(mask)
-                targets_def[k]['shape'][2] = 6 + self.yolo_head.num_classes
+                targets_def[k]['shape'][2] = 5 + self.yolo_head.num_classes
                 targets_def[k]['shape'][3] = image_shape[
                     -2] // downsample if image_shape[-2] else None
                 targets_def[k]['shape'][4] = image_shape[

@@ -41,9 +41,8 @@ TrainReader:
     - !Permute
       to_bgr: false
       channel_first: True
-      # focus: false
       downsample_ratios: [8, 16, 32]
-  batch_size: 2
+  batch_size: 16
   mosaic_prob: 0.3
   mosaic_epoch: 8
   shuffle: true

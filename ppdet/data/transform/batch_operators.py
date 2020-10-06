@@ -297,6 +297,91 @@ class Gt2YoloTarget(BaseOperator):
 
 
 @register_op
+class Gt2Yolov5Target(BaseOperator):
+    """
+    Generate YOLOv3 targets by groud truth data, this operator is only used in
+    fine grained YOLOv3 loss mode
+    """
+
+    def __init__(self,
+                 anchors,
+                 anchor_masks,
+                 downsample_ratios,
+                 num_classes,
+                 bias=0.5,
+                 anchor_t=4.0):
+        super(Gt2Yolov5Target, self).__init__()
+        self.anchors = [[anchors[i] for i in row] for row in anchor_masks]
+        self.downsample_ratios = downsample_ratios
+        self.num_classes = num_classes
+        self.bias = bias
+        self.anchor_t = anchor_t
+
+    def __call__(self, samples, context=None):
+        for sample in samples:
+            im = sample['image']
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+            h, w, _ = im.shape
+            gt_label = np.hstack((gt_bbox, gt_class))
+            nt = gt_label.shape[0]
+            off = np.array(
+                [
+                    [0, 0],
+                    [1, 0],
+                    [0, 1],
+                    [-1, 0],
+                    [0, -1],  # j,k,l,m
+                ],
+                dtype=np.float32) * self.bias
+
+            for i, (anchor, downsample_ratio
+                    ) in enumerate(zip(self.anchors, self.downsample_ratios)):
+                # compute gt_label
+                na = len(anchor)
+                a = np.arange(
+                    na, dtype=np.float32)[:, None].repeat(
+                        nt, axis=1)[:, :, None]
+                label = np.hstack((gt_label.repeat(na, 1, 1), a))
+                if nt:
+                    r = label[:, :, 2:4] / anchor[:, None]
+                    j = np.maximum(r, 1. / r).max(2) < self.anchor_t
+                    t = t[j]
+                    # Offsets
+                    gxy = t[:, 2:4]  # grid xy
+                    gxi = [[w, h]] - gxy  # inverse
+                    j, k = ((gxy % 1. < self.bias) & (gxy > 1.)).T
+                    l, m = ((gxi % 1. < self.bias) & (gxi > 1.)).T
+                    j = np.stack((np.ones_like(j), j, k, l, m))
+                    t = t.repeat((5, 1, 1))[j]
+                    offsets = (np.zeros_like(gxy)[None] + off[:, None])[j]
+                else:
+                    t = label[0]
+                    offsets = 0
+
+                c = t[:, 4]
+                a = t[:, 5]
+                gxy = t[:, 0:2]
+                gij = (gxy - offsets).astype(np.int32)
+                gi, gj = gij.T
+
+                grid_h = int(h / downsample_ratio)
+                grid_w = int(w / downsample_ratio)
+                target = np.zeros(
+                    (na, 5 + self.num_classes, grid_h, grid_w),
+                    dtype=np.float32)
+                target[a, 0:4, gi, gj] = t[:, 0:4]
+                target[a, 5, gi, gj] = 1.
+                target[a, 5 + c, gi, gj] = 1.
+
+                sample['target{}'.format(i)] = target.reshape(
+                    (na, 5 + self.num_classes, grid_h,
+                     grid_w)).astype(np.float32)
+
+        return samples
+
+
+@register_op
 class Gt2FCOSTarget(BaseOperator):
     """
     Generate FCOS targets by groud truth data
