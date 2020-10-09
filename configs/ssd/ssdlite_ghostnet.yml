@@ -2,7 +2,6 @@ architecture: SSD
 use_gpu: true
 max_iters: 400000
 snapshot_iter: 20000
-log_smooth_window: 20
 log_iter: 20
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/GhostNet_x1_3_ssld_pretrained.tar

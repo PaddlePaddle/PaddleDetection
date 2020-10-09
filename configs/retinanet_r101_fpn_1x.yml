@@ -3,7 +3,7 @@ max_iters: 90000
 use_gpu: true
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_pretrained.tar
 weights: output/retinanet_r101_fpn_1x/model_final
-log_smooth_window: 20
+log_iter: 20
 snapshot_iter: 10000
 metric: COCO
 save_dir: output
