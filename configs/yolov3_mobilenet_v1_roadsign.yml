@@ -6,8 +6,8 @@ architecture: YOLOv3
 use_gpu: true
   # ### max_iters为最大迭代次数，而一个iter会运行batch_size * device_num张图片。batch_size在下面 TrainReader.batch_size设置。
 max_iters: 1200
-# log平滑参数，平滑窗口大小，会从取历史窗口中取log_smooth_window大小的loss求平均值
-log_smooth_window: 20
+# log平滑参数，平滑窗口大小，会从取历史窗口中取log_iter大小的loss求平均值
+log_iter: 20
 # 模型保存文件夹
 save_dir: output
 # 每隔多少迭代保存模型

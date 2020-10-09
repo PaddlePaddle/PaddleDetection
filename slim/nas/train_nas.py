@@ -328,13 +328,13 @@ def main():
         # When iterable mode, set set_sample_list_generator(train_reader, place)
         train_loader.set_sample_list_generator(train_reader)
 
-        train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+        train_stats = TrainingStats(cfg.log_iter, train_keys)
         train_loader.start()
         end_time = time.time()
 
         cfg_name = os.path.basename(FLAGS.config).split('.')[0]
         save_dir = os.path.join(cfg.save_dir, cfg_name)
-        time_stat = deque(maxlen=cfg.log_smooth_window)
+        time_stat = deque(maxlen=cfg.log_iter)
         ap = 0
         for it in range(start_iter, cfg.max_iters):
             start_time = end_time

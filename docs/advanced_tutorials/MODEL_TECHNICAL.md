@@ -290,8 +290,7 @@ OptimizerBuilder:
 ```yaml
 use_gpu: true         # 是否使用GPU运行程序
 max_iters: 500200     # 最大迭代轮数
-log_smooth_window: 20 # 日志打印队列长度
-log_iter: 20          # 训练时日志每迭代x轮打印一次
+log_iter: 20          # 日志打印队列长度, 训练时日志每迭代x轮打印一次
 save_dir: output      # 模型保存路径
 snapshot_iter: 2000   # 训练时第x轮保存/评估
 metric: COCO          # 数据集名称

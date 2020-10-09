@@ -3,7 +3,7 @@ pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobile
 use_gpu: true
 max_iters: 28000
 snapshot_iter: 2000
-log_smooth_window: 1
+log_iter: 1
 metric: VOC
 map_type: 11point
 save_dir: output

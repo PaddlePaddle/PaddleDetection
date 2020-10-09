@@ -1,7 +1,7 @@
 architecture: YOLOv3
 use_gpu: true
 max_iters: 85000
-log_smooth_window: 1
+log_iter: 1
 save_dir: output
 snapshot_iter: 10000
 metric: COCO

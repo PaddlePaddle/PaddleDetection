@@ -2,7 +2,7 @@ architecture: FasterRCNN
 max_iters: 90000
 use_gpu: true
 snapshot_iter: 10000
-log_smooth_window: 20
+log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
 metric: COCO
