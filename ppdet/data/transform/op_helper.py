@@ -466,6 +466,7 @@ def gaussian2D(shape, sigma_x=1, sigma_y=1):
 
 def transform_bbox(bbox,
                    label,
+                   score,
                    M,
                    w,
                    h,
@@ -494,7 +495,8 @@ def transform_bbox(bbox,
     # clip boxes
     new_bbox, mask = clip_bbox(new_bbox, w, h, area_thr)
     new_label = label[mask]
-    return new_bbox, new_label
+    new_score = score[mask]
+    return new_bbox, new_label, new_score
 
 
 def clip_bbox(bbox, w, h, area_thr=0.25, wh_thr=2, ar_thr=20):

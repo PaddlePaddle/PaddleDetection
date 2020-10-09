@@ -149,11 +149,11 @@ class YOLOv5Head(object):
         return {'bbox': pred}
 
     def _make_grid(self, nx, ny):
-        start = self._create_tensor_from_numpy(np.array([0], dtype=np.int32))
-        step = self._create_tensor_from_numpy(np.array([1], dtype=np.int32))
+        # start = self._create_tensor_from_numpy(np.array([0], dtype=np.int32))
+        # step = self._create_tensor_from_numpy(np.array([1], dtype=np.int32))
         yv, xv = fluid.layers.meshgrid([
-            fluid.layers.arange(start, ny, step), fluid.layers.arange(start, nx,
-                                                                      step)
+            fluid.layers.range(0, ny, 1, 'float32'),
+            fluid.layers.range(0, nx, 1, 'float32')
         ])
         grid = fluid.layers.stack([xv, yv], axis=2)
         return fluid.layers.reshape(grid, (1, 1, ny, nx, 2))

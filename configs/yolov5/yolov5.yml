@@ -1,19 +1,19 @@
 architecture: YOLOv5
 use_gpu: true
-max_iters: 85000
+max_iters: 550000
 log_smooth_window: 1
 save_dir: output
-snapshot_iter: 5000
+snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar
+pretrain_weights: ''
 weights: output/yolov3_r50vd_dcn_db_iouaware_obj365_pretrained_coco/model_final
-use_fine_grained_loss: false
+use_fine_grained_loss: true
 num_classes: 80
 
 YOLOv5:
   backbone: CSPYolo
   yolo_head: YOLOv5Head
-  use_fine_grained_loss: false
+  use_fine_grained_loss: true
 
 CSPYolo:
   depth_multiple: 1.33
@@ -49,10 +49,10 @@ LearningRate:
   - !CosineDecay
     bias: 0.2
     max_iters: 300 # max epochs
-    step_each_epoch: # total // batch_size
+    step_each_epoch: 3696 # total // batch_size
   - !LinearWarmup
     start_factor: 0.
-    steps: 4000 # 3 * step_each_epoch
+    steps: 11089 # 3 * step_each_epoch
 
 OptimizerBuilder:
   optimizer:

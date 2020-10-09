@@ -7,12 +7,16 @@ TrainReader:
     !COCODataSet
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
+    dataset_dir: /paddle/data/detection/coco
     with_background: false
   sample_transforms:
     - !DecodeImage
-      to_rgb: True
-      with_mosaic: True
+      to_rgb: true
+      with_mosaic: true
+    - !ResizeAndKeepRatio
+      target_size: 640
+      augment: true
+      with_mosaic: true
     - !Mosaic
       target_size: 640
     - !RandomPerspective
@@ -41,10 +45,14 @@ TrainReader:
     - !Permute
       to_bgr: false
       channel_first: True
+    - !Gt2Yolov5Target
+      anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+      anchors: [[10, 13], [16, 30], [33, 23],
+                [30, 61], [62, 45], [59, 119],
+                [116, 90], [156, 198], [373, 326]]
       downsample_ratios: [8, 16, 32]
-  batch_size: 16
-  mosaic_prob: 0.3
-  mosaic_epoch: 8
+  batch_size: 8
+  mosaic: true
   shuffle: true
   drop_last: true
   worker_num: 8
@@ -60,7 +68,7 @@ EvalReader:
     num_max_boxes: 50
   dataset:
     !COCODataSet
-    dataset_dir: dataset/coco
+    dataset_dir: /paddle/data/detection/coco
     anno_path: annotations/instances_val2017.json
     #anno_path: annotations/instances_val2017_debug_139.json
     image_dir: val2017

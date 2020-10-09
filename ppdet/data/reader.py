@@ -28,7 +28,7 @@ import logging
 from ppdet.core.workspace import register, serializable
 
 from .parallel_map import ParallelMap
-from .transform.batch_operators import Gt2YoloTarget
+from .transform.batch_operators import Gt2YoloTarget, Gt2Yolov5Target
 
 __all__ = ['Reader', 'create_reader']
 
@@ -255,12 +255,12 @@ class Reader(object):
 
         if use_fine_grained_loss:
             for bt in batch_transforms:
-                if isinstance(bt, Gt2YoloTarget):
+                if isinstance(bt, (Gt2YoloTarget, Gt2Yolov5Target)):
                     bt.num_classes = num_classes
         elif batch_transforms:
             batch_transforms = [
                 bt for bt in batch_transforms
-                if not isinstance(bt, Gt2YoloTarget)
+                if not isinstance(bt, (Gt2YoloTarget, Gt2Yolov5Target))
             ]
 
         if batch_transforms:

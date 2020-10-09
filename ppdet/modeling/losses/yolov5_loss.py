@@ -39,7 +39,7 @@ class YOLOv5Loss(object):
         self.train_batch_size = train_batch_size
         self.balance = balance
         self.loss_weights = loss_weights
-        self.goiu_ratio = giou_ratio
+        self.giou_ratio = giou_ratio
 
     def _create_tensor_from_numpy(self, numpy_array):
         paddle_array = fluid.layers.create_global_var(
@@ -62,7 +62,7 @@ class YOLOv5Loss(object):
             x1, x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:, 2] / 2
             y1, y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:, 3] / 2
             x1g, x2g = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:, 2] / 2
-            x1g, x2g = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
+            y1g, y2g = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
 
         # intersection
         xi1 = fluid.layers.elementwise_max(x1, x1g)
@@ -108,7 +108,6 @@ class YOLOv5Loss(object):
                  strides):
         loss_boxes, loss_objs, loss_clss = [], [], []
         no = 5 + num_classes
-        np = len(outputs)
         for i, (output, target) in enumerate(zip(outputs, targets)):
             anchor = anchors[i]
             na = len(anchor)
@@ -117,31 +116,45 @@ class YOLOv5Loss(object):
                 2], output_shape[3]
             output = fluid.layers.reshape(output, [bs, na, no, h, w])
             output = fluid.layers.transpose(output, perm=[0, 1, 3, 4, 2])
-            anchor = np.array(anchor / strides[i]).reshape(
+            anchor = (np.array(anchor) / strides[i]).reshape(
                 (1, 3, 1, 1, 2)).astype(np.float32)
             anchor = self._create_tensor_from_numpy(anchor)
             xy = fluid.layers.sigmoid(output[:, :, :, :, 0:2]) * 2 - 0.5
             wh = (fluid.layers.sigmoid(output[:, :, :, :, 2:4]) * 2)**2 * anchor
             target = fluid.layers.reshape(target, [bs, na, no, h, w])
-            target = fluid.layers.reshape(target, perm=[0, 1, 3, 4, 2])
-            pbox = fluid.layers.concat((xy, wh), axis=-1)
+            target = fluid.layers.transpose(target, perm=[0, 1, 3, 4, 2])
+            pbox = fluid.layers.concat([xy, wh], axis=-1)
             tbox = target[:, :, :, :, 0:4]
             pbox = fluid.layers.reshape(pbox, [-1, 4])
             tbox = fluid.layers.reshape(tbox, [-1, 4])
+            mask = fluid.layers.reshape(target[:, :, :, :, 4], [-1])
+            nm = fluid.layers.reduce_sum(mask) + 0.00000001
             giou = self._bbox_iou(pbox, tbox, x1y1x2y2=False, CIoU=True)
-            loss_box = fluid.layers.reduce_sum(1 - giou) * self.loss_weights[0]
-            loss_boxes.append(loss_box)
+            # fluid.layers.Print(fluid.layers.reduce_min(giou))
+            # fluid.layers.Print(fluid.layers.reduce_max(giou))
+            loss_box = fluid.layers.reduce_sum(
+                (1 - giou) *
+                mask) * self.loss_weights[0] * self.train_batch_size
+            # fluid.layers.Print(loss_box)
+            loss_boxes.append(loss_box / nm)
             pcls = output[:, :, :, :, 5:]
-            tcls = output[:, :, :, :, 5:]
+            tcls = target[:, :, :, :, 5:]
+            pcls = fluid.layers.reshape(pcls, [-1, num_classes])
+            tcls = fluid.layers.reshape(tcls, [-1, num_classes])
+            loss_cls = fluid.layers.reduce_mean(
+                fluid.layers.sigmoid_cross_entropy_with_logits(pcls, tcls),
+                dim=-1)
             loss_cls = fluid.layers.reduce_sum(
-                fluid.layers.sigmoid_cross_entropy_with_logits(
-                    pcls, tcls)) * self.loss_weights[1]
-            loss_clss.append(loss_cls)
+                loss_cls * mask) * self.loss_weights[1] * self.train_batch_size
+            loss_clss.append(loss_cls / nm)
             pobj = output[:, :, :, :, 4]
-            tobj = target[:, :, :, :, 4]
-            loss_obj = fluid.layers.reduce_sum(
+            pobj = fluid.layers.reshape(pobj, [-1])
+            tobj = (1 - self.giou_ratio) * mask + self.giou_ratio * giou
+            tobj = fluid.layers.clamp(tobj, min=0.)
+            tobj.stop_gradient = True
+            loss_obj = fluid.layers.reduce_mean(
                 fluid.layers.sigmoid_cross_entropy_with_logits(
-                    pobj, tobj)) * self.balance[i]
+                    pobj, tobj)) * self.balance[i] * self.train_batch_size
             loss_objs.append(loss_obj * self.loss_weights[2])
 
         losses_all = {

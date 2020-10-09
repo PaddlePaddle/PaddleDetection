@@ -128,8 +128,8 @@ class CosineDecay(object):
 
     def __call__(self, base_lr=None, learning_rate=None):
         assert base_lr is not None, "either base LR or values should be provided"
-        lr = (1 - self.bias) * fluid.layers.cosine_decay(
-            base_lr, self.step_each_epoch, self.max_iters) + self.bias
+        lr = base_lr * ((1 - self.bias) * fluid.layers.cosine_decay(
+            1., self.step_each_epoch, self.max_iters) + self.bias)
         return lr
 
 

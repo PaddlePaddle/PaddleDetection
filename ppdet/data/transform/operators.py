@@ -388,6 +388,7 @@ class ResizeAndKeepRatio(BaseOperator):
         super(ResizeAndKeepRatio, self).__init__()
         self.target_size = target_size
         self.augment = augment
+        self.with_mosaic = with_mosaic
 
     def __call__(self, sample, context=None):
         im = sample['image']
@@ -395,20 +396,20 @@ class ResizeAndKeepRatio(BaseOperator):
 
         h0, w0 = im.shape[:2]
         r = self.target_size / max(h0, w0)
+        h1, w1 = int(h0 * r), int(w0 * r)
         if r != 1:
             interp = cv2.INTER_AREA if r < 1 and not self.augment else cv2.INTER_LINEAR
-            im = cv2.resize(
-                im, (int(w0 * r), int(h0 * r)), interpolation=interp)
+            im = cv2.resize(im, (w1, h1), interpolation=interp)
 
         bbox = bbox * (r, r, r, r)
-        bbox = bbox.clip(h0, w0)
+        bbox[:, [0, 2]] = bbox[:, [0, 2]].clip(0, w1)
+        bbox[:, [1, 3]] = bbox[:, [1, 3]].clip(0, h1)
 
         sample['image'] = im
         sample['im_size'] = [float(h0), float(w0)]
         sample['im_scale'] = [1. / r, 1. / r]
         sample['gt_bbox'] = bbox
-
-        if self.with_mosaic and mosaic in sample:
+        if self.with_mosaic and 'mosaic' in sample:
             for x in sample['mosaic']:
                 self.__call__(x, context)
 
@@ -2684,6 +2685,7 @@ class Rotate(BaseOperator):
         im = sample['image']
         bbox = sample['gt_bbox']
         label = sample['gt_class']
+        score = sample['gt_score']
 
         # rotate image
         height, width = im.shape[:2]
@@ -2695,13 +2697,14 @@ class Rotate(BaseOperator):
 
         # rotate bbox
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(bbox, label, M, width, height,
-                                                 self.area_thr)
+            new_bbox, new_label, new_score = transform_bbox(
+                bbox, label, score, M, width, height, self.area_thr)
         else:
-            new_bbox, new_label = bbox, label
+            new_bbox, new_label, new_score = bbox, label, score
         sample['image'] = im
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
+        sample['gt_score'] = new_score
         return sample
 
 
@@ -2773,6 +2776,7 @@ class Shear(BaseOperator):
         im = sample['image']
         bbox = sample['gt_bbox']
         label = sample['gt_class']
+        score = sample['gt_score']
 
         # shear image
         height, width = im.shape[:2]
@@ -2784,13 +2788,14 @@ class Shear(BaseOperator):
 
         # shear box
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(bbox, label, M, width, height,
-                                                 self.area_thr)
+            new_bbox, new_label, new_score = transform_bbox(
+                bbox, label, score, M, width, height, self.area_thr)
         else:
-            new_bbox, new_label = bbox, label
+            new_bbox, new_label, new_score = bbox, label, score
         sample['image'] = im
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
+        sample['gt_score'] = new_score
         return sample
 
 
@@ -3089,9 +3094,9 @@ class RandomPerspective(BaseOperator):
         im = sample['image']
         bbox = sample['gt_bbox']
         label = sample['gt_class']
-
-        height = im.shape[0] + self.border[0]
-        width = im.shape[1] + self.border[1]
+        score = sample['gt_score']
+        height = im.shape[0] + self.border[0] * 2
+        width = im.shape[1] + self.border[1] * 2
 
         # center 
         C = np.eye(3)
@@ -3144,20 +3149,22 @@ class RandomPerspective(BaseOperator):
                     borderValue=self.border_value)
 
         if bbox.shape[0] > 0:
-            new_bbox, new_label = transform_bbox(
+            new_bbox, new_label, new_score = transform_bbox(
                 bbox,
                 label,
+                score,
                 M,
                 width,
                 height,
                 area_thr=self.area_thr,
                 perspective=self.perspective)
         else:
-            new_bbox, new_label = bbox, label
+            new_bbox, new_label, new_score = bbox, label, score
 
         sample['image'] = im
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
+        sample['gt_score'] = new_score.astype(np.float32)
         return sample
 
 
@@ -3191,18 +3198,22 @@ class Mosaic(BaseOperator):
         super(Mosaic, self).__init__()
         self.target_size = target_size
         if mosaic_border is None:
-            mosaic_border = (-target_size // 2, target_size // 2)
+            mosaic_border = (-target_size // 2, -target_size // 2)
         self.mosaic_border = mosaic_border
         self.border_value = border_value
 
     def __call__(self, sample, context=None):
+        if 'mosaic' not in sample:
+            return sample
         s = self.target_size
-        ims, bboxes, labels = [sample['image']], [sample['gt_bbox']
-                                                  ], [sample['gt_class']]
+        ims, bboxes, labels, scores = [sample['image']], [
+            sample['gt_bbox']
+        ], [sample['gt_class']], [sample['gt_score']]
         for x in sample['mosaic']:
             ims.append(x['image'])
             bboxes.append(x['gt_bbox'])
             labels.append(x['gt_class'])
+            scores.append(x['gt_score'])
         yc, xc = [
             int(random.uniform(-x, 2 * s + x)) for x in self.mosaic_border
         ]
@@ -3237,7 +3248,9 @@ class Mosaic(BaseOperator):
 
         new_bbox = np.vstack(bboxes)
         new_label = np.vstack(labels)
+        new_score = np.vstack(scores)
         sample['image'] = new_im.astype(np.uint8)
         sample['gt_bbox'] = new_bbox.astype(np.float32)
         sample['gt_class'] = new_label.astype(np.int32)
+        sample['gt_score'] = new_score.astype(np.float32)
         return sample
