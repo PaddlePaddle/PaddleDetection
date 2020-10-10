@@ -126,9 +126,9 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
     num_classes 模型中分类数量。注意在FasterRCNN中，需要将 `with_background=true 且 num_classes=数据num_classes + 1`  
 
 - 7、dataset路径设置
-    - 'dataset_dir' : 数据路径设置
-    - 'image_dir'   : 图像文件夹路径，相对于`dataset_dir`的相对路径，也可以设置为全局路径。
-    - 'anno_path'   :
+    - `dataset_dir` : 数据路径设置
+    - `image_dir`   : 图像文件夹路径，相对于`dataset_dir`的相对路径，也可以设置为全局路径。
+    - `anno_path`   :
         - 训练和评估时，表示标注文件路径，相对于`dataset_dir`的相对路径，也可以设置为全局路径。
         - 测试时，表示类别映射文件路径，相对于`dataset_dir`的相对路径，也可以设置为全局路径。`VOC`数据中是`lable_list.txt`文件路径，`COCO`数据中是包含类别的`json`文件路径。  
 
@@ -178,7 +178,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 |        --vdl\_log_dir     |   train/infer   |  指定 VisualDL 记录数据的存储路径  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL需Python>=3.5   |
 
 **注意:**
-**参数设置优先级， 命令行 -o 选项参数设置的优先级 > 配置文件参数设置优先级 > 配置文件中的__READER__.yml中的参数设置优先级，高优先级会覆盖低优先级的参数设置**
+**参数设置优先级， 命令行 -o 选项参数设置的优先级 > 配置文件参数设置优先级 > 配置文件中的`__READER__.yml`中的参数设置优先级，高优先级会覆盖低优先级的参数设置**
 
 ##### 开始训练
 ```
@@ -325,95 +325,95 @@ python slim/prune/export_model.py \
 详细部署文档请参考[PaddleDetection预测部署文档](../../deploy/README.md)。这里以PaddleServing部署方式为例说明。
 
 ##### 安装`paddle-serving-client`和`paddle-serving-server`  
-    ```
-    # 安装 paddle-serving-client
-    pip install paddle-serving-client -i https://mirror.baidu.com/pypi/simple
+```
+# 安装 paddle-serving-client
+pip install paddle-serving-client -i https://mirror.baidu.com/pypi/simple
 
-    # 安装 paddle-serving-server
-    pip install paddle-serving-server -i https://mirror.baidu.com/pypi/simple
+# 安装 paddle-serving-server
+pip install paddle-serving-server -i https://mirror.baidu.com/pypi/simple
 
-    # 安装 paddle-serving-server-gpu
-    pip install paddle-serving-server-gpu -i https://mirror.baidu.com/pypi/simple
-    ```
+# 安装 paddle-serving-server-gpu
+pip install paddle-serving-server-gpu -i https://mirror.baidu.com/pypi/simple
+```
 
 ##### 导出模型  
-    ```
-    python tools/export_serving_model.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true weights=output/yolov3_mobilenet_v1_roadsign/best_model --output_dir=./inference_model
-    ```
+```
+python tools/export_serving_model.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true weights=output/yolov3_mobilenet_v1_roadsign/best_model --output_dir=./inference_model
+```
 
-    以上命令会在./inference_model文件夹下生成一个`yolov3_mobilenet_v1_roadsign`文件夹：
-    ```
-    inference_model
-    │   ├── yolov3_mobilenet_v1_roadsign
-    │   │   ├── infer_cfg.yml
-    │   │   ├── serving_client
-    │   │   │   ├── serving_client_conf.prototxt
-    │   │   │   ├── serving_client_conf.stream.prototxt
-    │   │   ├── serving_server
-    │   │   │   ├── conv1_bn_mean
-    │   │   │   ├── conv1_bn_offset
-    │   │   │   ├── conv1_bn_scale
-    │   │   │   ├── ...
-    ```
+以上命令会在./inference_model文件夹下生成一个`yolov3_mobilenet_v1_roadsign`文件夹：
+```
+inference_model
+│   ├── yolov3_mobilenet_v1_roadsign
+│   │   ├── infer_cfg.yml
+│   │   ├── serving_client
+│   │   │   ├── serving_client_conf.prototxt
+│   │   │   ├── serving_client_conf.stream.prototxt
+│   │   ├── serving_server
+│   │   │   ├── conv1_bn_mean
+│   │   │   ├── conv1_bn_offset
+│   │   │   ├── conv1_bn_scale
+│   │   │   ├── ...
+```
 
-    `serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息
-    `serving_client_conf.prototxt`文件内容为：
-    ```
-    feed_var {
-      name: "image"
-      alias_name: "image"
-      is_lod_tensor: false
-      feed_type: 1
-      shape: 3
-      shape: 608
-      shape: 608
-    }
-    feed_var {
-      name: "im_size"
-      alias_name: "im_size"
-      is_lod_tensor: false
-      feed_type: 2
-      shape: 2
-    }
-    fetch_var {
-      name: "multiclass_nms_0.tmp_0"
-      alias_name: "multiclass_nms_0.tmp_0"
-      is_lod_tensor: true
-      fetch_type: 1
-      shape: -1
-    }
-    ```
+`serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息
+`serving_client_conf.prototxt`文件内容为：
+```
+feed_var {
+  name: "image"
+  alias_name: "image"
+  is_lod_tensor: false
+  feed_type: 1
+  shape: 3
+  shape: 608
+  shape: 608
+}
+feed_var {
+  name: "im_size"
+  alias_name: "im_size"
+  is_lod_tensor: false
+  feed_type: 2
+  shape: 2
+}
+fetch_var {
+  name: "multiclass_nms_0.tmp_0"
+  alias_name: "multiclass_nms_0.tmp_0"
+  is_lod_tensor: true
+  fetch_type: 1
+  shape: -1
+}
+```
 
 ##### 启动PaddleServing服务
 
-    ```
-    cd inference_model/yolov3_mobilenet_v1_roadsign/
+```
+cd inference_model/yolov3_mobilenet_v1_roadsign/
 
-    # GPU
-    python -m paddle_serving_server_gpu.serve --model serving_server --port 9393 --gpu_ids 0
+# GPU
+python -m paddle_serving_server_gpu.serve --model serving_server --port 9393 --gpu_ids 0
 
-    # CPU
-    python -m paddle_serving_server.serve --model serving_server --port 9393
-    ```
+# CPU
+python -m paddle_serving_server.serve --model serving_server --port 9393
+```
 
 ##### 测试部署的服务
-    准备`label_list.txt`文件
-    ```
-    # 进入到导出模型文件夹
-    cd inference_model/yolov3_mobilenet_v1_roadsign/
+准备`label_list.txt`文件
+```
+# 进入到导出模型文件夹
+cd inference_model/yolov3_mobilenet_v1_roadsign/
 
-    # 将数据集对应的label_list.txt文件拷贝到当前文件夹下
-    cp ../../dataset/roadsign_voc/label_list.txt .
-    ```
+# 将数据集对应的label_list.txt文件拷贝到当前文件夹下
+cp ../../dataset/roadsign_voc/label_list.txt .
+```
 
-    设置测试文件`test_client.py`中的`prototxt`文件路径为`serving_client/serving_client_conf.prototxt` 。  
-    设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`
+设置测试文件`test_client.py`中的`prototxt`文件路径为`serving_client/serving_client_conf.prototxt` 。  
+设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`
 
-    测试
-    ```
-    # 进入目录
-    cd inference_model/yolov3_mobilenet_v1_roadsign/
+测试
+```
+# 进入目录
+cd inference_model/yolov3_mobilenet_v1_roadsign/
 
-    # 测试代码 test_client.py 会自动创建output文件夹，并在output下生成`bbox.json`和`road554.png`两个文件
-    python ../../deploy/serving/test_client.py ../../demo/road554.png
-    ```
+# 测试代码 test_client.py 会自动创建output文件夹，并在output下生成`bbox.json`和`road554.png`两个文件
+python ../../deploy/serving/test_client.py ../../demo/road554.png
+```
