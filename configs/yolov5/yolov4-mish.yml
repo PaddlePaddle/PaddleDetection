@@ -1,19 +1,21 @@
 architecture: YOLOv5
 use_gpu: true
-max_iters: 85000
+max_iters: 550000
 log_smooth_window: 1
 save_dir: output
-snapshot_iter: 5000
+snapshot_iter: 10000
 metric: COCO
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ResNet50_vd_dcn_db_obj365_pretrained.tar
+pretrain_weights: ''
 weights: output/yolov3_r50vd_dcn_db_iouaware_obj365_pretrained_coco/model_final
-use_fine_grained_loss: false
+use_fine_grained_loss: true
 num_classes: 80
+use_ema: true
+ema_decay: 0.9999
 
 YOLOv5:
   backbone: CSPYolo
   yolo_head: YOLOv5Head
-  use_fine_grained_loss: false
+  use_fine_grained_loss: true
 
 CSPYolo:
   depth_multiple: 1.33
@@ -41,7 +43,7 @@ CSPYolo:
    [-1, 1, 'Upsample', ['None', 2, 'nearest']],
    [8, 1, 'Conv', [256, 1, 1]], # route backbone P4
    [[-1, -2], 1, 'Concat', [1]],
-   [-1, 2, 'BottleneckCSP2', [256]], # 16 
+   [-1, 2, 'BottleneckCSP2', [256]], # 16
    [-1, 1, 'Conv', [128, 1, 1]],
    [-1, 1, 'Upsample', ['None', 2, 'nearest']],
    [6, 1, 'Conv', [128, 1, 1]], # route backbone P3
@@ -62,9 +64,8 @@ YOLOv5Head:
   anchors: [[12, 16], [19, 36], [40, 28], [36, 75], [76, 55],
             [72, 146], [142, 110], [192, 243], [459, 401]]
   anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
-  yolo_loss: YOLOv3Loss
+  yolo_loss: YOLOv5Loss
   stride: [8, 16, 32]
-  start: 31
   nms:
     background_label: -1
     keep_top_k: 300
@@ -74,28 +75,26 @@ YOLOv5Head:
     score_threshold: 0.001 #0.001
   weight_prefix_name: 'model'
 
+YOLOv5Loss:
+  giou_ratio: 1.0
+  balance: [4.0, 1.0, 0.4]
+  loss_weights: [0.05, 0.5, 1.0] # giou, cls, obj
 
-YOLOv3Loss:
-  batch_size: 4
-  ignore_thresh: 0.7
-  label_smooth: false
-  use_fine_grained_loss: false
 
 LearningRate:
-  base_lr: 0.001
+  base_lr: 0.01
   schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones:
-    - 55000
-    - 75000
+  - !CosineDecay
+    bias: 0.2
+    max_iters: 300 # max epochs
+    step_each_epoch: 3696 # total // batch_size
   - !LinearWarmup
     start_factor: 0.
-    steps: 4000
+    steps: 11089 # 3 * step_each_epoch
 
 OptimizerBuilder:
   optimizer:
-    momentum: 0.9
+    momentum: 0.937
     type: Momentum
   regularizer:
     factor: 0.0005

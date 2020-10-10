@@ -33,6 +33,7 @@ from paddle.fluid import profiler
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
+from ppdet.optimizer import ExponentialMovingAverageV5
 
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
@@ -126,9 +127,8 @@ def main():
                     loss /= ctx.get_loss_scale_var()
 
             if 'use_ema' in cfg and cfg['use_ema']:
-                global_steps = _decay_step_counter()
-                ema = ExponentialMovingAverage(
-                    cfg['ema_decay'], thres_steps=global_steps)
+                # global_steps = _decay_step_counter()
+                ema = ExponentialMovingAverage(cfg['ema_decay'])
                 ema.update()
 
     # parse train fetches

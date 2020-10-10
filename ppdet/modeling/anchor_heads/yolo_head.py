@@ -33,7 +33,7 @@ except Exception:
     from collections import Sequence
 from ppdet.utils.check import check_version
 
-__all__ = ['YOLOv3Head', 'YOLOv4Head']
+__all__ = ['YOLOv3Head', 'YOLOv4Head', 'PPYOLOHead']
 
 
 @register
@@ -637,3 +637,151 @@ class YOLOv4Head(YOLOv3Head):
             outputs.append(block_out)
 
         return outputs
+
+
+@register
+class PPYOLOHead(YOLOv3Head):
+    """
+    Head block for YOLOv3 network
+
+    Args:
+        conv_block_num (int): number of conv block in each detection block
+        norm_decay (float): weight decay for normalization layer weights
+        num_classes (int): number of output classes
+        anchors (list): anchors
+        anchor_masks (list): anchor masks
+        nms (object): an instance of `MultiClassNMS`
+    """
+    __inject__ = ['yolo_loss', 'nms']
+    __shared__ = ['num_classes', 'weight_prefix_name']
+
+    def __init__(self,
+                 conv_block_num=2,
+                 norm_decay=0.,
+                 num_classes=80,
+                 anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
+                          [59, 119], [116, 90], [156, 198], [373, 326]],
+                 anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 drop_block=False,
+                 coord_conv=False,
+                 iou_aware=False,
+                 iou_aware_factor=0.4,
+                 block_size=3,
+                 keep_prob=0.9,
+                 yolo_loss="YOLOv5Loss",
+                 spp=False,
+                 nms=MultiClassNMS(
+                     score_threshold=0.01,
+                     nms_top_k=1000,
+                     keep_top_k=100,
+                     nms_threshold=0.45,
+                     background_label=-1).__dict__,
+                 weight_prefix_name='',
+                 downsample=[32, 16, 8],
+                 scale_x_y=1.0,
+                 clip_bbox=True):
+        # check_version("1.8.4")
+        self.conv_block_num = conv_block_num
+        self.norm_decay = norm_decay
+        self.num_classes = num_classes
+        self.anchor_masks = anchor_masks
+        self._parse_anchors(anchors)
+        self.yolo_loss = yolo_loss
+        self.nms = nms
+        self.prefix_name = weight_prefix_name
+        self.drop_block = drop_block
+        self.iou_aware = iou_aware
+        self.coord_conv = coord_conv
+        self.iou_aware_factor = iou_aware_factor
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.use_spp = spp
+        if isinstance(nms, dict):
+            self.nms = MultiClassNMS(**nms)
+        self.downsample = downsample
+        self.scale_x_y = scale_x_y
+        self.clip_bbox = clip_bbox
+
+    def get_loss(self, inputs, gt_box, gt_label, gt_score, targets):
+        outputs = self._get_outputs(inputs, is_train=True)
+        return self.yolo_loss(outputs, targets, gt_box, gt_label,
+                              self.mask_anchors, self.num_classes, self.stride)
+
+    def get_prediction(self,
+                       inputs,
+                       im_size,
+                       im_scale,
+                       im_pad,
+                       exclude_nms=False):
+        outputs = self._get_outputs(inputs, is_train=False)
+        boxes, scores = [], []
+        for i, output in enumerate(outputs):
+            output = fluid.layers.sigmoid(output)
+            output_shape = fluid.layers.shape(output)
+            bs, c, h, w = output_shape[0], output_shape[1], output_shape[
+                2], output_shape[3]
+            na = len(self.anchor_masks[i])
+            no = self.num_classes + 5
+            output = fluid.layers.reshape(output, [bs, na, no, h, w])
+            output = fluid.layers.transpose(output, perm=[0, 1, 3, 4, 2])
+            grid = self._make_grid(w, h)
+            # decode
+            xy = (output[:, :, :, :, 0:2] * 2 - 0.5 + grid) * self.stride[i]
+            anchor = np.array(self.mask_anchors[i]).reshape(
+                (1, 3, 1, 1, 2)).astype(np.float32)
+            anchor = self._create_tensor_from_numpy(anchor)
+            wh = (output[:, :, :, :, 2:4] * 2)**2 * anchor
+            box = self._xywh2xxyy(xy, wh)
+            box = fluid.layers.reshape(box, (bs, -1, 4))
+            box = self._scale_box(box, im_scale, im_pad)
+            box = self._clip_box(box, im_size)
+            boxes.append(box)
+            # calculate prop
+            objectness = output[:, :, :, :, 4:5]
+            cls_p = output[:, :, :, :, 5:] * objectness
+            score = fluid.layers.reshape(cls_p, (bs, -1, self.num_classes))
+            scores.append(score)
+
+        yolo_boxes = fluid.layers.concat(boxes, axis=1)
+        yolo_scores = fluid.layers.concat(scores, axis=1)
+        if exclude_nms:
+            return {'bbox': yolo_scores}
+        if type(self.nms) is not MultiClassSoftNMS:
+            yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
+        pred = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
+        return {'bbox': pred}
+
+    def _make_grid(self, nx, ny):
+        # start = self._create_tensor_from_numpy(np.array([0], dtype=np.int32))
+        # step = self._create_tensor_from_numpy(np.array([1], dtype=np.int32))
+        yv, xv = fluid.layers.meshgrid([
+            fluid.layers.range(0, ny, 1, 'float32'),
+            fluid.layers.range(0, nx, 1, 'float32')
+        ])
+        grid = fluid.layers.stack([xv, yv], axis=2)
+        return fluid.layers.reshape(grid, (1, 1, ny, nx, 2))
+
+    def _xywh2xxyy(self, xy, wh):
+        x1y1 = xy - wh / 2
+        x2y2 = xy + wh / 2
+        return fluid.layers.concat([x1y1, x2y2], axis=-1)
+
+    def _scale_box(self, box, im_scale, im_pad):
+        x1 = (box[:, :, 0:1] - im_pad[:, 1:2]) * im_scale[:, 1:2]
+        y1 = (box[:, :, 1:2] - im_pad[:, 0:1]) * im_scale[:, 0:1]
+        x2 = (box[:, :, 2:3] - im_pad[:, 1:2]) * im_scale[:, 1:2] - 1
+        y2 = (box[:, :, 3:4] - im_pad[:, 0:1]) * im_scale[:, 0:1] - 1
+        return fluid.layers.concat([x1, y1, x2, y2], axis=-1)
+
+    def _clip_box(self, box, im_size):
+        bs = fluid.layers.shape(box)[0]
+        outputs = []
+        for i in range(1):
+            s = fluid.layers.cast(im_size[i], dtype=np.float32)
+            x1 = fluid.layers.clamp(box[i, :, 0:1], min=0., max=s[1])
+            y1 = fluid.layers.clamp(box[i, :, 1:2], min=0., max=s[0])
+            x2 = fluid.layers.clamp(box[i, :, 2:3], min=0., max=s[1])
+            y2 = fluid.layers.clamp(box[i, :, 3:4], min=0., max=s[0])
+            output = fluid.layers.concat([x1, y1, x2, y2], axis=-1)
+            outputs.append(output)
+        return fluid.layers.stack(outputs, axis=0)

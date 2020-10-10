@@ -9,6 +9,8 @@ pretrain_weights: ''
 weights: output/yolov3_r50vd_dcn_db_iouaware_obj365_pretrained_coco/model_final
 use_fine_grained_loss: true
 num_classes: 80
+use_ema: true
+ema_decay: 0.9999
 
 YOLOv5:
   backbone: CSPYolo
