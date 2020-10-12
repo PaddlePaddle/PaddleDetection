@@ -8,7 +8,7 @@ if parent_path not in sys.path:
     sys.path.append(parent_path)
 
 import time
-# ignore numba warning 
+# ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
 import random
