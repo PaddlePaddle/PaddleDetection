@@ -35,7 +35,7 @@ PPYOLOHead:
             [116, 90], [156, 198], [373, 326]]
   norm_decay: 0.
   coord_conv: true
-  iou_aware: true
+  iou_aware: false
   iou_aware_factor: 0.4
   scale_x_y: 1.05
   spp: true
@@ -68,4 +68,4 @@ OptimizerBuilder:
     factor: 0.0005
     type: L2
 
-_READER_: 'yolov5_reader.yml'
+_READER_: 'ppyolo_reader.yml'

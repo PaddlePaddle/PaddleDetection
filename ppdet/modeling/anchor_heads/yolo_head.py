@@ -685,7 +685,7 @@ class PPYOLOHead(YOLOv3Head):
         self.norm_decay = norm_decay
         self.num_classes = num_classes
         self.anchor_masks = anchor_masks
-        self._parse_anchors(anchors)
+        self.anchors = self._parse_anchors(anchors, anchor_masks)
         self.yolo_loss = yolo_loss
         self.nms = nms
         self.prefix_name = weight_prefix_name
@@ -702,10 +702,16 @@ class PPYOLOHead(YOLOv3Head):
         self.scale_x_y = scale_x_y
         self.clip_bbox = clip_bbox
 
+    def _parse_anchors(self, anchors, anchor_masks):
+        output = []
+        for anchor_mask in anchor_masks:
+            output.append([anchors[i] for i in anchor_mask])
+        return output
+
     def get_loss(self, inputs, gt_box, gt_label, gt_score, targets):
         outputs = self._get_outputs(inputs, is_train=True)
-        return self.yolo_loss(outputs, targets, gt_box, gt_label,
-                              self.mask_anchors, self.num_classes, self.stride)
+        return self.yolo_loss(outputs, targets, gt_box, gt_label, self.anchors,
+                              self.num_classes, self.downsample)
 
     def get_prediction(self,
                        inputs,
@@ -726,8 +732,8 @@ class PPYOLOHead(YOLOv3Head):
             output = fluid.layers.transpose(output, perm=[0, 1, 3, 4, 2])
             grid = self._make_grid(w, h)
             # decode
-            xy = (output[:, :, :, :, 0:2] * 2 - 0.5 + grid) * self.stride[i]
-            anchor = np.array(self.mask_anchors[i]).reshape(
+            xy = (output[:, :, :, :, 0:2] * 2 - 0.5 + grid) * self.downsample[i]
+            anchor = np.array(self.anchors[i]).reshape(
                 (1, 3, 1, 1, 2)).astype(np.float32)
             anchor = self._create_tensor_from_numpy(anchor)
             wh = (output[:, :, :, :, 2:4] * 2)**2 * anchor
