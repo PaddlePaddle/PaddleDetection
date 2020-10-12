@@ -172,7 +172,7 @@ def run(FLAGS, cfg):
             logs = train_stats.log()
             if iter_id % cfg.log_iter == 0:
                 ips = float(cfg['TrainReader']['batch_size']) / time_cost
-                strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, time: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
                     iter_id, curr_lr, logs, eta, time_cost, ips)
                 logger.info(strs)
             # Save Stage 
