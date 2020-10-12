@@ -1,7 +1,7 @@
 architecture: CascadeRCNN
 use_gpu: true
 max_iters: 180000
-log_smooth_window: 50
+log_iter: 50
 save_dir: output
 snapshot_iter: 10000
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/resnet50.pdparams
