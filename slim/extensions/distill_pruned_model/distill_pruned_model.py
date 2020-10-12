@@ -44,7 +44,7 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-def split_distill(split_output_names, weight):
+def split_distill(split_output_names, weight, target_number):
     """
     Add fine grained distillation losses.
     Each loss is composed by distill_reg_loss, distill_cls_loss and
@@ -54,16 +54,27 @@ def split_distill(split_output_names, weight):
     for name in split_output_names:
         student_var.append(fluid.default_main_program().global_block().var(
             name))
-    s_x0, s_y0, s_w0, s_h0, s_obj0, s_cls0 = student_var[0:6]
-    s_x1, s_y1, s_w1, s_h1, s_obj1, s_cls1 = student_var[6:12]
-    s_x2, s_y2, s_w2, s_h2, s_obj2, s_cls2 = student_var[12:18]
+    s_x, s_y, s_w, s_h, s_obj, s_cls = [], [], [], [], [], []
+    for i in range(target_number):
+        s_x.append(student_var[i * 6])
+        s_y.append(student_var[i * 6 + 1])
+        s_w.append(student_var[i * 6 + 2])
+        s_h.append(student_var[i * 6 + 3])
+        s_obj.append(student_var[i * 6 + 4])
+        s_cls.append(student_var[i * 6 + 5])
+
     teacher_var = []
     for name in split_output_names:
         teacher_var.append(fluid.default_main_program().global_block().var(
             'teacher_' + name))
-    t_x0, t_y0, t_w0, t_h0, t_obj0, t_cls0 = teacher_var[0:6]
-    t_x1, t_y1, t_w1, t_h1, t_obj1, t_cls1 = teacher_var[6:12]
-    t_x2, t_y2, t_w2, t_h2, t_obj2, t_cls2 = teacher_var[12:18]
+    t_x, t_y, t_w, t_h, t_obj, t_cls = [], [], [], [], [], []
+    for i in range(target_number):
+        t_x.append(teacher_var[i * 6])
+        t_y.append(teacher_var[i * 6 + 1])
+        t_w.append(teacher_var[i * 6 + 2])
+        t_h.append(teacher_var[i * 6 + 3])
+        t_obj.append(teacher_var[i * 6 + 4])
+        t_cls.append(teacher_var[i * 6 + 5])
 
     def obj_weighted_reg(sx, sy, sw, sh, tx, ty, tw, th, tobj):
         loss_x = fluid.layers.sigmoid_cross_entropy_with_logits(
@@ -92,26 +103,24 @@ def split_distill(split_output_names, weight):
             fluid.layers.sigmoid_cross_entropy_with_logits(sobj, obj_mask))
         return loss
 
-    distill_reg_loss0 = obj_weighted_reg(s_x0, s_y0, s_w0, s_h0, t_x0, t_y0,
-                                         t_w0, t_h0, t_obj0)
-    distill_reg_loss1 = obj_weighted_reg(s_x1, s_y1, s_w1, s_h1, t_x1, t_y1,
-                                         t_w1, t_h1, t_obj1)
-    distill_reg_loss2 = obj_weighted_reg(s_x2, s_y2, s_w2, s_h2, t_x2, t_y2,
-                                         t_w2, t_h2, t_obj2)
-    distill_reg_loss = fluid.layers.sum(
-        [distill_reg_loss0, distill_reg_loss1, distill_reg_loss2])
+    distill_reg_losses = []
+    for i in range(target_number):
+        distill_reg_losses.append(
+            obj_weighted_reg(s_x[i], s_y[i], s_w[i], s_h[i], t_x[i], t_y[i],
+                             t_w[i], t_h[i], t_obj[i]))
+    distill_reg_loss = fluid.layers.sum(distill_reg_losses)
 
-    distill_cls_loss0 = obj_weighted_cls(s_cls0, t_cls0, t_obj0)
-    distill_cls_loss1 = obj_weighted_cls(s_cls1, t_cls1, t_obj1)
-    distill_cls_loss2 = obj_weighted_cls(s_cls2, t_cls2, t_obj2)
-    distill_cls_loss = fluid.layers.sum(
-        [distill_cls_loss0, distill_cls_loss1, distill_cls_loss2])
+    distill_cls_losses = []
+    for i in range(target_number):
+        distill_cls_losses.append(
+            obj_weighted_cls(s_cls[i], t_cls[i], t_obj[i]))
+    distill_cls_loss = fluid.layers.sum(distill_cls_losses)
 
-    distill_obj_loss0 = obj_loss(s_obj0, t_obj0)
-    distill_obj_loss1 = obj_loss(s_obj1, t_obj1)
-    distill_obj_loss2 = obj_loss(s_obj2, t_obj2)
-    distill_obj_loss = fluid.layers.sum(
-        [distill_obj_loss0, distill_obj_loss1, distill_obj_loss2])
+    distill_obj_losses = []
+    for i in range(target_number):
+        distill_obj_losses.append(obj_loss(s_obj[i], t_obj[i]))
+    distill_obj_loss = fluid.layers.sum(distill_obj_losses)
+
     loss = (distill_reg_loss + distill_cls_loss + distill_obj_loss) * weight
     return loss
 
@@ -187,31 +196,44 @@ def main():
     checkpoint.load_params(exe, teacher_program, FLAGS.teacher_pretrained)
     teacher_program = teacher_program.clone(for_test=True)
 
+    target_number = len(model.yolo_head.anchor_masks)
+
     data_name_map = {
-        'target0': 'target0',
-        'target1': 'target1',
-        'target2': 'target2',
         'image': 'image',
         'gt_bbox': 'gt_bbox',
         'gt_class': 'gt_class',
         'gt_score': 'gt_score'
     }
+    for i in range(target_number):
+        data_name_map['target{}'.format(i)] = 'target{}'.format(i)
+
     merge(teacher_program, fluid.default_main_program(), data_name_map, place)
 
-    yolo_output_names = [
-        'strided_slice_0.tmp_0', 'strided_slice_1.tmp_0',
-        'strided_slice_2.tmp_0', 'strided_slice_3.tmp_0',
-        'strided_slice_4.tmp_0', 'transpose_0.tmp_0', 'strided_slice_5.tmp_0',
-        'strided_slice_6.tmp_0', 'strided_slice_7.tmp_0',
-        'strided_slice_8.tmp_0', 'strided_slice_9.tmp_0', 'transpose_2.tmp_0',
-        'strided_slice_10.tmp_0', 'strided_slice_11.tmp_0',
-        'strided_slice_12.tmp_0', 'strided_slice_13.tmp_0',
-        'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
+    output_names = [
+        [
+            'strided_slice_0.tmp_0', 'strided_slice_1.tmp_0',
+            'strided_slice_2.tmp_0', 'strided_slice_3.tmp_0',
+            'strided_slice_4.tmp_0', 'transpose_0.tmp_0'
+        ],
+        [
+            'strided_slice_5.tmp_0', 'strided_slice_6.tmp_0',
+            'strided_slice_7.tmp_0', 'strided_slice_8.tmp_0',
+            'strided_slice_9.tmp_0', 'transpose_2.tmp_0'
+        ],
+        [
+            'strided_slice_10.tmp_0', 'strided_slice_11.tmp_0',
+            'strided_slice_12.tmp_0', 'strided_slice_13.tmp_0',
+            'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
+        ],
     ]
+
+    yolo_output_names = []
+    for i in range(target_number):
+        yolo_output_names.extend(output_names[i])
 
     assert cfg.use_fine_grained_loss, \
         "Only support use_fine_grained_loss=True, Please set it in config file or '-o use_fine_grained_loss=true'"
-    distill_loss = split_distill(yolo_output_names, 1000)
+    distill_loss = split_distill(yolo_output_names, 1000, target_number)
     loss = distill_loss + loss
     lr_builder = create('LearningRate')
     optim_builder = create('OptimizerBuilder')

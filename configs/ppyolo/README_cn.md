@@ -50,6 +50,9 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 | PP-YOLO_2x                |    8    |      24      | ResNet50vd |   512    |         44.4         |         45.0          |      89.9      |          188.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO_2x                |    8    |      24      | ResNet50vd |   416    |         42.7         |         43.2          |     109.1      |          215.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
 | PP-YOLO_2x                |    8    |      24      | ResNet50vd |   320    |         39.5         |         40.1          |     132.2      |          242.2          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo.yml)                   |
+| PP-YOLO_ResNet18vd        |    4    |      32      | ResNet18vd |   512    |         29.3         |         29.5          |     357.1      |          657.9          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd        |    4    |      32      | ResNet18vd |   416    |         28.6         |         28.9          |     409.8      |          719.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd        |    4    |      32      | ResNet18vd |   320    |         26.2         |         26.4          |     480.7      |          763.4          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
 
 **注意:**
 
@@ -63,16 +66,16 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 - YOLOv4(AlexyAB)行`模型下载`和`配置文件`为PaddleDetection复现的YOLOv4模型，目前评估精度已对齐，支持finetune，训练精度对齐中，可参见[PaddleDetection YOLOv4 模型](../yolov4/README.md)
 - PP-YOLO使用每GPU `batch_size=24`训练，需要使用显存为32G的GPU，我们也提供了`batch_size=12`的可以在显存为16G的GPU上训练的配置文件`ppyolo_2x_bs12.yml`，使用这个配置文件训练在COCO val2017数据集上评估结果为`mAP(IoU=0.5:0.95) = 45.1%`，可通过[ppyolo_2x_bs12模型](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x_bs12.pdparams)下载权重。
 
-### PP-YOLO 移动端模型
+### PP-YOLO 轻量级模型
 
-|          模型            | GPU个数 | 每GPU图片个数 |  骨干网络  | 输入尺寸 | Box AP50<sup>val</sup> | Box AP50<sup>test</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | 模型下载 | 配置文件 |
-|:------------------------:|:-------:|:-------------:|:----------:| :-------:| :--------------------: | :---------------------: |------------: | :---------------------: | :------: | :------: |
-| PP-YOLO_r18vd            |    4    |      32       | ResNet18vd |   416    |         47.0           |           47.7          |   401.6      |          724.6          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
-| PP-YOLO_r18vd            |    4    |      32       | ResNet18vd |   320    |         43.7           |           44.4          |   478.5      |          791.3          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
+|          模型                | GPU个数 | 每GPU图片个数 |  模型体积  | 输入尺寸 | Box AP<sup>val</sup> | Kirin 990 (FPS) | 模型下载 | 配置文件 |
+|:----------------------------:|:-------:|:-------------:|:----------:| :-------:| :------------------: | :-------------: |------------: | :---------------------: |
+| PP-YOLO_MobileNetV3_large    |    4    |      32       |    18MB    |   320    |         22.0         |       14.1      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
+| PP-YOLO_MobileNetV3_small    |    4    |      32       |    11MB    |   320    |         16.8         |       21.5      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
-- PP-YOLO_r18vd 模型使用COCO数据集中train2017作为训练集，使用val2017和test-dev2017作为测试集，Box AP50<sup>val</sup>为`mAP(IoU=0.5)`评估结果。
-- PP-YOLO_r18vd 模型训练过程中使用4GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
-- PP-YOLO_r18vd 模型推理速度测试环境配置和测试方法与PP-YOLO模型一致。
+- PP-YOLO_MobileNetV3 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP50<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果。
+- PP-YOLO_MobileNetV3 模型训练过程中使用4GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
+- PP-YOLO_MobileNetV3 模型推理速度测试环境配置为麒麟990芯片单线程。
 
 ## 使用说明
 
