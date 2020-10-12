@@ -105,12 +105,15 @@ def split_distill(split_output_names, weight, target_number):
 
     distill_reg_losses = []
     for i in range(target_number):
-        distill_reg_losses.append(obj_weighted_reg(s_x[i], s_y[i], s_w[i], s_h[i], t_x[i], t_y[i], t_w[i], t_h[i], t_obj[i]))
+        distill_reg_losses.append(
+            obj_weighted_reg(s_x[i], s_y[i], s_w[i], s_h[i], t_x[i], t_y[i],
+                             t_w[i], t_h[i], t_obj[i]))
     distill_reg_loss = fluid.layers.sum(distill_reg_losses)
 
     distill_cls_losses = []
     for i in range(target_number):
-        distill_cls_losses.append(obj_weighted_cls(s_cls[i], t_cls[i], t_obj[i]))
+        distill_cls_losses.append(
+            obj_weighted_cls(s_cls[i], t_cls[i], t_obj[i]))
     distill_cls_loss = fluid.layers.sum(distill_cls_losses)
 
     distill_obj_losses = []
@@ -207,12 +210,21 @@ def main():
     merge(teacher_program, fluid.default_main_program(), data_name_map, place)
 
     output_names = [
-        ['strided_slice_0.tmp_0', 'strided_slice_1.tmp_0', 'strided_slice_2.tmp_0',
-        'strided_slice_3.tmp_0', 'strided_slice_4.tmp_0', 'transpose_0.tmp_0'],
-        ['strided_slice_5.tmp_0', 'strided_slice_6.tmp_0', 'strided_slice_7.tmp_0',
-        'strided_slice_8.tmp_0', 'strided_slice_9.tmp_0', 'transpose_2.tmp_0'],
-        ['strided_slice_10.tmp_0', 'strided_slice_11.tmp_0', 'strided_slice_12.tmp_0',
-        'strided_slice_13.tmp_0', 'strided_slice_14.tmp_0', 'transpose_4.tmp_0'],
+        [
+            'strided_slice_0.tmp_0', 'strided_slice_1.tmp_0',
+            'strided_slice_2.tmp_0', 'strided_slice_3.tmp_0',
+            'strided_slice_4.tmp_0', 'transpose_0.tmp_0'
+        ],
+        [
+            'strided_slice_5.tmp_0', 'strided_slice_6.tmp_0',
+            'strided_slice_7.tmp_0', 'strided_slice_8.tmp_0',
+            'strided_slice_9.tmp_0', 'transpose_2.tmp_0'
+        ],
+        [
+            'strided_slice_10.tmp_0', 'strided_slice_11.tmp_0',
+            'strided_slice_12.tmp_0', 'strided_slice_13.tmp_0',
+            'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
+        ],
     ]
 
     yolo_output_names = []
