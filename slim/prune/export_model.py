@@ -27,6 +27,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.export_utils import save_infer_model, dump_infer_config
 from ppdet.utils.check import check_config, check_version
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
@@ -35,47 +36,6 @@ import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
-
-
-def prune_feed_vars(feeded_var_names, target_vars, prog):
-    """
-    Filter out feed variables which are not in program,
-    pruned feed variables are only used in post processing
-    on model output, which are not used in program, such
-    as im_id to identify image order, im_shape to clip bbox
-    in image.
-    """
-    exist_var_names = []
-    prog = prog.clone()
-    prog = prog._prune(targets=target_vars)
-    global_block = prog.global_block()
-    for name in feeded_var_names:
-        try:
-            v = global_block.var(name)
-            exist_var_names.append(str(v.name))
-        except Exception:
-            logger.info('save_inference_model pruned unused feed '
-                        'variables {}'.format(name))
-            pass
-    return exist_var_names
-
-
-def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
-    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
-    feed_var_names = [var.name for var in feed_vars.values()]
-    target_vars = list(test_fetches.values())
-    feed_var_names = prune_feed_vars(feed_var_names, target_vars, infer_prog)
-    logger.info("Export inference model to {}, input: {}, output: "
-                "{}...".format(save_dir, feed_var_names,
-                               [str(var.name) for var in target_vars]))
-    fluid.io.save_inference_model(
-        save_dir,
-        feeded_var_names=feed_var_names,
-        target_vars=target_vars,
-        executor=exe,
-        main_program=infer_prog,
-        params_filename="__params__")
 
 
 def main():
@@ -132,6 +92,7 @@ def main():
     exe.run(startup_prog)
     checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
 
+    dump_infer_config(FLAGS, cfg)
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
 
