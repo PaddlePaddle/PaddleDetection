@@ -50,6 +50,9 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     512     |         44.4         |         45.0          |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     416     |         42.7         |         43.2          |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     320     |         39.5         |         40.1          |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     512     |         29.3         |         29.5          |     357.1      |          657.9          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     416     |         28.6         |         28.9          |     409.8      |          719.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     320     |         26.2         |         26.4          |     480.7      |          763.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
 
 **Notes:**
 
@@ -64,14 +67,22 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 ### PP-YOLO for mobile
 
-|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP50<sup>val</sup> | Box AP50<sup>test</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
-|:------------------------:|:----------:|:----------:|:----------:| :----------:| :--------------------: | :---------------------: | :------------: | :---------------------: | :------: | :-----: |
-| PP-YOLO_r18vd            |     4      |      32    | ResNet18vd |     416     |          47.0          |          47.7           |     401.6      |          724.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
-| PP-YOLO_r18vd            |     4      |      32    | ResNet18vd |     320     |          43.7          |          44.4           |     478.5      |          791.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
+|            Model             | GPU number | images/GPU | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
+|:----------------------------:|:----------:|:----------:| :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
+| PP-YOLO_MobileNetV3_large    |     4      |      32    |    18MB    |     320     |         22.0         |      14.1      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |    11MB    |     320     |         16.8         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
-- PP-YOLO_r18vd is trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，Box AP50<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
-- PP-YOLO_r18vd used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
-- PP-YOLO_r18vd inference speeding testing environment and configuration is same as PP-YOLO above.
+**Notes:**
+
+- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
+- PP-YOLO_MobileNetV3 used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
+- PP-YOLO_MobileNetV3 inference speed is tested on Kirin 990 with 1 thread.
+
+### Slim PP-YOLO
+
+|            Model             | GPU number | images/GPU | Prune Ratio |        Teacher Model      | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
+|:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.1MB    |     320     |         14.4         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
 ## Getting Start
 
