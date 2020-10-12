@@ -168,7 +168,7 @@ EvalReader:
     std: [0.229, 0.224,0.225]
   - !ResizeImage
     interp: 1
-    max_size: 13330
+    max_size: 1333
     target_size: 800
     use_cv2: true
   - !Permute
