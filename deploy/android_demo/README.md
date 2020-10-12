@@ -19,5 +19,20 @@
   <img src="demo/ppdet_app_home.jpg" height="500px" ><img src="demo/ppdet_app_photo.jpg" height="500px" ><img src="demo/ppdet_app_camera.jpg" height="500px" >
 </div>
 
+### 更新预测库与模型
+
+#### 更新预测库
+
+- 参考[ Paddle-Lite文档](https://github.com/PaddlePaddle/Paddle-Lite/wiki)，编译Android等预测库，或直接下载最新[Paddle Lite预编译库](https://paddle-lite.readthedocs.io/zh/latest/quick_start/release_lib.html)。
+- 更新`app/libs`下`PaddlePredictor.jar`包，更新`app/src/main/jniLibs/arm64-v8a/libpaddle_lite_jni.so`包，更新`app/src/main/jniLibs/armeabi-v7a/libpaddle_lite_jni.so`包。
+
+#### 更新模型
+
+- 本demo中支持SSD与YOLO系列模型，如想更新模型，请替换`app/src/main/assets/models`下相关`model.nb`权重文件。
+- 如果想要加入新的算法模型，如人脸检测、实例分割等，需要在`app/src/main/assets/models`下放入新模型，并修改`app/src/main/cpp`下的数据预处理代码以适配新的模型算法。
+- 如更新的模型是非COCO数据集模型，请更新`app/src/main/assets/labels`下的类别标签文件。
+
 ### 获取更多支持
-前往[端计算模型生成平台EasyEdge](https://ai.baidu.com/easyedge/app/open_source_demo?referrerUrl=paddlelite)，获得更多开发支持
+- 本demo依赖[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)，Android工程开发可参考[Paddle-Lite Android 工程示例教程](https://paddle-lite.readthedocs.io/zh/latest/demo_guides/android_app_demo.html#android-demo)。
+- 更多Paddle-Lite的demo请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)。
+- 前往[端计算模型生成平台EasyEdge](https://ai.baidu.com/easyedge/app/open_source_demo?referrerUrl=paddlelite)，获得更多开发支持。
