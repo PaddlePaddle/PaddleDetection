@@ -8,7 +8,7 @@ if parent_path not in sys.path:
     sys.path.append(parent_path)
 
 import time
-# ignore numba warning
+# ignore numba warning 
 import warnings
 warnings.filterwarnings('ignore')
 import random
@@ -167,8 +167,7 @@ def run(FLAGS, cfg):
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
             # Log state 
             if iter_id == 0:
-                train_stats = TrainingStats(cfg.log_iter,
-                                            outputs.keys())
+                train_stats = TrainingStats(cfg.log_iter, outputs.keys())
             train_stats.update(outputs)
             logs = train_stats.log()
             if iter_id % cfg.log_iter == 0:
