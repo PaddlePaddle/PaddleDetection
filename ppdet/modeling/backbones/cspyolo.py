@@ -24,6 +24,7 @@ from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
 from ppdet.core.workspace import register
+from paddle.fluid.initializer import Uniform
 
 __all__ = ['CSPYolo']
 
@@ -37,6 +38,12 @@ def autopad(k, p):
 def make_divisible(x, divisor):
     # Returns x evenly divisble by divisor
     return math.ceil(x / divisor) * divisor
+
+
+def kaiming_init(input, filter_size):
+    fan_in = input.shape[1]
+    std = (1.0 / (fan_in * filter_size * filter_size))**0.5
+    return Uniform(0. - std, std)
 
 
 @register
@@ -143,14 +150,17 @@ class CSPYolo(object):
             stride=s,
             padding=autopad(k, p),
             groups=g,
-            param_attr=ParamAttr(name=name + '.conv.weight'),
+            param_attr=ParamAttr(
+                name=name + '.conv.weight', initializer=kaiming_init(x, k)),
             bias_attr=False)
         x = self._bn(x, name=name)
         x = self.act_cfg[act](x)
         return x
 
     def _bn(self, x, name=None):
-        param_attr = ParamAttr(name=name + '.{}.weight'.format(self.norm_type))
+        param_attr = ParamAttr(
+            regularizer=L2Decay(self.norm_decay),
+            name=name + '.{}.weight'.format(self.norm_type))
         bias_attr = ParamAttr(
             regularizer=L2Decay(self.norm_decay),
             name=name + '.{}.bias'.format(self.norm_type))
@@ -158,6 +168,7 @@ class CSPYolo(object):
         x = fluid.layers.batch_norm(
             input=x,
             epsilon=0.001,
+            momentum=0.97,
             param_attr=param_attr,
             bias_attr=bias_attr,
             moving_mean_name=name + '.{}.running_mean'.format(self.norm_type),
@@ -214,7 +225,8 @@ class CSPYolo(object):
             c_h,
             1,
             1,
-            param_attr=ParamAttr(name=name + '.cv3.weight'),
+            param_attr=ParamAttr(
+                name=name + '.cv3.weight', initializer=kaiming_init(y1, 1)),
             bias_attr=False)
         # right branch
         y2 = fluid.layers.conv2d(
@@ -222,7 +234,8 @@ class CSPYolo(object):
             c_h,
             1,
             1,
-            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            param_attr=ParamAttr(
+                name=name + '.cv2.weight', initializer=kaiming_init(x, 1)),
             bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)
@@ -256,7 +269,8 @@ class CSPYolo(object):
             c_h,
             1,
             1,
-            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            param_attr=ParamAttr(
+                name=name + '.cv2.weight', initializer=kaiming_init(x, 1)),
             bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)
@@ -301,7 +315,8 @@ class CSPYolo(object):
             c_h,
             1,
             1,
-            param_attr=ParamAttr(name=name + '.cv2.weight'),
+            param_attr=ParamAttr(
+                name=name + '.cv2.weight', initializer=kaiming_init(x, 1)),
             bias_attr=False)
         # concat
         y = fluid.layers.concat([y1, y2], axis=1)

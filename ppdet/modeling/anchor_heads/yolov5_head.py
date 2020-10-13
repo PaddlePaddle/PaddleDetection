@@ -21,7 +21,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS
+from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS, NumpyArrayInitializer
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -79,10 +79,22 @@ class YOLOv5Head(object):
             output.append([anchors[i] for i in anchor_mask])
         return output
 
+    def _init_bias(self, x, c_out, s, na):
+        fan_in = input.shape[1]
+        std = (1.0 / (fan_in * filter_size * filter_size))**0.5
+        bias = np.random.uniform(-std, std, size=c_out)
+        bias = np.reshape(value, (na, -1))
+        bias[:, 4] += np.log(8 / (640 / s)**2)
+        bias[:, 5:] += np.log(0.6 / (self.num_classes - 0.99))
+        bias = np.reshape(bias, [-1])
+        return bias.astype(np.float32)
+
     def _get_outputs(self, inputs):
         outputs = []
         for i, x in enumerate(inputs):
             c_out = len(self.anchor_masks[i]) * (self.num_classes + 5)
+            bias = self._init_bias(x, c_out, self.stride[i],
+                                   len(self.anchor_masks[i]))
             output = fluid.layers.conv2d(
                 x,
                 c_out,
@@ -94,6 +106,7 @@ class YOLOv5Head(object):
                     name=self.prefix + '.{}.m.{}.weight'.format(self.start, i)),
                 bias_attr=ParamAttr(
                     regularizer=L2Decay(0.0),
+                    initializer=NumpyArrayInitializer(bias),
                     name=self.prefix + '.{}.m.{}.bias'.format(self.start, i)))
             outputs.append(output)
 
