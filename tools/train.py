@@ -132,7 +132,7 @@ def run(FLAGS, cfg):
     train_reader = create_reader(
         cfg.TrainReader, (cfg.max_iters - start_iter), cfg, devices_num=1)
 
-    time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
     end_time = time.time()
     # Run Train 
@@ -167,13 +167,13 @@ def run(FLAGS, cfg):
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
             # Log state 
             if iter_id == 0:
-                train_stats = TrainingStats(cfg.log_smooth_window,
-                                            outputs.keys())
+                train_stats = TrainingStats(cfg.log_iter, outputs.keys())
             train_stats.update(outputs)
             logs = train_stats.log()
             if iter_id % cfg.log_iter == 0:
-                strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                    iter_id, curr_lr, logs, time_cost, eta)
+                ips = float(cfg['TrainReader']['batch_size']) / time_cost
+                strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                    iter_id, curr_lr, logs, eta, time_cost, ips)
                 logger.info(strs)
             # Save Stage 
             if iter_id > 0 and iter_id % int(
