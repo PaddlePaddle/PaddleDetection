@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    tools:context=".MainActivity">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/colorWindow">
+
+        <com.baidu.paddledetection.common.CameraSurfaceView
+            android:id="@+id/sv_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true" />
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/top_bar_height"
+            android:layout_alignParentTop="true"
+            android:background="@color/colorTopBar">
+
+            <TextView
+                android:id="@+id/tv_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_centerVertical="true"
+                android:layout_marginRight="@dimen/top_bar_left_right_margin"
+                android:textColor="@color/colorText"
+                android:gravity="center"
+                android:textSize="@dimen/small_font_size" />
+
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:background="@color/colorBottomBar"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bottom_bar_top_margin"
+                android:orientation="vertical"></LinearLayout>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/large_button_height">
+
+                <ImageButton
+                    android:id="@+id/btn_switch"
+                    android:layout_width="@dimen/small_button_width"
+                    android:layout_height="@dimen/small_button_height"
+                    android:layout_alignParentLeft="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginLeft="@dimen/bottom_bar_left_right_margin"
+                    android:layout_marginRight="@dimen/bottom_bar_left_right_margin"
+                    android:background="#00000000"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/btn_switch" />
+
+                <ImageButton
+                    android:id="@+id/btn_shutter"
+                    android:layout_width="@dimen/large_button_width"
+                    android:layout_height="@dimen/large_button_height"
+                    android:layout_centerInParent="true"
+                    android:background="@null"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/btn_shutter" />
+
+                <ImageButton
+                    android:id="@+id/btn_settings"
+                    android:layout_width="@dimen/small_button_width"
+                    android:layout_height="@dimen/small_button_height"
+                    android:layout_alignParentRight="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginRight="@dimen/bottom_bar_left_right_margin"
+                    android:background="@null"
+                    android:scaleType="fitXY"
+                    android:src="@drawable/btn_settings" />
+
+            </RelativeLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/bottom_bar_bottom_margin"
+                android:orientation="vertical"></LinearLayout>
+        </LinearLayout>
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
