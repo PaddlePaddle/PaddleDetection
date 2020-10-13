@@ -77,7 +77,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
           <li><b>Instance Segmentation</b></li>
             <ul>
              <li>Mask RCNN</li>
-             <li>SOLOv2 is coming soon</li>
+             <li>SOLOv2</li>
             </ul>
         </ul>
         <ul>

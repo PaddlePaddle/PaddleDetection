@@ -71,6 +71,7 @@ OptimizerBuilder:
 
 _READER_: 'solov2_reader.yml'
 TrainReader:
+  batch_size: 2
   sample_transforms:
   - !DecodeImage
     to_rgb: true

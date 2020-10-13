@@ -138,7 +138,7 @@ def main():
 
     # parse dataset category
     if cfg.metric == 'COCO':
-        from ppdet.utils.coco_eval import bbox2out, mask2out, get_category_info
+        from ppdet.utils.coco_eval import bbox2out, mask2out, segm2out, get_category_info
     if cfg.metric == 'OID':
         from ppdet.utils.oid_eval import bbox2out, get_category_info
     if cfg.metric == "VOC":
@@ -187,13 +187,15 @@ def main():
 
         bbox_results = None
         mask_results = None
+        segm_results = None
         lmk_results = None
         if 'bbox' in res:
             bbox_results = bbox2out([res], clsid2catid, is_bbox_normalized)
-
         if 'mask' in res:
             mask_results = mask2out([res], clsid2catid,
                                     model.mask_head.resolution)
+        if 'segm' in res:
+            segm_results = segm2out([res], clsid2catid)
         if 'landmark' in res:
             lmk_results = lmk2out([res], is_bbox_normalized)
 
@@ -213,7 +215,7 @@ def main():
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
-                                      mask_results, lmk_results)
+                                      mask_results, segm_results, lmk_results)
 
             # use VisualDL to log image with bbox
             if FLAGS.use_vdl:
