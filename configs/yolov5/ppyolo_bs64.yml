@@ -1,0 +1,71 @@
+architecture: YOLOv5
+use_gpu: true
+max_iters: 550000
+log_smooth_window: 1848
+log_iter: 100
+save_dir: output
+snapshot_iter: 10000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
+weights: output/ppyolo/model_final
+num_classes: 80
+use_fine_grained_loss: true
+use_ema: true
+ema_decay: 0.9999
+
+YOLOv5:
+  backbone: ResNet
+  yolo_head: PPYOLOHead
+  use_fine_grained_loss: true
+
+ResNet:
+  norm_type: sync_bn
+  freeze_at: 0
+  freeze_norm: false
+  norm_decay: 0.
+  depth: 50
+  feature_maps: [3, 4, 5]
+  variant: d
+  dcn_v2_stages: [5]
+
+PPYOLOHead:
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  norm_decay: 0.
+  coord_conv: true
+  iou_aware: false
+  iou_aware_factor: 0.4
+  scale_x_y: 1.05
+  spp: true
+  yolo_loss: YOLOv5Loss
+  nms: MatrixNMS
+  drop_block: true
+
+YOLOv5Loss:
+  giou_ratio: 1.0
+  balance: [4.0, 1.0, 0.4]
+  loss_weights: [0.05, 0.5, 1.0] # giou, cls, obj
+
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !CosineDecay
+    bias: 0.2
+    max_iters: 300 # max epochs
+    step_each_epoch: 1848 # total // batch_size
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 5544 # 3 * step_each_epoch
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.937
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+_READER_: 'ppyolo_reader.yml'
