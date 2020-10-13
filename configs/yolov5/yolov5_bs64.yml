@@ -1,7 +1,7 @@
 architecture: YOLOv5
 use_gpu: true
-max_iters: 1100000
-log_smooth_window: 3696
+max_iters: 550000
+log_smooth_window: 1848
 log_iter: 100
 save_dir: output
 snapshot_iter: 10000
@@ -52,10 +52,10 @@ LearningRate:
   - !CosineDecay
     bias: 0.2
     max_iters: 300 # max epochs
-    step_each_epoch: 3696 # total // batch_size
+    step_each_epoch: 1848 # total // batch_size
   - !LinearWarmup
     start_factor: 0.
-    steps: 11089 # 3 * step_each_epoch
+    steps: 5544 # 3 * step_each_epoch
 
 OptimizerBuilder:
   optimizer:

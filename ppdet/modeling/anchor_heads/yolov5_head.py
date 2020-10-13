@@ -79,11 +79,11 @@ class YOLOv5Head(object):
             output.append([anchors[i] for i in anchor_mask])
         return output
 
-    def _init_bias(self, x, c_out, s, na):
-        fan_in = input.shape[1]
-        std = (1.0 / (fan_in * filter_size * filter_size))**0.5
+    def _init_bias(self, x, c_out, s, na, k):
+        fan_in = x.shape[1]
+        std = (1.0 / (fan_in * k * k))**0.5
         bias = np.random.uniform(-std, std, size=c_out)
-        bias = np.reshape(value, (na, -1))
+        bias = np.reshape(bias, (na, -1))
         bias[:, 4] += np.log(8 / (640 / s)**2)
         bias[:, 5:] += np.log(0.6 / (self.num_classes - 0.99))
         bias = np.reshape(bias, [-1])
@@ -94,7 +94,7 @@ class YOLOv5Head(object):
         for i, x in enumerate(inputs):
             c_out = len(self.anchor_masks[i]) * (self.num_classes + 5)
             bias = self._init_bias(x, c_out, self.stride[i],
-                                   len(self.anchor_masks[i]))
+                                   len(self.anchor_masks[i]), 1)
             output = fluid.layers.conv2d(
                 x,
                 c_out,
