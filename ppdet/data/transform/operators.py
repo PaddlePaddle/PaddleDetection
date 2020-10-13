@@ -2713,7 +2713,7 @@ class RandomRotate(BaseOperator):
     """Rotate image and bboxes randomly
     Args:
         degree (int, float, list, tuple): if（int, float), the rotation degree will be uniformly sampled uniformly in [-abs(degree), abs(degree)]
-            if (list, tuple), the rotation degree will be uniformly sampled in [degree[0], degree[1]]
+        if (list, tuple), the rotation degree will be uniformly sampled in [degree[0], degree[1]]
         scale (float): the scale factor will be uniformly sampled in [1 - scale, 1 + scale]
         center (tuple): center of the rotation in the source image
         area_thr (float): the area threshold of bbox to be kept after rotation, default 0.25
