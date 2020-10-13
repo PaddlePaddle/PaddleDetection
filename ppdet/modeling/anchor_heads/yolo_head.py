@@ -21,8 +21,9 @@ import numpy as np
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import Uniform
 
-from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS
+from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS, NumpyArrayInitializer
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DropBlock
@@ -34,6 +35,12 @@ except Exception:
 from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv3Head', 'YOLOv4Head', 'PPYOLOHead']
+
+
+def kaiming_init(input, filter_size):
+    fan_in = input.shape[1]
+    std = (1.0 / (fan_in * filter_size * filter_size))**0.5
+    return Uniform(0. - std, std)
 
 
 @register
@@ -707,6 +714,85 @@ class PPYOLOHead(YOLOv3Head):
         for anchor_mask in anchor_masks:
             output.append([anchors[i] for i in anchor_mask])
         return output
+
+    def _init_bias(self, x, c_out, s, na, k):
+        fan_in = x.shape[1]
+        std = (1.0 / (fan_in * k * k))**0.5
+        bias = np.random.uniform(-std, std, size=c_out)
+        bias = np.reshape(bias, (na, -1))
+        bias[:, 4] += np.log(8 / (640 / s)**2)
+        bias[:, 5:] += np.log(0.6 / (self.num_classes - 0.99))
+        bias = np.reshape(bias, [-1])
+        return bias.astype(np.float32)
+
+    def _get_outputs(self, input, is_train=True):
+        """
+        Get YOLOv3 head output
+
+        Args:
+            input (list): List of Variables, output of backbone stages
+            is_train (bool): whether in train or test mode
+
+        Returns:
+            outputs (list): Variables of each output layer
+        """
+
+        outputs = []
+
+        # get last out_layer_num blocks in reverse order
+        out_layer_num = len(self.anchor_masks)
+        blocks = input[-1:-out_layer_num - 1:-1]
+
+        route = None
+        for i, block in enumerate(blocks):
+            if i > 0:  # perform concat in first 2 detection_block
+                block = fluid.layers.concat(input=[route, block], axis=1)
+            route, tip = self._detection_block(
+                block,
+                channel=64 * (2**out_layer_num) // (2**i),
+                is_first=i == 0,
+                is_test=(not is_train),
+                conv_block_num=self.conv_block_num,
+                name=self.prefix_name + "yolo_block.{}".format(i))
+
+            # out channel number = mask_num * (5 + class_num)
+            if self.iou_aware:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 6)
+            else:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
+            with fluid.name_scope('yolo_output'):
+                bias = self._init_bias(tip, num_filters, self.downsample[i],
+                                       len(self.anchor_masks[i]), 1)
+                block_out = fluid.layers.conv2d(
+                    input=tip,
+                    num_filters=num_filters,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    act=None,
+                    param_attr=ParamAttr(
+                        initializer=kaiming_init(tip, 1),
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.weights".format(i)),
+                    bias_attr=ParamAttr(
+                        initializer=NumpyArrayInitializer(bias),
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.bias".format(i)))
+                outputs.append(block_out)
+
+            if i < len(blocks) - 1:
+                # do not perform upsample in the last detection_block
+                route = self._conv_bn(
+                    input=route,
+                    ch_out=256 // (2**i),
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    name=self.prefix_name + "yolo_transition.{}".format(i))
+                # upsample
+                route = self._upsample(route)
+
+        return outputs
 
     def get_loss(self, inputs, gt_box, gt_label, gt_score, targets):
         outputs = self._get_outputs(inputs, is_train=True)

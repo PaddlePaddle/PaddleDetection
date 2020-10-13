@@ -20,6 +20,7 @@ import numpy as np
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import Uniform
 
 from ppdet.modeling.ops import MultiClassNMS, MultiClassSoftNMS, MatrixNMS, NumpyArrayInitializer
 from ppdet.modeling.losses.yolo_loss import YOLOv3Loss
@@ -33,6 +34,12 @@ except Exception:
 from ppdet.utils.check import check_version
 
 __all__ = ['YOLOv5Head']
+
+
+def kaiming_init(input, filter_size):
+    fan_in = input.shape[1]
+    std = (1.0 / (fan_in * filter_size * filter_size))**0.5
+    return Uniform(0. - std, std)
 
 
 @register
@@ -103,6 +110,7 @@ class YOLOv5Head(object):
                 0,
                 act=None,
                 param_attr=ParamAttr(
+                    initializer=kaiming_init(x, 1),
                     name=self.prefix + '.{}.m.{}.weight'.format(self.start, i)),
                 bias_attr=ParamAttr(
                     regularizer=L2Decay(0.0),
