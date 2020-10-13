@@ -430,7 +430,7 @@ def segm2out(results, clsid2catid, thresh_binarize=0.5):
 
     # for each batch
     for t in results:
-        segms = t['segm'][0]
+        segms = t['segm'][0].astype(np.uint8)
         clsid_labels = t['cate_label'][0]
         clsid_scores = t['cate_score'][0]
         lengths = segms.shape[0]
@@ -443,7 +443,7 @@ def segm2out(results, clsid2catid, thresh_binarize=0.5):
             im_h = int(im_shape[0])
             im_w = int(im_shape[1])
 
-            clsid = int(clsid_labels[i])
+            clsid = int(clsid_labels[i]) + 1
             catid = clsid2catid[clsid]
             score = clsid_scores[i]
             mask = segms[i]
