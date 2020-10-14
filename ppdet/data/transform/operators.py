@@ -2712,8 +2712,8 @@ class Rotate(BaseOperator):
 class RandomRotate(BaseOperator):
     """Rotate image and bboxes randomly
     Args:
-        degree (int, float, list, tuple): if（int, float), the rotation degree will be uniformly sampled uniformly in [-abs(degree), abs(degree)]
-        if (list, tuple), the rotation degree will be uniformly sampled in [degree[0], degree[1]]
+        degree (int, float, list, tuple): if (int, float), the rotation degree will be uniformly sampled in [-abs(degree), abs(degree)]
+            if (list, tuple), the rotation degree will be uniformly sampled in [degree[0], degree[1]]
         scale (float): the scale factor will be uniformly sampled in [1 - scale, 1 + scale]
         center (tuple): center of the rotation in the source image
         area_thr (float): the area threshold of bbox to be kept after rotation, default 0.25
@@ -3098,7 +3098,7 @@ class RandomPerspective(BaseOperator):
         height = im.shape[0] + self.border[0] * 2
         width = im.shape[1] + self.border[1] * 2
 
-        # center 
+        # center
         C = np.eye(3)
         C[0, 2] = -im.shape[1] / 2
         C[1, 2] = -im.shape[0] / 2
@@ -3206,9 +3206,9 @@ class Mosaic(BaseOperator):
         if 'mosaic' not in sample:
             return sample
         s = self.target_size
-        ims, bboxes, labels, scores = [sample['image']], [
-            sample['gt_bbox']
-        ], [sample['gt_class']], [sample['gt_score']]
+        ims, bboxes, labels, scores = [sample['image']], [sample['gt_bbox']], [
+            sample['gt_class']
+        ], [sample['gt_score']]
         for x in sample['mosaic']:
             ims.append(x['image'])
             bboxes.append(x['gt_bbox'])
@@ -3236,8 +3236,8 @@ class Mosaic(BaseOperator):
                 x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, max(xc, w), min(
                     y2a - y1a, h)
             elif i == 3:  # bottom right
-                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2,
-                                                                     yc + h)
+                x1a, y1a, x2a, y2a = xc, yc, min(xc + w,
+                                                 s * 2), min(s * 2, yc + h)
                 x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
 
             new_im[y1a:y2a, x1a:x2a] = im[y1b:y2b, x1b:x2b]
