@@ -9,7 +9,6 @@
 - [选择和修改配置文件](#选择和修改配置文件)
 - [训练](#训练)
 - [评估和预测](#评估和预测)
-- [模型压缩](#模型压缩)
 - [推理部署](#推理部署)
 
 ## 准备数据
@@ -96,7 +95,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
     max_iters为最大迭代次数，而一个iter会运行`batch_size * device_num`张图片。
     **注意:  
     (1) `LearningRate.schedulers.milestones`需要随`max_iters`变化而变化。
-    (2) `milestones`设置的是在PiecewiseDecay学习率调整策略中，学习率在`milestones`中轮次数时以`gamma`倍数变化。  
+    (2) `milestones`设置的是在PiecewiseDecay学习率调整策略中，在训练轮数达到`milestones`中设置的轮数时，学习率以`gamma`倍数衰减变化。  
     (3) 1x表示训练12个epoch，1个epoch是将所有训练数据训练一轮。由于YOLO系列算法收敛比较慢，在COCO数据集上YOLO系列算法换算后约为270 epoch，PP-YOLO约380 epoch。**
 
 - 2、pretrain_weights  
@@ -245,75 +244,9 @@ python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign.yml --infer_img=de
 ![](../images/road554.png)
 
 
-## 模型压缩
-在PaddleDetection, 提供了基于PaddleSlim进行模型压缩的完整教程和实验结果。
-这里在YOLOv3_MobileNetV1模型基础上，以`r578`裁剪策略为例，裁剪效果如下：
-
- 骨架网络         |  剪裁策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 |   Box AP (COCO)  |                           下载                          |
-| :----------------| :-------: | :------------: | :-------------: | :------: | :--------: | :-----------------------------------------------------: |
-| MobileNetV1      |  baseline | 20.64          |  94.60          |   608    | 29.3       | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar) |
-| MobileNetV1      |   r578    |  6.27(-69.64%) |  31.30(-66.90%) |   608    | 27.8(-1.5) | [下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/prune/yolov3_mobilenet_v1_prune578.tar) |
-
-`PaddleDetection`提供了基于[PaddleSlim](https://github.com/PaddlePaddle/Paddleslim) 进行模型压缩的完整教程和实验结果，详细请参考：
-- [量化](../../slim/quantization)
-- [剪枝](../../slim/prune)
-- [蒸馏](../../slim/distillation)
-- [搜索](../../slim/nas)
-
-详细的PaddleDetection检测模型压缩文档及benchmark请参考[PaddleDetection检测模型压缩](../../slim)。本教程以剪枝为例进行说明。
-
-在YOLOv3_MobileNetV1模型基础上，采用`r578`裁剪策略的过程如下：
-
-##### 安装paddleslim
-```
-pip install paddleslim -i https://pypi.tuna.tsinghua.edu.cn/simple
-```
-
-##### 确定待分析参数
-```
-python slim/prune/prune.py -c ./configs/yolov3_mobilenet_v1_roadsign.yml --print_params
-```
-通过观察参数名称和参数的形状，筛选出所有卷积层参数，并确定要分析的卷积层参数。
-
-##### 参数敏感度分析
-
-可通过敏感度分析脚本分析待剪裁参数敏感度得到合适的剪裁率，敏感度分析工具见[敏感度分析](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/sensitive/README.md)。
-
-##### 启动剪裁任
-对于剪裁任务，原模型的权重不一定对剪裁后的模型训练的重训练有贡献，所以加载原模型的权重不是必需的步骤。可以通过`-o pretrain_weights`指定模型的预训练权重。
-
-使用prune.py启动裁剪任务时，通过--pruned_params选项指定待裁剪的参数名称列表，参数名之间用空格分隔，通过--pruned_ratios选项指定各个参数被裁掉的比例。
-```
-python slim/prune/prune.py \
--c ./configs/yolov3_mobilenet_v1_roadsign.yml \
---pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
---pruned_ratios="0.2,0.3,0.4"
-```
-
-##### 裁任模型的评估
-训练剪裁任务完成后，可通过`eval.py`评估剪裁模型精度，通过`--pruned_params`和`--pruned_ratios`指定裁剪的参数名称列表和各参数裁剪比例。
-
-```
-python slim/prune/eval.py \
--c ./configs/yolov3_mobilenet_v1_roadsign.yml \
---pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
---pruned_ratios="0.2,0.3,0.4" \
--o weights=output/yolov3_mobilenet_v1_roadsign/best_model
-```
-
-##### 导出模型
-
-可通过`export_model.py`导出该模型，导出的模型可以接入到C++预测库或者Serving服务。
-
-```
-python slim/prune/export_model.py \
--c ./configs/yolov3_mobilenet_v1_roadsign.yml \
---pruned_params "yolo_block.0.0.0.conv.weights,yolo_block.0.0.1.conv.weights,yolo_block.0.1.0.conv.weights" \
---pruned_ratios="0.2,0.3,0.4" \
--o weights=output/yolov3_mobilenet_v1_roadsign/model_final
-```
-
 ## 推理部署
+
+在模型部署之前，如果您需要对模型进行压缩，`PaddleDetection`提供了基于[PaddleSlim](https://github.com/PaddlePaddle/Paddleslim) 进行模型压缩的完整教程和实验结果，详细请参考：[量化](../../slim/quantization)、[剪枝](../../slim/prune)、[蒸馏](../../slim/distillation)、[搜索](../../slim/nas) 。
 
 `PaddleDetection`目前支持以下部署方式：
 
