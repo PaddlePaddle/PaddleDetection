@@ -61,7 +61,7 @@ class PiecewiseDecay(object):
             for i in self.gamma:
                 value.append(base_lr * i)
 
-        return optimizer.lr_scheduler.PiecewiseLR(boundary, value)
+        return optimizer.lr.PiecewiseDecay(boundary, value)
 
 
 @serializable
