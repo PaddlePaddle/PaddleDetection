@@ -43,13 +43,13 @@ static std::string DirName(const std::string &filepath) {
   return filepath.substr(0, pos);
 }
 
-static void PathExists(const std::string& path){
+static bool PathExists(const std::string& path){
 #ifdef _WIN32
-  struct stat buffer;
-  return (stat(filepath.c_str(), &buffer) == 0);
-#else
   struct _stat buffer;
-  return (_stat(filepath.c_str(), &buffer) == 0);
+  return (_stat(path.c_str(), &buffer) == 0);
+#else
+  struct stat buffer;
+  return (stat(path.c_str(), &buffer) == 0);
 #endif  // !_WIN32
 }
 
