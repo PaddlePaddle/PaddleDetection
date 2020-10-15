@@ -27,6 +27,7 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.export_utils import save_infer_model, dump_infer_config
 from ppdet.utils.check import check_config, check_version
 from tools.export_model import prune_feed_vars
 
@@ -35,22 +36,6 @@ FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 from paddleslim.quant import quant_aware, convert
-
-
-def save_infer_model(save_dir, exe, feed_vars, test_fetches, infer_prog):
-    feed_var_names = [var.name for var in feed_vars.values()]
-    target_vars = list(test_fetches.values())
-    feed_var_names = prune_feed_vars(feed_var_names, target_vars, infer_prog)
-    logger.info("Export inference model to {}, input: {}, output: "
-                "{}...".format(save_dir, feed_var_names,
-                               [str(var.name) for var in target_vars]))
-    fluid.io.save_inference_model(
-        save_dir,
-        feeded_var_names=feed_var_names,
-        target_vars=target_vars,
-        executor=exe,
-        main_program=infer_prog,
-        params_filename="__params__")
 
 
 def main():
