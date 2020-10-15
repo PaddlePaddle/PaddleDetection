@@ -17,6 +17,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "include/object_detector.h"
 
@@ -32,6 +34,46 @@ DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
+
+static std::string DirName(const std::string &filepath) {
+  auto pos = filepath.rfind(OS_PATH_SEP);
+  if (pos == std::string::npos) {
+    return "";
+  }
+  return filepath.substr(0, pos);
+}
+
+static bool PathExists(const std::string& path){
+#ifdef _WIN32
+  struct _stat buffer;
+  return (_stat(path.c_str(), &buffer) == 0);
+#else
+  struct stat buffer;
+  return (stat(path.c_str(), &buffer) == 0);
+#endif  // !_WIN32
+}
+
+static void MkDir(const std::string& path) {
+  std::string path_error(path);
+  path_error += " mkdir failed!";
+  int ret = 0;
+#ifdef _WIN32
+  ret = _mkdir(path.c_str());
+#else
+  ret = mkdir(path.c_str(), 0755);
+#endif  // !_WIN32
+  if (ret != 0) {
+    throw std::runtime_error(path_error);
+  }
+}
+
+static void MkDirs(const std::string& path) {
+  if (path.empty()) return;
+  if (PathExists(path)) return;
+
+  MkDirs(DirName(path));
+  MkDir(path);
+}
 
 void PredictVideo(const std::string& video_path,
                   PaddleDetection::ObjectDetector* det) {
@@ -127,7 +169,7 @@ void PredictImage(const std::string& image_path,
     std::vector<int> compression_params;
     compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
     compression_params.push_back(95);
-    cv::imwrite(output_dir + "/output.jpg", vis_img, compression_params);
+    cv::imwrite(output_dir + OS_PATH_SEP + "output.jpg", vis_img, compression_params);
     printf("Visualized output saved as output.jpg\n");
   }
 }
@@ -154,6 +196,9 @@ int main(int argc, char** argv) {
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);
   } else if (!FLAGS_image_path.empty()) {
+    if (!PathExists(FLAGS_output_dir)) {
+      MkDirs(FLAGS_output_dir);
+    }
     PredictImage(FLAGS_image_path, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
