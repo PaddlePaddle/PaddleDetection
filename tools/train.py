@@ -60,7 +60,7 @@ def main():
     num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
-        local_seed = (99 + trainer_id)
+        local_seed = (2 + trainer_id)
         random.seed(local_seed)
         np.random.seed(local_seed)
 

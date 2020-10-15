@@ -355,13 +355,13 @@ class CSPYolo(object):
                     inputs = layers[f]
                 else:
                     inputs = [layers[idx] for idx in f]
-            n = max(round(n * gd), 1) if n > 1 else n
+            n = int(max(round(n * gd), 1) if n > 1 else n)
             if m in [
                     'Conv', 'Bottleneck', 'BottleneckCSP', 'BottleneckCSP2',
                     'SPP', 'SPPCSP', 'Focus'
             ]:
                 c_out = args[0]
-                args[0] = make_divisible(c_out * gw, 8)
+                args[0] = int(make_divisible(c_out * gw, 8))
                 if m in ['BottleneckCSP', 'BottleneckCSP2']:
                     args.insert(1, n)
 

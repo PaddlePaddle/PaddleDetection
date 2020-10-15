@@ -149,7 +149,7 @@ class YOLOv5Loss(object):
             loss_clss.append(loss_cls / nm)
             pobj = output[:, :, :, :, 4]
             pobj = fluid.layers.reshape(pobj, [-1])
-            tobj = (1 - self.giou_ratio) * mask + self.giou_ratio * giou
+            tobj = ((1 - self.giou_ratio) + self.giou_ratio * giou) * mask
             tobj = fluid.layers.clamp(tobj, min=0.)
             tobj.stop_gradient = True
             loss_obj = fluid.layers.reduce_mean(

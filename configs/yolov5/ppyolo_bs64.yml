@@ -62,6 +62,7 @@ LearningRate:
 
 OptimizerBuilder:
   optimizer:
+    use_nesterov: true
     momentum: 0.937
     type: Momentum
   regularizer:
