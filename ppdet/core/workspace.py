@@ -139,7 +139,7 @@ def merge_config(config, another_cfg=None):
     #       batch size config to global, models can get batch size config
     #       from global config when building model.
     #       batch size in evaluation or inference can also be added here
-    if 'TrainReader' in dct:
+    if 'TrainReader' in dct and 'batch_size' in dct['TrainReader']:
         dct['train_batch_size'] = dct['TrainReader']['batch_size']
 
     return dct
