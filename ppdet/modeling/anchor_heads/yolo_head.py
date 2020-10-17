@@ -179,7 +179,9 @@ class YOLOv3Head(object):
             stride=stride,
             padding=padding,
             act=None,
-            param_attr=ParamAttr(name=name + ".conv.weights"),
+            param_attr=ParamAttr(
+                name=name + ".conv.weights",
+                initializer=kaiming_init(input, ch_out)),
             bias_attr=False)
 
         bn_name = name + ".bn"
@@ -771,11 +773,11 @@ class PPYOLOHead(YOLOv3Head):
                     padding=0,
                     act=None,
                     param_attr=ParamAttr(
-                        # initializer=kaiming_init(tip, 1),
+                        initializer=kaiming_init(tip, 1),
                         name=self.prefix_name +
                         "yolo_output.{}.conv.weights".format(i)),
                     bias_attr=ParamAttr(
-                        # initializer=NumpyArrayInitializer(bias),
+                        initializer=NumpyArrayInitializer(bias),
                         name=self.prefix_name +
                         "yolo_output.{}.conv.bias".format(i)))
                 outputs.append(block_out)
