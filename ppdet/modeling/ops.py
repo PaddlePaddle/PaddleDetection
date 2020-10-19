@@ -24,6 +24,8 @@ import six
 import numpy as np
 from functools import reduce
 
+__all__ = ['collect_fpn_proposals', ]
+
 
 def collect_fpn_proposals(multi_rois,
                           multi_scores,
@@ -126,27 +128,3 @@ def collect_fpn_proposals(multi_rois,
     if rois_num_per_level is not None:
         return output_rois, rois_num
     return output_rois
-
-
-class CollectFpnProposals(layers.Layer):
-    """
-    See collect_fpn_proposals
-    """
-
-    def __init__(self, min_level, max_level, post_nms_top_n, name=None):
-        super(CollectFpnProposals, self).__init__()
-        self.min_level = min_level
-        self.max_level = max_level
-        self.post_nms_top_n = post_nms_top_n
-        self.name = name
-
-    def forward(self, multi_rois, multi_scores, rois_num_per_level):
-        assert rois_num_per_level is not None, 'rois_num_per_level should not be None in CollectFpnProposals'
-        return collect_fpn_proposals(
-            multi_rois,
-            multi_scores,
-            self.min_level,
-            self.max_level,
-            self.post_nms_top_n,
-            rois_num_per_level=rois_num_per_level,
-            name=self.name)

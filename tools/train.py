@@ -121,7 +121,6 @@ def run(FLAGS, cfg):
         strategy = paddle.distributed.init_parallel_env()
         model = paddle.DataParallel(model, strategy)
 
-    logger.info("success!")
     # Data Reader 
     start_iter = 0
     if cfg.use_gpu:

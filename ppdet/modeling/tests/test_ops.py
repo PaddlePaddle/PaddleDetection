@@ -50,17 +50,17 @@ class TestCollectFpnProposals(LayerTest):
             multi_scores = []
             rois_num_per_level = []
             for i in range(4):
-                bboxes = paddle.data(
+                bboxes = paddle.static.data(
                     name='rois' + str(i),
                     shape=[5, 4],
                     dtype='float32',
                     lod_level=1)
-                scores = paddle.data(
+                scores = paddle.static.data(
                     name='scores' + str(i),
                     shape=[5, 1],
                     dtype='float32',
                     lod_level=1)
-                rois_num = paddle.data(
+                rois_num = paddle.static.data(
                     name='rois_num' + str(i), shape=[None], dtype='int32')
 
                 multi_bboxes.append(bboxes)
@@ -96,9 +96,13 @@ class TestCollectFpnProposals(LayerTest):
                 multi_bboxes_dy.append(bboxes_dy)
                 multi_scores_dy.append(scores_dy)
                 rois_num_per_level_dy.append(rois_num_dy)
-            collect_ops = ops.CollectFpnProposals(2, 5, 10)
-            fpn_rois_dy, rois_num_dy = collect_ops(
-                multi_bboxes_dy, multi_scores_dy, rois_num_per_level_dy)
+            fpn_rois_dy, rois_num_dy = ops.collect_fpn_proposals(
+                multi_bboxes_dy,
+                multi_scores_dy,
+                2,
+                5,
+                10,
+                rois_num_per_level=rois_num_per_level_dy)
             fpn_rois_dy = fpn_rois_dy.numpy()
             rois_num_dy = rois_num_dy.numpy()
 
@@ -110,12 +114,12 @@ class TestCollectFpnProposals(LayerTest):
             multi_bboxes = []
             multi_scores = []
             for i in range(4):
-                bboxes = paddle.data(
+                bboxes = paddle.static.data(
                     name='rois' + name + str(i),
                     shape=[10, 4],
                     dtype=bbox_type,
                     lod_level=1)
-                scores = paddle.data(
+                scores = paddle.static.data(
                     name='scores' + name + str(i),
                     shape=[10, 1],
                     dtype=score_type,
@@ -127,9 +131,9 @@ class TestCollectFpnProposals(LayerTest):
         paddle.enable_static()
         program = Program()
         with program_guard(program):
-            bbox1 = paddle.data(
+            bbox1 = paddle.static.data(
                 name='rois', shape=[5, 10, 4], dtype='float32', lod_level=1)
-            score1 = paddle.data(
+            score1 = paddle.static.data(
                 name='scores', shape=[5, 10, 1], dtype='float32', lod_level=1)
             bbox2, score2 = generate_input('int32', 'float32', '2')
             self.assertRaises(
