@@ -38,7 +38,7 @@ import cv2
 from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
-from ppdet.modeling.ops import AnchorGrid
+from ppdet.modeling.layers import AnchorGrid
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
