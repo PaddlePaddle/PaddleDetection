@@ -19,6 +19,7 @@ from paddle.fluid.dygraph.base import to_variable
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
+from . import ops
 
 
 @register
@@ -308,7 +309,7 @@ class RoIExtractor(object):
         offset = 2
         k_min = self.start_level + offset
         k_max = self.end_level + offset
-        rois_dist, restore_index, rois_num_dist = fluid.layers.distribute_fpn_proposals(
+        rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
             roi,
             k_min,
             k_max,

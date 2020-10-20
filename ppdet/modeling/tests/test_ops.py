@@ -154,5 +154,68 @@ class TestCollectFpnProposals(LayerTest):
                 post_nms_top_n=2000)
 
 
+class TestDistributeFpnProposals(LayerTest):
+    def test_distribute_fpn_proposals(self):
+        rois_np = np.random.rand(10, 4).astype('float32')
+        rois_num_np = np.array([4, 6]).astype('int32')
+        with self.static_graph():
+            rois = paddle.static.data(
+                name='rois', shape=[10, 4], dtype='float32')
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[None], dtype='int32')
+            multi_rois, restore_ind, rois_num_per_level = ops.distribute_fpn_proposals(
+                fpn_rois=rois,
+                min_level=2,
+                max_level=5,
+                refer_level=4,
+                refer_scale=224,
+                rois_num=rois_num)
+            fetch_list = multi_rois + [restore_ind] + rois_num_per_level
+            output_stat = self.get_static_graph_result(
+                feed={'rois': rois_np,
+                      'rois_num': rois_num_np},
+                fetch_list=fetch_list,
+                with_lod=True)
+            output_stat_np = []
+            for output in output_stat:
+                output_np = np.array(output)
+                if len(output_np) > 0:
+                    output_stat_np.append(output_np)
+
+        with self.dynamic_graph():
+            rois_dy = base.to_variable(rois_np)
+            rois_num_dy = base.to_variable(rois_num_np)
+            multi_rois_dy, restore_ind_dy, rois_num_per_level_dy = ops.distribute_fpn_proposals(
+                fpn_rois=rois_dy,
+                min_level=2,
+                max_level=5,
+                refer_level=4,
+                refer_scale=224,
+                rois_num=rois_num_dy)
+            output_dy = multi_rois_dy + [restore_ind_dy] + rois_num_per_level_dy
+            output_dy_np = []
+            for output in output_dy:
+                output_np = output.numpy()
+                if len(output_np) > 0:
+                    output_dy_np.append(output_np)
+
+        for res_stat, res_dy in zip(output_stat_np, output_dy_np):
+            self.assertTrue(np.array_equal(res_stat, res_dy))
+
+    def test_distribute_fpn_proposals_error(self):
+        program = Program()
+        with program_guard(program):
+            fpn_rois = paddle.static.data(
+                name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
+            self.assertRaises(
+                TypeError,
+                ops.distribute_fpn_proposals,
+                fpn_rois=fpn_rois,
+                min_level=2,
+                max_level=5,
+                refer_level=4,
+                refer_scale=224)
+
+
 if __name__ == '__main__':
     unittest.main()
