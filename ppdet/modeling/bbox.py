@@ -4,6 +4,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
+from . import ops
 
 
 @register
@@ -218,7 +219,7 @@ class Proposal(object):
 
         start_level = 2
         end_level = start_level + len(rpn_head_out)
-        rois_collect, rois_num_collect = fluid.layers.collect_fpn_proposals(
+        rois_collect, rois_num_collect = ops.collect_fpn_proposals(
             rpn_rois_list,
             rpn_prob_list,
             start_level,
