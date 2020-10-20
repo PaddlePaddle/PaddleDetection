@@ -92,7 +92,7 @@ class YOLOFeat(nn.Layer):
 
             if i < self.num_levels - 1:
                 route = self.route_blocks[i](route)
-                route = F.resize_nearest(route, scale=2.)
+                route = F.interpolate(route, scale_factor=2.)
 
         return yolo_feats
 
