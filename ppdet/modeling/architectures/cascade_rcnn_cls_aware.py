@@ -117,6 +117,7 @@ class CascadeRCNNClsAware(object):
 
         self.cascade_decoded_box = []
         self.cascade_cls_prob = []
+        max_overlap = None
 
         for stage in range(3):
             if stage > 0:
@@ -126,9 +127,13 @@ class CascadeRCNNClsAware(object):
             if mode == "train":
                 self.cascade_var_v[stage].stop_gradient = True
                 outs = self.bbox_assigner(
-                    input_rois=pool_rois, feed_vars=feed_vars, curr_stage=stage)
+                    input_rois=pool_rois,
+                    feed_vars=feed_vars,
+                    curr_stage=stage,
+                    max_overlap=max_overlap)
                 pool_rois = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
 
             # extract roi features
             roi_feat = self.roi_extractor(body_feats, pool_rois, spatial_scale)
