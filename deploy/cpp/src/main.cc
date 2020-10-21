@@ -54,8 +54,7 @@ static bool PathExists(const std::string& path){
 }
 
 static void MkDir(const std::string& path) {
-  std::string path_error(path);
-  path_error += " mkdir failed!";
+  if (PathExists(path)) return;
   int ret = 0;
 #ifdef _WIN32
   ret = _mkdir(path.c_str());
@@ -63,6 +62,8 @@ static void MkDir(const std::string& path) {
   ret = mkdir(path.c_str(), 0755);
 #endif  // !_WIN32
   if (ret != 0) {
+    std::string path_error(path);
+    path_error += " mkdir failed!";
     throw std::runtime_error(path_error);
   }
 }
@@ -169,8 +170,13 @@ void PredictImage(const std::string& image_path,
     std::vector<int> compression_params;
     compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
     compression_params.push_back(95);
-    cv::imwrite(output_dir + OS_PATH_SEP + "output.jpg", vis_img, compression_params);
-    printf("Visualized output saved as output.jpg\n");
+    std::string output_path(output_dir);
+    if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
+      output_path += OS_PATH_SEP;
+    }
+    output_path += "output.jpg";
+    cv::imwrite(output_path, vis_img, compression_params);
+    printf("Visualized output saved as %s\n", output_path.c_str());
   }
 }
 
