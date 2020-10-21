@@ -52,7 +52,7 @@ TrainReader:
   drop_last: true
   worker_num: 4
   bufsize: 4
-  use_process: true #true
+  use_process: true
 
 
 EvalReader:

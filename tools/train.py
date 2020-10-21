@@ -87,14 +87,7 @@ def parse_args():
     return args
 
 
-def run():
-    FLAGS = parse_args()
-
-    cfg = load_config(FLAGS.config)
-    merge_config(FLAGS.opt)
-    check_config(cfg)
-    check_gpu(cfg.use_gpu)
-    check_version()
+def run(FLAGS, cfg):
     env = os.environ
 
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
@@ -197,7 +190,15 @@ def run():
 
 
 def main():
-    run()
+    FLAGS = parse_args()
+
+    cfg = load_config(FLAGS.config)
+    merge_config(FLAGS.opt)
+    check_config(cfg)
+    check_gpu(cfg.use_gpu)
+    check_version()
+
+    run(FLAGS, cfg)
 
 
 if __name__ == "__main__":
