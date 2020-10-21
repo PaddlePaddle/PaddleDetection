@@ -39,6 +39,7 @@ from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.quant import quant_aware, convert
+from pact import pact, get_optimizer
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -50,14 +51,6 @@ def save_checkpoint(exe, prog, path, train_prog):
         shutil.rmtree(path)
     logger.info('Save model to {}.'.format(path))
     fluid.io.save_persistables(exe, path, main_program=prog)
-
-    v = train_prog.global_block().var('@LR_DECAY_COUNTER@')
-    fluid.io.save_vars(exe, dirname=path, vars=[v])
-
-
-def load_global_step(exe, prog, path):
-    v = prog.global_block().var('@LR_DECAY_COUNTER@')
-    fluid.io.load_vars(exe, path, prog, [v])
 
 
 def main():
@@ -105,9 +98,10 @@ def main():
     with fluid.program_guard(train_prog, startup_prog):
         with fluid.unique_name.guard():
             model = create(main_arch)
-
             inputs_def = cfg['TrainReader']['inputs_def']
             feed_vars, train_loader = model.build_inputs(**inputs_def)
+            if FLAGS.use_pact:
+                feed_vars['image'].stop_gradient = False
             train_fetches = model.train(feed_vars)
             loss = train_fetches['loss']
             lr = lr_builder()
@@ -181,17 +175,30 @@ def main():
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
-    if not FLAGS.resume_checkpoint:
-        if cfg.pretrain_weights and fuse_bn and not ignore_params:
-            checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
-        elif cfg.pretrain_weights:
-            checkpoint.load_params(
-                exe,
-                train_prog,
-                cfg.pretrain_weights,
-                ignore_params=ignore_params)
+    if cfg.pretrain_weights and fuse_bn and not ignore_params:
+        checkpoint.load_and_fusebn(exe, train_prog, cfg.pretrain_weights)
+    elif cfg.pretrain_weights:
+        checkpoint.load_params(
+            exe, train_prog, cfg.pretrain_weights, ignore_params=ignore_params)
+
+    if FLAGS.use_pact:
+        act_preprocess_func = pact
+        optimizer_func = get_optimizer
+        executor = exe
+    else:
+        act_preprocess_func = None
+        optimizer_func = None
+        executor = None
     # insert quantize op in train_prog, return type is CompiledProgram
-    train_prog_quant = quant_aware(train_prog, place, config, for_test=False)
+    train_prog_quant = quant_aware(
+        train_prog,
+        place,
+        config,
+        scope=None,
+        act_preprocess_func=act_preprocess_func,
+        optimizer_func=optimizer_func,
+        executor=executor,
+        for_test=False)
 
     compiled_train_prog = train_prog_quant.with_data_parallel(
         loss_name=loss.name,
@@ -200,14 +207,18 @@ def main():
 
     if FLAGS.eval:
         # insert quantize op in eval_prog
-        eval_prog = quant_aware(eval_prog, place, config, for_test=True)
+        eval_prog = quant_aware(
+            eval_prog,
+            place,
+            config,
+            scope=None,
+            act_preprocess_func=act_preprocess_func,
+            optimizer_func=optimizer_func,
+            executor=executor,
+            for_test=True)
         compiled_eval_prog = fluid.CompiledProgram(eval_prog)
 
     start_iter = 0
-    if FLAGS.resume_checkpoint:
-        checkpoint.load_checkpoint(exe, eval_prog, FLAGS.resume_checkpoint)
-        load_global_step(exe, train_prog, FLAGS.resume_checkpoint)
-        start_iter = checkpoint.global_step()
 
     train_reader = create_reader(cfg.TrainReader,
                                  (cfg.max_iters - start_iter) * devices_num)
@@ -253,8 +264,6 @@ def main():
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
-            save_checkpoint(exe, eval_prog,
-                            os.path.join(save_dir, save_name), train_prog)
 
             if FLAGS.eval:
                 # evaluation
@@ -289,12 +298,6 @@ def main():
 if __name__ == '__main__':
     parser = ArgsParser()
     parser.add_argument(
-        "-r",
-        "--resume_checkpoint",
-        default=None,
-        type=str,
-        help="Checkpoint path for resuming training.")
-    parser.add_argument(
         "--loss_scale",
         default=8.,
         type=float,
@@ -315,5 +318,7 @@ if __name__ == '__main__':
         type=str,
         help="Layers which name_scope contains string in not_quant_pattern will not be quantized"
     )
+    parser.add_argument(
+        "--use_pact", nargs='+', type=bool, help="Whether to use PACT or not.")
     FLAGS = parser.parse_args()
     main()
