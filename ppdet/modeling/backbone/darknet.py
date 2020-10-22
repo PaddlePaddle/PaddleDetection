@@ -20,7 +20,7 @@ class ConvBNLayer(nn.Layer):
                  name=None):
         super(ConvBNLayer, self).__init__()
 
-        self.conv = nn.Conv2d(
+        self.conv = nn.Conv2D(
             in_channels=ch_in,
             out_channels=ch_out,
             kernel_size=filter_size,
