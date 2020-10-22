@@ -217,5 +217,145 @@ class TestDistributeFpnProposals(LayerTest):
                 refer_scale=224)
 
 
+class TestROIAlign(LayerTest):
+    def test_roi_align(self):
+        b, c, h, w = 2, 12, 20, 20
+        inputs_np = np.random.rand(b, c, h, w).astype('float32')
+        rois_num = [4, 6]
+        output_size = (7, 7)
+        rois_np = self.make_rois(h, w, rois_num, output_size)
+        rois_num_np = np.array(rois_num).astype('int32')
+        with self.static_graph():
+            inputs = paddle.static.data(
+                name='inputs', shape=[b, c, h, w], dtype='float32')
+            rois = paddle.static.data(
+                name='rois', shape=[10, 4], dtype='float32')
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[None], dtype='int32')
+
+            output = ops.roi_align(
+                input=inputs,
+                rois=rois,
+                output_size=output_size,
+                rois_num=rois_num)
+            output_np, = self.get_static_graph_result(
+                feed={
+                    'inputs': inputs_np,
+                    'rois': rois_np,
+                    'rois_num': rois_num_np
+                },
+                fetch_list=output,
+                with_lod=False)
+
+        with self.dynamic_graph():
+            inputs_dy = base.to_variable(inputs_np)
+            rois_dy = base.to_variable(rois_np)
+            rois_num_dy = base.to_variable(rois_num_np)
+
+            output_dy = ops.roi_align(
+                input=inputs_dy,
+                rois=rois_dy,
+                output_size=output_size,
+                rois_num=rois_num_dy)
+            output_dy_np = output_dy.numpy()
+
+        self.assertTrue(np.array_equal(output_np, output_dy_np))
+
+    def make_rois(self, h, w, rois_num, output_size):
+        rois = np.zeros((0, 4)).astype('float32')
+        for roi_num in rois_num:
+            roi = np.zeros((roi_num, 4)).astype('float32')
+            roi[:, 0] = np.random.randint(0, h - output_size[0], size=roi_num)
+            roi[:, 1] = np.random.randint(0, w - output_size[1], size=roi_num)
+            roi[:, 2] = np.random.randint(roi[:, 0] + output_size[0], h)
+            roi[:, 3] = np.random.randint(roi[:, 1] + output_size[1], w)
+            rois = np.vstack((rois, roi))
+        return rois
+
+    def test_roi_align_error(self):
+        program = Program()
+        with program_guard(program):
+            inputs = paddle.static.data(
+                name='inputs', shape=[2, 12, 20, 20], dtype='float32')
+            rois = paddle.static.data(
+                name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
+            self.assertRaises(
+                TypeError,
+                ops.roi_align,
+                input=inputs,
+                rois=rois,
+                output_size=(7, 7))
+
+
+class TestROIPool(LayerTest):
+    def test_roi_pool(self):
+        b, c, h, w = 2, 12, 20, 20
+        inputs_np = np.random.rand(b, c, h, w).astype('float32')
+        rois_num = [4, 6]
+        output_size = (7, 7)
+        rois_np = self.make_rois(h, w, rois_num, output_size)
+        rois_num_np = np.array(rois_num).astype('int32')
+        with self.static_graph():
+            inputs = paddle.static.data(
+                name='inputs', shape=[b, c, h, w], dtype='float32')
+            rois = paddle.static.data(
+                name='rois', shape=[10, 4], dtype='float32')
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[None], dtype='int32')
+
+            output, _ = ops.roi_pool(
+                input=inputs,
+                rois=rois,
+                output_size=output_size,
+                rois_num=rois_num)
+            output_np, = self.get_static_graph_result(
+                feed={
+                    'inputs': inputs_np,
+                    'rois': rois_np,
+                    'rois_num': rois_num_np
+                },
+                fetch_list=[output],
+                with_lod=False)
+
+        with self.dynamic_graph():
+            inputs_dy = base.to_variable(inputs_np)
+            rois_dy = base.to_variable(rois_np)
+            rois_num_dy = base.to_variable(rois_num_np)
+
+            output_dy, _ = ops.roi_pool(
+                input=inputs_dy,
+                rois=rois_dy,
+                output_size=output_size,
+                rois_num=rois_num_dy)
+            output_dy_np = output_dy.numpy()
+
+        self.assertTrue(np.array_equal(output_np, output_dy_np))
+
+    def make_rois(self, h, w, rois_num, output_size):
+        rois = np.zeros((0, 4)).astype('float32')
+        for roi_num in rois_num:
+            roi = np.zeros((roi_num, 4)).astype('float32')
+            roi[:, 0] = np.random.randint(0, h - output_size[0], size=roi_num)
+            roi[:, 1] = np.random.randint(0, w - output_size[1], size=roi_num)
+            roi[:, 2] = np.random.randint(roi[:, 0] + output_size[0], h)
+            roi[:, 3] = np.random.randint(roi[:, 1] + output_size[1], w)
+            rois = np.vstack((rois, roi))
+        return rois
+
+    def test_roi_pool_error(self):
+        program = Program()
+        with program_guard(program):
+            inputs = paddle.static.data(
+                name='inputs', shape=[2, 12, 20, 20], dtype='float32')
+            rois = paddle.static.data(
+                name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
+            self.assertRaises(
+                TypeError,
+                ops.roi_pool,
+                input=inputs,
+                rois=rois,
+                output_size=(7, 7))
+
+
 if __name__ == '__main__':
     unittest.main()
