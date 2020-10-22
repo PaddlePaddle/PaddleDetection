@@ -298,7 +298,7 @@ class RoIExtractor(object):
         roi, rois_num = rois
         cur_l = 0
         if self.start_level == self.end_level:
-            rois_feat = fluid.layers.roi_align(
+            rois_feat = ops.roi_align(
                 feats[self.start_level],
                 roi,
                 self.resolution,
@@ -319,7 +319,7 @@ class RoIExtractor(object):
 
         rois_feat_list = []
         for lvl in range(self.start_level, self.end_level + 1):
-            roi_feat = fluid.layers.roi_align(
+            roi_feat = ops.roi_align(
                 feats[lvl],
                 rois_dist[lvl],
                 self.resolution,
