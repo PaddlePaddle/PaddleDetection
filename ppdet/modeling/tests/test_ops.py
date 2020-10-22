@@ -226,10 +226,12 @@ class TestROIAlign(LayerTest):
         rois_np = self.make_rois(h, w, rois_num, output_size)
         rois_num_np = np.array(rois_num).astype('int32')
         with self.static_graph():
-            inputs = fluid.data(
+            inputs = paddle.static.data(
                 name='inputs', shape=[b, c, h, w], dtype='float32')
-            rois = fluid.data(name='rois', shape=[10, 4], dtype='float32')
-            rois_num = fluid.data(name='rois_num', shape=[None], dtype='int32')
+            rois = paddle.static.data(
+                name='rois', shape=[10, 4], dtype='float32')
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[None], dtype='int32')
 
             output = ops.roi_align(
                 input=inputs,
@@ -273,9 +275,9 @@ class TestROIAlign(LayerTest):
     def test_roi_align_error(self):
         program = Program()
         with program_guard(program):
-            inputs = fluid.data(
+            inputs = paddle.static.data(
                 name='inputs', shape=[2, 12, 20, 20], dtype='float32')
-            rois = fluid.data(
+            rois = paddle.static.data(
                 name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
             self.assertRaises(
                 TypeError,
@@ -294,10 +296,12 @@ class TestROIPool(LayerTest):
         rois_np = self.make_rois(h, w, rois_num, output_size)
         rois_num_np = np.array(rois_num).astype('int32')
         with self.static_graph():
-            inputs = fluid.data(
+            inputs = paddle.static.data(
                 name='inputs', shape=[b, c, h, w], dtype='float32')
-            rois = fluid.data(name='rois', shape=[10, 4], dtype='float32')
-            rois_num = fluid.data(name='rois_num', shape=[None], dtype='int32')
+            rois = paddle.static.data(
+                name='rois', shape=[10, 4], dtype='float32')
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[None], dtype='int32')
 
             output, _ = ops.roi_pool(
                 input=inputs,
@@ -341,9 +345,9 @@ class TestROIPool(LayerTest):
     def test_roi_pool_error(self):
         program = Program()
         with program_guard(program):
-            inputs = fluid.data(
+            inputs = paddle.static.data(
                 name='inputs', shape=[2, 12, 20, 20], dtype='float32')
-            rois = fluid.data(
+            rois = paddle.static.data(
                 name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
             self.assertRaises(
                 TypeError,

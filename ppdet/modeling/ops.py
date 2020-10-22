@@ -42,7 +42,7 @@ __all__ = [
 
 def roi_pool(input,
              rois,
-             output_size=(1, 1),
+             output_size,
              spatial_scale=1.0,
              rois_num=None,
              name=None):
@@ -60,9 +60,14 @@ def roi_pool(input,
     For more information, please refer to https://stackoverflow.com/questions/43430056/what-is-roi-layer-in-fast-rcnn
 
     Args:
-        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], where N is the batch size, C is the input channel, H is Height, W is weight. The data type is float32 or float64.
-        rois (Tensor): ROIs (Regions of Interest) to pool over. 2D-Tensor or 2D-LoDTensor with the shape of [num_rois,4], the lod level is 1. Given as [[x1, y1, x2, y2], ...], (x1, y1) is the top left coordinates, and (x2, y2) is the bottom right coordinates.
-        output_size (int or tuple of int, optional): The pooled output size(h, w), data type is int32. Default: (1, 1)
+        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
+            where N is the batch size, C is the input channel, H is Height, W is weight. 
+            The data type is float32 or float64.
+        rois (Tensor): ROIs (Regions of Interest) to pool over. 
+            2D-Tensor or 2D-LoDTensor with the shape of [num_rois,4], the lod level is 1. 
+            Given as [[x1, y1, x2, y2], ...], (x1, y1) is the top left coordinates, 
+            and (x2, y2) is the bottom right coordinates.
+        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
         spatial_scale (float, optional): Multiplicative spatial scale factor to translate ROI coords from their input scale to the scale used when pooling. Default: 1.0
         rois_num (Tensor): The number of RoIs in each image. Default: None
         name(str, optional): For detailed information, please refer
@@ -78,36 +83,23 @@ def roi_pool(input,
 
     ..  code-block:: python
 
-        import paddle.fluid as fluid
-        import numpy as np
         import paddle
         paddle.enable_static()
 
-        DATATYPE='float32'
+        x = paddle.static.data(
+                name='data', shape=[None, 256, 32, 32], dtype='float32')
+        rois = paddle.static.data(
+                name='rois', shape=[None, 4], dtype='float32')
+        rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
 
-        place = fluid.CPUPlace()
-        #place = fluid.CUDAPlace(0)
-
-        input_data = np.array([i for i in range(1,17)]).reshape(1,1,4,4).astype(DATATYPE)
-        roi_data =fluid.create_lod_tensor(np.array([[1., 1., 2., 2.], [1.5, 1.5, 3., 3.]]).astype(DATATYPE),[[2]], place)
-        rois_num_data = np.array([2]).astype('int32')
-
-        x = fluid.data(name='input', shape=[None,1,4,4], dtype=DATATYPE)
-        rois = fluid.data(name='roi', shape=[None,4], dtype=DATATYPE)
-        rois_num = fluid.data(name='rois_num', shape=[None], dtype='int32')
-
-        pool_out = fluid.layers.roi_pool(
+        pool_out = ops.roi_pool(
                 input=x,
                 rois=rois,
                 output_size=(1, 1),
                 spatial_scale=1.0,
                 rois_num=rois_num)
-
-        exe = fluid.Executor(place)
-        out, = exe.run(feed={'input':input_data ,'roi':roi_data, 'rois_num': rois_num_data}, fetch_list=[pool_out.name])
-        print(out)   #array([[[[11.]]], [[[16.]]]], dtype=float32)
-        print(np.array(out).shape)  # (2, 1, 1, 1)
     """
+    check_type(output_size, 'output_size', (int, tuple), 'roi_pool')
     if isinstance(output_size, int):
         output_size = (output_size, output_size)
 
@@ -147,23 +139,35 @@ def roi_pool(input,
 
 def roi_align(input,
               rois,
-              output_size=(1, 1),
+              output_size,
               spatial_scale=1.0,
               sampling_ratio=-1,
               rois_num=None,
               name=None):
     """
 
-    ${comment}
+    Region of interest align (also known as RoI align) is to perform
+    bilinear interpolation on inputs of nonuniform sizes to obtain 
+    fixed-size feature maps (e.g. 7*7)
+
+    Dividing each region proposal into equal-sized sections with
+    the pooled_width and pooled_height. Location remains the origin
+    result.
+
+    In each ROI bin, the value of the four regularly sampled locations 
+    are computed directly through bilinear interpolation. The output is
+    the mean of four locations.
+    Thus avoid the misaligned problem. 
 
     Args:
-        input (Tensor): ${x_comment}
+        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
+            where N is the batch size, C is the input channel, H is Height, W is weight. 
+            The data type is float32 or float64.
         rois (Tensor): ROIs (Regions of Interest) to pool over.It should be
-            a 2-D Tensor or 2-D LoDTensor of shape (num_rois, 4), the lod level is 1. The
-            data type is float32 or float64. Given as [[x1, y1, x2, y2], ...],
-            (x1, y1) is the top left coordinates, and (x2, y2) is the bottom
-            right coordinates.
-        output_size (int or tuple of int, optional): The pooled output size(h, w), data type is int32. Default: (1, 1)
+            a 2-D Tensor or 2-D LoDTensor of shape (num_rois, 4), the lod level is 1. 
+            The data type is float32 or float64. Given as [[x1, y1, x2, y2], ...],
+            (x1, y1) is the top left coordinates, and (x2, y2) is the bottom right coordinates.
+        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
         spatial_scale (float32, optional): ${spatial_scale_comment} Default: 1.0
         sampling_ratio(int32, optional): ${sampling_ratio_comment} Default: -1
         rois_num (Tensor): The number of RoIs in each image. Default: None
@@ -174,22 +178,21 @@ def roi_align(input,
     Returns:
         Tensor:
 
-        Output: ${out_comment}.
+        Output: The output of ROIAlignOp is a 4-D tensor with shape (num_rois, channels, pooled_h, pooled_w). The data type is float32 or float64.
 
 
     Examples:
         .. code-block:: python
 
-            import paddle.fluid as fluid
             import paddle
             paddle.enable_static()
 
-            x = fluid.data(
+            x = paddle.static.data(
                 name='data', shape=[None, 256, 32, 32], dtype='float32')
-            rois = fluid.data(
+            rois = paddle.static.data(
                 name='rois', shape=[None, 4], dtype='float32')
-            rois_num = fluid.data(name='rois_num', shape=[None], dtype='int32')
-            align_out = fluid.layers.roi_align(input=x,
+            rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
+            align_out = ops.roi_align(input=x,
                                                rois=rois,
                                                ouput_size=(7, 7),
                                                spatial_scale=0.5,
