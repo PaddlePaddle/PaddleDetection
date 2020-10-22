@@ -1,0 +1,135 @@
+TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
+  use_fine_grained_loss: true
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: true
+      with_mosaic: true
+    - !ResizeAndKeepRatio
+      target_size: 640
+      augment: true
+      with_mosaic: true
+    - !Mosaic
+      target_size: 640
+    - !RandomPerspective
+      degree: 0
+      translate: 0.1
+      scale: 0.5
+      shear: 0.0
+      perspective: 0.0
+      border: [-320, -320]
+    - !RandomFlipImage
+      prob: 0.5
+      is_normalized: false
+    - !RandomHSV
+      hgain: 0.015
+      sgain: 0.7
+      vgain: 0.4
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
+  batch_transforms:
+    - !NormalizeImage
+      mean: [0.0, 0.0, 0.0]
+      std: [1.0, 1.0, 1.0]
+      is_scale: True
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+    - !Gt2Yolov5Target
+      anchor_masks: [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
+      anchors: [[10, 13], [16, 30], [33, 23],
+                [30, 61], [62, 45], [59, 119],
+                [116, 90], [156, 198], [373, 326]]
+      downsample_ratios: [8, 16, 32]
+  batch_size: 16
+  mosaic: true
+  shuffle: true
+  drop_last: true
+  worker_num: 8
+  bufsize: 16
+  target_size: 640
+  rect: false
+  pad: 0.5
+  use_process: true
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_size', 'im_id', 'im_pad', 'im_scale']
+    num_max_boxes: 50
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/coco
+    anno_path: annotations/instances_val2017.json
+    #anno_path: annotations/instances_val2017_debug_139.json
+    image_dir: val2017
+    with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: true
+      with_mixup: false
+    - !ResizeAndKeepRatio
+      target_size: 640
+      augment: false
+    - !LetterBox
+      target_size: 640
+      rect: true
+      auto: false
+      augment: false
+    - !NormalizeImage
+      mean: [0.0, 0.0, 0.0]
+      std: [1.0, 1.0, 1.0]
+      is_scale: true
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: true
+    - !PadBox
+      num_max_boxes: 50
+  batch_size: 1
+  drop_empty: false
+  worker_num: 8
+  bufsize: 16
+  target_size: 640
+  rect: true
+  pad: 0.5
+  stride: 32
+
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_size', 'im_id', 'im_pad', 'im_scale']
+  dataset:
+    !ImageFolder
+      anno_path: annotations/instances_val2017.json
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+      with_mixup: false
+    - !ResizeAndKeepRatio
+      target_size: 640
+      augment: false
+    - !LetterBox
+      target_size: 672
+      rect: false
+      auto: false
+      augment: false
+    - !NormalizeImage
+      mean: [0.0, 0.0, 0.0]
+      std: [1.0, 1.0, 1.0]
+      is_scale: True
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
