@@ -30,6 +30,7 @@ import six
 from collections import deque
 from paddle.fluid import profiler
 
+import paddle
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
@@ -316,6 +317,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

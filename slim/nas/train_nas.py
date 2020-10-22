@@ -27,6 +27,7 @@ import numpy as np
 import datetime
 from collections import deque
 
+import paddle
 from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
@@ -378,6 +379,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "-r",
