@@ -22,6 +22,7 @@ from functools import reduce
 from PIL import Image
 import cv2
 import numpy as np
+import paddle
 import paddle.fluid as fluid
 from preprocess import preprocess, Resize, Normalize, Permute, PadStride
 from visualize import visualize_box_mask
@@ -509,6 +510,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",

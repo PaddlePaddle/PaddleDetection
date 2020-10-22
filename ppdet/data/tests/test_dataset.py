@@ -146,5 +146,7 @@ class TestDataset(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    import paddle
+    paddle.enable_static()
     logging.basicConfig()
     unittest.main()

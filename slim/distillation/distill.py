@@ -26,6 +26,7 @@ import numpy as np
 from collections import OrderedDict
 
 from paddleslim.dist.single_distiller import merge, l2_loss
+import paddle
 from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
@@ -371,6 +372,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

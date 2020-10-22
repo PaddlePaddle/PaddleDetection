@@ -26,6 +26,7 @@ import glob
 import numpy as np
 from PIL import Image
 
+import paddle
 from paddle import fluid
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
@@ -223,6 +224,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--infer_dir",

@@ -28,6 +28,7 @@ import datetime
 from collections import deque
 import shutil
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
@@ -296,6 +297,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--loss_scale",

@@ -22,6 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
@@ -97,6 +98,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",
