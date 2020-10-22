@@ -128,6 +128,7 @@ class CascadeRCNN(object):
 
         proposals = None
         bbox_pred = None
+        max_overlap = None
         for i in range(3):
             if i > 0:
                 refined_bbox = self._decode_box(
@@ -139,10 +140,14 @@ class CascadeRCNN(object):
 
             if mode == 'train':
                 outs = self.bbox_assigner(
-                    input_rois=refined_bbox, feed_vars=feed_vars, curr_stage=i)
+                    input_rois=refined_bbox,
+                    feed_vars=feed_vars,
+                    curr_stage=i,
+                    max_overlap=max_overlap)
 
                 proposals = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
             else:
                 proposals = refined_bbox
             proposal_list.append(proposals)
