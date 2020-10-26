@@ -491,6 +491,7 @@ class Detector():
                             shape:[N, class_num, mask_resolution, mask_resolution]
         '''
         inputs, im_info = self.preprocess(image)
+        print('im_info: {}'.format(im_info))
         np_boxes, np_masks = None, None
         if self.config.use_python_inference:
             for i in range(warmup):
