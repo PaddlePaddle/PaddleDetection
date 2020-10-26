@@ -302,7 +302,6 @@ class RoIExtractor(object):
                 feats[self.start_level],
                 roi,
                 self.resolution,
-                self.resolution,
                 spatial_scale,
                 rois_num=rois_num)
             return rois_feat
@@ -322,7 +321,6 @@ class RoIExtractor(object):
             roi_feat = ops.roi_align(
                 feats[lvl],
                 rois_dist[lvl],
-                self.resolution,
                 self.resolution,
                 spatial_scale[lvl],
                 sampling_ratio=self.sampling_ratio,
