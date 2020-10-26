@@ -30,7 +30,7 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(name=name + '.conv.weights'),
             bias_attr=False)
         bn_name = name + '.bn'
-        self.batch_norm = nn.BatchNorm2d(
+        self.batch_norm = nn.BatchNorm2D(
             ch_out,
             weight_attr=ParamAttr(
                 name=bn_name + '.scale', regularizer=L2Decay(0.)),
