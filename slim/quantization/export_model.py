@@ -30,7 +30,6 @@ from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.export_utils import save_infer_model, dump_infer_config
 from ppdet.utils.check import check_config, check_version
-from tools.export_model import prune_feed_vars
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -81,13 +80,11 @@ def main():
     infer_prog, int8_program = convert(
         infer_prog, place, config, save_int8=True)
 
-    save_infer_model(
-        os.path.join(FLAGS.output_dir, 'float'), exe, feed_vars, test_fetches,
-        infer_prog)
+    FLAGS.output_dir = os.path.join(FLAGS.output_dir, 'float')
+    save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
-    save_infer_model(
-        os.path.join(FLAGS.output_dir, 'int'), exe, feed_vars, test_fetches,
-        int8_program)
+    FLAGS.output_dir = os.path.join(FLAGS.output_dir, 'int')
+    save_infer_model(FLAGS, exe, feed_vars, test_fetches, int8_program)
 
 
 if __name__ == '__main__':
