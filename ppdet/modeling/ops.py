@@ -168,8 +168,10 @@ def roi_align(input,
             The data type is float32 or float64. Given as [[x1, y1, x2, y2], ...],
             (x1, y1) is the top left coordinates, and (x2, y2) is the bottom right coordinates.
         output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
-        spatial_scale (float32, optional): ${spatial_scale_comment} Default: 1.0
-        sampling_ratio(int32, optional): ${sampling_ratio_comment} Default: -1
+        spatial_scale (float32, optional): Multiplicative spatial scale factor to translate ROI coords 
+            from their input scale to the scale used when pooling. Default: 1.0
+        sampling_ratio(int32, optional): number of sampling points in the interpolation grid. 
+            If <=0, then grid points are adaptive to roi_width and pooled_w, likewise for height. Default: -1
         rois_num (Tensor): The number of RoIs in each image. Default: None
         name(str, optional): For detailed information, please refer
             to :ref:`api_guide_Name`. Usually name is no need to set and
@@ -199,6 +201,7 @@ def roi_align(input,
                                                sampling_ratio=-1,
                                                rois_num=rois_num)
     """
+    check_type(output_size, 'output_size', (int, tuple), 'roi_align')
     if isinstance(output_size, int):
         output_size = (output_size, output_size)
 
