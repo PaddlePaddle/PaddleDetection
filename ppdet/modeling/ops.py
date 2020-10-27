@@ -590,7 +590,7 @@ def yolo_box(
                     The second dimension(C) stores box locations, confidence score and
                     classification one-hot keys of each anchor box. Generally, X should be the output of YOLOv3 network.
                     The data type is float32 or float64.
-        origin_shape (Variable): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
+        origin_shape (Tensor): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
                     This tensor holds height and width of each input image used for resizing output box in input image
                     scale. The data type is int32.
         anchors (list|tuple): The anchor width and height, it will be parsed pair by pair.
