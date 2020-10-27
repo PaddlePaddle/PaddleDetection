@@ -31,6 +31,18 @@ import ppdet.modeling.ops as ops
 from ppdet.modeling.tests.test_base import LayerTest
 
 
+def make_rois(h, w, rois_num, output_size):
+    rois = np.zeros((0, 4)).astype('float32')
+    for roi_num in rois_num:
+        roi = np.zeros((roi_num, 4)).astype('float32')
+        roi[:, 0] = np.random.randint(0, h - output_size[0], size=roi_num)
+        roi[:, 1] = np.random.randint(0, w - output_size[1], size=roi_num)
+        roi[:, 2] = np.random.randint(roi[:, 0] + output_size[0], h)
+        roi[:, 3] = np.random.randint(roi[:, 1] + output_size[1], w)
+        rois = np.vstack((rois, roi))
+    return rois
+
+
 class TestCollectFpnProposals(LayerTest):
     def test_collect_fpn_proposals(self):
         multi_bboxes_np = []
@@ -223,7 +235,7 @@ class TestROIAlign(LayerTest):
         inputs_np = np.random.rand(b, c, h, w).astype('float32')
         rois_num = [4, 6]
         output_size = (7, 7)
-        rois_np = self.make_rois(h, w, rois_num, output_size)
+        rois_np = make_rois(h, w, rois_num, output_size)
         rois_num_np = np.array(rois_num).astype('int32')
         with self.static_graph():
             inputs = paddle.static.data(
@@ -261,17 +273,6 @@ class TestROIAlign(LayerTest):
 
         self.assertTrue(np.array_equal(output_np, output_dy_np))
 
-    def make_rois(self, h, w, rois_num, output_size):
-        rois = np.zeros((0, 4)).astype('float32')
-        for roi_num in rois_num:
-            roi = np.zeros((roi_num, 4)).astype('float32')
-            roi[:, 0] = np.random.randint(0, h - output_size[0], size=roi_num)
-            roi[:, 1] = np.random.randint(0, w - output_size[1], size=roi_num)
-            roi[:, 2] = np.random.randint(roi[:, 0] + output_size[0], h)
-            roi[:, 3] = np.random.randint(roi[:, 1] + output_size[1], w)
-            rois = np.vstack((rois, roi))
-        return rois
-
     def test_roi_align_error(self):
         program = Program()
         with program_guard(program):
@@ -293,7 +294,7 @@ class TestROIPool(LayerTest):
         inputs_np = np.random.rand(b, c, h, w).astype('float32')
         rois_num = [4, 6]
         output_size = (7, 7)
-        rois_np = self.make_rois(h, w, rois_num, output_size)
+        rois_np = make_rois(h, w, rois_num, output_size)
         rois_num_np = np.array(rois_num).astype('int32')
         with self.static_graph():
             inputs = paddle.static.data(
@@ -331,17 +332,6 @@ class TestROIPool(LayerTest):
 
         self.assertTrue(np.array_equal(output_np, output_dy_np))
 
-    def make_rois(self, h, w, rois_num, output_size):
-        rois = np.zeros((0, 4)).astype('float32')
-        for roi_num in rois_num:
-            roi = np.zeros((roi_num, 4)).astype('float32')
-            roi[:, 0] = np.random.randint(0, h - output_size[0], size=roi_num)
-            roi[:, 1] = np.random.randint(0, w - output_size[1], size=roi_num)
-            roi[:, 2] = np.random.randint(roi[:, 0] + output_size[0], h)
-            roi[:, 3] = np.random.randint(roi[:, 1] + output_size[1], w)
-            rois = np.vstack((rois, roi))
-        return rois
-
     def test_roi_pool_error(self):
         program = Program()
         with program_guard(program):
@@ -355,6 +345,34 @@ class TestROIPool(LayerTest):
                 input=inputs,
                 rois=rois,
                 output_size=(7, 7))
+
+
+class TestIoUSimilarity(LayerTest):
+    def test_iou_similarity(self):
+        b, c, h, w = 2, 12, 20, 20
+        inputs_np = np.random.rand(b, c, h, w).astype('float32')
+        output_size = (7, 7)
+        x_np = make_rois(h, w, [20], output_size)
+        y_np = make_rois(h, w, [10], output_size)
+        with self.static_graph():
+            x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
+
+            iou = ops.iou_similarity(x=x, y=y)
+            iou_np, = self.get_static_graph_result(
+                feed={
+                    'x': x_np,
+                    'y': y_np,
+                }, fetch_list=[iou], with_lod=False)
+
+        with self.dynamic_graph():
+            x_dy = base.to_variable(x_np)
+            y_dy = base.to_variable(y_np)
+
+            iou_dy = ops.iou_similarity(x=x_dy, y=y_dy)
+            iou_dy_np = iou_dy.numpy()
+
+        self.assertTrue(np.array_equal(iou_np, iou_dy_np))
 
 
 if __name__ == '__main__':

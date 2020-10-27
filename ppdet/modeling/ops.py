@@ -30,7 +30,7 @@ __all__ = [
     #'prior_box',
     #'anchor_generator',
     #'generate_proposals',
-    #'iou_similarity',
+    'iou_similarity',
     #'box_coder',
     #'yolo_box',
     #'multiclass_nms',
@@ -238,6 +238,69 @@ def roi_align(input,
             "sampling_ratio": sampling_ratio
         })
     return align_out
+
+
+def iou_similarity(x, y, box_normalized=True, name=None):
+    """
+    Computes intersection-over-union (IOU) between two box lists.
+    Box list 'X' should be a LoDTensor and 'Y' is a common Tensor,
+    boxes in 'Y' are shared by all instance of the batched inputs of X.
+    Given two boxes A and B, the calculation of IOU is as follows:
+
+    $$
+    IOU(A, B) = 
+    \\frac{area(A\\cap B)}{area(A)+area(B)-area(A\\cap B)}
+    $$
+
+    Args:
+        x (Tensor): Box list X is a 2-D Tensor with shape [N, 4] holds N 
+             boxes, each box is represented as [xmin, ymin, xmax, ymax], 
+             the shape of X is [N, 4]. [xmin, ymin] is the left top 
+             coordinate of the box if the input is image feature map, they
+             are close to the origin of the coordinate system. 
+             [xmax, ymax] is the right bottom coordinate of the box.
+             The data type is float32 or float64.
+        y (Tensor): Box list Y holds M boxes, each box is represented as 
+             [xmin, ymin, xmax, ymax], the shape of X is [N, 4]. 
+             [xmin, ymin] is the left top coordinate of the box if the 
+             input is image feature map, and [xmax, ymax] is the right 
+             bottom coordinate of the box. The data type is float32 or float64.
+        box_normalized(bool): Whether treat the priorbox as a normalized box.
+            Set true by default.
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        Tensor: The output of iou_similarity op, a tensor with shape [N, M] 
+              representing pairwise iou scores. The data type is same with x.
+
+    Examples:
+        .. code-block:: python
+
+            import numpy as np
+            import paddle
+            paddle.enable_static()
+
+            x = paddle.data(name='x', shape=[None, 4], dtype='float32')
+            y = paddle.data(name='y', shape=[None, 4], dtype='float32')
+            iou = ops.iou_similarity(x=x, y=y)
+    """
+
+    if in_dygraph_mode():
+        out = core.ops.iou_similarity(x, y, 'box_normalized', box_normalized)
+        return out
+
+    helper = LayerHelper("iou_similarity", **locals())
+    out = helper.create_variable_for_type_inference(dtype=x.dtype)
+
+    helper.append_op(
+        type="iou_similarity",
+        inputs={"X": x,
+                "Y": y},
+        attrs={"box_normalized": box_normalized},
+        outputs={"Out": out})
+    return out
 
 
 def collect_fpn_proposals(multi_rois,
