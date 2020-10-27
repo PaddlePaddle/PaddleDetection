@@ -1,5 +1,5 @@
 # 是否使用GPU(即是否使用 CUDA)
-WITH_GPU=OFF
+WITH_GPU=ON
 # 使用MKL or openblas
 WITH_MKL=ON
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
@@ -7,14 +7,15 @@ WITH_TENSORRT=OFF
 # TensorRT 的路径
 TENSORRT_DIR=/path/to/TensorRT/
 # Paddle 预测库路径
-PADDLE_DIR=/path/to/fluid_inference/
+# PADDLE_DIR=/paddle/paddle/Paddle/build/fluid_inference_c_install_dir
+PADDLE_DIR=../fluid_inference/
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
-WITH_STATIC_LIB=OFF
+WITH_STATIC_LIB=ON
 # CUDA 的 lib 路径
-CUDA_LIB=/path/to/cuda/lib/
+CUDA_LIB=/usr/local/cuda/lib64
 # CUDNN 的 lib 路径
-CUDNN_LIB=/path/to/cudnn/lib/
+CUDNN_LIB=/usr/lib/x86_64-linux-gnu/
 
 # OPENCV 路径, 如果使用自带预编译版本可不修改
 sh $(pwd)/scripts/bootstrap.sh  # 下载预编译版本的opencv

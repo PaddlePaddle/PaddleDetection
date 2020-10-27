@@ -17,8 +17,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <ctime>
 
 #include "include/object_detector.h"
+#include <nvjpeg.h>
+#include <fstream>
+#include <unistd.h>
 
 
 DEFINE_string(model_dir, "", "Path of inference model");
@@ -96,14 +100,110 @@ void PredictVideo(const std::string& video_path,
   video_out.release();
 }
 
+int dev_malloc(void **p, size_t s) { return (int)cudaMalloc(p, s); }
+
+int dev_free(void *p) { return (int)cudaFree(p); }
+
 void PredictImage(const std::string& image_path,
                   const double threshold,
                   const bool run_benchmark,
                   PaddleDetection::ObjectDetector* det,
                   const std::string& output_dir = "output") {
   // Open input image as an opencv cv::Mat object
+  clock_t imread_tic =clock();
+
+  cudaStream_t stream;
+  cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+
+  printf("stream created\n");
+
+  nvjpegHandle_t nvjpeg_handle;
+  nvjpegDevAllocator_t dev_allocator = {&dev_malloc, &dev_free};
+
+  nvjpegStatus_t status = nvjpegCreate(NVJPEG_BACKEND_DEFAULT, &dev_allocator, &nvjpeg_handle);
+
+  printf("handle created %d \n", status);
+
+  nvjpegJpegState_t nvjpeg_state;
+  nvjpegJpegStateCreate(nvjpeg_handle, &nvjpeg_state);
+
+  printf("state created\n");
+
+  std::vector<char> image_data;
+  std::ifstream input(image_path.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+	std::streamsize file_size = input.tellg();
+  printf("image_path %s file_size %d \n", image_path.c_str(), file_size);
+	input.seekg(0, std::ios::beg);
+  if (image_data.size() < file_size) {
+    image_data.resize(file_size);
+  }
+  input.read(image_data.data(), file_size);
+
+  printf("input created \n");
+
+  int widths[NVJPEG_MAX_COMPONENT];
+  int heights[NVJPEG_MAX_COMPONENT];
+  int channels;
+  nvjpegChromaSubsampling_t subsampling;
+  nvjpegGetImageInfo(nvjpeg_handle, (unsigned char *)image_data.data(), image_data.size(),
+                      &channels, &subsampling, widths, heights);
+
+  printf("image info created %d %d \n", widths[0], heights[0]);
+
+  nvjpegImage_t ibuf;
+  int sz = widths[0] * heights[0];
+	// alloc output buffer if required
+	for (int c = 0; c < 3; c++) {
+		ibuf.pitch[c] = widths[0];
+    // if (ibuf.channel[c]) {
+    //   cudaFree(ibuf.channel[c]);
+    // }
+    cudaMalloc((void **)&ibuf.channel[c], sz);
+	}
+
+  printf("buffer alloced\n");
+
+  cudaStreamSynchronize(stream);
+  status = nvjpegDecode(nvjpeg_handle, nvjpeg_state, (const unsigned char *)image_data.data(), (size_t)file_size, NVJPEG_OUTPUT_BGR, &ibuf, stream);
+  printf("decode finish %d \n", status);
+  clock_t imread_toc = clock();
+  printf("imread time cost: %f ms\n", 1000 * (imread_toc - imread_tic) / (double)CLOCKS_PER_SEC);
+  // printf("nvjpeg %d, %d, %d, %d\n", ibuf.channel[0][0], ibuf.channel[0][1], ibuf.channel[0][2], ibuf.channel[0][3]);
+
+	// for (int c = 0; c < 3; c++) {
+  //   if (ibuf.channel[c]) {
+  //     cudaFree(ibuf.channel[c]);
+  //   }
+	// }
+
+  clock_t memcpy_tic = clock();
+  unsigned char image_data_cpu[3 * heights[0] * widths[0]];
+  for (int c = 0; c < 3; c++) {
+    cudaMemcpy(image_data_cpu + c * sz, ibuf.channel[c], sz, cudaMemcpyDeviceToHost);
+  }
+  cv::Size cv_sz(widths[0], heights[0]);
+  cv::Mat im0(cv_sz, CV_8UC3, (void *)image_data_cpu);
+  // cv::Mat im0(widths[0] * 3, heights[0], CV_8UC1, (void *)image_data_cpu);
+  // im0 = im0.reshape(3, widths[0], heights[0]).transpose(1, 2, 0);
+  printf("im0 data: %d, %d, %d, %d, %d \n", im0.data[0], im0.data[1], im0.data[2], im0.data[3], im0.data[4]);
+  clock_t memcpy_toc = clock();
+  printf("memcpy time cost: %f ms\n", 1000 * (memcpy_toc - memcpy_tic) / (double)CLOCKS_PER_SEC);
+
+  cudaStreamDestroy(stream);
+  nvjpegJpegStateDestroy(nvjpeg_state);
+  nvjpegDestroy(nvjpeg_handle);
+  // cudaDeviceReset();
+  // cudaDeviceSynchronize();
+
+  // sleep(300);
+
+  imread_tic = clock();
   cv::Mat im = cv::imread(image_path, 1);
+  printf("im data: %d, %d, %d, %d, %d \n", im.data[0], im.data[1], im.data[2], im.data[3], im.data[4]);
+  imread_toc =clock();
+  printf("cv imread time cost: %f ms\n", 1000 * (imread_toc - imread_tic) / (double)CLOCKS_PER_SEC);
   // Store all detected result
+  clock_t predict_tic =clock();
   std::vector<PaddleDetection::ObjectResult> result;
   if (run_benchmark)
   {
@@ -111,6 +211,8 @@ void PredictImage(const std::string& image_path,
   }else
   {
     det->Predict(im, 0.5, 0, 1, run_benchmark, &result);
+    clock_t predict_toc =clock();
+    printf("predict time cost: %f ms\n", 1000 * (predict_toc - predict_tic) / (double)CLOCKS_PER_SEC);
     for (const auto& item : result) {
       printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
           item.class_id,
