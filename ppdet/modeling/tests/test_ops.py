@@ -355,15 +355,19 @@ class TestIoUSimilarity(LayerTest):
         x_np = make_rois(h, w, [20], output_size)
         y_np = make_rois(h, w, [10], output_size)
         with self.static_graph():
-            x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
-            y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
+            program = Program()
+            with program_guard(program):
+                x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
+                y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
 
-            iou = ops.iou_similarity(x=x, y=y)
-            iou_np, = self.get_static_graph_result(
-                feed={
-                    'x': x_np,
-                    'y': y_np,
-                }, fetch_list=[iou], with_lod=False)
+                iou = ops.iou_similarity(x=x, y=y)
+                iou_np, = self.get_static_graph_result(
+                    feed={
+                        'x': x_np,
+                        'y': y_np,
+                    },
+                    fetch_list=[iou],
+                    with_lod=False)
 
         with self.dynamic_graph():
             x_dy = base.to_variable(x_np)
@@ -373,6 +377,86 @@ class TestIoUSimilarity(LayerTest):
             iou_dy_np = iou_dy.numpy()
 
         self.assertTrue(np.array_equal(iou_np, iou_dy_np))
+
+
+class TestYOLO_Box(LayerTest):
+    def test_yolo_box(self):
+
+        # x shape [N C H W], C=K * (5 + class_num), class_num=10, K=2
+        np_x = np.random.random([1, 30, 7, 7]).astype('float32')
+        np_origin_shape = np.array([[608, 608]], dtype='int32')
+        class_num = 10
+        conf_thresh = 0.01
+        downsample_ratio = 32
+        scale_x_y = 1.2
+
+        # static
+        with self.static_graph():
+            # x shape [N C H W], C=K * (5 + class_num), class_num=10, K=2
+            x = paddle.static.data(
+                name='x', shape=[1, 30, 7, 7], dtype='float32')
+            origin_shape = paddle.static.data(
+                name='origin_shape', shape=[1, 2], dtype='int32')
+
+            boxes, scores = ops.yolo_box(
+                x,
+                origin_shape, [10, 13, 30, 13],
+                class_num,
+                conf_thresh,
+                downsample_ratio,
+                scale_x_y=scale_x_y)
+
+            boxes_np, scores_np = self.get_static_graph_result(
+                feed={
+                    'x': np_x,
+                    'origin_shape': np_origin_shape,
+                    'anchors': [10, 13, 30, 13],
+                    'class_num': 10,
+                    'conf_thresh': 0.01,
+                    'downsample_ratio': 32,
+                    'scale_x_y': 1.0,
+                },
+                fetch_list=[boxes, scores],
+                with_lod=False)
+
+        # dygraph
+        with self.dynamic_graph():
+            x_dy = fluid.layers.assign(np_x)
+            origin_shape_dy = fluid.layers.assign(np_origin_shape)
+
+            boxes_dy, scores_dy = ops.yolo_box(
+                x_dy,
+                origin_shape_dy, [10, 13, 30, 13],
+                10,
+                0.01,
+                32,
+                scale_x_y=scale_x_y)
+
+            boxes_dy_np = boxes_dy.numpy()
+            scores_dy_np = scores_dy.numpy()
+
+            self.assertTrue(np.array_equal(boxes_np, boxes_dy_np))
+            self.assertTrue(np.array_equal(scores_np, scores_dy_np))
+
+    def test_yolo_box_error(self):
+        paddle.enable_static()
+        program = Program()
+        with program_guard(program):
+            # x shape [N C H W], C=K * (5 + class_num), class_num=10, K=2
+            x = paddle.static.data(
+                name='x', shape=[1, 30, 7, 7], dtype='float32')
+            origin_shape = paddle.static.data(
+                name='origin_shape', shape=[1, 2], dtype='int32')
+
+            self.assertRaises(
+                TypeError,
+                ops.yolo_box,
+                x,
+                origin_shape, [10, 13, 30, 13],
+                10.123,
+                0.01,
+                32,
+                scale_x_y=1.2)
 
 
 if __name__ == '__main__':
