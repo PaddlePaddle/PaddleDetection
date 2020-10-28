@@ -44,6 +44,7 @@ class LayerTest(unittest.TestCase):
 
     @contextlib.contextmanager
     def static_graph(self):
+        paddle.enable_static()
         scope = fluid.core.Scope()
         program = Program()
         with fluid.scope_guard(scope):
@@ -66,6 +67,7 @@ class LayerTest(unittest.TestCase):
 
     @contextlib.contextmanager
     def dynamic_graph(self, force_to_use_cpu=False):
+        paddle.disable_static()
         with fluid.dygraph.guard(
                 self._get_place(force_to_use_cpu=force_to_use_cpu)):
             paddle.seed(self.seed)

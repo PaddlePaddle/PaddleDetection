@@ -31,7 +31,7 @@ __all__ = [
     #'anchor_generator',
     #'generate_proposals',
     'iou_similarity',
-    #'box_coder',
+    'box_coder',
     'yolo_box',
     #'multiclass_nms',
     'distribute_fpn_proposals',
@@ -669,3 +669,152 @@ def yolo_box(
         },
         attrs=attrs)
     return boxes, scores
+
+
+def box_coder(prior_box,
+              prior_box_var,
+              target_box,
+              code_type="encode_center_size",
+              box_normalized=True,
+              axis=0,
+              name=None):
+    """
+    **Box Coder Layer**
+    Encode/Decode the target bounding box with the priorbox information.
+    
+    The Encoding schema described below:
+    .. math::
+        ox = (tx - px) / pw / pxv
+        oy = (ty - py) / ph / pyv
+        ow = \log(\abs(tw / pw)) / pwv 
+        oh = \log(\abs(th / ph)) / phv 
+    The Decoding schema described below:
+    
+    .. math::
+  
+        ox = (pw * pxv * tx * + px) - tw / 2
+        oy = (ph * pyv * ty * + py) - th / 2
+        ow = \exp(pwv * tw) * pw + tw / 2
+        oh = \exp(phv * th) * ph + th / 2   
+    where `tx`, `ty`, `tw`, `th` denote the target box's center coordinates, 
+    width and height respectively. Similarly, `px`, `py`, `pw`, `ph` denote 
+    the priorbox's (anchor) center coordinates, width and height. `pxv`, 
+    `pyv`, `pwv`, `phv` denote the variance of the priorbox and `ox`, `oy`, 
+    `ow`, `oh` denote the encoded/decoded coordinates, width and height. 
+    During Box Decoding, two modes for broadcast are supported. Say target 
+    box has shape [N, M, 4], and the shape of prior box can be [N, 4] or 
+    [M, 4]. Then prior box will broadcast to target box along the 
+    assigned axis. 
+    Args:
+        prior_box(Tensor): Box list prior_box is a 2-D Tensor with shape 
+            [M, 4] holds M boxes and data type is float32 or float64. Each box
+            is represented as [xmin, ymin, xmax, ymax], [xmin, ymin] is the 
+            left top coordinate of the anchor box, if the input is image feature
+            map, they are close to the origin of the coordinate system. 
+            [xmax, ymax] is the right bottom coordinate of the anchor box.       
+        prior_box_var(List|Tensor|None): prior_box_var supports three types 
+            of input. One is Tensor with shape [M, 4] which holds M group and 
+            data type is float32 or float64. The second is list consist of 
+            4 elements shared by all boxes and data type is float32 or float64. 
+            Other is None and not involved in calculation. 
+        target_box(Tensor): This input can be a 2-D LoDTensor with shape 
+            [N, 4] when code_type is 'encode_center_size'. This input also can 
+            be a 3-D Tensor with shape [N, M, 4] when code_type is 
+            'decode_center_size'. Each box is represented as 
+            [xmin, ymin, xmax, ymax]. The data type is float32 or float64. 
+        code_type(str): The code type used with the target box. It can be
+            `encode_center_size` or `decode_center_size`. `encode_center_size` 
+            by default.
+        box_normalized(bool): Whether treat the priorbox as a normalized box.
+            Set true by default.
+        axis(int): Which axis in PriorBox to broadcast for box decode, 
+            for example, if axis is 0 and TargetBox has shape [N, M, 4] and 
+            PriorBox has shape [M, 4], then PriorBox will broadcast to [N, M, 4]
+            for decoding. It is only valid when code type is 
+            `decode_center_size`. Set 0 by default. 
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        Tensor:
+        output_box(Tensor): When code_type is 'encode_center_size', the 
+        output tensor of box_coder_op with shape [N, M, 4] representing the 
+        result of N target boxes encoded with M Prior boxes and variances. 
+        When code_type is 'decode_center_size', N represents the batch size 
+        and M represents the number of decoded boxes.
+    Examples:
+ 
+        .. code-block:: python
+ 
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+            # For encode
+            prior_box_encode = paddle.static.data(name='prior_box_encode',
+                                  shape=[512, 4],
+                                  dtype='float32')
+            target_box_encode = paddle.static.data(name='target_box_encode',
+                                   shape=[81, 4],
+                                   dtype='float32')
+            output_encode = ops.box_coder(prior_box=prior_box_encode,
+                                    prior_box_var=[0.1,0.1,0.2,0.2],
+                                    target_box=target_box_encode,
+                                    code_type="encode_center_size")
+            # For decode
+            prior_box_decode = paddle.static.data(name='prior_box_decode',
+                                  shape=[512, 4],
+                                  dtype='float32')
+            target_box_decode = paddle.static.data(name='target_box_decode',
+                                   shape=[512, 81, 4],
+                                   dtype='float32')
+            output_decode = ops.box_coder(prior_box=prior_box_decode,
+                                    prior_box_var=[0.1,0.1,0.2,0.2],
+                                    target_box=target_box_decode,
+                                    code_type="decode_center_size",
+                                    box_normalized=False,
+                                    axis=1)
+    """
+    check_variable_and_dtype(prior_box, 'prior_box', ['float32', 'float64'],
+                             'box_coder')
+    check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
+                             'box_coder')
+
+    if in_dygraph_mode():
+        if isinstance(prior_box_var, Variable):
+            output_box = core.ops.box_coder(
+                prior_box, prior_box_var, target_box, "code_type", code_type,
+                "box_normalized", box_normalized, "axis", axis)
+
+        elif isinstance(prior_box_var, list):
+            output_box = core.ops.box_coder(
+                prior_box, target_box, "code_type", code_type, "box_normalized",
+                box_normalized, "axis", axis, "variance", prior_box_var)
+        else:
+            raise TypeError(
+                "Input variance of box_coder must be Variable or list")
+        return output_box
+
+    helper = LayerHelper("box_coder", **locals())
+
+    output_box = helper.create_variable_for_type_inference(
+        dtype=prior_box.dtype)
+
+    inputs = {"PriorBox": prior_box, "TargetBox": target_box}
+    attrs = {
+        "code_type": code_type,
+        "box_normalized": box_normalized,
+        "axis": axis
+    }
+    if isinstance(prior_box_var, Variable):
+        inputs['PriorBoxVar'] = prior_box_var
+    elif isinstance(prior_box_var, list):
+        attrs['variance'] = prior_box_var
+    else:
+        raise TypeError("Input variance of box_coder must be Variable or list")
+    helper.append_op(
+        type="box_coder",
+        inputs=inputs,
+        attrs=attrs,
+        outputs={"OutputBox": output_box})
+    return output_box
