@@ -390,6 +390,57 @@ class MultiClassNMS(object):
 
 @register
 @serializable
+class RoIAlign(object):
+    __op__ = ops.roi_align
+    __append_doc__ = True
+
+    def __init__(self, output_size=7, spatial_scale=1. / 16, sampling_ratio=0):
+        super(RoIAlign, self).__init__()
+        self.output_size = output_size
+        self.spatial_scale = spatial_scale
+        self.sampling_ratio = sampling_ratio
+
+
+@register
+@serializable
+class RoIPool(object):
+    __op__ = ops.roi_pool
+    __append_doc__ = True
+
+    def __init__(self, output_size=7, spatial_scale=1. / 16):
+        super(RoIPool, self).__init__()
+        self.output_size = output_size
+        self.spatial_scale = spatial_scale
+
+
+@register
+@serializable
+class MatrixNMS(object):
+    __op__ = ops.matrix_nms
+    __append_doc__ = True
+
+    def __init__(self,
+                 score_threshold=.05,
+                 post_threshold=.05,
+                 nms_top_k=-1,
+                 keep_top_k=100,
+                 use_gaussian=False,
+                 gaussian_sigma=2.,
+                 normalized=False,
+                 background_label=0):
+        super(MatrixNMS, self).__init__()
+        self.score_threshold = score_threshold
+        self.post_threshold = post_threshold
+        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
+        self.normalized = normalized
+        self.use_gaussian = use_gaussian
+        self.gaussian_sigma = gaussian_sigma
+        self.background_label = background_label
+
+
+@register
+@serializable
 class YOLOBox(object):
     def __init__(
             self,
