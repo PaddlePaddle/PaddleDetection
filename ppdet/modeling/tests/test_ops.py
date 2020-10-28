@@ -462,6 +462,7 @@ class TestYOLO_Box(LayerTest):
                 32,
                 scale_x_y=1.2)
 
+
 class TestMatrixNMS(LayerTest):
     def test_matrix_nms(self):
         N, M, C = 7, 1200, 21
@@ -516,6 +517,25 @@ class TestMatrixNMS(LayerTest):
 
         self.assertTrue(np.array_equal(out_np, out_dy_np))
         self.assertTrue(np.array_equal(index_np, index_dy_np))
+
+    def test_matrix_nms_error(self):
+        paddle.enable_static()
+        program = Program()
+        with program_guard(program):
+            bboxes = paddle.static.data(
+                name='bboxes', shape=[7, 1200, 4], dtype='float32')
+            scores = paddle.static.data(
+                name='data_error', shape=[7, 21, 1200], dtype='int32')
+            self.assertRaises(
+                TypeError,
+                ops.matrix_nms,
+                bboxes=bboxes,
+                scores=scores,
+                score_threshold=0.01,
+                post_threshold=0.,
+                nms_top_k=400,
+                keep_top_k=200,
+                return_index=True)
 
 
 if __name__ == '__main__':
