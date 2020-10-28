@@ -150,13 +150,16 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 ## 性能测试
 在win10系统下，CPU: I9-9820X, GPU: 2080Ti硬件下测试，paddle预测库: 1.8.4，CUDA 10, CUDNN: 7.4
 
-|模型 | AnalysisPredictor | Executor | 输入|
-|---|----|---|---|
-| YOLOv3-MobileNetv1 | 41.51 | 36.43 |  608*608
-| faster_rcnn_r50_1x | 194.47 | 195.98 | 1333*1333
-| faster_rcnn_r50_vd_fpn_2x | 43.35 | 44.18 | 1344*1344
-| mask_rcnn_r50_fpn_1x | 96.96 | 98.19 | 1344*1344
-| mask_rcnn_r50_vd_fpn_2x | 97.66 | 97.14 | 1344*1344
-| ppyolo_r18vd | 5.54 | 5.36 | 320*320
-| ppyolo_2x | 56.93 | 57.27 | 608*608
-| ttfnet_darknet | 36.17 | 35.53 | 512*512
+去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
+
+
+|模型 | AnalysisPredictor(ms) | 输入|
+|---|----|---|
+| YOLOv3-MobileNetv1 | 41.51 |  608*608
+| faster_rcnn_r50_1x | 194.47 | 1333*1333
+| faster_rcnn_r50_vd_fpn_2x | 43.35 | 1344*1344
+| mask_rcnn_r50_fpn_1x | 96.96 | 1344*1344
+| mask_rcnn_r50_vd_fpn_2x | 97.66 | 1344*1344
+| ppyolo_r18vd | 5.54 | 320*320
+| ppyolo_2x | 56.93 | 608*608
+| ttfnet_darknet | 36.17 | 512*512
