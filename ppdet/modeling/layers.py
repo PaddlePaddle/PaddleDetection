@@ -401,9 +401,8 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
 
     def __call__(self, x, img_size, anchors, num_classes, stage=0):
-        outs = fluid.layers.yolo_box(x, img_size, anchors, num_classes,
-                                     self.conf_thresh, self.downsample_ratio //
-                                     2**stage, self.clip_bbox)
+        outs = ops.yolo_box(x, img_size, anchors, num_classes, self.conf_thresh,
+                            self.downsample_ratio // 2**stage, self.clip_bbox)
         return outs
 
 
