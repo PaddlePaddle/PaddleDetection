@@ -390,31 +390,6 @@ class MultiClassNMS(object):
 
 @register
 @serializable
-class RoIAlign(object):
-    __op__ = ops.roi_align
-    __append_doc__ = True
-
-    def __init__(self, output_size=7, spatial_scale=1. / 16, sampling_ratio=0):
-        super(RoIAlign, self).__init__()
-        self.output_size = output_size
-        self.spatial_scale = spatial_scale
-        self.sampling_ratio = sampling_ratio
-
-
-@register
-@serializable
-class RoIPool(object):
-    __op__ = ops.roi_pool
-    __append_doc__ = True
-
-    def __init__(self, output_size=7, spatial_scale=1. / 16):
-        super(RoIPool, self).__init__()
-        self.output_size = output_size
-        self.spatial_scale = spatial_scale
-
-
-@register
-@serializable
 class MatrixNMS(object):
     __op__ = ops.matrix_nms
     __append_doc__ = True

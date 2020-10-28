@@ -670,6 +670,7 @@ def yolo_box(
         attrs=attrs)
     return boxes, scores
 
+
 def matrix_nms(bboxes,
                scores,
                score_threshold,
@@ -681,6 +682,7 @@ def matrix_nms(bboxes,
                background_label=0,
                normalized=True,
                return_index=False,
+               return_rois_num=True,
                name=None):
     """
     **Matrix NMS**
@@ -724,6 +726,7 @@ def matrix_nms(bboxes,
                                 categories will be considered. Default: 0
         normalized (bool): Whether detections are normalized. Default: True
         return_index(bool): Whether return selected index. Default: False
+        return_rois_num(bool): whether return rois_num. Default: True
         name(str): Name of the matrix nms op. Default: None.
 
     Returns:
@@ -779,12 +782,17 @@ def matrix_nms(bboxes,
                  normalized)
         out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
         if return_index:
-            return out, index, rois_num
-        return out, rois_num
+            if return_rois_num:
+                return out, index, rois_num
+            return out, index
+        if return_rois_num:
+            return out, rois_num
+        return out
 
     helper = LayerHelper('matrix_nms', **locals())
     output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
     index = helper.create_variable_for_type_inference(dtype='int')
+    rois_num = helper.create_variable_for_type_inference(dtype='int')
     helper.append_op(
         type="matrix_nms",
         inputs={'BBoxes': bboxes,
@@ -800,10 +808,14 @@ def matrix_nms(bboxes,
             'normalized': normalized
         },
         outputs={'Out': output,
-                 'Index': index})
+                 'Index': index,
+                 'RoisNum': rois_num})
     output.stop_gradient = True
 
     if return_index:
+        if return_rois_num:
+            return output, index, rois_num
         return output, index
-    else:
-        return output
+    if return_rois_num:
+        return output, rois_num
+    return output

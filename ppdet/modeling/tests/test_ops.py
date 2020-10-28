@@ -486,7 +486,7 @@ class TestMatrixNMS(LayerTest):
                 name='boxes', shape=[N, M, BOX_SIZE], dtype='float32')
             scores = paddle.static.data(
                 name='scores', shape=[N, C, M], dtype='float32')
-            out, index = ops.matrix_nms(
+            out, index, _ = ops.matrix_nms(
                 bboxes=boxes,
                 scores=scores,
                 score_threshold=score_threshold,
