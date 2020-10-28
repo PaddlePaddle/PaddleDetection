@@ -792,7 +792,11 @@ def matrix_nms(bboxes,
     helper = LayerHelper('matrix_nms', **locals())
     output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
     index = helper.create_variable_for_type_inference(dtype='int')
-    rois_num = helper.create_variable_for_type_inference(dtype='int')
+    outputs = {'Out': output, 'Index': index}
+    if return_rois_num:
+        rois_num = helper.create_variable_for_type_inference(dtype='int')
+        outputs['RoisNum'] = rois_num
+
     helper.append_op(
         type="matrix_nms",
         inputs={'BBoxes': bboxes,
@@ -807,9 +811,7 @@ def matrix_nms(bboxes,
             'keep_top_k': keep_top_k,
             'normalized': normalized
         },
-        outputs={'Out': output,
-                 'Index': index,
-                 'RoisNum': rois_num})
+        outputs=outputs)
     output.stop_gradient = True
 
     if return_index:
