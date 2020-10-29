@@ -45,7 +45,7 @@ class AnchorGeneratorRPN(object):
         stride = self.stride if (
             level is None or self.anchor_start_size is None) else (
                 self.stride[0] * (2.**level), self.stride[1] * (2.**level))
-        anchor, var = fluid.layers.anchor_generator(
+        anchor, var = ops.anchor_generator(
             input=input,
             anchor_sizes=anchor_sizes,
             aspect_ratios=self.aspect_ratios,
@@ -367,7 +367,7 @@ class DecodeClipNms(object):
 @register
 @serializable
 class MultiClassNMS(object):
-    __op__ = fluid.layers.multiclass_nms
+    __op__ = ops.multiclass_nms
     __append_doc__ = True
 
     def __init__(self,
@@ -390,6 +390,32 @@ class MultiClassNMS(object):
 
 @register
 @serializable
+class MatrixNMS(object):
+    __op__ = ops.matrix_nms
+    __append_doc__ = True
+
+    def __init__(self,
+                 score_threshold=.05,
+                 post_threshold=.05,
+                 nms_top_k=-1,
+                 keep_top_k=100,
+                 use_gaussian=False,
+                 gaussian_sigma=2.,
+                 normalized=False,
+                 background_label=0):
+        super(MatrixNMS, self).__init__()
+        self.score_threshold = score_threshold
+        self.post_threshold = post_threshold
+        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
+        self.normalized = normalized
+        self.use_gaussian = use_gaussian
+        self.gaussian_sigma = gaussian_sigma
+        self.background_label = background_label
+
+
+@register
+@serializable
 class YOLOBox(object):
     def __init__(
             self,
@@ -401,9 +427,8 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
 
     def __call__(self, x, img_size, anchors, num_classes, stage=0):
-        outs = fluid.layers.yolo_box(x, img_size, anchors, num_classes,
-                                     self.conf_thresh, self.downsample_ratio //
-                                     2**stage, self.clip_bbox)
+        outs = ops.yolo_box(x, img_size, anchors, num_classes, self.conf_thresh,
+                            self.downsample_ratio // 2**stage, self.clip_bbox)
         return outs
 
 
