@@ -43,6 +43,14 @@ def make_rois(h, w, rois_num, output_size):
     return rois
 
 
+def softmax(x):
+    # clip to shiftx, otherwise, when calc loss with
+    # log(exp(shiftx)), may get log(0)=INF
+    shiftx = (x - np.max(x)).clip(-64.)
+    exps = np.exp(shiftx)
+    return exps / np.sum(exps)
+
+
 class TestCollectFpnProposals(LayerTest):
     def test_collect_fpn_proposals(self):
         multi_bboxes_np = []
@@ -355,19 +363,15 @@ class TestIoUSimilarity(LayerTest):
         x_np = make_rois(h, w, [20], output_size)
         y_np = make_rois(h, w, [10], output_size)
         with self.static_graph():
-            program = Program()
-            with program_guard(program):
-                x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
-                y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
+            x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
 
-                iou = ops.iou_similarity(x=x, y=y)
-                iou_np, = self.get_static_graph_result(
-                    feed={
-                        'x': x_np,
-                        'y': y_np,
-                    },
-                    fetch_list=[iou],
-                    with_lod=False)
+            iou = ops.iou_similarity(x=x, y=y)
+            iou_np, = self.get_static_graph_result(
+                feed={
+                    'x': x_np,
+                    'y': y_np,
+                }, fetch_list=[iou], with_lod=False)
 
         with self.dynamic_graph():
             x_dy = base.to_variable(x_np)
@@ -457,6 +461,81 @@ class TestYOLO_Box(LayerTest):
                 0.01,
                 32,
                 scale_x_y=1.2)
+
+
+class TestMatrixNMS(LayerTest):
+    def test_matrix_nms(self):
+        N, M, C = 7, 1200, 21
+        BOX_SIZE = 4
+        nms_top_k = 400
+        keep_top_k = 200
+        score_threshold = 0.01
+        post_threshold = 0.
+
+        scores_np = np.random.random((N * M, C)).astype('float32')
+        scores_np = np.apply_along_axis(softmax, 1, scores_np)
+        scores_np = np.reshape(scores_np, (N, M, C))
+        scores_np = np.transpose(scores_np, (0, 2, 1))
+
+        boxes_np = np.random.random((N, M, BOX_SIZE)).astype('float32')
+        boxes_np[:, :, 0:2] = boxes_np[:, :, 0:2] * 0.5
+        boxes_np[:, :, 2:4] = boxes_np[:, :, 2:4] * 0.5 + 0.5
+
+        with self.static_graph():
+            boxes = paddle.static.data(
+                name='boxes', shape=[N, M, BOX_SIZE], dtype='float32')
+            scores = paddle.static.data(
+                name='scores', shape=[N, C, M], dtype='float32')
+            out, index, _ = ops.matrix_nms(
+                bboxes=boxes,
+                scores=scores,
+                score_threshold=score_threshold,
+                post_threshold=post_threshold,
+                nms_top_k=nms_top_k,
+                keep_top_k=keep_top_k,
+                return_index=True)
+            out_np, index_np = self.get_static_graph_result(
+                feed={'boxes': boxes_np,
+                      'scores': scores_np},
+                fetch_list=[out, index],
+                with_lod=True)
+
+        with self.dynamic_graph():
+            boxes_dy = base.to_variable(boxes_np)
+            scores_dy = base.to_variable(scores_np)
+
+            out_dy, index_dy, _ = ops.matrix_nms(
+                bboxes=boxes_dy,
+                scores=scores_dy,
+                score_threshold=score_threshold,
+                post_threshold=post_threshold,
+                nms_top_k=nms_top_k,
+                keep_top_k=keep_top_k,
+                return_index=True)
+            out_dy_np = out_dy.numpy()
+            index_dy_np = index_dy.numpy()
+
+        self.assertTrue(np.array_equal(out_np, out_dy_np))
+        self.assertTrue(np.array_equal(index_np, index_dy_np))
+
+    def test_matrix_nms_error(self):
+        paddle.enable_static()
+        program = Program()
+        with program_guard(program):
+            bboxes = paddle.static.data(
+                name='bboxes', shape=[7, 1200, 4], dtype='float32')
+            scores = paddle.static.data(
+                name='data_error', shape=[7, 21, 1200], dtype='int32')
+            self.assertRaises(
+                TypeError,
+                ops.matrix_nms,
+                bboxes=bboxes,
+                scores=scores,
+                score_threshold=0.01,
+                post_threshold=0.,
+                nms_top_k=400,
+                keep_top_k=200,
+                return_index=True)
 
 
 if __name__ == '__main__':

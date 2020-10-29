@@ -390,6 +390,32 @@ class MultiClassNMS(object):
 
 @register
 @serializable
+class MatrixNMS(object):
+    __op__ = ops.matrix_nms
+    __append_doc__ = True
+
+    def __init__(self,
+                 score_threshold=.05,
+                 post_threshold=.05,
+                 nms_top_k=-1,
+                 keep_top_k=100,
+                 use_gaussian=False,
+                 gaussian_sigma=2.,
+                 normalized=False,
+                 background_label=0):
+        super(MatrixNMS, self).__init__()
+        self.score_threshold = score_threshold
+        self.post_threshold = post_threshold
+        self.nms_top_k = nms_top_k
+        self.keep_top_k = keep_top_k
+        self.normalized = normalized
+        self.use_gaussian = use_gaussian
+        self.gaussian_sigma = gaussian_sigma
+        self.background_label = background_label
+
+
+@register
+@serializable
 class YOLOBox(object):
     def __init__(
             self,
