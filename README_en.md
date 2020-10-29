@@ -148,7 +148,7 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
     - [Python inference](deploy/python)
     - [C++ inference](deploy/cpp)
     - [Mobile](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
-    - [Serving](https://github.com/PaddlePaddle/PaddleDetection/tree/release/0.4/deploy/serving)
+    - [Serving](deploy/serving)
     - [Inference benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 
 ## Model Zoo
