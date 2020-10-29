@@ -148,7 +148,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 
 ## 性能测试
-在win10系统下，CPU: I9-9820X, GPU: 2080Ti硬件下测试，paddle预测库: 1.8.4，CUDA 10, CUDNN: 7.4
+测试环境为：系统: Windows 10专业版系统，CPU: I9-9820X, GPU: GTX 2080 Ti，Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.4.  
 
 去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
 
