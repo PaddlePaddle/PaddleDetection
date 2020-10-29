@@ -253,7 +253,7 @@ class Proposal(object):
         bbox_delta_s = fluid.layers.slice(
             bbox_delta_r, axes=[1], starts=[1], ends=[2])
 
-        refined_bbox = fluid.layers.box_coder(
+        refined_bbox = ops.box_coder(
             prior_box=rois,
             prior_box_var=self.proposal_target_generator.bbox_reg_weights[
                 stage],
