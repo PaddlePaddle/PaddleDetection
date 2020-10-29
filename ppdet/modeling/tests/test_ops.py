@@ -448,18 +448,6 @@ class TestYoloBox(LayerTest):
                 32,
                 scale_x_y=1.2)
 
-    def test_box_coder_error(self):
-        with self.static_graph():
-            prior_box = paddle.static.data(
-                name='prior_box', shape=[81, 4], dtype='int32')
-            prior_box_var = paddle.static.data(
-                name='prior_box_var', shape=[81, 4], dtype='float32')
-            target_box = paddle.static.data(
-                name='target_box', shape=[20, 81, 4], dtype='float32')
-
-            self.assertRaises(TypeError, ops.box_coder, prior_box,
-                              prior_box_var, target_box)
-
 
 class TestPriorBox(LayerTest):
     def test_prior_box(self):
@@ -762,6 +750,18 @@ class TestBoxCoder(LayerTest):
             boxes_dy_np = boxes_dy.numpy()
 
             self.assertTrue(np.array_equal(boxes_np, boxes_dy_np))
+
+    def test_box_coder_error(self):
+        with self.static_graph():
+            prior_box = paddle.static.data(
+                name='prior_box', shape=[81, 4], dtype='int32')
+            prior_box_var = paddle.static.data(
+                name='prior_box_var', shape=[81, 4], dtype='float32')
+            target_box = paddle.static.data(
+                name='target_box', shape=[20, 81, 4], dtype='float32')
+
+            self.assertRaises(TypeError, ops.box_coder, prior_box,
+                              prior_box_var, target_box)
 
 
 if __name__ == '__main__':
