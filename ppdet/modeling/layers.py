@@ -45,7 +45,7 @@ class AnchorGeneratorRPN(object):
         stride = self.stride if (
             level is None or self.anchor_start_size is None) else (
                 self.stride[0] * (2.**level), self.stride[1] * (2.**level))
-        anchor, var = fluid.layers.anchor_generator(
+        anchor, var = ops.anchor_generator(
             input=input,
             anchor_sizes=anchor_sizes,
             aspect_ratios=self.aspect_ratios,
@@ -367,7 +367,7 @@ class DecodeClipNms(object):
 @register
 @serializable
 class MultiClassNMS(object):
-    __op__ = fluid.layers.multiclass_nms
+    __op__ = ops.multiclass_nms
     __append_doc__ = True
 
     def __init__(self,
