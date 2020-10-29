@@ -207,7 +207,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [服务器端Python部署](deploy/python)
     - [服务器端C++部署](deploy/cpp)
     - [移动端部署](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
-    - [在线Serving部署](https://github.com/PaddlePaddle/PaddleDetection/tree/release/0.4/deploy/serving)
+    - [在线Serving部署](deploy/serving)
     - [推理Benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 - 进阶开发
     - [新增数据预处理](docs/advanced_tutorials/READER.md)
