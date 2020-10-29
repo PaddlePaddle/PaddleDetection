@@ -20,6 +20,14 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#include <direct.h>
+#include <io.h>
+#elif LINUX
+#include <stdarg.h>
+#include <sys/stat.h>
+#endif
+
 #include "include/object_detector.h"
 
 

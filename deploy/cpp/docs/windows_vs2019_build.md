@@ -4,9 +4,9 @@ Windows 平台下，我们使用`Visual Studio 2019 Community` 进行了测试�
 
 
 ## 前置条件
-* Visual Studio 2019
+* Visual Studio 2019 (根据Paddle预测库所使用的VS版本选择，请参考 [Visual Studio 不同版本二进制兼容性](https://docs.microsoft.com/zh-cn/cpp/porting/binary-compat-2015-2017?view=vs-2019) )
 * CUDA 9.0 / CUDA 10.0，cudnn 7+ （仅在使用GPU版本的预测库时需要）
-* CMake 3.0+
+* CMake 3.0+ [CMake下载](https://cmake.org/download/)
 
 请确保系统已经安装好上述基本软件，我们使用的是`VS2019`的社区版。
 
@@ -40,12 +40,14 @@ fluid_inference
 
 1. 在OpenCV官网下载适用于Windows平台的3.4.6版本， [下载地址](https://sourceforge.net/projects/opencvlibrary/files/3.4.6/opencv-3.4.6-vc14_vc15.exe/download)  
 2. 运行下载的可执行文件，将OpenCV解压至指定目录，如`D:\projects\opencv`
-3. 配置环境变量，如下流程所示  
+3. 配置环境变量，如下流程所示（如果使用全局绝对路径，可以不用设置环境变量）  
     - 我的电脑->属性->高级系统设置->环境变量
     - 在系统变量中找到Path（如没有，自行创建），并双击编辑
     - 新建，将opencv路径填入并保存，如`D:\projects\opencv\build\x64\vc14\bin`
 
-### Step4: 使用Visual Studio 2019直接编译CMake
+### Step4: 编译
+
+#### 通过图形化操作编译CMake
 
 1. 打开Visual Studio 2019 Community，点击`继续但无需代码`
 ![step2](https://paddleseg.bj.bcebos.com/inference/vs2019_step1.png)
@@ -81,6 +83,26 @@ fluid_inference
 ![step6](https://paddleseg.bj.bcebos.com/inference/vs2019_step6.png)
 
 
+#### 通过命令行操作编译CMake
+
+1. 进入到`cpp`文件夹
+```
+cd D:\projects\PaddleDetection\deploy\cpp
+```
+
+2. 使用CMake生成项目文件
+```
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DOPENCV_DIR=path_to_opencv
+```
+
+例如：
+```
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\fluid_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6
+```
+
+3. 编译
+用`Visual Studio 16 2019`打开`cpp`文件夹下的`PaddleObjectDetector.sln`，点击`生成`->`全部生成`
+
 ### Step5: 预测及可视化
 
 上述`Visual Studio 2019`编译产出的可执行文件在`out\build\x64-Release`目录下，打开`cmd`，并切换到该目录：
@@ -99,10 +121,12 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16）|
-| --run_benchmark | 是否重复预测来进行benchmark测速 ｜
-| --output_dir | 输出图片所在的文件夹, 默认为output ｜
+| --run_benchmark | 是否重复预测来进行benchmark测速 |
+| --output_dir | 输出图片所在的文件夹, 默认为output |
 
-**注意**：如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
+**注意**：  
+（1）如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。  
+（2）如果提示找不到`opencv_world346.dll`，把`D:\projects\packages\opencv3_4_6\build\x64\vc14\bin`文件夹下的`opencv_world346.dll`拷贝到`main.exe`文件夹下即可。
 
 
 `样例一`：
@@ -121,3 +145,21 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 ```
 
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
+
+
+## 性能测试
+测试环境为：系统: Windows 10专业版系统，CPU: I9-9820X, GPU: GTX 2080 Ti，Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.4.  
+
+去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
+
+
+|模型 | AnalysisPredictor(ms) | 输入|
+|---|----|---|
+| YOLOv3-MobileNetv1 | 41.51 |  608*608
+| faster_rcnn_r50_1x | 194.47 | 1333*1333
+| faster_rcnn_r50_vd_fpn_2x | 43.35 | 1344*1344
+| mask_rcnn_r50_fpn_1x | 96.96 | 1344*1344
+| mask_rcnn_r50_vd_fpn_2x | 97.66 | 1344*1344
+| ppyolo_r18vd | 5.54 | 320*320
+| ppyolo_2x | 56.93 | 608*608
+| ttfnet_darknet | 36.17 | 512*512
