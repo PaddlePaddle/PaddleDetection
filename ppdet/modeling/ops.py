@@ -36,7 +36,7 @@ __all__ = [
     'multiclass_nms',
     'distribute_fpn_proposals',
     'collect_fpn_proposals',
-    #'matrix_nms',
+    'matrix_nms',
 ]
 
 
@@ -684,8 +684,8 @@ def prior_box(input,
               clip=False,
               steps=[0.0, 0.0],
               offset=0.5,
-              name=None,
-              min_max_aspect_ratios_order=False):
+              min_max_aspect_ratios_order=False,
+              name=None):
     """
 
     This op generates prior boxes for SSD(Single Shot MultiBox Detector) algorithm.
@@ -695,8 +695,8 @@ def prior_box(input,
     sequence according to the aspect_ratios.
 
     Parameters:
-       input(Variable): 4-D tensor(NCHW), the data type should be float32 or float64.
-       image(Variable): 4-D tensor(NCHW), the input image data of PriorBoxOp,
+       input(Tensor): 4-D tensor(NCHW), the data type should be float32 or float64.
+       image(Tensor): 4-D tensor(NCHW), the input image data of PriorBoxOp,
             the data type should be float32 or float64.
        min_sizes(list|tuple|float): the min sizes of generated prior boxes.
        max_sizes(list|tuple|None): the max sizes of generated prior boxes.
@@ -723,13 +723,13 @@ def prior_box(input,
     Returns:
         Tuple: A tuple with two Variable (boxes, variances)
 
-        boxes(Variable): the output prior boxes of PriorBox.
-	4-D tensor, the layout is [H, W, num_priors, 4].
+        boxes(Tensor): the output prior boxes of PriorBox.
+        4-D tensor, the layout is [H, W, num_priors, 4].
         H is the height of input, W is the width of input,
         num_priors is the total box count of each position of input.
 
-        variances(Variable): the expanded variances of PriorBox.
-    	4-D tensor, the layput is [H, W, num_priors, 4].
+        variances(Tensor): the expanded variances of PriorBox.
+        4-D tensor, the layput is [H, W, num_priors, 4].
         H is the height of input, W is the width of input
         num_priors is the total box count of each position of input
 
@@ -738,14 +738,14 @@ def prior_box(input,
 
         import paddle
         from ppdet.modeling import ops
-        
+
         paddle.enable_static()
-	    input = paddle.static.data(name="input", shape=[None,3,6,9])
-	    image = paddle.static.data(name="image", shape=[None,3,9,12])
-	    box, var = ops.prior_box(
+        input = paddle.static.data(name="input", shape=[None,3,6,9])
+        image = paddle.static.data(name="image", shape=[None,3,9,12])
+        box, var = ops.prior_box(
                     input=input,
                     image=image,
-		            min_sizes=[100.],
+                    min_sizes=[100.],
                     clip=True,
                     flip=True)
     """
@@ -832,7 +832,7 @@ def anchor_generator(input,
     is firstly aspect_ratios loop then anchor_sizes loop.
 
     Args:
-       input(Variable): 4-D Tensor with shape [N,C,H,W]. The input feature map.
+       input(Tensor): 4-D Tensor with shape [N,C,H,W]. The input feature map.
        anchor_sizes(float32|list|tuple, optional): The anchor sizes of generated
           anchors, given in absolute pixels e.g. [64., 128., 256., 512.].
           For instance, the anchor size of 64 means the area of this anchor 
@@ -852,12 +852,12 @@ def anchor_generator(input,
     Returns:
         Tuple:
 
-        Anchors(Variable): The output anchors with a layout of [H, W, num_anchors, 4].
+        Anchors(Tensor): The output anchors with a layout of [H, W, num_anchors, 4].
         H is the height of input, W is the width of input,
         num_anchors is the box count of each position. 
         Each anchor is in (xmin, ymin, xmax, ymax) format an unnormalized.
- 
-        Variances(Variable): The expanded variances of anchors
+
+        Variances(Tensor): The expanded variances of anchors
         with a layout of [H, W, num_priors, 4].
         H is the height of input, W is the width of input
         num_anchors is the box count of each position.
@@ -939,7 +939,6 @@ def multiclass_nms(bboxes,
                    rois_num=None,
                    name=None):
     """
-
     This operator is to do multi-class non maximum suppression (NMS) on
     boxes and scores.
     In the NMS step, this operator greedily selects a subset of detection bounding
@@ -950,9 +949,8 @@ def multiclass_nms(bboxes,
     threshold NMS based on parameters of nms_threshold and nms_eta.
     Aftern NMS step, at most keep_top_k number of total bboxes are to be kept
     per image if keep_top_k is larger than -1.
-
     Args:
-        bboxes (Variable): Two types of bboxes are supported:
+        bboxes (Tensor): Two types of bboxes are supported:
                            1. (Tensor) A 3-D Tensor with shape
                            [N, M, 4 or 8 16 24 32] represents the
                            predicted locations of M bounding bboxes,
@@ -962,7 +960,7 @@ def multiclass_nms(bboxes,
                            2. (LoDTensor) A 3-D Tensor with shape [M, C, 4]
                            M is the number of bounding boxes, C is the
                            class number
-        scores (Variable): Two types of scores are supported:
+        scores (Tensor): Two types of scores are supported:
                            1. (Tensor) A 3-D Tensor with shape [N, C, M]
                            represents the predicted confidence predictions.
                            N is the batch size, C is the class number, M is
@@ -995,7 +993,6 @@ def multiclass_nms(bboxes,
             is the output RoIs' number of each image on the corresponding level
             and the shape is [B]. None by default.
         name(str): Name of the multiclass nms op. Default: None.
-
     Returns:
         A tuple with two Variables: (Out, Index) if return_index is True,
         otherwise, a tuple with one Variable(Out) is returned.
@@ -1012,14 +1009,11 @@ def multiclass_nms(bboxes,
         as Out. If the index is used to gather other attribute such as age,
         one needs to reshape the input(N, M, 1) to (N * M, 1) as first, where
         N is the batch size and M is the number of boxes.
-
-
     Examples:
         .. code-block:: python
-            
+
             import paddle
             from ppdet.modeling import ops
-
             boxes = paddle.static.data(name='bboxes', shape=[81, 4],
                                       dtype='float32', lod_level=1)
             scores = paddle.static.data(name='scores', shape=[81],
@@ -1042,9 +1036,12 @@ def multiclass_nms(bboxes,
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
                  'normalized', normalized)
-        output, index, nms_rois_num = core.ops.multiclass_nms(bboxes, scores,
-                                                              rois_num, *attrs)
-        return output, index, nms_rois_num
+        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
+                                                               rois_num, *attrs)
+        if return_index:
+            return output, index, nms_rois_num
+        else:
+            return output, nms_rois_num
 
     output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
     index = helper.create_variable_for_type_inference(dtype='int')
@@ -1079,4 +1076,144 @@ def multiclass_nms(bboxes,
         return output, index
     elif not return_index and rois_num is not None:
         return output, nms_rois_num
+    return output
+
+
+def matrix_nms(bboxes,
+               scores,
+               score_threshold,
+               post_threshold,
+               nms_top_k,
+               keep_top_k,
+               use_gaussian=False,
+               gaussian_sigma=2.,
+               background_label=0,
+               normalized=True,
+               return_index=False,
+               return_rois_num=True,
+               name=None):
+    """
+    **Matrix NMS**
+    This operator does matrix non maximum suppression (NMS).
+    First selects a subset of candidate bounding boxes that have higher scores
+    than score_threshold (if provided), then the top k candidate is selected if
+    nms_top_k is larger than -1. Score of the remaining candidate are then
+    decayed according to the Matrix NMS scheme.
+    Aftern NMS step, at most keep_top_k number of total bboxes are to be kept
+    per image if keep_top_k is larger than -1.
+    Args:
+        bboxes (Tensor): A 3-D Tensor with shape [N, M, 4] represents the
+                           predicted locations of M bounding bboxes,
+                           N is the batch size. Each bounding box has four
+                           coordinate values and the layout is
+                           [xmin, ymin, xmax, ymax], when box size equals to 4.
+                           The data type is float32 or float64.
+        scores (Tensor): A 3-D Tensor with shape [N, C, M]
+                           represents the predicted confidence predictions.
+                           N is the batch size, C is the class number, M is
+                           number of bounding boxes. For each category there
+                           are total M scores which corresponding M bounding
+                           boxes. Please note, M is equal to the 2nd dimension
+                           of BBoxes. The data type is float32 or float64.
+        score_threshold (float): Threshold to filter out bounding boxes with
+                                 low confidence score.
+        post_threshold (float): Threshold to filter out bounding boxes with
+                                low confidence score AFTER decaying.
+        nms_top_k (int): Maximum number of detections to be kept according to
+                         the confidences after the filtering detections based
+                         on score_threshold.
+        keep_top_k (int): Number of total bboxes to be kept per image after NMS
+                          step. -1 means keeping all bboxes after NMS step.
+        use_gaussian (bool): Use Gaussian as the decay function. Default: False
+        gaussian_sigma (float): Sigma for Gaussian decay function. Default: 2.0
+        background_label (int): The index of background label, the background
+                                label will be ignored. If set to -1, then all
+                                categories will be considered. Default: 0
+        normalized (bool): Whether detections are normalized. Default: True
+        return_index(bool): Whether return selected index. Default: False
+        return_rois_num(bool): whether return rois_num. Default: True
+        name(str): Name of the matrix nms op. Default: None.
+    Returns:
+        A tuple with three Tensor: (Out, Index, RoisNum) if return_index is True,
+        otherwise, a tuple with two Tensor (Out, RoisNum) is returned.
+        Out (Tensor): A 2-D Tensor with shape [No, 6] containing the
+             detection results.
+             Each row has 6 values: [label, confidence, xmin, ymin, xmax, ymax]
+             (After version 1.3, when no boxes detected, the lod is changed
+             from {0} to {1})
+        Index (Tensor): A 2-D Tensor with shape [No, 1] containing the
+            selected indices, which are absolute values cross batches.
+        rois_num (Tensor): A 1-D Tensor with shape [N] containing 
+            the number of detected boxes in each image.
+    Examples:
+        .. code-block:: python
+            import paddle
+            from ppdet.modeling import ops
+            boxes = paddle.static.data(name='bboxes', shape=[None,81, 4],
+                                      dtype='float32', lod_level=1)
+            scores = paddle.static.data(name='scores', shape=[None,81],
+                                      dtype='float32', lod_level=1)
+            out = ops.matrix_nms(bboxes=boxes, scores=scores, background_label=0,
+                                 score_threshold=0.5, post_threshold=0.1,
+                                 nms_top_k=400, keep_top_k=200, normalized=False)
+    """
+    check_variable_and_dtype(bboxes, 'BBoxes', ['float32', 'float64'],
+                             'matrix_nms')
+    check_variable_and_dtype(scores, 'Scores', ['float32', 'float64'],
+                             'matrix_nms')
+    check_type(score_threshold, 'score_threshold', float, 'matrix_nms')
+    check_type(post_threshold, 'post_threshold', float, 'matrix_nms')
+    check_type(nms_top_k, 'nums_top_k', int, 'matrix_nms')
+    check_type(keep_top_k, 'keep_top_k', int, 'matrix_nms')
+    check_type(normalized, 'normalized', bool, 'matrix_nms')
+    check_type(use_gaussian, 'use_gaussian', bool, 'matrix_nms')
+    check_type(gaussian_sigma, 'gaussian_sigma', float, 'matrix_nms')
+    check_type(background_label, 'background_label', int, 'matrix_nms')
+
+    if in_dygraph_mode():
+        attrs = ('background_label', background_label, 'score_threshold',
+                 score_threshold, 'post_threshold', post_threshold, 'nms_top_k',
+                 nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
+                 use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
+                 normalized)
+        out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
+        if return_index:
+            if return_rois_num:
+                return out, index, rois_num
+            return out, index
+        if return_rois_num:
+            return out, rois_num
+        return out
+
+    helper = LayerHelper('matrix_nms', **locals())
+    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+    index = helper.create_variable_for_type_inference(dtype='int')
+    outputs = {'Out': output, 'Index': index}
+    if return_rois_num:
+        rois_num = helper.create_variable_for_type_inference(dtype='int')
+        outputs['RoisNum'] = rois_num
+
+    helper.append_op(
+        type="matrix_nms",
+        inputs={'BBoxes': bboxes,
+                'Scores': scores},
+        attrs={
+            'background_label': background_label,
+            'score_threshold': score_threshold,
+            'post_threshold': post_threshold,
+            'nms_top_k': nms_top_k,
+            'gaussian_sigma': gaussian_sigma,
+            'use_gaussian': use_gaussian,
+            'keep_top_k': keep_top_k,
+            'normalized': normalized
+        },
+        outputs=outputs)
+    output.stop_gradient = True
+
+    if return_index:
+        if return_rois_num:
+            return output, index, rois_num
+        return output, index
+    if return_rois_num:
+        return output, rois_num
     return output
