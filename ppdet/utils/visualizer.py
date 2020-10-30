@@ -26,18 +26,18 @@ __all__ = ['visualize_results']
 
 
 def visualize_results(image,
+                      bbox_res,
+                      mask_res,
                       im_id,
                       catid2name,
-                      threshold=0.5,
-                      bbox_results=None,
-                      mask_results=None):
+                      threshold=0.5):
     """
     Visualize bbox and mask results
     """
-    if mask_results:
-        image = draw_mask(image, im_id, mask_results, threshold)
-    if bbox_results:
-        image = draw_bbox(image, im_id, catid2name, bbox_results, threshold)
+    if bbox_res is not None:
+        image = draw_bbox(image, im_id, catid2name, bbox_res, threshold)
+    if mask_res is not None:
+        image = draw_mask(image, im_id, mask_res, threshold)
     return image
 
 

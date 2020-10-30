@@ -1031,7 +1031,6 @@ def multiclass_nms(bboxes,
     helper = LayerHelper('multiclass_nms3', **locals())
 
     if in_dygraph_mode():
-        assert rois_num is not None, "rois_num should not be None in dygraph mode."
         attrs = ('background_label', background_label, 'score_threshold',
                  score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
                  nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
