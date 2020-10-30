@@ -123,7 +123,8 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
 
 - [Installation guide](docs/tutorials/INSTALL.md)
 - [Quick start on small dataset](docs/tutorials/QUICK_STARTED.md)
-- [Train/Evaluation/Inference](docs/tutorials/GETTING_STARTED.md)
+- [Prepare dataset](docs/tutorials/PrepareDataSet.md)
+- [Train/Evaluation/Inference/Deploy](docs/tutorials/DetectionPipeline.md)
 - [How to train a custom dataset](docs/tutorials/Custom_DataSet.md)
 - [FAQ](docs/FAQ.md)
 
@@ -146,6 +147,8 @@ The following is the relationship between COCO mAP and FPS on Tesla V100 of SOTA
     - [Export model for inference](docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
     - [Python inference](deploy/python)
     - [C++ inference](deploy/cpp)
+    - [Mobile](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
+    - [Serving](deploy/serving)
     - [Inference benchmark](docs/advanced_tutorials/deploy/BENCHMARK_INFER_cn.md)
 
 ## Model Zoo
