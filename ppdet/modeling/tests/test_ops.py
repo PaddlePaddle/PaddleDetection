@@ -43,6 +43,14 @@ def make_rois(h, w, rois_num, output_size):
     return rois
 
 
+def softmax(x):
+    # clip to shiftx, otherwise, when calc loss with
+    # log(exp(shiftx)), may get log(0)=INF
+    shiftx = (x - np.max(x)).clip(-64.)
+    exps = np.exp(shiftx)
+    return exps / np.sum(exps)
+
+
 class TestCollectFpnProposals(LayerTest):
     def test_collect_fpn_proposals(self):
         multi_bboxes_np = []
@@ -56,7 +64,6 @@ class TestCollectFpnProposals(LayerTest):
             multi_scores_np.append(scores_np)
             rois_num_per_level_np.append(rois_num)
 
-        paddle.enable_static()
         with self.static_graph():
             multi_bboxes = []
             multi_scores = []
@@ -96,7 +103,6 @@ class TestCollectFpnProposals(LayerTest):
             fpn_rois_stat = np.array(fpn_rois_stat)
             rois_num_stat = np.array(rois_num_stat)
 
-        paddle.disable_static()
         with self.dynamic_graph():
             multi_bboxes_dy = []
             multi_scores_dy = []
@@ -140,9 +146,7 @@ class TestCollectFpnProposals(LayerTest):
                 multi_scores.append(scores)
             return multi_bboxes, multi_scores
 
-        paddle.enable_static()
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             bbox1 = paddle.static.data(
                 name='rois', shape=[5, 10, 4], dtype='float32', lod_level=1)
             score1 = paddle.static.data(
@@ -215,8 +219,7 @@ class TestDistributeFpnProposals(LayerTest):
             self.assertTrue(np.array_equal(res_stat, res_dy))
 
     def test_distribute_fpn_proposals_error(self):
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             fpn_rois = paddle.static.data(
                 name='data_error', shape=[10, 4], dtype='int32', lod_level=1)
             self.assertRaises(
@@ -274,8 +277,7 @@ class TestROIAlign(LayerTest):
         self.assertTrue(np.array_equal(output_np, output_dy_np))
 
     def test_roi_align_error(self):
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             inputs = paddle.static.data(
                 name='inputs', shape=[2, 12, 20, 20], dtype='float32')
             rois = paddle.static.data(
@@ -333,8 +335,7 @@ class TestROIPool(LayerTest):
         self.assertTrue(np.array_equal(output_np, output_dy_np))
 
     def test_roi_pool_error(self):
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             inputs = paddle.static.data(
                 name='inputs', shape=[2, 12, 20, 20], dtype='float32')
             rois = paddle.static.data(
@@ -355,19 +356,15 @@ class TestIoUSimilarity(LayerTest):
         x_np = make_rois(h, w, [20], output_size)
         y_np = make_rois(h, w, [10], output_size)
         with self.static_graph():
-            program = Program()
-            with program_guard(program):
-                x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
-                y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
+            x = paddle.static.data(name='x', shape=[20, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[10, 4], dtype='float32')
 
-                iou = ops.iou_similarity(x=x, y=y)
-                iou_np, = self.get_static_graph_result(
-                    feed={
-                        'x': x_np,
-                        'y': y_np,
-                    },
-                    fetch_list=[iou],
-                    with_lod=False)
+            iou = ops.iou_similarity(x=x, y=y)
+            iou_np, = self.get_static_graph_result(
+                feed={
+                    'x': x_np,
+                    'y': y_np,
+                }, fetch_list=[iou], with_lod=False)
 
         with self.dynamic_graph():
             x_dy = base.to_variable(x_np)
@@ -379,7 +376,7 @@ class TestIoUSimilarity(LayerTest):
         self.assertTrue(np.array_equal(iou_np, iou_dy_np))
 
 
-class TestYOLO_Box(LayerTest):
+class TestYoloBox(LayerTest):
     def test_yolo_box(self):
 
         # x shape [N C H W], C=K * (5 + class_num), class_num=10, K=2
@@ -430,13 +427,11 @@ class TestYOLO_Box(LayerTest):
             boxes_dy_np = boxes_dy.numpy()
             scores_dy_np = scores_dy.numpy()
 
-            self.assertTrue(np.array_equal(boxes_np, boxes_dy_np))
-            self.assertTrue(np.array_equal(scores_np, scores_dy_np))
+        self.assertTrue(np.array_equal(boxes_np, boxes_dy_np))
+        self.assertTrue(np.array_equal(scores_np, scores_dy_np))
 
     def test_yolo_box_error(self):
-        paddle.enable_static()
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             # x shape [N C H W], C=K * (5 + class_num), class_num=10, K=2
             x = paddle.static.data(
                 name='x', shape=[1, 30, 7, 7], dtype='float32')
@@ -452,6 +447,321 @@ class TestYOLO_Box(LayerTest):
                 0.01,
                 32,
                 scale_x_y=1.2)
+
+
+class TestPriorBox(LayerTest):
+    def test_prior_box(self):
+        input_np = np.random.rand(2, 10, 32, 32).astype('float32')
+        image_np = np.random.rand(2, 10, 40, 40).astype('float32')
+        min_sizes = [2, 4]
+        with self.static_graph():
+            input = paddle.static.data(
+                name='input', shape=[2, 10, 32, 32], dtype='float32')
+            image = paddle.static.data(
+                name='image', shape=[2, 10, 40, 40], dtype='float32')
+
+            box, var = ops.prior_box(
+                input=input,
+                image=image,
+                min_sizes=min_sizes,
+                clip=True,
+                flip=True)
+            box_np, var_np = self.get_static_graph_result(
+                feed={
+                    'input': input_np,
+                    'image': image_np,
+                },
+                fetch_list=[box, var],
+                with_lod=False)
+
+        with self.dynamic_graph():
+            inputs_dy = base.to_variable(input_np)
+            image_dy = base.to_variable(image_np)
+
+            box_dy, var_dy = ops.prior_box(
+                input=inputs_dy,
+                image=image_dy,
+                min_sizes=min_sizes,
+                clip=True,
+                flip=True)
+            box_dy_np = box_dy.numpy()
+            var_dy_np = var_dy.numpy()
+
+        self.assertTrue(np.array_equal(box_np, box_dy_np))
+        self.assertTrue(np.array_equal(var_np, var_dy_np))
+
+    def test_prior_box_error(self):
+        program = Program()
+        paddle.enable_static()
+        with program_guard(program):
+            input = paddle.static.data(
+                name='input', shape=[2, 10, 32, 32], dtype='int32')
+            image = paddle.static.data(
+                name='image', shape=[2, 10, 40, 40], dtype='int32')
+            self.assertRaises(
+                TypeError,
+                ops.prior_box,
+                input=input,
+                image=image,
+                min_sizes=[2, 4],
+                clip=True,
+                flip=True)
+
+
+class TestAnchorGenerator(LayerTest):
+    def test_anchor_generator(self):
+        b, c, h, w = 2, 48, 16, 16
+        input_np = np.random.rand(2, 48, 16, 16).astype('float32')
+        with self.static_graph():
+            input = paddle.static.data(
+                name='input', shape=[b, c, h, w], dtype='float32')
+
+            anchor, var = ops.anchor_generator(
+                input=input,
+                anchor_sizes=[64, 128, 256, 512],
+                aspect_ratios=[0.5, 1.0, 2.0],
+                variance=[0.1, 0.1, 0.2, 0.2],
+                stride=[16.0, 16.0],
+                offset=0.5)
+            anchor_np, var_np = self.get_static_graph_result(
+                feed={'input': input_np, },
+                fetch_list=[anchor, var],
+                with_lod=False)
+
+        with self.dynamic_graph():
+            inputs_dy = base.to_variable(input_np)
+
+            anchor_dy, var_dy = ops.anchor_generator(
+                input=inputs_dy,
+                anchor_sizes=[64, 128, 256, 512],
+                aspect_ratios=[0.5, 1.0, 2.0],
+                variance=[0.1, 0.1, 0.2, 0.2],
+                stride=[16.0, 16.0],
+                offset=0.5)
+            anchor_dy_np = anchor_dy.numpy()
+            var_dy_np = var_dy.numpy()
+
+        self.assertTrue(np.array_equal(anchor_np, anchor_dy_np))
+        self.assertTrue(np.array_equal(var_np, var_dy_np))
+
+
+class TestMulticlassNms(LayerTest):
+    def test_multiclass_nms(self):
+        boxes_np = np.random.rand(81, 4).astype('float32')
+        scores_np = np.random.rand(81).astype('float32')
+        rois_num_np = np.array([40, 41]).astype('int32')
+        with self.static_graph():
+            boxes = paddle.static.data(
+                name='bboxes', shape=[81, 4], dtype='float32', lod_level=1)
+            scores = paddle.static.data(
+                name='scores', shape=[81], dtype='float32', lod_level=1)
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[40, 41], dtype='int32')
+
+            output = ops.multiclass_nms(
+                bboxes=boxes,
+                scores=scores,
+                background_label=0,
+                score_threshold=0.5,
+                nms_top_k=400,
+                nms_threshold=0.3,
+                keep_top_k=200,
+                normalized=False,
+                return_index=True,
+                rois_num=rois_num)
+            out_np, index_np, nms_rois_num_np = self.get_static_graph_result(
+                feed={
+                    'bboxes': boxes_np,
+                    'scores': scores_np,
+                    'rois_num': rois_num_np
+                },
+                fetch_list=output,
+                with_lod=False)
+
+        with self.dynamic_graph():
+            boxes_dy = base.to_variable(boxes_np)
+            scores_dy = base.to_variable(scores_np)
+            rois_num_dy = base.to_variable(rois_num_np)
+
+            out_dy, index_dy, nms_rois_num_dy = ops.multiclass_nms(
+                bboxes=boxes_dy,
+                scores=scores_dy,
+                background_label=0,
+                score_threshold=0.5,
+                nms_top_k=400,
+                nms_threshold=0.3,
+                keep_top_k=200,
+                normalized=False,
+                return_index=True,
+                rois_num=rois_num_dy)
+            out_dy_np = out_dy.numpy()
+            index_dy_np = index_dy.numpy()
+            nms_rois_num_dy_np = nms_rois_num_dy.numpy()
+
+        self.assertTrue(np.array_equal(out_np, out_dy_np))
+        self.assertTrue(np.array_equal(index_np, index_dy_np))
+        self.assertTrue(np.array_equal(nms_rois_num_np, nms_rois_num_dy_np))
+
+    def test_multiclass_nms_error(self):
+        program = Program()
+        paddle.enable_static()
+        with program_guard(program):
+            boxes = paddle.static.data(
+                name='bboxes', shape=[81, 4], dtype='float32', lod_level=1)
+            scores = paddle.static.data(
+                name='scores', shape=[81], dtype='float32', lod_level=1)
+            rois_num = paddle.static.data(
+                name='rois_num', shape=[40, 41], dtype='int32')
+            self.assertRaises(
+                TypeError,
+                ops.multiclass_nms,
+                boxes=boxes,
+                scores=scores,
+                background_label=0,
+                score_threshold=0.5,
+                nms_top_k=400,
+                nms_threshold=0.3,
+                keep_top_k=200,
+                normalized=False,
+                return_index=True,
+                rois_num=rois_num)
+
+
+class TestMatrixNMS(LayerTest):
+    def test_matrix_nms(self):
+        N, M, C = 7, 1200, 21
+        BOX_SIZE = 4
+        nms_top_k = 400
+        keep_top_k = 200
+        score_threshold = 0.01
+        post_threshold = 0.
+
+        scores_np = np.random.random((N * M, C)).astype('float32')
+        scores_np = np.apply_along_axis(softmax, 1, scores_np)
+        scores_np = np.reshape(scores_np, (N, M, C))
+        scores_np = np.transpose(scores_np, (0, 2, 1))
+
+        boxes_np = np.random.random((N, M, BOX_SIZE)).astype('float32')
+        boxes_np[:, :, 0:2] = boxes_np[:, :, 0:2] * 0.5
+        boxes_np[:, :, 2:4] = boxes_np[:, :, 2:4] * 0.5 + 0.5
+
+        with self.static_graph():
+            boxes = paddle.static.data(
+                name='boxes', shape=[N, M, BOX_SIZE], dtype='float32')
+            scores = paddle.static.data(
+                name='scores', shape=[N, C, M], dtype='float32')
+            out, index, _ = ops.matrix_nms(
+                bboxes=boxes,
+                scores=scores,
+                score_threshold=score_threshold,
+                post_threshold=post_threshold,
+                nms_top_k=nms_top_k,
+                keep_top_k=keep_top_k,
+                return_index=True)
+            out_np, index_np = self.get_static_graph_result(
+                feed={'boxes': boxes_np,
+                      'scores': scores_np},
+                fetch_list=[out, index],
+                with_lod=True)
+
+        with self.dynamic_graph():
+            boxes_dy = base.to_variable(boxes_np)
+            scores_dy = base.to_variable(scores_np)
+
+            out_dy, index_dy, _ = ops.matrix_nms(
+                bboxes=boxes_dy,
+                scores=scores_dy,
+                score_threshold=score_threshold,
+                post_threshold=post_threshold,
+                nms_top_k=nms_top_k,
+                keep_top_k=keep_top_k,
+                return_index=True)
+            out_dy_np = out_dy.numpy()
+            index_dy_np = index_dy.numpy()
+
+        self.assertTrue(np.array_equal(out_np, out_dy_np))
+        self.assertTrue(np.array_equal(index_np, index_dy_np))
+
+    def test_matrix_nms_error(self):
+        paddle.enable_static()
+        program = Program()
+        with program_guard(program):
+            bboxes = paddle.static.data(
+                name='bboxes', shape=[7, 1200, 4], dtype='float32')
+            scores = paddle.static.data(
+                name='data_error', shape=[7, 21, 1200], dtype='int32')
+            self.assertRaises(
+                TypeError,
+                ops.matrix_nms,
+                bboxes=bboxes,
+                scores=scores,
+                score_threshold=0.01,
+                post_threshold=0.,
+                nms_top_k=400,
+                keep_top_k=200,
+                return_index=True)
+
+
+class TestBoxCoder(LayerTest):
+    def test_box_coder(self):
+
+        prior_box_np = np.random.random((81, 4)).astype('float32')
+        prior_box_var_np = np.random.random((81, 4)).astype('float32')
+        target_box_np = np.random.random((20, 81, 4)).astype('float32')
+
+        # static
+        with self.static_graph():
+            prior_box = paddle.static.data(
+                name='prior_box', shape=[81, 4], dtype='float32')
+            prior_box_var = paddle.static.data(
+                name='prior_box_var', shape=[81, 4], dtype='float32')
+            target_box = paddle.static.data(
+                name='target_box', shape=[20, 81, 4], dtype='float32')
+
+            boxes = ops.box_coder(
+                prior_box=prior_box,
+                prior_box_var=prior_box_var,
+                target_box=target_box,
+                code_type="decode_center_size",
+                box_normalized=False)
+
+            boxes_np, = self.get_static_graph_result(
+                feed={
+                    'prior_box': prior_box_np,
+                    'prior_box_var': prior_box_var_np,
+                    'target_box': target_box_np,
+                },
+                fetch_list=[boxes],
+                with_lod=False)
+
+        # dygraph
+        with self.dynamic_graph():
+            prior_box_dy = base.to_variable(prior_box_np)
+            prior_box_var_dy = base.to_variable(prior_box_var_np)
+            target_box_dy = base.to_variable(target_box_np)
+
+            boxes_dy = ops.box_coder(
+                prior_box=prior_box_dy,
+                prior_box_var=prior_box_var_dy,
+                target_box=target_box_dy,
+                code_type="decode_center_size",
+                box_normalized=False)
+
+            boxes_dy_np = boxes_dy.numpy()
+
+            self.assertTrue(np.array_equal(boxes_np, boxes_dy_np))
+
+    def test_box_coder_error(self):
+        with self.static_graph():
+            prior_box = paddle.static.data(
+                name='prior_box', shape=[81, 4], dtype='int32')
+            prior_box_var = paddle.static.data(
+                name='prior_box_var', shape=[81, 4], dtype='float32')
+            target_box = paddle.static.data(
+                name='target_box', shape=[20, 81, 4], dtype='float32')
+
+            self.assertRaises(TypeError, ops.box_coder, prior_box,
+                              prior_box_var, target_box)
 
 
 if __name__ == '__main__':
