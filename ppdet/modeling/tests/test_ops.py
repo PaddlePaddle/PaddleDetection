@@ -406,7 +406,7 @@ class TestYoloBox(LayerTest):
             boxes_np, scores_np = self.get_static_graph_result(
                 feed={
                     'x': np_x,
-                    'origin_shape': np_origin_shape
+                    'origin_shape': np_origin_shape,
                 },
                 fetch_list=[boxes, scores],
                 with_lod=False)
