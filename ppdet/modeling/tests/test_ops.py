@@ -409,12 +409,7 @@ class TestYOLO_Box(LayerTest):
             boxes_np, scores_np = self.get_static_graph_result(
                 feed={
                     'x': np_x,
-                    'origin_shape': np_origin_shape,
-                    'anchors': [10, 13, 30, 13],
-                    'class_num': 10,
-                    'conf_thresh': 0.01,
-                    'downsample_ratio': 32,
-                    'scale_x_y': 1.0,
+                    'origin_shape': np_origin_shape
                 },
                 fetch_list=[boxes, scores],
                 with_lod=False)
