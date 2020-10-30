@@ -764,5 +764,69 @@ class TestBoxCoder(LayerTest):
                               prior_box_var, target_box)
 
 
+class TestGenerateProposals(LayerTest):
+    def test_generate_proposals(self):
+        scores_np = np.random.rand(2, 3, 4, 4).astype('float32')
+        bbox_deltas_np = np.random.rand(2, 12, 4, 4).astype('float32')
+        im_shape_np = np.array([[8, 8], [6, 6]]).astype('float32')
+        anchors_np = np.reshape(np.arange(4 * 4 * 3 * 4),
+                                [4, 4, 3, 4]).astype('float32')
+        variances_np = np.ones((4, 4, 3, 4)).astype('float32')
+
+        with self.static_graph():
+            scores = paddle.static.data(
+                name='scores', shape=[2, 3, 4, 4], dtype='float32')
+            bbox_deltas = paddle.static.data(
+                name='bbox_deltas', shape=[2, 12, 4, 4], dtype='float32')
+            im_shape = paddle.static.data(
+                name='im_shape', shape=[2, 2], dtype='float32')
+            anchors = paddle.static.data(
+                name='anchors', shape=[4, 4, 3, 4], dtype='float32')
+            variances = paddle.static.data(
+                name='var', shape=[4, 4, 3, 4], dtype='float32')
+            rois, roi_probs, rois_num = ops.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=10,
+                post_nms_top_n=5,
+                return_rois_num=True)
+            rois_stat, roi_probs_stat, rois_num_stat = self.get_static_graph_result(
+                feed={
+                    'scores': scores_np,
+                    'bbox_deltas': bbox_deltas_np,
+                    'im_shape': im_shape_np,
+                    'anchors': anchors_np,
+                    'var': variances_np
+                },
+                fetch_list=[rois, roi_probs, rois_num],
+                with_lod=True)
+
+        with self.dynamic_graph():
+            scores_dy = base.to_variable(scores_np)
+            bbox_deltas_dy = base.to_variable(bbox_deltas_np)
+            im_shape_dy = base.to_variable(im_shape_np)
+            anchors_dy = base.to_variable(anchors_np)
+            variances_dy = base.to_variable(variances_np)
+            rois, roi_probs, rois_num = ops.generate_proposals(
+                scores_dy,
+                bbox_deltas_dy,
+                im_shape_dy,
+                anchors_dy,
+                variances_dy,
+                pre_nms_top_n=10,
+                post_nms_top_n=5,
+                return_rois_num=True)
+            rois_dy = rois.numpy()
+            roi_probs_dy = roi_probs.numpy()
+            rois_num_dy = rois_num.numpy()
+
+        self.assertTrue(np.array_equal(np.array(rois_stat), rois_dy))
+        self.assertTrue(np.array_equal(np.array(roi_probs_stat), roi_probs_dy))
+        self.assertTrue(np.array_equal(np.array(rois_num_stat), rois_num_dy))
+
+
 if __name__ == '__main__':
     unittest.main()
