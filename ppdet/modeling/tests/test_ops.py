@@ -491,9 +491,7 @@ class TestPriorBox(LayerTest):
         self.assertTrue(np.array_equal(var_np, var_dy_np))
 
     def test_prior_box_error(self):
-        program = Program()
-        paddle.enable_static()
-        with program_guard(program):
+        with self.static_graph():
             input = paddle.static.data(
                 name='input', shape=[2, 10, 32, 32], dtype='int32')
             image = paddle.static.data(
@@ -603,9 +601,7 @@ class TestMulticlassNms(LayerTest):
         self.assertTrue(np.array_equal(nms_rois_num_np, nms_rois_num_dy_np))
 
     def test_multiclass_nms_error(self):
-        program = Program()
-        paddle.enable_static()
-        with program_guard(program):
+        with self.static_graph():
             boxes = paddle.static.data(
                 name='bboxes', shape=[81, 4], dtype='float32', lod_level=1)
             scores = paddle.static.data(
@@ -683,9 +679,7 @@ class TestMatrixNMS(LayerTest):
         self.assertTrue(np.array_equal(index_np, index_dy_np))
 
     def test_matrix_nms_error(self):
-        paddle.enable_static()
-        program = Program()
-        with program_guard(program):
+        with self.static_graph():
             bboxes = paddle.static.data(
                 name='bboxes', shape=[7, 1200, 4], dtype='float32')
             scores = paddle.static.data(
