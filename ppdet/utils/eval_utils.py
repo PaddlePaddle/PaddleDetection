@@ -94,6 +94,25 @@ def clean_res(result, keep_name_list):
     return clean_result
 
 
+def get_masks(result):
+    import pycocotools.mask as mask_util
+    if result is None:
+        return {}
+    seg_pred = result['segm'][0].astype(np.uint8)
+    cate_label = result['cate_label'][0].astype(np.int)
+    cate_score = result['cate_score'][0].astype(np.float)
+    num_ins = seg_pred.shape[0]
+    masks = []
+    for idx in range(num_ins - 1):
+        cur_mask = seg_pred[idx, ...]
+        rle = mask_util.encode(
+            np.array(
+                cur_mask[:, :, np.newaxis], order='F'))[0]
+        rst = (rle, cate_score[idx])
+        masks.append([cate_label[idx], rst])
+    return masks
+
+
 def eval_run(exe,
              compile_program,
              loader,
@@ -163,11 +182,13 @@ def eval_run(exe,
                 corner_post_process(res, post_config, cfg.num_classes)
             if 'TTFNet' in cfg.architecture:
                 res['bbox'][1].append([len(res['bbox'][0])])
+            if 'segm' in res:
+                res['segm'] = get_masks(res)
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
-            if len(res['bbox'][1]) == 0:
+            if 'bbox' not in res or len(res['bbox'][1]) == 0:
                 has_bbox = False
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
@@ -198,7 +219,7 @@ def eval_results(results,
     """Evaluation for evaluation program results"""
     box_ap_stats = []
     if metric == 'COCO':
-        from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
+        from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval, segm_eval
         anno_file = dataset.get_anno()
         with_background = dataset.with_background
         if 'proposal' in results[0]:
@@ -225,6 +246,14 @@ def eval_results(results,
                 output = os.path.join(output_directory, 'mask.json')
             mask_eval(
                 results, anno_file, output, resolution, save_only=save_only)
+        if 'segm' in results[0]:
+            output = 'segm.json'
+            if output_directory:
+                output = os.path.join(output_directory, output)
+            mask_ap_stats = segm_eval(
+                results, anno_file, output, save_only=save_only)
+            if len(box_ap_stats) == 0:
+                box_ap_stats = mask_ap_stats
     else:
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])

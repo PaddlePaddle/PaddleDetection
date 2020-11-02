@@ -29,6 +29,7 @@ import datetime
 from collections import deque
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
+import paddle
 from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
@@ -132,7 +133,8 @@ def main():
         eval_prog = eval_prog.clone(True)
 
         eval_reader = create_reader(cfg.EvalReader)
-        eval_loader.set_sample_list_generator(eval_reader, place)
+        # When iterable mode, set set_sample_list_generator(eval_reader, place)
+        eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
         extra_keys = []
@@ -234,14 +236,14 @@ def main():
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
 
-    train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+    train_stats = TrainingStats(cfg.log_iter, train_keys)
     train_loader.start()
     start_time = time.time()
     end_time = time.time()
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use VisualDL to log data
@@ -346,6 +348,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

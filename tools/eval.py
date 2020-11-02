@@ -22,6 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import paddle
 import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
@@ -74,7 +75,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(cfg.EvalReader, devices_num=1)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
 
     dataset = cfg['EvalReader']['dataset']
 
@@ -132,9 +134,6 @@ def main():
                                                 extra_keys)
         sub_eval_prog = sub_eval_prog.clone(True)
 
-    #if 'weights' in cfg:
-    #    checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
-
     # load model
     exe.run(startup_prog)
     if 'weights' in cfg:
@@ -146,7 +145,6 @@ def main():
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values, resolution)
 
-    #print(cfg['EvalReader']['dataset'].__dict__)
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
@@ -164,6 +162,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--json_eval",

@@ -3,7 +3,7 @@ max_iters: 281250
 use_gpu: true
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/EfficientNetB0_pretrained.tar
 weights: output/efficientdet_d0/model_final
-log_smooth_window: 20
+log_iter: 20
 snapshot_iter: 10000
 metric: COCO
 save_dir: output

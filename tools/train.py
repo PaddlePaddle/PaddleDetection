@@ -30,6 +30,7 @@ import six
 from collections import deque
 from paddle.fluid import profiler
 
+import paddle
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
@@ -56,6 +57,7 @@ def main():
     FLAGS.dist = 'PADDLE_TRAINER_ID' in env \
                     and 'PADDLE_TRAINERS_NUM' in env \
                     and int(env['PADDLE_TRAINERS_NUM']) > 1
+    num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         local_seed = (99 + trainer_id)
@@ -145,7 +147,8 @@ def main():
         eval_prog = eval_prog.clone(True)
 
         eval_reader = create_reader(cfg.EvalReader, devices_num=1)
-        eval_loader.set_sample_list_generator(eval_reader, place)
+        # When iterable mode, set set_sample_list_generator(eval_reader, place)
+        eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
         extra_keys = []
@@ -203,8 +206,10 @@ def main():
     train_reader = create_reader(
         cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
         cfg,
-        devices_num=devices_num)
-    train_loader.set_sample_list_generator(train_reader, place)
+        devices_num=devices_num,
+        num_trainers=num_trainers)
+    # When iterable mode, set set_sample_list_generator(train_reader, place)
+    train_loader.set_sample_list_generator(train_reader)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
@@ -215,14 +220,14 @@ def main():
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
 
-    train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+    train_stats = TrainingStats(cfg.log_iter, train_keys)
     train_loader.start()
     start_time = time.time()
     end_time = time.time()
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use VisualDL to log data
@@ -253,8 +258,9 @@ def main():
         train_stats.update(stats)
         logs = train_stats.log()
         if it % cfg.log_iter == 0 and (not FLAGS.dist or trainer_id == 0):
-            strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                it, np.mean(outs[-1]), logs, time_cost, eta)
+            ips = float(cfg['TrainReader']['batch_size']) / time_cost
+            strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                it, np.mean(outs[-1]), logs, eta, time_cost, ips)
             logger.info(strs)
 
         # NOTE : profiler tools, used for benchmark
@@ -311,6 +317,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

@@ -3,7 +3,6 @@ max_iters: 160000
 pretrain_weights:
 use_gpu: true
 snapshot_iter: 10000
-log_smooth_window: 20
 log_iter: 20
 metric: WIDERFACE
 save_dir: output

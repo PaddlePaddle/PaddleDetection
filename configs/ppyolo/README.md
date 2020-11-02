@@ -50,27 +50,39 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     512     |         44.4         |         45.0          |      89.9      |          188.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     416     |         42.7         |         43.2          |     109.1      |          215.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
 | PP-YOLO_2x               |     8      |     24     | ResNet50vd |     320     |         39.5         |         40.1          |     132.2      |          242.2          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_2x.yml)                   |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     512     |         29.3         |         29.5          |     357.1      |          657.9          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     416     |         28.6         |         28.9          |     409.8      |          719.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                  |
+| PP-YOLO_ResNet18vd       |     4      |     32     | ResNet18vd |     320     |         26.2         |         26.4          |     480.7      |          763.4          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
 
 **Notes:**
 
-- PP-YOLO is trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
+- PP-YOLO is trained on COCO train2017 dataset and evaluated on val2017 & test-dev2017 dataset，Box AP<sup>test</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLO used 8 GPUs for training and mini-batch size as 24 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO inference speed is tesed on single Tesla V100 with batch size as 1, CUDA 10.2, CUDNN 7.5.1, TensorRT 5.1.2.2 in TensorRT mode.
 - PP-YOLO FP32 inference speed testing uses inference model exported by `tools/export_model.py` and benchmarked by running `depoly/python/infer.py` with `--run_benchmark`. All testing results do not contains the time cost of data reading and post-processing(NMS), which is same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) in testing method.
 - TensorRT FP16 inference speed testing exclude the time cost of bounding-box decoding(`yolo_box`) part comparing with FP32 testing above, which means that data reading, bounding-box decoding and post-processing(NMS) is excluded(test method same as [YOLOv4(AlexyAB)](https://github.com/AlexeyAB/darknet) too)
 - YOLOv4(AlexyAB) performance and inference speed is copy from single Tesla V100 testing results in [YOLOv4 github repo](https://github.com/AlexeyAB/darknet), Tesla V100 TensorRT FP16 inference speed is testing with tkDNN configuration and TensorRT 5.1.2.2 on single Tesla V100 based on [AlexyAB/darknet repo](https://github.com/AlexeyAB/darknet).
 - Download and configuration of YOLOv4(AlexyAB) is reproduced model of YOLOv4 in PaddleDetection, whose evaluation performance is same as YOLOv4(AlexyAB), and finetune training is supported in PaddleDetection currently, reproducing by training from backbone pretrain weights is on working, see [PaddleDetection YOLOv4](../yolov4/README.md) for details.
+- PP-YOLO trained with `batch_size=24` in each GPU with memory as 32G, configuation yaml with `batch_size=12` which can be trained on GPU with memory as 16G is provided as `ppyolo_2x_bs12.yml`, training with `batch_size=12` reached `mAP(IoU=0.5:0.95) = 45.1%` on COCO val2017 dataset, download weights by [ppyolo_2x_bs12 model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_2x_bs12.pdparams)
 
 ### PP-YOLO for mobile
 
-|          Model           | GPU number | images/GPU |  backbone  | input shape | Box AP50<sup>val</sup> | Box AP50<sup>test</sup> | V100 FP32(FPS) | V100 TensorRT FP16(FPS) | download | config  |
-|:------------------------:|:----------:|:----------:|:----------:| :----------:| :--------------------: | :---------------------: | :------------: | :---------------------: | :------: | :-----: |
-| PP-YOLO_r18vd            |     4      |      32    | ResNet18vd |     416     |          47.0          |          47.7           |     401.6      |          724.6          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
-| PP-YOLO_r18vd            |     4      |      32    | ResNet18vd |     320     |          43.7          |          44.4           |     478.5      |          791.3          | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_r18vd.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_r18vd.yml)                   |
+|            Model             | GPU number | images/GPU | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
+|:----------------------------:|:----------:|:----------:| :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
+| PP-YOLO_MobileNetV3_large    |     4      |      32    |    18MB    |     320     |         22.0         |      14.1      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |    11MB    |     320     |         16.8         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
-- PP-YOLO_r18vd is trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，Box AP50<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
-- PP-YOLO_r18vd used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
-- PP-YOLO_r18vd inference speeding testing environment and configuration is same as PP-YOLO above.
+**Notes:**
+
+- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
+- PP-YOLO_MobileNetV3 used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
+- PP-YOLO_MobileNetV3 inference speed is tested on Kirin 990 with 1 thread.
+
+### Slim PP-YOLO
+
+|            Model             | GPU number | images/GPU | Prune Ratio |        Teacher Model      | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
+|:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.1MB    |     320     |         14.4         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
 ## Getting Start
 
@@ -80,6 +92,12 @@ Training PP-YOLO on 8 GPUs with following command(all commands should be run und
 
 ```bash
 CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python tools/train.py -c configs/ppyolo/ppyolo.yml --eval
+```
+
+optional: Run `tools/anchor_cluster.py` to get anchors suitable for your dataset, and modify the anchor setting in `configs/ppyolo/ppyolo.yml`.
+
+``` bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
 ```
 
 ### 2. Evaluation

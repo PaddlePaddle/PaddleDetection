@@ -1,0 +1,165 @@
+architecture: YOLOv3
+use_gpu: true
+max_iters: 250000
+log_smooth_window: 20
+log_iter: 20
+save_dir: output
+snapshot_iter: 10000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_small_x1_0_ssld_pretrained.tar
+weights: output/ppyolo_tiny/model_final
+num_classes: 80
+use_fine_grained_loss: true
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: MobileNetV3
+  yolo_head: YOLOv3Head
+  use_fine_grained_loss: true
+
+MobileNetV3:
+  norm_type: sync_bn
+  norm_decay: 0.
+  model_name: small
+  scale: 1.
+  extra_block_filters: []
+  feature_maps: [1, 2, 3, 4, 6]
+
+
+YOLOv3Head:
+  anchor_masks: [[3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 14], [23, 27], [37, 58],
+            [81, 82], [135, 169], [344, 319]]
+  norm_decay: 0.
+  conv_block_num: 0
+  scale_x_y: 1.05
+  yolo_loss: YOLOv3Loss
+  spp: true
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    normalized: false
+    score_threshold: 0.01
+  drop_block: true
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  scale_x_y: 1.05
+  label_smooth: false
+  use_fine_grained_loss: true
+  iou_loss: IouLoss
+
+IouLoss:
+  loss_weight: 2.5
+  max_height: 608
+  max_width: 608
+
+LearningRate:
+  base_lr: 0.00666
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 150000
+    - 200000
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+_READER_: 'ppyolo_reader.yml'
+TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
+  dataset:
+    !COCODataSet
+      image_dir: train2017
+      anno_path: annotations/instances_train2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+      with_mixup: True
+    - !MixupImage
+      alpha: 1.5
+      beta: 1.5
+    - !ColorDistort {}
+    - !RandomExpand
+      fill_value: [123.675, 116.28, 103.53]
+    - !RandomCrop {}
+    - !RandomFlipImage
+      is_normalized: false
+    - !NormalizeBox {}
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
+  batch_transforms:
+  - !RandomShape
+    sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+    random_inter: True
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: True
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: True
+  # Gt2YoloTarget is only used when use_fine_grained_loss set as true,
+  # this operator will be deleted automatically if use_fine_grained_loss
+  # is set as false
+  - !Gt2YoloTarget
+    anchor_masks: [[3, 4, 5], [0, 1, 2]]
+    anchors: [[10, 14], [23, 27], [37, 58],
+              [81, 82], [135, 169], [344, 319]]
+    downsample_ratios: [32, 16]
+  batch_size: 32
+  shuffle: true
+  mixup_epoch: 500
+  drop_last: true
+  worker_num: 8
+  bufsize: 4
+  use_process: true
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_size', 'im_id']
+    num_max_boxes: 50
+  dataset:
+    !COCODataSet
+      image_dir: val2017
+      anno_path: annotations/instances_val2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 320
+      interp: 2
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: True
+      is_channel_first: false
+    - !PadBox
+      num_max_boxes: 50
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 8
+  drop_empty: false
+  worker_num: 2
+  bufsize: 4

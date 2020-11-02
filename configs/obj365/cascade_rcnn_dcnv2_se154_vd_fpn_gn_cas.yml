@@ -3,7 +3,6 @@ max_iters: 500000
 snapshot_iter: 10000
 use_gpu: true
 log_iter: 20
-log_smooth_window: 20
 save_dir: output
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_coco_pretrained.tar
 weights: output/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas/model_final

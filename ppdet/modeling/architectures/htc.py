@@ -158,13 +158,18 @@ class HybridTaskCascade(object):
         bbox_pred = None
         outs = None
         refined_bbox = rpn_rois
+        max_overlap = None
         for i in range(self.num_stage):
             # BBox Branch
             if mode == 'train':
                 outs = self.bbox_assigner(
-                    input_rois=refined_bbox, feed_vars=feed_vars, curr_stage=i)
+                    input_rois=refined_bbox,
+                    feed_vars=feed_vars,
+                    curr_stage=i,
+                    max_overlap=max_overlap)
                 proposals = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
             else:
                 proposals = refined_bbox
             proposal_list.append(proposals)

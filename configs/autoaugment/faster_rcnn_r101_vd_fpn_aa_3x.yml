@@ -2,7 +2,7 @@ architecture: FasterRCNN
 max_iters: 270000
 snapshot_iter: 30000
 use_gpu: true
-log_smooth_window: 20
+log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
 weights: output/faster_rcnn_r101_vd_fpn_aa_3x/model_final

@@ -26,6 +26,7 @@ import glob
 import numpy as np
 from PIL import Image
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
@@ -75,7 +76,8 @@ def main():
     infer_prog = infer_prog.clone(True)
 
     reader = create_reader(cfg.TestReader)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
     not_quant_pattern = []
     if FLAGS.not_quant_pattern:
         not_quant_pattern = FLAGS.not_quant_pattern
@@ -167,6 +169,7 @@ def main():
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--infer_dir",

@@ -22,35 +22,20 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.utils.export_utils import save_infer_model, dump_infer_config
 from ppdet.utils.check import check_config, check_version
-from tools.export_model import prune_feed_vars
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 from paddleslim.quant import quant_aware, convert
-
-
-def save_infer_model(save_dir, exe, feed_vars, test_fetches, infer_prog):
-    feed_var_names = [var.name for var in feed_vars.values()]
-    target_vars = list(test_fetches.values())
-    feed_var_names = prune_feed_vars(feed_var_names, target_vars, infer_prog)
-    logger.info("Export inference model to {}, input: {}, output: "
-                "{}...".format(save_dir, feed_var_names,
-                               [str(var.name) for var in target_vars]))
-    fluid.io.save_inference_model(
-        save_dir,
-        feeded_var_names=feed_var_names,
-        target_vars=target_vars,
-        executor=exe,
-        main_program=infer_prog,
-        params_filename="__params__")
 
 
 def main():
@@ -95,16 +80,15 @@ def main():
     infer_prog, int8_program = convert(
         infer_prog, place, config, save_int8=True)
 
-    save_infer_model(
-        os.path.join(FLAGS.output_dir, 'float'), exe, feed_vars, test_fetches,
-        infer_prog)
+    FLAGS.output_dir = os.path.join(FLAGS.output_dir, 'float')
+    save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
-    save_infer_model(
-        os.path.join(FLAGS.output_dir, 'int'), exe, feed_vars, test_fetches,
-        int8_program)
+    FLAGS.output_dir = os.path.join(FLAGS.output_dir, 'int')
+    save_infer_model(FLAGS, exe, feed_vars, test_fetches, int8_program)
 
 
 if __name__ == '__main__':
+    paddle.enable_static()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",

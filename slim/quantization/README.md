@@ -9,6 +9,7 @@
 
 - [检测模型的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)
+- [自定义量化PACT](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/quant/pact_quant_aware)
 
 已发布量化模型见[压缩模型库](../README.md)
 
@@ -76,11 +77,24 @@ python slim/quantization/train.py --not_quant_pattern yolo_output \
 - **LeaningRate.base_lr:** 根据多卡的总`batch_size`调整`base_lr`，两者大小正相关，可以简单的按比例进行调整。
 - **LearningRate.schedulers.PiecewiseDecay.milestones：** 请根据batch size的变化对其调整。
 
-
 通过`python slim/quantization/train.py --help`查看可配置参数。
 通过`python ./tools/configure.py help ${option_name}`查看如何通过命令行覆盖配置文件中的参数。
 
+### PACT自定义量化
 
+```
+python slim/quantization/train.py \
+    --eval \
+    -c ./configs/yolov3_mobilenet_v3.yml \
+    -o max_iters=30000 \
+    save_dir=./output/mobilenetv3 \
+    LearningRate.base_lr=0.0001 \
+    LearningRate.schedulers="[!PiecewiseDecay {gamma: 0.1, milestones: [10000]}]" \
+    pretrain_weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v3.pdparams \
+    --use_pact=True
+```
+
+- 在量化训练时，将`--use_pact=True`，即可选择PACT自定义量化
 
 ### 训练时的模型结构
 [PaddleSlim 量化API](https://paddlepaddle.github.io/PaddleSlim/api/quantization_api/)文档中介绍了``paddleslim.quant.quant_aware``和``paddleslim.quant.convert``两个接口。
@@ -144,6 +158,7 @@ python slim/quantization/eval.py --not_quant_pattern yolo_output  -c ./configs/y
  python slim/quantization/export_model.py --not_quant_pattern yolo_output  -c ./configs/yolov3_mobilenet_v1.yml --output_dir ${save path} \
 -o weights=./output/mobilenetv1/yolov3_mobilenet_v1/best_model
 ```
+
 ## 预测
 
 ### python预测
@@ -157,7 +172,6 @@ python slim/quantization/infer.py --not_quant_pattern yolo_output \
 --infer_dir ./demo \
 -o weights=./output/mobilenetv1/yolov3_mobilenet_v1/best_model
 ```
-
 
 ### PaddleLite预测
 导出模型步骤中导出的FP32模型可使用PaddleLite进行加载预测，可参见教程[Paddle-Lite如何加载运行量化模型](https://github.com/PaddlePaddle/Paddle-Lite/wiki/model_quantization)

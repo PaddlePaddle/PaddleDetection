@@ -2,7 +2,6 @@ architecture: CascadeRCNN
 max_iters: 270000
 snapshot_iter: 30000
 use_gpu: true
-log_smooth_window: 20
 log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_ssld_pretrained.tar
@@ -169,7 +168,7 @@ EvalReader:
     std: [0.229, 0.224,0.225]
   - !ResizeImage
     interp: 1
-    max_size: 13330
+    max_size: 1333
     target_size: 800
     use_cv2: true
   - !Permute
