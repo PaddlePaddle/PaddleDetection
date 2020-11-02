@@ -84,7 +84,6 @@ class BiFPNCell(object):
         self.eps = 1e-4
 
     def __call__(self, inputs, cell_name=''):
-
         def upsample(feat):
             return fluid.layers.resize_nearest(feat, scale=2.)
 
