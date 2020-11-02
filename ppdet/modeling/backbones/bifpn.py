@@ -136,21 +136,43 @@ class BiFPNCell(object):
                 if len(inputs) != self.levels:
                     if p < self.inputs_layer_num:
                         w1 = fluid.layers.slice(
-                            trigates, axes=[0, 1], starts=[p - 1, 0], ends=[p, 1])
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 0],
+                            ends=[p, 1])
                         w2 = fluid.layers.slice(
-                            trigates, axes=[0, 1], starts=[p - 1, 1], ends=[p, 2])
-                        w3 = fluid.layers.slice(trigates, axes=[0, 1], starts=[p - 1, 2], ends=[p, 3])
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 1],
+                            ends=[p, 2])
+                        w3 = fluid.layers.slice(
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 2],
+                            ends=[p, 3])
                         feature_maps[p] = fuse_conv(
-                            w1 * feature_maps[p] + w2 * below + w3 * inputs[p - 1 + self.levels], name=name)
+                            w1 * feature_maps[p] + w2 * below + w3 *
+                            inputs[p - 1 + self.levels],
+                            name=name)
                     else:  # For P6"
                         w1 = fluid.layers.slice(
-                            trigates, axes=[0, 1], starts=[p - 1, 0], ends=[p, 1])
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 0],
+                            ends=[p, 1])
                         w2 = fluid.layers.slice(
-                            trigates, axes=[0, 1], starts=[p - 1, 1], ends=[p, 2])
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 1],
+                            ends=[p, 2])
                         w3 = fluid.layers.slice(
-                            trigates, axes=[0, 1], starts=[p - 1, 2], ends=[p, 3])
+                            trigates,
+                            axes=[0, 1],
+                            starts=[p - 1, 2],
+                            ends=[p, 3])
                         feature_maps[p] = fuse_conv(
-                            w1 * feature_maps[p] + w2 * below + w3 * inputs[p], name=name)
+                            w1 * feature_maps[p] + w2 * below + w3 * inputs[p],
+                            name=name)
                 else:
                     w1 = fluid.layers.slice(
                         trigates, axes=[0, 1], starts=[p - 1, 0], ends=[p, 1])
@@ -159,7 +181,8 @@ class BiFPNCell(object):
                     w3 = fluid.layers.slice(
                         trigates, axes=[0, 1], starts=[p - 1, 2], ends=[p, 3])
                     feature_maps[p] = fuse_conv(
-                        w1 * feature_maps[p] + w2 * below + w3 * inputs[p], name=name)
+                        w1 * feature_maps[p] + w2 * below + w3 * inputs[p],
+                        name=name)
         return feature_maps
 
 
@@ -220,7 +243,8 @@ class BiFPN(object):
                     feat,
                     momentum=0.997,
                     epsilon=1e-04,
-                    param_attr=ParamAttr(initializer=Constant(1.0), regularizer=L2Decay(0.)),
+                    param_attr=ParamAttr(
+                        initializer=Constant(1.0), regularizer=L2Decay(0.)),
                     bias_attr=ParamAttr(regularizer=L2Decay(0.)),
                     name='resample_bn_{}'.format(idx))
             feat = fluid.layers.pool2d(
@@ -245,13 +269,14 @@ class BiFPN(object):
                 feat,
                 momentum=0.997,
                 epsilon=1e-04,
-                param_attr=ParamAttr(initializer=Constant(1.0), regularizer=L2Decay(0.)),
+                param_attr=ParamAttr(
+                    initializer=Constant(1.0), regularizer=L2Decay(0.)),
                 bias_attr=ParamAttr(regularizer=L2Decay(0.)),
                 name='resample2_bn_{}'.format(idx))
             feats.append(feat)
 
         biFPN = BiFPNCell(self.num_chan, self.levels, len(inputs))
         for r in range(self.repeat):
-                feats = biFPN(feats, cell_name='bifpn_{}'.format(r))
+            feats = biFPN(feats, cell_name='bifpn_{}'.format(r))
 
         return feats
