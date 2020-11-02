@@ -60,7 +60,10 @@ def main():
             "Currently only supports `--eval==True` while training in `quantization`."
         )
     env = os.environ
-    FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
+    FLAGS.dist = 'PADDLE_TRAINER_ID' in env \
+                    and 'PADDLE_TRAINERS_NUM' in env \
+                    and int(env['PADDLE_TRAINERS_NUM']) > 1
+    num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         import random
@@ -221,8 +224,11 @@ def main():
 
     start_iter = 0
 
-    train_reader = create_reader(cfg.TrainReader,
-                                 (cfg.max_iters - start_iter) * devices_num)
+    train_reader = create_reader(
+        cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
+        cfg,
+        devices_num=devices_num,
+        num_trainers=num_trainers)
     # When iterable mode, set set_sample_list_generator(train_reader, place)
     train_loader.set_sample_list_generator(train_reader)
 
