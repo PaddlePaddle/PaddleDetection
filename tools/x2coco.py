@@ -216,8 +216,8 @@ def voc_get_image_info(annotation_root, im_id):
     img_name = os.path.basename(filename)
 
     size = annotation_root.find('size')
-    width = int(size.findtext('width'))
-    height = int(size.findtext('height'))
+    width = float(size.findtext('width'))
+    height = float(size.findtext('height'))
 
     image_info = {
         'file_name': filename,
@@ -233,10 +233,10 @@ def voc_get_coco_annotation(obj, label2id):
     assert label in label2id, "label is not in label2id."
     category_id = label2id[label]
     bndbox = obj.find('bndbox')
-    xmin = int(bndbox.findtext('xmin')) - 1
-    ymin = int(bndbox.findtext('ymin')) - 1
-    xmax = int(bndbox.findtext('xmax'))
-    ymax = int(bndbox.findtext('ymax'))
+    xmin = float(bndbox.findtext('xmin')) - 1
+    ymin = float(bndbox.findtext('ymin')) - 1
+    xmax = float(bndbox.findtext('xmax'))
+    ymax = float(bndbox.findtext('ymax'))
     assert xmax > xmin and ymax > ymin, "Box size error."
     o_width = xmax - xmin
     o_height = ymax - ymin
