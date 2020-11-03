@@ -97,10 +97,7 @@ class BBoxPostProcessYOLO(object):
             scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
         yolo_boxes = paddle.concat(boxes_list, axis=1)
         yolo_scores = paddle.concat(scores_list, axis=2)
-        bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
-        # TODO: parse the lod of nmsed_bbox
-        # default batch size is 1
-        bbox_num = np.array([int(bbox.shape[0])], dtype=np.int32)
+        bbox, bbox_num = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
         return bbox, bbox_num
 
 

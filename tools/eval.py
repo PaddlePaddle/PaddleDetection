@@ -18,7 +18,7 @@ from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.eval_utils import coco_eval_results
+from ppdet.utils.eval_utils import get_infer_results, eval_results
 from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 import logging
@@ -79,11 +79,22 @@ def run(FLAGS, cfg):
     cost_time = time.time() - start_time
     logger.info('Total sample number: {}, averge FPS: {}'.format(
         sample_num, sample_num / cost_time))
+
+    eval_type = ['bbox']
+    if getattr(cfg, 'MaskHead', None):
+        eval_type.append('mask')
     # Metric
-    coco_eval_results(
-        outs_res,
-        include_mask=True if getattr(cfg, 'MaskHead', None) else False,
-        dataset=cfg['EvalReader']['dataset'])
+    # TODO: support other metric
+    dataset = cfg.EvalReader['dataset']
+    from ppdet.utils.coco_eval import get_category_info
+    anno_file = dataset.get_anno()
+    with_background = dataset.with_background
+    use_default_label = dataset.use_default_label
+    clsid2catid, catid2name = get_category_info(anno_file, with_background,
+                                                use_default_label)
+
+    infer_res = get_infer_results(outs_res, eval_type, clsid2catid)
+    eval_results(infer_res, cfg.metric, anno_file)
 
 
 def main():
