@@ -41,7 +41,7 @@ SUPPORT_MODELS = {
 }
 
 
-class Detector():
+class Detector(object):
     """
     Args:
         config (object): config of model, defined by `Config(model_dir)`
