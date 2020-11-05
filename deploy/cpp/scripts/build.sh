@@ -1,5 +1,5 @@
 # 是否使用GPU(即是否使用 CUDA)
-WITH_GPU=ON
+WITH_GPU=OFF
 
 # 是否使用MKL or openblas
 WITH_MKL=ON
