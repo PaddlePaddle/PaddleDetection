@@ -164,7 +164,7 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 
 
 ## 性能测试
-测试环境为：硬件: TX2，JetPack版本: 4.3, Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.5.  
+测试环境为：硬件: TX2，JetPack版本: 4.3, Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.5, TensorRT: 5.0.  
 
 去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
 
