@@ -77,7 +77,7 @@ def run(FLAGS, cfg):
             logger.info("Eval iter: {}".format(iter_id))
 
     cost_time = time.time() - start_time
-    logger.info('Total sample number: {}, averge FPS: {}'.format(
+    logger.info('Total sample number: {}, average FPS: {}'.format(
         sample_num, sample_num / cost_time))
     # Metric
     coco_eval_results(

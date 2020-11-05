@@ -22,6 +22,9 @@ MaskRCNN:
   rpn_head: RPNHead
   bbox_head: BBoxHead
   mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
 
 ResNet:
   # index 0 stands for res2
@@ -51,7 +54,7 @@ BBoxHead:
   bbox_feat:
     name: BBoxFeat
     roi_extractor:
-      name: RoIExtractor
+      name: RoIAlign
       resolution: 7
       sampling_ratio: 2
     head_feat:
@@ -67,7 +70,7 @@ MaskHead:
     feat_in: 256
     feat_out: 256
     mask_roi_extractor:
-      name: RoIExtractor
+      name: RoIAlign
       resolution: 14
       sampling_ratio: 2
     share_bbox_feat: False
@@ -104,27 +107,31 @@ Proposal:
     bg_thresh_lo: [0.0,]
     fg_thresh: [0.5,]
     fg_fraction: 0.25
-  bbox_post_process: # used in infer
-    name: BBoxPostProcess
-    # decode -> clip -> nms
-    decode_clip_nms:
-      name: DecodeClipNms
-      keep_top_k: 100
-      score_threshold: 0.05
-      nms_threshold: 0.5
+
+BBoxPostProcess: # used in infer
+  # decode -> nms
+  decode:
+    name: RCNNBox
+    num_classes: 81
+    batch_size: 1
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5
 
 Mask:
   mask_target_generator:
     name: MaskTargetGenerator
     mask_resolution: 28
-  mask_post_process:
-    name: MaskPostProcess
-    mask_resolution: 28
+
+MaskPostProcess:
+  mask_resolution: 28
 
 
 # Train
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.00125
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1

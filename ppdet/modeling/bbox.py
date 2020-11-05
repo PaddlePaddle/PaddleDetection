@@ -8,103 +8,6 @@ from . import ops
 
 
 @register
-class BBoxPostProcess(object):
-    __shared__ = ['num_classes']
-    __inject__ = ['decode_clip_nms']
-
-    def __init__(self,
-                 decode_clip_nms,
-                 num_classes=81,
-                 cls_agnostic=False,
-                 decode=None,
-                 clip=None,
-                 nms=None,
-                 score_stage=[0, 1, 2],
-                 delta_stage=[2]):
-        super(BBoxPostProcess, self).__init__()
-        self.num_classes = num_classes
-        self.decode = decode
-        self.clip = clip
-        self.nms = nms
-        self.decode_clip_nms = decode_clip_nms
-        self.score_stage = score_stage
-        self.delta_stage = delta_stage
-        self.out_dim = 2 if cls_agnostic else num_classes
-        self.cls_agnostic = cls_agnostic
-
-    def __call__(self, inputs, bboxheads, rois):
-        # TODO: split into 3 steps
-        # TODO: modify related ops for deploying
-        # decode
-        # clip
-        # nms
-        if isinstance(rois, tuple):
-            proposal, proposal_num = rois
-            score, delta = bboxheads[0]
-            bbox_prob = fluid.layers.softmax(score)
-            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
-        else:
-            num_stage = len(rois)
-            proposal_list = []
-            prob_list = []
-            delta_list = []
-            for stage, (proposals, bboxhead) in zip(rois, bboxheads):
-                score, delta = bboxhead
-                proposal, proposal_num = proposals
-                if stage in self.score_stage:
-                    bbox_prob = fluid.layers.softmax(score)
-                    prob_list.append(bbox_prob)
-                if stage in self.delta_stage:
-                    proposal_list.append(proposal)
-                    delta_list.append(delta)
-            bbox_prob = fluid.layers.mean(prob_list)
-            delta = fluid.layers.mean(delta_list)
-            proposal = fluid.layers.mean(proposal_list)
-            delta = fluid.layers.reshape(delta, (-1, self.out_dim, 4))
-            if self.cls_agnostic:
-                delta = delta[:, 1:2, :]
-                delta = fluid.layers.expand(delta, [1, self.num_classes, 1])
-        bboxes = (proposal, proposal_num)
-        bboxes, bbox_nums = self.decode_clip_nms(bboxes, bbox_prob, delta,
-                                                 inputs['im_info'])
-        return bboxes, bbox_nums
-
-
-@register
-class BBoxPostProcessYOLO(object):
-    __shared__ = ['num_classes']
-    __inject__ = ['yolo_box', 'nms']
-
-    def __init__(self, yolo_box, nms, num_classes=80, decode=None, clip=None):
-        super(BBoxPostProcessYOLO, self).__init__()
-        self.yolo_box = yolo_box
-        self.nms = nms
-        self.num_classes = num_classes
-        self.decode = decode
-        self.clip = clip
-
-    def __call__(self, im_size, yolo_head_out, mask_anchors):
-        # TODO: split yolo_box into 2 steps
-        # decode
-        # clip
-        boxes_list = []
-        scores_list = []
-        for i, head_out in enumerate(yolo_head_out):
-            boxes, scores = self.yolo_box(head_out, im_size, mask_anchors[i],
-                                          self.num_classes, i)
-
-            boxes_list.append(boxes)
-            scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
-        yolo_boxes = paddle.concat(boxes_list, axis=1)
-        yolo_scores = paddle.concat(scores_list, axis=2)
-        bbox = self.nms(bboxes=yolo_boxes, scores=yolo_scores)
-        # TODO: parse the lod of nmsed_bbox
-        # default batch size is 1
-        bbox_num = np.array([int(bbox.shape[0])], dtype=np.int32)
-        return bbox, bbox_num
-
-
-@register
 class AnchorRPN(object):
     __inject__ = ['anchor_generator', 'anchor_target_generator']
 
@@ -170,32 +73,24 @@ class AnchorRPN(object):
 
 @register
 class AnchorYOLO(object):
-    __inject__ = ['anchor_generator', 'anchor_post_process']
+    __inject__ = ['anchor_generator']
 
-    def __init__(self, anchor_generator, anchor_post_process):
+    def __init__(self, anchor_generator):
         super(AnchorYOLO, self).__init__()
         self.anchor_generator = anchor_generator
-        self.anchor_post_process = anchor_post_process
 
     def __call__(self):
         return self.anchor_generator()
 
-    def post_process(self, im_size, yolo_head_out, mask_anchors):
-        return self.anchor_post_process(im_size, yolo_head_out, mask_anchors)
-
 
 @register
 class Proposal(object):
-    __inject__ = [
-        'proposal_generator', 'proposal_target_generator', 'bbox_post_process'
-    ]
+    __inject__ = ['proposal_generator', 'proposal_target_generator']
 
-    def __init__(self, proposal_generator, proposal_target_generator,
-                 bbox_post_process):
+    def __init__(self, proposal_generator, proposal_target_generator):
         super(Proposal, self).__init__()
         self.proposal_generator = proposal_generator
         self.proposal_target_generator = proposal_target_generator
-        self.bbox_post_process = bbox_post_process
 
     def generate_proposal(self, inputs, rpn_head_out, anchor_out):
         rpn_rois_list = []
@@ -297,7 +192,3 @@ class Proposal(object):
 
     def get_proposals(self):
         return self.proposals_list
-
-    def post_process(self, inputs, bbox_head_out, rois):
-        bboxes = self.bbox_post_process(inputs, bbox_head_out, rois)
-        return bboxes

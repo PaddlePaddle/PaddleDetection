@@ -1,3 +1,4 @@
+import paddle
 import paddle.fluid as fluid
 from paddle.fluid.dygraph import Layer
 from paddle.fluid.param_attr import ParamAttr
@@ -5,6 +6,7 @@ from paddle.fluid.initializer import Normal, Xavier
 from paddle.fluid.regularizer import L2Decay
 from paddle.fluid.dygraph.nn import Conv2D, Pool2D, Linear
 from ppdet.core.workspace import register
+import paddle.nn.functional as F
 
 
 @register
@@ -85,7 +87,9 @@ class BBoxHead(Layer):
                  num_classes=81,
                  cls_agnostic=False,
                  num_stages=1,
-                 with_pool=False):
+                 with_pool=False,
+                 score_stage=[0, 1, 2],
+                 delta_stage=[2]):
         super(BBoxHead, self).__init__()
         self.num_classes = num_classes
         self.delta_dim = 2 if cls_agnostic else num_classes
@@ -94,6 +98,8 @@ class BBoxHead(Layer):
         self.bbox_score_list = []
         self.bbox_delta_list = []
         self.with_pool = with_pool
+        self.score_stage = score_stage
+        self.delta_stage = delta_stage
         for stage in range(num_stages):
             score_name = 'bbox_score_{}'.format(stage)
             delta_name = 'bbox_delta_{}'.format(stage)
@@ -169,3 +175,35 @@ class BBoxHead(Layer):
             loss_bbox[cls_name] = loss_bbox_cls
             loss_bbox[reg_name] = loss_bbox_reg
         return loss_bbox
+
+    def get_prediction(self, bbox_head_out, rois):
+        if len(bbox_head_out) == 1:
+            proposal, proposal_num = rois
+            score, delta = bbox_head_out[0]
+            bbox_prob = F.softmax(score)
+            delta = paddle.reshape(delta, (-1, self.out_dim, 4))
+        else:
+            num_stage = len(rois)
+            proposal_list = []
+            prob_list = []
+            delta_list = []
+            for stage, (proposals, bboxhead) in zip(rois, bboxheads):
+                score, delta = bboxhead
+                proposal, proposal_num = proposals
+                if stage in self.score_stage:
+                    bbox_prob = F.softmax(score)
+                    prob_list.append(bbox_prob)
+                if stage in self.delta_stage:
+                    proposal_list.append(proposal)
+                    delta_list.append(delta)
+            bbox_prob = paddle.mean(paddle.stack(prob_list), axis=0)
+            delta = paddle.mean(paddle.stack(delta_list), axis=0)
+            proposal = paddle.mean(paddle.stack(proposal_list), axis=0)
+            delta = paddle.reshape(delta, (-1, self.out_dim, 4))
+            if self.cls_agnostic:
+                N, C, M = delta.shape
+                delta = delta[:, 1:2, :]
+                delta = paddle.expand(delta, [N, self.num_classes, M])
+        bboxes = (proposal, proposal_num)
+        bbox_pred = (delta, bbox_prob)
+        return bbox_pred, bboxes
