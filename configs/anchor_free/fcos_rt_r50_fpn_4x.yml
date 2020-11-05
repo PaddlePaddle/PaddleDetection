@@ -1,0 +1,182 @@
+architecture: FCOS
+max_iters: 360000
+use_gpu: true
+snapshot_iter: 20000
+log_smooth_window: 20
+log_iter: 20
+save_dir: output
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+metric: COCO
+weights: output/fcos_rt_r50_fpn_4x/model_final
+num_classes: 80
+
+FCOS:
+  backbone: ResNet
+  fpn: FPN
+  fcos_head: FCOSHead
+
+ResNet:
+  norm_type: sync_bn
+  norm_decay: 0.
+  depth: 50
+  feature_maps: [3, 4, 5]
+  variant: b
+  freeze_at: 2
+
+FPN:
+  min_level: 3
+  max_level: 5
+  num_chan: 256
+  use_c5: false
+  spatial_scale: [0.03125, 0.0625, 0.125]
+  has_extra_convs: false
+
+FCOSHead:
+  num_classes: 80
+  fpn_stride: [8, 16, 32]
+  num_convs: 4
+  norm_type: "gn"
+  fcos_loss: FCOSLoss
+  norm_reg_targets: True
+  centerness_on_reg: True
+  use_dcn_in_tower: False
+  nms: MultiClassNMS
+
+MultiClassNMS:
+  score_threshold: 0.025
+  nms_top_k: 1000
+  keep_top_k: 100
+  nms_threshold: 0.6
+  background_label: -1
+
+FCOSLoss:
+  loss_alpha: 0.25
+  loss_gamma: 2.0
+  iou_loss_type: "giou"
+  reg_weights: 1.0
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [300000, 340000]
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'fcos_target']
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: false
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [103.53, 116.28, 123.675]
+    std: [1.0, 1.0, 1.0]
+  - !ResizeImage
+    target_size: [256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+    max_size: 900
+    interp: 1
+    use_cv2: true
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
+  - !Gt2FCOSTarget
+    object_sizes_boundary: [64, 128]
+    center_sampling_radius: 1.5
+    downsample_ratios: [8, 16, 32]
+    norm_reg_targets: True
+  batch_size: 16
+  shuffle: true
+  worker_num: 4
+  use_process: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'im_shape', 'im_info']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: false
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [103.53, 116.28, 123.675]
+    std: [1.0, 1.0, 1.0]
+  - !ResizeImage
+    target_size: 512
+    max_size: 736
+    interp: 1
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: true
+  batch_size: 1
+  shuffle: false
+  worker_num: 2
+  use_process: false
+
+TestReader:
+  inputs_def:
+    # set image_shape if needed
+    fields: ['image', 'im_id', 'im_shape', 'im_info']
+  dataset:
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: false
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [103.53, 116.28, 123.675]
+    std: [1.0, 1.0, 1.0]
+  - !ResizeImage
+    interp: 1
+    max_size: 736
+    target_size: 512
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: true
+  batch_size: 1
+  shuffle: false
