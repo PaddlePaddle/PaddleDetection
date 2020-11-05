@@ -2,7 +2,7 @@
 WITH_GPU=ON
 
 # 是否使用MKL or openblas
-WITH_MKL=OFF
+WITH_MKL=ON
 
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
