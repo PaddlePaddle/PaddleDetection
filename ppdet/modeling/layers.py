@@ -14,12 +14,15 @@
 
 import numpy as np
 from numbers import Integral
+
+import paddle
 import paddle.fluid as fluid
 from paddle.fluid.dygraph.base import to_variable
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
+import paddle.nn.functional as F
 
 
 @register
@@ -277,59 +280,84 @@ class MaskTargetGenerator(object):
         return outs
 
 
+def box_clip(input_box, im_info, output_box):
+    im_w = round(im_info[1] / im_info[2])
+    im_h = round(im_info[0] / im_info[2])
+    output_box[:, :, 0] = np.maximum(
+        np.minimum(input_box[:, :, 0], im_w - 1), 0)
+    output_box[:, :, 1] = np.maximum(
+        np.minimum(input_box[:, :, 1], im_h - 1), 0)
+    output_box[:, :, 2] = np.maximum(
+        np.minimum(input_box[:, :, 2], im_w - 1), 0)
+    output_box[:, :, 3] = np.maximum(
+        np.minimum(input_box[:, :, 3], im_h - 1), 0)
+
+
+def batch_box_clip(input_boxes, im_info, lod):
+    n = input_boxes.shape[0]
+    m = input_boxes.shape[1]
+    output_boxes = np.zeros((n, m, 4), dtype=np.float32)
+    cur_offset = 0
+    for i in range(len(lod)):
+        box_clip(input_boxes[cur_offset:(cur_offset + lod[i]), :, :],
+                 im_info[i, :],
+                 output_boxes[cur_offset:(cur_offset + lod[i]), :, :])
+        cur_offset += lod[i]
+    return output_boxes
+
+
 @register
-class RoIExtractor(object):
+@serializable
+class RCNNBox(object):
+    __shared__ = ['num_classes', 'batch_size']
+
     def __init__(self,
-                 resolution=14,
-                 sampling_ratio=0,
-                 canconical_level=4,
-                 canonical_size=224,
-                 start_level=0,
-                 end_level=3):
-        super(RoIExtractor, self).__init__()
-        self.resolution = resolution
-        self.sampling_ratio = sampling_ratio
-        self.canconical_level = canconical_level
-        self.canonical_size = canonical_size
-        self.start_level = start_level
-        self.end_level = end_level
+                 num_classes=81,
+                 batch_size=1,
+                 prior_box_var=[0.1, 0.1, 0.2, 0.2],
+                 code_type="decode_center_size",
+                 box_normalized=False,
+                 axis=1):
+        super(RCNNBox, self).__init__()
+        self.num_classes = num_classes
+        self.batch_size = batch_size
+        self.prior_box_var = prior_box_var
+        self.code_type = code_type
+        self.box_normalized = box_normalized
+        self.axis = axis
 
-    def __call__(self, feats, rois, spatial_scale):
+    def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
+        bbox_pred, cls_prob = bbox_head_out
         roi, rois_num = rois
-        cur_l = 0
-        if self.start_level == self.end_level:
-            rois_feat = ops.roi_align(
-                feats[self.start_level],
-                roi,
-                self.resolution,
-                spatial_scale,
-                rois_num=rois_num)
-            return rois_feat
-        offset = 2
-        k_min = self.start_level + offset
-        k_max = self.end_level + offset
-        rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
-            roi,
-            k_min,
-            k_max,
-            self.canconical_level,
-            self.canonical_size,
-            rois_num=rois_num)
+        origin_shape = im_shape / scale_factor
+        scale_list = []
+        im_info_list = []
+        for idx in range(self.batch_size):
+            scale = scale_factor[idx, :]
+            rois_num_per_im = rois_num[idx]
+            expand_scale = paddle.expand(scale, [rois_num_per_im, 1])
+            scale_list.append(expand_scale)
+            im_info = paddle.concat(
+                [origin_shape[idx, :], paddle.ones([1], 'float32')])
+            im_info_list.append(im_info)
 
-        rois_feat_list = []
-        for lvl in range(self.start_level, self.end_level + 1):
-            roi_feat = ops.roi_align(
-                feats[lvl],
-                rois_dist[lvl],
-                self.resolution,
-                spatial_scale[lvl],
-                sampling_ratio=self.sampling_ratio,
-                rois_num=rois_num_dist[lvl])
-            rois_feat_list.append(roi_feat)
-        rois_feat_shuffle = fluid.layers.concat(rois_feat_list)
-        rois_feat = fluid.layers.gather(rois_feat_shuffle, restore_index)
+        scale = paddle.concat(scale_list)
+        im_info = paddle.stack(im_info_list)
 
-        return rois_feat
+        bbox = roi / scale
+        bbox = ops.box_coder(
+            prior_box=bbox,
+            prior_box_var=self.prior_box_var,
+            target_box=bbox_pred,
+            code_type=self.code_type,
+            box_normalized=self.box_normalized,
+            axis=self.axis)
+        # TODO: Updata box_clip
+        bbox_np = batch_box_clip(bbox.numpy(),
+                                 im_info.numpy(), rois_num.numpy())
+        bbox = paddle.to_tensor(bbox_np)
+        bboxes = (bbox, rois_num)
+        return bboxes, cls_prob
 
 
 @register
@@ -367,9 +395,6 @@ class DecodeClipNms(object):
 @register
 @serializable
 class MultiClassNMS(object):
-    __op__ = ops.multiclass_nms
-    __append_doc__ = True
-
     def __init__(self,
                  score_threshold=.05,
                  nms_top_k=-1,
@@ -386,6 +411,13 @@ class MultiClassNMS(object):
         self.normalized = normalized
         self.nms_eta = nms_eta
         self.background_label = background_label
+
+    def __call__(self, bboxes, score):
+        kwargs = self.__dict__.copy()
+        if isinstance(bboxes, tuple):
+            bboxes, bbox_num = bboxes
+            kwargs.update({'rois_num': bbox_num})
+        return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
@@ -417,19 +449,37 @@ class MatrixNMS(object):
 @register
 @serializable
 class YOLOBox(object):
-    def __init__(
-            self,
-            conf_thresh=0.005,
-            downsample_ratio=32,
-            clip_bbox=True, ):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 num_classes=80,
+                 conf_thresh=0.005,
+                 downsample_ratio=32,
+                 clip_bbox=True,
+                 scale_x_y=1.):
+        self.num_classes = num_classes
         self.conf_thresh = conf_thresh
         self.downsample_ratio = downsample_ratio
         self.clip_bbox = clip_bbox
+        self.scale_x_y = scale_x_y
 
-    def __call__(self, x, img_size, anchors, num_classes, stage=0):
-        outs = ops.yolo_box(x, img_size, anchors, num_classes, self.conf_thresh,
-                            self.downsample_ratio // 2**stage, self.clip_bbox)
-        return outs
+    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor=None):
+        boxes_list = []
+        scores_list = []
+        if scale_factor is not None:
+            origin_shape = im_shape / scale_factor
+        else:
+            origin_shape = im_shape
+        for i, head_out in enumerate(yolo_head_out):
+            boxes, scores = ops.yolo_box(head_out, origin_shape, anchors[i],
+                                         self.num_classes, self.conf_thresh,
+                                         self.downsample_ratio // 2**i,
+                                         self.clip_bbox, self.scale_x_y)
+            boxes_list.append(boxes)
+            scores_list.append(paddle.transpose(scores, perm=[0, 2, 1]))
+        yolo_boxes = paddle.concat(boxes_list, axis=1)
+        yolo_scores = paddle.concat(scores_list, axis=2)
+        return yolo_boxes, yolo_scores
 
 
 @register

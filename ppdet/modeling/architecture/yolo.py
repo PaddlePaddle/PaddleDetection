@@ -15,13 +15,15 @@ class YOLOv3(BaseArch):
         'anchor',
         'backbone',
         'yolo_head',
+        'post_process',
     ]
 
-    def __init__(self, anchor, backbone, yolo_head):
+    def __init__(self, anchor, backbone, yolo_head, post_process):
         super(YOLOv3, self).__init__()
         self.anchor = anchor
         self.backbone = backbone
         self.yolo_head = yolo_head
+        self.post_process = post_process
 
     def model_arch(self, ):
         # Backbone
@@ -40,11 +42,11 @@ class YOLOv3(BaseArch):
         return yolo_loss
 
     def infer(self, ):
-        bbox, bbox_num = self.anchor.post_process(
-            self.inputs['im_size'], self.yolo_head_out, self.mask_anchors)
+        bbox, bbox_num = self.post_process(
+            self.yolo_head_out, self.mask_anchors, self.inputs['im_size'])
         outs = {
             "bbox": bbox.numpy(),
-            "bbox_num": bbox_num,
+            "bbox_num": bbox_num.numpy(),
             'im_id': self.inputs['im_id'].numpy()
         }
         return outs

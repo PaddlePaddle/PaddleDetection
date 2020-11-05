@@ -42,8 +42,8 @@ EvalReader:
   dataset:
     !COCODataSet
     image_dir: val2017
-    anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    anno_path: annotations/instances_val2017_debug_139.json
+    dataset_dir: /paddle/dataset/coco
   sample_transforms:
   - !DecodeImage
     to_rgb: true

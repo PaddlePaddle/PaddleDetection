@@ -85,7 +85,7 @@ def eval_results(res, metric, anno_file):
                 json.dump(res['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval('mask.json', 'mask', anno_file=anno_file)
+            seg_stats = cocoapi_eval('mask.json', 'segm', anno_file=anno_file)
             eval_res.append(seg_stats)
             sys.stdout.flush()
     else:
