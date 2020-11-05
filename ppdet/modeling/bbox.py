@@ -8,11 +8,11 @@ from . import ops
 
 
 @register
-class AnchorRPN(object):
+class Anchor(object):
     __inject__ = ['anchor_generator', 'anchor_target_generator']
 
     def __init__(self, anchor_generator, anchor_target_generator):
-        super(AnchorRPN, self).__init__()
+        super(Anchor, self).__init__()
         self.anchor_generator = anchor_generator
         self.anchor_target_generator = anchor_target_generator
 

@@ -280,32 +280,6 @@ class MaskTargetGenerator(object):
         return outs
 
 
-def box_clip(input_box, im_info, output_box):
-    im_w = round(im_info[1] / im_info[2])
-    im_h = round(im_info[0] / im_info[2])
-    output_box[:, :, 0] = np.maximum(
-        np.minimum(input_box[:, :, 0], im_w - 1), 0)
-    output_box[:, :, 1] = np.maximum(
-        np.minimum(input_box[:, :, 1], im_h - 1), 0)
-    output_box[:, :, 2] = np.maximum(
-        np.minimum(input_box[:, :, 2], im_w - 1), 0)
-    output_box[:, :, 3] = np.maximum(
-        np.minimum(input_box[:, :, 3], im_h - 1), 0)
-
-
-def batch_box_clip(input_boxes, im_info, lod):
-    n = input_boxes.shape[0]
-    m = input_boxes.shape[1]
-    output_boxes = np.zeros((n, m, 4), dtype=np.float32)
-    cur_offset = 0
-    for i in range(len(lod)):
-        box_clip(input_boxes[cur_offset:(cur_offset + lod[i]), :, :],
-                 im_info[i, :],
-                 output_boxes[cur_offset:(cur_offset + lod[i]), :, :])
-        cur_offset += lod[i]
-    return output_boxes
-
-
 @register
 @serializable
 class RCNNBox(object):
@@ -331,18 +305,18 @@ class RCNNBox(object):
         roi, rois_num = rois
         origin_shape = im_shape / scale_factor
         scale_list = []
-        im_info_list = []
+        origin_shape_list = []
         for idx in range(self.batch_size):
             scale = scale_factor[idx, :]
             rois_num_per_im = rois_num[idx]
             expand_scale = paddle.expand(scale, [rois_num_per_im, 1])
             scale_list.append(expand_scale)
-            im_info = paddle.concat(
-                [origin_shape[idx, :], paddle.ones([1], 'float32')])
-            im_info_list.append(im_info)
+            expand_im_shape = paddle.expand(origin_shape[idx, :],
+                                            [rois_num_per_im, 2])
+            origin_shape_list.append(expand_im_shape)
 
         scale = paddle.concat(scale_list)
-        im_info = paddle.stack(im_info_list)
+        origin_shape = paddle.concat(origin_shape_list)
 
         bbox = roi / scale
         bbox = ops.box_coder(
@@ -353,9 +327,23 @@ class RCNNBox(object):
             box_normalized=self.box_normalized,
             axis=self.axis)
         # TODO: Updata box_clip
-        bbox_np = batch_box_clip(bbox.numpy(),
-                                 im_info.numpy(), rois_num.numpy())
-        bbox = paddle.to_tensor(bbox_np)
+        origin_h = origin_shape[:, 0] - 1
+        origin_w = origin_shape[:, 1] - 1
+        zeros = paddle.zeros(origin_h.shape, 'float32')
+        x1 = paddle.maximum(
+            paddle.minimum(
+                bbox[:, :, 0], origin_w, axis=0), zeros, axis=0)
+        y1 = paddle.maximum(
+            paddle.minimum(
+                bbox[:, :, 1], origin_h, axis=0), zeros, axis=0)
+        x2 = paddle.maximum(
+            paddle.minimum(
+                bbox[:, :, 2], origin_w, axis=0), zeros, axis=0)
+        y2 = paddle.maximum(
+            paddle.minimum(
+                bbox[:, :, 3], origin_h, axis=0), zeros, axis=0)
+        bbox = paddle.stack([x1, y1, x2, y2], axis=-1)
+
         bboxes = (bbox, rois_num)
         return bboxes, cls_prob
 

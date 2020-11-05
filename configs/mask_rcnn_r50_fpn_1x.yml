@@ -13,7 +13,7 @@ load_static_weights: True
 # Model Achitecture
 MaskRCNN:
   # model anchor info flow
-  anchor: AnchorRPN
+  anchor: Anchor
   proposal: Proposal
   mask: Mask
   # model feat info flow
@@ -41,7 +41,6 @@ FPN:
   max_level: 4
   spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
 
-
 RPNHead:
   rpn_feat:
     name: RPNFeat
@@ -50,33 +49,7 @@ RPNHead:
   anchor_per_position: 3
   rpn_channel: 256
 
-BBoxHead:
-  bbox_feat:
-    name: BBoxFeat
-    roi_extractor:
-      name: RoIAlign
-      resolution: 7
-      sampling_ratio: 2
-    head_feat:
-      name: TwoFCHead
-      in_dim: 256
-      mlp_dim: 1024
-  in_feat: 1024
-
-MaskHead:
-  mask_feat:
-    name: MaskFeat
-    num_convs: 4
-    feat_in: 256
-    feat_out: 256
-    mask_roi_extractor:
-      name: RoIAlign
-      resolution: 14
-      sampling_ratio: 2
-    share_bbox_feat: False
-  feat_in: 256
-
-AnchorRPN:
+Anchor:
   anchor_generator:
     name: AnchorGeneratorRPN
     aspect_ratios: [0.5, 1.0, 2.0]
@@ -108,8 +81,20 @@ Proposal:
     fg_thresh: [0.5,]
     fg_fraction: 0.25
 
-BBoxPostProcess: # used in infer
-  # decode -> nms
+BBoxHead:
+  bbox_feat:
+    name: BBoxFeat
+    roi_extractor:
+      name: RoIAlign
+      resolution: 7
+      sampling_ratio: 2
+    head_feat:
+      name: TwoFCHead
+      in_dim: 256
+      mlp_dim: 1024
+  in_feat: 1024
+
+BBoxPostProcess:
   decode:
     name: RCNNBox
     num_classes: 81
@@ -125,13 +110,27 @@ Mask:
     name: MaskTargetGenerator
     mask_resolution: 28
 
+MaskHead:
+  mask_feat:
+    name: MaskFeat
+    num_convs: 4
+    feat_in: 256
+    feat_out: 256
+    mask_roi_extractor:
+      name: RoIAlign
+      resolution: 14
+      sampling_ratio: 2
+    share_bbox_feat: False
+  feat_in: 256
+
+
 MaskPostProcess:
   mask_resolution: 28
 
 
 # Train
 LearningRate:
-  base_lr: 0.00125
+  base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
