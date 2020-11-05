@@ -228,9 +228,22 @@ def draw_segm(im,
         color_mask = np.array(color_mask)
         im[idx[0], idx[1], :] *= 1.0 - alpha
         im[idx[0], idx[1], :] += alpha * color_mask
-        center_y, center_x = ndimage.measurements.center_of_mass(mask)
-        label_text = "{}".format(labels[clsid])
-        vis_pos = (max(int(center_x) - 10, 0), int(center_y))
-        cv2.putText(im, label_text, vis_pos, cv2.FONT_HERSHEY_COMPLEX, 0.3,
-                    (255, 255, 255))
+        sum_x = np.sum(mask, axis=0)
+        x = np.where(sum_x > 0.5)[0]
+        sum_y = np.sum(mask, axis=1)
+        y = np.where(sum_y > 0.5)[0]
+        x0, x1, y0, y1 = x[0], x[-1], y[0], y[-1]
+        cv2.rectangle(im, (x0, y0), (x1, y1),
+                      tuple(color_mask.astype('int32').tolist()), 1)
+        bbox_text = '%s %.2f' % (labels[clsid], score)
+        t_size = cv2.getTextSize(bbox_text, 0, 0.3, thickness=1)[0]
+        cv2.rectangle(im, (x0, y0), (x0 + t_size[0], y0 - t_size[1] - 3),
+                      tuple(color_mask.astype('int32').tolist()), -1)
+        cv2.putText(
+            im,
+            bbox_text, (x0, y0 - 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.3, (0, 0, 0),
+            1,
+            lineType=cv2.LINE_AA)
     return Image.fromarray(im.astype('uint8'))

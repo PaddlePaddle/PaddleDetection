@@ -71,10 +71,11 @@ class Detector(object):
     def preprocess(self, im):
         preprocess_ops = []
         for op_info in self.config.preprocess_infos:
-            op_type = op_info.pop('type')
+            new_op_info = op_info.copy()
+            op_type = new_op_info.pop('type')
             if op_type == 'Resize':
-                op_info['arch'] = self.config.arch
-            preprocess_ops.append(eval(op_type)(**op_info))
+                new_op_info['arch'] = self.config.arch
+            preprocess_ops.append(eval(op_type)(**new_op_info))
         im, im_info = preprocess(im, preprocess_ops)
         inputs = create_inputs(im, im_info, self.config.arch)
         return inputs, im_info
@@ -481,7 +482,8 @@ def predict_video(detector, camera_id):
             frame,
             results,
             detector.config.labels,
-            mask_resolution=detector.config.mask_resolution)
+            mask_resolution=detector.config.mask_resolution,
+            threshold=FLAGS.threshold)
         im = np.array(im)
         writer.write(im)
         if camera_id != -1:
