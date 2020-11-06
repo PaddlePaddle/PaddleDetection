@@ -24,23 +24,21 @@ except Exception:
 import logging
 import cv2
 import numpy as np
-from .operator import register_op, BaseOperator
+from .operator import register_op, BaseOperator, ResizeOp
 from .op_helper import jaccard_overlap, gaussian2D
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'PadBatch',
-    'RandomShape',
-    'PadMultiScaleTest',
-    'Gt2YoloTarget',
-    'Gt2FCOSTarget',
-    'Gt2TTFTarget',
+    'PadBatchOp',
+    'Gt2YoloTargetOp',
+    'Gt2FCOSTargetOp',
+    'Gt2TTFTargetOp',
 ]
 
 
 @register_op
-class PadBatch(BaseOperator):
+class PadBatchOp(BaseOperator):
     """
     Pad a batch of samples so they can be divisible by a stride.
     The layout of each image should be 'CHW'.
@@ -49,10 +47,9 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
-        super(PadBatch, self).__init__()
+    def __init__(self, pad_to_stride=0, pad_gt=False):
+        super(PadBatchOp, self).__init__()
         self.pad_to_stride = pad_to_stride
-        self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
 
     def __call__(self, samples, context=None):
@@ -61,8 +58,6 @@ class PadBatch(BaseOperator):
             samples (list): a batch of sample, each is dict.
         """
         coarsest_stride = self.pad_to_stride
-        #if coarsest_stride == 0:
-        #    return samples
 
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
@@ -80,8 +75,6 @@ class PadBatch(BaseOperator):
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
             padding_im[:, :im_h, :im_w] = im
             data['image'] = padding_im
-            if self.use_padded_im_info:
-                data['im_info'][:2] = max_shape[1:3]
         if self.pad_gt:
             gt_num = []
             if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
@@ -132,9 +125,9 @@ class PadBatch(BaseOperator):
 
 
 @register_op
-class RandomShape(BaseOperator):
+class BatchRandomResizeOp(BaseOperator):
     """
-    Randomly reshape a batch. If random_inter is True, also randomly
+    Randomly resize a batch. If random_inter is True, also randomly
     select one an interpolation algorithm [cv2.INTER_NEAREST, cv2.INTER_LINEAR,
     cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]. If random_inter is
     False, use cv2.INTER_NEAREST.
@@ -144,7 +137,7 @@ class RandomShape(BaseOperator):
     """
 
     def __init__(self, sizes=[], random_inter=False, resize_box=False):
-        super(RandomShape, self).__init__()
+        super(BatchRandomResizeOp, self).__init__()
         self.sizes = sizes
         self.random_inter = random_inter
         self.interps = [
@@ -158,77 +151,14 @@ class RandomShape(BaseOperator):
 
     def __call__(self, samples, context=None):
         shape = np.random.choice(self.sizes)
-        method = np.random.choice(self.interps) if self.random_inter \
-            else cv2.INTER_NEAREST
-        for i in range(len(samples)):
-            im = samples[i]['image']
-            h, w = im.shape[:2]
-            scale_x = float(shape) / w
-            scale_y = float(shape) / h
-            im = cv2.resize(
-                im, None, None, fx=scale_x, fy=scale_y, interpolation=method)
-            samples[i]['image'] = im
-            if self.resize_box and 'gt_bbox' in samples[i] and len(samples[0][
-                    'gt_bbox']) > 0:
-                scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
-                samples[i]['gt_bbox'] = np.clip(samples[i]['gt_bbox'] *
-                                                scale_array, 0,
-                                                float(shape) - 1)
-        return samples
+        method = np.random.choice(
+            self.interps) if self.random_inter else cv2.INTER_NEAREST
+        resizer = ResizeOp(shape, keep_ratio=False, interp=method)
+        return resizer(samples, context=context)
 
 
 @register_op
-class PadMultiScaleTest(BaseOperator):
-    """
-    Pad the image so they can be divisible by a stride for multi-scale testing.
- 
-    Args:
-        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
-            height and width is divisible by `pad_to_stride`.
-    """
-
-    def __init__(self, pad_to_stride=0):
-        super(PadMultiScaleTest, self).__init__()
-        self.pad_to_stride = pad_to_stride
-
-    def __call__(self, samples, context=None):
-        coarsest_stride = self.pad_to_stride
-        if coarsest_stride == 0:
-            return samples
-
-        batch_input = True
-        if not isinstance(samples, Sequence):
-            batch_input = False
-            samples = [samples]
-        if len(samples) != 1:
-            raise ValueError("Batch size must be 1 when using multiscale test, "
-                             "but now batch size is {}".format(len(samples)))
-        for i in range(len(samples)):
-            sample = samples[i]
-            for k in sample.keys():
-                # hard code
-                if k.startswith('image'):
-                    im = sample[k]
-                    im_c, im_h, im_w = im.shape
-                    max_h = int(
-                        np.ceil(im_h / coarsest_stride) * coarsest_stride)
-                    max_w = int(
-                        np.ceil(im_w / coarsest_stride) * coarsest_stride)
-                    padding_im = np.zeros(
-                        (im_c, max_h, max_w), dtype=np.float32)
-
-                    padding_im[:, :im_h, :im_w] = im
-                    sample[k] = padding_im
-                    info_name = 'im_info' if k == 'image' else 'im_info_' + k
-                    # update im_info
-                    sample[info_name][:2] = [max_h, max_w]
-        if not batch_input:
-            samples = samples[0]
-        return samples
-
-
-@register_op
-class Gt2YoloTarget(BaseOperator):
+class Gt2YoloTargetOp(BaseOperator):
     """
     Generate YOLOv3 targets by groud truth data, this operator is only used in
     fine grained YOLOv3 loss mode
@@ -240,7 +170,7 @@ class Gt2YoloTarget(BaseOperator):
                  downsample_ratios,
                  num_classes=80,
                  iou_thresh=1.):
-        super(Gt2YoloTarget, self).__init__()
+        super(Gt2YoloTargetOp, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
@@ -336,7 +266,7 @@ class Gt2YoloTarget(BaseOperator):
 
 
 @register_op
-class Gt2FCOSTarget(BaseOperator):
+class Gt2FCOSTargetOp(BaseOperator):
     """
     Generate FCOS targets by groud truth data
     """
@@ -346,7 +276,7 @@ class Gt2FCOSTarget(BaseOperator):
                  center_sampling_radius,
                  downsample_ratios,
                  norm_reg_targets=False):
-        super(Gt2FCOSTarget, self).__init__()
+        super(Gt2FCOSTargetOp, self).__init__()
         self.center_sampling_radius = center_sampling_radius
         self.downsample_ratios = downsample_ratios
         self.INF = np.inf
@@ -437,16 +367,10 @@ class Gt2FCOSTarget(BaseOperator):
         for sample in samples:
             # im, gt_bbox, gt_class, gt_score = sample
             im = sample['image']
-            im_info = sample['im_info']
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
-            gt_score = sample['gt_score']
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) / \
-                np.floor(im_info[1] / im_info[2])
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) / \
-                np.floor(im_info[0] / im_info[2])
             # calculate the locations
-            h, w = sample['image'].shape[1:3]
+            h, w = im.shape[1:3]
             points, num_points_each_level = self._compute_points(w, h)
             object_scale_exp = []
             for i, num_pts in enumerate(num_points_each_level):
@@ -536,7 +460,7 @@ class Gt2FCOSTarget(BaseOperator):
 
 
 @register_op
-class Gt2TTFTarget(BaseOperator):
+class Gt2TTFTargetOp(BaseOperator):
     """
     Gt2TTFTarget
     Generate TTFNet targets by ground truth data
@@ -549,7 +473,7 @@ class Gt2TTFTarget(BaseOperator):
     """
 
     def __init__(self, num_classes, down_ratio=4, alpha=0.54):
-        super(Gt2TTFTarget, self).__init__()
+        super(Gt2TTFTargetOp, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
         self.alpha = alpha

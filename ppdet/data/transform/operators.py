@@ -39,6 +39,7 @@ from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling.layers import AnchorGrid
+from .operator import register_op, BaseOperator
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -47,45 +48,6 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         is_poly, gaussian_radius, draw_gaussian)
 
 logger = logging.getLogger(__name__)
-
-registered_ops = []
-
-
-def register_op(cls):
-    registered_ops.append(cls.__name__)
-    if not hasattr(BaseOperator, cls.__name__):
-        setattr(BaseOperator, cls.__name__, cls)
-    else:
-        raise KeyError("The {} class has been registered.".format(cls.__name__))
-    return serializable(cls)
-
-
-class BboxError(ValueError):
-    pass
-
-
-class ImageError(ValueError):
-    pass
-
-
-class BaseOperator(object):
-    def __init__(self, name=None):
-        if name is None:
-            name = self.__class__.__name__
-        self._id = name + '_' + str(uuid.uuid4())[-6:]
-
-    def __call__(self, sample, context=None):
-        """ Process a sample.
-        Args:
-            sample (dict): a dict of sample, eg: {'image':xx, 'label': xxx}
-            context (dict): info about this sample processing
-        Returns:
-            result (dict): a processed sample
-        """
-        return sample
-
-    def __str__(self):
-        return str(self._id)
 
 
 @register_op

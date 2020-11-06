@@ -16,7 +16,9 @@ from . import operators
 from . import batch_operators
 
 from .operators import *
+from .operator import *
 from .batch_operators import *
+from .batch_operator import *
 
 __all__ = []
 __all__ += registered_ops
