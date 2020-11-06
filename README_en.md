@@ -13,8 +13,8 @@ image object detection, and automatic inspection with its practical features suc
 and multi-platform deployment.
 
 [PP-YOLO](https://arxiv.org/abs/2007.12099), which is faster and has higer performance than YOLOv4,
-has been released, it reached mAP(0.5:0.95) as 45.2% on COCO test2019 dataset and 72.9 FPS on single
-Test V100. Please refer to [PP-YOLO](configs/ppyolo/README.md) for details.
+has been released, it reached mAP(0.5:0.95) as 45.2%(newest 45.9%) on COCO test2019 dataset and
+72.9 FPS on single Test V100. Please refer to [PP-YOLO](configs/ppyolo/README.md) for details.
 
 **Now all models in PaddleDetection require PaddlePaddle version 1.8 or higher, or suitable develop version.**
 
