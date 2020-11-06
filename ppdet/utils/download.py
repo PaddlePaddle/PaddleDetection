@@ -323,17 +323,19 @@ def _download(url, path, md5sum=None):
             os.remove(tmp_fullname)
             continue
 
+
 def _md5check_from_req(weights_path, req):
     # For weights in bcebos URLs, MD5 value is contained
     # in request header as 'content_md5'
     content_md5 = req.headers.get('content-md5')
     if not content_md5 or _md5check(
             weights_path,
-            binascii.hexlify(base64.b64decode(content_md5.strip(
-                '"'))).decode()):
+            binascii.hexlify(base64.b64decode(content_md5.strip('"'))).decode(
+            )):
         return True
     else:
         return False
+
 
 def _md5check(fullname, md5sum=None):
     if md5sum is None:
