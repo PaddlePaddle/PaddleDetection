@@ -246,7 +246,6 @@ def voc_get_coco_annotation(obj, label2id):
         'bbox': [xmin, ymin, o_width, o_height],
         'category_id': category_id,
         'ignore': 0,
-        'segmentation': []  # This script is not for segmentation
     }
     return anno
 
