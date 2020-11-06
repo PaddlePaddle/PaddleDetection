@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import fpn
-from . import yolo_fpn
+from . import yolo_loss
 
-from .fpn import *
-from .yolo_fpn import *
+from .yolo_loss import *

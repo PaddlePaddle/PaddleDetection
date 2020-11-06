@@ -106,53 +106,6 @@ class AnchorTargetGeneratorRPN(object):
 
 @register
 @serializable
-class AnchorGeneratorYOLO(object):
-    def __init__(self,
-                 anchors=[
-                     10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90,
-                     156, 198, 373, 326
-                 ],
-                 anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]]):
-        super(AnchorGeneratorYOLO, self).__init__()
-        self.anchors = anchors
-        self.anchor_masks = anchor_masks
-
-    def __call__(self):
-        anchor_num = len(self.anchors)
-        mask_anchors = []
-        for i in range(len(self.anchor_masks)):
-            mask_anchor = []
-            for m in self.anchor_masks[i]:
-                assert m < anchor_num, "anchor mask index overflow"
-                mask_anchor.extend(self.anchors[2 * m:2 * m + 2])
-            mask_anchors.append(mask_anchor)
-        return self.anchors, self.anchor_masks, mask_anchors
-
-
-@register
-@serializable
-class AnchorTargetGeneratorYOLO(object):
-    def __init__(self,
-                 ignore_thresh=0.7,
-                 downsample_ratio=32,
-                 label_smooth=True):
-        super(AnchorTargetGeneratorYOLO, self).__init__()
-        self.ignore_thresh = ignore_thresh
-        self.downsample_ratio = downsample_ratio
-        self.label_smooth = label_smooth
-
-    def __call__(self, ):
-        # TODO: split yolov3_loss into here 
-        outs = {
-            'ignore_thresh': self.ignore_thresh,
-            'downsample_ratio': self.downsample_ratio,
-            'label_smooth': self.label_smooth
-        }
-        return outs
-
-
-@register
-@serializable
 class ProposalGenerator(object):
     __append_doc__ = True
 
