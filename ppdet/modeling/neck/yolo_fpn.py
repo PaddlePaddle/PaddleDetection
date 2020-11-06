@@ -106,4 +106,3 @@ class YOLOv3FPN(nn.Layer):
                 route = F.interpolate(route, scale_factor=2.)
 
         return yolo_feats
-

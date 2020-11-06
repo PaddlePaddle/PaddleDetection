@@ -14,15 +14,16 @@ class YOLOv3Head(nn.Layer):
     __inject__ = ['loss']
 
     def __init__(self,
-                 anchors=[10, 13, 16, 30, 33, 23,
-                          30, 61, 62, 45, 59, 119,
-                          116, 90, 156, 198, 373, 326],
+                 anchors=[
+                     10, 13, 16, 30, 33, 23, 30, 61, 62, 45, 59, 119, 116, 90,
+                     156, 198, 373, 326
+                 ],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  num_classes=80,
                  loss='YOLOv3Loss'):
         super(YOLOv3Head, self).__init__()
         self.anchors = anchors
-        self.anchor_masks = anchor_masks 
+        self.anchor_masks = anchor_masks
         self.num_classes = num_classes
         self.loss = loss
 
@@ -68,4 +69,3 @@ class YOLOv3Head(nn.Layer):
 
     def loss(self, inputs, head_outputs):
         return self.loss(inputs, head_outputs, anchors, anchor_masks)
-

@@ -44,8 +44,9 @@ class YOLOv3(BaseArch):
         return yolo_loss
 
     def infer(self, ):
-        bbox, bbox_num = self.post_process(
-            self.yolo_head_outs, self.yolo_head.mask_anchors, self.inputs['im_size'])
+        bbox, bbox_num = self.post_process(self.yolo_head_outs,
+                                           self.yolo_head.mask_anchors,
+                                           self.inputs['im_size'])
         outs = {
             "bbox": bbox.numpy(),
             "bbox_num": bbox_num.numpy(),

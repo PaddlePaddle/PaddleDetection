@@ -40,7 +40,8 @@ class YOLOv3Loss(nn.Layer):
 
     def forward(self, inputs, head_outputs, anchors, anchor_masks):
         if self.use_fine_grained_loss:
-            raise NotImplementedError("fine grained loss not implement currently")
+            raise NotImplementedError(
+                "fine grained loss not implement currently")
 
         yolo_losses = []
         for i, out in enumerate(head_outputs):
