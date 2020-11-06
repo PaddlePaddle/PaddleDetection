@@ -1337,8 +1337,9 @@ def box_coder(prior_box,
 
         elif isinstance(prior_box_var, list):
             output_box = core.ops.box_coder(
-                prior_box, target_box, "code_type", code_type, "box_normalized",
-                box_normalized, "axis", axis, "variance", prior_box_var)
+                prior_box, None, target_box, "code_type", code_type,
+                "box_normalized", box_normalized, "axis", axis, "variance",
+                prior_box_var)
         else:
             raise TypeError(
                 "Input variance of box_coder must be Variable or list")
