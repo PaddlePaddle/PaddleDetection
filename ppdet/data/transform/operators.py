@@ -39,7 +39,7 @@ from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling.layers import AnchorGrid
-from .operator import register_op, BaseOperator
+from .operator import register_op, BaseOperator, BboxError, ImageError
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
