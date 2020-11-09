@@ -25,7 +25,6 @@ logger = logging.getLogger(__name__)
 @register
 @serializable
 class COCODataSet(DataSet):
-    __shared__ = ['with_background']
     """
     Load COCO records with annotations in json file 'anno_path'
 

@@ -24,7 +24,6 @@ from .dataset import DataSet
 @register
 @serializable
 class WIDERFaceDataSet(DataSet):
-    __shared__ = ['with_background']
     """
     Load WiderFace records with 'anno_path'
 
