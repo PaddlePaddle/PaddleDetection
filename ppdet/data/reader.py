@@ -158,6 +158,8 @@ class Reader(object):
     """
     Args:
         dataset (DataSet): DataSet object
+        with_background (bool): whether load background as a class.  if True,
+            total class number will be class number of dataset + 1. default True.
         sample_transforms (list of BaseOperator): a list of sample transforms
             operators.
         batch_transforms (list of BaseOperator): a list of batch transforms
@@ -207,6 +209,7 @@ class Reader(object):
                  inputs_def=None,
                  devices_num=1):
         self._dataset = dataset
+        # TODO(dengkaipeng): refine with_background as global config
         self._dataset.with_background = with_background
         self._roidbs = self._dataset.get_roidb()
         self._fields = copy.deepcopy(inputs_def[

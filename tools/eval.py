@@ -59,7 +59,8 @@ def run(FLAGS, cfg):
         devices_num = 1
     else:
         devices_num = int(os.environ.get('CPU_NUM', 1))
-    eval_reader = create_reader(cfg.EvalReader, devices_num=devices_num)
+    eval_reader = create_reader(
+        cfg.EvalDataset, cfg.EvalReader, devices_num=devices_num)
 
     # Run Eval
     outs_res = []
