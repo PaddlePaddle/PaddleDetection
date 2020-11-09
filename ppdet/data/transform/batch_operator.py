@@ -75,6 +75,20 @@ class PadBatchOp(BaseOperator):
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
             padding_im[:, :im_h, :im_w] = im
             data['image'] = padding_im
+            if 'semantic' in data and data['semantic'] is not None:
+                semantic = data['semantic']
+                padding_sem = np.zeros(
+                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_sem[:, :im_h, :im_w] = semantic
+                data['semantic'] = padding_sem
+            if 'gt_segm' in data and data['gt_segm'] is not None:
+                gt_segm = data['gt_segm']
+                padding_segm = np.zeros(
+                    (gt_segm.shape[0], max_shape[1], max_shape[2]),
+                    dtype=np.uint8)
+                padding_segm[:, :im_h, :im_w] = gt_segm
+                data['gt_segm'] = padding_segm
+
         if self.pad_gt:
             gt_num = []
             if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
@@ -127,33 +141,54 @@ class PadBatchOp(BaseOperator):
 @register_op
 class BatchRandomResizeOp(BaseOperator):
     """
-    Randomly resize a batch. If random_inter is True, also randomly
-    select one an interpolation algorithm [cv2.INTER_NEAREST, cv2.INTER_LINEAR,
-    cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]. If random_inter is
-    False, use cv2.INTER_NEAREST.
+    Resize image to target size randomly. random target_size and interpolation method
     Args:
-        sizes (list): list of int, random choose a size from these
-        random_inter (bool): whether to randomly interpolation, defalut true.
+        target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
+        keep_ratio (bool): whether keep_raio or not, default true
+        interp (int): the interpolation method
+        random_size (bool): whether random select target size of image
+        random_interp (bool): whether random select interpolation method
     """
 
-    def __init__(self, sizes=[], random_inter=False, resize_box=False):
+    def __init__(self,
+                 target_size,
+                 keep_ratio=True,
+                 interp=cv2.INTER_LINEAR,
+                 random_size=True,
+                 random_interp=False):
         super(BatchRandomResizeOp, self).__init__()
-        self.sizes = sizes
-        self.random_inter = random_inter
-        self.interps = [
+        self.keep_ratio = keep_ratio
+        self.interp = interp
+        assert isinstance(target_size, (
+            int, Sequence)), "target_size must be int, list or tuple"
+        if random_size and not isinstance(target_size, list):
+            raise TypeError(
+                "Type of target_size is invalid when random_size is True. Must be List, now is {}".
+                format(type(target_size)))
+        self.target_size = target_size
+        self.random_size = random_size
+        self.random_interp = random_interp
+
+    def __call__(self, samples, context=None):
+        if self.random_size:
+            target_size = np.random.choice(self.target_size)
+        else:
+            target_size = self.target_size
+
+        interps = [
             cv2.INTER_NEAREST,
             cv2.INTER_LINEAR,
             cv2.INTER_AREA,
             cv2.INTER_CUBIC,
             cv2.INTER_LANCZOS4,
-        ] if random_inter else []
-        self.resize_box = resize_box
+        ]
+        if self.random_interp:
+            interp = np.random.choice(interps)
+        else:
+            interp = self.interp
 
-    def __call__(self, samples, context=None):
-        shape = np.random.choice(self.sizes)
-        method = np.random.choice(
-            self.interps) if self.random_inter else cv2.INTER_NEAREST
-        resizer = ResizeOp(shape, keep_ratio=False, interp=method)
+        resizer = ResizeOp(
+            target_size, keep_ratio=self.keep_ratio, interp=interp)
         return resizer(samples, context=context)
 
 

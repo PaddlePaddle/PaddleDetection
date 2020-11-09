@@ -105,15 +105,10 @@ class BaseOperator(object):
 
 @register_op
 class DecodeOp(BaseOperator):
-    def __init__(self, to_rgb=True):
-        """ Transform the image data to numpy format.
-        Args:
-            to_rgb (bool): whether to convert BGR to RGB
+    def __init__(self):
+        """ Transform the image data to numpy format following the rgb format
         """
         super(DecodeOp, self).__init__()
-        self.to_rgb = to_rgb
-        if not isinstance(self.to_rgb, bool):
-            raise TypeError("{}: input type is invalid.".format(self))
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -125,8 +120,7 @@ class DecodeOp(BaseOperator):
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
 
-        if self.to_rgb:
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
         if 'h' not in sample:
@@ -153,28 +147,15 @@ class DecodeOp(BaseOperator):
 
 @register_op
 class PermuteOp(BaseOperator):
-    def __init__(self, to_bgr=True, channel_first=True):
+    def __init__(self):
         """
-        Change the channel.
-        Args:
-            to_bgr (bool): confirm whether to convert RGB to BGR
-            channel_first (bool): confirm whether to change channel
+        Change the channel to be (C, H, W)
         """
         super(PermuteOp, self).__init__()
-        self.to_bgr = to_bgr
-        self.channel_first = channel_first
-        if not (isinstance(self.to_bgr, bool) and
-                isinstance(self.channel_first, bool)):
-            raise TypeError("{}: input type is invalid.".format(self))
 
     def apply(self, sample, context=None):
         im = sample['image']
-        if self.channel_first:
-            im = im.transpose((2, 0, 1))
-
-        if self.to_bgr:
-            im = im[[2, 1, 0], :, :]
-
+        im = im.transpose((2, 0, 1))
         sample['image'] = im
         return sample
 
@@ -203,11 +184,8 @@ class LightingOp(BaseOperator):
 
 @register_op
 class NormalizeImageOp(BaseOperator):
-    def __init__(self,
-                 mean=[0.485, 0.456, 0.406],
-                 std=[1, 1, 1],
-                 is_scale=True,
-                 is_channel_first=True):
+    def __init__(self, mean=[0.485, 0.456, 0.406], std=[1, 1, 1],
+                 is_scale=True):
         """
         Args:
             mean (list): the pixel mean
@@ -217,7 +195,6 @@ class NormalizeImageOp(BaseOperator):
         self.mean = mean
         self.std = std
         self.is_scale = is_scale
-        self.is_channel_first = is_channel_first
         if not (isinstance(self.mean, list) and isinstance(self.std, list) and
                 isinstance(self.is_scale, bool)):
             raise TypeError("{}: input type is invalid.".format(self))
@@ -233,12 +210,8 @@ class NormalizeImageOp(BaseOperator):
         """
         im = sample['image']
         im = im.astype(np.float32, copy=False)
-        if self.is_channel_first:
-            mean = np.array(self.mean)[:, np.newaxis, np.newaxis]
-            std = np.array(self.std)[:, np.newaxis, np.newaxis]
-        else:
-            mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
-            std = np.array(self.std)[np.newaxis, np.newaxis, :]
+        mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+        std = np.array(self.std)[np.newaxis, np.newaxis, :]
 
         if self.is_scale:
             im = im / 255.0
@@ -405,68 +378,6 @@ class RandomDistortOp(BaseOperator):
 
 
 @register_op
-class CornerRandColorOp(BaseOperator):
-    """Random color for CornerNet series models.
-    Args:
-        saturation (float): saturation settings.
-        contrast (float): contrast settings.
-        brightness (float): brightness settings.
-        is_scale (bool): whether to scale the input image.
-    """
-
-    def __init__(self,
-                 saturation=0.4,
-                 contrast=0.4,
-                 brightness=0.4,
-                 is_scale=True):
-        super(CornerRandColorOp, self).__init__()
-        self.saturation = saturation
-        self.contrast = contrast
-        self.brightness = brightness
-        self.is_scale = is_scale
-
-    def apply_saturation(self, img, img_gray):
-        alpha = 1. + np.random.uniform(
-            low=-self.saturation, high=self.saturation)
-        self._blend(alpha, img, img_gray[:, :, None])
-        return img
-
-    def apply_contrast(self, img, img_gray):
-        alpha = 1. + np.random.uniform(low=-self.contrast, high=self.contrast)
-        img_mean = img_gray.mean()
-        self._blend(alpha, img, img_mean)
-        return img
-
-    def apply_brightness(self, img, img_gray):
-        alpha = 1 + np.random.uniform(
-            low=-self.brightness, high=self.brightness)
-        img *= alpha
-        return img
-
-    def _blend(self, alpha, img, img_mean):
-        img *= alpha
-        img_mean *= (1 - alpha)
-        img += img_mean
-
-    def apply(self, sample, context=None):
-        img = sample['image']
-        if self.is_scale:
-            img = img.astype(np.float32, copy=False)
-            img /= 255.
-        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        functions = [
-            self.apply_brightness,
-            self.apply_contrast,
-            self.apply_saturation,
-        ]
-        distortions = np.random.permutation(functions)
-        for func in distortions:
-            img = func(img, img_gray)
-        sample['image'] = img
-        return sample
-
-
-@register_op
 class AutoAugmentOp(BaseOperator):
     def __init__(self, autoaug_type="v1"):
         """
@@ -589,6 +500,13 @@ class RandomFlipOp(BaseOperator):
             if 'gt_keypoint' in sample and len(sample['gt_keypoint']) > 0:
                 sample['gt_keypoint'] = self.apply_keypoint(
                     sample['gt_keypoint'], width)
+
+            if 'semantic' in sample and sample['semantic']:
+                sample['semantic'] = sample['semantic'][:, ::-1]
+
+            if 'gt_segm' in sample and sample['gt_segm']:
+                sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
+
             sample['flipped'] = True
             sample['image'] = im
         return sample
@@ -616,6 +534,64 @@ class ResizeOp(BaseOperator):
         if isinstance(target_size, int):
             target_size = [target_size, target_size]
         self.target_size = target_size
+
+    def apply_image(self, image, scale):
+        im_scale_x, im_scale_y = scale
+        return cv2.resize(
+            image,
+            None,
+            None,
+            fx=im_scale_x,
+            fy=im_scale_y,
+            interpolation=self.interp)
+
+    def apply_bbox(self, bbox, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        bbox[:, 0::2] *= im_scale_x
+        bbox[:, 1::2] *= im_scale_y
+        bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w - 1)
+        bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h - 1)
+        return bbox
+
+    def apply_segm(self, segms, im_size, scale):
+        def _resize_poly(poly, im_scale_x, im_scale_y):
+            resized_poly = np.array(poly)
+            resized_poly[0::2] *= im_scale_x
+            resized_poly[1::2] *= im_scale_y
+            return resized_poly.to_list()
+
+        def _resize_rle(rle, im_h, im_w, im_scale_x, im_scale_y):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, im_h, im_w)
+
+            mask = mask_util.decode(rle)
+            mask = cv2.resize(
+                image,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
+            return rle
+
+        im_h, im_w = im_size
+        im_scale_x, im_scale_y = scale
+        resized_segms = []
+        for segm in segms:
+            if is_poly(segm):
+                # Polygon format
+                resized_segms.append([
+                    _resize_poly(poly, im_scale_x, im_scale_y) for poly in segm
+                ])
+            else:
+                # RLE format
+                import pycocotools.mask as mask_util
+                resized_segms.append(
+                    _resize_rle(segm, im_h, im_w, im_scale_x, im_scale_y))
+
+        return resized_segms
 
     def apply(self, sample, context=None):
         """ Resize the image numpy.
@@ -649,13 +625,7 @@ class ResizeOp(BaseOperator):
             im_scale_y = resize_h / im_shape[1]
             im_scale_x = resize_w / im_shape[0]
 
-        im = cv2.resize(
-            im,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
+        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
         sample['image'] = im
         sample['im_shape'] = [resize_h, resize_w]
         scale_factor = sample['scale_factor']
@@ -664,10 +634,44 @@ class ResizeOp(BaseOperator):
         ]
 
         # apply bbox
-        gt_bbox = sample['gt_bbox']
-        gt_bbox[:, 0::2] = np.clip(gt_bbox[:, 0::2], 0, resize_w)
-        gt_bbox[:, 1::2] = np.clip(gt_bbox[:, 1::2], 0, resize_h)
-        sample['gt_bbox'] = gt_bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
+                                                [im_scale_x, im_scale_y],
+                                                [resize_w, resize_h])
+
+        # apply polygon
+        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im.shape[:2],
+                                                [im_scale_x, im_scale_y])
+
+        # apply semantic
+        if 'semantic' in sample and sample['semantic']:
+            semantic = sample['semantic']
+            semantic = cv2.resize(
+                semantic.astype('float32'),
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            semantic = np.asarray(semantic).astype('int32')
+            semantic = np.expand_dims(semantic, 0)
+            sample['semantic'] = semantic
+
+        # apply gt_segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.resize(
+                    gt_segm,
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=cv2.INTER_NEAREST)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
         return sample
 
 
@@ -1251,6 +1255,13 @@ class RandomCropOp(BaseOperator):
                         sample['gt_poly'] = valid_polys
                     else:
                         sample['gt_poly'] = crop_polys
+
+                if 'gt_segm' in sample:
+                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
+                                                        crop_box)
+                    sample['gt_segm'] = np.take(
+                        sample['gt_segm'], valid_ids, axis=0)
+
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
@@ -1295,6 +1306,10 @@ class RandomCropOp(BaseOperator):
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
+
+    def _crop_segm(self, segm, crop):
+        x1, y1, x2, y2 = crop
+        return segm[:, y1:y2, x1:x2]
 
 
 @register_op
@@ -1386,10 +1401,10 @@ class CutmixOp(BaseOperator):
         cx = np.random.randint(w)
         cy = np.random.randint(h)
 
-        bbx1 = np.clip(cx - cut_w // 2, 0, w)
-        bby1 = np.clip(cy - cut_h // 2, 0, h)
-        bbx2 = np.clip(cx + cut_w // 2, 0, w)
-        bby2 = np.clip(cy + cut_h // 2, 0, h)
+        bbx1 = np.clip(cx - cut_w // 2, 0, w - 1)
+        bby1 = np.clip(cy - cut_h // 2, 0, h - 1)
+        bbx2 = np.clip(cx + cut_w // 2, 0, w - 1)
+        bby2 = np.clip(cy + cut_h // 2, 0, h - 1)
 
         img_1 = np.zeros((h, w, img1.shape[2]), 'float32')
         img_1[:img1.shape[0], :img1.shape[1], :] = \
@@ -1403,6 +1418,8 @@ class CutmixOp(BaseOperator):
     def __call__(self, sample, context=None):
         if not isinstance(sample, Sequence):
             return sample
+
+        assert len(sample) == 2, 'cutmix need two samples'
 
         factor = np.random.beta(self.alpha, self.beta)
         factor = max(0.0, min(1.0, factor))
@@ -1461,6 +1478,8 @@ class MixupOp(BaseOperator):
         if not isinstance(sample, Sequence):
             return sample
 
+        assert len(sample) == 2, 'mixup need two samples'
+
         factor = np.random.beta(self.alpha, self.beta)
         factor = max(0.0, min(1.0, factor))
         if factor >= 1.0:
@@ -1468,6 +1487,7 @@ class MixupOp(BaseOperator):
         if factor <= 0.0:
             return sample[1]
         im = self.apply_image(sample[0]['image'], sample[1]['image'], factor)
+        # apply bbox and score
         gt_bbox1 = sample[0]['gt_bbox']
         gt_bbox2 = sample[1]['gt_bbox']
         gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
@@ -1735,4 +1755,42 @@ class Pad(BaseOperator):
             sample['gt_keypoint'] = self.apply_keypoint(sample['gt_keypoint'],
                                                         offsets)
 
+        return sample
+
+
+@register_op
+class Poly2Mask(BaseOperator):
+    """
+    gt poly to mask annotations
+    """
+
+    def __init__(self):
+        super(Poly2Mask, self).__init__()
+        import pycocotools.mask as maskUtils
+        self.maskutils = maskUtils
+
+    def _poly2mask(self, mask_ann, img_h, img_w):
+        if isinstance(mask_ann, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+            rle = self.maskutils.merge(rles)
+        elif isinstance(mask_ann['counts'], list):
+            # uncompressed RLE
+            rle = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+        else:
+            # rle
+            rle = mask_ann
+        mask = self.maskutils.decode(rle)
+        return mask
+
+    def apply(self, sample, context=None):
+        assert 'gt_poly' in sample
+        im_h = sample['h']
+        im_w = sample['w']
+        masks = [
+            self._poly2mask(gt_poly, im_h, im_w)
+            for gt_poly in sample['gt_poly']
+        ]
+        sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
         return sample
