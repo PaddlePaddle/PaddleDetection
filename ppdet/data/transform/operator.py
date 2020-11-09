@@ -559,7 +559,7 @@ class ResizeOp(BaseOperator):
             resized_poly = np.array(poly)
             resized_poly[0::2] *= im_scale_x
             resized_poly[1::2] *= im_scale_y
-            return resized_poly.to_list()
+            return resized_poly.tolist()
 
         def _resize_rle(rle, im_h, im_w, im_scale_x, im_scale_y):
             if 'counts' in rle and type(rle['counts']) == list:
@@ -622,8 +622,8 @@ class ResizeOp(BaseOperator):
             im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
-            im_scale_y = resize_h / im_shape[1]
-            im_scale_x = resize_w / im_shape[0]
+            im_scale_y = resize_h / im_shape[0]
+            im_scale_x = resize_w / im_shape[1]
 
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
         sample['image'] = im
@@ -641,7 +641,7 @@ class ResizeOp(BaseOperator):
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
-            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im.shape[:2],
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im_shape,
                                                 [im_scale_x, im_scale_y])
 
         # apply semantic
