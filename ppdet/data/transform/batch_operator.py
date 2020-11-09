@@ -24,23 +24,22 @@ except Exception:
 import logging
 import cv2
 import numpy as np
-from .operator import register_op, BaseOperator
+from .operator import register_op, BaseOperator, ResizeOp
 from .op_helper import jaccard_overlap, gaussian2D
+from scipy import ndimage
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'PadBatch',
-    'RandomShape',
-    'PadMultiScaleTest',
-    'Gt2YoloTarget',
-    'Gt2FCOSTarget',
-    'Gt2TTFTarget',
+    'PadBatchOp',
+    'Gt2YoloTargetOp',
+    'Gt2FCOSTargetOp',
+    'Gt2TTFTargetOp',
 ]
 
 
 @register_op
-class PadBatch(BaseOperator):
+class PadBatchOp(BaseOperator):
     """
     Pad a batch of samples so they can be divisible by a stride.
     The layout of each image should be 'CHW'.
@@ -49,10 +48,9 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, use_padded_im_info=True, pad_gt=False):
-        super(PadBatch, self).__init__()
+    def __init__(self, pad_to_stride=0, pad_gt=False):
+        super(PadBatchOp, self).__init__()
         self.pad_to_stride = pad_to_stride
-        self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
 
     def __call__(self, samples, context=None):
@@ -61,8 +59,6 @@ class PadBatch(BaseOperator):
             samples (list): a batch of sample, each is dict.
         """
         coarsest_stride = self.pad_to_stride
-        #if coarsest_stride == 0:
-        #    return samples
 
         max_shape = np.array([data['image'].shape for data in samples]).max(
             axis=0)
@@ -80,8 +76,20 @@ class PadBatch(BaseOperator):
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
             padding_im[:, :im_h, :im_w] = im
             data['image'] = padding_im
-            if self.use_padded_im_info:
-                data['im_info'][:2] = max_shape[1:3]
+            if 'semantic' in data and data['semantic'] is not None:
+                semantic = data['semantic']
+                padding_sem = np.zeros(
+                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_sem[:, :im_h, :im_w] = semantic
+                data['semantic'] = padding_sem
+            if 'gt_segm' in data and data['gt_segm'] is not None:
+                gt_segm = data['gt_segm']
+                padding_segm = np.zeros(
+                    (gt_segm.shape[0], max_shape[1], max_shape[2]),
+                    dtype=np.uint8)
+                padding_segm[:, :im_h, :im_w] = gt_segm
+                data['gt_segm'] = padding_segm
+
         if self.pad_gt:
             gt_num = []
             if data['gt_poly'] is not None and len(data['gt_poly']) > 0:
@@ -132,103 +140,61 @@ class PadBatch(BaseOperator):
 
 
 @register_op
-class RandomShape(BaseOperator):
+class BatchRandomResizeOp(BaseOperator):
     """
-    Randomly reshape a batch. If random_inter is True, also randomly
-    select one an interpolation algorithm [cv2.INTER_NEAREST, cv2.INTER_LINEAR,
-    cv2.INTER_AREA, cv2.INTER_CUBIC, cv2.INTER_LANCZOS4]. If random_inter is
-    False, use cv2.INTER_NEAREST.
+    Resize image to target size randomly. random target_size and interpolation method
     Args:
-        sizes (list): list of int, random choose a size from these
-        random_inter (bool): whether to randomly interpolation, defalut true.
+        target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
+        keep_ratio (bool): whether keep_raio or not, default true
+        interp (int): the interpolation method
+        random_size (bool): whether random select target size of image
+        random_interp (bool): whether random select interpolation method
     """
 
-    def __init__(self, sizes=[], random_inter=False, resize_box=False):
-        super(RandomShape, self).__init__()
-        self.sizes = sizes
-        self.random_inter = random_inter
+    def __init__(self,
+                 target_size,
+                 keep_ratio=True,
+                 interp=cv2.INTER_LINEAR,
+                 random_size=True,
+                 random_interp=False):
+        super(BatchRandomResizeOp, self).__init__()
+        self.keep_ratio = keep_ratio
         self.interps = [
             cv2.INTER_NEAREST,
             cv2.INTER_LINEAR,
             cv2.INTER_AREA,
             cv2.INTER_CUBIC,
             cv2.INTER_LANCZOS4,
-        ] if random_inter else []
-        self.resize_box = resize_box
+        ]
+        self.interp = interp
+        assert isinstance(target_size, (
+            int, Sequence)), "target_size must be int, list or tuple"
+        if random_size and not isinstance(target_size, list):
+            raise TypeError(
+                "Type of target_size is invalid when random_size is True. Must be List, now is {}".
+                format(type(target_size)))
+        self.target_size = target_size
+        self.random_size = random_size
+        self.random_interp = random_interp
 
     def __call__(self, samples, context=None):
-        shape = np.random.choice(self.sizes)
-        method = np.random.choice(self.interps) if self.random_inter \
-            else cv2.INTER_NEAREST
-        for i in range(len(samples)):
-            im = samples[i]['image']
-            h, w = im.shape[:2]
-            scale_x = float(shape) / w
-            scale_y = float(shape) / h
-            im = cv2.resize(
-                im, None, None, fx=scale_x, fy=scale_y, interpolation=method)
-            samples[i]['image'] = im
-            if self.resize_box and 'gt_bbox' in samples[i] and len(samples[0][
-                    'gt_bbox']) > 0:
-                scale_array = np.array([scale_x, scale_y] * 2, dtype=np.float32)
-                samples[i]['gt_bbox'] = np.clip(samples[i]['gt_bbox'] *
-                                                scale_array, 0,
-                                                float(shape) - 1)
-        return samples
+        if self.random_size:
+            target_size = np.random.choice(self.target_size)
+        else:
+            target_size = self.target_size
+
+        if self.random_interp:
+            interp = np.random.choice(self.interps)
+        else:
+            interp = self.interp
+
+        resizer = ResizeOp(
+            target_size, keep_ratio=self.keep_ratio, interp=interp)
+        return resizer(samples, context=context)
 
 
 @register_op
-class PadMultiScaleTest(BaseOperator):
-    """
-    Pad the image so they can be divisible by a stride for multi-scale testing.
- 
-    Args:
-        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
-            height and width is divisible by `pad_to_stride`.
-    """
-
-    def __init__(self, pad_to_stride=0):
-        super(PadMultiScaleTest, self).__init__()
-        self.pad_to_stride = pad_to_stride
-
-    def __call__(self, samples, context=None):
-        coarsest_stride = self.pad_to_stride
-        if coarsest_stride == 0:
-            return samples
-
-        batch_input = True
-        if not isinstance(samples, Sequence):
-            batch_input = False
-            samples = [samples]
-        if len(samples) != 1:
-            raise ValueError("Batch size must be 1 when using multiscale test, "
-                             "but now batch size is {}".format(len(samples)))
-        for i in range(len(samples)):
-            sample = samples[i]
-            for k in sample.keys():
-                # hard code
-                if k.startswith('image'):
-                    im = sample[k]
-                    im_c, im_h, im_w = im.shape
-                    max_h = int(
-                        np.ceil(im_h / coarsest_stride) * coarsest_stride)
-                    max_w = int(
-                        np.ceil(im_w / coarsest_stride) * coarsest_stride)
-                    padding_im = np.zeros(
-                        (im_c, max_h, max_w), dtype=np.float32)
-
-                    padding_im[:, :im_h, :im_w] = im
-                    sample[k] = padding_im
-                    info_name = 'im_info' if k == 'image' else 'im_info_' + k
-                    # update im_info
-                    sample[info_name][:2] = [max_h, max_w]
-        if not batch_input:
-            samples = samples[0]
-        return samples
-
-
-@register_op
-class Gt2YoloTarget(BaseOperator):
+class Gt2YoloTargetOp(BaseOperator):
     """
     Generate YOLOv3 targets by groud truth data, this operator is only used in
     fine grained YOLOv3 loss mode
@@ -240,7 +206,7 @@ class Gt2YoloTarget(BaseOperator):
                  downsample_ratios,
                  num_classes=80,
                  iou_thresh=1.):
-        super(Gt2YoloTarget, self).__init__()
+        super(Gt2YoloTargetOp, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
@@ -336,7 +302,7 @@ class Gt2YoloTarget(BaseOperator):
 
 
 @register_op
-class Gt2FCOSTarget(BaseOperator):
+class Gt2FCOSTargetOp(BaseOperator):
     """
     Generate FCOS targets by groud truth data
     """
@@ -346,7 +312,7 @@ class Gt2FCOSTarget(BaseOperator):
                  center_sampling_radius,
                  downsample_ratios,
                  norm_reg_targets=False):
-        super(Gt2FCOSTarget, self).__init__()
+        super(Gt2FCOSTargetOp, self).__init__()
         self.center_sampling_radius = center_sampling_radius
         self.downsample_ratios = downsample_ratios
         self.INF = np.inf
@@ -437,16 +403,10 @@ class Gt2FCOSTarget(BaseOperator):
         for sample in samples:
             # im, gt_bbox, gt_class, gt_score = sample
             im = sample['image']
-            im_info = sample['im_info']
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
-            gt_score = sample['gt_score']
-            bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) / \
-                np.floor(im_info[1] / im_info[2])
-            bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) / \
-                np.floor(im_info[0] / im_info[2])
             # calculate the locations
-            h, w = sample['image'].shape[1:3]
+            h, w = im.shape[1:3]
             points, num_points_each_level = self._compute_points(w, h)
             object_scale_exp = []
             for i, num_pts in enumerate(num_points_each_level):
@@ -536,7 +496,7 @@ class Gt2FCOSTarget(BaseOperator):
 
 
 @register_op
-class Gt2TTFTarget(BaseOperator):
+class Gt2TTFTargetOp(BaseOperator):
     """
     Gt2TTFTarget
     Generate TTFNet targets by ground truth data
@@ -549,7 +509,7 @@ class Gt2TTFTarget(BaseOperator):
     """
 
     def __init__(self, num_classes, down_ratio=4, alpha=0.54):
-        super(Gt2TTFTarget, self).__init__()
+        super(Gt2TTFTargetOp, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
         self.alpha = alpha
@@ -629,3 +589,154 @@ class Gt2TTFTarget(BaseOperator):
             heatmap[y - top:y + bottom, x - left:x + right] = np.maximum(
                 masked_heatmap, masked_gaussian)
         return heatmap
+
+
+@register_op
+class Gt2Solov2TargetOp(BaseOperator):
+    """Assign mask target and labels in SOLOv2 network.
+    Args:
+        num_grids (list): The list of feature map grids size.
+        scale_ranges (list): The list of mask boundary range.
+        coord_sigma (float): The coefficient of coordinate area length.
+        sampling_ratio (float): The ratio of down sampling.
+    """
+
+    def __init__(self,
+                 num_grids=[40, 36, 24, 16, 12],
+                 scale_ranges=[[1, 96], [48, 192], [96, 384], [192, 768],
+                               [384, 2048]],
+                 coord_sigma=0.2,
+                 sampling_ratio=4.0):
+        super(Gt2Solov2TargetOp, self).__init__()
+        self.num_grids = num_grids
+        self.scale_ranges = scale_ranges
+        self.coord_sigma = coord_sigma
+        self.sampling_ratio = sampling_ratio
+
+    def _scale_size(self, im, scale):
+        h, w = im.shape[:2]
+        new_size = (int(w * float(scale) + 0.5), int(h * float(scale) + 0.5))
+        resized_img = cv2.resize(
+            im, None, None, fx=scale, fy=scale, interpolation=cv2.INTER_LINEAR)
+        return resized_img
+
+    def __call__(self, samples, context=None):
+        sample_id = 0
+        for sample in samples:
+            gt_bboxes_raw = sample['gt_bbox']
+            gt_labels_raw = sample['gt_class']
+            im_c, im_h, im_w = sample['image'].shape[:]
+            gt_masks_raw = sample['gt_segm'].astype(np.uint8)
+            mask_feat_size = [
+                int(im_h / self.sampling_ratio), int(im_w / self.sampling_ratio)
+            ]
+            gt_areas = np.sqrt((gt_bboxes_raw[:, 2] - gt_bboxes_raw[:, 0]) *
+                               (gt_bboxes_raw[:, 3] - gt_bboxes_raw[:, 1]))
+            ins_ind_label_list = []
+            idx = 0
+            for (lower_bound, upper_bound), num_grid \
+                    in zip(self.scale_ranges, self.num_grids):
+
+                hit_indices = ((gt_areas >= lower_bound) &
+                               (gt_areas <= upper_bound)).nonzero()[0]
+                num_ins = len(hit_indices)
+
+                ins_label = []
+                grid_order = []
+                cate_label = np.zeros([num_grid, num_grid], dtype=np.int64)
+                ins_ind_label = np.zeros([num_grid**2], dtype=np.bool)
+
+                if num_ins == 0:
+                    ins_label = np.zeros(
+                        [1, mask_feat_size[0], mask_feat_size[1]],
+                        dtype=np.uint8)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
+                    idx += 1
+                    continue
+                gt_bboxes = gt_bboxes_raw[hit_indices]
+                gt_labels = gt_labels_raw[hit_indices]
+                gt_masks = gt_masks_raw[hit_indices, ...]
+
+                half_ws = 0.5 * (
+                    gt_bboxes[:, 2] - gt_bboxes[:, 0]) * self.coord_sigma
+                half_hs = 0.5 * (
+                    gt_bboxes[:, 3] - gt_bboxes[:, 1]) * self.coord_sigma
+
+                for seg_mask, gt_label, half_h, half_w in zip(
+                        gt_masks, gt_labels, half_hs, half_ws):
+                    if seg_mask.sum() == 0:
+                        continue
+                    # mass center
+                    upsampled_size = (mask_feat_size[0] * 4,
+                                      mask_feat_size[1] * 4)
+                    center_h, center_w = ndimage.measurements.center_of_mass(
+                        seg_mask)
+                    coord_w = int(
+                        (center_w / upsampled_size[1]) // (1. / num_grid))
+                    coord_h = int(
+                        (center_h / upsampled_size[0]) // (1. / num_grid))
+
+                    # left, top, right, down
+                    top_box = max(0,
+                                  int(((center_h - half_h) / upsampled_size[0])
+                                      // (1. / num_grid)))
+                    down_box = min(num_grid - 1,
+                                   int(((center_h + half_h) / upsampled_size[0])
+                                       // (1. / num_grid)))
+                    left_box = max(0,
+                                   int(((center_w - half_w) / upsampled_size[1])
+                                       // (1. / num_grid)))
+                    right_box = min(num_grid - 1,
+                                    int(((center_w + half_w) /
+                                         upsampled_size[1]) // (1. / num_grid)))
+
+                    top = max(top_box, coord_h - 1)
+                    down = min(down_box, coord_h + 1)
+                    left = max(coord_w - 1, left_box)
+                    right = min(right_box, coord_w + 1)
+
+                    cate_label[top:(down + 1), left:(right + 1)] = gt_label
+                    seg_mask = self._scale_size(
+                        seg_mask, scale=1. / self.sampling_ratio)
+                    for i in range(top, down + 1):
+                        for j in range(left, right + 1):
+                            label = int(i * num_grid + j)
+                            cur_ins_label = np.zeros(
+                                [mask_feat_size[0], mask_feat_size[1]],
+                                dtype=np.uint8)
+                            cur_ins_label[:seg_mask.shape[0], :seg_mask.shape[
+                                1]] = seg_mask
+                            ins_label.append(cur_ins_label)
+                            ins_ind_label[label] = True
+                            grid_order.append(
+                                [sample_id * num_grid * num_grid + label])
+                if ins_label == []:
+                    ins_label = np.zeros(
+                        [1, mask_feat_size[0], mask_feat_size[1]],
+                        dtype=np.uint8)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(
+                        [sample_id * num_grid * num_grid + 0])
+                else:
+                    ins_label = np.stack(ins_label, axis=0)
+                    ins_ind_label_list.append(ins_ind_label)
+                    sample['cate_label{}'.format(idx)] = cate_label.flatten()
+                    sample['ins_label{}'.format(idx)] = ins_label
+                    sample['grid_order{}'.format(idx)] = np.asarray(grid_order)
+                    assert len(grid_order) > 0
+                idx += 1
+            ins_ind_labels = np.concatenate([
+                ins_ind_labels_level_img
+                for ins_ind_labels_level_img in ins_ind_label_list
+            ])
+            fg_num = np.sum(ins_ind_labels)
+            sample['fg_num'] = fg_num
+            sample_id += 1
+
+        return samples
