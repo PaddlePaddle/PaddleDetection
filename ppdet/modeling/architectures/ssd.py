@@ -24,6 +24,9 @@ from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import SSDOutputDecoder
 
+import paddle
+paddle.enable_static()
+
 __all__ = ['SSD']
 
 
@@ -65,9 +68,12 @@ class SSD(object):
             gt_class = feed_vars['gt_class']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
+        # print("*"*50, mixed_precision_enabled)
         # cast inputs to FP16
         if mixed_precision_enabled:
             im = fluid.layers.cast(im, 'float16')
+        
+        # im = fluid.layers.Print(im, summarize=20)
 
         # backbone
         body_feats = self.backbone(im)
@@ -78,13 +84,21 @@ class SSD(object):
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(body_feats.keys())
             body_feats = [body_feats[name] for name in body_feat_names]
-
+        
+        # body_feats = [fluid.layers.Print(v, summarize=20) for v in body_feats]
+        
         # cast features back to FP32
         if mixed_precision_enabled:
             body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
 
+        # body_feats = [fluid.layers.Print(v, summarize=20) for v in body_feats]
+
+        # print("**"*20, body_feats)
+
         locs, confs, box, box_var = self.multi_box_head(
             inputs=body_feats, image=im, num_classes=self.num_classes)
+        
+        # locs = fluid.layers.Print(locs, summarize=20)
 
         if mode == 'train':
             loss = fluid.layers.ssd_loss(locs, confs, gt_bbox, gt_class, box,

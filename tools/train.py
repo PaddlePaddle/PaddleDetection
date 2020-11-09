@@ -120,6 +120,15 @@ def main():
                     loss *= ctx.get_loss_scale_var()
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
+
+                if not FLAGS.fp16:
+                    amp_list = fluid.contrib.mixed_precision.AutoMixedPrecisionLists(custom_black_list=['flatten2'])
+                    optimizer = fluid.contrib.mixed_precision.decorate(
+                        optimizer,
+                        amp_lists=amp_list,
+                        init_loss_scaling=128.0,
+                        use_dynamic_loss_scaling=True)
+
                 optimizer.minimize(loss)
 
                 if FLAGS.fp16:
@@ -162,6 +171,13 @@ def main():
     # compile program for multi-devices
     build_strategy = fluid.BuildStrategy()
     build_strategy.fuse_all_optimizer_ops = False
+
+    # add optimize strategy
+    build_strategy.fuse_bn_act_ops = True
+    build_strategy.fuse_elewise_add_act_ops = True
+    build_strategy.fuse_bn_add_act_ops = True
+    build_strategy.enable_addto = True
+
     # only enable sync_bn in multi GPU devices
     sync_bn = getattr(model.backbone, 'norm_type', None) == 'sync_bn'
     build_strategy.sync_batch_norm = sync_bn and devices_num > 1 \
@@ -225,6 +241,7 @@ def main():
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
     time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_record = []
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use VisualDL to log data
@@ -239,6 +256,7 @@ def main():
         start_time = end_time
         end_time = time.time()
         time_stat.append(end_time - start_time)
+        time_record.append(end_time - start_time)
         time_cost = np.mean(time_stat)
         eta_sec = (cfg.max_iters - it) * time_cost
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
@@ -251,6 +269,29 @@ def main():
                 for loss_name, loss_value in stats.items():
                     vdl_writer.add_scalar(loss_name, loss_value, vdl_loss_step)
                 vdl_loss_step += 1
+        
+        """
+        if it == 200:
+            profiler.start_profiler("All")
+            #fluid.core.nvprof_start()
+        if it == 202:
+            #fluid.core.nvprof_stop()
+            profiler.stop_profiler("total", "./profile")
+            return
+        """
+        
+        
+        if it == 200:
+            # if args.max_iter and total_batch_num == args.max_iter:
+            print("=" * 20)
+            avg_times = sum(time_record[-100:]) / 100
+            # avg_times = sum(train_batch_time_record[-100:]) / 100
+            avg_speed = cfg.TrainReader["batch_size"] / avg_times
+            print("average time: %.5f s/batch, average speed: %.5f imgs/s" %
+                (avg_times, avg_speed))
+            return
+        
+        
 
         train_stats.update(stats)
         logs = train_stats.log()

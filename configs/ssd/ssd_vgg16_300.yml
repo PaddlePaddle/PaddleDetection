@@ -65,7 +65,8 @@ TrainReader:
     !COCODataSet
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    # dataset_dir: dataset/coco
+    dataset_dir: /models/PaddleCV/human_pose_estimation/data/coco
   sample_transforms:
   - !DecodeImage
     to_rgb: true
@@ -105,7 +106,8 @@ EvalReader:
     !COCODataSet
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    # dataset_dir: dataset/coco
+    dataset_dir: /models/PaddleCV/human_pose_estimation/data/coco
   sample_transforms:
   - !DecodeImage
     to_rgb: true

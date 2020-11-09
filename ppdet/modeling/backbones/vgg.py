@@ -20,6 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 
 from ppdet.core.workspace import register
+from ppdet.experimental import mixed_precision_global_state
 
 __all__ = ['VGG']
 
@@ -56,7 +57,9 @@ class VGG(object):
 
     def __call__(self, input):
         layers = []
+        # print("***input***", input.dtype)
         layers += self._vgg_block(input)
+        # print("***layers***", layers)
 
         if not self.with_extra_blocks:
             return layers[-1]
@@ -191,8 +194,14 @@ class VGG(object):
         from paddle.fluid.layer_helper import LayerHelper
         from paddle.fluid.initializer import Constant
         helper = LayerHelper("Scale")
+        mixed_precision_enabled = mixed_precision_global_state() is not None
+        if mixed_precision_enabled:
+            input = fluid.layers.cast(input, "float32")
         l2_norm = fluid.layers.l2_normalize(
             input, axis=1)  # l2 norm along channel
+        if mixed_precision_enabled:
+            input = fluid.layers.cast(input, "float16")
+            l2_norm = fluid.layers.cast(l2_norm, "float16")
         shape = [1] if channel_shared else [input.shape[1]]
         scale = helper.create_parameter(
             attr=helper.param_attr,
