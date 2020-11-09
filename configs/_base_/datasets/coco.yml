@@ -3,16 +3,13 @@ TrainDataset:
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
     dataset_dir: dataset/coco
-    with_background: false
 
 EvalDataset:
   !COCODataSet
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
     dataset_dir: dataset/coco
-    with_background: false
 
 TestDataset:
   !ImageFolder
     anno_path: annotations/instances_val2017.json
-    with_background: false

@@ -188,6 +188,7 @@ class Reader(object):
 
     def __init__(self,
                  dataset=None,
+                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=None,
@@ -206,6 +207,7 @@ class Reader(object):
                  inputs_def=None,
                  devices_num=1):
         self._dataset = dataset
+        self._dataset.with_background = with_background
         self._roidbs = self._dataset.get_roidb()
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
@@ -416,7 +418,7 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, dataset, max_iter=0, global_cfg=None, devices_num=1):
+def create_reader(dataset, cfg, max_iter=0, global_cfg=None, devices_num=1):
     """
     Return iterable data reader.
 
@@ -433,7 +435,7 @@ def create_reader(cfg, dataset, max_iter=0, global_cfg=None, devices_num=1):
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
     cfg['devices_num'] = devices_num
 
-    reader = Reader(dataset=create(dataset), **cfg)()
+    reader = Reader(dataset=dataset, **cfg)()
 
     def _reader():
         n = 0

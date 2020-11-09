@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 @register
 @serializable
 class VOCDataSet(DataSet):
+    __shared__ = ['with_background']
     """
     Load dataset with PascalVOC format.
 

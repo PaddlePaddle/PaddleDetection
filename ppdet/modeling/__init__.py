@@ -4,6 +4,7 @@ from . import mask
 from . import backbone
 from . import neck
 from . import head
+from . import loss
 from . import architecture
 from . import post_process
 
@@ -13,5 +14,6 @@ from .mask import *
 from .backbone import *
 from .neck import *
 from .head import *
+from .loss import *
 from .architecture import *
 from .post_process import *

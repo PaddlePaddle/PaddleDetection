@@ -11,7 +11,7 @@ from ..backbone.darknet import ConvBNLayer
 @register
 class YOLOv3Head(nn.Layer):
     __shared__ = ['num_classes']
-    __inject__ = ['loss']
+    __inject__ = ['yolo_loss']
 
     def __init__(self,
                  anchors=[
@@ -20,12 +20,12 @@ class YOLOv3Head(nn.Layer):
                  ],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  num_classes=80,
-                 loss='YOLOv3Loss'):
+                 yolo_loss='YOLOv3Loss'):
         super(YOLOv3Head, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.num_classes = num_classes
-        self.loss = loss
+        self.yolo_loss = yolo_loss
 
         self.mask_anchors = self.parse_anchor(self.anchors, self.anchor_masks)
         self.num_outputs = len(self.mask_anchors)
@@ -68,4 +68,5 @@ class YOLOv3Head(nn.Layer):
         return yolo_outputs
 
     def loss(self, inputs, head_outputs):
-        return self.loss(inputs, head_outputs, anchors, anchor_masks)
+        return self.yolo_loss(inputs, head_outputs, self.anchors,
+                              self.anchor_masks)
