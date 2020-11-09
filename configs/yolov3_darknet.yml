@@ -33,7 +33,6 @@ YOLOv3Loss:
   ignore_thresh: 0.7
   downsample: 32
   label_smooth: true
-  # anchor_per_position: 3
 
 BBoxPostProcess:
   decode:

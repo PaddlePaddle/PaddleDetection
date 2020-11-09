@@ -57,6 +57,6 @@ class YOLOv3Loss(nn.Layer):
                 downsample_ratio=self.downsample // 2**i,
                 use_label_smooth=self.label_smooth,
                 name='yolo_loss_' + str(i))
-            loss = fluid.layers.reduce_mean(loss)
+            loss = paddle.mean(loss)
             yolo_losses.append(loss)
         return {'loss': sum(yolo_losses)}

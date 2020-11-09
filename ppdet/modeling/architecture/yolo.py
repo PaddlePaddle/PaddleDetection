@@ -31,13 +31,13 @@ class YOLOv3(BaseArch):
 
     def model_arch(self, ):
         # Backbone
-        blocks = self.backbone(self.inputs)
+        body_feats = self.backbone(self.inputs)
 
         # neck
-        feats = self.neck(blocks)
+        body_feats = self.neck(body_feats)
 
         # YOLO Head
-        self.yolo_head_outs = self.yolo_head(feats)
+        self.yolo_head_outs = self.yolo_head(body_feats)
 
     def loss(self, ):
         yolo_loss = self.yolo_head.loss(self.inputs, self.yolo_head_outs)
