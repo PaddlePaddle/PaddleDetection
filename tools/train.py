@@ -132,7 +132,9 @@ def run(FLAGS, cfg):
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
     train_reader = create_reader(
-        cfg.TrainReader, (cfg.max_iters - start_iter),
+        cfg.TrainReader, 
+        cfg.TrainDataset,
+        (cfg.max_iters - start_iter),
         cfg,
         devices_num=devices_num)
 

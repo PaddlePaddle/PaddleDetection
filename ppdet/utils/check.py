@@ -92,9 +92,9 @@ def check_config(cfg):
     if 'log_iter' not in cfg:
         cfg.log_iter = 20
 
-    train_dataset = cfg['TrainReader']['dataset']
-    eval_dataset = cfg['EvalReader']['dataset']
-    test_dataset = cfg['TestReader']['dataset']
+    train_dataset = cfg['TrainDataset']
+    eval_dataset = cfg['EvalDataset']
+    test_dataset = cfg['TestDataset']
     assert train_dataset.with_background == eval_dataset.with_background, \
         "'with_background' of TrainReader is not equal to EvalReader."
     assert train_dataset.with_background == test_dataset.with_background, \

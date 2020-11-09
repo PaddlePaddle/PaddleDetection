@@ -416,7 +416,7 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
+def create_reader(cfg, dataset, max_iter=0, global_cfg=None, devices_num=1):
     """
     Return iterable data reader.
 
@@ -432,7 +432,8 @@ def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
                                                'use_fine_grained_loss', False)
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
     cfg['devices_num'] = devices_num
-    reader = Reader(**cfg)()
+
+    reader = Reader(dataset=create(dataset), **cfg)()
 
     def _reader():
         n = 0

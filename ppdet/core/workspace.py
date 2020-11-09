@@ -66,7 +66,7 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
-READER_KEY = '_READER_'
+BASE_KEY = '_BASE_'
 
 
 def load_config(file_path):
@@ -85,16 +85,17 @@ def load_config(file_path):
     with open(file_path) as f:
         cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
 
-    if READER_KEY in cfg:
-        reader_cfg = cfg[READER_KEY]
-        if reader_cfg.startswith("~"):
-            reader_cfg = os.path.expanduser(reader_cfg)
-        if not reader_cfg.startswith('/'):
-            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
+    if BASE_KEY in cfg:
+        base_cfgs = list(cfg[BASE_KEY])
+        for base_cfg in base_cfgs:
+            if base_cfg.startswith("~"):
+                base_cfg = os.path.expanduser(base_cfg)
+            if not base_cfg.startswith('/'):
+                base_cfg = os.path.join(os.path.dirname(file_path), base_cfg)
 
-        with open(reader_cfg) as f:
-            merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[READER_KEY]
+            with open(base_cfg) as f:
+                merge_config(yaml.load(f, Loader=yaml.Loader))
+        del cfg[BASE_KEY]
 
     merge_config(cfg)
     return global_config

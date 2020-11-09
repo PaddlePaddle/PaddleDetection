@@ -1,0 +1,6 @@
+_BASE_: [
+  './_base_/models/yolov3.yml',
+  './_base_/optimizers/yolov3.yml',
+  './_base_/datasets/coco_detection.yml',
+  './_base_/readers/yolov3.yml',
+]
