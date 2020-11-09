@@ -74,7 +74,7 @@ def _load_config_with_base(file_path):
     with open(file_path) as f:
         file_cfg = yaml.load(f, Loader=yaml.Loader)
 
-    # NOTE: cfgs outside have higher priority than _BASE_
+    # NOTE: cfgs outside have higher priority than cfgs in _BASE_
     if BASE_KEY in file_cfg:
         all_base_cfg = AttrDict()
         base_ymls = list(file_cfg[BASE_KEY])
@@ -91,8 +91,7 @@ def _load_config_with_base(file_path):
         del file_cfg[BASE_KEY]
         return merge_config(file_cfg, all_base_cfg)
 
-    else:
-        return file_cfg
+    return file_cfg
 
 
 def load_config(file_path):
