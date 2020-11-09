@@ -159,6 +159,13 @@ class BatchRandomResizeOp(BaseOperator):
                  random_interp=False):
         super(BatchRandomResizeOp, self).__init__()
         self.keep_ratio = keep_ratio
+        self.interps = [
+            cv2.INTER_NEAREST,
+            cv2.INTER_LINEAR,
+            cv2.INTER_AREA,
+            cv2.INTER_CUBIC,
+            cv2.INTER_LANCZOS4,
+        ]
         self.interp = interp
         assert isinstance(target_size, (
             int, Sequence)), "target_size must be int, list or tuple"
@@ -176,15 +183,8 @@ class BatchRandomResizeOp(BaseOperator):
         else:
             target_size = self.target_size
 
-        interps = [
-            cv2.INTER_NEAREST,
-            cv2.INTER_LINEAR,
-            cv2.INTER_AREA,
-            cv2.INTER_CUBIC,
-            cv2.INTER_LANCZOS4,
-        ]
         if self.random_interp:
-            interp = np.random.choice(interps)
+            interp = np.random.choice(self.interps)
         else:
             interp = self.interp
 

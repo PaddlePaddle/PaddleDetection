@@ -745,6 +745,13 @@ class RandomResizeOp(BaseOperator):
         super(RandomResizeOp, self).__init__()
         self.keep_ratio = keep_ratio
         self.interp = interp
+        self.interps = [
+            cv2.INTER_NEAREST,
+            cv2.INTER_LINEAR,
+            cv2.INTER_AREA,
+            cv2.INTER_CUBIC,
+            cv2.INTER_LANCZOS4,
+        ]
         assert isinstance(target_size, (
             int, Sequence)), "target_size must be int, list or tuple"
         if random_size and not isinstance(target_size, list):
@@ -763,15 +770,8 @@ class RandomResizeOp(BaseOperator):
         else:
             target_size = self.target_size
 
-        interps = [
-            cv2.INTER_NEAREST,
-            cv2.INTER_LINEAR,
-            cv2.INTER_AREA,
-            cv2.INTER_CUBIC,
-            cv2.INTER_LANCZOS4,
-        ]
         if self.random_interp:
-            interp = random.choice(interps)
+            interp = random.choice(self.interps)
         else:
             interp = self.interp
 
