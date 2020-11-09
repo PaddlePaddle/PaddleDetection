@@ -1,3 +1,5 @@
+metric: COCO
+
 TrainDataset:
   !COCODataSet
     image_dir: train2017

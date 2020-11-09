@@ -1,10 +1,8 @@
 architecture: YOLOv3
 use_gpu: true
-max_iters: 500000
 log_iter: 20
 save_dir: output
-snapshot_iter: 50000
-metric: COCO
+snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet/model_final
 num_classes: 80

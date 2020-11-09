@@ -1,3 +1,5 @@
+max_iters: 500000
+
 LearningRate:
   base_lr: 0.001
   schedulers:

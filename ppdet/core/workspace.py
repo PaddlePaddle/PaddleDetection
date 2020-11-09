@@ -83,10 +83,10 @@ def load_config(file_path):
 
     cfg = AttrDict()
     with open(file_path) as f:
-        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+        file_cfg = yaml.load(f, Loader=yaml.Loader)
 
-    if BASE_KEY in cfg:
-        base_cfgs = list(cfg[BASE_KEY])
+    if BASE_KEY in file_cfg:
+        base_cfgs = list(file_cfg[BASE_KEY])
         for base_cfg in base_cfgs:
             if base_cfg.startswith("~"):
                 base_cfg = os.path.expanduser(base_cfg)
@@ -94,8 +94,9 @@ def load_config(file_path):
                 base_cfg = os.path.join(os.path.dirname(file_path), base_cfg)
 
             with open(base_cfg) as f:
-                merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[BASE_KEY]
+                merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+
+    cfg = merge_config(file_cfg, cfg)
 
     merge_config(cfg)
     return global_config

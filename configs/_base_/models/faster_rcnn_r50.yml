@@ -1,11 +1,9 @@
 architecture: FasterRCNN
 use_gpu: true
-max_iters: 180000
 log_iter: 50
 save_dir: output
 snapshot_iter: 10000
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/resnet50.pdparams
-metric: COCO
 weights: output/faster_rcnn_r50_1x/model_final
 num_classes: 81
 open_debug: False
