@@ -21,6 +21,8 @@ class MaskRCNN(BaseArch):
         'rpn_head',
         'bbox_head',
         'mask_head',
+        'bbox_post_process',
+        'mask_post_process',
     ]
 
     def __init__(self,
@@ -31,6 +33,8 @@ class MaskRCNN(BaseArch):
                  rpn_head,
                  bbox_head,
                  mask_head,
+                 bbox_post_process,
+                 mask_post_process,
                  neck=None):
         super(MaskRCNN, self).__init__()
         self.anchor = anchor
@@ -41,6 +45,8 @@ class MaskRCNN(BaseArch):
         self.rpn_head = rpn_head
         self.bbox_head = bbox_head
         self.mask_head = mask_head
+        self.bbox_post_process = bbox_post_process
+        self.mask_post_process = mask_post_process
 
     def model_arch(self):
         # Backbone
@@ -72,9 +78,11 @@ class MaskRCNN(BaseArch):
 
         rois_has_mask_int32 = None
         if self.inputs['mode'] == 'infer':
+            bbox_pred, bboxes = self.bbox_head.get_prediction(
+                self.bbox_head_out, rois)
             # Refine bbox by the output from bbox_head at test stage
-            self.bboxes = self.proposal.post_process(self.inputs,
-                                                     self.bbox_head_out, rois)
+            self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
+                                                 self.inputs['im_info'])
         else:
             # Proposal RoI for Mask branch
             # bboxes update at training stage only
@@ -111,7 +119,7 @@ class MaskRCNN(BaseArch):
         return loss
 
     def infer(self, ):
-        mask = self.mask.post_process(self.bboxes, self.mask_head_out,
+        mask = self.mask_post_process(self.bboxes, self.mask_head_out,
                                       self.inputs['im_info'])
         bbox, bbox_num = self.bboxes
         output = {

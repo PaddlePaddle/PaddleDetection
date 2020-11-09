@@ -47,7 +47,7 @@ def check_gpu(use_gpu):
         pass
 
 
-def check_version(version='1.7.0'):
+def check_version(version='2.0'):
     """
     Log error and exit when the installed version of paddlepaddle is
     not satisfied.

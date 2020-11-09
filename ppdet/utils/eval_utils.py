@@ -3,6 +3,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+import json
+from ppdet.py_op.post_process import get_det_res, get_seg_res
+import logging
+logger = logging.getLogger(__name__)
 
 
 def json_eval_results(metric, json_directory=None, dataset=None):
@@ -28,49 +33,62 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             logger.info("{} not exists!".format(v_json))
 
 
-def coco_eval_results(outs_res=None, include_mask=False, dataset=None):
-    print("start evaluate bbox using coco api")
-    import io
-    import six
-    import json
-    from pycocotools.coco import COCO
-    from pycocotools.cocoeval import COCOeval
-    from ppdet.py_op.post_process import get_det_res, get_seg_res
-    anno_file = os.path.join(dataset.dataset_dir, dataset.anno_path)
-    cocoGt = COCO(anno_file)
-    catid = {
-        i + dataset.with_background: v
-        for i, v in enumerate(cocoGt.getCatIds())
-    }
+def get_infer_results(outs_res, eval_type, catid):
+    """
+    Get result at the stage of inference.
+    The output format is dictionary containing bbox or mask result.
 
-    if outs_res is not None and len(outs_res) > 0:
-        det_res = []
+    For example, bbox result is a list and each element contains
+    image_id, category_id, bbox and score. 
+    """
+    if outs_res is None or len(outs_res) == 0:
+        raise ValueError(
+            'The number of valid detection result if zero. Please use reasonable model and check input data.'
+        )
+    infer_res = {}
+
+    if 'bbox' in eval_type:
+        box_res = []
         for outs in outs_res:
-            det_res += get_det_res(outs['bbox'], outs['bbox_num'],
+            box_res += get_det_res(outs['bbox'], outs['bbox_num'],
                                    outs['im_id'], catid)
+        infer_res['bbox'] = box_res
 
-        with io.open("bbox.json", 'w') as outfile:
-            encode_func = unicode if six.PY2 else str
-            outfile.write(encode_func(json.dumps(det_res)))
-
-        cocoDt = cocoGt.loadRes("bbox.json")
-        cocoEval = COCOeval(cocoGt, cocoDt, 'bbox')
-        cocoEval.evaluate()
-        cocoEval.accumulate()
-        cocoEval.summarize()
-
-    if outs_res is not None and len(outs_res) > 0 and include_mask:
+    if 'mask' in eval_type:
         seg_res = []
         for outs in outs_res:
             seg_res += get_seg_res(outs['mask'], outs['bbox_num'],
                                    outs['im_id'], catid)
+        infer_res['mask'] = seg_res
 
-        with io.open("mask.json", 'w') as outfile:
-            encode_func = unicode if six.PY2 else str
-            outfile.write(encode_func(json.dumps(seg_res)))
+    return infer_res
 
-        cocoSg = cocoGt.loadRes("mask.json")
-        cocoEval = COCOeval(cocoGt, cocoSg, 'segm')
-        cocoEval.evaluate()
-        cocoEval.accumulate()
-        cocoEval.summarize()
+
+def eval_results(res, metric, anno_file):
+    """
+    Evalute the inference result
+    """
+    eval_res = []
+    if metric == 'COCO':
+        from ppdet.utils.coco_eval import cocoapi_eval
+
+        if 'bbox' in res:
+            with open("bbox.json", 'w') as f:
+                json.dump(res['bbox'], f)
+                logger.info('The bbox result is saved to bbox.json.')
+
+            bbox_stats = cocoapi_eval('bbox.json', 'bbox', anno_file=anno_file)
+            eval_res.append(bbox_stats)
+            sys.stdout.flush()
+        if 'mask' in res:
+            with open("mask.json", 'w') as f:
+                json.dump(res['mask'], f)
+                logger.info('The mask result is saved to mask.json.')
+
+            seg_stats = cocoapi_eval('mask.json', 'segm', anno_file=anno_file)
+            eval_res.append(seg_stats)
+            sys.stdout.flush()
+    else:
+        raise NotImplemented("Only COCO metric is supported now.")
+
+    return eval_res
