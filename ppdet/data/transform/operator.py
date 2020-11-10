@@ -246,7 +246,7 @@ class GridMask(BaseOperator):
             prob (float): max probability to carry out gridmask
             upper_iter (int): suggested to be equal to global max_iter
         """
-        super(GridMaskOp, self).__init__()
+        super(GridMask, self).__init__()
         self.use_h = use_h
         self.use_w = use_w
         self.rotate = rotate
