@@ -224,7 +224,7 @@ class NormalizeImageOp(BaseOperator):
 
 
 @register_op
-class GridMaskOp(BaseOperator):
+class GridMask(BaseOperator):
     def __init__(self,
                  use_h=True,
                  use_w=True,
