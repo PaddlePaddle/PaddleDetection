@@ -15,7 +15,8 @@ cat /etc/nv_tegra_release
 * (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html)中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
 
 ## `Paddle`预测库
-本文档使用`Paddle`在`TX2`平台上预先编译好的预测库，下载地址[fluid_inference.tgz](https://paddle-inference-lib.bj.bcebos.com/1.8.4-nv-jetson-cuda10-cudnn7.5-trt5/fluid_inference.tgz), `Paddle`版本`1.8.4`,`CUDA`版本`10.0`,`CUDNN`版本`7.5`，`TensorRT`版本`5`。
+本文档使用`Paddle`在`TX2`平台上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。
+这里选择[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-rc0-nv-jetson-cuda10-cudnn7.6-trt6/paddle_inference.tgz), `Paddle`版本`2.0.0-rc0`,`CUDA`版本`10.0`,`CUDNN`版本`7.6`，`TensorRT`版本`6`。
 
 若需要自己在`TX2`平台上编译`Paddle`，请参考文档[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html) 的`NVIDIA Jetson嵌入式硬件预测库源码编译`部分内容。
 
@@ -59,8 +60,11 @@ WITH_MKL=OFF
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=ON
 
+# TensorRT 的include路径
+TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
+
 # TensorRT 的lib路径
-TENSORRT_DIR=/path/to/TensorRT/
+TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference/
@@ -70,10 +74,10 @@ PADDLE_DIR=/path/to/fluid_inference/
 WITH_STATIC_LIB=OFF
 
 # CUDA 的 lib 路径
-CUDA_LIB=/path/to/cuda/lib/
+CUDA_LIB=/usr/local/cuda-10.0/lib64
 
 # CUDNN 的 lib 路径
-CUDNN_LIB=/path/to/cudnn/lib/
+CUDNN_LIB=/usr/lib/aarch64-linux-gnu
 
 # OPENCV_DIR 的路径
 # linux平台请下载：https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2，并解压到deps文件夹下
@@ -107,11 +111,14 @@ WITH_MKL=OFF
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
-# TensorRT 的路径
-TENSORRT_DIR=/home/nvidia/PaddleDetection_infer/tensorrt/
+# TensorRT 的include路径
+TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
+
+# TensorRT 的lib路径
+TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
-PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference_1.8.4-_cuda10_cudnnv7.5_trt5_jetson_sm53_62_72/
+PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference/
 
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
