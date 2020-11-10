@@ -94,6 +94,18 @@ def _load_config_with_base(file_path):
     return file_cfg
 
 
+WITHOUT_BACKGROUND_ARCHS = ['YOLOv3']
+
+
+def _parse_with_background():
+    arch = global_config.architecture
+    with_background = arch not in WITHOUT_BACKGROUND_ARCHS
+    global_config['with_background'] = with_background
+    global_config['TrainReader']['with_background'] = with_background
+    global_config['EvalReader']['with_background'] = with_background
+    global_config['TestReader']['with_background'] = with_background
+
+
 def load_config(file_path):
     """
     Load config from file.
@@ -106,9 +118,13 @@ def load_config(file_path):
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
 
+    # load config from file and merge into global config
     cfg = _load_config_with_base(file_path)
-
     merge_config(cfg)
+
+    # parse config from merged config
+    _parse_with_background()
+
     return global_config
 
 

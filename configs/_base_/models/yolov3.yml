@@ -5,7 +5,6 @@ save_dir: output
 snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet/model_final
-num_classes: 80
 use_fine_grained_loss: false
 load_static_weights: True
 

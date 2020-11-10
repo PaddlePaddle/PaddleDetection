@@ -32,8 +32,6 @@ class WIDERFaceDataSet(DataSet):
         image_dir (str): directory for images.
         anno_path (str): root directory for voc annotation data
         sample_num (int): number of samples to load, -1 means all
-        with_background (bool): whether load background as a class.
-            if True, total class number will be 2. default True.
     """
 
     def __init__(self,
@@ -41,22 +39,19 @@ class WIDERFaceDataSet(DataSet):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 with_background=True,
                  with_lmk=False):
         super(WIDERFaceDataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
             sample_num=sample_num,
-            dataset_dir=dataset_dir,
-            with_background=with_background)
+            dataset_dir=dataset_dir)
         self.anno_path = anno_path
         self.sample_num = sample_num
-        self.with_background = with_background
         self.roidbs = None
         self.cname2cid = None
         self.with_lmk = with_lmk
 
-    def load_roidb_and_cname2cid(self):
+    def load_roidb_and_cname2cid(self, with_background=True):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -65,7 +60,7 @@ class WIDERFaceDataSet(DataSet):
         records = []
         ct = 0
         file_lists = self._load_file_list(txt_file)
-        cname2cid = widerface_label(self.with_background)
+        cname2cid = widerface_label(with_background)
 
         for item in file_lists:
             im_fname = item[0]

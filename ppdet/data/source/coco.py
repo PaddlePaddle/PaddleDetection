@@ -33,25 +33,20 @@ class COCODataSet(DataSet):
         image_dir (str): directory for images.
         anno_path (str): json file path.
         sample_num (int): number of samples to load, -1 means all.
-        with_background (bool): whether load background as a class.
-            if True, total class number will be 81. default True.
     """
 
     def __init__(self,
                  image_dir=None,
                  anno_path=None,
                  dataset_dir=None,
-                 sample_num=-1,
-                 with_background=True):
+                 sample_num=-1):
         super(COCODataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
             dataset_dir=dataset_dir,
-            sample_num=sample_num,
-            with_background=with_background)
+            sample_num=sample_num)
         self.anno_path = anno_path
         self.sample_num = sample_num
-        self.with_background = with_background
         # `roidbs` is list of dict whose structure is:
         # {
         #     'im_file': im_fname, # image file name
@@ -69,7 +64,7 @@ class COCODataSet(DataSet):
         self.cname2cid = None
         self.load_image_only = False
 
-    def load_roidb_and_cname2cid(self):
+    def load_roidb_and_cname2cid(self, with_background=True):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -85,7 +80,7 @@ class COCODataSet(DataSet):
         # when with_background = True, mapping category to classid, like:
         #   background:0, first_class:1, second_class:2, ...
         catid2clsid = dict({
-            catid: i + int(self.with_background)
+            catid: i + int(with_background)
             for i, catid in enumerate(cat_ids)
         })
         cname2cid = dict({

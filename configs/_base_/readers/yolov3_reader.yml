@@ -2,7 +2,6 @@ TrainReader:
   inputs_def:
     fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
     num_max_boxes: 50
-  with_background: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True
@@ -54,7 +53,6 @@ EvalReader:
   inputs_def:
     fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 50
-  with_background: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True
@@ -80,7 +78,6 @@ TestReader:
   inputs_def:
     image_shape: [3, 608, 608]
     fields: ['image', 'im_size', 'im_id']
-  with_background: false
   sample_transforms:
     - !DecodeImage
       to_rgb: True
