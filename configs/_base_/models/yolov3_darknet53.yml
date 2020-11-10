@@ -1,8 +1,4 @@
 architecture: YOLOv3
-use_gpu: true
-log_iter: 20
-save_dir: output
-snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
 weights: output/yolov3_darknet/model_final
 use_fine_grained_loss: false
