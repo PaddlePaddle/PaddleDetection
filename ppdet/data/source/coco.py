@@ -137,13 +137,6 @@ class COCODataSet(DataSet):
                     y1 = max(0, y)
                     x2 = min(im_w - 1, x1 + max(0, box_w - 1))
                     y2 = min(im_h - 1, y1 + max(0, box_h - 1))
-                    if 'segmentation' in inst:
-                        if inst['segmentation'] is None or len(inst[
-                                'segmentation']) == 0:
-                            logger.warn(
-                                'Found an empty segmentation in annotations: im_id: {}.'.
-                                format(img_id))
-                            continue
                     if x2 >= x1 and y2 >= y1:
                         inst['clean_bbox'] = [x1, y1, x2, y2]
                         bboxes.append(inst)
