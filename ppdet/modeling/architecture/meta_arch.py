@@ -31,15 +31,9 @@ class BaseArch(nn.Layer):
 
     def build_inputs(self, data, input_def):
         inputs = {}
-        for name in input_def:
-            inputs[name] = []
-        batch_size = len(data)
-        for bs in range(batch_size):
-            for name, input in zip(input_def, data[bs]):
-                input_v = np.array(input)[np.newaxis, ...]
-                inputs[name].append(input_v)
-        for name in input_def:
-            inputs[name] = paddle.to_tensor(np.concatenate(inputs[name]))
+        for i, k in enumerate(input_def):
+            v = paddle.to_tensor(data[i])
+            inputs[k] = v
         return inputs
 
     def model_arch(self):

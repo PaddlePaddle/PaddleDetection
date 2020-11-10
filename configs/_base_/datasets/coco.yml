@@ -2,17 +2,17 @@ metric: COCO
 num_classes: 80
 
 TrainDataset:
-  !COCODataSet
+    name: COCODataset
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
-    dataset_dir: dataset/coco
+    dataset_dir: /paddle/data/coco #dataset/coco
 
 EvalDataset:
-  !COCODataSet
+    name: COCODataset
     image_dir: val2017
     anno_path: annotations/instances_val2017.json
-    dataset_dir: dataset/coco
+    dataset_dir: /paddle/data/coco #dataset/coco
 
 TestDataset:
-  !ImageFolder
+    name: ImageFolder
     anno_path: annotations/instances_val2017.json

@@ -7,6 +7,7 @@ from . import head
 from . import loss
 from . import architecture
 from . import post_process
+from . import layers
 
 from .ops import *
 from .bbox import *
@@ -17,3 +18,4 @@ from .head import *
 from .loss import *
 from .architecture import *
 from .post_process import *
+from .layers import *

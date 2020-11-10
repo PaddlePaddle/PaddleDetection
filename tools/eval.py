@@ -19,7 +19,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
-from ppdet.data.reader import create_reader
+#from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -45,7 +45,7 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
 
     # Model
     main_arch = cfg.architecture
@@ -55,18 +55,16 @@ def run(FLAGS, cfg):
     model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
     # Data Reader
-    if FLAGS.use_gpu:
-        devices_num = 1
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-    eval_reader = create_reader(
-        cfg.EvalDataset, cfg.EvalReader, devices_num=devices_num)
+    reader = create('EvalReader')
+    dataset = create('EvalDataset')
+    eval_loader, _ = reader(
+        dataset, cfg['worker_num'], place, use_prefetch=cfg['use_prefetch'])
 
     # Run Eval
     outs_res = []
     start_time = time.time()
     sample_num = 0
-    for iter_id, data in enumerate(eval_reader()):
+    for iter_id, data in enumerate(eval_loader):
         # forward
         model.eval()
         outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
@@ -86,7 +84,6 @@ def run(FLAGS, cfg):
         eval_type.append('mask')
     # Metric
     # TODO: support other metric
-    dataset = cfg.EvalReader['dataset']
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
     with_background = dataset.with_background
@@ -110,7 +107,7 @@ def main():
     place = paddle.CUDAPlace(ParallelEnv()
                              .dev_id) if cfg.use_gpu else paddle.CPUPlace()
     paddle.disable_static(place)
-    run(FLAGS, cfg)
+    run(FLAGS, cfg, place)
 
 
 if __name__ == '__main__':

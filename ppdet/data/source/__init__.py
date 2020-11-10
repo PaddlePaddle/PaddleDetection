@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from . import coco
-from . import voc
-from . import widerface
+#from . import voc
+#from . import widerface
 
 from .coco import *
-from .voc import *
-from .widerface import *
+#from .voc import *
+#from .widerface import *
