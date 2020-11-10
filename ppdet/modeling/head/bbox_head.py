@@ -164,7 +164,7 @@ class BBoxHead(Layer):
         loss_bbox_reg = fluid.layers.reduce_mean(loss_bbox_reg)
         return loss_bbox_cls, loss_bbox_reg
 
-    def loss(self, bbox_head_out, targets):
+    def get_loss(self, bbox_head_out, targets):
         loss_bbox = {}
         for lvl, (bboxhead, target) in enumerate(zip(bbox_head_out, targets)):
             score, delta = bboxhead

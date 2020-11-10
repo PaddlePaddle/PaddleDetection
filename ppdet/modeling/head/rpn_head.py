@@ -85,7 +85,7 @@ class RPNHead(Layer):
             rpn_head_out.append((rrs, rrd))
         return rpn_feats, rpn_head_out
 
-    def loss(self, loss_inputs):
+    def get_loss(self, loss_inputs):
         # cls loss
         score_tgt = fluid.layers.cast(
             x=loss_inputs['rpn_score_target'], dtype='float32')

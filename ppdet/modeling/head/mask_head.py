@@ -178,7 +178,7 @@ class MaskHead(Layer):
                                               spatial_scale, stage)
         return mask_head_out
 
-    def loss(self, mask_head_out, mask_target):
+    def get_loss(self, mask_head_out, mask_target):
         mask_logits = fluid.layers.flatten(mask_head_out)
         mask_label = fluid.layers.cast(x=mask_target, dtype='float32')
         mask_label.stop_gradient = True

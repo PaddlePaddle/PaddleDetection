@@ -39,11 +39,11 @@ class YOLOv3(BaseArch):
         # YOLO Head
         self.yolo_head_outs = self.yolo_head(body_feats)
 
-    def loss(self, ):
-        yolo_loss = self.yolo_head.loss(self.inputs, self.yolo_head_outs)
-        return yolo_loss
+    def get_loss(self, ):
+        loss = self.yolo_head.get_loss(self.inputs, self.yolo_head_outs)
+        return loss
 
-    def infer(self, ):
+    def get_pred(self, ):
         bbox, bbox_num = self.post_process(self.yolo_head_outs,
                                            self.yolo_head.mask_anchors,
                                            self.inputs['im_size'])

@@ -22,9 +22,9 @@ class BaseArch(nn.Layer):
         self.model_arch()
 
         if mode == 'train':
-            out = self.loss()
+            out = self.get_loss()
         elif mode == 'infer':
-            out = self.infer()
+            out = self.get_pred()
         else:
             raise "Now, only support train or infer mode!"
         return out
@@ -45,8 +45,8 @@ class BaseArch(nn.Layer):
     def model_arch(self):
         raise NotImplementedError("Should implement model_arch method!")
 
-    def loss(self, ):
-        raise NotImplementedError("Should implement loss method!")
+    def get_loss(self, ):
+        raise NotImplementedError("Should implement get_loss method!")
 
-    def infer(self, ):
-        raise NotImplementedError("Should implement infer method!")
+    def get_pred(self, ):
+        raise NotImplementedError("Should implement get_pred method!")

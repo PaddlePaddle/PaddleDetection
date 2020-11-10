@@ -55,9 +55,9 @@ class FasterRCNN(BaseArch):
             bbox_out = self.proposal.post_process(self.gbd)
             self.gbd.update(bbox_out)
 
-    def loss(self, ):
-        rpn_cls_loss, rpn_reg_loss = self.rpn_head.loss(self.gbd)
-        bbox_cls_loss, bbox_reg_loss = self.bbox_head.loss(self.gbd)
+    def get_loss(self, ):
+        rpn_cls_loss, rpn_reg_loss = self.rpn_head.get_loss(self.gbd)
+        bbox_cls_loss, bbox_reg_loss = self.bbox_head.get_loss(self.gbd)
         losses = [rpn_cls_loss, rpn_reg_loss, bbox_cls_loss, bbox_reg_loss]
         loss = fluid.layers.sum(losses)
         out = {
@@ -69,7 +69,7 @@ class FasterRCNN(BaseArch):
         }
         return out
 
-    def infer(self, ):
+    def get_pred(self, ):
         outs = {
             "bbox": self.gbd['predicted_bbox'].numpy(),
             "bbox_nums": self.gbd['predicted_bbox_nums'].numpy(),
