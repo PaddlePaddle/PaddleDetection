@@ -158,6 +158,8 @@ class Reader(object):
     """
     Args:
         dataset (DataSet): DataSet object
+        with_background (bool): whether load background as a class.  if True,
+            total class number will be class number of dataset + 1. default True.
         sample_transforms (list of BaseOperator): a list of sample transforms
             operators.
         batch_transforms (list of BaseOperator): a list of batch transforms
@@ -188,6 +190,7 @@ class Reader(object):
 
     def __init__(self,
                  dataset=None,
+                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=None,
@@ -206,7 +209,7 @@ class Reader(object):
                  inputs_def=None,
                  devices_num=1):
         self._dataset = dataset
-        self._roidbs = self._dataset.get_roidb()
+        self._roidbs = self._dataset.get_roidb(with_background)
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
 
@@ -416,7 +419,7 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
+def create_reader(dataset, cfg, max_iter=0, global_cfg=None, devices_num=1):
     """
     Return iterable data reader.
 
@@ -432,7 +435,8 @@ def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
                                                'use_fine_grained_loss', False)
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
     cfg['devices_num'] = devices_num
-    reader = Reader(**cfg)()
+
+    reader = Reader(dataset=dataset, **cfg)()
 
     def _reader():
         n = 0

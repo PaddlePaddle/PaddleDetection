@@ -40,8 +40,6 @@ class VOCDataSet(DataSet):
         sample_num (int): number of samples to load, -1 means all.
         use_default_label (bool): whether use the default mapping of
             label to integer index. Default True.
-        with_background (bool): whether load background as a class,
-            default True.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
     """
@@ -52,14 +50,12 @@ class VOCDataSet(DataSet):
                  anno_path=None,
                  sample_num=-1,
                  use_default_label=True,
-                 with_background=True,
                  label_list='label_list.txt'):
         super(VOCDataSet, self).__init__(
             image_dir=image_dir,
             anno_path=anno_path,
             sample_num=sample_num,
-            dataset_dir=dataset_dir,
-            with_background=with_background)
+            dataset_dir=dataset_dir)
         # roidbs is list of dict whose structure is:
         # {
         #     'im_file': im_fname, # image file name
@@ -78,7 +74,7 @@ class VOCDataSet(DataSet):
         self.use_default_label = use_default_label
         self.label_list = label_list
 
-    def load_roidb_and_cname2cid(self):
+    def load_roidb_and_cname2cid(self, with_background=True):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -96,12 +92,12 @@ class VOCDataSet(DataSet):
                 raise ValueError("label_list {} does not exists".format(
                     label_path))
             with open(label_path, 'r') as fr:
-                label_id = int(self.with_background)
+                label_id = int(with_background)
                 for line in fr.readlines():
                     cname2cid[line.strip()] = label_id
                     label_id += 1
         else:
-            cname2cid = pascalvoc_label(self.with_background)
+            cname2cid = pascalvoc_label(with_background)
 
         with open(anno_path, 'r') as fr:
             while True:

@@ -21,6 +21,8 @@ from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ..backbone.darknet import ConvBNLayer
 
+__all__ = ['YOLOv3Loss']
+
 
 @register
 class YOLOv3Loss(nn.Layer):
@@ -33,6 +35,7 @@ class YOLOv3Loss(nn.Layer):
                  downsample=32,
                  use_fine_grained_loss=False):
         super(YOLOv3Loss, self).__init__()
+        self.num_classes = num_classes
         self.ignore_thresh = ignore_thresh
         self.label_smooth = label_smooth
         self.downsample = downsample

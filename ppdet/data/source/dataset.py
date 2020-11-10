@@ -40,7 +40,6 @@ class DataSet(object):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 with_background=True,
                  use_default_label=None,
                  **kwargs):
         super(DataSet, self).__init__()
@@ -48,7 +47,6 @@ class DataSet(object):
         self.image_dir = image_dir if image_dir is not None else ''
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
         self.sample_num = sample_num
-        self.with_background = with_background
         self.use_default_label = use_default_label
 
         self.cname2cid = None
@@ -59,13 +57,13 @@ class DataSet(object):
         raise NotImplementedError('%s.load_roidb_and_cname2cid not available' %
                                   (self.__class__.__name__))
 
-    def get_roidb(self):
+    def get_roidb(self, with_background=True):
         if not self.roidbs:
             data_dir = get_dataset_path(self.dataset_dir, self.anno_path,
                                         self.image_dir)
             if data_dir:
                 self.dataset_dir = data_dir
-            self.load_roidb_and_cname2cid()
+            self.load_roidb_and_cname2cid(with_background)
 
         return self.roidbs
 
@@ -116,12 +114,10 @@ class ImageFolder(DataSet):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 with_background=True,
                  use_default_label=None,
                  **kwargs):
         super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num, with_background,
-                                          use_default_label)
+                                          sample_num, use_default_label)
         self.roidbs = None
         self._imid2path = {}
 

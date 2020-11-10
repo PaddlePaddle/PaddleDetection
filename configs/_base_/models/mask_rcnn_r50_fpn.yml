@@ -1,13 +1,6 @@
 architecture: MaskRCNN
-use_gpu: true
-max_iters: 180000
-log_iter: 20
-save_dir: output
-snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-metric: COCO
 weights: output/mask_rcnn_r50_fpn_1x/model_final
-num_classes: 81
 load_static_weights: True
 
 # Model Achitecture
@@ -126,25 +119,3 @@ MaskHead:
 
 MaskPostProcess:
   mask_resolution: 28
-
-
-# Train
-LearningRate:
-  base_lr: 0.01
-  schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones: [120000, 160000]
-  - !LinearWarmup
-    start_factor: 0.3333333
-    steps: 500
-
-OptimizerBuilder:
-  optimizer:
-    momentum: 0.9
-    type: Momentum
-  regularizer:
-    factor: 0.0001
-    type: L2
-
-_READER_: 'mask_reader.yml'

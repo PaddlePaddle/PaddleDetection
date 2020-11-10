@@ -67,5 +67,5 @@ class YOLOv3Head(nn.Layer):
             yolo_outputs.append(yolo_output)
         return yolo_outputs
 
-    def loss(self, inputs, head_outputs):
-        return self.loss(inputs, head_outputs, anchors, anchor_masks)
+    def get_loss(self, inputs, head_outputs):
+        return self.loss(inputs, head_outputs, self.anchors, self.anchor_masks)

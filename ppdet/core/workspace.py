@@ -66,7 +66,44 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
-READER_KEY = '_READER_'
+BASE_KEY = '_BASE_'
+
+
+# parse and load _BASE_ recursively
+def _load_config_with_base(file_path):
+    with open(file_path) as f:
+        file_cfg = yaml.load(f, Loader=yaml.Loader)
+
+    # NOTE: cfgs outside have higher priority than cfgs in _BASE_
+    if BASE_KEY in file_cfg:
+        all_base_cfg = AttrDict()
+        base_ymls = list(file_cfg[BASE_KEY])
+        for base_yml in base_ymls:
+            if base_yml.startswith("~"):
+                base_yml = os.path.expanduser(base_yml)
+            if not base_yml.startswith('/'):
+                base_yml = os.path.join(os.path.dirname(file_path), base_yml)
+
+            with open(base_yml) as f:
+                base_cfg = _load_config_with_base(base_yml)
+                all_base_cfg = merge_config(base_cfg, all_base_cfg)
+
+        del file_cfg[BASE_KEY]
+        return merge_config(file_cfg, all_base_cfg)
+
+    return file_cfg
+
+
+WITHOUT_BACKGROUND_ARCHS = ['YOLOv3']
+
+
+def _parse_with_background():
+    arch = global_config.architecture
+    with_background = arch not in WITHOUT_BACKGROUND_ARCHS
+    global_config['with_background'] = with_background
+    global_config['TrainReader']['with_background'] = with_background
+    global_config['EvalReader']['with_background'] = with_background
+    global_config['TestReader']['with_background'] = with_background
 
 
 def load_config(file_path):
@@ -81,22 +118,13 @@ def load_config(file_path):
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
 
-    cfg = AttrDict()
-    with open(file_path) as f:
-        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
-
-    if READER_KEY in cfg:
-        reader_cfg = cfg[READER_KEY]
-        if reader_cfg.startswith("~"):
-            reader_cfg = os.path.expanduser(reader_cfg)
-        if not reader_cfg.startswith('/'):
-            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
-
-        with open(reader_cfg) as f:
-            merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[READER_KEY]
-
+    # load config from file and merge into global config
+    cfg = _load_config_with_base(file_path)
     merge_config(cfg)
+
+    # parse config from merged config
+    _parse_with_background()
+
     return global_config
 
 

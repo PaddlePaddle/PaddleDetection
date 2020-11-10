@@ -144,7 +144,7 @@ def run(FLAGS, cfg):
     model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
     # Data Reader
-    test_reader = create_reader(cfg.TestReader)
+    test_reader = create_reader(cfg.TestDataset, cfg.TestReader)
 
     # Run Infer 
     for iter_id, data in enumerate(test_reader()):
