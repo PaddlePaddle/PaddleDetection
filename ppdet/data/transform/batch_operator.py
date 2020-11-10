@@ -31,8 +31,12 @@ from scipy import ndimage
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    'PadBatchOp', 'BatchRandomResizeOp', 'Gt2YoloTargetOp', 'Gt2FCOSTargetOp',
-    'Gt2TTFTargetOp', 'Gt2Solov2TargetOp'
+    'PadBatchOp',
+    'BatchRandomResizeOp',
+    'Gt2YoloTargetOp',
+    'Gt2FCOSTargetOp',
+    'Gt2TTFTargetOp',
+    'Gt2Solov2TargetOp',
 ]
 
 
