@@ -65,13 +65,11 @@ def check_version(version='2.0'):
     version_split = version.split('.')
 
     length = min(len(version_installed), len(version_split))
-    flag = False
     for i in six.moves.range(length):
         if version_installed[i] > version_split[i]:
-            flag = True
-            break
-    if not flag:
-        raise Exception(err)
+            return
+        if version_installed[i] < version_split[i]:
+            raise Exception(err)
 
 
 def check_config(cfg):
