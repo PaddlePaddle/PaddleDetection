@@ -20,7 +20,7 @@ from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
 from ppdet.data.reader import create_reader
-from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -52,7 +52,7 @@ def run(FLAGS, cfg):
     model = create(cfg.architecture)
 
     # Init Model
-    model = load_dygraph_ckpt(model, ckpt=cfg.weights)
+    load_weight(model, cfg.weights)
 
     # Data Reader
     if FLAGS.use_gpu:
@@ -86,10 +86,10 @@ def run(FLAGS, cfg):
         eval_type.append('mask')
     # Metric
     # TODO: support other metric
-    dataset = cfg.EvalReader['dataset']
+    dataset = cfg.EvalDataset
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
-    with_background = dataset.with_background
+    with_background = cfg['with_background']
     use_default_label = dataset.use_default_label
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)

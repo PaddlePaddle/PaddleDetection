@@ -34,7 +34,7 @@ from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 from ppdet.utils.cli import ArgsParser
 from ppdet.data.reader import create_reader
-from ppdet.utils.checkpoint import load_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight
 from ppdet.utils.eval_utils import get_infer_results
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -126,7 +126,7 @@ def run(FLAGS, cfg):
     main_arch = cfg.architecture
     model = create(cfg.architecture)
 
-    dataset = cfg.TestReader['dataset']
+    dataset = cfg.TestDataset
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     dataset.set_images(test_images)
 
@@ -135,13 +135,13 @@ def run(FLAGS, cfg):
 
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
-    with_background = dataset.with_background
+    with_background = cfg['with_background']
     use_default_label = dataset.use_default_label
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
     # Init Model
-    model = load_dygraph_ckpt(model, ckpt=cfg.weights)
+    load_weight(model, cfg.weights)
 
     # Data Reader
     test_reader = create_reader(cfg.TestDataset, cfg.TestReader)

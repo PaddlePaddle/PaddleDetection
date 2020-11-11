@@ -22,7 +22,7 @@ from ppdet.data.reader import create_reader
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
 import paddle.distributed as dist
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        "-ckpt_type",
+        "-weight_type",
         default='pretrain',
         type=str,
         help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
@@ -113,12 +113,12 @@ def run(FLAGS, cfg):
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
-    model = load_dygraph_ckpt(
-        model,
-        optimizer,
-        cfg.pretrain_weights,
-        ckpt_type=FLAGS.ckpt_type,
-        load_static_weights=cfg.get('load_static_weights', False))
+    if FLAGS.weight_type == 'resume':
+        load_weight(model, cfg.pretrain_weights, optimizer)
+    else:
+        load_pretrain_weight(model, cfg.pretrain_weights,
+                             cfg.get('load_static_weights', False),
+                             FLAGS.weight_type)
 
     # Parallel Model 
     if dist.ParallelEnv().nranks > 1:

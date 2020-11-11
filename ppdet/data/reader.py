@@ -209,7 +209,7 @@ class Reader(object):
                  inputs_def=None,
                  devices_num=1):
         self._dataset = dataset
-        self._roidbs = self._dataset.get_roidb(with_background)
+        self._roidbs = self._dataset.get_roidb()
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
 

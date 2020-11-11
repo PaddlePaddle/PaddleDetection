@@ -73,6 +73,7 @@ EvalReader:
   drop_empty: false
   worker_num: 8
   bufsize: 16
+  with_background: false
 
 TestReader:
   inputs_def:
