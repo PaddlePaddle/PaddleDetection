@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from . import coco
+# TODO add voc and widerface dataset
 #from . import voc
 #from . import widerface
 

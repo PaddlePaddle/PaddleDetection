@@ -1,5 +1,4 @@
 worker_num: 2
-use_prefetch: True
 TrainReader:
   inputs_def:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_poly']

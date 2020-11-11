@@ -71,14 +71,14 @@ class BaseDataLoader(object):
 
     def __init__(self,
                  inputs_def=None,
-                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81):
+                 num_classes=81,
+                 with_background=True):
         # out fields 
         self._fields = copy.deepcopy(inputs_def[
             'fields']) if inputs_def else None
@@ -87,6 +87,7 @@ class BaseDataLoader(object):
             sample_transforms, num_classes=num_classes)
 
         # batch transfrom 
+        self._batch_transforms = None
         if batch_transforms:
             self._batch_transforms = Compose(batch_transforms, self._fields,
                                              batch_operators, num_classes)
@@ -130,48 +131,48 @@ class BaseDataLoader(object):
 class TrainReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=True,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81):
-        super(TrainReader, self).__init__(inputs_def, sample_transforms,
-                                          batch_transforms, batch_size, shuffle,
-                                          drop_last, drop_empty, num_classes)
+                 num_classes=81,
+                 with_background=True):
+        super(TrainReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, with_background)
 
 
 @register
 class EvalReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81):
-        super(EvalReader, self).__init__(inputs_def, sample_transforms,
-                                         batch_transforms, batch_size, shuffle,
-                                         drop_last, drop_empty, num_classes)
+                 num_classes=81,
+                 with_background=True):
+        super(EvalReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, with_background)
 
 
 @register
 class TestReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 with_background=True,
                  sample_transforms=None,
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81):
-        super(TestReader, self).__init__(inputs_def, sample_transforms,
-                                         batch_transforms, batch_size, shuffle,
-                                         drop_last, drop_empty, num_classes)
+                 num_classes=81,
+                 with_background=True):
+        super(TestReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, with_background)

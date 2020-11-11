@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 
 @register
 @serializable
-class COCODataset(DetDataset):
+class COCODataSet(DetDataset):
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1):
-        super(COCODataset, self).__init__(dataset_dir, image_dir, anno_path,
+        super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
                                           sample_num)
         self.load_image_only = False
         self.load_semantic = False
@@ -50,7 +50,7 @@ class COCODataset(DetDataset):
         # when with_background = True, mapping category to classid, like:
         #   background:0, first_class:1, second_class:2, ...
         catid2clsid = dict({
-            catid: i + int(self.with_background)
+            catid: i + int(with_background)
             for i, catid in enumerate(cat_ids)
         })
         cname2cid = dict({

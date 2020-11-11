@@ -19,7 +19,6 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
-#from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -55,10 +54,8 @@ def run(FLAGS, cfg, place):
     model = load_dygraph_ckpt(model, ckpt=cfg.weights)
 
     # Data Reader
-    reader = create('EvalReader')
-    dataset = create('EvalDataset')
-    eval_loader, _ = reader(
-        dataset, cfg['worker_num'], place, use_prefetch=cfg['use_prefetch'])
+    dataset = cfg.EvalDataset
+    eval_loader, _ = create('EvalReader')(dataset, cfg['worker_num'], place)
 
     # Run Eval
     outs_res = []
@@ -86,7 +83,7 @@ def run(FLAGS, cfg, place):
     # TODO: support other metric
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
-    with_background = dataset.with_background
+    with_background = cfg.with_background
     use_default_label = dataset.use_default_label
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
@@ -104,9 +101,8 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = paddle.CUDAPlace(ParallelEnv()
-                             .dev_id) if cfg.use_gpu else paddle.CPUPlace()
-    paddle.disable_static(place)
+    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
+    place = paddle.set_device(place)
     run(FLAGS, cfg, place)
 
 

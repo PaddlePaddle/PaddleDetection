@@ -22,7 +22,7 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
-import paddle.distributed as dist
+from paddle.distributed import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -99,19 +99,20 @@ def run(FLAGS, cfg, place):
         random.seed(0)
         np.random.seed(0)
 
-    if dist.ParallelEnv().nranks > 1:
+    if ParallelEnv().nranks > 1:
         paddle.distributed.init_parallel_env()
 
     # Data 
+    dataset = cfg.TrainDataset
     train_loader, step_per_epoch = create('TrainReader')(
-        cfg['worker_num'], place, use_prefetch=cfg['use_prefetch'])
+        dataset, cfg['worker_num'], place)
 
     # Model
     main_arch = cfg.architecture
     model = create(cfg.architecture)
 
     # Optimizer
-    lr = create('LearningRate')(step_per_epoch / int(dist.ParallelEnv().nranks))
+    lr = create('LearningRate')(step_per_epoch / int(ParallelEnv().nranks))
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
@@ -123,7 +124,7 @@ def run(FLAGS, cfg, place):
         load_static_weights=cfg.get('load_static_weights', False))
 
     # Parallel Model 
-    if dist.ParallelEnv().nranks > 1:
+    if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
     # Run Train
@@ -147,7 +148,7 @@ def run(FLAGS, cfg, place):
 
             # Model Backward
             loss = outputs['loss']
-            if dist.ParallelEnv().nranks > 1:
+            if ParallelEnv().nranks > 1:
                 loss = model.scale_loss(loss)
                 loss.backward()
                 model.apply_collective_grads()
@@ -159,20 +160,19 @@ def run(FLAGS, cfg, place):
             lr.step()
             optimizer.clear_grad()
 
-            if dist.ParallelEnv().nranks < 2 or dist.ParallelEnv(
-            ).local_rank == 0:
+            if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
                 if iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
                 if iter_id % cfg.log_iter == 0:
-                    strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                        iter_id, curr_lr, logs, time_cost, eta)
+                    strs = 'Epoch:{}: iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
+                        e_id, iter_id, curr_lr, logs, time_cost, eta)
                     logger.info(strs)
 
         # Save Stage 
-        if dist.ParallelEnv().local_rank == 0:
+        if ParallelEnv().local_rank == 0 and e_id % cfg.snapshot_epoch == 0:
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(e_id + 1) if e_id + 1 != int(
                 cfg.epoch) else "model_final"
@@ -189,8 +189,8 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = fluid.CUDAPlace(dist.ParallelEnv().dev_id) \
-                    if cfg.use_gpu else fluid.CPUPlace()
+    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
+    place = paddle.set_device(place)
 
     run(FLAGS, cfg, place)
 

@@ -10,7 +10,8 @@ import numpy as np
 from paddle import fluid
 from paddle.io import BatchSampler
 from paddle.fluid.layers import collective
-from paddle.fluid.dygraph.parallel import ParallelEnv, ParallelStrategy
+from paddle.distributed import ParallelEnv
+from paddle.fluid.dygraph.parallel import ParallelStrategy
 
 _parallel_context_initialized = False
 
@@ -84,11 +85,6 @@ class DistributedBatchSampler(BatchSampler):
 
     def set_epoch(self, epoch):
         self.epoch = epoch
-
-
-def _all_gather(x, nranks, ring_id=0, use_calc_stream=True):
-    return collective._c_allgather(
-        x, nranks, ring_id=ring_id, use_calc_stream=use_calc_stream)
 
 
 def wait_server_ready(endpoints):
