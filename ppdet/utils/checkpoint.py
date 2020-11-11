@@ -78,7 +78,7 @@ def load_weight(model, weight, optimizer=None):
 
     if optimizer is not None and os.path.exists(path + '.pdopt'):
         optim_state_dict = paddle.load(path + '.pdopt')
-        optimizer.set_dict(optim_state_dict)
+        optimizer.set_state_dict(optim_state_dict)
     return
 
 

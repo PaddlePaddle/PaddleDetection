@@ -141,13 +141,14 @@ def run(FLAGS, cfg):
     start_time = time.time()
     end_time = time.time()
     # Run Train 
+    start_iter = optimizer.state_dict()['LR_Scheduler']['last_epoch']
     for iter_id, data in enumerate(train_reader()):
-
+        idx = iter_id + start_iter
         start_time = end_time
         end_time = time.time()
         time_stat.append(end_time - start_time)
         time_cost = np.mean(time_stat)
-        eta_sec = (cfg.max_iters - iter_id) * time_cost
+        eta_sec = (cfg.max_iters - idx) * time_cost
         eta = str(datetime.timedelta(seconds=int(eta_sec)))
 
         # Model Forward
@@ -171,23 +172,23 @@ def run(FLAGS, cfg):
 
         if dist.ParallelEnv().nranks < 2 or dist.ParallelEnv().local_rank == 0:
             # Log state 
-            if iter_id == 0:
+            if idx == start_iter:
                 train_stats = TrainingStats(cfg.log_iter, outputs.keys())
             train_stats.update(outputs)
             logs = train_stats.log()
-            if iter_id % cfg.log_iter == 0:
+            if idx % cfg.log_iter == 0:
                 ips = float(cfg['TrainReader']['batch_size']) / time_cost
                 strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
-                    iter_id, curr_lr, logs, eta, time_cost, ips)
+                    idx, curr_lr, logs, eta, time_cost, ips)
                 logger.info(strs)
             # Save Stage 
-            if iter_id > 0 and iter_id % int(
-                    cfg.snapshot_iter) == 0 or iter_id == cfg.max_iters - 1:
+            if idx > 0 and idx % int(
+                    cfg.snapshot_iter) == 0 or idx == cfg.max_iters - 1:
                 cfg_name = os.path.basename(FLAGS.config).split('.')[0]
                 save_name = str(
-                    iter_id) if iter_id != cfg.max_iters - 1 else "model_final"
+                    idx) if idx != cfg.max_iters - 1 else "model_final"
                 save_dir = os.path.join(cfg.save_dir, cfg_name)
-                save_dygraph_ckpt(model, optimizer, save_dir, save_name)
+                save_model(model, optimizer, save_dir, save_name)
 
 
 def main():
