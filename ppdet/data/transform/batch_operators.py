@@ -26,6 +26,7 @@ import cv2
 import numpy as np
 from .operator import register_op, BaseOperator
 from .op_helper import jaccard_overlap, gaussian2D
+from .operators import NormalizeImage, Permute
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class PadBatch(BaseOperator):
         self.use_padded_im_info = use_padded_im_info
         self.pad_gt = pad_gt
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         """
         Args:
             samples (list): a batch of sample, each is dict.
@@ -156,7 +157,7 @@ class RandomShape(BaseOperator):
         ] if random_inter else []
         self.resize_box = resize_box
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         shape = np.random.choice(self.sizes)
         method = np.random.choice(self.interps) if self.random_inter \
             else cv2.INTER_NEAREST
@@ -191,7 +192,7 @@ class PadMultiScaleTest(BaseOperator):
         super(PadMultiScaleTest, self).__init__()
         self.pad_to_stride = pad_to_stride
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         coarsest_stride = self.pad_to_stride
         if coarsest_stride == 0:
             return samples
@@ -247,7 +248,7 @@ class Gt2YoloTarget(BaseOperator):
         self.num_classes = num_classes
         self.iou_thresh = iou_thresh
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         assert len(self.anchor_masks) == len(self.downsample_ratios), \
             "anchor_masks', and 'downsample_ratios' should have same length."
 
@@ -430,7 +431,7 @@ class Gt2FCOSTarget(BaseOperator):
         inside_gt_box = np.min(clipped_box_reg_targets, axis=2) > 0
         return inside_gt_box
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         assert len(self.object_sizes_of_interest) == len(self.downsample_ratios), \
             "object_sizes_of_interest', and 'downsample_ratios' should have same length."
 
@@ -554,7 +555,7 @@ class Gt2TTFTarget(BaseOperator):
         self.num_classes = num_classes
         self.alpha = alpha
 
-    def __call__(self, samples, context=None):
+    def __call__(self, samples):
         output_size = samples[0]['image'].shape[1]
         feat_size = output_size // self.down_ratio
         for sample in samples:

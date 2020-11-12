@@ -104,6 +104,7 @@ def _parse_with_background():
     global_config['TrainReader']['with_background'] = with_background
     global_config['EvalReader']['with_background'] = with_background
     global_config['TestReader']['with_background'] = with_background
+    global_config['num_classes'] += with_background
 
 
 def load_config(file_path):
