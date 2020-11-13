@@ -3,6 +3,10 @@ use_gpu: true
 max_iters: 180000
 snapshot_iter: 10000
 log_smooth_window: 20
+use_fp16: true
+scale_loss: 128.0
+use_dynamic_loss_scaling: true
+use_dali: true
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
@@ -16,19 +20,22 @@ MaskRCNN:
   roi_extractor: FPNRoIAlign
   bbox_head: BBoxHead
   bbox_assigner: BBoxAssigner
-
+  data_format: 'NHWC'
+  
 ResNet:
   depth: 50
   feature_maps: [2, 3, 4, 5]
   freeze_at: 2
   norm_type: bn
+  data_format: 'NHWC'
 
 FPN:
   max_level: 6
   min_level: 2
   num_chan: 256
   spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
-
+  data_format: 'NCHW'
+  
 FPNRPNHead:
   anchor_generator:
     aspect_ratios: [0.5, 1.0, 2.0]
@@ -53,6 +60,7 @@ FPNRPNHead:
     nms_thresh: 0.7
     pre_nms_top_n: 1000
     post_nms_top_n: 1000
+  data_format: 'NCHW'
 
 FPNRoIAlign:
   canconical_level: 4

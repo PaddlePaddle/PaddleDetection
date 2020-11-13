@@ -72,7 +72,8 @@ class ResNet(object):
                  nonlocal_stages=[],
                  gcb_stages=[],
                  gcb_params=dict(),
-                 lr_mult_list=[1., 1., 1., 1.]):
+                 lr_mult_list=[1., 1., 1., 1.],
+                 data_format='NCHW'):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -126,6 +127,7 @@ class ResNet(object):
         self.lr_mult_list = lr_mult_list
         # var denoting curr stage
         self.stage_num = -1
+        self.data_format=data_format
 
     def _conv_offset(self,
                      input,
@@ -146,7 +148,8 @@ class ResNet(object):
             bias_attr=ParamAttr(
                 initializer=Constant(0.0), name=name + ".b_0"),
             act=act,
-            name=name)
+            name=name,
+            data_format=self.data_format)
         return out
 
     def _conv_norm(self,
@@ -178,7 +181,8 @@ class ResNet(object):
                 param_attr=ParamAttr(
                     name=_name + "_weights", learning_rate=lr_mult),
                 bias_attr=False,
-                name=_name + '.conv2d.output.1')
+                name=_name + '.conv2d.output.1', 
+                data_format=self.data_format)
         else:
             # select deformable conv"
             offset_mask = self._conv_offset(
@@ -187,7 +191,8 @@ class ResNet(object):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 act=None,
-                name=_name + "_conv_offset")
+                name=_name + "_conv_offset",
+                data_format=self.data_format)
             offset_channel = filter_size**2 * 2
             mask_channel = filter_size**2
             offset, mask = fluid.layers.split(
@@ -235,7 +240,8 @@ class ResNet(object):
                 bias_attr=battr,
                 moving_mean_name=bn_name + '_mean',
                 moving_variance_name=bn_name + '_variance',
-                use_global_stats=global_stats)
+                use_global_stats=global_stats,
+                data_layout=self.data_format)
             scale = fluid.framework._get_var(pattr.name)
             bias = fluid.framework._get_var(battr.name)
         elif self.norm_type == 'affine_channel':
@@ -275,7 +281,8 @@ class ResNet(object):
                     pool_stride=2,
                     pool_padding=0,
                     ceil_mode=True,
-                    pool_type='avg')
+                    pool_type='avg',
+                    data_format=self.data_format)
                 return self._conv_norm(input, ch_out, 1, 1, name=name)
             return self._conv_norm(input, ch_out, 1, stride, name=name)
         else:
@@ -456,7 +463,8 @@ class ResNet(object):
             pool_size=3,
             pool_stride=2,
             pool_padding=1,
-            pool_type='max')
+            pool_type='max',
+            data_format=self.data_format)
         return output
 
     def __call__(self, input):

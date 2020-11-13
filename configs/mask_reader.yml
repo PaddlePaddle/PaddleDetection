@@ -61,7 +61,7 @@ EvalReader:
   - !Permute
     channel_first: true
     to_bgr: false
-  batch_size: 1
+  batch_size: 4
   shuffle: false
   drop_last: false
   drop_empty: false
@@ -90,6 +90,6 @@ TestReader:
   - !Permute
     channel_first: true
     to_bgr: false
-  batch_size: 1
+  batch_size: 4
   shuffle: false
   drop_last: false

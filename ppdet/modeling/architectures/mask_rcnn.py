@@ -59,7 +59,8 @@ class MaskRCNN(object):
                  mask_assigner='MaskAssigner',
                  mask_head='MaskHead',
                  rpn_only=False,
-                 fpn=None):
+                 fpn=None,
+                 data_format='NCHW'):
         super(MaskRCNN, self).__init__()
         self.backbone = backbone
         self.rpn_head = rpn_head
@@ -70,6 +71,7 @@ class MaskRCNN(object):
         self.mask_head = mask_head
         self.rpn_only = rpn_only
         self.fpn = fpn
+        self.data_format=data_format
 
     def build(self, feed_vars, mode='train'):
         if mode == 'train':
@@ -80,8 +82,9 @@ class MaskRCNN(object):
             required_fields = ['im_shape', 'im_info']
         self._input_check(required_fields, feed_vars)
         im = feed_vars['image']
+        if self.data_format == "NHWC":
+            im = fluid.layers.transpose(im, [0, 2, 3, 1]) # NHWC
         im_info = feed_vars['im_info']
-
         mixed_precision_enabled = mixed_precision_global_state() is not None
         # cast inputs to FP16
         if mixed_precision_enabled:
@@ -89,6 +92,11 @@ class MaskRCNN(object):
 
         # backbone
         body_feats = self.backbone(im)
+
+        if self.data_format == "NHWC":
+            for k, v in body_feats.items():
+                v = fluid.layers.transpose(v, [0, 3, 1, 2]) # NHWC
+                body_feats[k] = v
 
         # cast features back to FP32
         if mixed_precision_enabled:

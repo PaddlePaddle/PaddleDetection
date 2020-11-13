@@ -29,7 +29,7 @@ import datetime
 import six
 from collections import deque
 from paddle.fluid import profiler
-
+import paddle
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
@@ -50,6 +50,7 @@ FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
+paddle.enable_static()
 
 def main():
     env = os.environ
@@ -57,6 +58,13 @@ def main():
                     and 'PADDLE_TRAINERS_NUM' in env \
                     and int(env['PADDLE_TRAINERS_NUM']) > 1
     num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
+   # if FLAGS.use_dali:
+   #     import dali 
+   #     train_iter = dali.train(settings=args)
+   #     if trainer_id == 0:
+   #         test_iter = dali.val(settings=args)
+   # else:
+        
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         local_seed = (99 + trainer_id)
@@ -120,6 +128,12 @@ def main():
                     loss *= ctx.get_loss_scale_var()
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
+
+                if cfg.use_fp16:
+                    optimizer = fluid.contrib.mixed_precision.decorate(
+                        optimizer,
+                        init_loss_scaling=cfg.scale_loss,
+                        use_dynamic_loss_scaling=cfg.use_dynamic_loss_scaling)
                 optimizer.minimize(loss)
 
                 if FLAGS.fp16:
@@ -234,8 +248,19 @@ def main():
         vdl_writer = LogWriter(FLAGS.vdl_log_dir)
         vdl_loss_step = 0
         vdl_mAP_step = 0
-
+    ips_list = []
     for it in range(start_iter, cfg.max_iters):
+
+
+        #NOTE: this is for benchmark
+
+        if it == 210:
+            paddle.fluid.profiler.start_profiler('GPU', tracer_option='Default' )
+            print("start profiling")
+        if it == 220:
+            paddle.fluid.profiler.stop_profiler('total', profile_path='./detection.profiler')
+            print("save output timeline")
+            return
         start_time = end_time
         end_time = time.time()
         time_stat.append(end_time - start_time)
@@ -254,15 +279,22 @@ def main():
 
         train_stats.update(stats)
         logs = train_stats.log()
+        ips = float(cfg['TrainReader']['batch_size']) / time_cost
+        if it >= 100:
+            ips_list.append(ips)
+        if it == 500:
+            print(">>>>>>>>>>>>>>>>>>>>>>>>>> Average ips: ", np.mean(ips_list),">>>>>>>>>>>>>>>>>>>>>>>>")
         if it % cfg.log_iter == 0 and (not FLAGS.dist or trainer_id == 0):
-            strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                it, np.mean(outs[-1]), logs, time_cost, eta)
+            strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}, ips: {:.5f}'.format(
+                it, np.mean(outs[-1]), logs, time_cost, eta, ips)
             logger.info(strs)
 
         # NOTE : profiler tools, used for benchmark
         if FLAGS.is_profiler and it == 5:
+            print("prof start")
             profiler.start_profiler("All")
         elif FLAGS.is_profiler and it == 10:
+            print("prof end")
             profiler.stop_profiler("total", FLAGS.profiler_path)
             return
 
@@ -361,7 +393,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--is_profiler',
         type=int,
-        default=0,
+        default=1,
         help='The switch of profiler tools. (used for benchmark)')
     parser.add_argument(
         '--profiler_path',

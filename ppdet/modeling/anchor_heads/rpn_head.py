@@ -50,7 +50,8 @@ class RPNHead(object):
                  rpn_target_assign=RPNTargetAssign().__dict__,
                  train_proposal=GenerateProposals(12000, 2000).__dict__,
                  test_proposal=GenerateProposals().__dict__,
-                 num_classes=1):
+                 num_classes=1,
+                 data_format='NCHW'):
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
@@ -299,7 +300,8 @@ class FPNRPNHead(RPNHead):
                  num_chan=256,
                  min_level=2,
                  max_level=6,
-                 num_classes=1):
+                 num_classes=1,
+                 data_format='NCHW'):
         super(FPNRPNHead, self).__init__(anchor_generator, rpn_target_assign,
                                          train_proposal, test_proposal)
         self.anchor_start_size = anchor_start_size
@@ -307,6 +309,7 @@ class FPNRPNHead(RPNHead):
         self.min_level = min_level
         self.max_level = max_level
         self.num_classes = num_classes
+        self.data_format = data_format
 
         self.fpn_rpn_list = []
         self.anchors_list = []
@@ -334,7 +337,6 @@ class FPNRPNHead(RPNHead):
         conv_share_name = 'conv_rpn_fpn' + str(self.min_level)
         cls_share_name = 'rpn_cls_logits_fpn' + str(self.min_level)
         bbox_share_name = 'rpn_bbox_pred_fpn' + str(self.min_level)
-
         num_anchors = len(self.anchor_generator.aspect_ratios)
         conv_rpn_fpn = fluid.layers.conv2d(
             input=input,
@@ -350,7 +352,8 @@ class FPNRPNHead(RPNHead):
             bias_attr=ParamAttr(
                 name=conv_share_name + '_b',
                 learning_rate=2.,
-                regularizer=L2Decay(0.)))
+                regularizer=L2Decay(0.)),
+                data_format=self.data_format)
 
         self.anchors, self.anchor_var = self.anchor_generator(
             input=conv_rpn_fpn,
@@ -372,7 +375,8 @@ class FPNRPNHead(RPNHead):
             bias_attr=ParamAttr(
                 name=cls_share_name + '_b',
                 learning_rate=2.,
-                regularizer=L2Decay(0.)))
+                regularizer=L2Decay(0.)),
+                data_format=self.data_format)
         self.rpn_bbox_pred = fluid.layers.conv2d(
             input=conv_rpn_fpn,
             num_filters=num_anchors * 4,
@@ -386,7 +390,8 @@ class FPNRPNHead(RPNHead):
             bias_attr=ParamAttr(
                 name=bbox_share_name + '_b',
                 learning_rate=2.,
-                regularizer=L2Decay(0.)))
+                regularizer=L2Decay(0.)),
+                data_format=self.data_format)
         return self.rpn_cls_score, self.rpn_bbox_pred
 
     def _get_single_proposals(self, body_feat, im_info, feat_lvl, mode='train'):

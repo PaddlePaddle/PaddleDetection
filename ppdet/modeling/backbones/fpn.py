@@ -56,7 +56,8 @@ class FPN(object):
                  norm_decay=0.,
                  freeze_norm=False,
                  use_c5=True,
-                 reverse_out=False):
+                 reverse_out=False,
+                 data_format='NCHW'):
         self.freeze_norm = freeze_norm
         self.num_chan = num_chan
         self.min_level = min_level
@@ -67,6 +68,7 @@ class FPN(object):
         self.norm_decay = norm_decay
         self.use_c5 = use_c5
         self.reverse_out = reverse_out
+        self.data_format = data_format
 
     def _add_topdown_lateral(self, body_name, body_input, upper_output):
         lateral_name = 'fpn_inner_' + body_name + '_lateral'
@@ -95,15 +97,16 @@ class FPN(object):
                     name=lateral_name + "_b",
                     learning_rate=2.,
                     regularizer=L2Decay(0.)),
-                name=lateral_name)
+                name=lateral_name,
+                data_format=self.data_format)
         if body_input.shape[2] == -1 and body_input.shape[3] == -1:
             topdown = fluid.layers.resize_nearest(
-                upper_output, scale=2., name=topdown_name)
+                upper_output, scale=2., name=topdown_name, data_format=self.data_format)
         else:
             topdown = fluid.layers.resize_nearest(
                 upper_output,
                 out_shape=[body_input.shape[2], body_input.shape[3]],
-                name=topdown_name)
+                name=topdown_name, data_format=self.data_format)
 
         return lateral + topdown
 
@@ -126,7 +129,7 @@ class FPN(object):
         self.fpn_inner_output = [[] for _ in range(num_backbone_stages)]
         fpn_inner_name = 'fpn_inner_' + body_name_list[0]
         body_input = body_dict[body_name_list[0]]
-        fan = body_input.shape[1]
+        fan = body_input.shape[3]
         if self.norm_type:
             initializer = Xavier(fan_out=fan)
             self.fpn_inner_output[0] = ConvNorm(
@@ -151,7 +154,8 @@ class FPN(object):
                     name=fpn_inner_name + "_b",
                     learning_rate=2.,
                     regularizer=L2Decay(0.)),
-                name=fpn_inner_name)
+                name=fpn_inner_name,
+                data_format=self.data_format)
         for i in range(1, num_backbone_stages):
             body_name = body_name_list[i]
             body_input = body_dict[body_name]
@@ -163,7 +167,8 @@ class FPN(object):
         fpn_name_list = []
         for i in range(num_backbone_stages):
             fpn_name = 'fpn_' + body_name_list[i]
-            fan = self.fpn_inner_output[i].shape[1] * 3 * 3
+            print("fpn_inner_output.shape", self.fpn_inner_output[i].shape[3])
+            fan = self.fpn_inner_output[i].shape[3] * 3 * 3
             if self.norm_type:
                 initializer = Xavier(fan_out=fan)
                 fpn_output = ConvNorm(
@@ -188,7 +193,8 @@ class FPN(object):
                         name=fpn_name + "_b",
                         learning_rate=2.,
                         regularizer=L2Decay(0.)),
-                    name=fpn_name)
+                    name=fpn_name,
+                    data_format=self.data_format)
             fpn_dict[fpn_name] = fpn_output
             fpn_name_list.append(fpn_name)
         if not self.has_extra_convs and self.max_level - self.min_level == len(
@@ -215,7 +221,7 @@ class FPN(object):
                 fpn_name = 'fpn_' + str(i)
                 if i > highest_backbone_level + 1:
                     fpn_blob_in = fluid.layers.relu(fpn_blob)
-                fan = fpn_blob_in.shape[1] * 3 * 3
+                fan = fpn_blob_in.shape[3] * 3 * 3
                 fpn_blob = fluid.layers.conv2d(
                     input=fpn_blob_in,
                     num_filters=self.num_chan,
@@ -228,7 +234,8 @@ class FPN(object):
                         name=fpn_name + "_b",
                         learning_rate=2.,
                         regularizer=L2Decay(0.)),
-                    name=fpn_name)
+                    name=fpn_name,
+                    data_format=self.data_format)
                 fpn_dict[fpn_name] = fpn_blob
                 fpn_name_list.insert(0, fpn_name)
                 spatial_scale.insert(0, spatial_scale[0] * 0.5)
