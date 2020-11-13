@@ -25,7 +25,7 @@ class YOLOv3Head(nn.Layer):
         self.anchors = self.parse_anchor(anchors, anchor_masks)
         self.num_outputs = len(self.anchors)
 
-        self.yolo_outputs = []
+        self.yolo_outputs = nn.LayerList()
         for i in range(len(self.anchors)):
             num_filters = self.num_outputs * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)

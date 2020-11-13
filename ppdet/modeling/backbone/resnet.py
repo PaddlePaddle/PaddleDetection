@@ -1,5 +1,4 @@
 import numpy as np
-import paddle.fluid as fluid
 from paddle.fluid.dygraph import Layer, Sequential
 from paddle.fluid.dygraph import Conv2D, Pool2D, BatchNorm
 from paddle.fluid.param_attr import ParamAttr
@@ -194,7 +193,7 @@ class Blocks(Layer):
                  freeze_norm=True):
         super(Blocks, self).__init__()
 
-        self.blocks = []
+        self.blocks = nn.LayerList()
         for i in range(count):
             conv_name = name_adapter.fix_layer_warp_name(stage_num, count, i)
 
