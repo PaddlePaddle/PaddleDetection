@@ -101,6 +101,7 @@ class BaseDataLoader(object):
                  dataset,
                  worker_num,
                  device,
+                 sampler=None,
                  return_list=False,
                  use_prefetch=True):
         self._dataset = dataset
@@ -108,11 +109,14 @@ class BaseDataLoader(object):
         # get data
         self._dataset.set_out(self._sample_transforms, self._fields)
         # batch sampler
-        self._batch_sampler = DistributedBatchSampler(
-            self._dataset,
-            batch_size=self.batch_size,
-            shuffle=self.shuffle,
-            drop_last=self.drop_last)
+        if sampler is None:
+            self._batch_sampler = DistributedBatchSampler(
+                self._dataset,
+                batch_size=self.batch_size,
+                shuffle=self.shuffle,
+                drop_last=self.drop_last)
+        else:
+            self._batch_sampler = sampler
 
         loader = DataLoader(
             dataset=self._dataset,
