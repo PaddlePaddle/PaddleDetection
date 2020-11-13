@@ -53,6 +53,7 @@ class IouAwareLoss(IouLoss):
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         iou.stop_gradient = True
 
-        loss_iou_aware = F.binary_cross_entropy(ioup, iou, reduction='none')
+        loss_iou_aware = F.binary_cross_entropy_with_logits(
+            ioup, iou, reduction='none')
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

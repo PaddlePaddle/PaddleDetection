@@ -16,7 +16,6 @@ import datetime
 import numpy as np
 from collections import deque
 import paddle
-from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
@@ -108,7 +107,6 @@ def run(FLAGS, cfg, place):
         dataset, cfg['worker_num'], place)
 
     # Model
-    main_arch = cfg.architecture
     model = create(cfg.architecture)
 
     # Optimizer
@@ -123,16 +121,21 @@ def run(FLAGS, cfg, place):
         ckpt_type=FLAGS.ckpt_type,
         load_static_weights=cfg.get('load_static_weights', False))
 
+    sync_bn = (getattr(model.bakcbone, 'norm_type', None) == 'sync_bn' and
+               cfg.use_gpu and ParallelEnv().nranks > 1)
+    if sync_bn:
+        model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     # Parallel Model 
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
     # Run Train
-    start_iter = 0
     time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
     end_time = time.time()
     for e_id in range(int(cfg.epoch)):
+        train_loader._dataset.epoch = e_id
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
