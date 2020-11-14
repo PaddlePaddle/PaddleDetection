@@ -265,7 +265,6 @@ class YOLOv3Head(object):
                     is_test=is_test)
 
         if self.use_spp and conv_block_num == 0 and is_first:
-            print("spp", '{}.spp.conv'.format(name))
             c = conv.shape[1]
             conv = self._spp_module(conv, name="spp")
             conv = self._conv_bn(
