@@ -37,7 +37,7 @@ then
   # linux系统通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
   wget -c https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2
-  #tar xvfj opencv3.4.6gcc4.8ffmpeg.tar.gz2 && cd ..
+  tar xvfj opencv3.4.6gcc4.8ffmpeg.tar.gz2 && cd ..
 
   # set OPENCV_DIR
   OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
