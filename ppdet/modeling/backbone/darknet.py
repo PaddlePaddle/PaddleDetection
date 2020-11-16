@@ -148,8 +148,8 @@ class DarkNet(nn.Layer):
         self.downsample0 = DownSample(
             ch_in=32, ch_out=32 * 2, name='yolo_input.downsample')
 
-        self.darknet_conv_block_list = nn.LayerList()
-        self.downsample_list = nn.LayerList()
+        self.darknet_conv_block_list = []
+        self.downsample_list = []
         ch_in = [64, 128, 256, 512, 1024]
         for i, stage in enumerate(self.stages):
             name = 'stage.{}'.format(i)
