@@ -19,7 +19,6 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
-from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_weight
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -45,7 +44,7 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
 
     # Model
     main_arch = cfg.architecture
@@ -55,18 +54,14 @@ def run(FLAGS, cfg):
     load_weight(model, cfg.weights)
 
     # Data Reader
-    if FLAGS.use_gpu:
-        devices_num = 1
-    else:
-        devices_num = int(os.environ.get('CPU_NUM', 1))
-    eval_reader = create_reader(
-        cfg.EvalDataset, cfg.EvalReader, devices_num=devices_num)
+    dataset = cfg.EvalDataset
+    eval_loader, _ = create('EvalReader')(dataset, cfg['worker_num'], place)
 
     # Run Eval
     outs_res = []
     start_time = time.time()
     sample_num = 0
-    for iter_id, data in enumerate(eval_reader()):
+    for iter_id, data in enumerate(eval_loader):
         # forward
         model.eval()
         outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
@@ -86,10 +81,9 @@ def run(FLAGS, cfg):
         eval_type.append('mask')
     # Metric
     # TODO: support other metric
-    dataset = cfg.EvalDataset
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
-    with_background = cfg['with_background']
+    with_background = cfg.with_background
     use_default_label = dataset.use_default_label
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
@@ -107,10 +101,9 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = paddle.CUDAPlace(ParallelEnv()
-                             .dev_id) if cfg.use_gpu else paddle.CPUPlace()
-    paddle.disable_static(place)
-    run(FLAGS, cfg)
+    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
+    place = paddle.set_device(place)
+    run(FLAGS, cfg, place)
 
 
 if __name__ == '__main__':
