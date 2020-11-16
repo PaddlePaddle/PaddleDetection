@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,7 +33,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
-from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -51,7 +65,7 @@ def run(FLAGS, cfg, place):
     model = create(cfg.architecture)
 
     # Init Model
-    model = load_dygraph_ckpt(model, ckpt=cfg.weights)
+    load_weight(model, cfg.weights)
 
     # Data Reader
     dataset = cfg.EvalDataset
