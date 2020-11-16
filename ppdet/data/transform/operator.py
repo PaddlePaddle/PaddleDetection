@@ -184,20 +184,20 @@ class LightingOp(BaseOperator):
 
 @register_op
 class RandomErasingImageOp(BaseOperator):
-    def __init__(self, prob=0.5, sl=0.02, sh=0.4, r1=0.3):
+    def __init__(self, prob=0.5, lower=0.02, heigher=0.4, aspect_ratio=0.3):
         """
         Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
         Args:
             prob (float): probability to carry out random erasing
-            sl (float): lower limit of the erasing area ratio
-            sh (float): upper limit of the erasing area ratio
-            r1 (float): aspect ratio of the erasing region
+            lower (float): lower limit of the erasing area ratio
+            heigher (float): upper limit of the erasing area ratio
+            aspect_ratio (float): aspect ratio of the erasing region
         """
         super(RandomErasingImageOp, self).__init__()
         self.prob = prob
-        self.sl = sl
-        self.sh = sh
-        self.r1 = r1
+        self.lower = lower
+        self.heigher = heigher
+        self.aspect_ratio = aspect_ratio
 
     def apply(self, sample):
         gt_bbox = sample['gt_bbox']
@@ -216,8 +216,9 @@ class RandomErasingImageOp(BaseOperator):
             h_bbox = y2 - y1 + 1
             area = w_bbox * h_bbox
 
-            target_area = random.uniform(self.sl, self.sh) * area
-            aspect_ratio = random.uniform(self.r1, 1 / self.r1)
+            target_area = random.uniform(self.lower, self.higher) * area
+            aspect_ratio = random.uniform(self.aspect_ratio,
+                                          1 / self.aspect_ratio)
 
             h = int(round(math.sqrt(target_area * aspect_ratio)))
             w = int(round(math.sqrt(target_area / aspect_ratio)))

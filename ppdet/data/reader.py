@@ -101,7 +101,7 @@ class BaseDataLoader(object):
                  dataset,
                  worker_num,
                  device,
-                 sampler=None,
+                 batch_sampler=None,
                  return_list=False,
                  use_prefetch=True):
         self._dataset = dataset
@@ -116,7 +116,7 @@ class BaseDataLoader(object):
                 shuffle=self.shuffle,
                 drop_last=self.drop_last)
         else:
-            self._batch_sampler = sampler
+            self._batch_sampler = batch_sampler
 
         loader = DataLoader(
             dataset=self._dataset,

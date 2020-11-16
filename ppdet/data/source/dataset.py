@@ -40,8 +40,13 @@ class DetDataset(Dataset):
         self.image_dir = image_dir if image_dir is not None else ''
         self.sample_num = sample_num
         self.use_default_label = use_default_label
-        self.kwargs = kwargs
         self.epoch = 0
+        self.mixup_epoch = kwargs.get('mixup_epoch', -1)
+        self.mixup = kwargs.get('mixup', False) or self.mixup_epoch > -1
+        self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
+        self.cutmix = kwargs.get('cutmix', False) or self.cutmix_epoch > -1
+        self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
+        self.mosaic = kwargs.get('mosaic', False) or self.mosaic_epoch > -1
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -49,16 +54,13 @@ class DetDataset(Dataset):
     def __getitem__(self, idx):
         # data batch
         roidb = self.roidbs[idx]
-        if self.epoch < self.kwargs.get('mixup_epoch', -1) \
-            or ('mixup_epoch' not in self.kwargs and self.kwargs.get('mixup', False)):
+        if self.epoch < self.mixup_epoch or self.mixup:
             n = len(self.roidbs)
             roidb = [roidb, self.roidbs[np.random.randint(n)]]
-        elif self.epoch < self.kwargs.get('cutmix_epoch', -1) \
-            or ('cutmix_epoch' not in self.kwargs and self.kwargs.get('cutmix', False)):
+        elif self.epoch < self.cutmix_epoch or self.cutmix:
             n = len(self.roidbs)
             roidb = [roidb, self.roidbs[np.random.randint(n)]]
-        elif self.epoch < self.kwargs.get('mosaic_epoch', -1) \
-            or ('mosaic_epoch' not in self.kwargs and self.kwargs.get('mosaic', False)):
+        elif self.epoch < self.mosaic_epoch or self.mosaic:
             n = len(self.roidbs)
             roidb = [roidb,
                      ] + [self.roidbs[np.random.randint(n)] for _ in range(3)]
