@@ -34,7 +34,7 @@ from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 from ppdet.utils.cli import ArgsParser
 from ppdet.data.reader import create_reader
-from ppdet.utils.checkpoint import load_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight
 from ppdet.utils.eval_utils import get_infer_results
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -141,7 +141,7 @@ def run(FLAGS, cfg):
                                                 use_default_label)
 
     # Init Model
-    model = load_dygraph_ckpt(model, ckpt=cfg.weights)
+    load_weight(model, cfg.weights)
 
     # Data Reader
     test_reader = create_reader(cfg.TestDataset, cfg.TestReader)
