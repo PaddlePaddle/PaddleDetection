@@ -95,8 +95,8 @@ class BaseOperator(object):
         if isinstance(sample, Sequence):
             for i in range(len(sample)):
                 sample[i] = self.apply(sample[i], context)
-
-        sample = self.apply(sample, context)
+        else:
+            sample = self.apply(sample, context)
         return sample
 
     def __str__(self):
@@ -140,8 +140,8 @@ class DecodeOp(BaseOperator):
                 "image width.".format(im.shape[1], sample['w']))
             sample['w'] = im.shape[1]
 
-        sample['im_shape'] = im.shape[:2]
-        sample['scale_factor'] = [1., 1.]
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.int32)
+        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
         return sample
 
 
@@ -677,11 +677,11 @@ class ResizeOp(BaseOperator):
 
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
         sample['image'] = im
-        sample['im_shape'] = [resize_h, resize_w]
+        sample['im_shape'] = np.array([resize_h, resize_w], dtype=np.int32)
         scale_factor = sample['scale_factor']
-        sample['scale_factor'] = [
-            scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x
-        ]
+        sample['scale_factor'] = np.array(
+            [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
+            dtype=np.float32)
 
         # apply bbox
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
@@ -691,7 +691,7 @@ class ResizeOp(BaseOperator):
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
-            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im_shape,
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im_shape[:2],
                                                 [im_scale_x, im_scale_y])
 
         # apply semantic
@@ -1400,11 +1400,11 @@ class RandomScaledCropOp(BaseOperator):
         canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
             offset_y:offset_y + dim, offset_x:offset_x + dim, :]
         sample['image'] = canvas
-        sample['im_shape'] = [resize_h, resize_w]
+        sample['im_shape'] = np.array([resize_h, resize_w], dtype=np.int32)
         scale_factor = sample['sacle_factor']
-        sample['scale_factor'] = [
-            scale_factor[0] * scale, scale_factor[1] * scale
-        ]
+        sample['scale_factor'] = np.array(
+            [scale_factor[0] * scale, scale_factor[1] * scale],
+            dtype=np.float32)
 
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             scale_array = np.array([scale, scale] * 2, dtype=np.float32)

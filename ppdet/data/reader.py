@@ -11,14 +11,14 @@ import numpy as np
 from paddle.io import DataLoader
 from ppdet.core.workspace import register, serializable, create
 from .sampler import DistributedBatchSampler
-from .transform import operators
-from .transform import batch_operators
+from . import transform
+from .transform import operator, batch_operator
 
 logger = logging.getLogger(__name__)
 
 
 class Compose(object):
-    def __init__(self, transforms, fields=None, from_=operators,
+    def __init__(self, transforms, fields=None, from_=transform,
                  num_classes=81):
         self.transforms = transforms
         self.transforms_cls = []
@@ -90,12 +90,15 @@ class BaseDataLoader(object):
         self._batch_transforms = None
         if batch_transforms:
             self._batch_transforms = Compose(batch_transforms, self._fields,
-                                             batch_operators, num_classes)
+                                             transform, num_classes)
 
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
         self.with_background = with_background
+
+    def set_epoch(self, epoch):
+        self._dataset.epoch = epoch
 
     def __call__(self,
                  dataset,
@@ -109,7 +112,7 @@ class BaseDataLoader(object):
         # get data
         self._dataset.set_out(self._sample_transforms, self._fields)
         # batch sampler
-        if sampler is None:
+        if batch_sampler is None:
             self._batch_sampler = DistributedBatchSampler(
                 self._dataset,
                 batch_size=self.batch_size,

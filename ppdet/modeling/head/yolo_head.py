@@ -22,10 +22,10 @@ class YOLOv3Head(nn.Layer):
         self.num_classes = num_classes
         self.loss = loss
 
-        self.anchors = self.parse_anchor(anchors, anchor_masks)
+        self.parse_anchor(anchors, anchor_masks)
         self.num_outputs = len(self.anchors)
 
-        self.yolo_outputs = nn.LayerList()
+        self.yolo_outputs = []
         for i in range(len(self.anchors)):
             num_filters = self.num_outputs * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
@@ -43,7 +43,14 @@ class YOLOv3Head(nn.Layer):
             self.yolo_outputs.append(yolo_output)
 
     def parse_anchor(self, anchors, anchor_masks):
-        return [[anchors[i] for i in mask] for mask in anchor_masks]
+        self.anchors = [[anchors[i] for i in mask] for mask in anchor_masks]
+        self.mask_anchors = []
+        anchor_num = len(anchors)
+        for masks in anchor_masks:
+            self.mask_anchors.append([])
+            for mask in masks:
+                assert mask < anchor_num, "anchor mask index overflow"
+                self.mask_anchors[-1].extend(anchors[mask])
 
     def forward(self, feats):
         assert len(feats) == len(self.anchors)
