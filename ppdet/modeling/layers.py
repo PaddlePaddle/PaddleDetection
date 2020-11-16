@@ -407,10 +407,13 @@ class YOLOBox(object):
     def __call__(self, yolo_head_out, anchors, im_shape, scale_factor=None):
         boxes_list = []
         scores_list = []
+        im_shape = paddle.cast(im_shape, 'float32')
         if scale_factor is not None:
             origin_shape = im_shape / scale_factor
         else:
             origin_shape = im_shape
+
+        origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
             boxes, scores = ops.yolo_box(head_out, origin_shape, anchors[i],
                                          self.num_classes, self.conf_thresh,

@@ -135,7 +135,7 @@ def run(FLAGS, cfg, place):
     start_time = time.time()
     end_time = time.time()
     for e_id in range(int(cfg.epoch)):
-        train_loader._dataset.epoch = e_id
+        train_loader.set_epoch(e_id)
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
