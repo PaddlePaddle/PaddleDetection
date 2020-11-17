@@ -25,3 +25,4 @@ yolov3_darknet # 模型目录
 - [2. C++预测(支持 Linux 和 Windows)](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/cpp)
 - [3. 在线服务化部署](./serving/README.md)
 - [4. 移动端部署](https://github.com/PaddlePaddle/Paddle-Lite-Demo)
+- [5. Jetson设备部署](./cpp/docs/Jetson_build.md)
