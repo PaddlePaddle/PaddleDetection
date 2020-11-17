@@ -25,6 +25,7 @@ if parent_path not in sys.path:
     sys.path.append(parent_path)
 
 from ppdet.ext_op import cornerpool_lib
+from ppdet.utils.check import enable_static_mode
 
 
 def bottom_pool_np(x):
@@ -120,7 +121,5 @@ class TestLeftPoolOp(TestRightPoolOp):
 
 
 if __name__ == "__main__":
-    import paddle
-    if check_version('2.0.0-rc0'):
-        paddle.enable_static()
+    enable_static_mode()
     unittest.main()

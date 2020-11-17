@@ -33,7 +33,7 @@ from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -372,8 +372,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if check_version('2.0.0-rc0'):
-        paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "-r",
