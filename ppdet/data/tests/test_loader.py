@@ -27,6 +27,7 @@ from ppdet.utils.download import DATASET_HOME
 
 from ppdet.data.transform.operators import DecodeImage, ResizeImage, Permute
 from ppdet.data.transform.batch_operators import PadBatch
+from ppdet.utils.check import enable_static_mode
 
 COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
 COCO_VAL_MD5SUM = '442b8da7639aecaf257c1dceb8ba8c80'
@@ -168,6 +169,5 @@ class TestReader(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    import paddle
-    paddle.enable_static()
+    enable_static_mode()
     unittest.main()
