@@ -1,8 +1,8 @@
 architecture: YOLOv3
 use_gpu: true
 max_iters: 220000
-log_smooth_window: 20
-log_iter: 20
+log_smooth_window: 100
+log_iter: 100
 save_dir: output
 snapshot_iter: 10000
 metric: VOC
