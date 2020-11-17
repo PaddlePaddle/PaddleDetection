@@ -4,7 +4,7 @@ max_iters: 220000
 log_smooth_window: 100
 log_iter: 100
 save_dir: output
-snapshot_iter: 10000
+snapshot_iter: 2000
 metric: VOC
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x0_5_pretrained.tar
 weights: output/ppyolo_tiny/model_final
@@ -30,6 +30,7 @@ PPYOLOTinyHead:
   anchor_masks: [[3, 4, 5], [0, 1, 2]]
   anchors: [[24, 36], [45, 103], [103, 96],
             [106, 216], [221, 148], [253, 271]]
+  detection_block_channels: [160, 112]
   norm_decay: 0.
   scale_x_y: 1.05
   yolo_loss: YOLOv3Loss
