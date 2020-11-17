@@ -30,6 +30,7 @@ if parent_path not in sys.path:
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.utils.check import check_version
 
 
 class TestFasterRCNN(unittest.TestCase):
@@ -91,5 +92,6 @@ class TestSSD(TestFasterRCNN):
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    if check_version('2.0.0-rc0'):
+        paddle.enable_static()
     unittest.main()

@@ -27,6 +27,7 @@ from ppdet.utils.download import DATASET_HOME
 from ppdet.core.workspace import load_config, merge_config
 
 from ppdet.data.reader import create_reader
+from ppdet.utils.check import check_version
 
 COCO_VAL_URL = 'http://images.cocodataset.org/zips/val2017.zip'
 COCO_VAL_MD5SUM = '442b8da7639aecaf257c1dceb8ba8c80'
@@ -113,5 +114,6 @@ class TestReaderYAML(unittest.TestCase):
 
 if __name__ == '__main__':
     import paddle
-    paddle.enable_static()
+    if check_version('2.0.0-rc0'):
+        paddle.enable_static()
     unittest.main()
