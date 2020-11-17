@@ -1,11 +1,11 @@
 # 是否使用GPU(即是否使用 CUDA)
-WITH_GPU=ON
+WITH_GPU=OFF
 
 # 是否使用MKL or openblas，TX2需要设置为OFF
 WITH_MKL=ON
 
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
-WITH_TENSORRT=ON
+WITH_TENSORRT=OFF
 
 # TensorRT 的include路径
 TENSORRT_INC_DIR=/path/to/tensorrt/lib
