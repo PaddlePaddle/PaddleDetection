@@ -1,10 +1,14 @@
-# TX2平台编译指南
+# Jetson平台编译指南
 
 ## 说明
-本文档在`TX2`平台上使用`jetpack 4.3`进行测试。`TX2`平台的开发指南请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html).
+`NVIDIA Jetson`设备是具有`NVIDIA GPU`的嵌入式设备，可以将目标检测算法部署到该设备上。本文档是在`Jetson`硬件上部署`PaddleDetection`模型的教程。
 
-## TX2环境搭建
-`TX2`系统软件安装，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html).
+本文档以`Jetson TX2`硬件、`JetPack 4.3`版本为例进行说明。
+
+`Jetson`平台的开发指南请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html).
+
+## Jetson环境搭建
+`Jetson`系统软件安装，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html).
 
 * (1) 查看硬件系统的l4t的版本号
 ```
@@ -12,12 +16,14 @@ cat /etc/nv_tegra_release
 ```
 * (2) 根据硬件，选择硬件可安装的`JetPack`版本，硬件和`JetPack`版本对应关系请参考[jetpack-archive](https://developer.nvidia.com/embedded/jetpack-archive).
 
-* (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html)中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
+* (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html) 中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
 
-## `Paddle`预测库
-本文档使用`Paddle`在`TX2`平台上预先编译好的预测库，下载地址[fluid_inference.tgz](https://paddle-inference-lib.bj.bcebos.com/1.8.4-nv-jetson-cuda10-cudnn7.5-trt5/fluid_inference.tgz), `Paddle`版本`1.8.4`,`CUDA`版本`10.0`,`CUDNN`版本`7.5`，`TensorRT`版本`5`。
+## 下载或编译`Paddle`预测库
+本文档使用`Paddle`在`JetPack4.3`上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。
 
-若需要自己在`TX2`平台上编译`Paddle`，请参考文档[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html) 的`NVIDIA Jetson嵌入式硬件预测库源码编译`部分内容。
+这里选择[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-rc0-nv-jetson-cuda10-cudnn7.6-trt6/paddle_inference.tgz), `Paddle`版本`2.0.0-rc0`,`CUDA`版本`10.0`,`CUDNN`版本`7.6`，`TensorRT`版本`6`。
+
+若需要自己在`Jetson`平台上自定义编译`Paddle`库，请参考文档[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html) 的`NVIDIA Jetson嵌入式硬件预测库源码编译`部分内容。
 
 ### Step1: 下载代码
 
@@ -28,7 +34,7 @@ cat /etc/nv_tegra_release
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的硬件平台，针对不同`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)
+解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-rc0-nv-jetson-cuda10-cudnn7.6-trt6/paddle_inference.tgz) 。
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```
@@ -40,7 +46,7 @@ fluid_inference
 └── version.txt # 版本和编译信息
 ```
 
-**注意:** 预编译库`nv-jetson-cuda10-cudnn7.5-trt5`使用的`GCC`版本是`7.5.0`，其他都是使用`GCC 4.8.5`编译的。使用高版本的GCC可能存在`ABI`兼容性问题，建议降级或[自行编译预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
+**注意:** 预编译库`nv-jetson-cuda10-cudnn7.6-trt6`使用的`GCC`版本是`7.5.0`，其他都是使用`GCC 4.8.5`编译的。使用高版本的GCC可能存在`ABI`兼容性问题，建议降级或[自行编译预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
 
 
 ### Step4: 编译
@@ -59,8 +65,11 @@ WITH_MKL=OFF
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=ON
 
+# TensorRT 的include路径
+TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
+
 # TensorRT 的lib路径
-TENSORRT_DIR=/path/to/TensorRT/
+TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference/
@@ -70,10 +79,10 @@ PADDLE_DIR=/path/to/fluid_inference/
 WITH_STATIC_LIB=OFF
 
 # CUDA 的 lib 路径
-CUDA_LIB=/path/to/cuda/lib/
+CUDA_LIB=/usr/local/cuda-10.0/lib64
 
 # CUDNN 的 lib 路径
-CUDNN_LIB=/path/to/cudnn/lib/
+CUDNN_LIB=/usr/lib/aarch64-linux-gnu
 
 # OPENCV_DIR 的路径
 # linux平台请下载：https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2，并解压到deps文件夹下
@@ -107,11 +116,14 @@ WITH_MKL=OFF
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
-# TensorRT 的路径
-TENSORRT_DIR=/home/nvidia/PaddleDetection_infer/tensorrt/
+# TensorRT 的include路径
+TENSORRT_INC_DIR=/usr/include/aarch64-linux-gnu
+
+# TensorRT 的lib路径
+TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 
 # Paddle 预测库路径
-PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference_1.8.4-_cuda10_cudnnv7.5_trt5_jetson_sm53_62_72/
+PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference/
 
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库

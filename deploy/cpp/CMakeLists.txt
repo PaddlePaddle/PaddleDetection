@@ -10,7 +10,8 @@ SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(CUDA_LIB "" CACHE PATH "Location of libraries")
 SET(CUDNN_LIB "" CACHE PATH "Location of libraries")
-SET(TENSORRT_DIR "" CACHE PATH "Compile demo with TensorRT")
+SET(TENSORRT_INC_DIR "" CACHE PATH "Compile demo with TensorRT")
+SET(TENSORRT_LIB_DIR "" CACHE PATH "Compile demo with TensorRT")
 
 include(cmake/yaml-cpp.cmake)
 
@@ -112,8 +113,9 @@ endif()
 
 if (NOT WIN32)
   if (WITH_TENSORRT AND WITH_GPU)
-     include_directories("${TENSORRT_DIR}/include")
-     link_directories("${TENSORRT_DIR}/lib")
+	  include_directories("${TENSORRT_INC_DIR}/include")
+	  #link_directories("${TENSORRT_LIB_DIR}/lib")
+	  link_directories("${TENSORRT_LIB_DIR}/")
   endif()
 endif(NOT WIN32)
 
@@ -170,7 +172,7 @@ endif()
 
 if (NOT WIN32)
     set(DEPS ${DEPS}
-        ${MATH_LIB} ${MKLDNN_LIB} 
+        ${MATH_LIB} ${MKLDNN_LIB}
         glog gflags protobuf z xxhash yaml-cpp
         )
     if(EXISTS "${PADDLE_DIR}/third_party/install/snappystream/lib")
@@ -195,8 +197,8 @@ endif(NOT WIN32)
 if(WITH_GPU)
   if(NOT WIN32)
     if (WITH_TENSORRT)
-      set(DEPS ${DEPS} ${TENSORRT_DIR}/lib/libnvinfer${CMAKE_SHARED_LIBRARY_SUFFIX})
-      set(DEPS ${DEPS} ${TENSORRT_DIR}/lib/libnvinfer_plugin${CMAKE_SHARED_LIBRARY_SUFFIX})
+	    set(DEPS ${DEPS} ${TENSORRT_LIB_DIR}/libnvinfer${CMAKE_SHARED_LIBRARY_SUFFIX})
+	    set(DEPS ${DEPS} ${TENSORRT_LIB_DIR}/libnvinfer_plugin${CMAKE_SHARED_LIBRARY_SUFFIX})
     endif()
     set(DEPS ${DEPS} ${CUDA_LIB}/libcudart${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(DEPS ${DEPS} ${CUDNN_LIB}/libcudnn${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -212,7 +214,7 @@ if (NOT WIN32)
     set(DEPS ${DEPS} ${EXTERNAL_LIB})
 endif()
 
-set(DEPS ${DEPS} ${OpenCV_LIBS}) 
+set(DEPS ${DEPS} ${OpenCV_LIBS})
 add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
 ADD_DEPENDENCIES(main ext-yaml-cpp)
 target_link_libraries(main ${DEPS})
