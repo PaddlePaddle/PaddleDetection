@@ -168,6 +168,8 @@ class MobileNetV3(object):
         if if_act:
             if act == 'relu':
                 bn = fluid.layers.relu(bn)
+            if act == 'leaky_relu':
+                bn = fluid.layers.leaky_relu(bn, 0.1)
             elif act == 'hard_swish':
                 bn = self._hard_swish(bn)
             elif act == 'relu6':
@@ -565,3 +567,59 @@ class MobileNetV3RCNN(MobileNetV3):
         res = OrderedDict([('mv3_{}'.format(idx), self.end_points[idx])
                            for idx, feat_idx in enumerate(self.feature_maps)])
         return res
+
+
+@register
+class MobileNetV3PPYOLO(MobileNetV3):
+    """
+    MobileNet v3, see https://arxiv.org/abs/1905.02244
+    Args:
+	scale (float): scaling factor for convolution groups proportion of mobilenet_v3.
+        model_name (str): There are two modes, small and large.
+        norm_type (str): normalization type, 'bn' and 'sync_bn' are supported.
+        norm_decay (float): weight decay for normalization layer weights.
+        conv_decay (float): weight decay for convolution layer weights.
+        feature_maps (list): index of stages whose feature maps are returned.
+        extra_block_filters (list): number of filter for each extra block.
+        lr_mult_list (list): learning rate ratio of different blocks, lower learning rate ratio
+                             is need for pretrained model got using distillation(default as
+                             [1.0, 1.0, 1.0, 1.0, 1.0]).
+        freeze_norm (bool): freeze normalization layers.
+        multiplier (float): The multiplier by which to reduce the convolution expansion and
+                            number of channels.
+    """
+    __shared__ = ['norm_type']
+
+    def __init__(
+            self,
+            scale=1.0,
+            model_name='small',
+            feature_maps=[5, 6, 7, 8, 9, 10],
+            conv_decay=0.0,
+            norm_type='bn',
+            norm_decay=0.0,
+            extra_block_filters=[],
+            lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
+            freeze_norm=False,
+            multiplier=1.0):
+        super(MobileNetV3PPYOLO, self).__init__(
+            scale=scale,
+            model_name=model_name,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            extra_block_filters=extra_block_filters,
+            lr_mult_list=lr_mult_list,
+            feature_maps=feature_maps,
+            freeze_norm=freeze_norm,
+            multiplier=multiplier)
+        if model_name == "large":
+            self.cfg[-1] = [5, 960, 160, False, 'leaky_relu', 1]
+        elif model_name == "small":
+            self.cfg[-1] = [5, 576, 96, False, 'leaky_relu', 1]
+        else:
+            raise NotImplementedError
+
+        if multiplier != 1.0:
+            self.cfg[-1][1] = int(self.cfg[-1][1] * multiplier)
+            self.cfg[-1][2] = int(self.cfg[-1][2] * multiplier)
