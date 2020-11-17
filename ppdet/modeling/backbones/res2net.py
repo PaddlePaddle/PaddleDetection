@@ -51,6 +51,9 @@ class Res2Net(ResNet):
         feature_maps (list): index of stages whose feature maps are returned
         dcn_v2_stages (list): index of stages who select deformable conv v2
         nonlocal_stages (list): index of stages who select nonlocal networks
+        lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                             lower learning rate ratio is need for pretrained model 
+                             got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
@@ -67,7 +70,8 @@ class Res2Net(ResNet):
             feature_maps=[2, 3, 4, 5],
             dcn_v2_stages=[],
             weight_prefix_name='',
-            nonlocal_stages=[], ):
+            nonlocal_stages=[],
+            lr_mult_list=[1., 1., 1., 1.]):
         super(Res2Net, self).__init__(
             depth=depth,
             freeze_at=freeze_at,
@@ -78,7 +82,8 @@ class Res2Net(ResNet):
             feature_maps=feature_maps,
             dcn_v2_stages=dcn_v2_stages,
             weight_prefix_name=weight_prefix_name,
-            nonlocal_stages=nonlocal_stages)
+            nonlocal_stages=nonlocal_stages,
+            lr_mult_list=lr_mult_list)
 
         assert depth >= 50, "just support depth>=50 in res2net, but got depth=".format(
             depth)
@@ -165,6 +170,8 @@ class Res2Net(ResNet):
             The last variable in endpoint-th stage.
         """
         assert stage_num in [2, 3, 4, 5]
+        
+        self.stage_num = stage_num
 
         stages, block_func = self.depth_cfg[self.depth]
         count = stages[stage_num - 2]
