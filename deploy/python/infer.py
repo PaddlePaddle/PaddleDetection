@@ -35,6 +35,7 @@ import paddle
 import paddle.fluid as fluid
 from preprocess import preprocess, Resize, Normalize, Permute, PadStride
 from visualize import visualize_box_mask
+from ppdet.utils.check import check_version
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -521,7 +522,8 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    if check_version('2.0.0-rc0'):
+        paddle.enable_static()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",
