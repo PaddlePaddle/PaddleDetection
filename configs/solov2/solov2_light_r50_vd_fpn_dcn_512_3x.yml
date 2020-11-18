@@ -20,8 +20,9 @@ SOLOv2:
 ResNet:
   depth: 50
   feature_maps: [2, 3, 4, 5]
-  freeze_at: 2
-  norm_type: bn
+  freeze_at: 0
+  freeze_norm: false
+  norm_type: sync_bn
   dcn_v2_stages: [3, 4, 5]
   variant: d
   lr_mult_list: [0.05, 0.05, 0.1, 0.15]

@@ -24,6 +24,7 @@ if parent_path not in sys.path:
     sys.path.append(parent_path)
 
 from ppdet.data.parallel_map import ParallelMap
+from ppdet.utils.check import enable_static_mode
 
 
 class MemorySource(object):
@@ -146,7 +147,6 @@ class TestDataset(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    import paddle
-    paddle.enable_static()
+    enable_static_mode()
     logging.basicConfig()
     unittest.main()

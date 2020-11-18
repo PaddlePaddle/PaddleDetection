@@ -26,6 +26,7 @@ import paddle
 import paddle.fluid as fluid
 from preprocess import preprocess, Resize, Normalize, Permute, PadStride
 from visualize import visualize_box_mask
+from ppdet.utils.check import enable_static_mode
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -512,7 +513,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",
