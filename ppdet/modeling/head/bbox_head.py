@@ -156,22 +156,16 @@ class BBoxHead(nn.Layer):
             logits=score, label=labels_int64)
         loss_bbox_cls = paddle.mean(loss_bbox_cls)
         # bbox reg
-        # TODO
-        #delta = paddle.multiply(delta, target['bbox_inside_weights'])
-        #target['bbox_targets'] = paddle.multiply(target['bbox_targets'], target['bbox_inside_weights'])
-        #loss_bbox_reg = F.smooth_l1_loss(
-        #    delta,
-        #    target['bbox_targets'],
-        #    reduction='none',
-        #    delta=1.0)
-        #loss_bbox_reg = paddle.multiply(loss_bbox_reg, target['bbox_outside_weights'])
-        import paddle.fluid as fluid
-        loss_bbox_reg = fluid.layers.smooth_l1(
-            x=delta,
-            y=target['bbox_targets'],
-            inside_weight=target['bbox_inside_weights'],
-            outside_weight=target['bbox_outside_weights'],
-            sigma=1.0)
+        delta = paddle.multiply(delta, target['bbox_inside_weights'])
+        target['bbox_targets'] = paddle.multiply(target['bbox_targets'],
+                                                 target['bbox_inside_weights'])
+        loss_bbox_reg = F.smooth_l1_loss(
+            delta, target['bbox_targets'], reduction='none', delta=1.0)
+        loss_bbox_reg = paddle.multiply(loss_bbox_reg,
+                                        target['bbox_outside_weights'])
+        loss_bbox_reg = paddle.reshape(
+            loss_bbox_reg, shape=[loss_bbox_reg.shape[0], -1])
+        loss_bbox_reg = paddle.sum(loss_bbox_reg, axis=1)
         loss_bbox_reg = paddle.mean(loss_bbox_reg)
         return loss_bbox_cls, loss_bbox_reg
 
