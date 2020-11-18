@@ -71,7 +71,7 @@ class SOLOv2Head(object):
                      kernel='gaussian',
                      sigma=2.0).__dict__,
                  drop_block=False):
-        check_version('2.0.0')
+        check_version('2.0.0-rc0')
         self.num_classes = num_classes
         self.seg_num_grids = num_grids
         self.cate_out_channels = self.num_classes - 1

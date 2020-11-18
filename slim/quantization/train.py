@@ -37,7 +37,7 @@ from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.quant import quant_aware, convert
 from pact import pact, get_optimizer
@@ -303,7 +303,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--loss_scale",

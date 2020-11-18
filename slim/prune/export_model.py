@@ -29,7 +29,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.export_utils import save_infer_model, dump_infer_config
-from ppdet.utils.check import check_config, check_version
+from ppdet.utils.check import check_config, check_version, enable_static_mode
 from paddleslim.prune import Pruner
 from paddleslim.analysis import flops
 
@@ -98,7 +98,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",
