@@ -20,6 +20,7 @@ from paddle.nn import Conv2D, Conv2DTranspose, ReLU
 from paddle.nn.initializer import KaimingNormal
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
+from ppdet.modeling import ops
 
 
 @register
@@ -183,10 +184,11 @@ class MaskHead(Layer):
         mask_logits = paddle.flatten(mask_head_out, start_axis=1, stop_axis=-1)
         mask_label = paddle.cast(x=mask_target, dtype='float32')
         mask_label.stop_gradient = True
-        # TODO
-        import paddle.fluid as fluid
-        loss_mask = fluid.layers.sigmoid_cross_entropy_with_logits(
-            x=mask_logits, label=mask_label, ignore_index=-1, normalize=True)
+        loss_mask = ops.sigmoid_cross_entropy_with_logits(
+            input=mask_logits,
+            label=mask_label,
+            ignore_index=-1,
+            normalize=True)
         loss_mask = paddle.sum(loss_mask)
 
         return {'loss_mask': loss_mask}

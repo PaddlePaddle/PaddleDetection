@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import paddle
+import paddle.nn.functional as F
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
@@ -1509,3 +1510,30 @@ def generate_proposals(scores,
         return rpn_rois, rpn_roi_probs, rpn_rois_num
     else:
         return rpn_rois, rpn_roi_probs
+
+
+def sigmoid_cross_entropy_with_logits(input,
+                                      label,
+                                      ignore_index=-100,
+                                      normalize=False):
+    output = F.binary_cross_entropy_with_logits(input, label, reduction='none')
+    mask_tensor = paddle.cast(label != ignore_index, 'float32')
+    output = paddle.multiply(output, mask_tensor)
+    output = paddle.reshape(output, shape=[output.shape[0], -1])
+    if normalize:
+        sum_valid_mask = paddle.sum(mask_tensor)
+        output = output / sum_valid_mask
+    return output
+
+
+def smooth_l1(input, label, inside_weight=None, outside_weight=None,
+              sigma=None):
+    input_new = paddle.multiply(input, inside_weight)
+    label_new = paddle.multiply(label, inside_weight)
+    delta = 1 / (sigma * sigma)
+    out = F.smooth_l1_loss(input_new, label_new, reduction='none', delta=delta)
+    out = paddle.multiply(out, outside_weight)
+    out = out / delta
+    out = paddle.reshape(out, shape=[out.shape[0], -1])
+    out = paddle.sum(out, axis=1)
+    return out
