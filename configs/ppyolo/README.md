@@ -84,6 +84,13 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 |:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
 | PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.1MB    |     320     |         14.4         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
+### PP-YOLO tiny
+
+|        Model      | GPU number | images/GPU | Model Size | input shape | Box AP50<sup>val</sup> | Kirin 990 1xCore (FPS) | download | config  |
+|:-----------------:|:----------:|:----------:| :--------: | :----------:| :--------------------: | :--------------------: | :------: | :-----: |
+| PP-YOLO tiny      |     4      |      32    |   1.3MB    |     320     |          62.07         |          68.77         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
+| PP-YOLO tiny-x    |     4      |      32    |   3.3MB    |     320     |          71.72         |          37.57         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny_x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny_x.yml)                   |
+
 ## Getting Start
 
 ### 1. Training
