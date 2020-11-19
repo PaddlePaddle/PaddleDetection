@@ -33,7 +33,6 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.visualizer import visualize_results
 from ppdet.utils.cli import ArgsParser
-from ppdet.data.reader import create_reader
 from ppdet.utils.checkpoint import load_weight
 from ppdet.utils.eval_utils import get_infer_results
 import logging
@@ -120,22 +119,24 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def run(FLAGS, cfg):
+def run(FLAGS, cfg, place):
 
     # Model
     main_arch = cfg.architecture
     model = create(cfg.architecture)
 
-    dataset = cfg.TestReader['dataset']
+    # data
+    dataset = cfg.TestDataset
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     dataset.set_images(test_images)
+    test_loader, _ = create('TestReader')(dataset, cfg['worker_num'], place)
 
     # TODO: support other metrics
     imid2path = dataset.get_imid2path()
 
     from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
-    with_background = dataset.with_background
+    with_background = cfg.with_background
     use_default_label = dataset.use_default_label
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
@@ -143,11 +144,8 @@ def run(FLAGS, cfg):
     # Init Model
     load_weight(model, cfg.weights)
 
-    # Data Reader
-    test_reader = create_reader(cfg.TestDataset, cfg.TestReader)
-
     # Run Infer 
-    for iter_id, data in enumerate(test_reader()):
+    for iter_id, data in enumerate(test_loader):
         # forward
         model.eval()
         outs = model(data, cfg.TestReader['inputs_def']['fields'], 'infer')
@@ -208,7 +206,9 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    run(FLAGS, cfg)
+    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
+    place = paddle.set_device(place)
+    run(FLAGS, cfg, place)
 
 
 if __name__ == '__main__':
