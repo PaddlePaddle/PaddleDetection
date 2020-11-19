@@ -213,7 +213,10 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
             logger.debug("Found {}".format(fullpath))
             return fullpath, True
         else:
-            shutil.rmtree(fullpath)
+            if osp.isdir(fullpath):
+                shutil.rmtree(fullpath)
+            else:
+                os.remove(fullpath)
 
     fullname = _download(url, root_dir, md5sum)
 
