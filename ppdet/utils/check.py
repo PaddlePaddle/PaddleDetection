@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import sys
 
+import paddle
 import paddle.fluid as fluid
 
 import logging
@@ -126,3 +127,10 @@ def check_py_func(program):
                       "if you use MultiClassSoftNMS, better to replace it by "\
                       "MultiClassNMS.".format(input_arg, output_arg)
                 raise Exception(err)
+
+
+def enable_static_mode():
+    try:
+        paddle.enable_static()
+    except:
+        pass
