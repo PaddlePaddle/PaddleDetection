@@ -172,7 +172,6 @@ def run(FLAGS, cfg, place):
                 model.apply_collective_grads()
             else:
                 loss.backward()
-            optimizer.minimize(loss)
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
