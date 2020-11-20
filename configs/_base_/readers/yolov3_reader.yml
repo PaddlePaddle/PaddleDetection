@@ -42,7 +42,7 @@ EvalReader:
 TestReader:
   inputs_def:
     image_shape: [3, 608, 608]
-    fields: ['image', 'im_size', 'im_id']
+    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
     - DecodeOp: {}
     - ResizeOp: {target_size: 608, interp: 2}
