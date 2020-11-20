@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -16,11 +30,12 @@ import datetime
 import numpy as np
 from collections import deque
 import paddle
+from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_dygraph_ckpt, save_dygraph_ckpt
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
 from paddle.distributed import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -31,7 +46,7 @@ logger = logging.getLogger(__name__)
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        "-ckpt_type",
+        "--weight_type",
         default='pretrain',
         type=str,
         help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
@@ -107,6 +122,7 @@ def run(FLAGS, cfg, place):
         dataset, cfg['worker_num'], place)
 
     # Model
+    main_arch = cfg.architecture
     model = create(cfg.architecture)
 
     # Optimizer
@@ -114,34 +130,33 @@ def run(FLAGS, cfg, place):
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
-    model = load_dygraph_ckpt(
-        model,
-        optimizer,
-        cfg.pretrain_weights,
-        ckpt_type=FLAGS.ckpt_type,
-        load_static_weights=cfg.get('load_static_weights', False))
-
-    sync_bn = (getattr(model.bakcbone, 'norm_type', None) == 'sync_bn' and
-               cfg.use_gpu and ParallelEnv().nranks > 1)
-    if sync_bn:
-        model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    if FLAGS.weight_type == 'resume':
+        load_weight(model, cfg.pretrain_weights, optimizer)
+    else:
+        load_pretrain_weight(model, cfg.pretrain_weights,
+                             cfg.get('load_static_weights', False),
+                             FLAGS.weight_type)
 
     # Parallel Model 
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
     # Run Train
+    start_iter = 0
     time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
     end_time = time.time()
+    # Run Train
+    start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
     for e_id in range(int(cfg.epoch)):
-        train_loader.set_epoch(e_id)
+        cur_eid = e_id + start_epoch
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
             time_stat.append(end_time - start_time)
             time_cost = np.mean(time_stat)
-            eta_sec = (cfg.epoch * step_per_epoch - iter_id) * time_cost
+            eta_sec = (
+                (cfg.epoch - cur_eid) * step_per_epoch - iter_id) * time_cost
             eta = str(datetime.timedelta(seconds=int(eta_sec)))
 
             # Model Forward
@@ -165,22 +180,23 @@ def run(FLAGS, cfg, place):
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
-                if iter_id == 0:
+                if e_id == 0 and iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
                 if iter_id % cfg.log_iter == 0:
-                    strs = 'Epoch:{}: iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                        e_id, iter_id, curr_lr, logs, time_cost, eta)
+                    ips = float(cfg['TrainReader']['batch_size']) / time_cost
+                    strs = 'Epoch:{}: iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                        cur_eid, iter_id, curr_lr, logs, eta, time_cost, ips)
                     logger.info(strs)
 
         # Save Stage 
-        if ParallelEnv().local_rank == 0 and e_id % cfg.snapshot_epoch == 0:
+        if ParallelEnv().local_rank == 0 and cur_eid % cfg.snapshot_epoch == 0:
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-            save_name = str(e_id + 1) if e_id + 1 != int(
+            save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
             save_dir = os.path.join(cfg.save_dir, cfg_name)
-            save_dygraph_ckpt(model, optimizer, save_dir, save_name)
+            save_model(model, optimizer, save_dir, save_name)
 
 
 def main():
