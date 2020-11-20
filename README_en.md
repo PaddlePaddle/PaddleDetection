@@ -8,7 +8,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 
 PaddleDetection implements varied mainstream object detection algorithms in modular design, and provides wealthy data augmentation methods, network components(such as backbones), loss functions, etc., and integrates abilities of model compression and cross-platform high-performance deployment. 
 
-After a long time of industry practice polishing, PaddleDetection has had smooth and excellent use experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research. 
+After a long time of industry practice polishing, PaddleDetection has had smooth and excellent user experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research. 
 
 <div align="center">
   <img src="docs/images/football.gif" width='800'/>
