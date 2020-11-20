@@ -34,7 +34,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -234,7 +234,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--infer_dir",

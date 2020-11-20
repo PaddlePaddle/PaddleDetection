@@ -27,7 +27,7 @@ import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 
 from ppdet.data.reader import create_reader
 
@@ -162,7 +162,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--json_eval",
