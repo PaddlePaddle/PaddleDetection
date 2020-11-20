@@ -467,5 +467,7 @@ class HybridTaskCascade(object):
             return self.build_multi_scale(feed_vars, mask_branch)
         return self.build(feed_vars, 'test')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')
