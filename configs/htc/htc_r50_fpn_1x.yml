@@ -212,3 +212,14 @@ TestReader:
   - !ResizeImage
     interp: 1
     max_size: 1333
+    target_size: 800
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
+  batch_size: 1
+  shuffle: false
