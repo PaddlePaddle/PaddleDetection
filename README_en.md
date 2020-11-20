@@ -15,11 +15,11 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 </div>
 
 ### Product dynamic
-
+- 2020.10.01: Added SOLOv2 model for instance segmentation, which reached 38.6 FPS on a single Tesla V100, and mask ap on the COCO-val dataset reached 38.8, which increased inference speed by 24%, mAP increased by 2.4 percentage points.
 - 2020.09.30: Released the mobile-side detection demo, and you can directly scan the code for installation experience.
 - 2020.09.21-27: [Object detection 7 days of punching class] Hand in hand to teach you from the beginning to the advanced level, in-depth understanding of the object detection algorithm life. Join the course QQ group (1136406895) to study together :)
 - 2020.07.24: [PP-YOLO](https://arxiv.org/abs/2007.12099), which is **the most practical** object detection model, was released, it deeply considers the double demands of industrial applications for accuracy and speed, and reached accuracy as 45.2% (the latest 45.9%) on COCO dataset, inference speed as 72.9 FPS on a single Test V100. Please refer to [PP-YOLO](https://arxiv.org/abs/2007.12099) for details.
-- 2020.06.11: Publish 676 classes of large-scale server-side practical object detection models that are applicable to most application scenarios and can be used directly for prediction or for fine-tuning other tasks.
+- 2020.06.11: Published 676 classes of large-scale server-side practical object detection models that are applicable to most application scenarios and can be used directly for prediction or for fine-tuning other tasks.
 
 ### Features
 
@@ -85,7 +85,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
           <li><b>Instance Segmentation</b></li>
             <ul>
              <li>Mask RCNN</li>
-             <li>SOLOv2 is coming soon</li>
+             <li>SOLOv2</li>
             </ul>
         </ul>
         <ul>
