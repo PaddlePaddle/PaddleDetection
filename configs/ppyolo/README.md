@@ -91,6 +91,8 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 | PP-YOLO tiny      |     4      |      32    |   1.3MB    |     320     |          62.07         |          68.77         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
 | PP-YOLO tiny-x    |     4      |      32    |   3.3MB    |     320     |          71.72         |          37.57         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny_x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny_x.yml)                   |
 
+- PP-YOLO tiny is trained on 4 GPUs and `batch_size=32` on each GPU，Kirin 990 FPS is tested on Kirin 990 CPU with single thread and compiled with arm8.
+
 ## Getting Start
 
 ### 1. Training
