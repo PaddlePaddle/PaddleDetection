@@ -79,10 +79,10 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 ### PP-YOLO tiny
 
-|        Model      | GPU number | images/GPU | Model Size | input shape | Box AP50<sup>val</sup> | Kirin 990 1xCore (FPS) | download | config  |
-|:-----------------:|:----------:|:----------:| :--------: | :----------:| :--------------------: | :--------------------: | :------: | :-----: |
-| PP-YOLO tiny      |     4      |      32    |   1.3MB    |     320     |          62.07         |          68.77         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
-| PP-YOLO tiny-x    |     4      |      32    |   3.3MB    |     320     |          71.72         |          37.57         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny_x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny_x.yml)                   |
+|       模型      | GPU个数 | 每GPU图片个数 | 模型体积 | 输入尺寸 | Box AP50<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 预测模型下载 | 配置文件  |
+|:---------------:|:-------:|:-------------:| :------: | :-------:| :--------------------: | :--------------------: | :------: | :----------: | :-----: |
+| PP-YOLO tiny    |    4    |       32      |  1.3MB   |   320    |          62.07         |          68.77         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny.yml)                   |
+| PP-YOLO tiny-x  |    4    |       32      |  3.3MB   |   320    |          71.72         |          37.57         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny_x.pdparams) | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny_x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_tiny_x.yml)                   |
 
 - PP-YOLO tiny模型使用4卡每卡`batch_size=32`训练，麒麟990芯片预测FPSN为采用arm8单进程CPU测试结果。
 
