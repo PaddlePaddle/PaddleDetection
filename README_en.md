@@ -8,7 +8,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 
 PaddleDetection implements varied mainstream object detection algorithms in modular design, and provides wealthy data augmentation methods, network components(such as backbones), loss functions, etc., and integrates abilities of model compression and cross-platform high-performance deployment.
 
-After a long time of industry practice polishing, PaddleDetection has had smooth and excellent use experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research.
+After a long time of industry practice polishing, PaddleDetection has had smooth and excellent user experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research.
 
 <div align="center">
   <img src="docs/images/football.gif" width='800'/>
@@ -85,7 +85,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
           <li><b>Instance Segmentation</b></li>
             <ul>
              <li>Mask RCNN</li>
-             <li>SOLOv2 is coming soon</li>
+             <li>SOLOv2</li>
             </ul>
         </ul>
         <ul>
@@ -252,7 +252,7 @@ All these models can be get in [Model Zoo](#ModelZoo)
 
 ## Updates
 
-v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
+v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 
 ## License
