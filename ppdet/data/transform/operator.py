@@ -25,7 +25,7 @@ try:
 except Exception:
     from collections import Sequence
 
-from numbers import Number
+from numbers import Number, Integral
 
 import uuid
 import logging
@@ -33,6 +33,7 @@ import random
 import math
 import numpy as np
 import os
+import copy
 
 import cv2
 from PIL import Image, ImageEnhance, ImageDraw
@@ -577,11 +578,11 @@ class ResizeOp(BaseOperator):
         super(ResizeOp, self).__init__()
         self.keep_ratio = keep_ratio
         self.interp = interp
-        if not isinstance(target_size, (int, list, tuple)):
+        if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
                 format(type(target_size)))
-        if isinstance(target_size, int):
+        if isinstance(target_size, Integral):
             target_size = [target_size, target_size]
         self.target_size = target_size
 
@@ -678,10 +679,14 @@ class ResizeOp(BaseOperator):
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
         sample['image'] = im
         sample['im_shape'] = np.array([resize_h, resize_w], dtype=np.int32)
-        scale_factor = sample['scale_factor']
-        sample['scale_factor'] = np.array(
-            [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
-            dtype=np.float32)
+        if 'scale_factor' in sample:
+            scale_factor = sample['scale_factor']
+            sample['scale_factor'] = np.array(
+                [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
+                dtype=np.float32)
+        else:
+            sample['scale_factor'] = np.array(
+                [im_scale_y, im_scale_x], dtype=np.float32)
 
         # apply bbox
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
@@ -744,16 +749,16 @@ class MultiscaleTestResizeOp(BaseOperator):
         self.interp = interp
         self.use_flip = use_flip
 
-        if not isinstance(target_size, list):
+        if not isinstance(target_size, Sequence):
             raise TypeError(
-                "Type of target_size is invalid. Must be List, now is {}".
+                "Type of target_size is invalid. Must be List or Tuple, now is {}".
                 format(type(target_size)))
         self.target_size = target_size
 
-        if not isinstance(origin_target_size, list):
+        if not isinstance(origin_target_size, Sequence):
             raise TypeError(
-                "Type of target_size is invalid. Must be List, now is {}".
-                format(type(target_size)))
+                "Type of origin_target_size is invalid. Must be List or Tuple, now is {}".
+                format(type(origin_target_size)))
 
         self.origin_target_size = origin_target_size
 
@@ -803,10 +808,10 @@ class RandomResizeOp(BaseOperator):
             cv2.INTER_LANCZOS4,
         ]
         assert isinstance(target_size, (
-            int, Sequence)), "target_size must be int, list or tuple"
-        if random_size and not isinstance(target_size, list):
+            Integral, Sequence)), "target_size must be Integer, List or Tuple"
+        if random_size and not isinstance(target_size, Sequence):
             raise TypeError(
-                "Type of target_size is invalid when random_size is True. Must be List, now is {}".
+                "Type of target_size is invalid when random_size is True. Must be List or Tuple, now is {}".
                 format(type(target_size)))
         self.target_size = target_size
         self.random_size = random_size
@@ -866,7 +871,10 @@ class RandomExpandOp(BaseOperator):
         x = np.random.randint(0, w - width)
         offsets, size = [x, y], [h, w]
 
-        pad = Pad(size, pad_mode=-1, offsets=offsets)
+        pad = Pad(size,
+                  pad_mode=-1,
+                  offsets=offsets,
+                  fill_value=self.fill_value)
 
         return pad(sample, context=context)
 
@@ -1537,30 +1545,32 @@ class MixupOp(BaseOperator):
         if factor <= 0.0:
             return sample[1]
         im = self.apply_image(sample[0]['image'], sample[1]['image'], factor)
+        result = copy.deepcopy(sample[0])
+        result['image'] = im
         # apply bbox and score
-        gt_bbox1 = sample[0]['gt_bbox']
-        gt_bbox2 = sample[1]['gt_bbox']
-        gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
-        gt_class1 = sample[0]['gt_class']
-        gt_class2 = sample[1]['gt_class']
-        gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
+        if 'gt_bbox' in sample[0]:
+            gt_bbox1 = sample[0]['gt_bbox']
+            gt_bbox2 = sample[1]['gt_bbox']
+            gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
+            result['gt_bbox'] = gt_bbox
+        if 'gt_class' in sample[0]:
+            gt_class1 = sample[0]['gt_class']
+            gt_class2 = sample[1]['gt_class']
+            gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
+            result['gt_class'] = gt_class
+        if 'gt_score' in sample[0]:
+            gt_score1 = sample[0]['gt_score']
+            gt_score2 = sample[1]['gt_score']
+            gt_score = np.concatenate(
+                (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
+            result['gt_score'] = gt_score
+        if 'is_crowd' in sample[0]:
+            is_crowd1 = sample[0]['is_crowd']
+            is_crowd2 = sample[1]['is_crowd']
+            is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
+            result['is_crowd'] = is_crowd
 
-        gt_score1 = sample[0]['gt_score']
-        gt_score2 = sample[1]['gt_score']
-        gt_score = np.concatenate(
-            (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
-
-        is_crowd1 = sample[0]['is_crowd']
-        is_crowd2 = sample[1]['is_crowd']
-        is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
-
-        sample = sample[0]
-        sample['image'] = im
-        sample['gt_bbox'] = gt_bbox
-        sample['gt_score'] = gt_score
-        sample['gt_class'] = gt_class
-        sample['is_crowd'] = is_crowd
-        return sample
+        return result
 
 
 @register_op
@@ -1628,26 +1638,26 @@ class PadBoxOp(BaseOperator):
         bbox = sample['gt_bbox']
         gt_num = min(self.num_max_boxes, len(bbox))
         num_max = self.num_max_boxes
-        fields = context['fields'] if context else []
+        # fields = context['fields'] if context else []
         pad_bbox = np.zeros((num_max, 4), dtype=np.float32)
         if gt_num > 0:
             pad_bbox[:gt_num, :] = bbox[:gt_num, :]
         sample['gt_bbox'] = pad_bbox
-        if 'gt_class' in fields:
-            pad_class = np.zeros((num_max), dtype=np.int32)
+        if 'gt_class' in sample:
+            pad_class = np.zeros((num_max, ), dtype=np.int32)
             if gt_num > 0:
                 pad_class[:gt_num] = sample['gt_class'][:gt_num, 0]
             sample['gt_class'] = pad_class
-        if 'gt_score' in fields:
-            pad_score = np.zeros((num_max), dtype=np.float32)
+        if 'gt_score' in sample:
+            pad_score = np.zeros((num_max, ), dtype=np.float32)
             if gt_num > 0:
                 pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
             sample['gt_score'] = pad_score
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        if 'is_difficult' in fields:
-            pad_diff = np.zeros((num_max), dtype=np.int32)
+        if 'is_difficult' in sample:
+            pad_diff = np.zeros((num_max, ), dtype=np.int32)
             if gt_num > 0:
                 pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
             sample['difficult'] = pad_diff
@@ -1801,9 +1811,9 @@ class Pad(BaseOperator):
         x, y = offsets
         im_h, im_w = im_size
         h, w = size
-        canvas = np.ones((h, w, 3), dtype=np.uint8)
-        canvas *= np.array(self.fill_value, dtype=np.uint8)
-        canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.uint8)
+        canvas = np.ones((h, w, 3), dtype=np.float32)
+        canvas *= np.array(self.fill_value, dtype=np.float32)
+        canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
         return canvas
 
     def apply(self, sample, context=None):

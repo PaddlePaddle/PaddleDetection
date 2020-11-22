@@ -2,7 +2,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.fluid.regularizer import L2Decay
+from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['DarkNet', 'ConvBNLayer']

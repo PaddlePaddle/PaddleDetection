@@ -22,6 +22,7 @@ class Compose(object):
                  num_classes=81):
         self.transforms = transforms
         self.transforms_cls = []
+        output_fields = None
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(from_, k)
@@ -29,7 +30,17 @@ class Compose(object):
                 if hasattr(op_cls, 'num_classes'):
                     op_cls.num_classes = num_classes
 
+                if op_cls in [
+                        transform.Gt2YoloTargetOp, transform.Gt2YoloTarget
+                ]:
+                    output_fields = ['image', 'gt_bbox']
+                    output_fields.extend([
+                        'target{}'.format(i)
+                        for i in range(len(v['anchor_masks']))
+                    ])
+
         self.fields = fields
+        self.output_fields = output_fields if output_fields else fields
 
     def __call__(self, data):
         if self.fields is not None:
@@ -47,11 +58,11 @@ class Compose(object):
                             format(f, e, str(stack_info)))
                 raise e
 
-        if self.fields is not None:
+        if self.output_fields is not None:
             data_new = []
             for item in data:
                 batch = []
-                for k in self.fields:
+                for k in self.output_fields:
                     batch.append(item[k])
                 data_new.append(batch)
             batch_size = len(data_new)
@@ -80,8 +91,7 @@ class BaseDataLoader(object):
                  num_classes=81,
                  with_background=True):
         # out fields 
-        self._fields = copy.deepcopy(inputs_def[
-            'fields']) if inputs_def else None
+        self._fields = inputs_def['fields'] if inputs_def else None
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
@@ -89,7 +99,8 @@ class BaseDataLoader(object):
         # batch transfrom 
         self._batch_transforms = None
         if batch_transforms:
-            self._batch_transforms = Compose(batch_transforms, self._fields,
+            self._batch_transforms = Compose(batch_transforms,
+                                             copy.deepcopy(self._fields),
                                              transform, num_classes)
 
         self.batch_size = batch_size
@@ -97,20 +108,18 @@ class BaseDataLoader(object):
         self.drop_last = drop_last
         self.with_background = with_background
 
-    def set_epoch(self, epoch):
-        self._dataset.epoch = epoch
-
     def __call__(self,
                  dataset,
                  worker_num,
-                 device,
+                 device=None,
                  batch_sampler=None,
                  return_list=False,
                  use_prefetch=True):
         self._dataset = dataset
         self._dataset.parse_dataset(self.with_background)
         # get data
-        self._dataset.set_out(self._sample_transforms, self._fields)
+        self._dataset.set_out(self._sample_transforms,
+                              copy.deepcopy(self._fields))
         # batch sampler
         if batch_sampler is None:
             self._batch_sampler = DistributedBatchSampler(

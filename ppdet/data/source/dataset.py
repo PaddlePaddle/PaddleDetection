@@ -42,11 +42,8 @@ class DetDataset(Dataset):
         self.use_default_label = use_default_label
         self.epoch = 0
         self.mixup_epoch = kwargs.get('mixup_epoch', -1)
-        self.mixup = kwargs.get('mixup', False) or self.mixup_epoch > -1
         self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
-        self.cutmix = kwargs.get('cutmix', False) or self.cutmix_epoch > -1
         self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
-        self.mosaic = kwargs.get('mosaic', False) or self.mosaic_epoch > -1
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -54,13 +51,13 @@ class DetDataset(Dataset):
     def __getitem__(self, idx):
         # data batch
         roidb = self.roidbs[idx]
-        if self.epoch < self.mixup_epoch or self.mixup:
+        if self.mixup_epoch == 0 or self.epoch < self.mixup_epoch:
             n = len(self.roidbs)
             roidb = [roidb, self.roidbs[np.random.randint(n)]]
-        elif self.epoch < self.cutmix_epoch or self.cutmix:
+        elif self.cutmix_epoch == 0 or self.epoch < self.cutmix_epoch:
             n = len(self.roidbs)
             roidb = [roidb, self.roidbs[np.random.randint(n)]]
-        elif self.epoch < self.mosaic_epoch or self.mosaic:
+        elif self.mosaic_epoch == 0 or self.epoch < self.mosaic_epoch:
             n = len(self.roidbs)
             roidb = [roidb,
                      ] + [self.roidbs[np.random.randint(n)] for _ in range(3)]

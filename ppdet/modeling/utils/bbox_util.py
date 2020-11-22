@@ -46,12 +46,13 @@ def decode_yolo(box, anchor, downsample_ratio):
         box (Tensor): decoded box, with the shape [b, h, w, na, 4]
     """
     h, w, na = box.shape[1:4]
-    grid = make_grid(h, w, box.dtype).reshape((1, 1, h, w, 2))
+    grid = make_grid(h, w, box.dtype).reshape((1, h, w, 1, 2))
     box[:, :, :, :, 0:2] = box[:, :, :, :, :2] + grid
     box[:, :, :, :, 0] = box[:, :, :, :, 0] / w
     box[:, :, :, :, 1] = box[:, :, :, :, 1] / h
 
-    anchor = paddle.to_tensor(anchor, dtype=box.dtype, place=box.place)
+    anchor = paddle.to_tensor(anchor)
+    anchor = paddle.cast(anchor, box.dtype)
     anchor = anchor.reshape((1, 1, 1, na, 2))
     box[:, :, :, :, 2:4] = paddle.exp(box[:, :, :, :, 2:4]) * anchor
     box[:, :, :, :, 2] = box[:, :, :, :, 2] / (downsample_ratio * w)
@@ -78,7 +79,8 @@ def iou_similarity(box1, box2, eps=1e-9):
     overlap = (x2y2 - x1y1).clip(0).prod(-1)
     area1 = (px2y2 - px1y1).clip(0).prod(-1)
     area2 = (gx2y2 - gx1y1).clip(0).prod(-1)
-    return overlap / (area1 + area2 - overlap + eps)
+    union = area1 + area2 - overlap + eps
+    return overlap / union
 
 
 def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):

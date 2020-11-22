@@ -194,7 +194,7 @@ class Blocks(nn.Layer):
                  freeze_norm=True):
         super(Blocks, self).__init__()
 
-        self.blocks = nn.LayerList()
+        self.blocks = []
         for i in range(count):
             conv_name = name_adapter.fix_layer_warp_name(stage_num, count, i)
 

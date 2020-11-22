@@ -156,7 +156,7 @@ class BatchRandomResizeOp(BaseOperator):
     def __init__(self,
                  target_size,
                  keep_ratio=True,
-                 interp=cv2.INTER_LINEAR,
+                 interp=cv2.INTER_NEAREST,
                  random_size=True,
                  random_interp=False):
         super(BatchRandomResizeOp, self).__init__()
