@@ -8,7 +8,7 @@ PaddleDetection is an end-to-end object detection development kit based on Paddl
 
 PaddleDetection implements varied mainstream object detection algorithms in modular design, and provides wealthy data augmentation methods, network components(such as backbones), loss functions, etc., and integrates abilities of model compression and cross-platform high-performance deployment.
 
-After a long time of industry practice polishing, PaddleDetection has had smooth and excellent use experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research.
+After a long time of industry practice polishing, PaddleDetection has had smooth and excellent user experience, it has been widely used by developers in more than ten industries such as industrial quality inspection, remote sensing image object detection, automatic inspection, new retail, Internet, and scientific research.
 
 <div align="center">
   <img src="docs/images/football.gif" width='800'/>
@@ -16,6 +16,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 ### Product dynamic
 
+- 2020.10.01: Added SOLOv2 as an instance segmentation model, which reached 38.6 FPS on a single Tesla V100, 38.8 mask AP on Coco-Val dataset, and  inference speed increased by 24% and mAP by 2.4 percentage points.
 - 2020.09.30: Released the mobile-side detection demo, and you can directly scan the code for installation experience.
 - 2020.09.21-27: [Object detection 7 days of punching class] Hand in hand to teach you from the beginning to the advanced level, in-depth understanding of the object detection algorithm life. Join the course QQ group (1136406895) to study together :)
 - 2020.07.24: [PP-YOLO](https://arxiv.org/abs/2007.12099), which is **the most practical** object detection model, was released, it deeply considers the double demands of industrial applications for accuracy and speed, and reached accuracy as 45.2% (the latest 45.9%) on COCO dataset, inference speed as 72.9 FPS on a single Test V100. Please refer to [PP-YOLO](https://arxiv.org/abs/2007.12099) for details.
@@ -85,7 +86,7 @@ Based on the high performance core of PaddlePaddle, advantages of training speed
           <li><b>Instance Segmentation</b></li>
             <ul>
              <li>Mask RCNN</li>
-             <li>SOLOv2 is coming soon</li>
+             <li>SOLOv2</li>
             </ul>
         </ul>
         <ul>
@@ -252,7 +253,7 @@ All these models can be get in [Model Zoo](#ModelZoo)
 
 ## Updates
 
-v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [版本更新文档](docs/CHANGELOG.md) for details.
+v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 
 ## License
