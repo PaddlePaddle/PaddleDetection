@@ -126,7 +126,7 @@ def run(FLAGS, cfg, place):
     model = create(cfg.architecture)
 
     # Optimizer
-    lr = create('LearningRate')(step_per_epoch / int(ParallelEnv().nranks))
+    lr = create('LearningRate')(step_per_epoch)
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
