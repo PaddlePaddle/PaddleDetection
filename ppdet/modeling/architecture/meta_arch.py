@@ -32,8 +32,7 @@ class BaseArch(nn.Layer):
     def build_inputs(self, data, input_def):
         inputs = {}
         for i, k in enumerate(input_def):
-            v = paddle.to_tensor(data[i])
-            inputs[k] = v
+            inputs[k] = data[i]
         return inputs
 
     def model_arch(self):
