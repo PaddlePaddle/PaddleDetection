@@ -106,8 +106,8 @@ class RPNHead(nn.Layer):
             outside_weight=loss_inputs['rpn_rois_weight'],
             sigma=3.0, )
         loss_rpn_reg = paddle.sum(loss_rpn_reg)
-        score_shape = score_tgt.shape
-        score_shape = paddle.to_tensor(score_shape, dtype='float32')
+        score_shape = paddle.shape(score_tgt)
+        score_shape = paddle.cast(score_shape, dtype='float32')
         norm = paddle.prod(score_shape)
         norm.stop_gradient = True
         loss_rpn_reg = loss_rpn_reg / norm

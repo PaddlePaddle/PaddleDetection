@@ -72,7 +72,7 @@ class MaskFeat(Layer):
                         initializer=KaimingNormal(fan_in=fan_deconv)),
                     bias_attr=ParamAttr(
                         learning_rate=2., regularizer=L2Decay(0.))))
-            mask_conv.add_sublayer(conv_name + 'act', ReLU())
+            mask_conv.add_sublayer('conv5_mask' + 'act', ReLU())
             upsample = self.add_sublayer(name, mask_conv)
             self.upsample_module.append(upsample)
 
