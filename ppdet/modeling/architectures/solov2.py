@@ -22,6 +22,7 @@ from paddle import fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 
 __all__ = ['SOLOv2']
 
@@ -47,6 +48,7 @@ class SOLOv2(object):
                  bbox_head='SOLOv2Head',
                  mask_head='SOLOv2MaskHead'):
         super(SOLOv2, self).__init__()
+        check_version('2.0.0-rc0')
         self.backbone = backbone
         self.fpn = fpn
         self.bbox_head = bbox_head
