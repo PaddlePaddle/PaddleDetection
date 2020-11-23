@@ -127,7 +127,6 @@ def run(FLAGS, cfg, place):
     lr = create('LearningRate')(step_per_epoch)
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
-<<<<<<< 485c4f479352752c919ddcc26536589e3a28a058
     # Init Model & Optimzer   
     if FLAGS.weight_type == 'resume':
         load_weight(model, cfg.pretrain_weights, optimizer)
@@ -135,15 +134,6 @@ def run(FLAGS, cfg, place):
         load_pretrain_weight(model, cfg.pretrain_weights,
                              cfg.get('load_static_weights', False),
                              FLAGS.weight_type)
-=======
-    # Init Model & Optimzer
-    model = load_dygraph_ckpt(
-        model,
-        optimizer,
-        cfg.pretrain_weights,
-        ckpt_type=FLAGS.ckpt_type,
-        load_static_weights=cfg.get('load_static_weights', False))
->>>>>>> modify code to run eval and train successfully
 
     sync_bn = (getattr(model.backbone, 'norm_type', None) == 'sync_bn' and
                cfg.use_gpu and ParallelEnv().nranks > 1)
@@ -162,15 +152,8 @@ def run(FLAGS, cfg, place):
     # Run Train
     start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
     for e_id in range(int(cfg.epoch)):
-<<<<<<< 485c4f479352752c919ddcc26536589e3a28a058
-<<<<<<< 8cdc829fd10ca8721667741156faca443d8d403a
         cur_eid = e_id + start_epoch
-=======
-        train_loader.set_epoch(e_id)
->>>>>>> modify code to run eval.py successfully
-=======
         train_loader.dataset.epoch = e_id
->>>>>>> modify code to run eval and train successfully
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
@@ -192,10 +175,6 @@ def run(FLAGS, cfg, place):
                 model.apply_collective_grads()
             else:
                 loss.backward()
-<<<<<<< 485c4f479352752c919ddcc26536589e3a28a058
-=======
-
->>>>>>> modify code to run eval and train successfully
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
