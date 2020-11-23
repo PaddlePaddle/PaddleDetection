@@ -135,10 +135,13 @@ def run(FLAGS, cfg, place):
                              cfg.get('load_static_weights', False),
                              FLAGS.weight_type)
 
-    sync_bn = (getattr(model.backbone, 'norm_type', None) == 'sync_bn' and
-               cfg.use_gpu and ParallelEnv().nranks > 1)
-    if sync_bn:
-        model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+    if getattr(model.backbone, 'norm_type', None) == 'sync_bn':
+        assert cfg.use_gpu and ParallelEnv(
+        ).nranks > 1, 'you should use bn rather than sync_bn while using a single gpu'
+    # sync_bn = (getattr(model.backbone, 'norm_type', None) == 'sync_bn' and
+    #            cfg.use_gpu and ParallelEnv().nranks > 1)
+    # if sync_bn:
+    #     model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
     # Parallel Model 
     if ParallelEnv().nranks > 1:

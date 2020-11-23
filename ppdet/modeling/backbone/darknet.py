@@ -16,6 +16,7 @@ class ConvBNLayer(nn.Layer):
                  stride=1,
                  groups=1,
                  padding=0,
+                 norm_type='bn',
                  act="leaky",
                  name=None):
         super(ConvBNLayer, self).__init__()
@@ -30,7 +31,12 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(name=name + '.conv.weights'),
             bias_attr=False)
         bn_name = name + '.bn'
-        self.batch_norm = nn.BatchNorm2D(
+        if norm_type == 'sync_bn':
+            batch_norm = nn.SyncBatchNorm
+        else:
+            batch_norm = nn.BatchNorm2D
+
+        self.batch_norm = batch_norm(
             ch_out,
             weight_attr=ParamAttr(
                 name=bn_name + '.scale', regularizer=L2Decay(0.)),
@@ -54,6 +60,7 @@ class DownSample(nn.Layer):
                  filter_size=3,
                  stride=2,
                  padding=1,
+                 norm_type='bn',
                  name=None):
 
         super(DownSample, self).__init__()
@@ -64,6 +71,7 @@ class DownSample(nn.Layer):
             filter_size=filter_size,
             stride=stride,
             padding=padding,
+            norm_type=norm_type,
             name=name)
         self.ch_out = ch_out
 
@@ -73,7 +81,7 @@ class DownSample(nn.Layer):
 
 
 class BasicBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, name=None):
+    def __init__(self, ch_in, ch_out, norm_type='bn', name=None):
         super(BasicBlock, self).__init__()
 
         self.conv1 = ConvBNLayer(
@@ -82,6 +90,7 @@ class BasicBlock(nn.Layer):
             filter_size=1,
             stride=1,
             padding=0,
+            norm_type=norm_type,
             name=name + '.0')
         self.conv2 = ConvBNLayer(
             ch_in=ch_out,
@@ -89,6 +98,7 @@ class BasicBlock(nn.Layer):
             filter_size=3,
             stride=1,
             padding=1,
+            norm_type=norm_type,
             name=name + '.1')
 
     def forward(self, inputs):
@@ -99,16 +109,18 @@ class BasicBlock(nn.Layer):
 
 
 class Blocks(nn.Layer):
-    def __init__(self, ch_in, ch_out, count, name=None):
+    def __init__(self, ch_in, ch_out, count, norm_type='bn', name=None):
         super(Blocks, self).__init__()
 
-        self.basicblock0 = BasicBlock(ch_in, ch_out, name=name + '.0')
+        self.basicblock0 = BasicBlock(
+            ch_in, ch_out, norm_type=norm_type, name=name + '.0')
         self.res_out_list = []
         for i in range(1, count):
             block_name = '{}.{}'.format(name, i)
             res_out = self.add_sublayer(
-                block_name, BasicBlock(
-                    ch_out * 2, ch_out, name=block_name))
+                block_name,
+                BasicBlock(
+                    ch_out * 2, ch_out, norm_type=norm_type, name=block_name))
             self.res_out_list.append(res_out)
         self.ch_out = ch_out
 
@@ -125,6 +137,8 @@ DarkNet_cfg = {53: ([1, 2, 8, 8, 4])}
 @register
 @serializable
 class DarkNet(nn.Layer):
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  depth=53,
                  freeze_at=-1,
@@ -137,7 +151,6 @@ class DarkNet(nn.Layer):
         self.return_idx = return_idx
         self.num_stages = num_stages
         self.stages = DarkNet_cfg[self.depth][0:num_stages]
-        self.norm_type = norm_type
 
         self.conv0 = ConvBNLayer(
             ch_in=3,
@@ -145,10 +158,14 @@ class DarkNet(nn.Layer):
             filter_size=3,
             stride=1,
             padding=1,
+            norm_type=norm_type,
             name='yolo_input')
 
         self.downsample0 = DownSample(
-            ch_in=32, ch_out=32 * 2, name='yolo_input.downsample')
+            ch_in=32,
+            ch_out=32 * 2,
+            norm_type=norm_type,
+            name='yolo_input.downsample')
 
         self.darknet_conv_block_list = []
         self.downsample_list = []
@@ -156,8 +173,13 @@ class DarkNet(nn.Layer):
         for i, stage in enumerate(self.stages):
             name = 'stage.{}'.format(i)
             conv_block = self.add_sublayer(
-                name, Blocks(
-                    int(ch_in[i]), 32 * (2**i), stage, name=name))
+                name,
+                Blocks(
+                    int(ch_in[i]),
+                    32 * (2**i),
+                    stage,
+                    norm_type=norm_type,
+                    name=name))
             self.darknet_conv_block_list.append(conv_block)
         for i in range(num_stages - 1):
             down_name = 'stage.{}.downsample'.format(i)
@@ -166,6 +188,7 @@ class DarkNet(nn.Layer):
                 DownSample(
                     ch_in=32 * (2**(i + 1)),
                     ch_out=32 * (2**(i + 2)),
+                    norm_type=norm_type,
                     name=down_name))
             self.downsample_list.append(downsample)
 
