@@ -1,16 +1,33 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
+# limitations under the License.
+
 import numpy as np
-import paddle.fluid as fluid
-from paddle.fluid.dygraph import Layer, Sequential
-from paddle.fluid.dygraph import Conv2D, Pool2D, BatchNorm
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Constant
+from paddle import ParamAttr
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
+from paddle.nn import Conv2D, BatchNorm
+from paddle.nn import MaxPool2D
+
 from ppdet.core.workspace import register, serializable
-from paddle.fluid.regularizer import L2Decay
+
+from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
 
 
-class ConvNormLayer(Layer):
+class ConvNormLayer(nn.Layer):
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -24,19 +41,18 @@ class ConvNormLayer(Layer):
                  lr=1.0,
                  name=None):
         super(ConvNormLayer, self).__init__()
-        assert norm_type in ['bn', 'affine_channel']
+        assert norm_type in ['bn', 'sync_bn']
         self.norm_type = norm_type
         self.act = act
 
         self.conv = Conv2D(
-            num_channels=ch_in,
-            num_filters=ch_out,
-            filter_size=filter_size,
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=filter_size,
             stride=stride,
             padding=(filter_size - 1) // 2,
             groups=1,
-            act=None,
-            param_attr=ParamAttr(
+            weight_attr=ParamAttr(
                 learning_rate=lr, name=name + "_weights"),
             bias_attr=False)
 
@@ -53,30 +69,16 @@ class ConvNormLayer(Layer):
             name=bn_name + "_offset",
             trainable=False if freeze_norm else True)
 
-        if norm_type in ['bn', 'sync_bn']:
-            global_stats = True if freeze_norm else False
-            self.norm = BatchNorm(
-                num_channels=ch_out,
-                act=act,
-                param_attr=param_attr,
-                bias_attr=bias_attr,
-                use_global_stats=global_stats,
-                moving_mean_name=bn_name + '_mean',
-                moving_variance_name=bn_name + '_variance')
-            norm_params = self.norm.parameters()
-        elif norm_type == 'affine_channel':
-            self.scale = fluid.layers.create_parameter(
-                shape=[ch_out],
-                dtype='float32',
-                attr=param_attr,
-                default_initializer=Constant(1.))
-
-            self.offset = fluid.layers.create_parameter(
-                shape=[ch_out],
-                dtype='float32',
-                attr=bias_attr,
-                default_initializer=Constant(0.))
-            norm_params = [self.scale, self.offset]
+        global_stats = True if freeze_norm else False
+        self.norm = BatchNorm(
+            ch_out,
+            act=act,
+            param_attr=param_attr,
+            bias_attr=bias_attr,
+            use_global_stats=global_stats,
+            moving_mean_name=bn_name + '_mean',
+            moving_variance_name=bn_name + '_variance')
+        norm_params = self.norm.parameters()
 
         if freeze_norm:
             for param in norm_params:
@@ -86,13 +88,10 @@ class ConvNormLayer(Layer):
         out = self.conv(inputs)
         if self.norm_type == 'bn':
             out = self.norm(out)
-        elif self.norm_type == 'affine_channel':
-            out = fluid.layers.affine_channel(
-                out, scale=self.scale, bias=self.offset, act=self.act)
         return out
 
 
-class BottleNeck(Layer):
+class BottleNeck(nn.Layer):
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -176,12 +175,13 @@ class BottleNeck(Layer):
         out = self.branch2b(out)
         out = self.branch2c(out)
 
-        out = fluid.layers.elementwise_add(x=short, y=out, act='relu')
+        out = paddle.add(x=short, y=out)
+        out = F.relu(out)
 
         return out
 
 
-class Blocks(Layer):
+class Blocks(nn.Layer):
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -226,7 +226,7 @@ ResNet_cfg = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}
 
 @register
 @serializable
-class ResNet(Layer):
+class ResNet(nn.Layer):
     def __init__(self,
                  depth=50,
                  variant='b',
@@ -265,7 +265,7 @@ class ResNet(Layer):
             ]
         else:
             conv_def = [[3, 64, 7, 2, conv1_name]]
-        self.conv1 = Sequential()
+        self.conv1 = nn.Sequential()
         for (c_in, c_out, k, s, _name) in conv_def:
             self.conv1.add_sublayer(
                 _name,
@@ -282,8 +282,7 @@ class ResNet(Layer):
                     lr=lr_mult,
                     name=_name))
 
-        self.pool = Pool2D(
-            pool_type='max', pool_size=3, pool_stride=2, pool_padding=1)
+        self.pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
 
         ch_in_list = [64, 256, 512, 1024]
         ch_out_list = [64, 128, 256, 512]
