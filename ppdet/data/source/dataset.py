@@ -22,6 +22,7 @@ except Exception:
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
+import copy
 
 
 @serializable
@@ -45,7 +46,7 @@ class DetDataset(Dataset):
 
     def __getitem__(self, idx):
         # data batch
-        roidb = self.roidbs[idx]
+        roidb = copy.deepcopy(self.roidbs[idx])
         # data augment
         roidb = self.transform(roidb)
         # data item 
@@ -68,6 +69,23 @@ class DetDataset(Dataset):
         return os.path.join(self.dataset_dir, self.anno_path)
 
 
+def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
+    return f.lower().endswith(extensions)
+
+
+def _make_dataset(dir):
+    dir = os.path.expanduser(dir)
+    if not os.path.isdir(d):
+        raise ('{} should be a dir'.format(dir))
+    images = []
+    for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
+        for fname in sorted(fnames):
+            path = os.path.join(root, fname)
+            if is_valid_file(path):
+                images.append(path)
+    return images
+
+
 @register
 @serializable
 class ImageFolder(DetDataset):
@@ -76,11 +94,18 @@ class ImageFolder(DetDataset):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
+                 use_default_label=None,
                  **kwargs):
         super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num)
+                                          sample_num, use_default_label)
+        self._imid2path = {}
+        self.roidbs = None
 
-    def parse_dataset(self):
+    def parse_dataset(self, with_background=True):
+        if not self.roidbs:
+            self.roidbs = self._load_images()
+
+    def _parse(self):
         image_dir = self.image_dir
         if not isinstance(image_dir, Sequence):
             image_dir = [image_dir]
@@ -91,4 +116,27 @@ class ImageFolder(DetDataset):
                 images.extend(_make_dataset(im_dir))
             elif os.path.isfile(im_dir) and _is_valid_file(im_dir):
                 images.append(im_dir)
-        self.roidbs = images
+        return images
+
+    def _load_images(self):
+        images = self._parse()
+        ct = 0
+        records = []
+        for image in images:
+            assert image != '' and os.path.isfile(image), \
+                    "Image {} not found".format(image)
+            if self.sample_num > 0 and ct >= self.sample_num:
+                break
+            rec = {'im_id': np.array([ct]), 'im_file': image}
+            self._imid2path[ct] = image
+            ct += 1
+            records.append(rec)
+        assert len(records) > 0, "No image file found"
+        return records
+
+    def get_imid2path(self):
+        return self._imid2path
+
+    def set_images(self, images):
+        self.image_dir = images
+        self.roidbs = self._load_images()

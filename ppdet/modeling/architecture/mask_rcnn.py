@@ -1,8 +1,22 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from paddle import fluid
+import paddle
 from ppdet.core.workspace import register
 from .meta_arch import BaseArch
 
@@ -114,7 +128,7 @@ class MaskRCNN(BaseArch):
         loss_mask = self.mask_head.get_loss(self.mask_head_out, mask_targets)
         loss.update(loss_mask)
 
-        total_loss = fluid.layers.sums(list(loss.values()))
+        total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
 

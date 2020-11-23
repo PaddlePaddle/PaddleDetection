@@ -126,7 +126,7 @@ def run(FLAGS, cfg, place):
     model = create(cfg.architecture)
 
     # Optimizer
-    lr = create('LearningRate')(step_per_epoch / int(ParallelEnv().nranks))
+    lr = create('LearningRate')(step_per_epoch)
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
@@ -172,7 +172,6 @@ def run(FLAGS, cfg, place):
                 model.apply_collective_grads()
             else:
                 loss.backward()
-            optimizer.minimize(loss)
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
