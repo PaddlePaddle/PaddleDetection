@@ -590,18 +590,17 @@ class MobileNetV3PPYOLO(MobileNetV3):
     """
     __shared__ = ['norm_type']
 
-    def __init__(
-            self,
-            scale=1.0,
-            model_name='small',
-            feature_maps=[5, 6, 7, 8, 9, 10],
-            conv_decay=0.0,
-            norm_type='bn',
-            norm_decay=0.0,
-            extra_block_filters=[],
-            lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
-            freeze_norm=False,
-            multiplier=1.0):
+    def __init__(self,
+                 scale=1.0,
+                 model_name='small',
+                 feature_maps=[5, 6, 7, 8, 9, 10],
+                 conv_decay=0.0,
+                 norm_type='bn',
+                 norm_decay=0.0,
+                 extra_block_filters=[],
+                 lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
+                 freeze_norm=False,
+                 multiplier=1.0):
         super(MobileNetV3PPYOLO, self).__init__(
             scale=scale,
             model_name=model_name,

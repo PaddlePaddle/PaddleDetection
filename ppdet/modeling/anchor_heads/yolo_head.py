@@ -667,7 +667,7 @@ class PPYOLOTinyHead(YOLOv3Head):
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
-                 detection_block_channels = [128, 96],
+                 detection_block_channels=[128, 96],
                  drop_block=False,
                  block_size=3,
                  keep_prob=0.9,
@@ -829,4 +829,3 @@ class PPYOLOTinyHead(YOLOv3Head):
                 route = self._upsample(route)
 
         return outputs
-
