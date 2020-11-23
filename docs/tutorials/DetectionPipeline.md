@@ -218,20 +218,20 @@ python -m paddle.distributed.launch \
 
 - 使用配置文件中`weights`参数设定的权重文件进行评估
 ```bash
-# 默认使用训练过程中保存的best_model
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
+# 默认使用训练过程中保存的best_model，评估需使用单卡评估
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
 
 - 通过`weights`参数指定权重文件进行评估
 ```
 # 指定模型评估
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true weights=output/yolov3_mobilenet_v1_roadsign/best_model
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true weights=output/yolov3_mobilenet_v1_roadsign/best_model
 ```
 
 - 通过设置`save_prediction_only`参数保存评估结果，生成`bbox.json`文件
 ```
 # 设置 save_prediction_only=true，会在当前文件夹下生成预测结果文件bbox.json
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true save_prediction_only=true
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true save_prediction_only=true
 ```
 
 ##### 预测

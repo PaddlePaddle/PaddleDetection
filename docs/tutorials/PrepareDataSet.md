@@ -287,7 +287,7 @@ classname2
 ##### 用户数据转成COCO  
 在`./tools/`中提供了`x2coco.py`用于将VOC数据集、labelme标注的数据集或cityscape数据集转换为COCO数据，例如:
 
-（1）labelmes数据转换为COCO数据：
+（1）labelme数据转换为COCO数据：
 ```bash
 python tools/x2coco.py \
                 --dataset_type labelme \

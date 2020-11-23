@@ -2,6 +2,10 @@
 # 快速开始
 为了使得用户能够在很短时间内快速产出模型，掌握PaddleDetection的使用方式，这篇教程通过一个预训练检测模型对小数据集进行finetune。在较短时间内即可产出一个效果不错的模型。实际业务中，建议用户根据需要选择合适模型配置文件进行适配。
 
+- **设置显卡**
+```bash
+export CUDA_VISIBLE_DEVICES=0
+```
 
 ## 一、快速体验
 ```
@@ -34,7 +38,7 @@ python dataset/roadsign_voc/download_roadsign_voc.py
 python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true
 ```
 
-如果想通过VisualDL实时观察loss变化去去曲线，在训练命令种添加--use_vdl=true，以及通过--vdl_log_dir设置日志保存路径。
+如果想通过VisualDL实时观察loss变化曲线，在训练命令种添加--use_vdl=true，以及通过--vdl_log_dir设置日志保存路径。
 
 **但注意VisualDL需Python>=3.5**
 
@@ -58,8 +62,9 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 # 评估 默认使用训练过程中保存的best_model
 # -c 参数表示指定使用哪个配置文件
-# -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置）
-python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
+# -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置），需使用单卡评估
+
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
 ```
 
 
@@ -69,7 +74,6 @@ python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
 # -o 参数表示指定配置文件种的全局变量（覆盖配置文件种的设置）
 # --infer_img 参数指定预测图像路径
 # 预测结束后会在output文件夹中生成一张画有预测结果的同名图像
-
 
 python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true --infer_img=demo/road554.png
 ```
