@@ -129,13 +129,15 @@ class DarkNet(nn.Layer):
                  depth=53,
                  freeze_at=-1,
                  return_idx=[2, 3, 4],
-                 num_stages=5):
+                 num_stages=5,
+                 norm_type='bn'):
         super(DarkNet, self).__init__()
         self.depth = depth
         self.freeze_at = freeze_at
         self.return_idx = return_idx
         self.num_stages = num_stages
         self.stages = DarkNet_cfg[self.depth][0:num_stages]
+        self.norm_type = norm_type
 
         self.conv0 = ConvBNLayer(
             ch_in=3,

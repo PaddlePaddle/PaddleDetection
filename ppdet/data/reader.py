@@ -168,7 +168,7 @@ class EvalReader(BaseDataLoader):
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=False,
-                 drop_last=False,
+                 drop_last=True,
                  drop_empty=True,
                  num_classes=81,
                  with_background=True):

@@ -13,6 +13,7 @@ YOLOv3:
 DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
+  norm_type: sync_bn
 
 YOLOv3FPN:
   feat_channels: [1024, 768, 384]

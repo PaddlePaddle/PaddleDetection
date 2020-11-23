@@ -6,6 +6,7 @@ TrainDataset:
     image_dir: train2017
     anno_path: annotations/instances_train2017.json
     dataset_dir: dataset/coco
+    mixup_epoch: 250
 
 EvalDataset:
   !COCODataSet
