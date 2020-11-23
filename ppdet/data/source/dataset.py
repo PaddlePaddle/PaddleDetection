@@ -22,6 +22,7 @@ except Exception:
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
+import copy
 
 
 @serializable
@@ -45,7 +46,7 @@ class DetDataset(Dataset):
 
     def __getitem__(self, idx):
         # data batch
-        roidb = self.roidbs[idx]
+        roidb = copy.deepcopy(self.roidbs[idx])
         # data augment
         roidb = self.transform(roidb)
         # data item 
