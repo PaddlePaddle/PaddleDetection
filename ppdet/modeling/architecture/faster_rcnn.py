@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from paddle import fluid
+import paddle
 from ppdet.core.workspace import register
 from .meta_arch import BaseArch
 
@@ -88,7 +88,7 @@ class FasterRCNN(BaseArch):
         loss_bbox = self.bbox_head.get_loss(self.bbox_head_out, bbox_targets)
         loss.update(loss_bbox)
 
-        total_loss = fluid.layers.sums(list(loss.values()))
+        total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
 

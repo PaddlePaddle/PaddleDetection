@@ -13,7 +13,7 @@ TrainReader:
   - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: true}
   batch_size: 2
   shuffle: true
-  drop_last: false
+  drop_last: true
 
 
 EvalReader:
