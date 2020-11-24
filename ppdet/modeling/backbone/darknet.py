@@ -4,6 +4,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
+from ppdet.modeling.ops import BatchNorm
 
 __all__ = ['DarkNet', 'ConvBNLayer']
 
@@ -30,19 +31,7 @@ class ConvBNLayer(nn.Layer):
             groups=groups,
             weight_attr=ParamAttr(name=name + '.conv.weights'),
             bias_attr=False)
-        bn_name = name + '.bn'
-        if norm_type == 'sync_bn':
-            batch_norm = nn.SyncBatchNorm
-        else:
-            batch_norm = nn.BatchNorm2D
-
-        self.batch_norm = batch_norm(
-            ch_out,
-            weight_attr=ParamAttr(
-                name=bn_name + '.scale', regularizer=L2Decay(0.)),
-            bias_attr=ParamAttr(
-                name=bn_name + '.offset', regularizer=L2Decay(0.)))
-
+        self.batch_norm = BatchNorm(ch_out, norm_type=norm_type, name=name)
         self.act = act
 
     def forward(self, inputs):

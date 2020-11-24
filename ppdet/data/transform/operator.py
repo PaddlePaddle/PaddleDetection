@@ -185,7 +185,7 @@ class LightingOp(BaseOperator):
 
 @register_op
 class RandomErasingImageOp(BaseOperator):
-    def __init__(self, prob=0.5, lower=0.02, heigher=0.4, aspect_ratio=0.3):
+    def __init__(self, prob=0.5, lower=0.02, higher=0.4, aspect_ratio=0.3):
         """
         Random Erasing Data Augmentation, see https://arxiv.org/abs/1708.04896
         Args:

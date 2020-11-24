@@ -154,9 +154,9 @@ def run(FLAGS, cfg, place):
     end_time = time.time()
     # Run Train
     start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
-    for e_id in range(int(cfg.epoch)):
-        cur_eid = e_id + start_epoch
-        train_loader.dataset.epoch = e_id
+    for epoch_id in range(int(cfg.epoch)):
+        cur_eid = epoch_id + start_epoch
+        train_loader.dataset.epoch = epoch_id
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
@@ -185,7 +185,7 @@ def run(FLAGS, cfg, place):
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
-                if e_id == 0 and iter_id == 0:
+                if epoch_id == 0 and iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
