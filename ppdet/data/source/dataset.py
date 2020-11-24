@@ -33,6 +33,9 @@ class DetDataset(Dataset):
                  anno_path=None,
                  sample_num=-1,
                  use_default_label=None,
+                 mixup_epoch=-1,
+                 cutmix_epoch=-1,
+                 mosaic_epoch=-1,
                  **kwargs):
         super(DetDataset, self).__init__()
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
@@ -40,6 +43,10 @@ class DetDataset(Dataset):
         self.image_dir = image_dir if image_dir is not None else ''
         self.sample_num = sample_num
         self.use_default_label = use_default_label
+        self.epoch = 0
+        self.mixup_epoch = mixup_epoch
+        self.cutmix_epoch = cutmix_epoch
+        self.mosaic_epoch = mosaic_epoch
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -47,6 +54,21 @@ class DetDataset(Dataset):
     def __getitem__(self, idx):
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
+        if self.mixup_epoch == 0 or self.epoch < self.mixup_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.cutmix_epoch == 0 or self.epoch < self.cutmix_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.mosaic_epoch == 0 or self.epoch < self.mosaic_epoch:
+            n = len(self.roidbs)
+            roidb = [roidb, ] + [
+                copy.deepcopy(self.roidbs[np.random.randint(n)])
+                for _ in range(3)
+            ]
+
         # data augment
         roidb = self.transform(roidb)
         # data item 

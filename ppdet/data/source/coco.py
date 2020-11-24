@@ -28,9 +28,18 @@ class COCODataSet(DetDataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 mixup_epoch=-1,
+                 cutmix_epoch=-1,
+                 mosaic_epoch=-1,
                  sample_num=-1):
-        super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num)
+        super(COCODataSet, self).__init__(
+            dataset_dir,
+            image_dir,
+            anno_path,
+            sample_num,
+            mixup_epoch=mixup_epoch,
+            cutmix_epoch=cutmix_epoch,
+            mosaic_epoch=mosaic_epoch)
         self.load_image_only = False
         self.load_semantic = False
 
