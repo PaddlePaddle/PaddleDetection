@@ -26,6 +26,7 @@ from paddle.fluid.initializer import MSRA
 from paddle.fluid.regularizer import L2Decay
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 
 from .input_helper import multiscale_def
 
@@ -70,6 +71,7 @@ class HybridTaskCascade(object):
                  rpn_only=False,
                  fpn='FPN'):
         super(HybridTaskCascade, self).__init__()
+        check_version('2.0.0-rc0')
         assert fpn is not None, "HTC requires FPN"
         self.backbone = backbone
         self.fpn = fpn
