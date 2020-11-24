@@ -135,6 +135,7 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = box['segmentation']
 
                 if not any(gt_poly):
+                    pass
                     continue
 
                 coco_rec.update({
