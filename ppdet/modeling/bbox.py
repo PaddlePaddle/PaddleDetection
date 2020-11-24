@@ -104,7 +104,7 @@ class Proposal(object):
                 bbox_deltas=rpn_delta,
                 anchors=anchor,
                 variances=var,
-                im_info=inputs['im_info'],
+                im_shape=inputs['im_shape'],
                 mode=inputs['mode'])
             if len(rpn_head_out) == 1:
                 return rpn_rois, rpn_rois_num
