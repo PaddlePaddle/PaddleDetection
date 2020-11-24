@@ -127,11 +127,11 @@ OK (skipped=2)
 
 ```
 # use_gpu参数设置是否使用GPU
-python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439_640x640.jpg
+python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 会在`output`文件夹下生成一个画有预测结果的同名图像。
 
 结果如下图：
 
-![](../images/000000014439_640x640.jpg)
+![](../images/000000014439.jpg)
