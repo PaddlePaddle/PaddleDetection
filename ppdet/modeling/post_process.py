@@ -17,7 +17,12 @@ class BBoxPostProcess(object):
         self.decode = decode
         self.nms = nms
 
-    def __call__(self, head_out, rois, im_shape, scale_factor=None):
+    def __call__(self,
+                 head_out,
+                 rois,
+                 im_shape,
+                 scale_factor=None,
+                 var_weight=1.):
         # TODO: compatible for im_info
         # remove after unify the im_shape. scale_factor
         if im_shape.shape[1] > 2:
@@ -25,7 +30,8 @@ class BBoxPostProcess(object):
             scale_factor = im_shape[:, 2:]
         else:
             origin_shape = im_shape
-        bboxes, score = self.decode(head_out, rois, origin_shape, scale_factor)
+        bboxes, score = self.decode(head_out, rois, origin_shape, scale_factor,
+                                    var_weight)
         bbox_pred, bbox_num = self.nms(bboxes, score)
         return bbox_pred, bbox_num
 

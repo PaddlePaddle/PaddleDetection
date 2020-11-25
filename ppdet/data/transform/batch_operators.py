@@ -103,16 +103,17 @@ class PadBatch(BaseOperator):
                         for p_p in poly:
                             point_num.append(int(len(p_p) / 2))
             gt_num_max = max(gt_num)
-            gt_box_data = np.zeros([gt_num_max, 4])
-            gt_class_data = np.zeros([gt_num_max])
-            is_crowd_data = np.ones([gt_num_max])
+            gt_box_data = np.zeros([gt_num_max, 4], dtype=np.float32)
+            gt_class_data = np.zeros([gt_num_max], dtype=np.int32)
+            is_crowd_data = np.ones([gt_num_max], dtype=np.int32)
 
             if pad_mask:
                 poly_num_max = max(poly_num)
                 poly_part_num_max = max(poly_part_num)
                 point_num_max = max(point_num)
                 gt_masks_data = -np.ones(
-                    [poly_num_max, poly_part_num_max, point_num_max, 2])
+                    [poly_num_max, poly_part_num_max, point_num_max, 2],
+                    dtype=np.float32)
 
             for i, data in enumerate(samples):
                 gt_num = data['gt_bbox'].shape[0]

@@ -146,6 +146,7 @@ class MaskHead(Layer):
                      spatial_scale,
                      stage=0):
         bbox, bbox_num = bboxes
+
         if bbox.shape[0] == 0:
             mask_head_out = bbox
         else:
@@ -154,7 +155,8 @@ class MaskHead(Layer):
                 for n in range(num):
                     im_info_expand.append(im_info[idx, -1])
             im_info_expand = paddle.concat(im_info_expand)
-            scaled_bbox = paddle.multiply(bbox[:, 2:], im_info_expand, axis=0)
+            im_info_expand = paddle.reshape(im_info_expand, shape=[-1, 1])
+            scaled_bbox = paddle.multiply(bbox[:, 2:], im_info_expand)
             scaled_bboxes = (scaled_bbox, bbox_num)
             mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
                                        mask_index, spatial_scale, stage)

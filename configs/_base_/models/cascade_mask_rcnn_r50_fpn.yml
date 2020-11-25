@@ -1,10 +1,11 @@
-architecture: MaskRCNN
+architecture: CascadeRCNN
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/mask_rcnn_r50_fpn_1x/model_final
+weights: output/cascade_mask_rcnn_r50_fpn_1x_coco/model_final
 load_static_weights: True
+roi_stages: 3
 
 # Model Achitecture
-MaskRCNN:
+CascadeRCNN:
   # model anchor info flow
   anchor: Anchor
   proposal: Proposal
@@ -69,10 +70,11 @@ Proposal:
     name: ProposalTargetGenerator
     batch_size_per_im: 512
     bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
-    bg_thresh_hi: [0.5,]
-    bg_thresh_lo: [0.0,]
-    fg_thresh: [0.5,]
+    bg_thresh_hi: [0.5, 0.6, 0.7]
+    bg_thresh_lo: [0.0, 0.0, 0.0]
+    fg_thresh: [0.5, 0.6, 0.7]
     fg_fraction: 0.25
+    is_cls_agnostic: true
 
 BBoxHead:
   bbox_feat:
@@ -86,6 +88,7 @@ BBoxHead:
       in_dim: 256
       mlp_dim: 1024
   in_feat: 1024
+  cls_agnostic: true
 
 BBoxPostProcess:
   decode:

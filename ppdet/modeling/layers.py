@@ -17,7 +17,6 @@ from numbers import Integral
 
 import paddle
 import paddle.fluid as fluid
-from paddle.fluid.dygraph.base import to_variable
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
@@ -86,20 +85,20 @@ class AnchorTargetGeneratorRPN(object):
             self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random)
 
-        loc_indexes = to_variable(loc_indexes)
-        score_indexes = to_variable(score_indexes)
-        tgt_labels = to_variable(tgt_labels)
-        tgt_bboxes = to_variable(tgt_bboxes)
-        bbox_inside_weights = to_variable(bbox_inside_weights)
+        loc_indexes = paddle.to_tensor(loc_indexes)
+        score_indexes = paddle.to_tensor(score_indexes)
+        tgt_labels = paddle.to_tensor(tgt_labels)
+        tgt_bboxes = paddle.to_tensor(tgt_bboxes)
+        bbox_inside_weights = paddle.to_tensor(bbox_inside_weights)
 
         loc_indexes.stop_gradient = True
         score_indexes.stop_gradient = True
         tgt_labels.stop_gradient = True
 
-        cls_logits = fluid.layers.reshape(x=cls_logits, shape=(-1, ))
-        bbox_pred = fluid.layers.reshape(x=bbox_pred, shape=(-1, 4))
-        pred_cls_logits = fluid.layers.gather(cls_logits, score_indexes)
-        pred_bbox_pred = fluid.layers.gather(bbox_pred, loc_indexes)
+        cls_logits = paddle.reshape(x=cls_logits, shape=(-1, ))
+        bbox_pred = paddle.reshape(x=bbox_pred, shape=(-1, 4))
+        pred_cls_logits = paddle.gather(cls_logits, score_indexes)
+        pred_bbox_pred = paddle.gather(bbox_pred, loc_indexes)
 
         return pred_cls_logits, pred_bbox_pred, tgt_labels, tgt_bboxes, bbox_inside_weights
 
@@ -161,11 +160,10 @@ class ProposalTargetGenerator(object):
                  fg_thresh=[.5, ],
                  bg_thresh_hi=[.5, ],
                  bg_thresh_lo=[0., ],
-                 bbox_reg_weights=[[0.1, 0.1, 0.2, 0.2]],
+                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
                  num_classes=81,
                  use_random=True,
-                 is_cls_agnostic=False,
-                 is_cascade_rcnn=False):
+                 is_cls_agnostic=False):
         super(ProposalTargetGenerator, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
@@ -176,7 +174,6 @@ class ProposalTargetGenerator(object):
         self.num_classes = num_classes
         self.use_random = use_random
         self.is_cls_agnostic = is_cls_agnostic
-        self.is_cascade_rcnn = is_cascade_rcnn
 
     def __call__(self,
                  rpn_rois,
@@ -185,20 +182,26 @@ class ProposalTargetGenerator(object):
                  is_crowd,
                  gt_boxes,
                  im_info,
-                 stage=0):
+                 stage=0,
+                 max_overlap=None):
         rpn_rois = rpn_rois.numpy()
         rpn_rois_num = rpn_rois_num.numpy()
         gt_classes = gt_classes.numpy()
         gt_boxes = gt_boxes.numpy()
         is_crowd = is_crowd.numpy()
         im_info = im_info.numpy()
+        max_overlap = max_overlap if max_overlap is None else max_overlap.numpy(
+        )
+        reg_weights = [i / (stage + 1) for i in self.bbox_reg_weights]
+        is_cascade = True if stage > 0 else False
+        num_classes = 2 if is_cascade else self.num_classes
         outs = generate_proposal_target(
             rpn_rois, rpn_rois_num, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
-            self.bg_thresh_hi[stage], self.bg_thresh_lo[stage],
-            self.bbox_reg_weights[stage], self.num_classes, self.use_random,
-            self.is_cls_agnostic, self.is_cascade_rcnn)
-        outs = [to_variable(v) for v in outs]
+            self.bg_thresh_hi[stage], self.bg_thresh_lo[stage], reg_weights,
+            num_classes, self.use_random, self.is_cls_agnostic, is_cascade,
+            max_overlap)
+        outs = [paddle.to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
@@ -227,7 +230,7 @@ class MaskTargetGenerator(object):
                                     rois, rois_num, labels_int32,
                                     self.num_classes, self.mask_resolution)
 
-        outs = [to_variable(v) for v in outs]
+        outs = [paddle.to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
@@ -253,7 +256,12 @@ class RCNNBox(object):
         self.box_normalized = box_normalized
         self.axis = axis
 
-    def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
+    def __call__(self,
+                 bbox_head_out,
+                 rois,
+                 im_shape,
+                 scale_factor,
+                 var_weight=1.):
         bbox_pred, cls_prob = bbox_head_out
         roi, rois_num = rois
         origin_shape = im_shape / scale_factor
@@ -272,29 +280,22 @@ class RCNNBox(object):
         origin_shape = paddle.concat(origin_shape_list)
 
         bbox = roi / scale
+        prior_box_var = [i / var_weight for i in self.prior_box_var]
         bbox = ops.box_coder(
             prior_box=bbox,
-            prior_box_var=self.prior_box_var,
+            prior_box_var=prior_box_var,
             target_box=bbox_pred,
             code_type=self.code_type,
             box_normalized=self.box_normalized,
             axis=self.axis)
         # TODO: Updata box_clip
-        origin_h = origin_shape[:, 0] - 1
-        origin_w = origin_shape[:, 1] - 1
+        origin_h = paddle.unsqueeze(origin_shape[:, 0] - 1, axis=1)
+        origin_w = paddle.unsqueeze(origin_shape[:, 1] - 1, axis=1)
         zeros = paddle.zeros(origin_h.shape, 'float32')
-        x1 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 0], origin_w, axis=0), zeros, axis=0)
-        y1 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 1], origin_h, axis=0), zeros, axis=0)
-        x2 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 2], origin_w, axis=0), zeros, axis=0)
-        y2 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 3], origin_h, axis=0), zeros, axis=0)
+        x1 = paddle.maximum(paddle.minimum(bbox[:, :, 0], origin_w), zeros)
+        y1 = paddle.maximum(paddle.minimum(bbox[:, :, 1], origin_h), zeros)
+        x2 = paddle.maximum(paddle.minimum(bbox[:, :, 2], origin_w), zeros)
+        y2 = paddle.maximum(paddle.minimum(bbox[:, :, 3], origin_h), zeros)
         bbox = paddle.stack([x1, y1, x2, y2], axis=-1)
 
         bboxes = (bbox, rois_num)
@@ -327,7 +328,7 @@ class DecodeClipNms(object):
                                  im_info.numpy(), self.keep_top_k,
                                  self.score_threshold, self.nms_threshold,
                                  self.num_classes)
-        outs = [to_variable(v) for v in outs]
+        outs = [paddle.to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
