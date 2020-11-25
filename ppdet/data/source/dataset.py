@@ -33,9 +33,6 @@ class DetDataset(Dataset):
                  anno_path=None,
                  sample_num=-1,
                  use_default_label=None,
-                 mixup_epoch=-1,
-                 cutmix_epoch=-1,
-                 mosaic_epoch=-1,
                  **kwargs):
         super(DetDataset, self).__init__()
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
@@ -44,9 +41,6 @@ class DetDataset(Dataset):
         self.sample_num = sample_num
         self.use_default_label = use_default_label
         self.epoch = 0
-        self.mixup_epoch = mixup_epoch
-        self.cutmix_epoch = cutmix_epoch
-        self.mosaic_epoch = mosaic_epoch
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -76,6 +70,11 @@ class DetDataset(Dataset):
         for k in self.fields:
             out[k] = roidb[k]
         return out.values()
+
+    def set_kwargs(self, **kwargs):
+        self.mixup_epoch = kwargs.get('mixup_epoch', -1)
+        self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
+        self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
 
     def set_out(self, sample_transform, fields):
         self.transform = sample_transform

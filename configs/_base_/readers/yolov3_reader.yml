@@ -21,6 +21,7 @@ TrainReader:
   batch_size: 8
   shuffle: true
   drop_last: true
+  mixup_epoch: 250
 
 
 EvalReader:
