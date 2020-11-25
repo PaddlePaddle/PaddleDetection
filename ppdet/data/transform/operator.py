@@ -141,7 +141,7 @@ class DecodeOp(BaseOperator):
                 "image width.".format(im.shape[1], sample['w']))
             sample['w'] = im.shape[1]
 
-        sample['im_shape'] = np.array(im.shape[:2], dtype=np.int32)
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
         return sample
 
@@ -666,8 +666,8 @@ class ResizeOp(BaseOperator):
             im_scale = min(target_size_min / im_size_min,
                            target_size_max / im_size_max)
 
-            resize_h = int(im_scale * im_shape[0])
-            resize_w = int(im_scale * im_shape[1])
+            resize_h = im_scale * float(im_shape[0])
+            resize_w = im_scale * float(im_shape[1])
 
             im_scale_x = im_scale
             im_scale_y = im_scale
@@ -678,14 +678,14 @@ class ResizeOp(BaseOperator):
 
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
         sample['image'] = im
-        sample['im_shape'] = np.array([resize_h, resize_w], dtype=np.int32)
+        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
-            sample['scale_factor'] = np.array(
+            sample['scale_factor'] = np.asarray(
                 [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
                 dtype=np.float32)
         else:
-            sample['scale_factor'] = np.array(
+            sample['scale_factor'] = np.asarray(
                 [im_scale_y, im_scale_x], dtype=np.float32)
 
         # apply bbox
@@ -1397,8 +1397,8 @@ class RandomScaledCropOp(BaseOperator):
         random_dim = int(dim * random_scale)
         dim_max = max(h, w)
         scale = random_dim / dim_max
-        resize_w = int(round(w * scale))
-        resize_h = int(round(h * scale))
+        resize_w = w * scale
+        resize_h = h * scale
         offset_x = int(max(0, np.random.uniform(0., resize_w - dim)))
         offset_y = int(max(0, np.random.uniform(0., resize_h - dim)))
 
@@ -1408,9 +1408,9 @@ class RandomScaledCropOp(BaseOperator):
         canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
             offset_y:offset_y + dim, offset_x:offset_x + dim, :]
         sample['image'] = canvas
-        sample['im_shape'] = np.array([resize_h, resize_w], dtype=np.int32)
+        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         scale_factor = sample['sacle_factor']
-        sample['scale_factor'] = np.array(
+        sample['scale_factor'] = np.asarray(
             [scale_factor[0] * scale, scale_factor[1] * scale],
             dtype=np.float32)
 

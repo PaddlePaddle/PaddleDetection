@@ -10,7 +10,8 @@ import cv2
 def bbox_post_process(bboxes,
                       bbox_prob,
                       bbox_deltas,
-                      im_info,
+                      im_shape,
+                      scale_factor,
                       keep_top_k=100,
                       score_thresh=0.05,
                       nms_thresh=0.5,
@@ -27,14 +28,14 @@ def bbox_post_process(bboxes,
         end_num += box_num
 
         boxes = bbox[st_num:end_num, :]  # bbox 
-        boxes = boxes / im_info[i][2]  # scale
+        boxes = boxes / scale_factor[i]  # scale
         bbox_delta = bbox_deltas[st_num:end_num, :, :]  # bbox delta 
         bbox_delta = np.reshape(bbox_delta, (box_num, -1))
         # step1: decode 
         boxes = delta2bbox(bbox_delta, boxes, bbox_reg_weights)
 
         # step2: clip 
-        boxes = clip_bbox(boxes, im_info[i][:2] / im_info[i][2])
+        boxes = clip_bbox(boxes, im_shape[i][:2] / scale_factor[i])
         # step3: nms 
         cls_boxes = [[] for _ in range(class_nums)]
         scores_n = bbox_prob[st_num:end_num, :]
@@ -72,7 +73,12 @@ def bbox_post_process(bboxes,
 
 
 @jit
-def mask_post_process(bboxes, masks, im_info, resolution=14, binary_thresh=0.5):
+def mask_post_process(bboxes,
+                      masks,
+                      im_shape,
+                      scale_factor,
+                      resolution=14,
+                      binary_thresh=0.5):
     if masks.shape[0] == 0:
         return masks
     bbox, bbox_nums = bboxes
@@ -93,8 +99,8 @@ def mask_post_process(bboxes, masks, im_info, resolution=14, binary_thresh=0.5):
         labels_n = labels[st_num:end_num]
         masks_n = masks[st_num:end_num]
 
-        im_h = int(round(im_info[i][0] / im_info[i][2]))
-        im_w = int(round(im_info[i][1] / im_info[i][2]))
+        im_h = int(round(im_shape[i][0] / scale_factor[i]))
+        im_w = int(round(im_shape[i][1] / scale_factor[i]))
         boxes_n = expand_bbox(boxes_n, scale)
         boxes_n = boxes_n.astype(np.int32)
         padded_mask = np.zeros((M + 2, M + 2), dtype=np.float32)
