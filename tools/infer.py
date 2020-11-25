@@ -25,7 +25,7 @@ if parent_path not in sys.path:
 import glob
 import numpy as np
 import six
-from PIL import Image
+from PIL import Image, ImageOps
 
 import paddle
 from paddle import fluid
@@ -205,6 +205,7 @@ def main():
         for im_id in im_ids:
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
+            image = ImageOps.exif_transpose(image)
 
             # use VisualDL to log original image
             if FLAGS.use_vdl:
