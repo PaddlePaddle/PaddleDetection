@@ -343,7 +343,8 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=False,
                  nms_eta=1.0,
-                 background_label=0):
+                 background_label=0,
+                 return_rois_num=True):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -352,6 +353,7 @@ class MultiClassNMS(object):
         self.normalized = normalized
         self.nms_eta = nms_eta
         self.background_label = background_label
+        self.return_rois_num = return_rois_num
 
     def __call__(self, bboxes, score):
         kwargs = self.__dict__.copy()
@@ -408,10 +410,10 @@ class YOLOBox(object):
         boxes_list = []
         scores_list = []
         im_shape = paddle.cast(im_shape, 'float32')
-        if scale_factor is not None:
-            origin_shape = im_shape / scale_factor
-        else:
-            origin_shape = im_shape
+        #if scale_factor is not None:
+        origin_shape = im_shape / scale_factor
+        #else:
+        #    origin_shape = im_shape
 
         origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
