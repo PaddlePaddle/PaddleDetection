@@ -325,7 +325,9 @@ def predict_video(detector, camera_id):
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    # yapf: disable
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # yapf: enable
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
