@@ -134,18 +134,34 @@ class ProposalGenerator(object):
                  mode='train'):
         pre_nms_top_n = self.train_pre_nms_top_n if mode == 'train' else self.infer_pre_nms_top_n
         post_nms_top_n = self.train_post_nms_top_n if mode == 'train' else self.infer_post_nms_top_n
-        rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
-            scores,
-            bbox_deltas,
-            im_shape,
-            anchors,
-            variances,
-            pre_nms_top_n=pre_nms_top_n,
-            post_nms_top_n=post_nms_top_n,
-            nms_thresh=self.nms_thresh,
-            min_size=self.min_size,
-            eta=self.eta,
-            return_rois_num=True)
+        # TODO delete im_info
+        if im_shape.shape[1] > 2:
+            import paddle.fluid as fluid
+            rpn_rois, rpn_rois_prob, rpn_rois_num = fluid.layers.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=pre_nms_top_n,
+                post_nms_top_n=post_nms_top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
+        else:
+            rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=pre_nms_top_n,
+                post_nms_top_n=post_nms_top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
         return rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n
 
 

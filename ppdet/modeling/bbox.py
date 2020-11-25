@@ -93,6 +93,11 @@ class Proposal(object):
         self.proposal_target_generator = proposal_target_generator
 
     def generate_proposal(self, inputs, rpn_head_out, anchor_out):
+        # TODO: delete im_info 
+        try:
+            im_shape = inputs['im_info']
+        except:
+            im_shape = inputs['im_shape']
         rpn_rois_list = []
         rpn_prob_list = []
         rpn_rois_num_list = []
@@ -104,7 +109,7 @@ class Proposal(object):
                 bbox_deltas=rpn_delta,
                 anchors=anchor,
                 variances=var,
-                im_shape=inputs['im_shape'],
+                im_shape=im_shape,
                 mode=inputs['mode'])
             if len(rpn_head_out) == 1:
                 return rpn_rois, rpn_rois_num
