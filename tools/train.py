@@ -190,7 +190,9 @@ def run(FLAGS, cfg, place):
                     logger.info(strs)
 
         # Save Stage 
-        if ParallelEnv().local_rank == 0 and cur_eid % cfg.snapshot_epoch == 0:
+        if ParallelEnv().local_rank == 0 and (
+                cur_eid % cfg.snapshot_epoch == 0 or
+            (cur_eid + 1) == int(cfg.epoch)):
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
