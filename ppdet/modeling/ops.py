@@ -14,6 +14,9 @@
 
 import paddle
 import paddle.nn.functional as F
+import paddle.nn as nn
+from paddle import ParamAttr
+from paddle.regularizer import L2Decay
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
@@ -26,19 +29,31 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'anchor_generator',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
+    'roi_pool', 'roi_align', 'prior_box', 'anchor_generator',
+    'generate_proposals', 'iou_similarity', 'box_coder', 'yolo_box',
+    'multiclass_nms', 'distribute_fpn_proposals', 'collect_fpn_proposals',
+    'matrix_nms', 'BatchNorm'
 ]
+
+
+class BatchNorm(nn.Layer):
+    def __init__(self, ch, norm_type='bn', name=None):
+        super(BatchNorm, self).__init__()
+        bn_name = name + '.bn'
+        if norm_type == 'sync_bn':
+            batch_norm = nn.SyncBatchNorm
+        else:
+            batch_norm = nn.BatchNorm2D
+
+        self.batch_norm = batch_norm(
+            ch,
+            weight_attr=ParamAttr(
+                name=bn_name + '.scale', regularizer=L2Decay(0.)),
+            bias_attr=ParamAttr(
+                name=bn_name + '.offset', regularizer=L2Decay(0.)))
+
+    def forward(self, x):
+        return self.batch_norm(x)
 
 
 def roi_pool(input,
