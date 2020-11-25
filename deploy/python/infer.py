@@ -341,7 +341,7 @@ class Config():
     def print_config(self):
         print('-----------  Model Configuration -----------')
         print('%s: %s' % ('Model Arch', self.arch))
-        print('%s: %s' % ('Use Padddle Executor', self.use_python_inference))
+        print('%s: %s' % ('Use Paddle Executor', self.use_python_inference))
         print('%s: ' % ('Transform Order'))
         for op_info in self.preprocess_infos:
             print('--%s: %s' % ('transform op', op_info['type']))
