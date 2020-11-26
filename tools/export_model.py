@@ -84,7 +84,7 @@ def run(FLAGS, cfg):
             },
             {
                 'im_shape': InputSpec(
-                    shape=[None, 2], dtype='int32', name='im_shape')
+                    shape=[None, 2], name='im_shape')
             },
             {
                 'scale_factor': InputSpec(
@@ -101,7 +101,7 @@ def run(FLAGS, cfg):
 
     export_model = ExportModel(model)
     # debug for dy2static, remove later
-    paddle.jit.set_code_level()
+    #paddle.jit.set_code_level()
 
     # Init Model
     load_weight(export_model.model, cfg.weights)
@@ -110,7 +110,6 @@ def run(FLAGS, cfg):
 
     # export config and model
     paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
-    paddle.jit.load(os.path.join(save_dir, 'model'))
     logger.info('Export model to {}'.format(save_dir))
 
 

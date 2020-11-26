@@ -21,8 +21,8 @@ namespace PaddleDetection {
 
 void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
   data->im_shape_ = {
-      static_cast<int>(im->rows),
-      static_cast<int>(im->cols)
+      static_cast<float>(im->rows),
+      static_cast<float>(im->cols)
   };
   data->scale_factor_ = {1., 1.};
   data->input_shape_ = {
@@ -65,8 +65,8 @@ void Resize::Run(cv::Mat* im, ImageBlob* data) {
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
   data->im_shape_ = {
-    static_cast<int>(im->rows),
-    static_cast<int>(im->cols),
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
   };
   data->scale_factor_ = {
     resize_scale.second,

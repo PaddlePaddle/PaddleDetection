@@ -138,7 +138,7 @@ class MaskHead(Layer):
         return mask_head_out
 
     def forward_test(self,
-                     im_info,
+                     scale_factor,
                      body_feats,
                      bboxes,
                      bbox_feat,
@@ -149,12 +149,14 @@ class MaskHead(Layer):
         if bbox.shape[0] == 0:
             mask_head_out = bbox
         else:
-            im_info_expand = []
+            scale_factor_list = []
             for idx, num in enumerate(bbox_num):
                 for n in range(num):
-                    im_info_expand.append(im_info[idx, -1])
-            im_info_expand = paddle.concat(im_info_expand)
-            scaled_bbox = paddle.multiply(bbox[:, 2:], im_info_expand, axis=0)
+                    scale_factor_list.append(scale_factor[idx, 0])
+            scale_factor_list = paddle.cast(
+                paddle.concat(scale_factor_list), 'float32')
+            scaled_bbox = paddle.multiply(
+                bbox[:, 2:], scale_factor_list, axis=0)
             scaled_bboxes = (scaled_bbox, bbox_num)
             mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
                                        mask_index, spatial_scale, stage)
@@ -174,8 +176,8 @@ class MaskHead(Layer):
             mask_head_out = self.forward_train(body_feats, bboxes, bbox_feat,
                                                mask_index, spatial_scale, stage)
         else:
-            im_info = inputs['im_info']
-            mask_head_out = self.forward_test(im_info, body_feats, bboxes,
+            scale_factor = inputs['scale_factor']
+            mask_head_out = self.forward_test(scale_factor, body_feats, bboxes,
                                               bbox_feat, mask_index,
                                               spatial_scale, stage)
         return mask_head_out

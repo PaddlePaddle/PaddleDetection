@@ -163,7 +163,7 @@ def create_inputs(im, im_info):
     """
     inputs = {}
     inputs['image'] = np.array((im, )).astype('float32')
-    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('int32')
+    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
     inputs['scale_factor'] = np.array(
         (im_info['scale_factor'], )).astype('float32')
 

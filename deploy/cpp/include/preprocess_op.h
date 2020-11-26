@@ -33,7 +33,7 @@ namespace PaddleDetection {
 class ImageBlob {
  public:
   // image width and height
-  std::vector<int> im_shape_;
+  std::vector<float> im_shape_;
   // Buffer for image data after preprocessing
   std::vector<float> im_data_;
   // input image width, height

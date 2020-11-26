@@ -34,7 +34,7 @@ def decode_image(im_file, im_info):
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     else:
         im = im_file
-    im_info['im_shape'] = np.array(im.shape[:2], dtype=np.int32)
+    im_info['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
     return im, im_info
 
 
@@ -75,7 +75,7 @@ class ResizeOp(object):
             fx=im_scale_x,
             fy=im_scale_y,
             interpolation=self.interp)
-        im_info['im_shape'] = np.array(im.shape[:2]).astype('int32')
+        im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
         im_info['scale_factor'] = np.array(
             [im_scale_y, im_scale_x]).astype('float32')
         # padding im when image_shape fixed by infer_cfg.yml
