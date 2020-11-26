@@ -427,8 +427,8 @@ def get_category_info_from_anno(anno_file, with_background=True):
     }
     catid2name = {cat['id']: cat['name'] for cat in cats}
     if with_background:
-        clsid2catid.update({0: 0})
-        catid2name.update({0: 'background'})
+        clsid2catid.update({0: -1})
+        catid2name.update({-1: 'background'})
     return clsid2catid, catid2name
 
 
