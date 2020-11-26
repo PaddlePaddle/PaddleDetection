@@ -143,7 +143,6 @@ class COCODataSet(DetDataset):
                     elif 'segmentation' in box:
                         gt_poly[i] = box['segmentation']
 
-
                 coco_rec.update({
                     'is_crowd': is_crowd,
                     'gt_class': gt_class,

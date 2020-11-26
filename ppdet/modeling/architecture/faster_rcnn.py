@@ -13,16 +13,18 @@ __all__ = ['FasterRCNN']
 class FasterRCNN(BaseArch):
     __category__ = 'architecture'
     __inject__ = [
-        'anchor',
-        'proposal',
-        'backbone',
-        'neck',
-        'rpn_head',
-        'bbox_head',
+        'anchor', 'proposal', 'backbone', 'neck', 'rpn_head', 'bbox_head',
         'bbox_post_process'
     ]
 
-    def __init__(self, anchor, proposal, backbone, rpn_head, bbox_head, bbox_post_process, neck=None):
+    def __init__(self,
+                 anchor,
+                 proposal,
+                 backbone,
+                 rpn_head,
+                 bbox_head,
+                 bbox_post_process,
+                 neck=None):
         super(FasterRCNN, self).__init__()
         self.anchor = anchor
         self.proposal = proposal
