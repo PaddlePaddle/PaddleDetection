@@ -102,7 +102,8 @@ class BBoxHead(nn.Layer):
                  num_stages=1,
                  with_pool=False,
                  score_stage=[0, 1, 2],
-                 delta_stage=[2]):
+                 delta_stage=[2],
+                 use_resnetc5=False):
         super(BBoxHead, self).__init__()
         self.num_classes = num_classes
         self.delta_dim = 2 if cls_agnostic else num_classes
@@ -113,6 +114,7 @@ class BBoxHead(nn.Layer):
         self.with_pool = with_pool
         self.score_stage = score_stage
         self.delta_stage = delta_stage
+        self.use_resnetc5 = use_resnetc5
         for stage in range(num_stages):
             score_name = 'bbox_score_{}'.format(stage)
             delta_name = 'bbox_delta_{}'.format(stage)
@@ -138,11 +140,7 @@ class BBoxHead(nn.Layer):
             self.bbox_score_list.append(bbox_score)
             self.bbox_delta_list.append(bbox_delta)
 
-    def forward(self, body_feats, rois, spatial_scale, stage=0):
-        bbox_feat = self.bbox_feat(body_feats, rois, spatial_scale, stage)
-        if self.with_pool:
-            bbox_feat = F.pool2d(
-                bbox_feat, pool_type='avg', global_pooling=True)
+    def forward(self, bbox_feat, stage):
         bbox_head_out = []
         scores = self.bbox_score_list[stage](bbox_feat)
         deltas = self.bbox_delta_list[stage](bbox_feat)

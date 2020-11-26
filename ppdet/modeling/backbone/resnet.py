@@ -305,14 +305,22 @@ class ResNet(nn.Layer):
                     freeze_norm=freeze_norm))
             self.res_layers.append(res_layer)
 
-    def forward(self, inputs):
+    def forward(self, inputs, use_resnetc5=False):
+        outs = []
+        if use_resnetc5:
+            stage = self.res_layers[3]
+            x = stage(inputs)
+            if 3 <= self.freeze_at:
+                x.stop_gradient = True
+            outs.append(x)
+            return outs
+        
         x = inputs['image']
         conv1 = self.conv1(x)
         x = self.pool(conv1)
-        outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
-            if idx == self.freeze_at:
+            if idx <= self.freeze_at:
                 x.stop_gradient = True
             if idx in self.return_idx:
                 outs.append(x)
