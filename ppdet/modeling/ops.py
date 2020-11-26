@@ -41,7 +41,7 @@ __all__ = [
     'distribute_fpn_proposals',
     'collect_fpn_proposals',
     'matrix_nms',
-    'BatchNorm',
+    'batch_norm',
 ]
 
 
