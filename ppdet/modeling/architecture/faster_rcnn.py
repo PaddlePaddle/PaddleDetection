@@ -43,12 +43,6 @@ class FasterRCNN(BaseArch):
         # Neck
         if self.neck is not None:
             body_feats, spatial_scale = self.neck(body_feats)
-
-        spatial_scale = None
-
-        # Neck
-        if self.neck is not None:
-            body_feats, spatial_scale = self.neck(body_feats)
             
         # RPN
         # rpn_head returns two list: rpn_feat, rpn_head_out
