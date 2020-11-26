@@ -133,7 +133,7 @@ class MaskRCNN(BaseArch):
         loss.update({'loss': total_loss})
         return loss
 
-    def get_pred(self, ):
+    def get_pred(self, return_numpy=True):
         mask = self.mask_post_process(self.bboxes, self.mask_head_out,
                                       self.inputs['im_shape'],
                                       self.inputs['scale_factor'])
