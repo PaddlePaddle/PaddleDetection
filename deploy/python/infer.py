@@ -243,7 +243,7 @@ def load_predictor(model_dir,
     }
     if use_gpu:
         # initial GPU memory(M), device ID
-        config.enable_use_gpu(1000, 0)
+        config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     else:

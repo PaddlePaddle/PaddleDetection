@@ -32,7 +32,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight
-from ppdet.utils.export_utils import dump_infer_config
+from export_utils import dump_infer_config
 from paddle.jit import to_static
 import paddle.nn as nn
 from paddle.static import InputSpec
@@ -101,7 +101,7 @@ def run(FLAGS, cfg):
 
     export_model = ExportModel(model)
     # debug for dy2static, remove later
-    #paddle.jit.set_code_level()
+    paddle.jit.set_code_level()
 
     # Init Model
     load_weight(export_model.model, cfg.weights)
@@ -110,6 +110,7 @@ def run(FLAGS, cfg):
 
     # export config and model
     paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
+    paddle.jit.load(os.path.join(save_dir, 'model'))
     logger.info('Export model to {}'.format(save_dir))
 
 

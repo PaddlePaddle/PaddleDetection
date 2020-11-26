@@ -20,7 +20,7 @@ import numpy as np
 def decode_image(im_file, im_info):
     """read rgb image
     Args:
-        im_file (str/np.ndarray): path of image/ np.ndarray read by cv2
+        im_file (str|np.ndarray): input can be image path or np.ndarray
         im_info (dict): info of image
     Returns:
         im (np.ndarray):  processed image (np.ndarray)

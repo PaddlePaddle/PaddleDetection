@@ -33,7 +33,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
   config.SetModel(prog_file, params_file);
   if (use_gpu) {
-    config.EnableUseGpu(1000, gpu_id);
+    config.EnableUseGpu(200, gpu_id);
     config.SwitchIrOptim(true);
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
