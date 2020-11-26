@@ -18,7 +18,7 @@ class BBoxPostProcess(object):
 
     def __call__(self, head_out, rois, im_shape, scale_factor=None):
         bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-        bbox_pred, bbox_num = self.nms(bboxes, score)
+        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num
 
 

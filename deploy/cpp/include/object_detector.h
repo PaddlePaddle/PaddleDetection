@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <utility>
+#include <ctime>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -28,6 +29,7 @@
 #include "include/preprocess_op.h"
 #include "include/config_parser.h"
 
+using namespace paddle_infer;
 
 namespace PaddleDetection {
 // Object Detection Result
@@ -54,12 +56,15 @@ cv::Mat VisualizeResult(const cv::Mat& img,
 
 class ObjectDetector {
  public:
-  explicit ObjectDetector(const std::string& model_dir, bool use_gpu = false,
-                          const std::string& run_mode = "fluid") {
+  explicit ObjectDetector(const std::string& model_dir, 
+                          bool use_gpu=false,
+                          const std::string& run_mode="fluid",
+                          const int gpu_id=0) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
-    preprocessor_.Init(config_.preprocess_info_, config_.arch_);
-    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode);
+    image_shape_ = config_.image_shape_;
+    preprocessor_.Init(config_.preprocess_info_, image_shape_);
+    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id);
   }
 
   // Load Paddle inference model
@@ -68,12 +73,16 @@ class ObjectDetector {
     bool use_gpu,
     const int min_subgraph_size,
     const int batch_size = 1,
-    const std::string& run_mode = "fluid");
+    const std::string& run_mode = "fluid",
+    const int gpu_id=0);
 
   // Run predictor
-  void Predict(
-      const cv::Mat& img,
-      std::vector<ObjectResult>* result);
+  void Predict(const cv::Mat& im,
+      const double threshold = 0.5,
+      const int warmup = 0,
+      const int repeats = 1,
+      const bool run_benchmark = false,
+      std::vector<ObjectResult>* result = nullptr);
 
   // Get Model Label list
   const std::vector<std::string>& GetLabelList() const {
@@ -88,12 +97,13 @@ class ObjectDetector {
       const cv::Mat& raw_mat,
       std::vector<ObjectResult>* result);
 
-  std::unique_ptr<paddle::PaddlePredictor> predictor_;
+  std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
   float threshold_;
   ConfigPaser config_;
+  std::vector<int> image_shape_;
 };
 
 }  // namespace PaddleDetection
