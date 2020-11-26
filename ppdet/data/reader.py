@@ -190,7 +190,7 @@ class Reader(object):
                  dataset=None,
                  sample_transforms=None,
                  batch_transforms=None,
-                 batch_size=None,
+                 batch_size=1,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
