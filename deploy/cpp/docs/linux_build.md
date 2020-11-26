@@ -68,11 +68,6 @@ CUDA_LIB=/path/to/cuda/lib
 # CUDNN 的 lib 路径
 CUDNN_LIB=/path/to/cudnn/lib
 
-修改脚本设置好主要参数后，执行`build`脚本：
-```shell
-sh ./scripts/build.sh
-```
-
 # 请检查以上各个路径是否正确
 
 # 以下无需改动
@@ -95,6 +90,7 @@ make
  ```shell
  sh ./scripts/build.sh
  ```
+
 **注意**: OPENCV依赖OPENBLAS，Ubuntu用户需确认系统是否已存在`libopenblas.so`。如未安装，可执行apt-get install libopenblas-dev进行安装。
 
 ### Step5: 预测及可视化
