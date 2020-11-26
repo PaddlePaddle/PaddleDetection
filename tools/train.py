@@ -156,7 +156,7 @@ def run(FLAGS, cfg, place):
     start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
     for epoch_id in range(int(cfg.epoch)):
         cur_eid = epoch_id + start_epoch
-        train_loader.dataset.epoch = epoch_id
+        train_loader.dataset.epoch = cur_eid
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()

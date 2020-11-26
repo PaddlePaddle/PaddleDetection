@@ -30,6 +30,7 @@ class Compose(object):
                 if hasattr(op_cls, 'num_classes'):
                     op_cls.num_classes = num_classes
 
+                # TODO: should be refined in the future
                 if op_cls in [
                         transform.Gt2YoloTargetOp, transform.Gt2YoloTarget
                 ]:
@@ -89,7 +90,8 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
+                 with_background=True,
+                 **kwargs):
         # out fields 
         self._fields = inputs_def['fields'] if inputs_def else None
         # sample transform
@@ -107,6 +109,7 @@ class BaseDataLoader(object):
         self.shuffle = shuffle
         self.drop_last = drop_last
         self.with_background = with_background
+        self.kwargs = kwargs
 
     def __call__(self,
                  dataset,
@@ -120,6 +123,8 @@ class BaseDataLoader(object):
         # get data
         self._dataset.set_out(self._sample_transforms,
                               copy.deepcopy(self._fields))
+        # set kwargs
+        self._dataset.set_kwargs(**self.kwargs)
         # batch sampler
         if batch_sampler is None:
             self._batch_sampler = DistributedBatchSampler(
@@ -154,10 +159,12 @@ class TrainReader(BaseDataLoader):
                  drop_last=True,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(TrainReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(TrainReader, self).__init__(inputs_def, sample_transforms,
+                                          batch_transforms, batch_size, shuffle,
+                                          drop_last, drop_empty, num_classes,
+                                          with_background, **kwargs)
 
 
 @register
@@ -171,10 +178,12 @@ class EvalReader(BaseDataLoader):
                  drop_last=True,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(EvalReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(EvalReader, self).__init__(inputs_def, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty, num_classes,
+                                         with_background, **kwargs)
 
 
 @register
@@ -188,7 +197,9 @@ class TestReader(BaseDataLoader):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(TestReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(TestReader, self).__init__(inputs_def, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty, num_classes,
+                                         with_background, **kwargs)
