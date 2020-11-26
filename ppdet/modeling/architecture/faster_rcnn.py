@@ -13,18 +13,16 @@ __all__ = ['FasterRCNN']
 class FasterRCNN(BaseArch):
     __category__ = 'architecture'
     __inject__ = [
-        'anchor', 'proposal', 'backbone', 'neck', 'rpn_head', 'bbox_head',
+        'anchor',
+        'proposal',
+        'backbone',
+        'neck',
+        'rpn_head',
+        'bbox_head',
         'bbox_post_process'
     ]
 
-    def __init__(self,
-                 anchor,
-                 proposal,
-                 backbone,
-                 rpn_head,
-                 bbox_head,
-                 bbox_post_process,
-                 neck=None):
+    def __init__(self, anchor, proposal, backbone, rpn_head, bbox_head, bbox_post_process, neck=None):
         super(FasterRCNN, self).__init__()
         self.anchor = anchor
         self.proposal = proposal
@@ -44,6 +42,12 @@ class FasterRCNN(BaseArch):
         if self.neck is not None:
             body_feats, spatial_scale = self.neck(body_feats)
 
+        spatial_scale = None
+
+        # Neck
+        if self.neck is not None:
+            body_feats, spatial_scale = self.neck(body_feats)
+            
         # RPN
         # rpn_head returns two list: rpn_feat, rpn_head_out
         # each element in rpn_feats contains rpn feature on each level,
@@ -70,6 +74,7 @@ class FasterRCNN(BaseArch):
             self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
                                                  self.inputs['im_shape'],
                                                  self.inputs['scale_factor'])
+
         else:
             # Proposal RoI for Mask branch
             # bboxes update at training stage only
