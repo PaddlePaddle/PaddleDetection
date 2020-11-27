@@ -1,8 +1,6 @@
 architecture: MaskRCNN
-pretrain_weights: output/mask_rcnn.pdparams
-#https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/mask_rcnn.pdparams
-#output/mask_rcnn_r50_fpn_1x/model_final
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+weights: output/mask_rcnn_r50_fpn_1x/model_final
 load_static_weights: True
 
 # Model Achitecture
