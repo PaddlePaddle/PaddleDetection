@@ -39,7 +39,7 @@ class RPNFeat(nn.Layer):
             bias_attr=ParamAttr(
                 learning_rate=2., regularizer=L2Decay(0.)))
 
-    def forward(self, inputs, feats):
+    def forward(self, feats):
         rpn_feats = []
         for feat in feats:
             rpn_feats.append(F.relu(self.rpn_conv(feat)))
@@ -78,8 +78,8 @@ class RPNHead(nn.Layer):
             bias_attr=ParamAttr(
                 learning_rate=2., regularizer=L2Decay(0.)))
 
-    def forward(self, inputs, feats):
-        rpn_feats = self.rpn_feat(inputs, feats)
+    def forward(self, feats):
+        rpn_feats = self.rpn_feat(feats)
         rpn_head_out = []
         for rpn_feat in rpn_feats:
             rrs = self.rpn_rois_score(rpn_feat)

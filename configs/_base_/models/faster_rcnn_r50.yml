@@ -1,16 +1,7 @@
 architecture: FasterRCNN
-<<<<<<< HEAD
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/faster_rcnn_r50_fpn_1x/faster_rcnn_r50_fpn_1x.pdparams
-=======
-#pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-pretrain_weights: output/faster_rcnn_1120.pdparams
-#output/faster_rcnn_r50_fpn_1x/model_final.pdparams
-#weights: output/faster_rcnn_1120.pdparams
-#weights: output/faster_rcnn_1120.pdparams
-#output/faster_rcnn_r50_fpn_1x_coco/10.pdparams
-weights: output/faster_rcnn_r50_fpn_1x_roadsign/model_final.pdparams
->>>>>>> 55de7f1178fe806386501fc1b24407f116622cfd
+weights: output/faster_rcnn_r50_1x_roadsign/model_final.pdparams
+#output/faster_rcnn_r50_1x/faster_rcnn_r50_1x.pdparams
 load_static_weights: True
 
 # Model Achitecture
@@ -20,7 +11,6 @@ FasterRCNN:
   proposal: Proposal
   # model feat info flow
   backbone: ResNet
-  neck: FPN
   rpn_head: RPNHead
   bbox_head: BBoxHead
   # post process
@@ -32,30 +22,23 @@ ResNet:
   depth: 50
   norm_type: bn
   freeze_at: 0
-  return_idx: [0,1,2,3]
+  return_idx: [0,1,2]
   num_stages: 4
-
-FPN:
-  in_channels: [256, 512, 1024, 2048]
-  out_channel: 256
-  min_level: 0
-  max_level: 4
-  spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
 
 RPNHead:
   rpn_feat:
     name: RPNFeat
-    feat_in: 256
-    feat_out: 256
+    feat_in: 1024
+    feat_out: 1024
   anchor_per_position: 3
-  rpn_channel: 256
+  rpn_channel: 1024
 
 Anchor:
   anchor_generator:
     name: AnchorGeneratorRPN
     aspect_ratios: [0.5, 1.0, 2.0]
     anchor_start_size: 32
-    stride: [4., 4.]
+    stride: [16., 16.]
   anchor_target_generator:
     name: AnchorTargetGeneratorRPN
     batch_size_per_im: 256
@@ -69,9 +52,9 @@ Proposal:
     name: ProposalGenerator
     min_size: 0.0
     nms_thresh: 0.7
-    train_pre_nms_top_n: 2000
+    train_pre_nms_top_n: 12000
     train_post_nms_top_n: 2000
-    infer_pre_nms_top_n: 1000
+    infer_pre_nms_top_n: 6000
     infer_post_nms_top_n: 1000
   proposal_target_generator:
     name: ProposalTargetGenerator
@@ -87,17 +70,18 @@ BBoxHead:
     name: BBoxFeat
     roi_extractor:
       name: RoIAlign
-      resolution: 7
-      sampling_ratio: 2
+      resolution: 14
+      sampling_ratio: 0
+      start_level: 2
+      end_level: 2
     head_feat:
+      # not use when use_resnetc5=True
       name: TwoFCHead
       in_dim: 256
       mlp_dim: 1024
-  in_feat: 1024
-<<<<<<< HEAD
-=======
-  use_resnetc5: False
->>>>>>> 55de7f1178fe806386501fc1b24407f116622cfd
+  in_feat: 2048
+  use_resnetc5: True
+
 
 BBoxPostProcess:
   decode:

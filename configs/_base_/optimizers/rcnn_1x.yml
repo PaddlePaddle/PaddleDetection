@@ -1,14 +1,14 @@
 epoch: 12
 
 LearningRate:
-  base_lr: 0.01
+  base_lr: 0.002
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
     milestones: [8, 11]
   - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 500
+    start_factor: 0.1
+    steps: 1000
 
 OptimizerBuilder:
   optimizer:

@@ -98,6 +98,13 @@ class ConfigPaser {
       return false;
     }
 
+    if (config["image_shape"].IsDefined()) {
+      image_shape_ = config["image_shape"].as<std::vector<int>>();
+    } else {
+      std::cerr << "Please set image_shape." << std::endl;
+      return false;
+    }
+
     return true;
   }
   std::string mode_;
@@ -107,6 +114,7 @@ class ConfigPaser {
   bool with_background_;
   YAML::Node preprocess_info_;
   std::vector<std::string> label_list_;
+  std::vector<int> image_shape_;
 };
 
 }  // namespace PaddleDetection
