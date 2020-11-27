@@ -134,13 +134,6 @@ class COCODataSet(DetDataset):
                     elif 'segmentation' in box:
                         gt_poly[i] = box['segmentation']
 
-<<<<<<< HEAD
-                if not any(gt_poly):
-                    pass
-                    continue
-
-=======
->>>>>>> 55de7f1178fe806386501fc1b24407f116622cfd
                 coco_rec.update({
                     'is_crowd': is_crowd,
                     'gt_class': gt_class,
