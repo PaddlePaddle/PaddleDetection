@@ -45,6 +45,7 @@ class FasterRCNN(BaseArch):
             rpn_feat, self.rpn_head_out = self.rpn_head(body_feats)
         else:
             rpn_feat, self.rpn_head_out = self.rpn_head([body_feats[-1]])    
+
         # RPN
         # rpn_head returns two list: rpn_feat, rpn_head_out
         # each element in rpn_feats contains rpn feature on each level,
