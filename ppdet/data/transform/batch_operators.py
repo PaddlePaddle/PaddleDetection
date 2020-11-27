@@ -85,13 +85,9 @@ class PadBatch(BaseOperator):
                 data['im_info'][:2] = max_shape[1:3]
         if self.pad_gt:
             gt_num = []
-<<<<<<< HEAD
-            if 'gt_poly' in data and data['gt_poly'] is not None and len(data['gt_poly']) > 0:
-=======
 
             if 'gt_poly' in data and data['gt_poly'] is not None and len(data[
                     'gt_poly']) > 0:
->>>>>>> 55de7f1178fe806386501fc1b24407f116622cfd
                 pad_mask = True
             else:
                 pad_mask = False
