@@ -65,8 +65,6 @@ def run(FLAGS, cfg, place):
     model = create(cfg.architecture)
 
     # Init Model
-    print('load weights', cfg.weights)
-    input('pause')
     load_weight(model, cfg.weights)
 
     # Data Reader
