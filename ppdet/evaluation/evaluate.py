@@ -34,7 +34,9 @@ class Evaluation(object):
 
     Args:
         cfg (dict): cfg of model.
-        is_bbox_normalized(bool): 
+        is_bbox_normalized(bool): whether output bbox is normalized in model output layer
+        eval_dir(str): evaluation output save dir.
+        classwise(bool): whether compute per-category AP/Precision/Recall and draw P-R Curve or not.
     """
 
     def __init__(self,

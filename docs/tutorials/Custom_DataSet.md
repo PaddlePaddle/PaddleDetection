@@ -233,7 +233,7 @@ python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i
 
   EvalReader:
     inputs_def:
-      fields: ['image', 'im_info', 'im_id',  'im_shape', 'gt_bbox', 'gt_class', 'is_difficult']
+      fields:  ['image', 'im_info', 'im_id', 'im_shape']
     dataset:
       !VOCDataSet
       dataset_dir: path/to/dataset

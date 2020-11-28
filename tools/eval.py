@@ -153,6 +153,7 @@ def main():
     save_only = getattr(cfg, 'save_prediction_only', False)
     if save_only:
         eval.save_eval_json(FLAGS.output_eval)
+        return
     eval.eval_results(classwise=FLAGS.classwise)
 
 

@@ -34,6 +34,7 @@ python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/0000005
 |       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
 |       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
 |       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
+|       --classwise        |      eval      |  是否评估每一个类别的AP和P-R曲线   | False                |  |
 |       --output_dir       |      infer     |  输出预测后可视化文件  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    |

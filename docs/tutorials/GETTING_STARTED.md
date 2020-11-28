@@ -37,6 +37,7 @@ list below can be viewed by `--help`
 |       --fp16             |     train      |  Whether to enable mixed precision training  |  False  |  GPU training is required  |
 |       --loss_scale       |     train      |  Loss scaling factor for mixed precision training  |  8.0  |  enable when `--fp16` is True  |  
 |       --json_eval        |       eval     |  Whether to evaluate with already existed bbox.json or mask.json  |  False  |  json path is set in `--output_eval`  |
+|      --classwise         |      eval      |  whether compute per-category AP/Precision/Recall and draw P-R Curve or not  |  False  |   |
 |       --output_dir       |      infer     |  Directory for storing the output visualization files  |  `./output`  |  `--output_dir output`  |
 |    --draw_threshold      |      infer     |  Threshold to reserve the result for visualization  |  0.5  |  `--draw_threshold 0.7`  |
 |      --infer_dir         |       infer     |  Directory for images to perform inference on  |  None  |    |
