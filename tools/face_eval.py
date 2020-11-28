@@ -32,7 +32,7 @@ from collections import OrderedDict
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
-from ppdet.utils.widerface_eval_utils import get_shrink, bbox_vote, \
+from ppdet.evaluation.widerface_eval_utils import get_shrink, bbox_vote, \
     save_widerface_bboxes, save_fddb_bboxes, to_chw_bgr
 from ppdet.core.workspace import load_config, merge_config, create
 

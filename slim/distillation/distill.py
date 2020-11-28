@@ -30,8 +30,8 @@ import paddle
 from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
-from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
-from ppdet.utils.stats import TrainingStats
+from ppdet.evaluation.evaluate import Evaluation
+from ppdet.utils.stats import TrainingStats, parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
@@ -189,11 +189,7 @@ def main():
     eval_loader.set_sample_list_generator(eval_reader)
 
     # parse eval fetches
-    extra_keys = []
-    if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
-        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
+    extra_keys = ['im_info', 'im_id', 'im_shape']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                      extra_keys)
 
@@ -319,7 +315,7 @@ def main():
     best_box_ap_list = [0.0, 0]  #[map, iter]
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-
+    eval = Evaluation(cfg, is_bbox_normalized=is_bbox_normalized)
     train_loader.start()
     for step_id in range(start_iter, cfg.max_iters):
         teacher_loss_np, distill_loss_np, loss_np, lr_np = exe.run(
@@ -346,16 +342,13 @@ def main():
                                               feeded_var_names, targets, exe,
                                               eval_prog)
             # eval
-            results = eval_run(exe, compiled_eval_prog, eval_loader, eval_keys,
-                               eval_values, eval_cls, cfg)
-            resolution = None
-            box_ap_stats = eval_results(results, cfg.metric, cfg.num_classes,
-                                        resolution, is_bbox_normalized,
-                                        FLAGS.output_eval, map_type,
-                                        cfg['EvalReader']['dataset'])
+            results = eval.eval_run(exe, compiled_eval_prog, eval_loader,
+                                    eval_keys, eval_values)
 
-            if box_ap_stats[0] > best_box_ap_list[0]:
-                best_box_ap_list[0] = box_ap_stats[0]
+            box_ap_stats = eval.eval_results()
+
+            if box_ap_stats > best_box_ap_list[0]:
+                best_box_ap_list[0] = box_ap_stats
                 best_box_ap_list[1] = step_id
                 checkpoint.save(exe,
                                 fluid.default_main_program(),

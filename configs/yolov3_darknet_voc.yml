@@ -3,7 +3,7 @@ use_gpu: true
 max_iters: 70000
 log_iter: 20
 save_dir: output
-snapshot_iter: 2000
+snapshot_iter: 20
 metric: VOC
 map_type: 11point
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
@@ -73,7 +73,7 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+    fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 50
   dataset:
     !VOCDataSet

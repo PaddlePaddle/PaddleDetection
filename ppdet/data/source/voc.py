@@ -16,8 +16,10 @@ import os
 import numpy as np
 
 import xml.etree.ElementTree as ET
+from collections import OrderedDict
 
 from ppdet.core.workspace import register, serializable
+from ppdet.evaluation.map_utils import DetectionMAP
 
 from .dataset import DataSet
 import logging
@@ -74,9 +76,10 @@ class VOCDataSet(DataSet):
         # }
         self.roidbs = None
         # 'cname2id' is a dict to map category name to class id
-        self.cname2cid = None
+        self.cname2cid = OrderedDict()
         self.use_default_label = use_default_label
         self.label_list = label_list
+        self.id_indexs = {}
 
     def load_roidb_and_cname2cid(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -89,7 +92,6 @@ class VOCDataSet(DataSet):
         #   first_class:0, second_class:1, ...
         records = []
         ct = 0
-        cname2cid = {}
         if not self.use_default_label:
             label_path = os.path.join(self.dataset_dir, self.label_list)
             if not os.path.exists(label_path):
@@ -98,10 +100,10 @@ class VOCDataSet(DataSet):
             with open(label_path, 'r') as fr:
                 label_id = int(self.with_background)
                 for line in fr.readlines():
-                    cname2cid[line.strip()] = label_id
+                    self.cname2cid[line.strip()] = label_id
                     label_id += 1
         else:
-            cname2cid = pascalvoc_label(self.with_background)
+            self.cname2cid = pascalvoc_label(self.with_background)
 
         with open(anno_path, 'r') as fr:
             while True:
@@ -151,7 +153,7 @@ class VOCDataSet(DataSet):
                     y2 = min(im_h - 1, y2)
                     if x2 > x1 and y2 > y1:
                         gt_bbox.append([x1, y1, x2, y2])
-                        gt_class.append([cname2cid[cname]])
+                        gt_class.append([self.cname2cid[cname]])
                         gt_score.append([1.])
                         is_crowd.append([0])
                         difficult.append([_difficult])
@@ -178,18 +180,111 @@ class VOCDataSet(DataSet):
                 }
                 if len(objs) != 0:
                     records.append(voc_rec)
-
-                ct += 1
+                    self.id_indexs[im_id[0]] = ct
+                    ct += 1
                 if self.sample_num > 0 and ct >= self.sample_num:
                     break
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
-        self.roidbs, self.cname2cid = records, cname2cid
+        self.roidbs = records
+
+    def get_gt_with_imid(self, im_ids):
+        gt_boxes = []
+        gt_labels = []
+        difficults = []
+        for im_id in im_ids:
+            gt_info = self.roidbs[self.id_indexs[im_id]]
+            gt_boxes.append(gt_info['gt_bbox'])
+            gt_labels.append(gt_info['gt_class'])
+            difficults.append(gt_info['difficult'])
+        gt_boxes = np.asarray(gt_boxes)
+        gt_labels = np.asarray(gt_labels)
+        difficults = np.asarray(difficults)
+        return gt_boxes, gt_labels, difficults
+
+    def evaluate(self,
+                 results=None,
+                 jsonfile=None,
+                 style='11point',
+                 classwise=False,
+                 is_bbox_normalized=False,
+                 num_classes=20,
+                 max_dets=(100, 300, 1000)):
+        assert jsonfile == None, 'Currently does not support json file evaluation.'
+        assert style in ['11point', 'integral'
+                         ], 'evaluate style can only be `11point` or `integral`'
+
+        assert 'bbox' in results[0]
+        logger.info("Start evaluate...")
+        overlap_thresh = 0.5
+
+        detection_map = DetectionMAP(
+            class_num=num_classes,
+            overlap_thresh=overlap_thresh,
+            map_type=style,
+            classwise=classwise,
+            is_bbox_normalized=is_bbox_normalized,
+            cname2cid=self.cname2cid)
+
+        for t in results:
+            bboxes = t['bbox'][0]
+            bbox_lengths = t['bbox'][1][0]
+            im_ids = np.array(t['im_id'][0]).flatten()
+            if bboxes.shape == (1, 1) or bboxes is None:
+                continue
+
+            gt_boxes, gt_labels, difficults = self.get_gt_with_imid(im_ids)
+
+            if gt_boxes.shape[0] == 0:
+                # gt_bbox, gt_class, difficult read as zero padded Tensor
+                bbox_idx = 0
+                for i in range(len(gt_boxes)):
+                    gt_box = gt_boxes[i]
+                    gt_label = gt_labels[i]
+                    difficult = None if difficults is None \
+                                    else difficults[i]
+                    bbox_num = bbox_lengths[i]
+                    bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+                    gt_box, gt_label, difficult = self._prune_zero_padding(
+                        gt_box, gt_label, difficult)
+                    detection_map.update(bbox, gt_box, gt_label, difficult)
+                    bbox_idx += bbox_num
+            else:
+                # gt_box, gt_label, difficult read as LoDTensor
+                #gt_box_lengths = gt_boxes.shape[0]
+                bbox_idx = 0
+                gt_box_idx = 0
+                for i in range(len(bbox_lengths)):
+                    bbox_num = bbox_lengths[i]
+                    bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+                    gt_box = gt_boxes[i]
+                    gt_label = gt_labels[i]
+                    difficult = None if difficults is None else \
+                                difficults[i]
+                    detection_map.update(bbox, gt_box, gt_label, difficult)
+                    bbox_idx += bbox_num
+
+        logger.info("Accumulating evaluatation results...")
+        detection_map.accumulate()
+        map_stat = 100. * detection_map.get_map()
+        logger.info("mAP({:.2f}, {}) = {:.2f}%".format(overlap_thresh, style,
+                                                       map_stat))
+        return map_stat
+
+    def _prune_zero_padding(self, gt_box, gt_label, difficult=None):
+        valid_cnt = 0
+        for i in range(len(gt_box)):
+            if gt_box[i, 0] == 0 and gt_box[i, 1] == 0 and \
+                    gt_box[i, 2] == 0 and gt_box[i, 3] == 0:
+                break
+            valid_cnt += 1
+        return (gt_box[:valid_cnt], gt_label[:valid_cnt], difficult[:valid_cnt]
+                if difficult is not None else None)
 
 
 def pascalvoc_label(with_background=True):
-    labels_map = {
+    labels_map = OrderedDict({
         'aeroplane': 1,
         'bicycle': 2,
         'bird': 3,
@@ -210,7 +305,68 @@ def pascalvoc_label(with_background=True):
         'sofa': 18,
         'train': 19,
         'tvmonitor': 20
-    }
+    })
     if not with_background:
         labels_map = {k: v - 1 for k, v in labels_map.items()}
     return labels_map
+
+
+def get_category_info(anno_file=None,
+                      with_background=True,
+                      use_default_label=False):
+    if use_default_label or anno_file is None \
+            or not os.path.exists(anno_file):
+        logger.info("Not found annotation file {}, load "
+                    "voc2012 categories.".format(anno_file))
+        return vocall_category_info(with_background)
+    else:
+        logger.info("Load categories from {}".format(anno_file))
+        return get_category_info_from_anno(anno_file, with_background)
+
+
+def get_category_info_from_anno(anno_file, with_background=True):
+    """
+    Get class id to category id map and category id
+    to category name map from annotation file.
+
+    Args:
+        anno_file (str): annotation file path
+        with_background (bool, default True):
+            whether load background as class 0.
+    """
+    cats = []
+    with open(anno_file) as f:
+        for line in f.readlines():
+            cats.append(line.strip())
+
+    if cats[0] != 'background' and with_background:
+        cats.insert(0, 'background')
+    if cats[0] == 'background' and not with_background:
+        cats = cats[1:]
+
+    clsid2catid = {i: i for i in range(len(cats))}
+    catid2name = {i: name for i, name in enumerate(cats)}
+
+    return clsid2catid, catid2name
+
+
+def vocall_category_info(with_background=True):
+    """
+    Get class id to category id map and category id
+    to category name map of mixup voc dataset
+
+    Args:
+        with_background (bool, default True):
+            whether load background as class 0.
+    """
+    label_map = pascalvoc_label(with_background)
+    label_map = sorted(label_map.items(), key=lambda x: x[1])
+    cats = [l[0] for l in label_map]
+
+    if with_background:
+        cats.insert(0, 'background')
+
+    clsid2catid = {i: i for i in range(len(cats))}
+    catid2name = {i: name for i, name in enumerate(cats)}
+
+    return clsid2catid, catid2name

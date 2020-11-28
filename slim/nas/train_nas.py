@@ -33,10 +33,10 @@ from paddle import fluid
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create, register
 from ppdet.data.reader import create_reader
+from ppdet.evaluation.evaluate import Evaluation
 
 from ppdet.utils import dist_utils
-from ppdet.utils.eval_utils import parse_fetches, eval_run
-from ppdet.utils.stats import TrainingStats
+from ppdet.utils.stats import TrainingStats, parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
@@ -337,6 +337,7 @@ def main():
         save_dir = os.path.join(cfg.save_dir, cfg_name)
         time_stat = deque(maxlen=cfg.log_iter)
         ap = 0
+        eval = Evaluation(cfg, is_bbox_normalized=is_bbox_normalized)
         for it in range(start_iter, cfg.max_iters):
             start_time = end_time
             end_time = time.time()
@@ -365,8 +366,8 @@ def main():
                                 os.path.join(save_dir, save_name))
                 if FLAGS.eval:
                     # evaluation
-                    results = eval_run(exe, compiled_eval_prog, eval_loader,
-                                       eval_keys, eval_values, eval_cls)
+                    results = eval.eval_run(exe, compiled_eval_prog,
+                                            eval_loader, eval_keys, eval_values)
                     ap = calculate_ap_py(results)
 
         train_loader.reset()

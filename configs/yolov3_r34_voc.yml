@@ -72,9 +72,6 @@ TrainReader:
     with_background: false
 
 EvalReader:
-  inputs_def:
-    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
-    num_max_boxes: 50
   dataset:
     !VOCDataSet
     dataset_dir: dataset/voc

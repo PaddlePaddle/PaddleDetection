@@ -20,14 +20,13 @@ import os
 import numpy as np
 
 from ppdet.data.source.widerface import widerface_label
-from ppdet.utils.coco_eval import bbox2out
 
 import logging
 logger = logging.getLogger(__name__)
 
 __all__ = [
     'get_shrink', 'bbox_vote', 'save_widerface_bboxes', 'save_fddb_bboxes',
-    'to_chw_bgr', 'bbox2out', 'get_category_info', 'lmk2out'
+    'to_chw_bgr', 'get_category_info', 'lmk2out'
 ]
 
 

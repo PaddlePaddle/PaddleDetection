@@ -25,9 +25,10 @@ if parent_path not in sys.path:
 import paddle
 import paddle.fluid as fluid
 
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
+from ppdet.utils.stats import parse_fetches
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+from ppdet.evaluation.evaluate import Evaluation
 
 from ppdet.data.reader import create_reader
 
@@ -78,7 +79,14 @@ def main():
     # When iterable mode, set set_sample_list_generator(reader, place)
     loader.set_sample_list_generator(reader)
 
-    dataset = cfg['EvalReader']['dataset']
+    # whether output bbox is normalized in model output layer
+    is_bbox_normalized = False
+    if hasattr(model, 'is_bbox_normalized') and \
+            callable(model.is_bbox_normalized):
+        is_bbox_normalized = model.is_bbox_normalized()
+
+    eval = Evaluation(
+        cfg, is_bbox_normalized=is_bbox_normalized, eval_dir=FLAGS.output_eval)
 
     # eval already exists json file
     if FLAGS.json_eval:
@@ -86,8 +94,7 @@ def main():
             "In json_eval mode, PaddleDetection will evaluate json files in "
             "output_eval directly. And proposal.json, bbox.json and mask.json "
             "will be detected by default.")
-        json_eval_results(
-            cfg.metric, json_directory=FLAGS.output_eval, dataset=dataset)
+        eval.json_eval_results()
         return
 
     compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
@@ -100,12 +107,8 @@ def main():
                          "please use tools/face_eval.py".format(cfg.metric))
     assert cfg.metric in ['COCO', 'VOC'], \
             "unknown metric type {}".format(cfg.metric)
-    extra_keys = []
 
-    if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
-        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
+    extra_keys = ['im_info', 'im_id', 'im_shape']
 
     keys, values, cls = parse_fetches(fetches, eval_prog, extra_keys)
 
@@ -142,23 +145,15 @@ def main():
     resolution = None
     if 'Mask' in cfg.architecture or cfg.architecture == 'HybridTaskCascade':
         resolution = model.mask_head.resolution
-    results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
-                       sub_eval_prog, sub_keys, sub_values, resolution)
+
+    results = eval.eval_run(exe, compile_program, loader, keys, values,
+                            sub_eval_prog, sub_keys, sub_values, resolution)
 
     # evaluation
-    # if map_type not set, use default 11point, only use in VOC eval
-    map_type = cfg.map_type if 'map_type' in cfg else '11point'
     save_only = getattr(cfg, 'save_prediction_only', False)
-    eval_results(
-        results,
-        cfg.metric,
-        cfg.num_classes,
-        resolution,
-        is_bbox_normalized,
-        FLAGS.output_eval,
-        map_type,
-        dataset=dataset,
-        save_only=save_only)
+    if save_only:
+        eval.save_eval_json(FLAGS.output_eval)
+    eval.eval_results(classwise=FLAGS.classwise)
 
 
 if __name__ == '__main__':
@@ -175,5 +170,10 @@ if __name__ == '__main__':
         default=None,
         type=str,
         help="Evaluation file directory, default is current directory.")
+    parser.add_argument(
+        "--classwise",
+        action='store_true',
+        default=False,
+        help="Whether to compute per-category AP")
     FLAGS = parser.parse_args()
     main()

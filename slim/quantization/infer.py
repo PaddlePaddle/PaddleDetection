@@ -30,11 +30,13 @@ import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.eval_utils import parse_fetches
+from ppdet.utils.stats import parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
+from ppdet.evaluation.result_out import bbox2out, mask2out, segm2out
+from ppdet.evaluation.widerface_eval_utils import lmk2out
 
 from ppdet.data.reader import create_reader
 from tools.infer import get_test_images, get_save_image_name
@@ -99,29 +101,11 @@ def main():
     # parse infer fetches
     assert cfg.metric in ['COCO', 'VOC', 'OID', 'WIDERFACE'], \
             "unknown metric type {}".format(cfg.metric)
-    extra_keys = []
-    if cfg['metric'] in ['COCO', 'OID']:
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg['metric'] == 'VOC' or cfg['metric'] == 'WIDERFACE':
-        extra_keys = ['im_id', 'im_shape']
+    extra_keys = ['im_info', 'im_id', 'im_shape']
     keys, values, _ = parse_fetches(test_fetches, infer_prog, extra_keys)
 
     # parse dataset category
-    if cfg.metric == 'COCO':
-        from ppdet.utils.coco_eval import bbox2out, mask2out, get_category_info
-    if cfg.metric == 'OID':
-        from ppdet.utils.oid_eval import bbox2out, get_category_info
-    if cfg.metric == "VOC":
-        from ppdet.utils.voc_eval import bbox2out, get_category_info
-    if cfg.metric == "WIDERFACE":
-        from ppdet.utils.widerface_eval_utils import bbox2out, get_category_info
-
-    anno_file = dataset.get_anno()
-    with_background = dataset.with_background
-    use_default_label = dataset.use_default_label
-
-    clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                use_default_label)
+    clsid2catid, catid2name = dataset.get_category_info(cfg.metric)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False

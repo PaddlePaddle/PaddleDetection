@@ -162,3 +162,21 @@ class ImageFolder(DataSet):
             records.append(rec)
         assert len(records) > 0, "No image file found"
         return records
+
+    def get_category_info(self, metric):
+        if metric == 'COCO':
+            from .coco import get_category_info
+            return get_category_info(self.get_anno(), self.with_background,
+                                     self.use_default_label)
+        if metric == 'OID':
+            from .oid import get_category_info
+            return get_category_info(self.get_anno(), self.with_background,
+                                     self.use_default_label)
+        if metric == "VOC":
+            from .voc import get_category_info
+            return get_category_info(self.get_anno(), self.with_background,
+                                     self.use_default_label)
+        if metric == "WIDERFACE":
+            from .widerface import get_category_info
+            return get_category_info(self.get_anno(), self.with_background,
+                                     self.use_default_label)

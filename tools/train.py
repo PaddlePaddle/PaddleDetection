@@ -38,10 +38,10 @@ from paddle.fluid.optimizer import ExponentialMovingAverage
 from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
+from ppdet.evaluation.evaluate import Evaluation
 
 from ppdet.utils import dist_utils
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
-from ppdet.utils.stats import TrainingStats
+from ppdet.utils.stats import TrainingStats, parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
@@ -151,13 +151,7 @@ def main():
         eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
-        extra_keys = []
-        if cfg.metric == 'COCO':
-            extra_keys = ['im_info', 'im_id', 'im_shape']
-        if cfg.metric == 'VOC':
-            extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
-        if cfg.metric == 'WIDERFACE':
-            extra_keys = ['im_id', 'im_shape', 'gt_bbox']
+        extra_keys = ['im_info', 'im_id', 'im_shape']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
@@ -238,6 +232,8 @@ def main():
         vdl_loss_step = 0
         vdl_mAP_step = 0
 
+    eval = Evaluation(cfg, is_bbox_normalized=is_bbox_normalized)
+
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
@@ -270,7 +266,6 @@ def main():
             profiler.stop_profiler("total", FLAGS.profiler_path)
             return
 
-
         if (it > 0 and it % cfg.snapshot_iter == 0 or it == cfg.max_iters - 1) \
            and (not FLAGS.dist or trainer_id == 0):
             save_name = str(it) if it != cfg.max_iters - 1 else "model_final"
@@ -283,27 +278,23 @@ def main():
                 resolution = None
                 if 'Mask' in cfg.architecture:
                     resolution = model.mask_head.resolution
-                results = eval_run(
+                results = eval.eval_run(
                     exe,
                     compiled_eval_prog,
                     eval_loader,
                     eval_keys,
                     eval_values,
-                    eval_cls,
-                    cfg,
                     resolution=resolution)
-                box_ap_stats = eval_results(
-                    results, cfg.metric, cfg.num_classes, resolution,
-                    is_bbox_normalized, FLAGS.output_eval, map_type,
-                    cfg['EvalReader']['dataset'])
+
+                box_ap_stats = eval.eval_results()
 
                 # use vdl_paddle to log mAP
                 if FLAGS.use_vdl:
-                    vdl_writer.add_scalar("mAP", box_ap_stats[0], vdl_mAP_step)
+                    vdl_writer.add_scalar("mAP", box_ap_stats, vdl_mAP_step)
                     vdl_mAP_step += 1
 
-                if box_ap_stats[0] > best_box_ap_list[0]:
-                    best_box_ap_list[0] = box_ap_stats[0]
+                if box_ap_stats > best_box_ap_list[0]:
+                    best_box_ap_list[0] = box_ap_stats
                     best_box_ap_list[1] = it
                     checkpoint.save(exe, train_prog,
                                     os.path.join(save_dir, "best_model"))

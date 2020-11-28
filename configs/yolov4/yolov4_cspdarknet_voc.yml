@@ -123,7 +123,7 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+    fields: ['image', 'im_size', 'im_id']
     num_max_boxes: 90
   dataset:
     !VOCDataSet

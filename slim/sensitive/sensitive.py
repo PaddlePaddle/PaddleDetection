@@ -33,10 +33,9 @@ from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.data.reader import create_reader
-
+from ppdet.evaluation.evaluate import Evaluation
 from ppdet.utils import dist_utils
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
-from ppdet.utils.stats import TrainingStats
+from ppdet.utils.stats import TrainingStats, parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
@@ -89,13 +88,7 @@ def main():
     eval_loader.set_sample_list_generator(eval_reader)
 
     # parse eval fetches
-    extra_keys = []
-    if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
-        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
-    if cfg.metric == 'WIDERFACE':
-        extra_keys = ['im_id', 'im_shape', 'gt_box']
+    extra_keys = ['im_info', 'im_id', 'im_shape']
     eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                      extra_keys)
 
@@ -125,29 +118,20 @@ def main():
     def test(program):
 
         compiled_eval_prog = fluid.CompiledProgram(program)
-
-        results = eval_run(
+        eval = Evaluation(cfg, is_bbox_normalized=is_bbox_normalized)
+        resolution = None
+        if 'Mask' in cfg.architecture:
+            resolution = model.mask_head.resolution
+        results = eval.eval_run(
             exe,
             compiled_eval_prog,
             eval_loader,
             eval_keys,
             eval_values,
-            eval_cls,
-            cfg=cfg)
-        resolution = None
-        if 'mask' in results[0]:
-            resolution = model.mask_head.resolution
-        dataset = cfg['EvalReader']['dataset']
-        box_ap_stats = eval_results(
-            results,
-            cfg.metric,
-            cfg.num_classes,
-            resolution,
-            is_bbox_normalized,
-            FLAGS.output_eval,
-            map_type,
-            dataset=dataset)
-        return box_ap_stats[0]
+            resolution=resolution)
+
+        box_ap_stats = eval.eval_results()
+        return box_ap_stats
 
     pruned_params = FLAGS.pruned_params
 

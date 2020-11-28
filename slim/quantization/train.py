@@ -33,9 +33,9 @@ from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
+from ppdet.evaluation.evaluate import Evaluation
 from ppdet.utils import dist_utils
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
-from ppdet.utils.stats import TrainingStats
+from ppdet.utils.stats import TrainingStats, parse_fetches
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
@@ -131,13 +131,7 @@ def main():
         eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
-        extra_keys = []
-        if cfg.metric == 'COCO':
-            extra_keys = ['im_info', 'im_id', 'im_shape']
-        if cfg.metric == 'VOC':
-            extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
-        if cfg.metric == 'WIDERFACE':
-            extra_keys = ['im_id', 'im_shape', 'gt_bbox']
+        extra_keys = ['im_info', 'im_id', 'im_shape']
         eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                          extra_keys)
 
@@ -238,9 +232,6 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # if map_type not set, use default 11point, only use in VOC eval
-    map_type = cfg.map_type if 'map_type' in cfg else '11point'
-
     train_stats = TrainingStats(cfg.log_iter, train_keys)
     train_loader.start()
     start_time = time.time()
@@ -250,7 +241,7 @@ def main():
     save_dir = os.path.join(cfg.save_dir, cfg_name)
     time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
-
+    eval = Evaluation(cfg, is_bbox_normalized=is_bbox_normalized)
     for it in range(start_iter, cfg.max_iters):
         start_time = end_time
         end_time = time.time()
@@ -274,24 +265,21 @@ def main():
 
             if FLAGS.eval:
                 # evaluation
-                results = eval_run(
+                resolution = None
+                if 'Mask' in cfg.architecture:
+                    resolution = model.mask_head.resolution
+                results = eval.eval_run(
                     exe,
                     compiled_eval_prog,
                     eval_loader,
                     eval_keys,
                     eval_values,
-                    eval_cls,
-                    cfg=cfg)
-                resolution = None
-                if 'mask' in results[0]:
-                    resolution = model.mask_head.resolution
-                box_ap_stats = eval_results(
-                    results, cfg.metric, cfg.num_classes, resolution,
-                    is_bbox_normalized, FLAGS.output_eval, map_type,
-                    cfg['EvalReader']['dataset'])
+                    resolution=resolution)
 
-                if box_ap_stats[0] > best_box_ap_list[0]:
-                    best_box_ap_list[0] = box_ap_stats[0]
+                box_ap_stats = eval.eval_results()
+
+                if box_ap_stats > best_box_ap_list[0]:
+                    best_box_ap_list[0] = box_ap_stats
                     best_box_ap_list[1] = it
                     save_checkpoint(exe, eval_prog,
                                     os.path.join(save_dir, "best_model"),

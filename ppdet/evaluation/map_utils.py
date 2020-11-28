@@ -18,6 +18,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import sys
+import os
 import numpy as np
 import logging
 logger = logging.getLogger(__name__)
@@ -33,6 +34,31 @@ def bbox_area(bbox, is_bbox_normalized):
     width = bbox[2] - bbox[0] + norm
     height = bbox[3] - bbox[1] + norm
     return width * height
+
+
+def draw_pr_curve(precision,
+                  recall,
+                  iou=0.5,
+                  out_dir='pr_curve',
+                  file_name='precision_recall_curve.jpg'):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    output_path = os.path.join(out_dir, file_name)
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        logger.warn(
+            'Matplotlib not found, plaese install matplotlib. for example: `pip install matplotlib`.'
+        )
+        raise e
+    plt.cla()
+    plt.figure('P-R Curve')
+    plt.title('Precision/Recall Curve(IoU={})'.format(iou))
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.grid(True)
+    plt.plot(recall, precision)
+    plt.savefig(output_path)
 
 
 def jaccard_overlap(pred, gt, is_bbox_normalized=False):
@@ -78,16 +104,23 @@ class DetectionMAP(object):
                  class_num,
                  overlap_thresh=0.5,
                  map_type='11point',
+                 classwise=False,
                  is_bbox_normalized=False,
-                 evaluate_difficult=False):
+                 evaluate_difficult=False,
+                 cname2cid=None):
         self.class_num = class_num
         self.overlap_thresh = overlap_thresh
         assert map_type in ['11point', 'integral'], \
                 "map_type currently only support '11point' "\
                 "and 'integral'"
         self.map_type = map_type
+        self.classwise = classwise
         self.is_bbox_normalized = is_bbox_normalized
         self.evaluate_difficult = evaluate_difficult
+        self.cname2cid = cname2cid
+        self.classes = []
+        for key in self.cname2cid.keys():
+            self.classes.append(key)
         self.reset()
 
     def update(self, bbox, gt_box, gt_label, difficult=None):
@@ -143,6 +176,7 @@ class DetectionMAP(object):
         """
         mAP = 0.
         valid_cnt = 0
+        eval_results = []
         for score_pos, count in zip(self.class_score_poss,
                                     self.class_gt_counts):
             if count == 0: continue
@@ -157,7 +191,7 @@ class DetectionMAP(object):
             for ac_tp, ac_fp in zip(accum_tp_list, accum_fp_list):
                 precision.append(float(ac_tp) / (ac_tp + ac_fp))
                 recall.append(float(ac_tp) / count)
-
+            one_class_ap = 0.0
             if self.map_type == '11point':
                 max_precisions = [0.] * 11
                 start_idx = len(precision) - 1
@@ -171,24 +205,31 @@ class DetectionMAP(object):
                         else:
                             if max_precisions[j] < precision[i]:
                                 max_precisions[j] = precision[i]
-                mAP += sum(max_precisions) / 11.
+                one_class_ap = sum(max_precisions) / 11.
+                mAP += one_class_ap
                 valid_cnt += 1
             elif self.map_type == 'integral':
                 import math
-                ap = 0.
                 prev_recall = 0.
                 for i in range(len(precision)):
                     recall_gap = math.fabs(recall[i] - prev_recall)
                     if recall_gap > 1e-6:
-                        ap += precision[i] * recall_gap
+                        one_class_ap += precision[i] * recall_gap
                         prev_recall = recall[i]
-                mAP += ap
+                mAP += one_class_ap
                 valid_cnt += 1
             else:
                 logger.error("Unspported mAP type {}".format(self.map_type))
                 sys.exit(1)
+            eval_results.append({
+                'class': self.classes[valid_cnt - 1],
+                'ap': one_class_ap,
+                'precision': precision,
+                'recall': recall,
+            })
 
         self.mAP = mAP / float(valid_cnt) if valid_cnt > 0 else mAP
+        self.eval_results = eval_results
 
     def get_map(self):
         """
@@ -196,6 +237,16 @@ class DetectionMAP(object):
         """
         if self.mAP is None:
             logger.error("mAP is not calculated.")
+        if self.classwise:
+            for eval_result in self.eval_results:
+                print('class: {}, AP: {}'.format(eval_result['class'],
+                                                 eval_result['ap']))
+                draw_pr_curve(
+                    eval_result['precision'],
+                    eval_result['recall'],
+                    out_dir='voc_pr_curve',
+                    file_name='{}_precision_recall_curve.jpg'.format(
+                        eval_result['class']))
         return self.mAP
 
     def _get_tp_fp_accum(self, score_pos_list):

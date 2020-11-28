@@ -12,11 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import paddle.fluid as fluid
+
 import collections
 import numpy as np
 import datetime
 
 __all__ = ['TrainingStats', 'Time']
+
+
+def parse_fetches(fetches, prog=None, extra_keys=None):
+    """
+    Parse fetch variable infos from model fetches,
+    values for fetch_list and keys for stat
+    """
+    keys, values = [], []
+    cls = []
+    for k, v in fetches.items():
+        if hasattr(v, 'name'):
+            keys.append(k)
+            #v.persistable = True
+            values.append(v.name)
+        else:
+            cls.append(v)
+
+    if prog is not None and extra_keys is not None:
+        for k in extra_keys:
+            try:
+                v = fluid.framework._get_var(k, prog)
+                keys.append(k)
+                values.append(v.name)
+            except Exception:
+                pass
+
+    return keys, values, cls
 
 
 class SmoothedValue(object):
