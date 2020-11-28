@@ -76,7 +76,8 @@ class MaskRCNN(BaseArch):
         # each element in rpn_feats contains rpn feature on each level,
         # and the length is 1 when the neck is not applied.
         # each element in rpn_head_out contains (rpn_rois_score, rpn_rois_delta)
-        rpn_feat, self.rpn_head_out = self.rpn_head(self.inputs, body_feats)
+        #rpn_feat, self.rpn_head_out = self.rpn_head(self.inputs, body_feats)
+        rpn_feat, self.rpn_head_out = self.rpn_head(body_feats)
 
         # Anchor
         # anchor_out returns a list,
@@ -87,8 +88,11 @@ class MaskRCNN(BaseArch):
         # compute targets here when training
         rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out)
         # BBox Head
-        bbox_feat, self.bbox_head_out = self.bbox_head(body_feats, rois,
-                                                       spatial_scale)
+        #bbox_feat, self.bbox_head_out = self.bbox_head(body_feats, rois,
+        #                                               spatial_scale)
+        bbox_head_return_stage = 0
+        bbox_feat = self.bbox_head.bbox_feat(body_feats, rois, spatial_scale, stage=bbox_head_return_stage)
+        bbox_feat, self.bbox_head_out = self.bbox_head(bbox_feat, stage=bbox_head_return_stage)
 
         rois_has_mask_int32 = None
         if self.inputs['mode'] == 'infer':
