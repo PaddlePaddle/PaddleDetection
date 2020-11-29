@@ -102,7 +102,7 @@ TrainReader:
 EvalReader:
   inputs_def:
     image_shape: [3, 512, 512]
-    fields: ['image' 'im_shape', 'im_id']
+    fields: ['image', 'im_shape', 'im_id']
   dataset:
     !VOCDataSet
     anno_path: test.txt
