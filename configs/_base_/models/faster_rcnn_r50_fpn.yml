@@ -88,7 +88,7 @@ BBoxHead:
 BBoxPostProcess:
   decode:
     name: RCNNBox
-    num_classes: 5
+    num_classes: 81
     batch_size: 1
   nms:
     name: MultiClassNMS
