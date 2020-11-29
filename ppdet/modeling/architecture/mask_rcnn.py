@@ -98,7 +98,6 @@ class MaskRCNN(BaseArch):
             bbox_feat = paddle.fluid.layers.pool2d(bbox_feat, pool_type='avg', global_pooling=True)
             bbox_feat = paddle.reshape(bbox_feat, (bbox_feat.shape[0], bbox_feat.shape[1]))
             bbox_feat, self.bbox_head_out = self.bbox_head(bbox_feat, stage=bbox_head_return_stage)
->>>>>>> f62641e76ac9b5989a10ec47f595167f5ba9780e
 
         rois_has_mask_int32 = None
         if self.inputs['mode'] == 'infer':
