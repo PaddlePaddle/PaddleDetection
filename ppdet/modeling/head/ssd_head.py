@@ -1,6 +1,7 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from ppdet.core.workspace import register
 
 
 @register
@@ -16,43 +17,49 @@ class SSDHead(nn.Layer):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
+        self.anchor_generator = anchor_generator
         self.boxes = anchor_generator()
 
-        box_convs = []
-        score_convs = []
+        self.box_convs = []
+        self.score_convs = []
         for i, box in enumerate(self.boxes):
-            num_boxes = box.shape[2]
-            box_convs.append(
+            num_boxes = self.anchor_generator.num_priors
+            self.box_convs.append(
                 self.add_sublayer(
                     "boxes{}".format(i),
                     nn.Conv2D(
-                        in_channels=in_channels,
+                        in_channels=in_channels[i],
                         out_channels=num_boxes * 4,
                         kernel_size=3,
                         padding=1)))
-            score_convs.append(
+            self.score_convs.append(
                 self.add_sublayer(
+                    "scores{}".format(i),
                     nn.Conv2D(
-                        in_channels=in_channels,
-                        out_channels=num_classes * num_classes,
+                        in_channels=in_channels[i],
+                        out_channels=num_boxes * num_classes,
                         kernel_size=3,
                         padding=1)))
 
     def forward(self, feats):
         box_preds = []
         cls_scores = []
-        for feat, box_conv, score_conv in zip(feats, box_convs, score_convs):
+        for feat, box_conv, score_conv in zip(feats, self.box_convs,
+                                              self.score_convs):
             box_pred = box_conv(feat)
-            box_pred = paddle.tranpose(box_pred, [0, 2, 3, 1])
+            box_pred = paddle.transpose(box_pred, [0, 2, 3, 1])
             box_pred = paddle.reshape(box_pred, [0, -1, 4])
             box_preds.append(box_pred)
 
             cls_score = score_conv(feat)
-            cls_score = paddle.tranpose(box_pred, [0, 2, 3, 1])
-            cls_score = paddle.reshape(box_pred, [0, -1, self.num_classes])
+            cls_score = paddle.transpose(cls_score, [0, 2, 3, 1])
+            cls_score = paddle.reshape(cls_score, [0, -1, self.num_classes])
             cls_scores.append(cls_score)
 
-        return box_preds, cls_scores, self.boxes
+        outputs = {}
+        outputs['boxes'] = box_preds
+        outputs['scores'] = cls_scores
+        return outputs, self.boxes
 
     def get_loss(self, ):
         pass

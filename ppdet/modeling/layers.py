@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 import numpy as np
 from numbers import Integral
 
@@ -109,22 +110,22 @@ class AnchorGeneratorSSD(object):
     def __init__(self,
                  base_size=300,
                  steps=[8, 16, 32, 64, 100, 300],
-                 ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]],
+                 aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]],
                  min_ratio=15,
                  max_ratio=90,
                  min_sizes=[30.0, 60.0, 111.0, 162.0, 213.0, 264.0],
                  max_sizes=[60.0, 111.0, 162.0, 213.0, 264.0, 315.0],
                  offset=0.5,
-                 filp=True):
+                 clip=True):
         self.base_size = base_size
-        self.step = step
-        self.ratios = ratios
+        self.steps = steps
+        self.aspect_ratios = aspect_ratios
         self.min_ratio = min_ratio
         self.max_ratio = max_ratio
         self.min_sizes = min_sizes
         self.max_sizes = max_sizes
         self.offset = offset
-        self.flip = flip
+        self.clip = clip
 
         self.real_aspect_ratios = [1, 2.0, 1.0 / 2.0, 3.0, 1.0 / 3.0]
         self.num_priors = len(self.real_aspect_ratios) * len(
@@ -133,9 +134,9 @@ class AnchorGeneratorSSD(object):
     def __call__(self):
         out_boxes = []
         for step in self.steps:
+            input_size = int(np.ceil(float(self.base_size) / step))
             out_box = np.zeros(
                 (input_size, input_size, self.num_priors, 4)).astype('float32')
-            input_size = int(np.ceil(base_size / step))
 
             for w in range(input_size):
                 for h in range(input_size):
@@ -162,9 +163,9 @@ class AnchorGeneratorSSD(object):
                         idx += 1
             if self.clip:
                 out_box = np.clip(out_box, 0., 1.)
-            out_boxes.append(out_box.reshape((-1, 4)))
+            out_boxes.append(to_tensor(out_box.reshape((-1, 4))))
 
-        return to_variable(out_boxes)
+        return out_boxes
 
 
 @register
@@ -511,10 +512,10 @@ class SSDBox(object):
         self.num_classes = num_classes
         self.is_normalized = is_normalized
 
-    def __call__(self, boxes, scores, prior_boxes):
+    def __call__(self, preds, prior_boxes, im_shape, scale_factor):
+        boxes, scores = preds['boxes'], preds['scores']
         outputs = []
-        for box, score, prior_box, prior_var in zip(boxes, scores, prior_boxes,
-                                                    prior_vars):
+        for box, score, prior_box in zip(boxes, scores, prior_boxes):
             out_x = prior_box[:, 0] + box[:, :, 0] * prior_box[:, 2] * 0.1
             out_y = prior_box[:, 1] + box[:, :, 1] * prior_box[:, 3] * 0.1
             out_w = paddle.exp(box[:, :, 2] * 0.2) * prior_box[:, 2]
@@ -537,8 +538,8 @@ class SSDBox(object):
             outputs.append(output)
         boxes = paddle.concat(outputs, axis=1)
 
-        scores = paddle.softmax(paddle.concat(scores, axis=1))
-        scores = paddle.tranpose(scores, [0, 2, 1])
+        scores = F.softmax(paddle.concat(scores, axis=1))
+        scores = paddle.transpose(scores, [0, 2, 1])
 
         return boxes, scores
 

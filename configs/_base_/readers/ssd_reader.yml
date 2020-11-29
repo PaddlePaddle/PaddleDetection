@@ -1,7 +1,6 @@
 worker_num: 0
 TrainReader:
   inputs_def:
-    image_shape: [3, 300, 300]
     fields: ['image', 'gt_bbox', 'gt_class']
   sample_transforms:
     - DecodeImage: {to_rgb: True}
@@ -22,23 +21,22 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    image_shape: [3, 300, 300]
-    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id']
+    fields: ['image', 'im_shape',  'scale_factor', 'im_id']
   sample_transforms:
-    - DecodeImage: {to_rgb: True}
-    - ResizeImage: {target_size: 300, interp: 1}
-    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false, is_channel_first: false}
-    - Permute: {to_bgr: false, channel_first: True}
+    - DecodeOp: {}
+    - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+    - PermuteOp: {}
   batch_size: 1
   drop_empty: false
 
 TestReader:
   inputs_def:
     image_shape: [3, 300, 300]
-    fields: ['image', 'im_id', 'im_shape']
+    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
-    - DecodeImage: {to_rgb: True}
-    - ResizeImage: {target_size: 300, interp: 1}
-    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false, is_channel_first: false}
-    - Permute: {to_bgr: false, channel_first: True}
+    - DecodeOp: {}
+    - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+    - PermuteOp: {}
   batch_size: 1

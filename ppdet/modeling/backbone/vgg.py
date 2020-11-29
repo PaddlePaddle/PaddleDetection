@@ -20,6 +20,7 @@ class ConvBlock(nn.Layer):
                  groups,
                  pool_size=2,
                  pool_stride=2,
+                 pool_padding=0,
                  name=None):
         super(ConvBlock, self).__init__()
 
@@ -50,7 +51,8 @@ class ConvBlock(nn.Layer):
         self.pool = MaxPool2D(
             kernel_size=pool_size,
             stride=pool_stride,
-            padding=(pool_size - 1) // 2)
+            padding=pool_padding,
+            ceil_mode=True)
 
     def forward(self, inputs):
         out = self.conv0(inputs)
@@ -58,8 +60,8 @@ class ConvBlock(nn.Layer):
         for conv_i in self.conv_out_list:
             out = conv_i(out)
             out = F.relu(out)
-        out = self.pool(out)
-        return out
+        pool = self.pool(out)
+        return out, pool
 
 
 class ExtraBlock(nn.Layer):
@@ -102,14 +104,14 @@ class L2NormScale(nn.Layer):
             shape=[num_channels])
 
     def forward(self, inputs):
-        out = F.normalize(inputs, axis=1, eps=1e-10)
+        out = F.normalize(inputs, axis=1, epsilon=1e-10)
         out = self.scale.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(
             out) * out
         return out
 
 
-# @register
-# @serializable
+@register
+@serializable
 class VGG(nn.Layer):
     def __init__(self,
                  depth=16,
@@ -127,15 +129,15 @@ class VGG(nn.Layer):
         self.extra_block_filters = extra_block_filters
 
         self.conv_block_0 = ConvBlock(
-            3, 64, self.groups[0], 2, 2, name="conv1_")
+            3, 64, self.groups[0], 2, 2, 0, name="conv1_")
         self.conv_block_1 = ConvBlock(
-            64, 128, self.groups[1], 2, 2, name="conv2_")
+            64, 128, self.groups[1], 2, 2, 0, name="conv2_")
         self.conv_block_2 = ConvBlock(
-            128, 256, self.groups[2], 2, 2, name="conv3_")
+            128, 256, self.groups[2], 2, 2, 0, name="conv3_")
         self.conv_block_3 = ConvBlock(
-            256, 512, self.groups[3], 2, 2, name="conv4_")
+            256, 512, self.groups[3], 2, 2, 0, name="conv4_")
         self.conv_block_4 = ConvBlock(
-            512, 512, self.groups[4], 3, 1, name="conv5_")
+            512, 512, self.groups[4], 3, 1, 1, name="conv5_")
 
         self.fc6 = Conv2D(
             in_channels=512,
@@ -175,14 +177,14 @@ class VGG(nn.Layer):
     def forward(self, inputs):
         outputs = []
 
-        out = self.conv_block_0(inputs)
-        out = self.conv_block_1(out)
-        out = self.conv_block_2(out)
-        out = self.conv_block_3(out)
+        out, pool = self.conv_block_0(inputs['image'])
+        out, pool = self.conv_block_1(pool)
+        out, pool = self.conv_block_2(pool)
+        out, pool = self.conv_block_3(pool)
         outputs.append(out)
 
-        out = self.conv_block_4(out)
-        out = self.fc6(out)
+        out, pool = self.conv_block_4(pool)
+        out = self.fc6(pool)
         out = self.fc7(out)
         outputs.append(out)
 

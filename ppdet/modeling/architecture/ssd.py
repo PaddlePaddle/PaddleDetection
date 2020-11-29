@@ -30,21 +30,23 @@ class SSD(BaseArch):
             body_feats, spatial_scale = self.neck(body_feats)
 
         # SSD Head
-        self.ssd_head_outs = self.ssd_head(body_feats)
+        self.ssd_head_outs, self.anchors = self.ssd_head(body_feats)
 
     def get_loss(self, ):
         loss = self.ssd_head.get_loss(self.inputs, self.ssd_head_outs)
         return loss
 
-    def get_pred(self, ):
+    def get_pred(self, return_numpy=True):
         output = {}
-        # mask = self.mask_post_process(self.bboxes, self.mask_head_out,
-        #                               self.inputs['im_info'])
-        # bbox, bbox_num = self.bboxes
-        # output = {
-        #     'bbox': bbox.numpy(),
-        #     'bbox_num': bbox_num.numpy(),
-        #     'im_id': self.inputs['im_id'].numpy()
-        # }
-        # output.update(mask)
-        return output
+        bbox, bbox_num = self.post_process(self.ssd_head_outs, self.anchors,
+                                           self.inputs['im_shape'],
+                                           self.inputs['scale_factor'])
+        if return_numpy:
+            outs = {
+                "bbox": bbox.numpy(),
+                "bbox_num": bbox_num.numpy(),
+                'im_id': self.inputs['im_id'].numpy()
+            }
+        else:
+            outs = [bbox, bbox_num]
+        return outs
