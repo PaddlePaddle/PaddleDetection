@@ -11,17 +11,18 @@ import numpy as np
 from paddle.io import DataLoader
 from ppdet.core.workspace import register, serializable, create
 from .sampler import DistributedBatchSampler
-from .transform import operators
-from .transform import batch_operators
+from . import transform
+from .transform import operator, batch_operator
 
 logger = logging.getLogger(__name__)
 
 
 class Compose(object):
-    def __init__(self, transforms, fields=None, from_=operators,
+    def __init__(self, transforms, fields=None, from_=transform,
                  num_classes=81):
         self.transforms = transforms
         self.transforms_cls = []
+        output_fields = None
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(from_, k)
@@ -29,7 +30,18 @@ class Compose(object):
                 if hasattr(op_cls, 'num_classes'):
                     op_cls.num_classes = num_classes
 
+                # TODO: should be refined in the future
+                if op_cls in [
+                        transform.Gt2YoloTargetOp, transform.Gt2YoloTarget
+                ]:
+                    output_fields = ['image', 'gt_bbox']
+                    output_fields.extend([
+                        'target{}'.format(i)
+                        for i in range(len(v['anchor_masks']))
+                    ])
+
         self.fields = fields
+        self.output_fields = output_fields if output_fields else fields
 
     def __call__(self, data):
         if self.fields is not None:
@@ -47,11 +59,11 @@ class Compose(object):
                             format(f, e, str(stack_info)))
                 raise e
 
-        if self.fields is not None:
+        if self.output_fields is not None:
             data_new = []
             for item in data:
                 batch = []
-                for k in self.fields:
+                for k in self.output_fields:
                     batch.append(item[k])
                 data_new.append(batch)
             batch_size = len(data_new)
@@ -78,10 +90,10 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
+                 with_background=True,
+                 **kwargs):
         # out fields 
-        self._fields = copy.deepcopy(inputs_def[
-            'fields']) if inputs_def else None
+        self._fields = inputs_def['fields'] if inputs_def else None
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
@@ -89,30 +101,39 @@ class BaseDataLoader(object):
         # batch transfrom 
         self._batch_transforms = None
         if batch_transforms:
-            self._batch_transforms = Compose(batch_transforms, self._fields,
-                                             batch_operators, num_classes)
+            self._batch_transforms = Compose(batch_transforms,
+                                             copy.deepcopy(self._fields),
+                                             transform, num_classes)
 
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
         self.with_background = with_background
+        self.kwargs = kwargs
 
     def __call__(self,
                  dataset,
                  worker_num,
-                 device,
+                 device=None,
+                 batch_sampler=None,
                  return_list=False,
                  use_prefetch=True):
         self._dataset = dataset
         self._dataset.parse_dataset(self.with_background)
         # get data
-        self._dataset.set_out(self._sample_transforms, self._fields)
+        self._dataset.set_out(self._sample_transforms,
+                              copy.deepcopy(self._fields))
+        # set kwargs
+        self._dataset.set_kwargs(**self.kwargs)
         # batch sampler
-        self._batch_sampler = DistributedBatchSampler(
-            self._dataset,
-            batch_size=self.batch_size,
-            shuffle=self.shuffle,
-            drop_last=self.drop_last)
+        if batch_sampler is None:
+            self._batch_sampler = DistributedBatchSampler(
+                self._dataset,
+                batch_size=self.batch_size,
+                shuffle=self.shuffle,
+                drop_last=self.drop_last)
+        else:
+            self._batch_sampler = batch_sampler
 
         loader = DataLoader(
             dataset=self._dataset,
@@ -135,13 +156,15 @@ class TrainReader(BaseDataLoader):
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=True,
-                 drop_last=False,
+                 drop_last=True,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(TrainReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(TrainReader, self).__init__(inputs_def, sample_transforms,
+                                          batch_transforms, batch_size, shuffle,
+                                          drop_last, drop_empty, num_classes,
+                                          with_background, **kwargs)
 
 
 @register
@@ -152,13 +175,15 @@ class EvalReader(BaseDataLoader):
                  batch_transforms=None,
                  batch_size=1,
                  shuffle=False,
-                 drop_last=False,
+                 drop_last=True,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(EvalReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(EvalReader, self).__init__(inputs_def, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty, num_classes,
+                                         with_background, **kwargs)
 
 
 @register
@@ -172,7 +197,9 @@ class TestReader(BaseDataLoader):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=81,
-                 with_background=True):
-        super(TestReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, with_background)
+                 with_background=True,
+                 **kwargs):
+        super(TestReader, self).__init__(inputs_def, sample_transforms,
+                                         batch_transforms, batch_size, shuffle,
+                                         drop_last, drop_empty, num_classes,
+                                         with_background, **kwargs)

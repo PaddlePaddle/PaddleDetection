@@ -1,9 +1,25 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
+# limitations under the License.
+
 import numpy as np
+import paddle
 import paddle.fluid as fluid
-from paddle.fluid.dygraph import Layer
-from paddle.fluid.dygraph import Conv2D, Pool2D, BatchNorm
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Xavier
+import paddle.nn.functional as F
+from paddle import ParamAttr
+from paddle.nn import Layer
+from paddle.nn import Conv2D
+from paddle.nn.initializer import XavierUniform
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 
@@ -32,33 +48,27 @@ class FPN(Layer):
             lateral = self.add_sublayer(
                 lateral_name,
                 Conv2D(
-                    num_channels=in_c,
-                    num_filters=out_channel,
-                    filter_size=1,
-                    param_attr=ParamAttr(
-                        #name=lateral_name+'_w', 
-                        initializer=Xavier(fan_out=in_c)),
+                    in_channels=in_c,
+                    out_channels=out_channel,
+                    kernel_size=1,
+                    weight_attr=ParamAttr(
+                        initializer=XavierUniform(fan_out=in_c)),
                     bias_attr=ParamAttr(
-                        #name=lateral_name+'_b', 
-                        learning_rate=2.,
-                        regularizer=L2Decay(0.))))
+                        learning_rate=2., regularizer=L2Decay(0.))))
             self.lateral_convs.append(lateral)
 
             fpn_name = 'fpn_res{}_sum'.format(i + 2)
             fpn_conv = self.add_sublayer(
                 fpn_name,
                 Conv2D(
-                    num_channels=out_channel,
-                    num_filters=out_channel,
-                    filter_size=3,
+                    in_channels=out_channel,
+                    out_channels=out_channel,
+                    kernel_size=3,
                     padding=1,
-                    param_attr=ParamAttr(
-                        #name=fpn_name+'_w', 
-                        initializer=Xavier(fan_out=fan)),
+                    weight_attr=ParamAttr(
+                        initializer=XavierUniform(fan_out=fan)),
                     bias_attr=ParamAttr(
-                        #name=fpn_name+'_b', 
-                        learning_rate=2.,
-                        regularizer=L2Decay(0.))))
+                        learning_rate=2., regularizer=L2Decay(0.))))
             self.fpn_convs.append(fpn_conv)
 
         self.min_level = min_level
@@ -71,14 +81,17 @@ class FPN(Layer):
             laterals.append(self.lateral_convs[lvl](body_feats[lvl]))
 
         for lvl in range(self.max_level - 1, self.min_level, -1):
-            upsample = fluid.layers.resize_nearest(laterals[lvl], scale=2.)
+            upsample = F.interpolate(
+                laterals[lvl],
+                scale_factor=2.,
+                mode='nearest', )
             laterals[lvl - 1] = laterals[lvl - 1] + upsample
 
         fpn_output = []
         for lvl in range(self.min_level, self.max_level):
             fpn_output.append(self.fpn_convs[lvl](laterals[lvl]))
 
-        extension = fluid.layers.pool2d(fpn_output[-1], 1, 'max', pool_stride=2)
+        extension = F.max_pool2d(fpn_output[-1], 1, stride=2)
 
         spatial_scale = self.spatial_scale + [self.spatial_scale[-1] * 0.5]
         fpn_output.append(extension)

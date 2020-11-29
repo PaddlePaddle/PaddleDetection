@@ -1,11 +1,26 @@
-import paddle.fluid as fluid
-from paddle.fluid.dygraph import Layer, Sequential
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
+# limitations under the License.
 
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import MSRA
-from paddle.fluid.regularizer import L2Decay
-from paddle.fluid.dygraph.nn import Conv2D, Pool2D, Conv2DTranspose
+import paddle
+import paddle.nn.functional as F
+from paddle import ParamAttr
+from paddle.nn import Layer, Sequential
+from paddle.nn import Conv2D, Conv2DTranspose, ReLU
+from paddle.nn.initializer import KaimingNormal
+from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
+from ppdet.modeling import ops
 
 
 @register
@@ -37,35 +52,27 @@ class MaskFeat(Layer):
                 mask_conv.add_sublayer(
                     conv_name,
                     Conv2D(
-                        num_channels=feat_in if j == 0 else feat_out,
-                        num_filters=feat_out,
-                        filter_size=3,
-                        act='relu',
+                        in_channels=feat_in if j == 0 else feat_out,
+                        out_channels=feat_out,
+                        kernel_size=3,
                         padding=1,
-                        param_attr=ParamAttr(
-                            #name=conv_name+'_w', 
-                            initializer=MSRA(
-                                uniform=False, fan_in=fan_conv)),
+                        weight_attr=ParamAttr(
+                            initializer=KaimingNormal(fan_in=fan_conv)),
                         bias_attr=ParamAttr(
-                            #name=conv_name+'_b',
-                            learning_rate=2.,
-                            regularizer=L2Decay(0.))))
+                            learning_rate=2., regularizer=L2Decay(0.))))
+                mask_conv.add_sublayer(conv_name + 'act', ReLU())
             mask_conv.add_sublayer(
                 'conv5_mask',
                 Conv2DTranspose(
-                    num_channels=self.feat_in,
-                    num_filters=self.feat_out,
-                    filter_size=2,
+                    in_channels=self.feat_in,
+                    out_channels=self.feat_out,
+                    kernel_size=2,
                     stride=2,
-                    act='relu',
-                    param_attr=ParamAttr(
-                        #name='conv5_mask_w', 
-                        initializer=MSRA(
-                            uniform=False, fan_in=fan_deconv)),
+                    weight_attr=ParamAttr(
+                        initializer=KaimingNormal(fan_in=fan_deconv)),
                     bias_attr=ParamAttr(
-                        #name='conv5_mask_b',
-                        learning_rate=2.,
-                        regularizer=L2Decay(0.))))
+                        learning_rate=2., regularizer=L2Decay(0.))))
+            mask_conv.add_sublayer('conv5_mask' + 'act', ReLU())
             upsample = self.add_sublayer(name, mask_conv)
             self.upsample_module.append(upsample)
 
@@ -77,7 +84,7 @@ class MaskFeat(Layer):
                 spatial_scale,
                 stage=0):
         if self.share_bbox_feat:
-            rois_feat = fluid.layers.gather(bbox_feat, mask_index)
+            rois_feat = paddle.gather(bbox_feat, mask_index)
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)
@@ -107,18 +114,14 @@ class MaskHead(Layer):
             self.mask_fcn_logits.append(
                 self.add_sublayer(
                     name,
-                    fluid.dygraph.Conv2D(
-                        num_channels=self.feat_in,
-                        num_filters=self.num_classes,
-                        filter_size=1,
-                        param_attr=ParamAttr(
-                            #name='mask_fcn_logits_w', 
-                            initializer=MSRA(
-                                uniform=False, fan_in=self.num_classes)),
+                    Conv2D(
+                        in_channels=self.feat_in,
+                        out_channels=self.num_classes,
+                        kernel_size=1,
+                        weight_attr=ParamAttr(initializer=KaimingNormal(
+                            fan_in=self.num_classes)),
                         bias_attr=ParamAttr(
-                            #name='mask_fcn_logits_b',
-                            learning_rate=2.,
-                            regularizer=L2Decay(0.0)))))
+                            learning_rate=2., regularizer=L2Decay(0.0)))))
 
     def forward_train(self,
                       body_feats,
@@ -135,7 +138,7 @@ class MaskHead(Layer):
         return mask_head_out
 
     def forward_test(self,
-                     im_info,
+                     scale_factor,
                      body_feats,
                      bboxes,
                      bbox_feat,
@@ -146,18 +149,19 @@ class MaskHead(Layer):
         if bbox.shape[0] == 0:
             mask_head_out = bbox
         else:
-            im_info_expand = []
+            scale_factor_list = []
             for idx, num in enumerate(bbox_num):
                 for n in range(num):
-                    im_info_expand.append(im_info[idx, -1])
-            im_info_expand = fluid.layers.concat(im_info_expand)
-            scaled_bbox = fluid.layers.elementwise_mul(
-                bbox[:, 2:], im_info_expand, axis=0)
+                    scale_factor_list.append(scale_factor[idx, 0])
+            scale_factor_list = paddle.cast(
+                paddle.concat(scale_factor_list), 'float32')
+            scaled_bbox = paddle.multiply(
+                bbox[:, 2:], scale_factor_list, axis=0)
             scaled_bboxes = (scaled_bbox, bbox_num)
             mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
                                        mask_index, spatial_scale, stage)
             mask_logit = self.mask_fcn_logits[stage](mask_feat)
-            mask_head_out = fluid.layers.sigmoid(mask_logit)
+            mask_head_out = F.sigmoid(mask_logit)
         return mask_head_out
 
     def forward(self,
@@ -172,19 +176,21 @@ class MaskHead(Layer):
             mask_head_out = self.forward_train(body_feats, bboxes, bbox_feat,
                                                mask_index, spatial_scale, stage)
         else:
-            im_info = inputs['im_info']
-            mask_head_out = self.forward_test(im_info, body_feats, bboxes,
+            scale_factor = inputs['scale_factor']
+            mask_head_out = self.forward_test(scale_factor, body_feats, bboxes,
                                               bbox_feat, mask_index,
                                               spatial_scale, stage)
         return mask_head_out
 
     def get_loss(self, mask_head_out, mask_target):
-        mask_logits = fluid.layers.flatten(mask_head_out)
-        mask_label = fluid.layers.cast(x=mask_target, dtype='float32')
+        mask_logits = paddle.flatten(mask_head_out, start_axis=1, stop_axis=-1)
+        mask_label = paddle.cast(x=mask_target, dtype='float32')
         mask_label.stop_gradient = True
-
-        loss_mask = fluid.layers.sigmoid_cross_entropy_with_logits(
-            x=mask_logits, label=mask_label, ignore_index=-1, normalize=True)
-        loss_mask = fluid.layers.reduce_sum(loss_mask)
+        loss_mask = ops.sigmoid_cross_entropy_with_logits(
+            input=mask_logits,
+            label=mask_label,
+            ignore_index=-1,
+            normalize=True)
+        loss_mask = paddle.sum(loss_mask)
 
         return {'loss_mask': loss_mask}

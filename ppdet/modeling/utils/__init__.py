@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import yolo_loss
-from . import iou_aware_loss
-from . import iou_loss
+from . import bbox_util
 
-from .yolo_loss import *
-from .iou_aware_loss import *
-from .iou_loss import *
+from .bbox_util import *

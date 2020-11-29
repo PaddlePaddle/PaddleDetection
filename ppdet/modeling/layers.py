@@ -16,8 +16,7 @@ import numpy as np
 from numbers import Integral
 
 import paddle
-import paddle.fluid as fluid
-from paddle.fluid.dygraph.base import to_variable
+from paddle import to_tensor
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
@@ -86,20 +85,20 @@ class AnchorTargetGeneratorRPN(object):
             self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random)
 
-        loc_indexes = to_variable(loc_indexes)
-        score_indexes = to_variable(score_indexes)
-        tgt_labels = to_variable(tgt_labels)
-        tgt_bboxes = to_variable(tgt_bboxes)
-        bbox_inside_weights = to_variable(bbox_inside_weights)
+        loc_indexes = to_tensor(loc_indexes)
+        score_indexes = to_tensor(score_indexes)
+        tgt_labels = to_tensor(tgt_labels)
+        tgt_bboxes = to_tensor(tgt_bboxes)
+        bbox_inside_weights = to_tensor(bbox_inside_weights)
 
         loc_indexes.stop_gradient = True
         score_indexes.stop_gradient = True
         tgt_labels.stop_gradient = True
 
-        cls_logits = fluid.layers.reshape(x=cls_logits, shape=(-1, ))
-        bbox_pred = fluid.layers.reshape(x=bbox_pred, shape=(-1, 4))
-        pred_cls_logits = fluid.layers.gather(cls_logits, score_indexes)
-        pred_bbox_pred = fluid.layers.gather(bbox_pred, loc_indexes)
+        cls_logits = paddle.reshape(x=cls_logits, shape=(-1, ))
+        bbox_pred = paddle.reshape(x=bbox_pred, shape=(-1, 4))
+        pred_cls_logits = paddle.gather(cls_logits, score_indexes)
+        pred_bbox_pred = paddle.gather(bbox_pred, loc_indexes)
 
         return pred_cls_logits, pred_bbox_pred, tgt_labels, tgt_bboxes, bbox_inside_weights
 
@@ -195,22 +194,38 @@ class ProposalGenerator(object):
                  bbox_deltas,
                  anchors,
                  variances,
-                 im_info,
+                 im_shape,
                  mode='train'):
         pre_nms_top_n = self.train_pre_nms_top_n if mode == 'train' else self.infer_pre_nms_top_n
         post_nms_top_n = self.train_post_nms_top_n if mode == 'train' else self.infer_post_nms_top_n
-        rpn_rois, rpn_rois_prob, rpn_rois_num = fluid.layers.generate_proposals(
-            scores,
-            bbox_deltas,
-            im_info,
-            anchors,
-            variances,
-            pre_nms_top_n=pre_nms_top_n,
-            post_nms_top_n=post_nms_top_n,
-            nms_thresh=self.nms_thresh,
-            min_size=self.min_size,
-            eta=self.eta,
-            return_rois_num=True)
+        # TODO delete im_info
+        if im_shape.shape[1] > 2:
+            import paddle.fluid as fluid
+            rpn_rois, rpn_rois_prob, rpn_rois_num = fluid.layers.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=pre_nms_top_n,
+                post_nms_top_n=post_nms_top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
+        else:
+            rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
+                scores,
+                bbox_deltas,
+                im_shape,
+                anchors,
+                variances,
+                pre_nms_top_n=pre_nms_top_n,
+                post_nms_top_n=post_nms_top_n,
+                nms_thresh=self.nms_thresh,
+                min_size=self.min_size,
+                eta=self.eta,
+                return_rois_num=True)
         return rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n
 
 
@@ -262,7 +277,7 @@ class ProposalTargetGenerator(object):
             self.bg_thresh_hi[stage], self.bg_thresh_lo[stage],
             self.bbox_reg_weights[stage], self.num_classes, self.use_random,
             self.is_cls_agnostic, self.is_cascade_rcnn)
-        outs = [to_variable(v) for v in outs]
+        outs = [to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
@@ -291,7 +306,7 @@ class MaskTargetGenerator(object):
                                     rois, rois_num, labels_int32,
                                     self.num_classes, self.mask_resolution)
 
-        outs = [to_variable(v) for v in outs]
+        outs = [to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
@@ -324,7 +339,7 @@ class RCNNBox(object):
         scale_list = []
         origin_shape_list = []
         for idx in range(self.batch_size):
-            scale = scale_factor[idx, :]
+            scale = scale_factor[idx, :][0]
             rois_num_per_im = rois_num[idx]
             expand_scale = paddle.expand(scale, [rois_num_per_im, 1])
             scale_list.append(expand_scale)
@@ -391,7 +406,7 @@ class DecodeClipNms(object):
                                  im_info.numpy(), self.keep_top_k,
                                  self.score_threshold, self.nms_threshold,
                                  self.num_classes)
-        outs = [to_variable(v) for v in outs]
+        outs = [to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True
         return outs
@@ -407,7 +422,8 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=False,
                  nms_eta=1.0,
-                 background_label=0):
+                 background_label=0,
+                 return_rois_num=True):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -416,6 +432,7 @@ class MultiClassNMS(object):
         self.normalized = normalized
         self.nms_eta = nms_eta
         self.background_label = background_label
+        self.return_rois_num = return_rois_num
 
     def __call__(self, bboxes, score):
         kwargs = self.__dict__.copy()
@@ -468,13 +485,11 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
         self.scale_x_y = scale_x_y
 
-    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor=None):
+    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
         boxes_list = []
         scores_list = []
-        if scale_factor is not None:
-            origin_shape = im_shape / scale_factor
-        else:
-            origin_shape = im_shape
+        origin_shape = im_shape / scale_factor
+        origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
             boxes, scores = ops.yolo_box(head_out, origin_shape, anchors[i],
                                          self.num_classes, self.conf_thresh,

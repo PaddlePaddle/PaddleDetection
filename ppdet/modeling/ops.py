@@ -13,6 +13,10 @@
 # limitations under the License.
 
 import paddle
+import paddle.nn.functional as F
+import paddle.nn as nn
+from paddle import ParamAttr
+from paddle.regularizer import L2Decay
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid import core
@@ -25,19 +29,26 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'anchor_generator',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
+    'roi_pool', 'roi_align', 'prior_box', 'anchor_generator',
+    'generate_proposals', 'iou_similarity', 'box_coder', 'yolo_box',
+    'multiclass_nms', 'distribute_fpn_proposals', 'collect_fpn_proposals',
+    'matrix_nms', 'batch_norm'
 ]
+
+
+def batch_norm(ch, norm_type='bn', name=None):
+    bn_name = name + '.bn'
+    if norm_type == 'sync_bn':
+        batch_norm = nn.SyncBatchNorm
+    else:
+        batch_norm = nn.BatchNorm2D
+
+    return batch_norm(
+        ch,
+        weight_attr=ParamAttr(
+            name=bn_name + '.scale', regularizer=L2Decay(0.)),
+        bias_attr=ParamAttr(
+            name=bn_name + '.offset', regularizer=L2Decay(0.)))
 
 
 def roi_pool(input,
@@ -647,31 +658,31 @@ def yolo_box(
                  clip_bbox, 'scale_x_y', scale_x_y)
         boxes, scores = core.ops.yolo_box(x, origin_shape, *attrs)
         return boxes, scores
+    else:
+        boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
+        scores = helper.create_variable_for_type_inference(dtype=x.dtype)
 
-    boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
-    scores = helper.create_variable_for_type_inference(dtype=x.dtype)
+        attrs = {
+            "anchors": anchors,
+            "class_num": class_num,
+            "conf_thresh": conf_thresh,
+            "downsample_ratio": downsample_ratio,
+            "clip_bbox": clip_bbox,
+            "scale_x_y": scale_x_y,
+        }
 
-    attrs = {
-        "anchors": anchors,
-        "class_num": class_num,
-        "conf_thresh": conf_thresh,
-        "downsample_ratio": downsample_ratio,
-        "clip_bbox": clip_bbox,
-        "scale_x_y": scale_x_y,
-    }
-
-    helper.append_op(
-        type='yolo_box',
-        inputs={
-            "X": x,
-            "ImgSize": origin_shape,
-        },
-        outputs={
-            'Boxes': boxes,
-            'Scores': scores,
-        },
-        attrs=attrs)
-    return boxes, scores
+        helper.append_op(
+            type='yolo_box',
+            inputs={
+                "X": x,
+                "ImgSize": origin_shape,
+            },
+            outputs={
+                'Boxes': boxes,
+                'Scores': scores,
+            },
+            attrs=attrs)
+        return boxes, scores
 
 
 def prior_box(input,
@@ -936,6 +947,7 @@ def multiclass_nms(bboxes,
                    nms_eta=1.,
                    background_label=0,
                    return_index=False,
+                   return_rois_num=True,
                    rois_num=None,
                    name=None):
     """
@@ -1038,44 +1050,45 @@ def multiclass_nms(bboxes,
         output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
                                                                rois_num, *attrs)
         if return_index:
-            return output, index, nms_rois_num
-        else:
-            return output, nms_rois_num
+            index = None
+        return output, nms_rois_num, index
 
-    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-    index = helper.create_variable_for_type_inference(dtype='int')
+    else:
+        output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+        index = helper.create_variable_for_type_inference(dtype='int')
 
-    inputs = {'BBoxes': bboxes, 'Scores': scores}
-    outputs = {'Out': output, 'Index': index}
+        inputs = {'BBoxes': bboxes, 'Scores': scores}
+        outputs = {'Out': output, 'Index': index}
 
-    if rois_num is not None:
-        inputs['RoisNum'] = rois_num
-        nms_rois_num = helper.create_variable_for_type_inference(dtype='int32')
-        outputs['NmsRoisNum'] = nms_rois_num
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
 
-    helper.append_op(
-        type="multiclass_nms3",
-        inputs=inputs,
-        attrs={
-            'background_label': background_label,
-            'score_threshold': score_threshold,
-            'nms_top_k': nms_top_k,
-            'nms_threshold': nms_threshold,
-            'keep_top_k': keep_top_k,
-            'nms_eta': nms_eta,
-            'normalized': normalized
-        },
-        outputs=outputs)
-    output.stop_gradient = True
-    index.stop_gradient = True
+        if return_rois_num:
+            nms_rois_num = helper.create_variable_for_type_inference(
+                dtype='int32')
+            outputs['NmsRoisNum'] = nms_rois_num
 
-    if return_index and rois_num is not None:
-        return output, index, nms_rois_num
-    elif return_index and rois_num is None:
-        return output, index
-    elif not return_index and rois_num is not None:
-        return output, nms_rois_num
-    return output
+        helper.append_op(
+            type="multiclass_nms3",
+            inputs=inputs,
+            attrs={
+                'background_label': background_label,
+                'score_threshold': score_threshold,
+                'nms_top_k': nms_top_k,
+                'nms_threshold': nms_threshold,
+                'keep_top_k': keep_top_k,
+                'nms_eta': nms_eta,
+                'normalized': normalized
+            },
+            outputs=outputs)
+        output.stop_gradient = True
+        index.stop_gradient = True
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            nms_rois_num = None
+
+        return output, nms_rois_num, index
 
 
 def matrix_nms(bboxes,
@@ -1509,3 +1522,30 @@ def generate_proposals(scores,
         return rpn_rois, rpn_roi_probs, rpn_rois_num
     else:
         return rpn_rois, rpn_roi_probs
+
+
+def sigmoid_cross_entropy_with_logits(input,
+                                      label,
+                                      ignore_index=-100,
+                                      normalize=False):
+    output = F.binary_cross_entropy_with_logits(input, label, reduction='none')
+    mask_tensor = paddle.cast(label != ignore_index, 'float32')
+    output = paddle.multiply(output, mask_tensor)
+    output = paddle.reshape(output, shape=[output.shape[0], -1])
+    if normalize:
+        sum_valid_mask = paddle.sum(mask_tensor)
+        output = output / sum_valid_mask
+    return output
+
+
+def smooth_l1(input, label, inside_weight=None, outside_weight=None,
+              sigma=None):
+    input_new = paddle.multiply(input, inside_weight)
+    label_new = paddle.multiply(label, inside_weight)
+    delta = 1 / (sigma * sigma)
+    out = F.smooth_l1_loss(input_new, label_new, reduction='none', delta=delta)
+    out = paddle.multiply(out, outside_weight)
+    out = out / delta
+    out = paddle.reshape(out, shape=[out.shape[0], -1])
+    out = paddle.sum(out, axis=1)
+    return out
