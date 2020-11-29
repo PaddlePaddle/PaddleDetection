@@ -253,7 +253,7 @@ All these models can be get in [Model Zoo](#ModelZoo)
 
 ## Updates
 
-v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
+v0.5.0 was released at `11/2020`, add SOLOv2, etc. And add Android mobile demo, add PACT quantization strategy, add object detection full-process documentation and Jetson platform deployment tutorials, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 
 ## License
