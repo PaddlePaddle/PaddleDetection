@@ -535,7 +535,6 @@ class SSDBox(object):
     def __call__(self, preds, prior_boxes, im_shape, scale_factor):
         boxes, scores = preds['boxes'], preds['scores']
         outputs = []
-        sssss = 0
         for box, score, prior_box in zip(boxes, scores, prior_boxes):
             out_x = prior_box[:, 0] + box[:, :, 0] * prior_box[:, 2] * 0.1
             out_y = prior_box[:, 1] + box[:, :, 1] * prior_box[:, 3] * 0.1
