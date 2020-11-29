@@ -1,0 +1,38 @@
+architecture: SSD
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
+weights: output/ssd_vgg16/model_final
+
+# Model Achitecture
+SSD:
+  # model feat info flow
+  backbone: VGG
+  ssd_head: SSDHead
+  # post process
+  post_process: BBoxPostProcess
+
+VGG:
+  depth: 16
+
+SSDHead:
+  in_channels: [512, 1024, 512, 256, 256, 256]
+  anchor_generator: AnchorGeneratorSSD
+
+AnchorGeneratorSSD:
+  base_size: 300
+  steps: [8, 16, 32, 64, 100, 300]
+  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]]
+  min_ratio: 15
+  max_ratio: 90
+  min_sizes: [30.0, 60.0, 111.0, 162.0, 213.0, 264.0]
+  max_sizes: [60.0, 111.0, 162.0, 213.0, 264.0, 315.0]
+  offset: 0.5
+
+BBoxPostProcess:
+  decode:
+    name: SSDBox
+    num_classes: 81
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5

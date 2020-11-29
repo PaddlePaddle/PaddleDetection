@@ -106,6 +106,70 @@ class AnchorTargetGeneratorRPN(object):
 
 @register
 @serializable
+class AnchorGeneratorSSD(object):
+    def __init__(self,
+                 base_size=300,
+                 steps=[8, 16, 32, 64, 100, 300],
+                 ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]],
+                 min_ratio=15,
+                 max_ratio=90,
+                 min_sizes=[30.0, 60.0, 111.0, 162.0, 213.0, 264.0],
+                 max_sizes=[60.0, 111.0, 162.0, 213.0, 264.0, 315.0],
+                 offset=0.5,
+                 filp=True):
+        self.base_size = base_size
+        self.step = step
+        self.ratios = ratios
+        self.min_ratio = min_ratio
+        self.max_ratio = max_ratio
+        self.min_sizes = min_sizes
+        self.max_sizes = max_sizes
+        self.offset = offset
+        self.flip = flip
+
+        self.real_aspect_ratios = [1, 2.0, 1.0 / 2.0, 3.0, 1.0 / 3.0]
+        self.num_priors = len(self.real_aspect_ratios) * len(
+            self.min_sizes) + len(self.max_sizes)
+
+    def __call__(self):
+        out_boxes = []
+        for step in self.steps:
+            out_box = np.zeros(
+                (input_size, input_size, self.num_priors, 4)).astype('float32')
+            input_size = int(np.ceil(base_size / step))
+
+            for w in range(input_size):
+                for h in range(input_size):
+                    c_x = (w + self.offset) * step
+                    c_y = (h + self.offset) * step
+                    idx = 0
+                    for min_size, max_size in zip(self.min_sizes,
+                                                  self.max_sizes):
+                        for ar in self.real_aspect_ratios:
+                            c_w = min_size * math.sqrt(ar) / 2
+                            c_h = min_size / math.sqrt(ar) / 2
+                            out_box[h, w, idx, :] = [
+                                c_x / self.base_size, c_y / self.base_size,
+                                c_w / self.base_size, c_h / self.base_size
+                            ]
+                            idx += 1
+
+                        # second prior: aspect raito = 1
+                        c_w = c_h = math.sqrt(min_size * max_size) / 2
+                        out_box[h, w, idx, :] = [
+                            c_x / self.base_size, c_y / self.base_size,
+                            c_w / self.base_size, c_h / self.base_size
+                        ]
+                        idx += 1
+            if self.clip:
+                out_box = np.clip(out_box, 0., 1.)
+            out_boxes.append(out_box.reshape((-1, 4)))
+
+        return to_variable(out_boxes)
+
+
+@register
+@serializable
 class ProposalGenerator(object):
     __append_doc__ = True
 
@@ -421,6 +485,47 @@ class YOLOBox(object):
         yolo_boxes = paddle.concat(boxes_list, axis=1)
         yolo_scores = paddle.concat(scores_list, axis=2)
         return yolo_boxes, yolo_scores
+
+
+@register
+@serializable
+class SSDBox(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self, num_classes=80, is_normalized=True):
+        self.num_classes = num_classes
+        self.is_normalized = is_normalized
+
+    def __call__(self, boxes, scores, prior_boxes):
+        outputs = []
+        for box, score, prior_box, prior_var in zip(boxes, scores, prior_boxes,
+                                                    prior_vars):
+            out_x = prior_box[:, 0] + box[:, :, 0] * prior_box[:, 2] * 0.1
+            out_y = prior_box[:, 1] + box[:, :, 1] * prior_box[:, 3] * 0.1
+            out_w = paddle.exp(box[:, :, 2] * 0.2) * prior_box[:, 2]
+            out_h = paddle.exp(box[:, :, 3] * 0.2) * prior_box[:, 3]
+
+            if self.is_normalized:
+                output = paddle.stack(
+                    [
+                        out_x - out_w / 2., out_y - out_h / 2.,
+                        out_x + out_w / 2., out_y + out_h / 2.
+                    ],
+                    axis=-1)
+            else:
+                output = paddle.stack(
+                    [
+                        out_x - out_w / 2., out_y - out_h / 2.,
+                        out_x + out_w / 2. - 1., out_y + out_h / 2. - 1.
+                    ],
+                    axis=-1)
+            outputs.append(output)
+        boxes = paddle.concat(outputs, axis=1)
+
+        scores = paddle.softmax(paddle.concat(scores, axis=1))
+        scores = paddle.tranpose(scores, [0, 2, 1])
+
+        return boxes, scores
 
 
 @register

@@ -1,0 +1,44 @@
+worker_num: 0
+TrainReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class']
+  sample_transforms:
+    - DecodeImage: {to_rgb: True}
+    - ColorDistort: {}
+    - RandomExpand: {fill_value: [104., 117., 123.]}
+    - RandomCrop: {}
+    - ResizeImage: {target_size: 300, interp: 1, use_cv2: false}
+    - RandomFlipImage: {is_normalized: false}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+  batch_transforms:
+  - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false, is_channel_first: false}
+  - Permute: {to_bgr: false, channel_first: True}
+  batch_size: 8
+  shuffle: true
+  drop_last: true
+
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id']
+  sample_transforms:
+    - DecodeImage: {to_rgb: True}
+    - ResizeImage: {target_size: 300, interp: 1}
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false, is_channel_first: false}
+    - Permute: {to_bgr: false, channel_first: True}
+  batch_size: 1
+  drop_empty: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'im_id', 'im_shape']
+  sample_transforms:
+    - DecodeImage: {to_rgb: True}
+    - ResizeImage: {target_size: 300, interp: 1}
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false, is_channel_first: false}
+    - Permute: {to_bgr: false, channel_first: True}
+  batch_size: 1
