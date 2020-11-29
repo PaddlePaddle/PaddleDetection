@@ -23,7 +23,7 @@ class SSDHead(nn.Layer):
         self.box_convs = []
         self.score_convs = []
         for i, box in enumerate(self.boxes):
-            num_boxes = self.anchor_generator.num_priors
+            num_boxes = self.anchor_generator.num_priors[i]
             self.box_convs.append(
                 self.add_sublayer(
                     "boxes{}".format(i),

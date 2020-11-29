@@ -25,6 +25,12 @@ from . import ops
 import paddle.nn.functional as F
 
 
+def _to_list(l):
+    if isinstance(l, (list, tuple)):
+        return list(l)
+    return [l]
+
+
 @register
 @serializable
 class AnchorGeneratorRPN(object):
@@ -127,27 +133,40 @@ class AnchorGeneratorSSD(object):
         self.offset = offset
         self.clip = clip
 
-        self.real_aspect_ratios = [1, 2.0, 1.0 / 2.0, 3.0, 1.0 / 3.0]
-        self.num_priors = len(self.real_aspect_ratios) * len(
-            self.min_sizes) + len(self.max_sizes)
+        self.num_priors = []
+        self.real_aspect_ratios = []
+        for min_size, max_size, aspect_ratio in zip(min_sizes, max_sizes,
+                                                    self.aspect_ratios):
+            real_aspect_ratio = [1.]
+            for ar in aspect_ratio:
+                real_aspect_ratio.extend([ar, 1. / ar])
+            self.real_aspect_ratios.append(real_aspect_ratio)
+            min_size_len = len(_to_list(min_size))
+            max_size_len = len(_to_list(max_size))
+            self.num_priors.append(min_size_len * len(real_aspect_ratio) +
+                                   max_size_len)
 
     def __call__(self):
         out_boxes = []
-        for step in self.steps:
+        for i, step in enumerate(self.steps):
+            num_prior = self.num_priors[i]
+            real_aspect_ratio = self.real_aspect_ratios[i]
+            min_size = _to_list(self.min_sizes[i])
+            max_size = _to_list(self.max_sizes[i])
+
             input_size = int(np.ceil(float(self.base_size) / step))
             out_box = np.zeros(
-                (input_size, input_size, self.num_priors, 4)).astype('float32')
+                (input_size, input_size, num_prior, 4)).astype('float32')
 
             for w in range(input_size):
                 for h in range(input_size):
                     c_x = (w + self.offset) * step
                     c_y = (h + self.offset) * step
                     idx = 0
-                    for min_size, max_size in zip(self.min_sizes,
-                                                  self.max_sizes):
-                        for ar in self.real_aspect_ratios:
-                            c_w = min_size * math.sqrt(ar) / 2
-                            c_h = min_size / math.sqrt(ar) / 2
+                    for min_s in min_size:
+                        for ar in real_aspect_ratio:
+                            c_w = min_s * math.sqrt(ar)
+                            c_h = min_s / math.sqrt(ar)
                             out_box[h, w, idx, :] = [
                                 c_x / self.base_size, c_y / self.base_size,
                                 c_w / self.base_size, c_h / self.base_size
@@ -155,12 +174,13 @@ class AnchorGeneratorSSD(object):
                             idx += 1
 
                         # second prior: aspect raito = 1
-                        c_w = c_h = math.sqrt(min_size * max_size) / 2
-                        out_box[h, w, idx, :] = [
-                            c_x / self.base_size, c_y / self.base_size,
-                            c_w / self.base_size, c_h / self.base_size
-                        ]
-                        idx += 1
+                        for max_s in max_size:
+                            c_w = c_h = math.sqrt(min_s * max_s)
+                            out_box[h, w, idx, :] = [
+                                c_x / self.base_size, c_y / self.base_size,
+                                c_w / self.base_size, c_h / self.base_size
+                            ]
+                            idx += 1
             if self.clip:
                 out_box = np.clip(out_box, 0., 1.)
             out_boxes.append(to_tensor(out_box.reshape((-1, 4))))
@@ -515,6 +535,7 @@ class SSDBox(object):
     def __call__(self, preds, prior_boxes, im_shape, scale_factor):
         boxes, scores = preds['boxes'], preds['scores']
         outputs = []
+        sssss = 0
         for box, score, prior_box in zip(boxes, scores, prior_boxes):
             out_x = prior_box[:, 0] + box[:, :, 0] * prior_box[:, 2] * 0.1
             out_y = prior_box[:, 1] + box[:, :, 1] * prior_box[:, 3] * 0.1
@@ -522,11 +543,11 @@ class SSDBox(object):
             out_h = paddle.exp(box[:, :, 3] * 0.2) * prior_box[:, 3]
 
             if self.is_normalized:
+                h = im_shape[:, 0] / scale_factor[:, 0]
+                w = im_shape[:, 1] / scale_factor[:, 1]
                 output = paddle.stack(
-                    [
-                        out_x - out_w / 2., out_y - out_h / 2.,
-                        out_x + out_w / 2., out_y + out_h / 2.
-                    ],
+                    [(out_x - out_w / 2.) * w, (out_y - out_h / 2.) * h,
+                     (out_x + out_w / 2.) * w, (out_y + out_h / 2.) * h],
                     axis=-1)
             else:
                 output = paddle.stack(

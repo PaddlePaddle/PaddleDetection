@@ -32,7 +32,7 @@ class ConvBlock(nn.Layer):
             stride=1,
             padding=1,
             weight_attr=ParamAttr(name=name + "1_weights"),
-            bias_attr=False)
+            bias_attr=ParamAttr(name=name + "1_bias"))
         self.conv_out_list = []
         for i in range(1, groups):
             conv_out = self.add_sublayer(
@@ -45,7 +45,7 @@ class ConvBlock(nn.Layer):
                     padding=1,
                     weight_attr=ParamAttr(
                         name=name + "{}_weights".format(i + 1)),
-                    bias_attr=False))
+                    bias_attr=ParamAttr(name=name + "{}_bias".format(i + 1))))
             self.conv_out_list.append(conv_out)
 
         self.pool = MaxPool2D(
@@ -177,15 +177,17 @@ class VGG(nn.Layer):
     def forward(self, inputs):
         outputs = []
 
-        out, pool = self.conv_block_0(inputs['image'])
-        out, pool = self.conv_block_1(pool)
-        out, pool = self.conv_block_2(pool)
-        out, pool = self.conv_block_3(pool)
-        outputs.append(out)
+        conv, pool = self.conv_block_0(inputs['image'])
+        conv, pool = self.conv_block_1(pool)
+        conv, pool = self.conv_block_2(pool)
+        conv, pool = self.conv_block_3(pool)
+        outputs.append(conv)
 
-        out, pool = self.conv_block_4(pool)
+        conv, pool = self.conv_block_4(pool)
         out = self.fc6(pool)
+        out = F.relu(out)
         out = self.fc7(out)
+        out = F.relu(out)
         outputs.append(out)
 
         if not self.extra_block_filters:
