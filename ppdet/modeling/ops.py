@@ -29,19 +29,10 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'anchor_generator',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
+    'roi_pool', 'roi_align', 'prior_box', 'anchor_generator',
+    'generate_proposals', 'iou_similarity', 'box_coder', 'yolo_box',
+    'multiclass_nms', 'distribute_fpn_proposals', 'collect_fpn_proposals',
+    'matrix_nms', 'batch_norm'
 ]
 
 
@@ -923,8 +914,6 @@ def anchor_generator(input,
         attrs = ('anchor_sizes', anchor_sizes, 'aspect_ratios', aspect_ratios,
                  'variances', variance, 'stride', stride, 'offset', offset)
         anchor, var = core.ops.anchor_generator(input, *attrs)
-        print('call core.ops.anchor_generator')
-        print('anchor', anchor.numpy().shape, 'var', var.numpy().shape)
         return anchor, var
 
     attrs = {
