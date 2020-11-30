@@ -28,7 +28,14 @@ class Anchor(object):
         rpn_score_list = []
         rpn_delta_list = []
         anchor_list = []
+        save_idx = 0
         for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_feats, anchors):
+            print('in annchor', anchor.numpy().mean(), anchor.numpy().shape)
+            print('in var', var.numpy().mean(), var.numpy().shape)
+            import numpy as np
+            np.save('20201130_anchor_{}.npy'.format(save_idx), anchor.numpy())
+            np.save('20201130_anchor_var_{}.npy'.format(save_idx), var.numpy())
+            save_idx = save_idx + 1
             rpn_score = fluid.layers.transpose(rpn_score, perm=[0, 2, 3, 1])
             rpn_delta = fluid.layers.transpose(rpn_delta, perm=[0, 2, 3, 1])
             rpn_score = fluid.layers.reshape(x=rpn_score, shape=(0, -1, 1))
@@ -36,7 +43,8 @@ class Anchor(object):
 
             anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
             var = fluid.layers.reshape(var, shape=(-1, 4))
-
+            print('anchor', anchor.numpy().mean(), anchor.numpy().shape)
+            print('anchor var', var.numpy().mean(), var.numpy().shape)
             rpn_score_list.append(rpn_score)
             rpn_delta_list.append(rpn_delta)
             anchor_list.append(anchor)
@@ -54,6 +62,9 @@ class Anchor(object):
         rpn_score, rpn_delta, anchors = self._get_target_input(rpn_head_out,
                                                                anchors)
 
+        print('rpn_score', rpn_score.numpy().mean(), rpn_score.numpy().shape)
+        print('rpn_delta', rpn_delta.numpy().mean(), rpn_delta.numpy().shape)
+        print('anchors', anchors.numpy().mean(), anchors.numpy().shape)
         score_pred, roi_pred, score_tgt, roi_tgt, roi_weight = self.anchor_target_generator(
             bbox_pred=rpn_delta,
             cls_logits=rpn_score,
@@ -68,6 +79,9 @@ class Anchor(object):
             'rpn_rois_target': roi_tgt,
             'rpn_rois_weight': roi_weight
         }
+        print('bbox', 'rpn_score_pred', score_pred.numpy().shape,
+                score_pred.numpy().mean(), 'rpn_score_target',
+                score_tgt.numpy().shape, score_tgt.numpy().mean())
         return outs
 
 

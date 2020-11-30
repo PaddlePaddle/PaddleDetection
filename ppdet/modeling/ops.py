@@ -923,6 +923,8 @@ def anchor_generator(input,
         attrs = ('anchor_sizes', anchor_sizes, 'aspect_ratios', aspect_ratios,
                  'variances', variance, 'stride', stride, 'offset', offset)
         anchor, var = core.ops.anchor_generator(input, *attrs)
+        print('call core.ops.anchor_generator')
+        print('anchor', anchor.numpy().shape, 'var', var.numpy().shape)
         return anchor, var
 
     attrs = {

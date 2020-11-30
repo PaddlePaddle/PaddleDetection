@@ -37,6 +37,9 @@ class FasterRCNN(BaseArch):
     def model_arch(self):
         # Backbone
         body_feats = self.backbone(self.inputs, False)
+        import numpy as np
+        for i in range(len(body_feats)):
+            np.save('res_{}.npy'.format(i), body_feats[i].numpy())
         spatial_scale = [0.25, 0.125, 0.0625, 0.03125]
 
         # Neck
@@ -56,10 +59,19 @@ class FasterRCNN(BaseArch):
         # anchor_out returns a list,
         # each element contains (anchor, anchor_var)
         self.anchor_out = self.anchor(rpn_feat)
+        for i in range(5):
+            print('i=', i, self.anchor_out[i][0].shape,
+                    self.anchor_out[i][1].shape)
+        for i in range(5):
+            np.save('anchor_{}.npy'.format(i), self.anchor_out[i][0].numpy())
+            np.save('anchor_var_{}.npy'.format(i), self.anchor_out[i][1].numpy())
 
         # Proposal RoI
         # compute targets here when training
         rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out)
+        print('rois', rois)
+        np.save('rois_0.npy', rois[0].numpy())
+        np.save('rois_1.npy', rois[1].numpy())
         # BBox Head
         bbox_head_return_stage = 0
         if not self.bbox_head.use_resnetc5:

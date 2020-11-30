@@ -1,7 +1,8 @@
 architecture: FasterRCNN
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+pretrain_weights: output/faster_rcnn_fpn_1120.pdparams
+#https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 weights: output/faster_rcnn_fpn_1120.pdparams
-load_static_weights: True
+load_static_weights: False
 
 # Model Achitecture
 FasterRCNN:
@@ -46,6 +47,7 @@ Anchor:
     aspect_ratios: [0.5, 1.0, 2.0]
     anchor_start_size: 32
     stride: [4., 4.]
+    variance: [1.0, 1.0, 1.0, 1.0]
   anchor_target_generator:
     name: AnchorTargetGeneratorRPN
     batch_size_per_im: 256
