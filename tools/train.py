@@ -42,12 +42,6 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-# set seed
-random.seed(1234)
-np.random.seed(1234)
-        
-
-
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
@@ -117,12 +111,6 @@ def run(FLAGS, cfg, place):
     if FLAGS.enable_ce:
         random.seed(0)
         np.random.seed(0)
-    
-    # set seed
-    random.seed(1234)
-    np.random.seed(1234)
-    paddle.seed(1234)
-
 
     if ParallelEnv().nranks > 1:
         paddle.distributed.init_parallel_env()

@@ -1,4 +1,0 @@
-use_gpu: true
-log_iter: 1
-save_dir: output
-snapshot_epoch: 2

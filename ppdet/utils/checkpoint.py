@@ -111,9 +111,6 @@ def load_pretrain_weight(model,
                          "exists.".format(path))
 
     model_dict = model.state_dict()
-    pre_state_dict = paddle.static.load_program_state(path)
-    model.set_dict(pre_state_dict)
-    return
 
     if load_static_weights:
         pre_state_dict = paddle.static.load_program_state(path)

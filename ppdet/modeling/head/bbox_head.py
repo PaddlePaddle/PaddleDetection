@@ -187,7 +187,7 @@ class BBoxHead(nn.Layer):
             proposal_list = []
             prob_list = []
             delta_list = []
-            for stage, (proposals, bboxhead) in zip(rois, bboxheads):
+            for stage, (proposals, bboxhead) in zip(rois, bbox_head_out):
                 score, delta = bboxhead
                 proposal, proposal_num = proposals
                 if stage in self.score_stage:
