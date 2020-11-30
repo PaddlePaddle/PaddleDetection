@@ -28,7 +28,7 @@ class MaskFeat(Layer):
     __inject__ = ['mask_roi_extractor']
 
     def __init__(self,
-                 mask_roi_extractor,
+                 mask_roi_extractor=None,
                  num_convs=1,
                  feat_in=2048,
                  feat_out=256,
@@ -155,8 +155,8 @@ class MaskHead(Layer):
                     scale_factor_list.append(scale_factor[idx, 0])
             scale_factor_list = paddle.cast(
                 paddle.concat(scale_factor_list), 'float32')
-            scaled_bbox = paddle.multiply(
-                bbox[:, 2:], scale_factor_list, axis=0)
+            scale_factor_list = paddle.reshape(scale_factor_list, shape=[-1, 1])
+            scaled_bbox = paddle.multiply(bbox[:, 2:], scale_factor_list)
             scaled_bboxes = (scaled_bbox, bbox_num)
             mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
                                        mask_index, spatial_scale, stage)

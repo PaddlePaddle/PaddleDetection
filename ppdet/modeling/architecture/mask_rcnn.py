@@ -65,7 +65,7 @@ class MaskRCNN(BaseArch):
     def model_arch(self):
         # Backbone
         body_feats = self.backbone(self.inputs)
-        spatial_scale = None
+        spatial_scale = 1. / 16
 
         # Neck
         if self.neck is not None:

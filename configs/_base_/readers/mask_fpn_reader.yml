@@ -9,7 +9,7 @@ TrainReader:
   - ResizeImage: {target_size: 800, max_size: 1333, interp: 1, use_cv2: true}
   - Permute: {to_bgr: false, channel_first: true}
   batch_transforms:
-  - PadBatch: {pad_to_stride: -1., use_padded_im_info: false, pad_gt: true}
+  - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: true}
   batch_size: 1
   shuffle: true
   drop_last: true
@@ -24,7 +24,7 @@ EvalReader:
   - ResizeOp: {interp: 1, target_size: [800, 1333]}
   - PermuteOp: {}
   batch_transforms:
-  - PadBatchOp: {pad_to_stride: -1., pad_gt: false}
+  - PadBatchOp: {pad_to_stride: 32, pad_gt: false}
   batch_size: 1
   shuffle: false
   drop_last: false
@@ -40,7 +40,7 @@ TestReader:
   - ResizeImage: {interp: 1, max_size: 1333, target_size: 800, use_cv2: true}
   - Permute: {channel_first: true, to_bgr: false}
   batch_transforms:
-  - PadBatch: {pad_to_stride: -1., use_padded_im_info: false, pad_gt: false}
+  - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: false}
   batch_size: 1
   shuffle: false
   drop_last: false
