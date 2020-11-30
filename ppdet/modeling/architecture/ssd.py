@@ -30,7 +30,8 @@ class SSD(BaseArch):
             body_feats, spatial_scale = self.neck(body_feats)
 
         # SSD Head
-        self.ssd_head_outs, self.anchors = self.ssd_head(body_feats)
+        self.ssd_head_outs, self.anchors = self.ssd_head(body_feats,
+                                                         self.inputs['image'])
 
     def get_loss(self, ):
         loss = self.ssd_head.get_loss(self.inputs, self.ssd_head_outs)

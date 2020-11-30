@@ -794,7 +794,7 @@ def prior_box(input,
             min_max_aspect_ratios_order
         ]
         if cur_max_sizes is not None:
-            attrs.extend('max_sizes', max_sizes)
+            attrs.extend(['max_sizes', max_sizes])
         attrs = tuple(attrs)
         box, var = core.ops.prior_box(input, image, *attrs)
         return box, var

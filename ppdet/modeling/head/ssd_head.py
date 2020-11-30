@@ -12,24 +12,22 @@ class SSDHead(nn.Layer):
     def __init__(self,
                  num_classes=81,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator=None):
+                 anchor_generator='AnchorGeneratorSSD'):
         super(SSDHead, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
-        self.anchor_generator = anchor_generator
-        self.boxes = anchor_generator()
+        self.num_priors = self.anchor_generator.num_priors
 
         self.box_convs = []
         self.score_convs = []
-        for i, box in enumerate(self.boxes):
-            num_boxes = self.anchor_generator.num_priors[i]
+        for i, num_prior in enumerate(self.num_priors):
             self.box_convs.append(
                 self.add_sublayer(
                     "boxes{}".format(i),
                     nn.Conv2D(
                         in_channels=in_channels[i],
-                        out_channels=num_boxes * 4,
+                        out_channels=num_prior * 4,
                         kernel_size=3,
                         padding=1)))
             self.score_convs.append(
@@ -37,13 +35,14 @@ class SSDHead(nn.Layer):
                     "scores{}".format(i),
                     nn.Conv2D(
                         in_channels=in_channels[i],
-                        out_channels=num_boxes * num_classes,
+                        out_channels=num_prior * num_classes,
                         kernel_size=3,
                         padding=1)))
 
-    def forward(self, feats):
+    def forward(self, feats, image):
         box_preds = []
         cls_scores = []
+        prior_boxes = []
         for feat, box_conv, score_conv in zip(feats, self.box_convs,
                                               self.score_convs):
             box_pred = box_conv(feat)
@@ -56,10 +55,12 @@ class SSDHead(nn.Layer):
             cls_score = paddle.reshape(cls_score, [0, -1, self.num_classes])
             cls_scores.append(cls_score)
 
+        prior_boxes = self.anchor_generator(feats, image)
+
         outputs = {}
         outputs['boxes'] = box_preds
         outputs['scores'] = cls_scores
-        return outputs, self.boxes
+        return outputs, prior_boxes
 
     def get_loss(self, ):
         pass
