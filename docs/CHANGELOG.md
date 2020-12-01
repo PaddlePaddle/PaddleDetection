@@ -2,6 +2,28 @@
 
 ## 最新版本信息
 
+### v0.5.0(11/2020)
+  - 模型丰富度提升：
+    - 发布SOLOv2系列模型，其中SOLOv2-Light-R50-VD-DCN-FPN 模型在单卡V100上达到 38.6 FPS，加速24% ，COCO验证集精度达到38.8%, 提升2.4绝对百分点。
+    - 新增Android移动端检测demo，包括SSD、YOLO系列模型，可直接扫码安装体验。
+
+  - 移动端模型优化：
+    - 新增PACT新量化策略，YOLOv3-Mobilenetv3在COCO数据集上比普通量化相比提升0.7%。
+
+  - 易用性提升及功能组件：
+    - 增强generate_proposal_labels算子功能，规避模型出nan风险。
+    - 修复deploy下python与C++预测若干问题。
+    - 统一COCO与VOC数据集下评估流程，支持输出单类AP和P-R曲线。
+    - PP-YOLO支持矩形输入图像。
+
+  - 文档：
+    - 新增目标检测全流程教程，新增Jetson平台部署教程。
+
+
+
+
+## 历史版本信息
+
 ### v0.4.0(07/2020)
   - 模型丰富度提升：
     - 发布PPYOLO模型，COCO数据集精度达到45.2%，单卡V100预测速度达到72.9 FPS，精度和预测速度优于YOLOv4模型。
@@ -14,7 +36,7 @@
   - 移动端模型优化：
     - 新增SSDLite系列优化模型，包括新增GhostNet的Backbone，新增FPN组件等，精度提升0.5%-1.5%。
 
-  - 易用性提升机功能组件：
+  - 易用性提升及功能组件：
     - 新增GridMask, RandomErasing数据增强方法。
     - 新增Matrix NMS支持。
     - 新增EMA(Exponential Moving Average)训练支持。
@@ -44,9 +66,6 @@
     - 支持迁移学习自动进行shape匹配。
     - 优化mask分支评估阶段内存占用。
 
-
-## 历史版本信息
-
 ### v0.2.0(02/2020)
   - 新增模型:
     - 新增基于CBResNet模型。
@@ -72,7 +91,7 @@
   - 文档:
     - 增加详细的数据预处理模块介绍文档以及实现自定义数据Reader文档。
     - 增加如何新增算法模型的文档。
-    - 文档部署到网站: https://paddledetection.readthedocs.io/zh/latest/
+    - 文档部署到网站: https://paddledetection.readthedocs.io
 
 ### 12/2019
 - 增加Res2Net模型。

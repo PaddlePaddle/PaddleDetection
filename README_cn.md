@@ -15,6 +15,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
+- 2020.10.30: PP-YOLO支持矩形图像输入，并新增PACT模型量化策略。
 - 2020.10.01: 添加实例分割模型SOLOv2，在Tesla V100上达到38.6 FPS, COCO-val数据集上mask ap达到38.8，预测速度提高24%，mAP提高2.4个百分点。
 - 2020.09.30: 发布[移动端检测demo](deploy/android_demo)，可直接扫码安装体验。
 - 2020.09.21-27: 【目标检测7日打卡课】手把手教你从入门到进阶，深入了解目标检测算法的前世今生。立即加入课程QQ交流群(1136406895)一起学习吧 :)
@@ -234,7 +235,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 
 ## 版本更新
-v0.4.0版本已经在`07/2020`发布，增加PP-YOLO, TTFNet, HTC, ACFPN等多个模型，新增BlazeFace人脸关键点检测模型，新增移动端SSDLite系列优化模型，新增GridMask，RandomErasing数据增强方法，新增Matrix NMS和EMA训练，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.5.0版本已经在`11/2020`发布，增加SOLOv2等多个模型，新增Android移动端Demo，新增PACT量化策略，新增目标检测全流程和Jetson平台部署等教程，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 许可证书
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。

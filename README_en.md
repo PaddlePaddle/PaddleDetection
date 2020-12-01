@@ -16,6 +16,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 ### Product dynamic
 
+- 2020.10.30: PP-YOLO support rectangular image input, and add a new PACT quantization strategy for slim。
 - 2020.10.01: Added SOLOv2 as an instance segmentation model, which reached 38.6 FPS on a single Tesla V100, 38.8 mask AP on Coco-Val dataset, and  inference speed increased by 24% and mAP by 2.4 percentage points.
 - 2020.09.30: Released the mobile-side detection demo, and you can directly scan the code for installation experience.
 - 2020.09.21-27: [Object detection 7 days of punching class] Hand in hand to teach you from the beginning to the advanced level, in-depth understanding of the object detection algorithm life. Join the course QQ group (1136406895) to study together :)
@@ -253,7 +254,7 @@ All these models can be get in [Model Zoo](#ModelZoo)
 
 ## Updates
 
-v0.4.0 was released at `07/2020`, add PP-YOLO, TTFNet, HTC, ACFPN, etc. And add BlaceFace face landmark detection model, add a series of optimized SSDLite models on mobile side, add data augmentations GridMask and RandomErasing, add Matrix NMS and EMA training, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
+v0.5.0 was released at `11/2020`, add SOLOv2, etc. And add Android mobile demo, add PACT quantization strategy, add object detection full-process documentation and Jetson platform deployment tutorials, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 
 ## License
