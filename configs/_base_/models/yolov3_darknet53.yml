@@ -3,6 +3,7 @@ pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pr
 weights: output/yolov3_darknet/model_final
 use_fine_grained_loss: false
 load_static_weights: True
+norm_type: sync_bn
 
 YOLOv3:
   backbone: DarkNet
@@ -13,7 +14,6 @@ YOLOv3:
 DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
-  norm_type: sync_bn
 
 YOLOv3FPN:
   feat_channels: [1024, 768, 384]
@@ -28,7 +28,7 @@ YOLOv3Head:
 YOLOv3Loss:
   ignore_thresh: 0.7
   downsample: [32, 16, 8]
-  label_smooth: true
+  label_smooth: false
 
 BBoxPostProcess:
   decode:
