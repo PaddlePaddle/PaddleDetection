@@ -20,9 +20,25 @@ This document covers how to install PaddleDetection, its dependencies
 For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/).
 
 
-## PaddlePaddle
+## Install PaddlePaddle
 
-Running PaddleDetection requires PaddlePaddle Fluid v.1.6 and later. please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
+### Requirements:
+- Python2 or Python3 (Only support Python3 for windows)
+- CUDA >= 9.0
+- cuDNN >= 7.6
+- nccl >= 2.1.2
+
+If you need GPU multi-card training, firstly please install NCCL. (Windows does not support nccl).
+
+PaddleDetection depends on PaddlePaddle version relationship:
+
+| PaddleDetection version | PaddlePaddle version  |    tips    |
+| :----------------: | :---------------: | :-------: |
+|      v0.3          |        >=1.7      |     --    |
+|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
+|      v0.5          |       >= 1.8.4   |  Most models can run with >= 1.8.4, Cascade R-CNN and SOLOv2 depend on 2.0.0.rc |
+
+If you want install paddlepaddle, please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
 Please make sure your PaddlePaddle installation was successful and the version
 of your PaddlePaddle is not lower than required. Verify with the following commands.
@@ -36,12 +52,6 @@ of your PaddlePaddle is not lower than required. Verify with the following comma
 python -c "import paddle; print(paddle.__version__)"
 ```
 
-### Requirements:
-
-- Python2 or Python3 (Only support Python3 for windows)
-- CUDA >= 8.0
-- cuDNN >= 5.0
-- nccl >= 2.1.2
 
 
 ## Other Dependencies
