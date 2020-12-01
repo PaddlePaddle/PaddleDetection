@@ -255,7 +255,7 @@ EvalReader:
       to_bgr: false
       channel_first: True
   # 1个GPU的batch size，默认为1。需要注意：每个iter迭代会运行batch_size * device_num张图片
-  batch_size: 8
+  batch_size: 1
   # drop_empty
   drop_empty: false
   # 若选用多进程，设置使用多进程/线程的数目
