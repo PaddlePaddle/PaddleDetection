@@ -16,6 +16,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 ### Product dynamic
 
+- 2020.10.30: PP-YOLO support rectangular image input, and add a new PACT quantization strategy for slim。
 - 2020.10.01: Added SOLOv2 as an instance segmentation model, which reached 38.6 FPS on a single Tesla V100, 38.8 mask AP on Coco-Val dataset, and  inference speed increased by 24% and mAP by 2.4 percentage points.
 - 2020.09.30: Released the mobile-side detection demo, and you can directly scan the code for installation experience.
 - 2020.09.21-27: [Object detection 7 days of punching class] Hand in hand to teach you from the beginning to the advanced level, in-depth understanding of the object detection algorithm life. Join the course QQ group (1136406895) to study together :)
