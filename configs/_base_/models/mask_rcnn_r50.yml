@@ -69,12 +69,7 @@ Proposal:
 BBoxHead:
   bbox_feat:
     name: BBoxFeat
-    roi_extractor:
-      name: RoIAlign
-      resolution: 14
-      sampling_ratio: 0
-      start_level: 0
-      end_level: 0
+    roi_extractor: RoIAlign
     head_feat:
       name: Res5Head
       feat_in: 1024
@@ -98,12 +93,19 @@ Mask:
     name: MaskTargetGenerator
     mask_resolution: 14
 
+RoIAlign:
+  resolution: 14
+  sampling_ratio: 0
+  start_level: 0
+  end_level: 0
+
 MaskHead:
   mask_feat:
     name: MaskFeat
     num_convs: 0
     feat_in: 2048
     feat_out: 256
+    mask_roi_extractor: RoIAlign
     share_bbox_feat: true
   feat_in: 256
 

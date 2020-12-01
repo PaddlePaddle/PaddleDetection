@@ -106,7 +106,7 @@ class BBoxFeat(nn.Layer):
     def forward(self, body_feats, rois, spatial_scale, stage=0):
         rois_feat = self.roi_extractor(body_feats, rois, spatial_scale)
         bbox_feat = self.head_feat(rois_feat, stage)
-        return bbox_feat
+        return bbox_feat, self.head_feat
 
 
 @register
@@ -159,7 +159,8 @@ class BBoxHead(nn.Layer):
             self.bbox_delta_list.append(bbox_delta)
 
     def forward(self, body_feats, rois, spatial_scale, stage=0):
-        bbox_feat = self.bbox_feat(body_feats, rois, spatial_scale, stage)
+        bbox_feat, head_feat_func = self.bbox_feat(body_feats, rois,
+                                                   spatial_scale, stage)
         bbox_head_out = []
         if self.with_pool:
             bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
@@ -170,7 +171,7 @@ class BBoxHead(nn.Layer):
             scores = self.bbox_score_list[stage](bbox_feat)
             deltas = self.bbox_delta_list[stage](bbox_feat)
         bbox_head_out.append((scores, deltas))
-        return bbox_feat, bbox_head_out
+        return bbox_feat, bbox_head_out, head_feat_func
 
     def _get_head_loss(self, score, delta, target):
         # bbox cls  
