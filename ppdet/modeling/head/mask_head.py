@@ -29,7 +29,7 @@ class MaskFeat(Layer):
 
     def __init__(self,
                  mask_roi_extractor=None,
-                 num_convs=1,
+                 num_convs=0,
                  feat_in=2048,
                  feat_out=256,
                  mask_num_stages=1,
@@ -84,7 +84,10 @@ class MaskFeat(Layer):
                 spatial_scale,
                 stage=0):
         if self.share_bbox_feat:
-            rois_feat = paddle.gather(bbox_feat, mask_index)
+            if mask_index:
+                rois_feat = paddle.gather(bbox_feat, mask_index)
+            else:
+                rois_feat = bbox_feat
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)

@@ -160,12 +160,15 @@ class BBoxHead(nn.Layer):
 
     def forward(self, body_feats, rois, spatial_scale, stage=0):
         bbox_feat = self.bbox_feat(body_feats, rois, spatial_scale, stage)
+        bbox_head_out = []
         if self.with_pool:
             bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             bbox_feat_ = paddle.squeeze(bbox_feat_, axis=[2, 3])
-        bbox_head_out = []
-        scores = self.bbox_score_list[stage](bbox_feat_)
-        deltas = self.bbox_delta_list[stage](bbox_feat_)
+            scores = self.bbox_score_list[stage](bbox_feat_)
+            deltas = self.bbox_delta_list[stage](bbox_feat_)
+        else:
+            scores = self.bbox_score_list[stage](bbox_feat)
+            deltas = self.bbox_delta_list[stage](bbox_feat)
         bbox_head_out.append((scores, deltas))
         return bbox_feat, bbox_head_out
 
