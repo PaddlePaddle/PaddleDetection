@@ -14,6 +14,7 @@
     - 增强generate_proposal_labels算子功能，规避模型出nan风险。
     - 修复deploy下python与C++预测若干问题。
     - 统一COCO与VOC数据集下评估流程，支持输出单类AP和P-R曲线。
+    - PP-YOLO支持矩形输入图像。
 
   - 文档：
     - 新增目标检测全流程教程，新增Jetson平台部署教程。

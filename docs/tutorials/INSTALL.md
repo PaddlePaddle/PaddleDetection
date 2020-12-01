@@ -36,7 +36,7 @@ PaddleDetection depends on PaddlePaddle version relationship:
 | :----------------: | :---------------: | :-------: |
 |      v0.3          |        >=1.7      |     --    |
 |      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
-|      v0.5          |       >= 2.0.0.rc  |  Most models can run with >= 1.8.4, Cascade R-CNN and SOLOv2 depend on 2.0.0.rc |
+|      v0.5          |       >= 1.8.4   |  Most models can run with >= 1.8.4, Cascade R-CNN and SOLOv2 depend on 2.0.0.rc |
 
 If you want install paddlepaddle, please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
