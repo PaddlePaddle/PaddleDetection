@@ -188,7 +188,6 @@ def generate_proposal_target(rpn_rois,
     for im_i in range(len(rpn_rois_num)):
         length = rpn_rois_num[im_i]
         end_num += length
-
         rpn_roi = rpn_rois[st_num:end_num]
         max_overlap = max_overlaps[st_num:end_num] if is_cascade_rcnn else None
         im_scale = im_info[im_i][2]
@@ -249,7 +248,7 @@ def generate_proposal_target(rpn_rois,
     sampled_max_overlaps = np.concatenate(
         sampled_max_overlaps, axis=0).astype(np.float32)
     new_rois_num = np.asarray(new_rois_num, np.int32)
-    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, new_rois_num, sampled_max_overlap
+    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, new_rois_num, sampled_max_overlaps
 
 
 @jit

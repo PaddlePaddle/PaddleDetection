@@ -115,6 +115,8 @@ class COCODataSet(DetDataset):
                             'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
                                 img_id, float(inst['area']), x1, y1, x2, y2))
                 num_bbox = len(bboxes)
+                if num_bbox <= 0:
+                    continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)

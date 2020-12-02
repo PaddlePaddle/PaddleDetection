@@ -110,20 +110,24 @@ class CascadeRCNN(BaseArch):
                                                       spatial_scale, i)
             self.bbox_head_list.append(bbox_head_out)
 
-        rois_has_mask_int32 = None
-        rois = rois_list[-1]
         if self.inputs['mode'] == 'infer':
             bbox_pred, bboxes = self.bbox_head.get_cascade_prediction(
                 self.bbox_head_list, rois_list)
             self.bboxes = self.bbox_post_process(
                 bbox_pred, bboxes, self.inputs['im_info'], var_weight=3.)
 
-        else:
-            bbox_targets = self.proposal.get_targets()[-1]
-            self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
-                                                         bbox_targets)
+        #elif self.with_mask:
+        #    bbox_targets = self.proposal.get_targets()[-1]
+        #    self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
+        #                                                 bbox_targets)
 
         if self.with_mask:
+            rois = rois_list[-1]
+            rois_has_mask_int32 = None
+            if self.inputs['mode'] == 'train':
+                bbox_targets = self.proposal.get_targets()[-1]
+                self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
+                                                             bbox_targets)
             # Mask Head 
             self.mask_head_out = self.mask_head(
                 self.inputs, body_feats, self.bboxes, bbox_feat,
@@ -144,10 +148,12 @@ class CascadeRCNN(BaseArch):
                                             bbox_targets_list)
         loss.update(loss_bbox)
 
-        # Mask loss
-        mask_targets = self.mask.get_targets()
-        loss_mask = self.mask_head.get_loss(self.mask_head_out, mask_targets)
-        loss.update(loss_mask)
+        if self.with_mask:
+            # Mask loss
+            mask_targets = self.mask.get_targets()
+            loss_mask = self.mask_head.get_loss(self.mask_head_out,
+                                                mask_targets)
+            loss.update(loss_mask)
 
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
