@@ -34,7 +34,6 @@ FPNRPNHead:
   anchor_generator:
     anchor_sizes: [32, 64, 128, 256, 512]
     aspect_ratios: [0.5, 1.0, 2.0]
-    stride: [16.0, 16.0]
     variance: [1.0, 1.0, 1.0, 1.0]
   anchor_start_size: 32
   min_level: 2
