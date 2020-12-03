@@ -28,8 +28,8 @@ class MaskFeat(Layer):
     __inject__ = ['mask_roi_extractor']
 
     def __init__(self,
-                 mask_roi_extractor,
-                 num_convs=1,
+                 mask_roi_extractor=None,
+                 num_convs=0,
                  feat_in=2048,
                  feat_out=256,
                  mask_num_stages=1,
@@ -82,12 +82,16 @@ class MaskFeat(Layer):
                 bbox_feat,
                 mask_index,
                 spatial_scale,
-                stage=0):
-        if self.share_bbox_feat:
+                stage=0,
+                bbox_head_feat_func=None,
+                mode='train'):
+        if self.share_bbox_feat and mask_index:
             rois_feat = paddle.gather(bbox_feat, mask_index)
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)
+        if bbox_head_feat_func is not None and mode == 'infer':
+            rois_feat = bbox_head_feat_func(rois_feat)
         # upsample 
         mask_feat = self.upsample_module[stage](rois_feat)
         return mask_feat
@@ -131,8 +135,14 @@ class MaskHead(Layer):
                       spatial_scale,
                       stage=0):
         # feat
-        mask_feat = self.mask_feat(body_feats, bboxes, bbox_feat, mask_index,
-                                   spatial_scale, stage)
+        mask_feat = self.mask_feat(
+            body_feats,
+            bboxes,
+            bbox_feat,
+            mask_index,
+            spatial_scale,
+            stage,
+            mode='train')
         # logits
         mask_head_out = self.mask_fcn_logits[stage](mask_feat)
         return mask_head_out
@@ -144,7 +154,8 @@ class MaskHead(Layer):
                      bbox_feat,
                      mask_index,
                      spatial_scale,
-                     stage=0):
+                     stage=0,
+                     bbox_head_feat_func=None):
         bbox, bbox_num = bboxes
         if bbox.shape[0] == 0:
             mask_head_out = bbox
@@ -155,11 +166,18 @@ class MaskHead(Layer):
                     scale_factor_list.append(scale_factor[idx, 0])
             scale_factor_list = paddle.cast(
                 paddle.concat(scale_factor_list), 'float32')
-            scaled_bbox = paddle.multiply(
-                bbox[:, 2:], scale_factor_list, axis=0)
+            scale_factor_list = paddle.reshape(scale_factor_list, shape=[-1, 1])
+            scaled_bbox = paddle.multiply(bbox[:, 2:], scale_factor_list)
             scaled_bboxes = (scaled_bbox, bbox_num)
-            mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
-                                       mask_index, spatial_scale, stage)
+            mask_feat = self.mask_feat(
+                body_feats,
+                scaled_bboxes,
+                bbox_feat,
+                mask_index,
+                spatial_scale,
+                stage,
+                bbox_head_feat_func,
+                mode='infer')
             mask_logit = self.mask_fcn_logits[stage](mask_feat)
             mask_head_out = F.sigmoid(mask_logit)
         return mask_head_out
@@ -171,15 +189,16 @@ class MaskHead(Layer):
                 bbox_feat,
                 mask_index,
                 spatial_scale,
+                bbox_head_feat_func=None,
                 stage=0):
         if inputs['mode'] == 'train':
             mask_head_out = self.forward_train(body_feats, bboxes, bbox_feat,
                                                mask_index, spatial_scale, stage)
         else:
             scale_factor = inputs['scale_factor']
-            mask_head_out = self.forward_test(scale_factor, body_feats, bboxes,
-                                              bbox_feat, mask_index,
-                                              spatial_scale, stage)
+            mask_head_out = self.forward_test(
+                scale_factor, body_feats, bboxes, bbox_feat, mask_index,
+                spatial_scale, stage, bbox_head_feat_func)
         return mask_head_out
 
     def get_loss(self, mask_head_out, mask_target):
