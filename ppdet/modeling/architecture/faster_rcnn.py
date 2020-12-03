@@ -36,7 +36,7 @@ class FasterRCNN(BaseArch):
 
     def model_arch(self):
         # Backbone
-        body_feats = self.backbone(self.inputs, False)
+        body_feats = self.backbone(self.inputs)
         spatial_scale = 0.0625
 
         # Neck
