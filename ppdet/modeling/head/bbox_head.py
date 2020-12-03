@@ -22,6 +22,9 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
 
+from ..backbone.name_adapter import NameAdapter
+from ..backbone.resnet import Blocks
+
 
 @register
 class TwoFCHead(nn.Layer):
@@ -75,6 +78,23 @@ class TwoFCHead(nn.Layer):
 
 
 @register
+class Res5Head(nn.Layer):
+    def __init__(self, feat_in=1024, feat_out=512):
+        super(Res5Head, self).__init__()
+        na = NameAdapter(self)
+        self.res5_conv = []
+        self.res5 = self.add_sublayer(
+            'res5_roi_feat',
+            Blocks(
+                feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
+        self.feat_out = feat_out * 4
+
+    def forward(self, roi_feat, stage=0):
+        y = self.res5(roi_feat)
+        return y
+
+
+@register
 class BBoxFeat(nn.Layer):
     __inject__ = ['roi_extractor', 'head_feat']
 
@@ -86,7 +106,7 @@ class BBoxFeat(nn.Layer):
     def forward(self, body_feats, rois, spatial_scale, stage=0):
         rois_feat = self.roi_extractor(body_feats, rois, spatial_scale)
         bbox_feat = self.head_feat(rois_feat, stage)
-        return bbox_feat
+        return bbox_feat, self.head_feat
 
 
 @register
@@ -139,15 +159,19 @@ class BBoxHead(nn.Layer):
             self.bbox_delta_list.append(bbox_delta)
 
     def forward(self, body_feats, rois, spatial_scale, stage=0):
-        bbox_feat = self.bbox_feat(body_feats, rois, spatial_scale, stage)
-        if self.with_pool:
-            bbox_feat = F.pool2d(
-                bbox_feat, pool_type='avg', global_pooling=True)
+        bbox_feat, head_feat_func = self.bbox_feat(body_feats, rois,
+                                                   spatial_scale, stage)
         bbox_head_out = []
-        scores = self.bbox_score_list[stage](bbox_feat)
-        deltas = self.bbox_delta_list[stage](bbox_feat)
+        if self.with_pool:
+            bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
+            bbox_feat_ = paddle.squeeze(bbox_feat_, axis=[2, 3])
+            scores = self.bbox_score_list[stage](bbox_feat_)
+            deltas = self.bbox_delta_list[stage](bbox_feat_)
+        else:
+            scores = self.bbox_score_list[stage](bbox_feat)
+            deltas = self.bbox_delta_list[stage](bbox_feat)
         bbox_head_out.append((scores, deltas))
-        return bbox_feat, bbox_head_out
+        return bbox_feat, bbox_head_out, head_feat_func
 
     def _get_head_loss(self, score, delta, target):
         # bbox cls  
