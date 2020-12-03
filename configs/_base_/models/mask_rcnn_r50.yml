@@ -55,8 +55,8 @@ Proposal:
     nms_thresh: 0.7
     train_pre_nms_top_n: 12000
     train_post_nms_top_n: 2000
-    infer_pre_nms_top_n: 12000
-    infer_post_nms_top_n: 2000
+    infer_pre_nms_top_n: 6000
+    infer_post_nms_top_n: 1000
   proposal_target_generator:
     name: ProposalTargetGenerator
     batch_size_per_im: 512
