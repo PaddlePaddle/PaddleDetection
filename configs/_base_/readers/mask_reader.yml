@@ -31,7 +31,7 @@ EvalReader:
   drop_empty: false
 
 
-EvalReader:
+TestReader:
   inputs_def:
     fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
