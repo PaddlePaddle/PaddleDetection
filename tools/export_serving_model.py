@@ -31,7 +31,7 @@ from ppdet.utils.check import check_config, check_version, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
-from export_model import parse_reader, dump_infer_config, prune_feed_vars
+from ppdet.utils.export_utils import dump_infer_config, prune_feed_vars
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
