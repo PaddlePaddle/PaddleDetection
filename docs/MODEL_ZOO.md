@@ -202,7 +202,7 @@ results of image size 608/416/320 above. Deformable conv is added on stage 5 of 
 | MobileNet_v3 large | 320 | 64 | Cosine decay(40w) | - | 23.3 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
 | MobileNet_v3 small w/ FPN | 320 | 64 | Cosine decay(40w) | - | 18.9 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small_fpn.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small_fpn.yml) |
 | MobileNet_v3 large w/ FPN | 320 | 64 | Cosine decay(40w) | - | 24.3 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large_fpn.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large_fpn.yml) |
-| GhostNet | 320 | 64 | Cosine decay(40w) | - | 23.3 | [model](htts://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_ghostnet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_ghostnet.yml) |
+| GhostNet | 320 | 64 | Cosine decay(40w) | - | 23.3 | [model](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_ghostnet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_ghostnet.yml) |
 
 **Notes:** `SSDLite` is trained in 8 GPU with total batch size as 512 and uses cosine decay strategy to train.
 
