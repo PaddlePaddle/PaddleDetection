@@ -39,7 +39,7 @@ class RoIAlign(object):
 
         if self.start_level == self.end_level:
             rois_feat = ops.roi_align(
-                feats[0],
+                feats[self.start_level],
                 roi,
                 self.resolution,
                 spatial_scale,

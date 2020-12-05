@@ -1,7 +1,6 @@
 architecture: FasterRCNN
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/faster_rcnn_r50_1x_roadsign/model_final.pdparams
-#output/faster_rcnn_r50_1x/faster_rcnn_r50_1x.pdparams
+weights: output/faster_rcnn_r50_1x_coco/model_final.pdparams
 load_static_weights: True
 
 # Model Achitecture
@@ -73,8 +72,8 @@ BBoxHead:
       name: RoIAlign
       resolution: 14
       sampling_ratio: 0
-      start_level: 2
-      end_level: 2
+      start_level: 0
+      end_level: 0
     head_feat:
       name: Res5Head
       feat_in: 1024
