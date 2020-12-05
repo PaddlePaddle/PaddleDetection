@@ -43,7 +43,7 @@ inference_model
 │   │   │   ├── ...
 ```
 
-`serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息
+`serving_client`文件夹下`serving_client_conf.prototxt`详细说明了模型输入输出信息，这个文件我们后面会用到
 `serving_client_conf.prototxt`文件内容为：
 ```
 feed_var {
@@ -84,7 +84,8 @@ python -m paddle_serving_server.serve --model serving_server --port 9393
 ```
 
 ## 5. 测试部署的服务
-准备`label_list.txt`文件
+准备`label_list.txt`文件（如果没有该文件可以参照导出模型文件夹内的`infer_cfg.yml`里的label_list写一份）
+
 ```
 # 进入到导出模型文件夹
 cd inference_model/yolov3_mobilenet_v1_roadsign/
@@ -93,8 +94,14 @@ cd inference_model/yolov3_mobilenet_v1_roadsign/
 cp ../../dataset/roadsign_voc/label_list.txt .
 ```
 
-设置`prototxt`文件路径为`serving_client/serving_client_conf.prototxt` 。  
-设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`
+* 接下来打开`PaddleDetection/deploy/serving/test_client.py`这个文件
+
+根据你的`serving_client/serving_client_conf.prototxt`文件位置设置路径
+line 29 设置`prototxt`文件路径为`serving_client/serving_client_conf.prototxt`   
+
+同样的设置 line 26 设置你的`label_list.txt`的路径
+
+line 38 设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`  (该值为`serving_client`文件夹下`serving_client_conf.prototxt`文件内的`fetch_var`的`name`值)
 
 测试
 ```
