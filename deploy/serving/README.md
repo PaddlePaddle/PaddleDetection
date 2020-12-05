@@ -101,7 +101,7 @@ cp ../../dataset/roadsign_voc/label_list.txt .
 
 * 同时设置 line 26 设置你的`label_list.txt`的路径
 
-* line 38 设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`  (该值为`serving_client`文件夹下`serving_client_conf.prototxt`文件内的`fetch_var`的`name`值)
+* line 38 设置`fetch`为`fetch=["multiclass_nms_0.tmp_0"])`  (该值为`serving_client`文件夹下`serving_client_conf.prototxt`文件内的`fetch_var`的`name`值) 
 
 测试
 ```
