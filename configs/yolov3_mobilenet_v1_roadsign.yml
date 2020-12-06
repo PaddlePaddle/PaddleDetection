@@ -144,7 +144,7 @@ EvalReader:
     - !Permute
       to_bgr: false
       channel_first: True
-  batch_size: 8
+  batch_size: 1
   drop_empty: false
   worker_num: 4
   bufsize: 2
