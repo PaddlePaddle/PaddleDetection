@@ -14,6 +14,8 @@
 
 from . import operators
 from . import batch_operators
+from . import operator
+from . import batch_operator
 
 # TODO: operators and batch_operators will be replaced by operator and batch_operator
 from .operators import *

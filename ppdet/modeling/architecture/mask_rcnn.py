@@ -65,7 +65,7 @@ class MaskRCNN(BaseArch):
     def model_arch(self):
         # Backbone
         body_feats = self.backbone(self.inputs)
-        spatial_scale = None
+        spatial_scale = 1. / 16
 
         # Neck
         if self.neck is not None:
@@ -87,8 +87,8 @@ class MaskRCNN(BaseArch):
         # compute targets here when training
         rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out)
         # BBox Head
-        bbox_feat, self.bbox_head_out = self.bbox_head(body_feats, rois,
-                                                       spatial_scale)
+        bbox_feat, self.bbox_head_out, self.bbox_head_feat_func = self.bbox_head(
+            body_feats, rois, spatial_scale)
 
         rois_has_mask_int32 = None
         if self.inputs['mode'] == 'infer':
@@ -96,7 +96,8 @@ class MaskRCNN(BaseArch):
                 self.bbox_head_out, rois)
             # Refine bbox by the output from bbox_head at test stage
             self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
-                                                 self.inputs['im_info'])
+                                                 self.inputs['im_shape'],
+                                                 self.inputs['scale_factor'])
         else:
             # Proposal RoI for Mask branch
             # bboxes update at training stage only
@@ -105,9 +106,9 @@ class MaskRCNN(BaseArch):
                                                          bbox_targets)
 
         # Mask Head 
-        self.mask_head_out = self.mask_head(self.inputs, body_feats,
-                                            self.bboxes, bbox_feat,
-                                            rois_has_mask_int32, spatial_scale)
+        self.mask_head_out = self.mask_head(
+            self.inputs, body_feats, self.bboxes, bbox_feat,
+            rois_has_mask_int32, spatial_scale, self.bbox_head_feat_func)
 
     def get_loss(self, ):
         loss = {}
@@ -132,9 +133,10 @@ class MaskRCNN(BaseArch):
         loss.update({'loss': total_loss})
         return loss
 
-    def get_pred(self, ):
+    def get_pred(self, return_numpy=True):
         mask = self.mask_post_process(self.bboxes, self.mask_head_out,
-                                      self.inputs['im_info'])
+                                      self.inputs['im_shape'],
+                                      self.inputs['scale_factor'])
         bbox, bbox_num = self.bboxes
         output = {
             'bbox': bbox.numpy(),

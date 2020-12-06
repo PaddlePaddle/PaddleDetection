@@ -40,6 +40,7 @@ class DetDataset(Dataset):
         self.image_dir = image_dir if image_dir is not None else ''
         self.sample_num = sample_num
         self.use_default_label = use_default_label
+        self.epoch = 0
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -47,6 +48,21 @@ class DetDataset(Dataset):
     def __getitem__(self, idx):
         # data batch
         roidb = copy.deepcopy(self.roidbs[idx])
+        if self.mixup_epoch == 0 or self.epoch < self.mixup_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.cutmix_epoch == 0 or self.epoch < self.cutmix_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.mosaic_epoch == 0 or self.epoch < self.mosaic_epoch:
+            n = len(self.roidbs)
+            roidb = [roidb, ] + [
+                copy.deepcopy(self.roidbs[np.random.randint(n)])
+                for _ in range(3)
+            ]
+
         # data augment
         roidb = self.transform(roidb)
         # data item 
@@ -54,6 +70,11 @@ class DetDataset(Dataset):
         for k in self.fields:
             out[k] = roidb[k]
         return out.values()
+
+    def set_kwargs(self, **kwargs):
+        self.mixup_epoch = kwargs.get('mixup_epoch', -1)
+        self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
+        self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
 
     def set_out(self, sample_transform, fields):
         self.transform = sample_transform

@@ -21,7 +21,7 @@ from ..backbone.darknet import ConvBNLayer
 
 
 class YoloDetBlock(nn.Layer):
-    def __init__(self, ch_in, channel, name):
+    def __init__(self, ch_in, channel, norm_type, name):
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
         self.channel = channel
@@ -45,6 +45,7 @@ class YoloDetBlock(nn.Layer):
                     ch_out=ch_out,
                     filter_size=filter_size,
                     padding=(filter_size - 1) // 2,
+                    norm_type=norm_type,
                     name=name + post_name))
 
         self.tip = ConvBNLayer(
@@ -52,6 +53,7 @@ class YoloDetBlock(nn.Layer):
             ch_out=channel * 2,
             filter_size=3,
             padding=1,
+            norm_type=norm_type,
             name=name + '.tip')
 
     def forward(self, inputs):
@@ -63,7 +65,9 @@ class YoloDetBlock(nn.Layer):
 @register
 @serializable
 class YOLOv3FPN(nn.Layer):
-    def __init__(self, feat_channels=[1024, 768, 384]):
+    __shared__ = ['norm_type']
+
+    def __init__(self, feat_channels=[1024, 768, 384], norm_type='bn'):
         super(YOLOv3FPN, self).__init__()
         assert len(feat_channels) > 0, "feat_channels length should > 0"
         self.feat_channels = feat_channels
@@ -75,7 +79,10 @@ class YOLOv3FPN(nn.Layer):
             yolo_block = self.add_sublayer(
                 name,
                 YoloDetBlock(
-                    feat_channels[i], channel=512 // (2**i), name=name))
+                    feat_channels[i],
+                    channel=512 // (2**i),
+                    norm_type=norm_type,
+                    name=name))
             self.yolo_blocks.append(yolo_block)
 
             if i < self.num_blocks - 1:
@@ -88,6 +95,7 @@ class YOLOv3FPN(nn.Layer):
                         filter_size=1,
                         stride=1,
                         padding=0,
+                        norm_type=norm_type,
                         name=name))
                 self.routes.append(route)
 

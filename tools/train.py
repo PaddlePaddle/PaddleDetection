@@ -30,7 +30,6 @@ import datetime
 import numpy as np
 from collections import deque
 import paddle
-from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
@@ -122,7 +121,6 @@ def run(FLAGS, cfg, place):
         dataset, cfg['worker_num'], place)
 
     # Model
-    main_arch = cfg.architecture
     model = create(cfg.architecture)
 
     # Optimizer
@@ -137,19 +135,28 @@ def run(FLAGS, cfg, place):
                              cfg.get('load_static_weights', False),
                              FLAGS.weight_type)
 
+    if getattr(model.backbone, 'norm_type', None) == 'sync_bn':
+        assert cfg.use_gpu and ParallelEnv(
+        ).nranks > 1, 'you should use bn rather than sync_bn while using a single gpu'
+    # sync_bn = (getattr(model.backbone, 'norm_type', None) == 'sync_bn' and
+    #            cfg.use_gpu and ParallelEnv().nranks > 1)
+    # if sync_bn:
+    #     model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     # Parallel Model 
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
+    fields = train_loader.collate_fn.output_fields
     # Run Train
-    start_iter = 0
     time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
     end_time = time.time()
     # Run Train
     start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
-    for e_id in range(int(cfg.epoch)):
-        cur_eid = e_id + start_epoch
+    for epoch_id in range(int(cfg.epoch)):
+        cur_eid = epoch_id + start_epoch
+        train_loader.dataset.epoch = cur_eid
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
             end_time = time.time()
@@ -161,8 +168,7 @@ def run(FLAGS, cfg, place):
 
             # Model Forward
             model.train()
-            outputs = model(data, cfg['TrainReader']['inputs_def']['fields'],
-                            'train')
+            outputs = model(data, fields, 'train')
 
             # Model Backward
             loss = outputs['loss']
@@ -174,7 +180,7 @@ def run(FLAGS, cfg, place):
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
-                if e_id == 0 and iter_id == 0:
+                if epoch_id == 0 and iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
@@ -185,7 +191,9 @@ def run(FLAGS, cfg, place):
                     logger.info(strs)
 
         # Save Stage 
-        if ParallelEnv().local_rank == 0 and cur_eid % cfg.snapshot_epoch == 0:
+        if ParallelEnv().local_rank == 0 and (
+                cur_eid % cfg.snapshot_epoch == 0 or
+            (cur_eid + 1) == int(cfg.epoch)):
             cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
