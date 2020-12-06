@@ -85,7 +85,7 @@ class MaskFeat(Layer):
                 stage=0,
                 bbox_head_feat_func=None,
                 mode='train'):
-        if self.share_bbox_feat and mask_index:
+        if self.share_bbox_feat and mask_index is not None:
             rois_feat = paddle.gather(bbox_feat, mask_index)
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,

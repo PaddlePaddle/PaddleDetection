@@ -215,7 +215,7 @@ class ProposalTargetGenerator(object):
             rpn_rois, rpn_rois_num, gt_classes, is_crowd, gt_boxes, im_info,
             self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
             self.bg_thresh_hi[stage], self.bg_thresh_lo[stage], reg_weights,
-            num_classes, self.use_random, self.is_cls_agnostic, is_cascade_rcnn,
+            num_classes, self.use_random, self.is_cls_agnostic, is_cascade,
             max_overlap)
         outs = [to_tensor(v) for v in outs]
         for v in outs:

@@ -183,8 +183,7 @@ class BBoxHead(nn.Layer):
             rois_feat = self.roi_feat_list[roi_stage]
             bbox_feat = self.bbox_feat.head_feat(rois_feat, stage)
         if self.with_pool:
-            bbox_feat_ = F.pool2d(
-                bbox_feat, pool_type='avg', global_pooling=True)
+            bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             bbox_feat_ = paddle.squeeze(bbox_feat_, axis=[2, 3])
             scores = self.bbox_score_list[stage](bbox_feat_)
             deltas = self.bbox_delta_list[stage](bbox_feat_)
