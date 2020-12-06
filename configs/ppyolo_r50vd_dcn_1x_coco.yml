@@ -1,0 +1,7 @@
+_BASE_: [
+  './_base_/models/ppyolo_r50vd_dcn.yml',
+  './_base_/optimizers/ppyolo_1x.yml',
+  './_base_/datasets/coco.yml',
+  './_base_/readers/ppyolo_reader.yml',
+  './_base_/runtime.yml',
+]

@@ -25,6 +25,7 @@ from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
+from ppdet.modeling.ops import batch_norm, DeformableConvV2
 
 
 class ConvNormLayer(nn.Layer):
@@ -39,22 +40,33 @@ class ConvNormLayer(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  lr=1.0,
+                 dcn_v2=False,
                  name=None):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn']
         self.norm_type = norm_type
         self.act = act
 
-        self.conv = Conv2D(
-            in_channels=ch_in,
-            out_channels=ch_out,
-            kernel_size=filter_size,
-            stride=stride,
-            padding=(filter_size - 1) // 2,
-            groups=1,
-            weight_attr=ParamAttr(
-                learning_rate=lr, name=name + "_weights"),
-            bias_attr=False)
+        if dcn_v2 is False:
+            self.conv = Conv2D(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                weight_attr=ParamAttr(
+                    learning_rate=lr, name=name + "_weights"),
+                bias_attr=False)
+        else:
+            self.conv = DeformableConvV2(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                name=name)
 
         bn_name = name_adapter.fix_conv_norm_name(name)
         norm_lr = 0. if freeze_norm else lr
@@ -103,7 +115,8 @@ class BottleNeck(nn.Layer):
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=True):
+                 freeze_norm=True,
+                 dcn_v2=False):
         super(BottleNeck, self).__init__()
         if variant == 'a':
             stride1, stride2 = stride, 1
@@ -138,6 +151,7 @@ class BottleNeck(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
+            dcn_v2=dcn_v2,
             name=conv_name1)
 
         self.branch2b = ConvNormLayer(
@@ -191,7 +205,8 @@ class Blocks(nn.Layer):
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=True):
+                 freeze_norm=True,
+                 dcn_v2=False):
         super(Blocks, self).__init__()
 
         self.blocks = []
@@ -211,7 +226,8 @@ class Blocks(nn.Layer):
                     lr=lr,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
-                    freeze_norm=freeze_norm))
+                    freeze_norm=freeze_norm,
+                    dcn_v2=dcn_v2))
             self.blocks.append(block)
 
     def forward(self, inputs):
@@ -227,6 +243,8 @@ ResNet_cfg = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}
 @register
 @serializable
 class ResNet(nn.Layer):
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  depth=50,
                  variant='b',
@@ -236,6 +254,7 @@ class ResNet(nn.Layer):
                  freeze_norm=True,
                  freeze_at=0,
                  return_idx=[0, 1, 2, 3],
+                 dcn_v2_stages=[],
                  num_stages=4):
         super(ResNet, self).__init__()
         self.depth = depth
@@ -252,6 +271,13 @@ class ResNet(nn.Layer):
             'is {}'.format(max(return_idx), num_stages)
         self.return_idx = return_idx
         self.num_stages = num_stages
+        if isinstance(dcn_v2_stages, Integral):
+            dcn_v2_stages = [dcn_v2_stages]
+        assert max(dcn_v2_stages) < num_stages, \
+            'the maximum return dcn_v2_stages must smaller than num_stages, ' \
+            'but received maximum dcn_v2_stages is {} and num_stages ' \
+            'is {}'.format(max(return_idx), num_stages)
+        self.dcn_v2_stages = dcn_v2_stages
 
         block_nums = ResNet_cfg[depth]
         na = NameAdapter(self)
@@ -302,7 +328,8 @@ class ResNet(nn.Layer):
                     lr=lr_mult,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
-                    freeze_norm=freeze_norm))
+                    freeze_norm=freeze_norm,
+                    dcn_v2=(i in self.dcn_v2_stages)))
             self.res_layers.append(res_layer)
 
     def forward(self, inputs):

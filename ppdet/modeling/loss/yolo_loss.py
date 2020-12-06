@@ -93,11 +93,15 @@ class YOLOv3Loss(nn.Layer):
         no = c // na
         x = x.reshape((b, na, no, h, w)).transpose((0, 3, 4, 1, 2))
 
-        xy, wh, obj = x[:, :, :, :, 0:2], x[:, :, :, :, 2:4], x[:, :, :, :, 4:5]
         if self.iou_aware_loss:
-            ioup, pcls = x[:, :, :, :, 5:6], x[:, :, :, :, 6:]
+            # ioup, x, y, w, h, obj, pcls
+            ioup = x[:, :, :, :, 0:1]
+            xy, wh = x[:, :, :, :, 1:3], x[:, :, :, :, 3:5]
+            obj, pcls = x[:, :, :, :, 5:6], x[:, :, :, :, 6:]
         else:
-            pcls = x[:, :, :, :, 5:]
+            # x, y, w, h, obj, pcls
+            xy, wh = x[:, :, :, :, 0:2], x[:, :, :, :, 2:4]
+            obj, pcls = x[:, :, :, :, 4:5], x[:, :, :, :, 5:]
 
         t = t.transpose((0, 3, 4, 1, 2))
         txy, twh, tscale = t[:, :, :, :, 0:2], t[:, :, :, :, 2:4], t[:, :, :, :,
