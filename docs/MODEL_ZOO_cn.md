@@ -25,7 +25,8 @@
 
 Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型均通过标准的Imagenet-1k数据集训练得到。[下载链接](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/image_classification#supported-models-and-performances)
 
-- 注：ResNet50模型通过余弦学习率调整策略训练得到。[下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar)
+- 注：ResNet50模型通过余弦学习率调整策略训练得到。[ResNet50下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_pretrained.tar),
+ [ResNet50_vd下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_vd_pretrained.tar)
 
 ## 基线
 
