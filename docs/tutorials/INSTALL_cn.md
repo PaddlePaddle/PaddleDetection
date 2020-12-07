@@ -66,11 +66,10 @@ pip install -r requirements.txt
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
-**提示：**
 
 也可以通过 [https://gitee.com/paddlepaddle/PaddleDetection](https://gitee.com/paddlepaddle/PaddleDetection) 克隆。
 ```
-cd <path/to/clone/PaddleDetection>
+cd <path/to/clone/PazcccccccccccddleDetection>
 git clone https://gitee.com/paddlepaddle/PaddleDetection
 ```
 

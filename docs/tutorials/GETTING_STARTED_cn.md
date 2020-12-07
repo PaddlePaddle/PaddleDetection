@@ -22,7 +22,6 @@ python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/faster_rcnn_r50_fpn_1x_coco.yml
 ```
 
-# TODO: infer问题解决后需验证
 #### 预测
 ```bash
 # 预测
