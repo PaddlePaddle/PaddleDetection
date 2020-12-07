@@ -21,21 +21,12 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 **环境需求:**
 
 - OS 64位操作系统
-- Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64位版本
+- Python 3(3.5.1+/3.6/3.7)，64位版本
 - pip/pip3(9.0.1+)，64位版本操作系统是
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
 如果需要 GPU 多卡训练，请先安装NCCL。
-
-PaddleDetection 依赖 PaddlePaddle 版本关系：
-
-| PaddleDetection版本 | PaddlePaddle版本  |    备注    |
-| :----------------: | :---------------: | :-------: |
-|      v0.3          |        >=1.7      |     --    |
-|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
-|      v0.5          |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
-|     dygraph        |     每日版本       |  Paddle中`c0a991c8740b413559bfc894aa5ae1d5ed3704b5`这个commit会影响精度，建议安装这个commit之前的版本 |
 
 
 ## 其他依赖安装
@@ -81,20 +72,6 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
 cd <path/to/clone/PaddleDetection>
 git clone https://gitee.com/paddlepaddle/PaddleDetection
-```
-
-**确认测试通过：**
-
-```
-python ppdet/modeling/tests/test_architectures.py
-```
-
-测试通过后会提示如下信息：
-```
-..........
-----------------------------------------------------------------------
-Ran 12 tests in 2.480s
-OK (skipped=2)
 ```
 
 

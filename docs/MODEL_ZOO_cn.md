@@ -18,7 +18,7 @@
 ## 训练策略
 
 - 我们采用和[Detectron](https://github.com/facebookresearch/Detectron/blob/master/MODEL_ZOO.md#training-schedules)相同的训练策略。
-- 1x 策略表示：在总batch size为16时，初始学习率为0.02，在6万轮和8万轮后学习率分别下降10倍，最终训练9万轮。在总batch size为8时，初始学习率为0.01，在12万轮和16万轮后学习率分别下降10倍，最终训练18万轮。
+- 1x 策略表示：在总batch size为8时，初始学习率为0.01，在8 epoch和11 epoch后学习率分别下降10倍，最终训练12 epoch。
 - 2x 策略为1x策略的两倍，同时学习率调整位置也为1x的两倍。
 
 ## ImageNet预训练模型
