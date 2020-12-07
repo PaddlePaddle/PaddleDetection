@@ -226,6 +226,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [PP-YOLO模型](configs/ppyolo/README_cn.md)
     - [676类目标检测](docs/featured_model/LARGE_SCALE_DET_MODEL.md)
     - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
+- 通用实例分割：
+    - [SOLOv2](configs/solov2/README.md)
 - 垂类领域
     - [人脸检测](docs/featured_model/FACE_DETECTION.md)
     - [行人检测](docs/featured_model/CONTRIB_cn.md)
