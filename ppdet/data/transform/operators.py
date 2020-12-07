@@ -2552,18 +2552,20 @@ class DebugVisibleImage(BaseOperator):
             assert six.PY3, "VisualDL requires Python >= 3.5"
             from visualdl import LogWriter
             self.vdl_writer = LogWriter(self.output_dir)
-            self.vdl_image_step = 0
-            self.vdl_image_frame = 0
 
     def __call__(self, sample, context=None):
-        image = Image.open(sample['im_file']).convert('RGB')
-        image = ImageOps.exif_transpose(image)
-        if self.use_vdl:
-            image_np = np.array(image)
-            self.vdl_writer.add_image(
-                "original/frame_{}".format(self.vdl_image_frame), image_np,
-                self.vdl_image_step)
         out_file_name = sample['im_file'].split('/')[-1]
+        if self.use_vdl:
+            origin_image = Image.open(sample['im_file']).convert('RGB')
+            origin_image = ImageOps.exif_transpose(origin_image)
+            image_np = np.array(origin_image)
+            self.vdl_writer.add_image("original/{}".format(out_file_name),
+                                      image_np, 0)
+
+        if not isinstance(sample['image'], np.ndarray):
+            raise TypeError("{}: sample[image] type is not numpy.".format(self))
+        image = Image.fromarray(np.uint8(sample['image']))
+
         width = sample['w']
         height = sample['h']
         gt_bbox = sample['gt_bbox']
@@ -2608,7 +2610,7 @@ class DebugVisibleImage(BaseOperator):
                 width=2,
                 fill='green')
             # draw label
-            text = str(gt_class[i][0])
+            text = 'id' + str(gt_class[i][0])
             tw, th = draw.textsize(text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
@@ -2632,13 +2634,8 @@ class DebugVisibleImage(BaseOperator):
         save_path = os.path.join(self.output_dir, out_file_name)
         if self.use_vdl:
             preprocess_image_np = np.array(image)
-            self.vdl_writer.add_image(
-                "preprocess/frame_{}".format(self.vdl_image_frame),
-                preprocess_image_np, self.vdl_image_step)
-            self.vdl_image_step += 1
-            if self.vdl_image_step % 100 == 0:
-                self.vdl_image_step = 0
-                self.vdl_image_frame += 1
+            self.vdl_writer.add_image("preprocess/{}".format(out_file_name),
+                                      preprocess_image_np, 0)
         else:
             image.save(save_path, quality=95)
         return sample
