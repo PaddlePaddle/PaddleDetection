@@ -244,6 +244,8 @@ All these models can be get in [Model Zoo](#ModelZoo)
   - [PP-YOLO](configs/ppyolo/README_cn.md)
   - [676 classes of object detection](docs/featured_model/LARGE_SCALE_DET_MODEL.md)
   - [Two-stage practical PSS-Det](configs/rcnn_enhance/README.md)
+- Universal instance segmentation
+  - [SOLOv2](configs/solov2/README.md)
 - Vertical field
   - [Face detection](docs/featured_model/FACE_DETECTION.md)
   - [Pedestrian detection](docs/featured_model/CONTRIB_cn.md)
