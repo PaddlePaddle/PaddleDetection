@@ -340,7 +340,7 @@ def generate_mask_target(im_info, gt_classes, is_crowd, gt_segms, rois,
                     x, y = polys[ii]
                     if (x == -1 and y == -1):
                         continue
-                    elif (x >= 0 and y >= 0):
+                    elif (x >= 0 or y >= 0):
                         new_poly.append([x, y])  # array, one poly 
                 if len(new_poly) > 0:
                     gt_segs.append(new_poly)
