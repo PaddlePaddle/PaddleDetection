@@ -532,7 +532,10 @@ class RandomFlipOp(BaseOperator):
         return image[:, ::-1, :]
 
     def apply_bbox(self, bbox, width):
-        bbox[:, 0::2] = width - bbox[:, 0::2] - 1
+        oldx1 = bbox[:, 0].copy()
+        oldx2 = bbox[:, 2].copy()
+        bbox[:, 0] = width - oldx2 - 1
+        bbox[:, 2] = width - oldx1 - 1
         return bbox
 
     def apply(self, sample, context=None):
