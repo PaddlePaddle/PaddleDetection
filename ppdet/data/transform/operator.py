@@ -354,24 +354,46 @@ class RandomDistortOp(BaseOperator):
         self.count = count
         self.random_channel = random_channel
 
-    def apply_hue(self, img):
+    def apply_hue(self, img, hsv_format=True):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
 
         img = img.astype(np.float32)
-        img[..., 0] += random.uniform(low, high)
-        img[..., 0][img[..., 0] > 360] -= 360
-        img[..., 0][img[..., 0] < 0] += 360
+        if hsv_format:
+            img[..., 0] += random.uniform(low, high)
+            img[..., 0][img[..., 0] > 360] -= 360
+            img[..., 0][img[..., 0] < 0] += 360
+            return img
+
+        # XXX works, but result differ from HSV version
+        delta = np.random.uniform(low, high)
+        u = np.cos(delta * np.pi)
+        w = np.sin(delta * np.pi)
+        bt = np.array([[1.0, 0.0, 0.0], [0.0, u, -w], [0.0, w, u]])
+        tyiq = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.321],
+                         [0.211, -0.523, 0.311]])
+        ityiq = np.array([[1.0, 0.956, 0.621], [1.0, -0.272, -0.647],
+                          [1.0, -1.107, 1.705]])
+        t = np.dot(np.dot(ityiq, bt), tyiq).T
+        img = np.dot(img, t)
         return img
 
-    def apply_saturation(self, img):
+    def apply_saturation(self, img, hsv_format=True):
         low, high, prob = self.saturation
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
         img = img.astype(np.float32)
-        img[..., 1] *= delta
+        if hsv_format:
+            img[..., 1] *= delta
+            return img
+
+        gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
+        gray = gray.sum(axis=2, keepdims=True)
+        gray *= (1.0 - delta)
+        img *= delta
+        img += gray
         return img
 
     def apply_contrast(self, img):
@@ -398,8 +420,8 @@ class RandomDistortOp(BaseOperator):
             functions = [
                 self.apply_brightness,
                 self.apply_contrast,
-                lambda img: cv2.cvtColor(self.apply_saturation(cv2.cvtColor(img, cv2.COLOR_RGB2HSV)), cv2.COLOR_HSV2RGB),
-                lambda img: cv2.cvtColor(self.apply_hue(cv2.cvtColor(img, cv2.COLOR_RGB2HSV)), cv2.COLOR_HSV2RGB),
+                lambda img: self.apply_saturation(img, hsv_format=False),
+                lambda img: self.apply_hue(img, hsv_format=False)
             ]
             distortions = np.random.permutation(functions)[:self.count]
             for func in distortions:
