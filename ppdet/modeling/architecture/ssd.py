@@ -34,8 +34,9 @@ class SSD(BaseArch):
                                                          self.inputs['image'])
 
     def get_loss(self, ):
-        loss = self.ssd_head.get_loss(self.inputs, self.ssd_head_outs)
-        return loss
+        loss = self.ssd_head.get_loss(self.ssd_head_outs, self.inputs,
+                                      self.anchors)
+        return {"loss": loss}
 
     def get_pred(self, return_numpy=True):
         output = {}

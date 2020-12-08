@@ -14,9 +14,9 @@
 
 from . import coco
 # TODO add voc and widerface dataset
-#from . import voc
+from . import voc
 #from . import widerface
 
 from .coco import *
-#from .voc import *
+from .voc import *
 #from .widerface import *

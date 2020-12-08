@@ -19,14 +19,14 @@ import xml.etree.ElementTree as ET
 
 from ppdet.core.workspace import register, serializable
 
-from .dataset import DataSet
+from .dataset import DetDataset
 import logging
 logger = logging.getLogger(__name__)
 
 
 @register
 @serializable
-class VOCDataSet(DataSet):
+class VOCDataSet(DetDataset):
     """
     Load dataset with PascalVOC format.
 
@@ -38,8 +38,6 @@ class VOCDataSet(DataSet):
         image_dir (str): directory for images.
         anno_path (str): voc annotation file path.
         sample_num (int): number of samples to load, -1 means all.
-        use_default_label (bool): whether use the default mapping of
-            label to integer index. Default True.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
     """
@@ -49,32 +47,15 @@ class VOCDataSet(DataSet):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 use_default_label=True,
-                 label_list='label_list.txt'):
+                 label_list=None):
         super(VOCDataSet, self).__init__(
+            dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
-            sample_num=sample_num,
-            dataset_dir=dataset_dir)
-        # roidbs is list of dict whose structure is:
-        # {
-        #     'im_file': im_fname, # image file name
-        #     'im_id': im_id, # image id
-        #     'h': im_h, # height of image
-        #     'w': im_w, # width
-        #     'is_crowd': is_crowd,
-        #     'gt_class': gt_class,
-        #     'gt_score': gt_score,
-        #     'gt_bbox': gt_bbox,
-        #     'difficult': difficult
-        # }
-        self.roidbs = None
-        # 'cname2id' is a dict to map category name to class id
-        self.cname2cid = None
-        self.use_default_label = use_default_label
+            sample_num=sample_num)
         self.label_list = label_list
 
-    def load_roidb_and_cname2cid(self, with_background=True):
+    def parse_dataset(self, with_background=True):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -86,7 +67,7 @@ class VOCDataSet(DataSet):
         records = []
         ct = 0
         cname2cid = {}
-        if not self.use_default_label:
+        if self.label_list:
             label_path = os.path.join(self.dataset_dir, self.label_list)
             if not os.path.exists(label_path):
                 raise ValueError("label_list {} does not exists".format(
@@ -178,6 +159,7 @@ class VOCDataSet(DataSet):
                 ct += 1
                 if self.sample_num > 0 and ct >= self.sample_num:
                     break
+        records = records[:100]
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))

@@ -1383,6 +1383,178 @@ def box_coder(prior_box,
     return output_box
 
 
+def bipartite_match(dist_matrix,
+                    match_type=None,
+                    dist_threshold=None,
+                    name=None):
+    """
+
+    This operator implements a greedy bipartite matching algorithm, which is
+    used to obtain the matching with the maximum distance based on the input
+    distance matrix. For input 2D matrix, the bipartite matching algorithm can
+    find the matched column for each row (matched means the largest distance),
+    also can find the matched row for each column. And this operator only
+    calculate matched indices from column to row. For each instance,
+    the number of matched indices is the column number of the input distance
+    matrix. **The OP only supports CPU**.
+
+    There are two outputs, matched indices and distance.
+    A simple description, this algorithm matched the best (maximum distance)
+    row entity to the column entity and the matched indices are not duplicated
+    in each row of ColToRowMatchIndices. If the column entity is not matched
+    any row entity, set -1 in ColToRowMatchIndices.
+
+    NOTE: the input DistMat can be LoDTensor (with LoD) or Tensor.
+    If LoDTensor with LoD, the height of ColToRowMatchIndices is batch size.
+    If Tensor, the height of ColToRowMatchIndices is 1.
+
+    NOTE: This API is a very low level API. It is used by :code:`ssd_loss`
+    layer. Please consider to use :code:`ssd_loss` instead.
+
+    Args:
+        dist_matrix(Tensor): This input is a 2-D LoDTensor with shape
+            [K, M]. The data type is float32 or float64. It is pair-wise 
+            distance matrix between the entities represented by each row and 
+            each column. For example, assumed one entity is A with shape [K], 
+            another entity is B with shape [M]. The dist_matrix[i][j] is the 
+            distance between A[i] and B[j]. The bigger the distance is, the 
+            better matching the pairs are. NOTE: This tensor can contain LoD 
+            information to represent a batch of inputs. One instance of this 
+            batch can contain different numbers of entities.
+        match_type(str, optional): The type of matching method, should be
+           'bipartite' or 'per_prediction'. None ('bipartite') by default.
+        dist_threshold(float32, optional): If `match_type` is 'per_prediction',
+            this threshold is to determine the extra matching bboxes based
+            on the maximum distance, 0.5 by default.
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default.
+ 
+    Returns:
+        Tuple:
+
+        matched_indices(Tensor): A 2-D Tensor with shape [N, M]. The data
+        type is int32. N is the batch size. If match_indices[i][j] is -1, it
+        means B[j] does not match any entity in i-th instance.
+        Otherwise, it means B[j] is matched to row
+        match_indices[i][j] in i-th instance. The row number of
+        i-th instance is saved in match_indices[i][j].
+
+        matched_distance(Tensor): A 2-D Tensor with shape [N, M]. The data
+        type is float32. N is batch size. If match_indices[i][j] is -1,
+        match_distance[i][j] is also -1.0. Otherwise, assumed
+        match_distance[i][j] = d, and the row offsets of each instance
+        are called LoD. Then match_distance[i][j] =
+        dist_matrix[d+LoD[i]][j].
+
+    Examples:
+
+        .. code-block:: python
+            import paddle
+            from ppdet.modeling import ops
+            from ppdet.modeling.utils import iou_similarity
+
+            paddle.enable_static()
+
+            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
+            iou = iou_similarity(x=x, y=y)
+            matched_indices, matched_dist = ops.bipartite_match(iou)
+    """
+    check_variable_and_dtype(dist_matrix, 'dist_matrix',
+                             ['float32', 'float64'], 'bipartite_match')
+
+    if in_dygraph_mode():
+        match_indices, match_distance = core.ops.bipartite_match(
+            dist_matrix, "match_type", match_type, "dist_threshold",
+            dist_threshold)
+        return match_indices, match_distance
+
+    helper = LayerHelper('bipartite_match', **locals())
+    match_indices = helper.create_variable_for_type_inference(dtype='int32')
+    match_distance = helper.create_variable_for_type_inference(
+        dtype=dist_matrix.dtype)
+    helper.append_op(
+        type='bipartite_match',
+        inputs={'DistMat': dist_matrix},
+        attrs={
+            'match_type': match_type,
+            'dist_threshold': dist_threshold,
+        },
+        outputs={
+            'ColToRowMatchIndices': match_indices,
+            'ColToRowMatchDist': match_distance
+        })
+    return match_indices, match_distance
+
+
+def label_target_assign(gt_label,
+                        matched_indices,
+                        neg_mask=None,
+                        mismatch_value=0):
+    gt_label = gt_label.numpy()
+    matched_indices = matched_indices.numpy()
+    if neg_mask is not None:
+        neg_mask = neg_mask.numpy()
+
+    batch_size, num_priors = matched_indices.shape
+    trg_lbl = np.ones((batch_size, num_priors, 1)).astype('int32')
+    trg_lbl *= mismatch_value
+    trg_lbl_wt = np.zeros((batch_size, num_priors, 1)).astype('float32')
+
+    for i in range(batch_size):
+        col_ids = np.where(matched_indices[i] > -1)
+        col_val = matched_indices[i][col_ids]
+        trg_lbl[i][col_ids] = gt_label[i][col_val]
+        trg_lbl_wt[i][col_ids] = 1.0
+
+    if neg_mask is not None:
+        trg_lbl_wt += neg_mask[:, :, np.newaxis]
+
+    return paddle.to_tensor(trg_lbl), paddle.to_tensor(trg_lbl_wt)
+
+
+def bbox_target_assign(encoded_box, matched_indices):
+    encoded_box = encoded_box.numpy()
+    matched_indices = matched_indices.numpy()
+
+    batch_size, num_priors = matched_indices.shape
+    trg_bbox = np.zeros((batch_size, num_priors, 4)).astype('float32')
+    trg_bbox_wt = np.zeros((batch_size, num_priors, 1)).astype('float32')
+
+    for i in range(batch_size):
+        col_ids = np.where(matched_indices[i] > -1)
+        col_val = matched_indices[i][col_ids]
+        for v, c in zip(col_val.tolist(), col_ids[0]):
+            trg_bbox[i][c] = encoded_box[i][v][c]
+        trg_bbox_wt[i][col_ids] = 1.0
+
+    return paddle.to_tensor(trg_bbox), paddle.to_tensor(trg_bbox_wt)
+
+
+def mine_hard_example(conf_loss,
+                      matched_indices,
+                      matched_dist,
+                      neg_pos_ratio=3.0,
+                      neg_overlap=0.5):
+    pos = (matched_indices > -1).astype(conf_loss.dtype)
+    num_pos = pos.sum(axis=1, keepdim=True)
+    neg = (matched_dist < neg_overlap).astype(conf_loss.dtype)
+
+    conf_loss = conf_loss * (1.0 - pos) * neg
+    loss_idx = conf_loss.argsort(axis=1, descending=True)
+    idx_rank = loss_idx.argsort(axis=1)
+    num_negs = []
+    for i in range(matched_indices.shape[0]):
+        cur_idx = loss_idx[i]
+        cur_num_pos = num_pos[i]
+        num_neg = paddle.clip(cur_num_pos * neg_pos_ratio, max=pos.shape[1])
+        num_negs.append(num_neg)
+    num_neg = paddle.stack(num_negs, axis=0).expand_as(idx_rank)
+    neg_mask = (idx_rank < num_neg).astype(conf_loss.dtype)
+    return neg_mask
+
+
 def generate_proposals(scores,
                        bbox_deltas,
                        im_shape,
