@@ -199,7 +199,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - 参数配置
   - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)
   - [RCNN参数说明](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
-  - [YOLOv3参数说明]()
+  - [YOLOv3参数说明](docs/advanced_tutorials/config_doc/yolov3_mobilenet_v1.md)
 - 迁移学习
     - [如何加载预训练](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
