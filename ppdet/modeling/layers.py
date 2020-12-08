@@ -295,21 +295,13 @@ class RCNNBox(object):
             box_normalized=self.box_normalized,
             axis=self.axis)
         # TODO: Updata box_clip
-        origin_h = origin_shape[:, 0] - 1
-        origin_w = origin_shape[:, 1] - 1
+        origin_h = paddle.unsqueeze(origin_shape[:, 0] - 1, axis=1)
+        origin_w = paddle.unsqueeze(origin_shape[:, 1] - 1, axis=1)
         zeros = paddle.zeros(origin_h.shape, 'float32')
-        x1 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 0], origin_w, axis=0), zeros, axis=0)
-        y1 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 1], origin_h, axis=0), zeros, axis=0)
-        x2 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 2], origin_w, axis=0), zeros, axis=0)
-        y2 = paddle.maximum(
-            paddle.minimum(
-                bbox[:, :, 3], origin_h, axis=0), zeros, axis=0)
+        x1 = paddle.maximum(paddle.minimum(bbox[:, :, 0], origin_w), zeros)
+        y1 = paddle.maximum(paddle.minimum(bbox[:, :, 1], origin_h), zeros)
+        x2 = paddle.maximum(paddle.minimum(bbox[:, :, 2], origin_w), zeros)
+        y2 = paddle.maximum(paddle.minimum(bbox[:, :, 3], origin_h), zeros)
         bbox = paddle.stack([x1, y1, x2, y2], axis=-1)
 
         bboxes = (bbox, rois_num)
