@@ -87,11 +87,11 @@ class MaskFeat(Layer):
                 mode='train'):
         if self.share_bbox_feat and mask_index:
             rois_feat = paddle.gather(bbox_feat, mask_index)
+            if bbox_head_feat_func is not None and mode == 'infer':
+                rois_feat = bbox_head_feat_func(rois_feat)
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)
-        if bbox_head_feat_func is not None and mode == 'infer':
-            rois_feat = bbox_head_feat_func(rois_feat)
         # upsample 
         mask_feat = self.upsample_module[stage](rois_feat)
         return mask_feat
