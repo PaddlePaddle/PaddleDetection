@@ -72,5 +72,3 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 cd <path/to/clone/PazcccccccccccddleDetection>
 git clone https://gitee.com/paddlepaddle/PaddleDetection
 ```
-
-
