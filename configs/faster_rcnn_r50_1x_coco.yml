@@ -1,0 +1,7 @@
+_BASE_: [
+  './_base_/models/faster_rcnn_r50.yml',
+  './_base_/optimizers/rcnn_1x.yml',
+  './_base_/datasets/coco.yml',
+  './_base_/readers/faster_reader.yml',
+  './_base_/runtime.yml',
+]
