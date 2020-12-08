@@ -90,12 +90,14 @@ def load_weight(model, weight, optimizer=None):
     param_state_dict = paddle.load(pdparam_path)
     model.set_dict(param_state_dict)
 
-    last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
+        last_epoch = 0
         optim_state_dict = paddle.load(path + '.pdopt')
-        last_epoch = optim_state_dict.pop('last_epoch')
+        if 'last_epoch' in optim_state_dict:
+            last_epoch = optim_state_dict.pop('last_epoch')
         optimizer.set_state_dict(optim_state_dict)
-    return last_epoch
+        return last_epoch
+    return
 
 
 def load_pretrain_weight(model,
