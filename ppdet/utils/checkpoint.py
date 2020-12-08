@@ -92,6 +92,7 @@ def load_weight(model, weight, optimizer=None):
 
     if optimizer is not None and os.path.exists(path + '.pdopt'):
         optim_state_dict = paddle.load(path + '.pdopt')
+        # to slove resume bug, will it be fixed in paddle 2.0
         for key in optimizer.state_dict().keys():
             if not key in optim_state_dict.keys():
                 optim_state_dict[key] = optimizer.state_dict()[key]
