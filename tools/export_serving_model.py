@@ -28,10 +28,11 @@ from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_config, check_version, enable_static_mode
+from ppdet.utils.export_utils import prune_feed_vars
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
-from export_model import parse_reader, dump_infer_config, prune_feed_vars
+from export_model import dump_infer_config
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
