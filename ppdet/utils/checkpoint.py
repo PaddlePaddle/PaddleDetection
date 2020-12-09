@@ -91,12 +91,16 @@ def load_weight(model, weight, optimizer=None):
     model.set_dict(param_state_dict)
 
     if optimizer is not None and os.path.exists(path + '.pdopt'):
+        last_epoch = 0
         optim_state_dict = paddle.load(path + '.pdopt')
         # to slove resume bug, will it be fixed in paddle 2.0
         for key in optimizer.state_dict().keys():
             if not key in optim_state_dict.keys():
                 optim_state_dict[key] = optimizer.state_dict()[key]
+        if 'last_epoch' in optim_state_dict:
+            last_epoch = optim_state_dict.pop('last_epoch')
         optimizer.set_state_dict(optim_state_dict)
+        return last_epoch
     return
 
 
@@ -143,10 +147,12 @@ def load_pretrain_weight(model,
     return
 
 
-def save_model(model, optimizer, save_dir, save_name):
+def save_model(model, optimizer, save_dir, save_name, last_epoch):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, save_name)
     paddle.save(model.state_dict(), save_path + ".pdparams")
-    paddle.save(optimizer.state_dict(), save_path + ".pdopt")
+    state_dict = optimizer.state_dict()
+    state_dict['last_epoch'] = last_epoch
+    paddle.save(state_dict, save_path + ".pdopt")
     logger.info("Save checkpoint: {}".format(save_dir))
