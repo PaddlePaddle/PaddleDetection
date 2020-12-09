@@ -126,7 +126,7 @@ class COCODataSet(DetDataset):
                 difficult = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
 
-                gt_poly_empty = True
+                has_segmentation = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
                     gt_class[i][0] = catid2clsid[catid]
@@ -137,9 +137,9 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = [[0.0, 0.0], ]
                     elif 'segmentation' in box:
                         gt_poly[i] = box['segmentation']
-                        gt_poly_empty = False
+                        has_segmentation = True
 
-                if gt_poly_empty:
+                if has_segmentation and any(gt_poly):
                     continue
 
                 coco_rec.update({
