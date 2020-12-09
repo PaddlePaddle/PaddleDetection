@@ -16,18 +16,27 @@ class BaseArch(nn.Layer):
     def __init__(self):
         super(BaseArch, self).__init__()
 
-    def forward(self, data, input_def, mode, input_tensor=None):
+    def forward(self,
+                input_tensor=None,
+                data=None,
+                input_def=None,
+                mode='infer',
+                export=True):
         if input_tensor is None:
+            assert data is not None and input_def is not None
             self.inputs = self.build_inputs(data, input_def)
         else:
             self.inputs = input_tensor
+
         self.inputs['mode'] = mode
         self.model_arch()
 
         if mode == 'train':
             out = self.get_loss()
-        elif mode == 'infer':
-            out = self.get_pred(input_tensor is None)
+        elif mode == 'infer' and not export:
+            out = self.get_pred()
+        elif mode == 'infer' and export:
+            out = self.get_export()
         else:
             out = None
             raise "Now, only support train and infer mode!"
@@ -47,6 +56,3 @@ class BaseArch(nn.Layer):
 
     def get_pred(self, ):
         raise NotImplementedError("Should implement get_pred method!")
-
-    def get_export_model(self, input_tensor):
-        return self.forward(None, None, 'infer', input_tensor)

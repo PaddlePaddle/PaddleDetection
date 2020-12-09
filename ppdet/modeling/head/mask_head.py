@@ -159,12 +159,19 @@ class MaskHead(Layer):
                      bbox_head_feat_func=None):
         bbox, bbox_num = bboxes
         if bbox.shape[0] == 0:
-            mask_head_out = bbox
+            mask_head_out = paddle.full([1, 6], -1)
+            return mask_head_out
         else:
-            scale_factor_list = []
+            # TODO(guanghua): Remove fluid dependency
+            scale_factor_list = paddle.fluid.layers.create_array('float32')
+            num_count = 0
             for idx, num in enumerate(bbox_num):
                 for n in range(num):
-                    scale_factor_list.append(scale_factor[idx, 0])
+                    paddle.fluid.layers.array_write(
+                        x=scale_factor[idx, 0],
+                        i=paddle.to_tensor(num_count),
+                        array=scale_factor_list)
+                    num_count += 1
             scale_factor_list = paddle.cast(
                 paddle.concat(scale_factor_list), 'float32')
             scale_factor_list = paddle.reshape(scale_factor_list, shape=[-1, 1])
@@ -181,7 +188,7 @@ class MaskHead(Layer):
                 mode='infer')
             mask_logit = self.mask_fcn_logits[stage](mask_feat)
             mask_head_out = F.sigmoid(mask_logit)
-        return mask_head_out
+            return mask_head_out
 
     def forward(self,
                 inputs,

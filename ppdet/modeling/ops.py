@@ -29,10 +29,19 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool', 'roi_align', 'prior_box', 'anchor_generator',
-    'generate_proposals', 'iou_similarity', 'box_coder', 'yolo_box',
-    'multiclass_nms', 'distribute_fpn_proposals', 'collect_fpn_proposals',
-    'matrix_nms', 'batch_norm'
+    'roi_pool',
+    'roi_align',
+    'prior_box',
+    'anchor_generator',
+    'generate_proposals',
+    'iou_similarity',
+    'box_coder',
+    'yolo_box',
+    'multiclass_nms',
+    'distribute_fpn_proposals',
+    'collect_fpn_proposals',
+    'matrix_nms',
+    'batch_norm',
 ]
 
 
@@ -51,6 +60,7 @@ def batch_norm(ch, norm_type='bn', name=None):
             name=bn_name + '.offset', regularizer=L2Decay(0.)))
 
 
+@paddle.jit.not_to_static
 def roi_pool(input,
              rois,
              output_size,
@@ -123,32 +133,34 @@ def roi_pool(input,
             "pooled_width", pooled_width, "spatial_scale", spatial_scale)
         return pool_out, argmaxes
 
-    check_variable_and_dtype(input, 'input', ['float32'], 'roi_pool')
-    check_variable_and_dtype(rois, 'rois', ['float32'], 'roi_pool')
-    helper = LayerHelper('roi_pool', **locals())
-    dtype = helper.input_dtype()
-    pool_out = helper.create_variable_for_type_inference(dtype)
-    argmaxes = helper.create_variable_for_type_inference(dtype='int32')
+    else:
+        check_variable_and_dtype(input, 'input', ['float32'], 'roi_pool')
+        check_variable_and_dtype(rois, 'rois', ['float32'], 'roi_pool')
+        helper = LayerHelper('roi_pool', **locals())
+        dtype = helper.input_dtype()
+        pool_out = helper.create_variable_for_type_inference(dtype)
+        argmaxes = helper.create_variable_for_type_inference(dtype='int32')
 
-    inputs = {
-        "X": input,
-        "ROIs": rois,
-    }
-    if rois_num is not None:
-        inputs['RoisNum'] = rois_num
-    helper.append_op(
-        type="roi_pool",
-        inputs=inputs,
-        outputs={"Out": pool_out,
-                 "Argmax": argmaxes},
-        attrs={
-            "pooled_height": pooled_height,
-            "pooled_width": pooled_width,
-            "spatial_scale": spatial_scale
-        })
-    return pool_out, argmaxes
+        inputs = {
+            "X": input,
+            "ROIs": rois,
+        }
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+        helper.append_op(
+            type="roi_pool",
+            inputs=inputs,
+            outputs={"Out": pool_out,
+                     "Argmax": argmaxes},
+            attrs={
+                "pooled_height": pooled_height,
+                "pooled_width": pooled_width,
+                "spatial_scale": spatial_scale
+            })
+        return pool_out, argmaxes
 
 
+@paddle.jit.not_to_static
 def roi_align(input,
               rois,
               output_size,
@@ -228,31 +240,34 @@ def roi_align(input,
             "sampling_ratio", sampling_ratio)
         return align_out
 
-    check_variable_and_dtype(input, 'input', ['float32', 'float64'],
-                             'roi_align')
-    check_variable_and_dtype(rois, 'rois', ['float32', 'float64'], 'roi_align')
-    helper = LayerHelper('roi_align', **locals())
-    dtype = helper.input_dtype()
-    align_out = helper.create_variable_for_type_inference(dtype)
-    inputs = {
-        "X": input,
-        "ROIs": rois,
-    }
-    if rois_num is not None:
-        inputs['RoisNum'] = rois_num
-    helper.append_op(
-        type="roi_align",
-        inputs=inputs,
-        outputs={"Out": align_out},
-        attrs={
-            "pooled_height": pooled_height,
-            "pooled_width": pooled_width,
-            "spatial_scale": spatial_scale,
-            "sampling_ratio": sampling_ratio
-        })
-    return align_out
+    else:
+        check_variable_and_dtype(input, 'input', ['float32', 'float64'],
+                                 'roi_align')
+        check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
+                                 'roi_align')
+        helper = LayerHelper('roi_align', **locals())
+        dtype = helper.input_dtype()
+        align_out = helper.create_variable_for_type_inference(dtype)
+        inputs = {
+            "X": input,
+            "ROIs": rois,
+        }
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+        helper.append_op(
+            type="roi_align",
+            inputs=inputs,
+            outputs={"Out": align_out},
+            attrs={
+                "pooled_height": pooled_height,
+                "pooled_width": pooled_width,
+                "spatial_scale": spatial_scale,
+                "sampling_ratio": sampling_ratio
+            })
+        return align_out
 
 
+@paddle.jit.not_to_static
 def iou_similarity(x, y, box_normalized=True, name=None):
     """
     Computes intersection-over-union (IOU) between two box lists.
@@ -303,19 +318,20 @@ def iou_similarity(x, y, box_normalized=True, name=None):
     if in_dygraph_mode():
         out = core.ops.iou_similarity(x, y, 'box_normalized', box_normalized)
         return out
+    else:
+        helper = LayerHelper("iou_similarity", **locals())
+        out = helper.create_variable_for_type_inference(dtype=x.dtype)
 
-    helper = LayerHelper("iou_similarity", **locals())
-    out = helper.create_variable_for_type_inference(dtype=x.dtype)
-
-    helper.append_op(
-        type="iou_similarity",
-        inputs={"X": x,
-                "Y": y},
-        attrs={"box_normalized": box_normalized},
-        outputs={"Out": out})
-    return out
+        helper.append_op(
+            type="iou_similarity",
+            inputs={"X": x,
+                    "Y": y},
+            attrs={"box_normalized": box_normalized},
+            outputs={"Out": out})
+        return out
 
 
+@paddle.jit.not_to_static
 def collect_fpn_proposals(multi_rois,
                           multi_scores,
                           min_level,
@@ -398,34 +414,35 @@ def collect_fpn_proposals(multi_rois,
         attrs = ('post_nms_topN', post_nms_top_n)
         output_rois, rois_num = core.ops.collect_fpn_proposals(
             input_rois, input_scores, rois_num_per_level, *attrs)
-
-    helper = LayerHelper('collect_fpn_proposals', **locals())
-    dtype = helper.input_dtype('multi_rois')
-    check_dtype(dtype, 'multi_rois', ['float32', 'float64'],
-                'collect_fpn_proposals')
-    output_rois = helper.create_variable_for_type_inference(dtype)
-    output_rois.stop_gradient = True
-
-    inputs = {
-        'MultiLevelRois': input_rois,
-        'MultiLevelScores': input_scores,
-    }
-    outputs = {'FpnRois': output_rois}
-    if rois_num_per_level is not None:
-        inputs['MultiLevelRoIsNum'] = rois_num_per_level
-        rois_num = helper.create_variable_for_type_inference(dtype='int32')
-        rois_num.stop_gradient = True
-        outputs['RoisNum'] = rois_num
-    helper.append_op(
-        type='collect_fpn_proposals',
-        inputs=inputs,
-        outputs=outputs,
-        attrs={'post_nms_topN': post_nms_top_n})
-    if rois_num_per_level is not None:
         return output_rois, rois_num
-    return output_rois
+
+    else:
+        helper = LayerHelper('collect_fpn_proposals', **locals())
+        dtype = helper.input_dtype('multi_rois')
+        check_dtype(dtype, 'multi_rois', ['float32', 'float64'],
+                    'collect_fpn_proposals')
+        output_rois = helper.create_variable_for_type_inference(dtype)
+        output_rois.stop_gradient = True
+
+        inputs = {
+            'MultiLevelRois': input_rois,
+            'MultiLevelScores': input_scores,
+        }
+        outputs = {'FpnRois': output_rois}
+        if rois_num_per_level is not None:
+            inputs['MultiLevelRoIsNum'] = rois_num_per_level
+            rois_num = helper.create_variable_for_type_inference(dtype='int32')
+            rois_num.stop_gradient = True
+            outputs['RoisNum'] = rois_num
+        helper.append_op(
+            type='collect_fpn_proposals',
+            inputs=inputs,
+            outputs=outputs,
+            attrs={'post_nms_topN': post_nms_top_n})
+        return output_rois, rois_num
 
 
+@paddle.jit.not_to_static
 def distribute_fpn_proposals(fpn_rois,
                              min_level,
                              max_level,
@@ -510,45 +527,46 @@ def distribute_fpn_proposals(fpn_rois,
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
         return multi_rois, restore_ind, rois_num_per_level
 
-    check_variable_and_dtype(fpn_rois, 'fpn_rois', ['float32', 'float64'],
-                             'distribute_fpn_proposals')
-    helper = LayerHelper('distribute_fpn_proposals', **locals())
-    dtype = helper.input_dtype('fpn_rois')
-    multi_rois = [
-        helper.create_variable_for_type_inference(dtype) for i in range(num_lvl)
-    ]
-
-    restore_ind = helper.create_variable_for_type_inference(dtype='int32')
-
-    inputs = {'FpnRois': fpn_rois}
-    outputs = {
-        'MultiFpnRois': multi_rois,
-        'RestoreIndex': restore_ind,
-    }
-
-    if rois_num is not None:
-        inputs['RoisNum'] = rois_num
-        rois_num_per_level = [
-            helper.create_variable_for_type_inference(dtype='int32')
+    else:
+        check_variable_and_dtype(fpn_rois, 'fpn_rois', ['float32', 'float64'],
+                                 'distribute_fpn_proposals')
+        helper = LayerHelper('distribute_fpn_proposals', **locals())
+        dtype = helper.input_dtype('fpn_rois')
+        multi_rois = [
+            helper.create_variable_for_type_inference(dtype)
             for i in range(num_lvl)
         ]
-        outputs['MultiLevelRoIsNum'] = rois_num_per_level
 
-    helper.append_op(
-        type='distribute_fpn_proposals',
-        inputs=inputs,
-        outputs=outputs,
-        attrs={
-            'min_level': min_level,
-            'max_level': max_level,
-            'refer_level': refer_level,
-            'refer_scale': refer_scale
-        })
-    if rois_num is not None:
+        restore_ind = helper.create_variable_for_type_inference(dtype='int32')
+
+        inputs = {'FpnRois': fpn_rois}
+        outputs = {
+            'MultiFpnRois': multi_rois,
+            'RestoreIndex': restore_ind,
+        }
+
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+            rois_num_per_level = [
+                helper.create_variable_for_type_inference(dtype='int32')
+                for i in range(num_lvl)
+            ]
+            outputs['MultiLevelRoIsNum'] = rois_num_per_level
+
+        helper.append_op(
+            type='distribute_fpn_proposals',
+            inputs=inputs,
+            outputs=outputs,
+            attrs={
+                'min_level': min_level,
+                'max_level': max_level,
+                'refer_level': refer_level,
+                'refer_scale': refer_scale
+            })
         return multi_rois, restore_ind, rois_num_per_level
-    return multi_rois, restore_ind
 
 
+@paddle.jit.not_to_static
 def yolo_box(
         x,
         origin_shape,
@@ -685,6 +703,7 @@ def yolo_box(
         return boxes, scores
 
 
+@paddle.jit.not_to_static
 def prior_box(input,
               image,
               min_sizes,
@@ -798,36 +817,37 @@ def prior_box(input,
         attrs = tuple(attrs)
         box, var = core.ops.prior_box(input, image, *attrs)
         return box, var
+    else:
+        attrs = {
+            'min_sizes': min_sizes,
+            'aspect_ratios': aspect_ratios,
+            'variances': variance,
+            'flip': flip,
+            'clip': clip,
+            'step_w': steps[0],
+            'step_h': steps[1],
+            'offset': offset,
+            'min_max_aspect_ratios_order': min_max_aspect_ratios_order
+        }
 
-    attrs = {
-        'min_sizes': min_sizes,
-        'aspect_ratios': aspect_ratios,
-        'variances': variance,
-        'flip': flip,
-        'clip': clip,
-        'step_w': steps[0],
-        'step_h': steps[1],
-        'offset': offset,
-        'min_max_aspect_ratios_order': min_max_aspect_ratios_order
-    }
+        if cur_max_sizes is not None:
+            attrs['max_sizes'] = cur_max_sizes
 
-    if cur_max_sizes is not None:
-        attrs['max_sizes'] = cur_max_sizes
-
-    box = helper.create_variable_for_type_inference(dtype)
-    var = helper.create_variable_for_type_inference(dtype)
-    helper.append_op(
-        type="prior_box",
-        inputs={"Input": input,
-                "Image": image},
-        outputs={"Boxes": box,
-                 "Variances": var},
-        attrs=attrs, )
-    box.stop_gradient = True
-    var.stop_gradient = True
-    return box, var
+        box = helper.create_variable_for_type_inference(dtype)
+        var = helper.create_variable_for_type_inference(dtype)
+        helper.append_op(
+            type="prior_box",
+            inputs={"Input": input,
+                    "Image": image},
+            outputs={"Boxes": box,
+                     "Variances": var},
+            attrs=attrs, )
+        box.stop_gradient = True
+        var.stop_gradient = True
+        return box, var
 
 
+@paddle.jit.not_to_static
 def anchor_generator(input,
                      anchor_sizes=None,
                      aspect_ratios=None,
@@ -916,27 +936,29 @@ def anchor_generator(input,
         anchor, var = core.ops.anchor_generator(input, *attrs)
         return anchor, var
 
-    attrs = {
-        'anchor_sizes': anchor_sizes,
-        'aspect_ratios': aspect_ratios,
-        'variances': variance,
-        'stride': stride,
-        'offset': offset
-    }
+    else:
+        attrs = {
+            'anchor_sizes': anchor_sizes,
+            'aspect_ratios': aspect_ratios,
+            'variances': variance,
+            'stride': stride,
+            'offset': offset
+        }
 
-    anchor = helper.create_variable_for_type_inference(dtype)
-    var = helper.create_variable_for_type_inference(dtype)
-    helper.append_op(
-        type="anchor_generator",
-        inputs={"Input": input},
-        outputs={"Anchors": anchor,
-                 "Variances": var},
-        attrs=attrs, )
-    anchor.stop_gradient = True
-    var.stop_gradient = True
-    return anchor, var
+        anchor = helper.create_variable_for_type_inference(dtype)
+        var = helper.create_variable_for_type_inference(dtype)
+        helper.append_op(
+            type="anchor_generator",
+            inputs={"Input": input},
+            outputs={"Anchors": anchor,
+                     "Variances": var},
+            attrs=attrs, )
+        anchor.stop_gradient = True
+        var.stop_gradient = True
+        return anchor, var
 
 
+@paddle.jit.not_to_static
 def multiclass_nms(bboxes,
                    scores,
                    score_threshold,
@@ -1091,6 +1113,7 @@ def multiclass_nms(bboxes,
         return output, nms_rois_num, index
 
 
+@paddle.jit.not_to_static
 def matrix_nms(bboxes,
                scores,
                score_threshold,
@@ -1196,41 +1219,42 @@ def matrix_nms(bboxes,
         if return_rois_num:
             return out, rois_num
         return out
-
-    helper = LayerHelper('matrix_nms', **locals())
-    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-    index = helper.create_variable_for_type_inference(dtype='int')
-    outputs = {'Out': output, 'Index': index}
-    if return_rois_num:
-        rois_num = helper.create_variable_for_type_inference(dtype='int')
-        outputs['RoisNum'] = rois_num
-
-    helper.append_op(
-        type="matrix_nms",
-        inputs={'BBoxes': bboxes,
-                'Scores': scores},
-        attrs={
-            'background_label': background_label,
-            'score_threshold': score_threshold,
-            'post_threshold': post_threshold,
-            'nms_top_k': nms_top_k,
-            'gaussian_sigma': gaussian_sigma,
-            'use_gaussian': use_gaussian,
-            'keep_top_k': keep_top_k,
-            'normalized': normalized
-        },
-        outputs=outputs)
-    output.stop_gradient = True
-
-    if return_index:
+    else:
+        helper = LayerHelper('matrix_nms', **locals())
+        output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+        index = helper.create_variable_for_type_inference(dtype='int')
+        outputs = {'Out': output, 'Index': index}
         if return_rois_num:
-            return output, index, rois_num
-        return output, index
-    if return_rois_num:
-        return output, rois_num
-    return output
+            rois_num = helper.create_variable_for_type_inference(dtype='int')
+            outputs['RoisNum'] = rois_num
+
+        helper.append_op(
+            type="matrix_nms",
+            inputs={'BBoxes': bboxes,
+                    'Scores': scores},
+            attrs={
+                'background_label': background_label,
+                'score_threshold': score_threshold,
+                'post_threshold': post_threshold,
+                'nms_top_k': nms_top_k,
+                'gaussian_sigma': gaussian_sigma,
+                'use_gaussian': use_gaussian,
+                'keep_top_k': keep_top_k,
+                'normalized': normalized
+            },
+            outputs=outputs)
+        output.stop_gradient = True
+
+        if return_index:
+            if return_rois_num:
+                return output, index, rois_num
+            return output, index
+        if return_rois_num:
+            return output, rois_num
+        return output
 
 
+@paddle.jit.not_to_static
 def box_coder(prior_box,
               prior_box_var,
               target_box,
@@ -1357,32 +1381,34 @@ def box_coder(prior_box,
             raise TypeError(
                 "Input variance of box_coder must be Variable or list")
         return output_box
-
-    helper = LayerHelper("box_coder", **locals())
-
-    output_box = helper.create_variable_for_type_inference(
-        dtype=prior_box.dtype)
-
-    inputs = {"PriorBox": prior_box, "TargetBox": target_box}
-    attrs = {
-        "code_type": code_type,
-        "box_normalized": box_normalized,
-        "axis": axis
-    }
-    if isinstance(prior_box_var, Variable):
-        inputs['PriorBoxVar'] = prior_box_var
-    elif isinstance(prior_box_var, list):
-        attrs['variance'] = prior_box_var
     else:
-        raise TypeError("Input variance of box_coder must be Variable or list")
-    helper.append_op(
-        type="box_coder",
-        inputs=inputs,
-        attrs=attrs,
-        outputs={"OutputBox": output_box})
-    return output_box
+        helper = LayerHelper("box_coder", **locals())
+
+        output_box = helper.create_variable_for_type_inference(
+            dtype=prior_box.dtype)
+
+        inputs = {"PriorBox": prior_box, "TargetBox": target_box}
+        attrs = {
+            "code_type": code_type,
+            "box_normalized": box_normalized,
+            "axis": axis
+        }
+        if isinstance(prior_box_var, Variable):
+            inputs['PriorBoxVar'] = prior_box_var
+        elif isinstance(prior_box_var, list):
+            attrs['variance'] = prior_box_var
+        else:
+            raise TypeError(
+                "Input variance of box_coder must be Variable or list")
+        helper.append_op(
+            type="box_coder",
+            inputs=inputs,
+            attrs=attrs,
+            outputs={"OutputBox": output_box})
+        return output_box
 
 
+@paddle.jit.not_to_static
 def generate_proposals(scores,
                        bbox_deltas,
                        im_shape,
@@ -1472,56 +1498,55 @@ def generate_proposals(scores,
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
         return rpn_rois, rpn_roi_probs, rpn_rois_num
 
-    helper = LayerHelper('generate_proposals_v2', **locals())
-
-    check_variable_and_dtype(scores, 'scores', ['float32'],
-                             'generate_proposals_v2')
-    check_variable_and_dtype(bbox_deltas, 'bbox_deltas', ['float32'],
-                             'generate_proposals_v2')
-    check_variable_and_dtype(im_shape, 'im_shape', ['float32', 'float64'],
-                             'generate_proposals_v2')
-    check_variable_and_dtype(anchors, 'anchors', ['float32'],
-                             'generate_proposals_v2')
-    check_variable_and_dtype(variances, 'variances', ['float32'],
-                             'generate_proposals_v2')
-
-    rpn_rois = helper.create_variable_for_type_inference(
-        dtype=bbox_deltas.dtype)
-    rpn_roi_probs = helper.create_variable_for_type_inference(
-        dtype=scores.dtype)
-    outputs = {
-        'RpnRois': rpn_rois,
-        'RpnRoiProbs': rpn_roi_probs,
-    }
-    if return_rois_num:
-        rpn_rois_num = helper.create_variable_for_type_inference(dtype='int32')
-        rpn_rois_num.stop_gradient = True
-        outputs['RpnRoisNum'] = rpn_rois_num
-
-    helper.append_op(
-        type="generate_proposals_v2",
-        inputs={
-            'Scores': scores,
-            'BboxDeltas': bbox_deltas,
-            'ImShape': im_shape,
-            'Anchors': anchors,
-            'Variances': variances
-        },
-        attrs={
-            'pre_nms_topN': pre_nms_top_n,
-            'post_nms_topN': post_nms_top_n,
-            'nms_thresh': nms_thresh,
-            'min_size': min_size,
-            'eta': eta
-        },
-        outputs=outputs)
-    rpn_rois.stop_gradient = True
-    rpn_roi_probs.stop_gradient = True
-
-    if return_rois_num:
-        return rpn_rois, rpn_roi_probs, rpn_rois_num
     else:
-        return rpn_rois, rpn_roi_probs
+        helper = LayerHelper('generate_proposals_v2', **locals())
+
+        check_variable_and_dtype(scores, 'scores', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(bbox_deltas, 'bbox_deltas', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(im_shape, 'im_shape', ['float32', 'float64'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(anchors, 'anchors', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(variances, 'variances', ['float32'],
+                                 'generate_proposals_v2')
+
+        rpn_rois = helper.create_variable_for_type_inference(
+            dtype=bbox_deltas.dtype)
+        rpn_roi_probs = helper.create_variable_for_type_inference(
+            dtype=scores.dtype)
+        outputs = {
+            'RpnRois': rpn_rois,
+            'RpnRoiProbs': rpn_roi_probs,
+        }
+        if return_rois_num:
+            rpn_rois_num = helper.create_variable_for_type_inference(
+                dtype='int32')
+            rpn_rois_num.stop_gradient = True
+            outputs['RpnRoisNum'] = rpn_rois_num
+
+        helper.append_op(
+            type="generate_proposals_v2",
+            inputs={
+                'Scores': scores,
+                'BboxDeltas': bbox_deltas,
+                'ImShape': im_shape,
+                'Anchors': anchors,
+                'Variances': variances
+            },
+            attrs={
+                'pre_nms_topN': pre_nms_top_n,
+                'post_nms_topN': post_nms_top_n,
+                'nms_thresh': nms_thresh,
+                'min_size': min_size,
+                'eta': eta
+            },
+            outputs=outputs)
+        rpn_rois.stop_gradient = True
+        rpn_roi_probs.stop_gradient = True
+
+        return rpn_rois, rpn_roi_probs, rpn_rois_num
 
 
 def sigmoid_cross_entropy_with_logits(input,

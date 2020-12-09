@@ -80,7 +80,8 @@ class FPN(Layer):
         for lvl in range(self.min_level, self.max_level):
             laterals.append(self.lateral_convs[lvl](body_feats[lvl]))
 
-        for lvl in range(self.max_level - 1, self.min_level, -1):
+        for i in range(self.min_level + 1, self.max_level):
+            lvl = self.max_level + self.min_level - i
             upsample = F.interpolate(
                 laterals[lvl],
                 scale_factor=2.,

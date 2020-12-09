@@ -109,7 +109,8 @@ def dump_infer_config(config, path, image_shape):
         os._exit(0)
 
     if 'Mask' in config['architecture']:
-        infer_cfg['mask_resolution'] = config['Mask']['mask_resolution']
+        infer_cfg['mask_resolution'] = config['MaskPostProcess'][
+            'mask_resolution']
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],

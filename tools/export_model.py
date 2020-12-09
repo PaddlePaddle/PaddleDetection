@@ -53,63 +53,41 @@ def parse_args():
     return args
 
 
+def dygraph_to_static(model, save_dir):
+    input_spec = [{
+        "image": InputSpec(
+            shape=[None, 3, None, None], name='image'),
+        "im_shape": InputSpec(
+            shape=[None, 2], name='im_shape'),
+        "scale_factor": InputSpec(
+            shape=[None, 2], name='scale_factor')
+    }]
+
+    export_model = to_static(model, input_spec=input_spec)
+    # export config and model
+    paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
+
+
 def run(FLAGS, cfg):
 
     # Model
     main_arch = cfg.architecture
     model = create(cfg.architecture)
-    inputs_def = cfg['TestReader']['inputs_def']
-    assert 'image_shape' in inputs_def, 'image_shape must be specified.'
-    image_shape = inputs_def.get('image_shape')
-
-    assert not None in image_shape, 'image_shape should not contain None'
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    image_shape = dump_infer_config(cfg,
-                                    os.path.join(save_dir, 'infer_cfg.yml'),
-                                    image_shape)
-
-    class ExportModel(nn.Layer):
-        def __init__(self, model):
-            super(ExportModel, self).__init__()
-            self.model = model
-
-        @to_static(input_spec=[
-            {
-                'image': InputSpec(
-                    shape=[None] + image_shape, name='image')
-            },
-            {
-                'im_shape': InputSpec(
-                    shape=[None, 2], name='im_shape')
-            },
-            {
-                'scale_factor': InputSpec(
-                    shape=[None, 2], name='scale_factor')
-            },
-        ])
-        def forward(self, image, im_shape, scale_factor):
-            inputs = {}
-            inputs_tensor = [image, im_shape, scale_factor]
-            for t in inputs_tensor:
-                inputs.update(t)
-            outs = self.model.get_export_model(inputs)
-            return outs
-
-    export_model = ExportModel(model)
-    # debug for dy2static, remove later
-    #paddle.jit.set_code_level()
+    inputs_def = cfg['TestReader']['inputs_def']
+    image_shape = inputs_def.get('image_shape')
+    if image_shape == None:
+        image_shape = [3, None, None]
+    dump_infer_config(cfg, os.path.join(save_dir, 'infer_cfg.yml'), image_shape)
 
     # Init Model
-    load_weight(export_model.model, cfg.weights)
-
-    export_model.eval()
-
-    # export config and model
-    paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
+    load_weight(model, cfg.weights)
+    # save Model
+    dygraph_to_static(model, save_dir)
     logger.info('Export model to {}'.format(save_dir))
 
 

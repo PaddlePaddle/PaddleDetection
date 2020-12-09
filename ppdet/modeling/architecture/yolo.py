@@ -56,3 +56,9 @@ class YOLOv3(BaseArch):
         else:
             outs = [bbox, bbox_num]
         return outs
+
+    def get_export(self):
+        bbox, bbox_num = self.post_process(
+            self.yolo_head_outs, self.yolo_head.mask_anchors,
+            self.inputs['im_shape'], self.inputs['scale_factor'])
+        return [bbox, bbox_num]

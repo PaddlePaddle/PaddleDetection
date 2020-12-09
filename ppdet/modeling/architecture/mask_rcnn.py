@@ -145,3 +145,7 @@ class MaskRCNN(BaseArch):
         }
         output.update(mask)
         return output
+
+    def get_export(self):
+        bbox, bbox_num = self.bboxes
+        return bbox, self.mask_head_out, bbox_num
