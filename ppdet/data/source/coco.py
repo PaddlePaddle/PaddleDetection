@@ -139,7 +139,7 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
-                if has_segmentation and any(gt_poly):
+                if has_segmentation and not any(gt_poly):
                     continue
 
                 coco_rec.update({
