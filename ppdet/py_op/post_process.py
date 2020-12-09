@@ -141,7 +141,7 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
     det_res = []
     k = 0
     for i in range(len(bbox_nums)):
-        image_id = int(image_id[i][0])
+        cur_image_id = int(image_id[i][0])
         det_nums = bbox_nums[i]
         for j in range(det_nums):
             dt = bboxes[k]
@@ -152,7 +152,7 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
             h = ymax - ymin + 1
             bbox = [xmin, ymin, w, h]
             dt_res = {
-                'image_id': image_id,
+                'image_id': cur_image_id,
                 'category_id': category_id,
                 'bbox': bbox,
                 'score': score
@@ -166,7 +166,7 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
     seg_res = []
     k = 0
     for i in range(len(mask_nums)):
-        image_id = int(image_id[i][0])
+        cur_image_id = int(image_id[i][0])
         det_nums = mask_nums[i]
         for j in range(det_nums):
             dt = masks[k]
@@ -177,7 +177,7 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
                 if 'counts' in sg:
                     sg['counts'] = sg['counts'].decode("utf8")
             sg_res = {
-                'image_id': image_id,
+                'image_id': cur_image_id,
                 'category_id': cat_id,
                 'segmentation': sg,
                 'score': score
