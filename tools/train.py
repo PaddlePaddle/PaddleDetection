@@ -128,8 +128,9 @@ def run(FLAGS, cfg, place):
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
+    start_epoch = 0
     if FLAGS.weight_type == 'resume':
-        load_weight(model, cfg.pretrain_weights, optimizer)
+        start_epoch = load_weight(model, cfg.pretrain_weights, optimizer)
     else:
         load_pretrain_weight(model, cfg.pretrain_weights,
                              cfg.get('load_static_weights', False),
@@ -153,9 +154,7 @@ def run(FLAGS, cfg, place):
     start_time = time.time()
     end_time = time.time()
     # Run Train
-    start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
-    for epoch_id in range(int(cfg.epoch)):
-        cur_eid = epoch_id + start_epoch
+    for cur_eid in range(start_epoch, int(cfg.epoch)):
         train_loader.dataset.epoch = cur_eid
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
@@ -185,7 +184,7 @@ def run(FLAGS, cfg, place):
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
-                if epoch_id == 0 and iter_id == 0:
+                if cur_eid == start_epoch and iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
@@ -203,7 +202,7 @@ def run(FLAGS, cfg, place):
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
             save_dir = os.path.join(cfg.save_dir, cfg_name)
-            save_model(model, optimizer, save_dir, save_name)
+            save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
 
 
 def main():
