@@ -121,7 +121,7 @@ class MaskRCNN(BaseArch):
 
         # BBox loss
         bbox_targets = self.proposal.get_targets()
-        loss_bbox = self.bbox_head.get_loss(self.bbox_head_out, bbox_targets)
+        loss_bbox = self.bbox_head.get_loss([self.bbox_head_out], bbox_targets)
         loss.update(loss_bbox)
 
         # Mask loss
