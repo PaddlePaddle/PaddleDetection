@@ -346,7 +346,8 @@ class Reader(object):
                     #   'drop this sample'.format(
                     #    sample['im_file'], sample['gt_bbox']))
                     continue
-            if self._drop_empty and self._fields and 'gt_poly' in sample:
+            has_mask = 'gt_mask' in self._fields or 'gt_segm' in self._fields
+            if self._drop_empty and self._fields and has_mask:
                 if _has_empty(_segm(sample)):
                     #logger.warn('gt_mask is empty or not valid in {}'.format(
                     #    sample['im_file']))
