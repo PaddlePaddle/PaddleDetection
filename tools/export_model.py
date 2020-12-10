@@ -30,7 +30,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.export_utils import save_infer_model, dump_infer_config
-from ppdet.utils.check import check_config, check_version, check_py_func
+from ppdet.utils.check import check_config, check_version, check_py_func, enable_static_mode
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -72,7 +72,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",

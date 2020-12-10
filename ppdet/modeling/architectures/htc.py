@@ -26,6 +26,7 @@ from paddle.fluid.initializer import MSRA
 from paddle.fluid.regularizer import L2Decay
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 
 from .input_helper import multiscale_def
 
@@ -70,6 +71,7 @@ class HybridTaskCascade(object):
                  rpn_only=False,
                  fpn='FPN'):
         super(HybridTaskCascade, self).__init__()
+        check_version('2.0.0-rc0')
         assert fpn is not None, "HTC requires FPN"
         self.backbone = backbone
         self.fpn = fpn
@@ -467,5 +469,7 @@ class HybridTaskCascade(object):
             return self.build_multi_scale(feed_vars, mask_branch)
         return self.build(feed_vars, 'test')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')

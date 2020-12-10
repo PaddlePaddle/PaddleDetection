@@ -15,7 +15,9 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
-
+- 2020.11.20: 发布release/0.5版本,详情请参考[版本更新文档](docs/CHANGELOG.md)。
+- 2020.11.10: 添加实例分割模型[SOLOv2](configs/solov2)，在Tesla V100上达到38.6 FPS, COCO-val数据集上mask ap达到38.8，预测速度提高24%，mAP提高2.4个百分点。
+- 2020.10.30: PP-YOLO支持矩形图像输入，并新增PACT模型量化策略。
 - 2020.09.30: 发布[移动端检测demo](deploy/android_demo)，可直接扫码安装体验。
 - 2020.09.21-27: 【目标检测7日打卡课】手把手教你从入门到进阶，深入了解目标检测算法的前世今生。立即加入课程QQ交流群(1136406895)一起学习吧 :)
 - 2020.07.24: 发布**产业最实用**目标检测模型 [PP-YOLO](https://arxiv.org/abs/2007.12099) ，深入考虑产业应用对精度速度的双重面诉求，COCO数据集精度45.2%(最新45.9%)，Tesla V100预测速度72.9 FPS，详细信息见[文档](configs/ppyolo/README_cn.md)。
@@ -197,7 +199,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - 参数配置
   - [配置模块设计和介绍](docs/advanced_tutorials/config_doc/CONFIG_cn.md)
   - [RCNN参数说明](docs/advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)
-  - [YOLOv3参数说明]()
+  - [YOLOv3参数说明](docs/advanced_tutorials/config_doc/yolov3_mobilenet_v1.md)
 - 迁移学习
     - [如何加载预训练](docs/advanced_tutorials/TRANSFER_LEARNING_cn.md)
 - 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
@@ -224,6 +226,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [PP-YOLO模型](configs/ppyolo/README_cn.md)
     - [676类目标检测](docs/featured_model/LARGE_SCALE_DET_MODEL.md)
     - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
+- 通用实例分割：
+    - [SOLOv2](configs/solov2/README.md)
 - 垂类领域
     - [人脸检测](docs/featured_model/FACE_DETECTION.md)
     - [行人检测](docs/featured_model/CONTRIB_cn.md)
@@ -234,7 +238,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 
 ## 版本更新
-v0.4.0版本已经在`07/2020`发布，增加PP-YOLO, TTFNet, HTC, ACFPN等多个模型，新增BlazeFace人脸关键点检测模型，新增移动端SSDLite系列优化模型，新增GridMask，RandomErasing数据增强方法，新增Matrix NMS和EMA训练，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v0.5.0版本已经在`11/2020`发布，增加SOLOv2等多个模型，新增Android移动端Demo，新增PACT量化策略，新增目标检测全流程和Jetson平台部署等教程，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 许可证书
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。

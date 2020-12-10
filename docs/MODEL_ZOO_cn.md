@@ -194,7 +194,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | MobileNet_v3 large | 320 | 64 | Cosine decay(40w) | - | 23.3 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large.yml) |
 | MobileNet_v3 small w/ FPN | 320 | 64 | Cosine decay(40w) | - | 18.9 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_small_fpn.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_small_fpn.yml) |
 | MobileNet_v3 large w/ FPN | 320 | 64 | Cosine decay(40w) | - | 24.3 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_mobilenet_v3_large_fpn.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_mobilenet_v3_large_fpn.yml) |
-| GhostNet | 320 | 64 | Cosine decay(40w) | - | 23.3 | [下载链接](htts://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_ghostnet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_ghostnet.yml) |
+| GhostNet | 320 | 64 | Cosine decay(40w) | - | 23.3 | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/mobile_models/ssdlite_ghostnet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ssd/ssdlite_ghostnet.yml) |
 
 **注意事项:** SSDLite模型使用学习率余弦衰减策略在8卡GPU下总batch size为512。
 

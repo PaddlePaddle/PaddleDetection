@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import argparse
 import time
 import yaml
@@ -26,6 +35,7 @@ import paddle
 import paddle.fluid as fluid
 from preprocess import preprocess, Resize, Normalize, Permute, PadStride
 from visualize import visualize_box_mask
+from ppdet.utils.check import enable_static_mode
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -331,7 +341,7 @@ class Config():
     def print_config(self):
         print('-----------  Model Configuration -----------')
         print('%s: %s' % ('Model Arch', self.arch))
-        print('%s: %s' % ('Use Padddle Executor', self.use_python_inference))
+        print('%s: %s' % ('Use Paddle Executor', self.use_python_inference))
         print('%s: ' % ('Transform Order'))
         for op_info in self.preprocess_infos:
             print('--%s: %s' % ('transform op', op_info['type']))
@@ -512,7 +522,7 @@ def main():
 
 
 if __name__ == '__main__':
-    paddle.enable_static()
+    enable_static_mode()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",
