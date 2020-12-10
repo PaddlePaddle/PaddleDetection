@@ -36,7 +36,6 @@ class Anchor(object):
 
             anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
             var = fluid.layers.reshape(var, shape=(-1, 4))
-
             rpn_score_list.append(rpn_score)
             rpn_delta_list.append(rpn_delta)
             anchor_list.append(anchor)

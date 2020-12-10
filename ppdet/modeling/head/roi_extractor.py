@@ -36,7 +36,7 @@ class RoIAlign(object):
 
     def __call__(self, feats, rois, spatial_scale):
         roi, rois_num = rois
-        cur_l = 0
+
         if self.start_level == self.end_level:
             rois_feat = ops.roi_align(
                 feats[self.start_level],
@@ -55,7 +55,6 @@ class RoIAlign(object):
             self.canconical_level,
             self.canonical_size,
             rois_num=rois_num)
-
         rois_feat_list = []
         for lvl in range(self.start_level, self.end_level + 1):
             roi_feat = ops.roi_align(

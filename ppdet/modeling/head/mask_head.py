@@ -90,8 +90,9 @@ class MaskFeat(Layer):
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)
-        if bbox_head_feat_func is not None and mode == 'infer':
+        if self.share_bbox_feat and bbox_head_feat_func is not None and mode == 'infer':
             rois_feat = bbox_head_feat_func(rois_feat)
+
         # upsample 
         mask_feat = self.upsample_module[stage](rois_feat)
         return mask_feat

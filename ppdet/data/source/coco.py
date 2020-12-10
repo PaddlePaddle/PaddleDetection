@@ -114,6 +114,7 @@ class COCODataSet(DetDataset):
                             'Found an invalid bbox in annotations: im_id: {}, '
                             'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
                                 img_id, float(inst['area']), x1, y1, x2, y2))
+
                 num_bbox = len(bboxes)
                 if num_bbox <= 0:
                     continue
@@ -125,6 +126,7 @@ class COCODataSet(DetDataset):
                 difficult = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
 
+                has_segmentation = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
                     gt_class[i][0] = catid2clsid[catid]
@@ -135,8 +137,9 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = [[0.0, 0.0], ]
                     elif 'segmentation' in box:
                         gt_poly[i] = box['segmentation']
+                        has_segmentation = True
 
-                if not any(gt_poly):
+                if has_segmentation and not any(gt_poly):
                     continue
 
                 coco_rec.update({
