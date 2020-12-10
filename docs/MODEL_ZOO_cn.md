@@ -26,7 +26,7 @@
 Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型均通过标准的Imagenet-1k数据集训练得到。[下载链接](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/image_classification#supported-models-and-performances)
 
 - 注：ResNet50模型通过余弦学习率调整策略训练得到。[ResNet50下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_pretrained.tar),
- [ResNet50_vd下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_vd_pretrained.tar)
+ [ResNet50_vd下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar)
 
 ## 基线
 
@@ -34,5 +34,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 | 骨架网络             | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
 | :------------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50             | Faster         |    1    |   1x    |     ----     |  ----  |    -    | [下载链接]() | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_1x_coco.yml) |
-| ResNet50-FPN         | Faster         |    1    |   1x    |     ----     |  37.0  |    -    | [下载链接]() | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_fpn_1x.yml) |
+| ResNet50             | Faster         |    1    |   1x    |     ----     |  35.1  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_1x_coco.yml) |
+| ResNet50-FPN         | Faster         |    1    |   1x    |     ----     |  37.0  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_fpn_1x_coco.yml) |
+| ResNet50             | Mask         |    1    |   1x    |     ----     |  36.4  |    31.9    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_1x_coco.yml) |
+| ResNet50-FPN         | Mask         |    1    |   1x    |     ----     |  38.3  |    34.5    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_fpn_1x_coco.yml) |
+| ResNet50-FPN         | Cascade Faster         |    1    |   1x    |     ----     |  41.1  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_faster_rcnn_r50_fpn_1x_coco.yml) |
+| ResNet50-FPN         | Cascade Mask         |    1    |   1x    |     ----     |  41.6  |    35.3    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_mask_rcnn_r50_fpn_1x_coco.yml) |
+| DarkNet53         | YOLOv3         |    1    |   270e    |     ----     |  39.0  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
