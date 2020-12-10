@@ -4,12 +4,13 @@ TrainReader:
     fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   sample_transforms:
   - DecodeImage: {to_rgb: true}
+  # check
   - RandomFlipImage: {prob: 0.5}
   - NormalizeImage: {is_channel_first: false, is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - ResizeImage: {target_size: 800, max_size: 1333, interp: 1, use_cv2: true}
   - Permute: {to_bgr: false, channel_first: true}
   batch_transforms:
-  - PadBatch: {pad_to_stride: -1, use_padded_im_info: false, pad_gt: true}
+  - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: true}
   batch_size: 1
   shuffle: true
   drop_last: true
@@ -24,7 +25,7 @@ EvalReader:
   - ResizeOp: { interp: 1, target_size: [ 800, 1333 ] }
   - PermuteOp: { }
   batch_transforms:
-  - PadBatchOp: { pad_to_stride: -1, pad_gt: false }
+  - PadBatchOp: { pad_to_stride: 32, pad_gt: false }
   batch_size: 1
   shuffle: false
   drop_last: false
@@ -33,14 +34,14 @@ EvalReader:
 
 TestReader:
   inputs_def:
-    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
+    fields:  ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
   - DecodeOp: { }
   - NormalizeImageOp: { is_scale: true, mean: [ 0.485,0.456,0.406 ], std: [ 0.229, 0.224,0.225 ] }
   - ResizeOp: { interp: 1, target_size: [ 800, 1333 ] }
   - PermuteOp: { }
   batch_transforms:
-  - PadBatchOp: { pad_to_stride: -1, pad_gt: false }
+  - PadBatchOp: { pad_to_stride: 32, pad_gt: false }
   batch_size: 1
   shuffle: false
   drop_last: false
