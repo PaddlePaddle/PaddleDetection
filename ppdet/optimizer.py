@@ -21,7 +21,7 @@ import logging
 
 import paddle
 import paddle.nn as nn
-
+from paddle import regularizer
 import paddle.optimizer as optimizer
 from paddle import cos
 

@@ -427,7 +427,7 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
         self.scale_x_y = scale_x_y
 
-    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
+    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor, *args):
         boxes_list = []
         scores_list = []
         origin_shape = im_shape / scale_factor

@@ -231,7 +231,6 @@ class PPYOLOFPN(nn.Layer):
         # parse kwargs
         self.coord_conv = kwargs.get('coord_conv', False)
         self.drop_block = kwargs.get('drop_block', False)
-        print('drop_block:', self.drop_block)
         if self.drop_block:
             self.block_size = kwargs.get('block_size', 3)
             self.keep_prob = kwargs.get('keep_prob', 0.9)

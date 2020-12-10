@@ -30,6 +30,7 @@ import datetime
 import numpy as np
 from collections import deque
 import paddle
+from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
@@ -137,13 +138,14 @@ def run(FLAGS, cfg, place):
                              cfg.get('load_static_weights', False),
                              FLAGS.weight_type)
 
-    if getattr(model.backbone, 'norm_type', None) == 'sync_bn':
-        assert cfg.use_gpu and ParallelEnv(
-        ).nranks > 1, 'you should use bn rather than sync_bn while using a single gpu'
-    # sync_bn = (getattr(model.backbone, 'norm_type', None) == 'sync_bn' and
-    #            cfg.use_gpu and ParallelEnv().nranks > 1)
+    # sync_bn = ('norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and cfg.use_gpu and ParallelEnv().nranks > 1)
     # if sync_bn:
     #     model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
+    use_ema = ('use_ema' in cfg and cfg['use_ema'])
+    if use_ema:
+        ema = ModelEMA(cfg['ema_decay'], use_thres_step=True)
+        ema.resume(model)
 
     # Parallel Model 
     if ParallelEnv().nranks > 1:
@@ -198,7 +200,13 @@ def run(FLAGS, cfg, place):
             (cur_eid + 1) == int(cfg.epoch)):
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
-            save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
+            save_dir = os.path.join(cfg.save_dir, cfg_name)
+            if use_ema:
+                ema.update(model)
+                save_model(ema.state_dict, optimizer, save_dir, save_name,
+                           cur_eid + 1)
+            else:
+                save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
         # TODO(guanghua): dygraph model to static model
         # if ParallelEnv().local_rank == 0 and (cur_eid + 1) == int(cfg.epoch)):
         #     dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'), cfg)
