@@ -20,6 +20,7 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
 from ..utils import xywh2xyxy, bbox_iou, decode_yolo
+from paddle import fluid
 
 
 @register
@@ -37,18 +38,12 @@ class IouAwareLoss(IouLoss):
         super(IouAwareLoss, self).__init__(
             loss_weight=loss_weight, giou=giou, diou=diou, ciou=ciou)
 
-    def __call__(self, ioup, pbox, gbox, anchor, downsample, scale=1.):
-        b = pbox.shape[0]
-        ioup = ioup.reshape((b, -1))
-        pbox = decode_yolo(pbox, anchor, downsample)
-        gbox = decode_yolo(gbox, anchor, downsample)
-        pbox = xywh2xyxy(pbox).reshape((b, -1, 4))
-        gbox = xywh2xyxy(gbox).reshape((b, -1, 4))
-        iou = bbox_iou(
-            pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
+    def __call__(self, ioup, pbox, gbox, anchor, downsample):
+        b, na, h, w = ioup.shape
+        iou = self._iou(pbox, gbox, anchor, downsample)
         iou.stop_gradient = True
-
-        loss_iou_aware = F.binary_cross_entropy_with_logits(
-            ioup, iou, reduction='none')
+        iou = iou.reshape((b, h, w, na)).transpose((0, 3, 1, 2))
+        ioup = F.sigmoid(ioup)
+        loss_iou_aware = fluid.layers.cross_entropy(ioup, iou, soft_label=True)
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

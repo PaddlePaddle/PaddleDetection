@@ -23,7 +23,6 @@ import paddle
 import paddle.nn as nn
 
 import paddle.optimizer as optimizer
-import paddle.fluid.regularizer as regularizer
 from paddle import cos
 
 from ppdet.core.workspace import register, serializable
@@ -168,3 +167,28 @@ class OptimizerBuilder():
                   weight_decay=regularization,
                   grad_clip=grad_clip,
                   **optim_args)
+
+
+class ModelEMA(object):
+    def __init__(self, decay, use_thres_step=False):
+        self.iters = 0
+        self.decay = decay
+        self.use_thres_step = use_thres_step
+
+    def resume(self, model, optimizer=None):
+        self.state_dict = model.state_dict()
+        if optimizer is not None:
+            self.iters = optimizer.state_dict()['LR_Scheduler']['last_epoch']
+
+    def restore(self, model):
+        model.set_dict(self.state_dict)
+
+    def update(self, model):
+        model_dict = model.state_dict()
+        decay = min(self.decay, (1 + self.iters) / (10 + self.iters))
+        for k, v in self.state_dict.items():
+            if '_mean' not in k and '_variance' not in k:
+                v = decay * v + (1 - decay) * model_dict[k]
+                v.stop_gradient = True
+                self.state_dict[k] = v
+        self.iters += 1

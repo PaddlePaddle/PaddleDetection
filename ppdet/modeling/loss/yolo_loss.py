@@ -90,18 +90,11 @@ class YOLOv3Loss(nn.Layer):
                     eps=1e-10):
         na = len(anchor)
         b, c, h, w = x.shape
-        no = c // na
-        x = x.reshape((b, na, no, h, w)).transpose((0, 3, 4, 1, 2))
-
         if self.iou_aware_loss:
-            # ioup, x, y, w, h, obj, pcls
-            ioup = x[:, :, :, :, 0:1]
-            xy, wh = x[:, :, :, :, 1:3], x[:, :, :, :, 3:5]
-            obj, pcls = x[:, :, :, :, 5:6], x[:, :, :, :, 6:]
-        else:
-            # x, y, w, h, obj, pcls
-            xy, wh = x[:, :, :, :, 0:2], x[:, :, :, :, 2:4]
-            obj, pcls = x[:, :, :, :, 4:5], x[:, :, :, :, 5:]
+            ioup, x = x[:, 0:na, :, :], x[:, na:, :, :]
+        x = x.reshape((b, na, -1, h, w)).transpose((0, 3, 4, 1, 2))
+        xy, wh = x[:, :, :, :, 0:2], x[:, :, :, :, 2:4]
+        obj, pcls = x[:, :, :, :, 4:5], x[:, :, :, :, 5:]
 
         t = t.transpose((0, 3, 4, 1, 2))
         txy, twh, tscale = t[:, :, :, :, 0:2], t[:, :, :, :, 2:4], t[:, :, :, :,
@@ -121,26 +114,28 @@ class YOLOv3Loss(nn.Layer):
         loss_wh = tscale_obj * paddle.abs(wh - twh)
         loss_wh = loss_wh.sum([1, 2, 3, 4]).mean()
 
-        loss['loss_loc'] = loss_xy + loss_wh
+        loss['loss_xy'] = loss_xy
+        loss['loss_wh'] = loss_wh
 
         x[:, :, :, :, 0:2] = scale * F.sigmoid(x[:, :, :, :, 0:2]) - 0.5 * (
             scale - 1.)
-        box, tbox = x[:, :, :, :, 0:4], t[:, :, :, :, 0:4]
         if self.iou_loss is not None:
-            # box and tbox will not change though they are modified in self.iou_loss function, so no need to clone
-            loss_iou = self.iou_loss(box, tbox, anchor, downsample, scale)
+            box, tbox = x[:, :, :, :, 0:4], t[:, :, :, :, 0:4]
+            loss_iou = self.iou_loss(box, tbox, anchor, downsample)
             loss_iou = loss_iou * tscale_obj.reshape((b, -1))
             loss_iou = loss_iou.sum(-1).mean()
             loss['loss_iou'] = loss_iou
 
         if self.iou_aware_loss is not None:
-            # box and tbox will not change though they are modified in self.iou_aware_loss function, so no need to clone
+            box, tbox = x[:, :, :, :, 0:4], t[:, :, :, :, 0:4]
             loss_iou_aware = self.iou_aware_loss(ioup, box, tbox, anchor,
-                                                 downsample, scale)
-            loss_iou_aware = loss_iou_aware * tobj.reshape((b, -1))
-            loss_iou_aware = loss_iou_aware.sum(-1).mean()
+                                                 downsample)
+            loss_iou_aware = loss_iou_aware * tobj.squeeze(-1).transpose(
+                (0, 3, 1, 2))
+            loss_iou_aware = loss_iou_aware.sum([1, 2, 3]).mean()
             loss['loss_iou_aware'] = loss_iou_aware
 
+        box = x[:, :, :, :, 0:4]
         loss_obj = self.obj_loss(box, gt_box, obj, tobj, anchor, downsample)
         loss_obj = loss_obj.sum(-1).mean()
         loss['loss_obj'] = loss_obj
@@ -156,7 +151,8 @@ class YOLOv3Loss(nn.Layer):
         yolo_losses = dict()
         for x, t, anchor, downsample in zip(inputs, gt_targets, anchors,
                                             self.downsample):
-            yolo_loss = self.yolov3_loss(x, t, gt_box, anchor, downsample)
+            yolo_loss = self.yolov3_loss(x, t, gt_box, anchor, downsample,
+                                         self.scale_x_y)
             for k, v in yolo_loss.items():
                 if k in yolo_losses:
                     yolo_losses[k] += v

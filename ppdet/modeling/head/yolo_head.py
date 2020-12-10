@@ -5,6 +5,7 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ..backbone.darknet import ConvBNLayer
+import numpy as np
 
 
 def _de_sigmoid(x, eps=1e-7):
@@ -81,19 +82,21 @@ class YOLOv3Head(nn.Layer):
     def get_outputs(self, outputs):
         if self.iou_aware:
             y = []
-            for i, x in enumerate(outputs):
+            for i, out in enumerate(outputs):
                 na = len(self.anchors[i])
+                ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
                 b, c, h, w = x.shape
                 no = c // na
                 x = x.reshape((b, na, no, h, w))
-                ioup, obj = x[:, :, 0:1, :, :], x[:, :, 5:6, :, :]
+                ioup = ioup.reshape((b, na, 1, h, w))
+                obj = x[:, :, 4:5, :, :]
                 ioup = F.sigmoid(ioup)
                 obj = F.sigmoid(obj)
                 obj_t = (obj**(1 - self.iou_aware_factor)) * (
                     ioup**self.iou_aware_factor)
                 obj_t = _de_sigmoid(obj_t)
-                loc_t = x[:, :, 1:5, :, :]
-                cls_t = x[:, :, 6:, :, :]
+                loc_t = x[:, :, :4, :, :]
+                cls_t = x[:, :, 5:, :, :]
                 y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
                 y_t = y_t.reshape((b, -1, h, w))
                 y.append(y_t)

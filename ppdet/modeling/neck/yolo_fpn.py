@@ -18,6 +18,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from ..backbone.darknet import ConvBNLayer
+import numpy as np
 
 
 class YoloDetBlock(nn.Layer):
@@ -69,8 +70,11 @@ class SPP(nn.Layer):
         for size in pool_size:
             pool = self.add_sublayer(
                 '{}.spp.pool1'.format(name),
-                nn.Pool2D(
-                    pool_size=size, pool_padding=size // 2))
+                nn.MaxPool2D(
+                    kernel_size=size,
+                    stride=1,
+                    padding=size // 2,
+                    ceil_mode=False))
             self.pool.append(pool)
         self.conv = ConvBNLayer(
             ch_in,
@@ -84,7 +88,7 @@ class SPP(nn.Layer):
         outs = [x]
         for pool in self.pool:
             outs.append(pool(x))
-        y = paddle.concat(outs, axis=0)
+        y = paddle.concat(outs, axis=1)
         y = self.conv(y)
         return y
 
@@ -97,7 +101,7 @@ class DropBlock(nn.Layer):
         self.name = name
 
     def forward(self, x):
-        if not self.training and sell.keep_prob == 1:
+        if not self.training or self.keep_prob == 1:
             return x
         else:
             gamma = (1. - self.keep_prob) / (self.block_size**2)
@@ -116,7 +120,7 @@ class CoordConv(nn.Layer):
     def __init__(self, ch_in, ch_out, filter_size, padding, norm_type, name):
         super(CoordConv, self).__init__()
         self.conv = ConvBNLayer(
-            ch_in,
+            ch_in + 2,
             ch_out,
             filter_size=filter_size,
             padding=padding,
@@ -126,12 +130,12 @@ class CoordConv(nn.Layer):
     def forward(self, x):
         b, _, h, w = x.shape
 
-        gx = paddle.arange(w, dtype=x.dtype) / (w - 1) * 2.0 - 1
-        gx = gx.unsqueeze([0, 1, 2]).expand([b, 1, h, 1])
+        gx = paddle.arange(w, dtype='float32') / (w - 1.) * 2.0 - 1.
+        gx = gx.unsqueeze([0, 1, 2]).expand([b, 1, h, w])
         gx.stop_gradient = True
 
-        gy = paddle.arange(h, dtype=x.dtype) / (h - 1) * 2.0 - 1
-        gy = gy.unsqueeze([0, 1, 3]).expand([b, 1, 1, w])
+        gy = paddle.arange(h, dtype='float32') / (h - 1.) * 2.0 - 1.
+        gy = gy.unsqueeze([0, 1, 3]).expand([b, 1, h, w])
         gy.stop_gradient = True
 
         y = paddle.concat([x, gx, gy], axis=1)
@@ -144,14 +148,12 @@ class PPYOLODetBlock(nn.Layer):
         super(PPYOLODetBlock, self).__init__()
         self.conv_module = nn.Sequential()
         for idx, (conv_name, layer, args, kwargs) in enumerate(cfg[:-1]):
-            self.conv_module.add_sublayer(
-                conv_name,
-                layer(
-                    *args, **kwargs, name='{}.{}'.format(name + conv_name,
-                                                         idx)))
+            kwargs.update(name='{}.{}'.format(name + conv_name, idx))
+            self.conv_module.add_sublayer(conv_name, layer(*args, **kwargs))
 
-        name, layer, args, kwargs = cfg[-1]
-        self.tip = layer(*args, **kwargs, name='{}.tip'.format(name))
+        conv_name, layer, args, kwargs = cfg[-1]
+        kwargs.update(name='{}.tip'.format(name + conv_name))
+        self.tip = layer(*args, **kwargs)
 
     def forward(self, inputs):
         route = self.conv_module(inputs)
@@ -218,17 +220,18 @@ class YOLOv3FPN(nn.Layer):
 class PPYOLOFPN(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self, feat_channels=[1024, 768, 384], norm_type='bn',
+    def __init__(self,
+                 feat_channels=[2048, 1280, 640],
+                 norm_type='bn',
                  **kwargs):
         super(PPYOLOFPN, self).__init__()
         assert len(feat_channels) > 0, "feat_channels length should > 0"
         self.feat_channels = feat_channels
         self.num_blocks = len(feat_channels)
-        self.yolo_blocks = []
-        self.routes = []
         # parse kwargs
         self.coord_conv = kwargs.get('coord_conv', False)
         self.drop_block = kwargs.get('drop_block', False)
+        print('drop_block:', self.drop_block)
         if self.drop_block:
             self.block_size = kwargs.get('block_size', 3)
             self.keep_prob = kwargs.get('keep_prob', 0.9)
@@ -265,25 +268,28 @@ class PPYOLOFPN(nn.Layer):
                 conf.append(dict(padding=filter_size // 2, norm_type=norm_type))
             if i == 0:
                 if self.spp:
+                    pool_size = [5, 9, 13]
                     spp_cfg = [[
-                        'spp', SPP, [channel, channel, 1], dict(
-                            pool_size=[5, 9, 13], norm_type=norm_type)
+                        'spp', SPP,
+                        [channel * (len(pool_size) + 1), channel, 1], dict(
+                            pool_size=pool_size, norm_type=norm_type)
                     ]]
                 else:
                     spp_cfg = []
                 cfg = base_cfg[0:3] + spp_cfg + base_cfg[
                     3:4] + dropblock_cfg + base_cfg[4:6]
             else:
-                cfg = base_cfg[0:2] + dropblock_cfg + dropblock_cfg[2:6]
+                cfg = base_cfg[0:2] + dropblock_cfg + base_cfg[2:6]
             name = 'yolo_block.{}'.format(i)
             yolo_block = self.add_sublayer(name, PPYOLODetBlock(cfg, name))
+            self.yolo_blocks.append(yolo_block)
             if i < self.num_blocks - 1:
                 name = 'yolo_transition.{}'.format(i)
                 route = self.add_sublayer(
                     name,
                     ConvBNLayer(
-                        ch_in=channel // (2**i),
-                        ch_out=channel // (2**(i + 1)),
+                        ch_in=channel,
+                        ch_out=channel // 2,
                         filter_size=1,
                         stride=1,
                         padding=0,

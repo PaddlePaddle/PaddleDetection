@@ -6,7 +6,7 @@ TrainReader:
   sample_transforms:
     - DecodeOp: {}
     - MixupOp: {alpha: 1.5, beta: 1.5}
-    - ColorDistort: {}
+    - RandomDistortOp: {}
     - RandomExpandOp: {fill_value: [123.675, 116.28, 103.53]}
     - RandomCropOp: {}
     - RandomFlipOp: {}

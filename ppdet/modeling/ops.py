@@ -17,7 +17,7 @@ import paddle.nn.functional as F
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
-from paddle.nn.initializer import Constant
+from paddle.nn.initializer import Constant, Normal
 
 from paddle.fluid.framework import Variable, in_dygraph_mode
 from paddle.fluid.layers import utils
@@ -31,19 +31,10 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'anchor_generator',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
+    'roi_pool', 'roi_align', 'prior_box', 'anchor_generator',
+    'generate_proposals', 'iou_similarity', 'box_coder', 'yolo_box',
+    'multiclass_nms', 'distribute_fpn_proposals', 'collect_fpn_proposals',
+    'matrix_nms', 'batch_norm', 'deform_conv2d'
 ]
 
 
@@ -62,286 +53,93 @@ def batch_norm(ch, norm_type='bn', name=None):
             name=bn_name + '.offset', regularizer=L2Decay(0.)))
 
 
-class DeformableConvV1(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 weight_attr=None,
-                 bias_attr=False,
-                 lr_scale=1.0,
-                 act=None,
-                 name=None):
-        super(DeformableConvV1, self).__init__()
-        self.conv = nn.Conv2D(
-            in_channels,
-            2 * kernel_size**2,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2,
-            weight_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}.conv_offset.weight'.format(name)),
-            bias_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}.conv_offset.bias'.format(name)))
-
-        if weight_attr is None:
-            weight_attr = ParamAttr(
-                name='{}.dcn.weight'.format(name), learning_rate=lr_scale)
-
-        self.dcn = DeformableConv(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2 * dilation,
-            dilation=dilation,
-            groups=groups,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr)
-
-    def forward(self, x):
-        offset = self.conv(x)
-        y = self.dcn(x, offset)
-        if act:
-            y = getattr(F, act)(y)
-        return y
-
-
-class DeformableConvV2(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 weight_attr=None,
-                 bias_attr=False,
-                 lr_scale=1.0,
-                 act=None,
-                 name=None):
-        super(DeformableConvV2, self).__init__()
-        self.offset_channel = 2 * kernel_size**2
-        self.mask_channel = kernel_size**2
-        self.act = act
-        self.conv = nn.Conv2D(
-            in_channels,
-            3 * kernel_size**2,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2,
-            weight_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}.conv_offset.weight'.format(name)),
-            bias_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}.conv_offset.bias'.format(name)))
-
-        if weight_attr is None:
-            weight_attr = ParamAttr(
-                name='{}.dcn.weight'.format(name), learning_rate=lr_scale)
-
-        self.dcn = DeformableConv(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2 * dilation,
-            dilation=dilation,
-            groups=groups,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr)
-
-    def forward(self, x):
-        offset_mask = self.conv(x)
-        offset, mask = paddle.split(
-            offset_mask, num_or_sections=[offset_channel, mask_channel], dim=1)
-        mask = F.sigmoid(mask)
-        y = self.dcn(x, offset, mask=mask)
-        if self.act:
-            y = getattr(F, self.act)(y)
-        return y
-
-
-class DeformableConv(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 padding_mode='zeros',
-                 weight_attr=None,
-                 bias_attr=None):
-        super(DeformableConv, self).__init__()
-        assert weight_attr is not False, "weight_attr should not be False in Conv."
-        self._param_attr = weight_attr
-        self._bias_attr = bias_attr
-        self._groups = groups
-        self._in_channels = in_channels
-        self._out_channels = out_channels
-
-        valid_padding_modes = {'zeros', 'reflect', 'replicate', 'circular'}
-        if padding_mode not in valid_padding_modes:
-            raise ValueError(
-                "padding_mode must be one of {}, but got padding_mode='{}'".
-                format(valid_padding_modes, padding_mode))
-
-        if padding_mode in {'reflect', 'replicate', 'circular'
-                            } and not isinstance(padding, np.int):
-            raise TypeError(
-                "when padding_mode in ['reflect', 'replicate', 'circular'], type of padding must be int"
-            )
-
-        self._stride = utils.convert_to_list(stride, 2, 'stride')
-        self._dilation = utils.convert_to_list(dilation, 2, 'dilation')
-        self._kernel_size = utils.convert_to_list(kernel_size, 2, 'kernel_size')
-        self._padding = padding
-        self._padding_mode = padding_mode
-
-        if in_channels % groups != 0:
-            raise ValueError("in_channels must be divisible by groups.")
-
-        if padding_mode in {'reflect', 'replicate', 'circular'}:
-            _paired_padding = utils.convert_to_list(padding, 2, 'padding')
-            self._reversed_padding_repeated_twice = _reverse_repeat_list(
-                _paired_padding, 2)
-
-        filter_shape = [out_channels, in_channels // groups] + self._kernel_size
-
-        self.weight = self.create_parameter(
-            shape=filter_shape, attr=self._param_attr)
-        self.bias = self.create_parameter(
-            attr=self._bias_attr, shape=[self._out_channels], is_bias=True)
-
-    def forward(self, x, offset, mask=None):
-        if self._padding_mode != 'zeros':
-            x = F.pad(x,
-                      self._reversed_padding_repeated_twice,
-                      mode=self._padding_mode,
-                      data_format=self._data_format)
-            return deformable_conv(
-                x,
-                self.weight,
-                offset,
-                mask=mask,
-                bias=self.bias,
-                stride=self._stride,
-                dilation=self._dilation,
-                groups=self._groups)
-        else:
-            return deformable_conv(
-                x,
-                self.weight,
-                offset,
-                mask=mask,
-                bias=self.bias,
-                stride=self._stride,
-                padding=self._padding,
-                dilation=self._dilation,
-                groups=self._groups)
-
-
 @paddle.jit.not_to_static
-def deformable_conv(input,
-                    weight,
-                    offset,
-                    mask=None,
-                    bias=None,
-                    stride=1,
-                    padding=0,
-                    dilation=1,
-                    groups=None,
-                    deformable_groups=None,
-                    im2col_step=None):
-
+def deform_conv2d(x,
+                  offset,
+                  weight,
+                  bias=None,
+                  stride=1,
+                  padding=0,
+                  dilation=1,
+                  groups=1,
+                  mask=None,
+                  name=None):
     stride = utils.convert_to_list(stride, 2, 'stride')
     padding = utils.convert_to_list(padding, 2, 'padding')
     dilation = utils.convert_to_list(dilation, 2, 'dilation')
 
+    use_deform_conv2d_v1 = True if mask is None else False
+
     if in_dygraph_mode():
         attrs = ('strides', stride, 'paddings', padding, 'dilations', dilation,
-                 'groups', groups, 'deformable_groups', deformable_groups,
-                 'im2col_step', im2col_step)
-        if mask:
-            pre_bias = core.ops.deformable_conv(input, offset, mask, weight,
-                                                *attrs)
+                 'groups', groups, 'im2col_step', 1)
+        if use_deform_conv2d_v1:
+            op_type = 'deformable_conv_v1'
+            pre_bias = getattr(core.ops, op_type)(x, offset, weight, *attrs)
         else:
-            pre_bias = core.ops.deformable_conv_v1(input, offset, weight,
-                                                   *attrs)
-        if bias:
+            op_type = 'deformable_conv'
+            pre_bias = getattr(core.ops, op_type)(x, offset, mask, weight,
+                                                  *attrs)
+        if bias is not None:
             out = nn.elementwise_add(pre_bias, bias, axis=1)
         else:
             out = pre_bias
-        return out
     else:
-        check_variable_and_dtype(input, "input", ['float32', 'float64'],
-                                 'deformable_conv')
-        check_variable_and_dtype(weight, "weight", ['float32', 'float64'],
-                                 'deformable_conv')
+        check_variable_and_dtype(x, "x", ['float32', 'float64'],
+                                 'deform_conv2d')
         check_variable_and_dtype(offset, "offset", ['float32', 'float64'],
-                                 'deformable_conv')
-        check_type(mask, 'mask', (Variable, type(None)), 'deformable_conv')
+                                 'deform_conv2d')
+
+        num_channels = x.shape[1]
 
         helper = LayerHelper('deformable_conv', **locals())
         dtype = helper.input_dtype()
 
-        if groups is None:
-            num_filter_channels = num_channels
-        else:
-            if num_channels % groups != 0:
-                raise ValueError("num_channels must be divisible by groups.")
-            num_filter_channels = num_channels // groups
+        stride = utils.convert_to_list(stride, 2, 'stride')
+        padding = utils.convert_to_list(padding, 2, 'padding')
+        dilation = utils.convert_to_list(dilation, 2, 'dilation')
 
         pre_bias = helper.create_variable_for_type_inference(dtype)
 
-        if mask:
-            helper.append_op(
-                type='deformable_conv',
-                inputs={
-                    'Input': input,
-                    'Filter': weight,
-                    'Offset': offset,
-                    'Mask': mask,
-                },
-                outputs={"Output": pre_bias},
-                attrs={
-                    'strides': stride,
-                    'paddings': padding,
-                    'dilations': dilation,
-                    'groups': groups,
-                    'deformable_groups': deformable_groups,
-                    'im2col_step': im2col_step
-                })
+        if use_deform_conv2d_v1:
+            op_type = 'deformable_conv_v1'
+            inputs = {
+                'Input': x,
+                'Filter': weight,
+                'Offset': offset,
+            }
         else:
-            helper.append_op(
-                type='deformable_conv_v1',
-                inputs={
-                    'Input': input,
-                    'Filter': filter_param,
-                    'Offset': offset,
-                },
-                outputs={"Output": pre_bias},
-                attrs={
-                    'strides': stride,
-                    'paddings': padding,
-                    'dilations': dilation,
-                    'groups': groups,
-                    'deformable_groups': deformable_groups,
-                    'im2col_step': im2col_step
-                })
+            op_type = 'deformable_conv'
+            inputs = {
+                'Input': x,
+                'Filter': weight,
+                'Offset': offset,
+                'Mask': mask,
+            }
 
-        output = helper.append_bias_op(pre_bias, dim_start=1, dim_end=2)
-        return output
+        outputs = {"Output": pre_bias}
+        attrs = {
+            'strides': stride,
+            'paddings': padding,
+            'dilations': dilation,
+            'groups': groups,
+            'deformable_groups': 1,
+            'im2col_step': 1,
+        }
+        helper.append_op(
+            type=op_type, inputs=inputs, outputs=outputs, attrs=attrs)
+
+        if bias is not None:
+            out = helper.create_variable_for_type_inference(dtype)
+            helper.append_op(
+                type='elementwise_add',
+                inputs={'X': [pre_bias],
+                        'Y': [bias]},
+                outputs={'Out': [out]},
+                attrs={'axis': 1})
+        else:
+            out = pre_bias
+    return out
 
 @paddle.jit.not_to_static
 def roi_pool(input,
@@ -1495,6 +1293,7 @@ def matrix_nms(bboxes,
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
         out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
+<<<<<<< a88341f4e8540df345de2f74c4973385e36daf17
         if return_index:
             if return_rois_num:
                 return out, index, rois_num
@@ -1535,6 +1334,44 @@ def matrix_nms(bboxes,
         if return_rois_num:
             return output, rois_num
         return output
+=======
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return out, rois_num, index
+
+    helper = LayerHelper('matrix_nms', **locals())
+    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+    index = helper.create_variable_for_type_inference(dtype='int')
+    outputs = {'Out': output, 'Index': index}
+    if return_rois_num:
+        rois_num = helper.create_variable_for_type_inference(dtype='int')
+        outputs['RoisNum'] = rois_num
+
+    helper.append_op(
+        type="matrix_nms",
+        inputs={'BBoxes': bboxes,
+                'Scores': scores},
+        attrs={
+            'background_label': background_label,
+            'score_threshold': score_threshold,
+            'post_threshold': post_threshold,
+            'nms_top_k': nms_top_k,
+            'gaussian_sigma': gaussian_sigma,
+            'use_gaussian': use_gaussian,
+            'keep_top_k': keep_top_k,
+            'normalized': normalized
+        },
+        outputs=outputs)
+    output.stop_gradient = True
+
+    if not return_index:
+        index = None
+    if not return_rois_num:
+        rois_num = None
+    return out, rois_num, index
+>>>>>>> modify code to train and eval successfully
 
 
 @paddle.jit.not_to_static

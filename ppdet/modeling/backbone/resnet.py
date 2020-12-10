@@ -17,15 +17,15 @@ from paddle import ParamAttr
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm
-from paddle.nn import MaxPool2D
+from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D
 
 from ppdet.core.workspace import register, serializable
 
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
-from ppdet.modeling.ops import batch_norm, DeformableConvV2
+from ppdet.modeling.ops import batch_norm
+from ppdet.modeling.layers import DeformableConvV2
 
 
 class ConvNormLayer(nn.Layer):
@@ -66,6 +66,9 @@ class ConvNormLayer(nn.Layer):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 groups=1,
+                weight_attr=ParamAttr(
+                    name='{}.dcn.weight'.format(name), learning_rate=lr),
+                bias_attr=False,
                 name=name)
 
         bn_name = name_adapter.fix_conv_norm_name(name)
@@ -128,17 +131,41 @@ class BottleNeck(nn.Layer):
 
         self.shortcut = shortcut
         if not shortcut:
-            self.short = ConvNormLayer(
-                ch_in=ch_in,
-                ch_out=ch_out * 4,
-                filter_size=1,
-                stride=stride,
-                name_adapter=name_adapter,
-                norm_type=norm_type,
-                norm_decay=norm_decay,
-                freeze_norm=freeze_norm,
-                lr=lr,
-                name=shortcut_name)
+            if variant == 'd' and stride == 2:
+                self.short = nn.Sequential()
+                self.short.add_sublayer(
+                    'pool',
+                    Pool2D(
+                        pool_size=2,
+                        pool_type='avg',
+                        pool_stride=stride,
+                        pool_padding=0,
+                        ceil_mode=True))
+                self.short.add_sublayer(
+                    'conv',
+                    ConvNormLayer(
+                        ch_in=ch_in,
+                        ch_out=ch_out * 4,
+                        filter_size=1,
+                        stride=1,
+                        name_adapter=name_adapter,
+                        norm_type=norm_type,
+                        norm_decay=norm_decay,
+                        freeze_norm=freeze_norm,
+                        lr=lr,
+                        name=shortcut_name))
+            else:
+                self.short = ConvNormLayer(
+                    ch_in=ch_in,
+                    ch_out=ch_out * 4,
+                    filter_size=1,
+                    stride=stride,
+                    name_adapter=name_adapter,
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    lr=lr,
+                    name=shortcut_name)
 
         self.branch2a = ConvNormLayer(
             ch_in=ch_in,
@@ -151,7 +178,6 @@ class BottleNeck(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
-            dcn_v2=dcn_v2,
             name=conv_name1)
 
         self.branch2b = ConvNormLayer(
@@ -165,6 +191,7 @@ class BottleNeck(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
+            dcn_v2=dcn_v2,
             name=conv_name2)
 
         self.branch2c = ConvNormLayer(
@@ -180,16 +207,16 @@ class BottleNeck(nn.Layer):
             name=conv_name3)
 
     def forward(self, inputs):
-
         out = self.branch2a(inputs)
         out = self.branch2b(out)
         out = self.branch2c(out)
+
         if self.shortcut:
             short = inputs
         else:
             short = self.short(inputs)
 
-        out = paddle.add(x=out, y=short)
+        out = paddle.add(x=short, y=out)
         out = F.relu(out)
 
         return out
