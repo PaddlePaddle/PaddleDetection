@@ -120,11 +120,6 @@ class CascadeRCNN(BaseArch):
                 self.inputs['scale_factor'],
                 var_weight=3.)
 
-        #elif self.with_mask:
-        #    bbox_targets = self.proposal.get_targets()[-1]
-        #    self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
-        #                                                 bbox_targets)
-
         if self.with_mask:
             rois = rois_list[-1]
             rois_has_mask_int32 = None
