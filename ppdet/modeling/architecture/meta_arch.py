@@ -20,8 +20,7 @@ class BaseArch(nn.Layer):
                 input_tensor=None,
                 data=None,
                 input_def=None,
-                mode='infer',
-                export=True):
+                mode='infer'):
         if input_tensor is None:
             assert data is not None and input_def is not None
             self.inputs = self.build_inputs(data, input_def)
@@ -33,10 +32,8 @@ class BaseArch(nn.Layer):
 
         if mode == 'train':
             out = self.get_loss()
-        elif mode == 'infer' and not export:
+        elif mode == 'infer':
             out = self.get_pred()
-        elif mode == 'infer' and export:
-            out = self.get_export()
         else:
             out = None
             raise "Now, only support train and infer mode!"

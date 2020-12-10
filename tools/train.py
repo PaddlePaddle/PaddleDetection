@@ -170,7 +170,7 @@ def run(FLAGS, cfg, place):
 
             # Model Forward
             model.train()
-            outputs = model(data, fields, 'train')
+            outputs = model(data=data, input_def=fields, mode='train')
 
             # Model Backward
             loss = outputs['loss']
@@ -204,9 +204,9 @@ def run(FLAGS, cfg, place):
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
             save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
-
-    # dygraph model to static model
-    dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'))
+        # TODO(guanghua): dygraph model to static model
+        # if ParallelEnv().local_rank == 0 and (cur_eid + 1) == int(cfg.epoch)):
+        #     dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'), cfg)
 
 
 def main():

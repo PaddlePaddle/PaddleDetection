@@ -53,10 +53,19 @@ def parse_args():
     return args
 
 
-def dygraph_to_static(model, save_dir):
+def dygraph_to_static(model, save_dir, cfg):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    inputs_def = cfg['TestReader']['inputs_def']
+    image_shape = inputs_def.get('image_shape')
+    if image_shape is None:
+        image_shape = [3, None, None]
+    # Save infer cfg
+    dump_infer_config(cfg, os.path.join(save_dir, 'infer_cfg.yml'), image_shape)
+
     input_spec = [{
         "image": InputSpec(
-            shape=[None, 3, None, None], name='image'),
+            shape=[None] + image_shape, name='image'),
         "im_shape": InputSpec(
             shape=[None, 2], name='im_shape'),
         "scale_factor": InputSpec(
@@ -64,7 +73,7 @@ def dygraph_to_static(model, save_dir):
     }]
 
     export_model = to_static(model, input_spec=input_spec)
-    # export config and model
+    # save Model
     paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
 
 
@@ -75,19 +84,12 @@ def run(FLAGS, cfg):
     model = create(cfg.architecture)
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(FLAGS.output_dir, cfg_name)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    inputs_def = cfg['TestReader']['inputs_def']
-    image_shape = inputs_def.get('image_shape')
-    if image_shape == None:
-        image_shape = [3, None, None]
-    dump_infer_config(cfg, os.path.join(save_dir, 'infer_cfg.yml'), image_shape)
 
     # Init Model
     load_weight(model, cfg.weights)
-    # save Model
-    dygraph_to_static(model, save_dir)
+
+    # export config and model
+    dygraph_to_static(model, save_dir, cfg)
     logger.info('Export model to {}'.format(save_dir))
 
 

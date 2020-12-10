@@ -73,7 +73,8 @@ def bbox_post_process(bboxes,
 
 
 @jit
-def mask_post_process(bboxes,
+def mask_post_process(bbox,
+                      bbox_nums,
                       masks,
                       im_shape,
                       scale_factor,
@@ -81,7 +82,6 @@ def mask_post_process(bboxes,
                       binary_thresh=0.5):
     if masks.shape[0] == 0:
         return masks
-    bbox, bbox_nums = bboxes
     M = resolution
     scale = (M + 2.0) / M
     boxes = bbox[:, 2:]
@@ -98,7 +98,6 @@ def mask_post_process(bboxes,
         boxes_n = boxes[st_num:end_num]
         labels_n = labels[st_num:end_num]
         masks_n = masks[st_num:end_num]
-
         im_h = int(round(im_shape[i][0] / scale_factor[i]))
         im_w = int(round(im_shape[i][1] / scale_factor[i]))
         boxes_n = expand_bbox(boxes_n, scale)
