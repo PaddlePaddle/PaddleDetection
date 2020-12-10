@@ -72,7 +72,7 @@ def expand_bbox(bboxes, scale):
     w_half *= scale
     h_half *= scale
 
-    bboxes_exp = np.zeros(bboxes.shape)
+    bboxes_exp = np.zeros(bboxes.shape, dtype=np.float32)
     bboxes_exp[:, 0] = x_c - w_half
     bboxes_exp[:, 2] = x_c + w_half
     bboxes_exp[:, 1] = y_c - h_half
@@ -107,18 +107,20 @@ def bbox_overlaps(bboxes1, bboxes2):
     area1 = w1 * h1
     area2 = w2 * h2
 
-    overlaps = np.zeros((bboxes1.shape[0], bboxes2.shape[0]))
-    for ind1 in range(bboxes1.shape[0]):
-        for ind2 in range(bboxes2.shape[0]):
-            inter_x1 = np.maximum(bboxes1[ind1, 0], bboxes2[ind2, 0])
-            inter_y1 = np.maximum(bboxes1[ind1, 1], bboxes2[ind2, 1])
-            inter_x2 = np.minimum(bboxes1[ind1, 2], bboxes2[ind2, 2])
-            inter_y2 = np.minimum(bboxes1[ind1, 3], bboxes2[ind2, 3])
-            inter_w = np.maximum(inter_x2 - inter_x1 + 1, 0)
-            inter_h = np.maximum(inter_y2 - inter_y1 + 1, 0)
-            inter_area = inter_w * inter_h
-            iou = inter_area * 1.0 / (area1[ind1] + area2[ind2] - inter_area)
-            overlaps[ind1, ind2] = iou
+    boxes1_x1, boxes1_y1, boxes1_x2, boxes1_y2 = np.split(bboxes1, 4, axis=1)
+    boxes2_x1, boxes2_y1, boxes2_x2, boxes2_y2 = np.split(bboxes2, 4, axis=1)
+
+    all_pairs_min_ymax = np.minimum(boxes1_y2, np.transpose(boxes2_y2))
+    all_pairs_max_ymin = np.maximum(boxes1_y1, np.transpose(boxes2_y1))
+    inter_h = np.maximum(all_pairs_min_ymax - all_pairs_max_ymin + 1, 0.)
+    all_pairs_min_xmax = np.minimum(boxes1_x2, np.transpose(boxes2_x2))
+    all_pairs_max_xmin = np.maximum(boxes1_x1, np.transpose(boxes2_x1))
+    inter_w = np.maximum(all_pairs_min_xmax - all_pairs_max_xmin + 1, 0.)
+
+    inter_area = inter_w * inter_h
+
+    union_area = np.expand_dims(area1, 1) + np.expand_dims(area2, 0)
+    overlaps = inter_area / (union_area - inter_area)
     return overlaps
 
 

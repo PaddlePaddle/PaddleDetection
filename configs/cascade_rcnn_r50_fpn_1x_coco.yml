@@ -1,0 +1,7 @@
+_BASE_: [
+  './_base_/models/cascade_rcnn_r50_fpn.yml',
+  './_base_/optimizers/rcnn_1x.yml',
+  './_base_/datasets/coco.yml',
+  './_base_/readers/faster_fpn_reader.yml',
+  './_base_/runtime.yml',
+]

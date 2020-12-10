@@ -158,6 +158,7 @@ class MaskHead(Layer):
                      stage=0,
                      bbox_head_feat_func=None):
         bbox, bbox_num = bboxes
+
         if bbox.shape[0] == 0:
             mask_head_out = paddle.full([1, 6], -1)
             return mask_head_out

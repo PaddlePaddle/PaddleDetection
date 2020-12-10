@@ -1,23 +1,21 @@
-architecture: MaskRCNN
+architecture: FasterRCNN
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/mask_rcnn_r50_fpn_1x/model_final
+weights: output/faster_rcnn_r50_fpn_1x_coco/model_final.pdparams
 load_static_weights: True
 
 # Model Achitecture
-MaskRCNN:
+FasterRCNN:
   # model anchor info flow
   anchor: Anchor
   proposal: Proposal
-  mask: Mask
   # model feat info flow
   backbone: ResNet
   neck: FPN
   rpn_head: RPNHead
   bbox_head: BBoxHead
-  mask_head: MaskHead
   # post process
   bbox_post_process: BBoxPostProcess
-  mask_post_process: MaskPostProcess
+
 
 ResNet:
   # index 0 stands for res2
@@ -97,25 +95,3 @@ BBoxPostProcess:
     keep_top_k: 100
     score_threshold: 0.05
     nms_threshold: 0.5
-
-Mask:
-  mask_target_generator:
-    name: MaskTargetGenerator
-    mask_resolution: 28
-
-MaskHead:
-  mask_feat:
-    name: MaskFeat
-    num_convs: 4
-    feat_in: 256
-    feat_out: 256
-    mask_roi_extractor:
-      name: RoIAlign
-      resolution: 14
-      sampling_ratio: 2
-    share_bbox_feat: False
-  feat_in: 256
-
-
-MaskPostProcess:
-  mask_resolution: 28

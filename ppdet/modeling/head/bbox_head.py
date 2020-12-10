@@ -29,39 +29,42 @@ from ..backbone.resnet import Blocks
 @register
 class TwoFCHead(nn.Layer):
 
-    __shared__ = ['num_stages']
+    __shared__ = ['roi_stages']
 
-    def __init__(self, in_dim=256, mlp_dim=1024, resolution=7, num_stages=1):
+    def __init__(self, in_dim=256, mlp_dim=1024, resolution=7, roi_stages=1):
         super(TwoFCHead, self).__init__()
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
-        self.num_stages = num_stages
+        self.roi_stages = roi_stages
         fan = in_dim * resolution * resolution
         self.fc6_list = []
         self.fc6_relu_list = []
         self.fc7_list = []
         self.fc7_relu_list = []
-        for stage in range(num_stages):
+        for stage in range(roi_stages):
             fc6_name = 'fc6_{}'.format(stage)
             fc7_name = 'fc7_{}'.format(stage)
+            lr_factor = 2**stage
             fc6 = self.add_sublayer(
                 fc6_name,
                 nn.Linear(
                     in_dim * resolution * resolution,
                     mlp_dim,
                     weight_attr=ParamAttr(
+                        learning_rate=lr_factor,
                         initializer=XavierUniform(fan_out=fan)),
                     bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
+                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
             fc6_relu = self.add_sublayer(fc6_name + 'act', ReLU())
             fc7 = self.add_sublayer(
                 fc7_name,
                 nn.Linear(
                     mlp_dim,
                     mlp_dim,
-                    weight_attr=ParamAttr(initializer=XavierUniform()),
+                    weight_attr=ParamAttr(
+                        learning_rate=lr_factor, initializer=XavierUniform()),
                     bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
+                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
             fc7_relu = self.add_sublayer(fc7_name + 'act', ReLU())
             self.fc6_list.append(fc6)
             self.fc6_relu_list.append(fc6_relu)
@@ -102,16 +105,17 @@ class BBoxFeat(nn.Layer):
         super(BBoxFeat, self).__init__()
         self.roi_extractor = roi_extractor
         self.head_feat = head_feat
+        self.rois_feat_list = []
 
     def forward(self, body_feats, rois, spatial_scale, stage=0):
         rois_feat = self.roi_extractor(body_feats, rois, spatial_scale)
         bbox_feat = self.head_feat(rois_feat, stage)
-        return bbox_feat, self.head_feat
+        return rois_feat, bbox_feat
 
 
 @register
 class BBoxHead(nn.Layer):
-    __shared__ = ['num_classes', 'num_stages']
+    __shared__ = ['num_classes', 'roi_stages']
     __inject__ = ['bbox_feat']
 
     def __init__(self,
@@ -119,49 +123,65 @@ class BBoxHead(nn.Layer):
                  in_feat=1024,
                  num_classes=81,
                  cls_agnostic=False,
-                 num_stages=1,
+                 roi_stages=1,
                  with_pool=False,
                  score_stage=[0, 1, 2],
                  delta_stage=[2]):
         super(BBoxHead, self).__init__()
         self.num_classes = num_classes
+        self.cls_agnostic = cls_agnostic
         self.delta_dim = 2 if cls_agnostic else num_classes
         self.bbox_feat = bbox_feat
-        self.num_stages = num_stages
+        self.roi_stages = roi_stages
         self.bbox_score_list = []
         self.bbox_delta_list = []
+        self.roi_feat_list = [[] for i in range(roi_stages)]
         self.with_pool = with_pool
         self.score_stage = score_stage
         self.delta_stage = delta_stage
-        for stage in range(num_stages):
+        for stage in range(roi_stages):
             score_name = 'bbox_score_{}'.format(stage)
             delta_name = 'bbox_delta_{}'.format(stage)
+            lr_factor = 2**stage
             bbox_score = self.add_sublayer(
                 score_name,
                 nn.Linear(
                     in_feat,
                     1 * self.num_classes,
-                    weight_attr=ParamAttr(initializer=Normal(
-                        mean=0.0, std=0.01)),
+                    weight_attr=ParamAttr(
+                        learning_rate=lr_factor,
+                        initializer=Normal(
+                            mean=0.0, std=0.01)),
                     bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
+                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
 
             bbox_delta = self.add_sublayer(
                 delta_name,
                 nn.Linear(
                     in_feat,
                     4 * self.delta_dim,
-                    weight_attr=ParamAttr(initializer=Normal(
-                        mean=0.0, std=0.001)),
+                    weight_attr=ParamAttr(
+                        learning_rate=lr_factor,
+                        initializer=Normal(
+                            mean=0.0, std=0.001)),
                     bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
+                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
             self.bbox_score_list.append(bbox_score)
             self.bbox_delta_list.append(bbox_delta)
 
-    def forward(self, body_feats, rois, spatial_scale, stage=0):
-        bbox_feat, head_feat_func = self.bbox_feat(body_feats, rois,
-                                                   spatial_scale, stage)
-        bbox_head_out = []
+    def forward(self,
+                body_feats=None,
+                rois=None,
+                spatial_scale=None,
+                stage=0,
+                roi_stage=-1):
+        if rois is not None:
+            rois_feat, bbox_feat = self.bbox_feat(body_feats, rois,
+                                                  spatial_scale, stage)
+            self.roi_feat_list[stage] = rois_feat
+        else:
+            rois_feat = self.roi_feat_list[roi_stage]
+            bbox_feat = self.bbox_feat.head_feat(rois_feat, stage)
         if self.with_pool:
             bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             bbox_feat_ = paddle.squeeze(bbox_feat_, axis=[2, 3])
@@ -170,8 +190,8 @@ class BBoxHead(nn.Layer):
         else:
             scores = self.bbox_score_list[stage](bbox_feat)
             deltas = self.bbox_delta_list[stage](bbox_feat)
-        bbox_head_out.append((scores, deltas))
-        return bbox_feat, bbox_head_out, head_feat_func
+        bbox_head_out = (scores, deltas)
+        return bbox_feat, bbox_head_out, self.bbox_feat.head_feat
 
     def _get_head_loss(self, score, delta, target):
         # bbox cls  
@@ -198,38 +218,46 @@ class BBoxHead(nn.Layer):
             reg_name = 'loss_bbox_reg_{}'.format(lvl)
             loss_bbox_cls, loss_bbox_reg = self._get_head_loss(score, delta,
                                                                target)
-            loss_bbox[cls_name] = loss_bbox_cls
-            loss_bbox[reg_name] = loss_bbox_reg
+            loss_weight = 1. / 2**lvl
+            loss_bbox[cls_name] = loss_bbox_cls * loss_weight
+            loss_bbox[reg_name] = loss_bbox_reg * loss_weight
         return loss_bbox
 
     def get_prediction(self, bbox_head_out, rois):
-        if len(bbox_head_out) == 1:
-            proposal, proposal_num = rois
-            score, delta = bbox_head_out[0]
-            bbox_prob = F.softmax(score)
-            delta = paddle.reshape(delta, (-1, self.delta_dim, 4))
-        else:
-            num_stage = len(rois)
-            proposal_list = []
-            prob_list = []
-            delta_list = []
-            for stage, (proposals, bboxhead) in zip(rois, bboxheads):
-                score, delta = bboxhead
-                proposal, proposal_num = proposals
-                if stage in self.score_stage:
-                    bbox_prob = F.softmax(score)
-                    prob_list.append(bbox_prob)
-                if stage in self.delta_stage:
-                    proposal_list.append(proposal)
-                    delta_list.append(delta)
-            bbox_prob = paddle.mean(paddle.stack(prob_list), axis=0)
-            delta = paddle.mean(paddle.stack(delta_list), axis=0)
-            proposal = paddle.mean(paddle.stack(proposal_list), axis=0)
-            delta = paddle.reshape(delta, (-1, self.out_dim, 4))
-            if self.cls_agnostic:
-                N, C, M = delta.shape
-                delta = delta[:, 1:2, :]
-                delta = paddle.expand(delta, [N, self.num_classes, M])
+        proposal, proposal_num = rois
+        score, delta = bbox_head_out
+        bbox_prob = F.softmax(score)
+        delta = paddle.reshape(delta, (-1, self.delta_dim, 4))
+        bbox_pred = (delta, bbox_prob)
+        return bbox_pred, rois
+
+    def get_cascade_prediction(self, bbox_head_out, rois):
+        proposal_list = []
+        prob_list = []
+        delta_list = []
+        for stage in range(len(rois)):
+            proposals = rois[stage]
+            bboxhead = bbox_head_out[stage]
+            score, delta = bboxhead
+            proposal, proposal_num = proposals
+            if stage in self.score_stage:
+                if stage < 2:
+                    _, head_out, _ = self(stage=stage, roi_stage=-1)
+                    score = head_out[0]
+
+                bbox_prob = F.softmax(score)
+                prob_list.append(bbox_prob)
+            if stage in self.delta_stage:
+                proposal_list.append(proposal)
+                delta_list.append(delta)
+        bbox_prob = paddle.mean(paddle.stack(prob_list), axis=0)
+        delta = paddle.mean(paddle.stack(delta_list), axis=0)
+        proposal = paddle.mean(paddle.stack(proposal_list), axis=0)
+        delta = paddle.reshape(delta, (-1, self.delta_dim, 4))
+        if self.cls_agnostic:
+            N, C, M = delta.shape
+            delta = delta[:, 1:2, :]
+            delta = paddle.expand(delta, [N, self.num_classes, M])
         bboxes = (proposal, proposal_num)
         bbox_pred = (delta, bbox_prob)
         return bbox_pred, bboxes

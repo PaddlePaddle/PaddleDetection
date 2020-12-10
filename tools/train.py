@@ -174,12 +174,7 @@ def run(FLAGS, cfg, place):
 
             # Model Backward
             loss = outputs['loss']
-            if ParallelEnv().nranks > 1:
-                loss = model.scale_loss(loss)
-                loss.backward()
-                model.apply_collective_grads()
-            else:
-                loss.backward()
+            loss.backward()
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()

@@ -90,7 +90,6 @@ def generate_rpn_anchor_target(anchors,
 @jit
 def label_anchor(anchors, gt_boxes):
     iou = bbox_overlaps(anchors, gt_boxes)
-
     # every gt's anchor's index
     gt_bbox_anchor_inds = iou.argmax(axis=0)
     gt_bbox_anchor_iou = iou[gt_bbox_anchor_inds, np.arange(iou.shape[1])]
@@ -149,6 +148,16 @@ def sample_anchor(anchor_gt_bbox_iou,
 
 
 @jit
+def filter_roi(rois, max_overlap):
+    ws = rois[:, 2] - rois[:, 0] + 1
+    hs = rois[:, 3] - rois[:, 1] + 1
+    keep = np.where((ws > 0) & (hs > 0) & (max_overlap < 1))[0]
+    if len(keep) > 0:
+        return rois[keep, :]
+    return np.zeros((1, 4)).astype('float32')
+
+
+@jit
 def generate_proposal_target(rpn_rois,
                              rpn_rois_num,
                              gt_classes,
@@ -164,42 +173,38 @@ def generate_proposal_target(rpn_rois,
                              class_nums=81,
                              use_random=True,
                              is_cls_agnostic=False,
-                             is_cascade_rcnn=False):
+                             is_cascade_rcnn=False,
+                             max_overlaps=None):
 
     rois = []
     tgt_labels = []
     tgt_deltas = []
     rois_inside_weights = []
     rois_outside_weights = []
+    sampled_max_overlaps = []
     new_rois_num = []
     st_num = 0
     end_num = 0
     for im_i in range(len(rpn_rois_num)):
         length = rpn_rois_num[im_i]
         end_num += length
-
         rpn_roi = rpn_rois[st_num:end_num]
+        max_overlap = max_overlaps[st_num:end_num] if is_cascade_rcnn else None
         im_scale = im_info[im_i][2]
         rpn_roi = rpn_roi / im_scale
         gt_bbox = gt_boxes[im_i]
 
         if is_cascade_rcnn:
-            rpn_roi = rpn_roi[gt_bbox.shape[0]:, :]
-        bbox = np.vstack([gt_bbox, rpn_roi])
+            rpn_roi = filter_roi(rpn_roi, max_overlap)
+        bbox = np.vstack([gt_bbox, rpn_roi]).astype('float32')
 
         # Step1: label bbox 
-        roi_gt_bbox_inds, roi_gt_bbox_iou, labels, = label_bbox(
+        roi_gt_bbox_inds, labels, max_overlap = label_bbox(
             bbox, gt_bbox, gt_classes[im_i], is_crowd[im_i])
 
         # Step2: sample bbox 
-        if is_cascade_rcnn:
-            ws = bbox[:, 2] - bbox[:, 0] + 1
-            hs = bbox[:, 3] - bbox[:, 1] + 1
-            keep = np.where((ws > 0) & (hs > 0))[0]
-            bbox = bbox[keep]
-
         fg_inds, bg_inds, fg_nums = sample_bbox(
-            roi_gt_bbox_iou, batch_size_per_im, fg_fraction, fg_thresh,
+            max_overlap, batch_size_per_im, fg_fraction, fg_thresh,
             bg_thresh_hi, bg_thresh_lo, bbox_reg_weights, class_nums,
             use_random, is_cls_agnostic, is_cascade_rcnn)
 
@@ -210,10 +215,12 @@ def generate_proposal_target(rpn_rois,
         sampled_labels[fg_nums:] = 0
 
         sampled_boxes = bbox[sampled_inds]
+        sampled_max_overlap = max_overlap[sampled_inds]
         sampled_gt_boxes = gt_bbox[roi_gt_bbox_inds[sampled_inds]]
-        sampled_gt_boxes[fg_nums:, :] = gt_bbox[0]
+        sampled_gt_boxes[fg_nums:, :] = 0
         sampled_deltas = compute_bbox_targets(sampled_boxes, sampled_gt_boxes,
                                               sampled_labels, bbox_reg_weights)
+        sampled_deltas[fg_nums:, :] = 0
         sampled_deltas, bbox_inside_weights = expand_bbox_targets(
             sampled_deltas, class_nums, is_cls_agnostic)
         bbox_outside_weights = np.array(
@@ -228,6 +235,7 @@ def generate_proposal_target(rpn_rois,
         tgt_deltas.append(sampled_deltas)
         rois_inside_weights.append(bbox_inside_weights)
         rois_outside_weights.append(bbox_outside_weights)
+        sampled_max_overlaps.append(sampled_max_overlap)
 
     rois = np.concatenate(rois, axis=0).astype(np.float32)
     tgt_labels = np.concatenate(
@@ -237,23 +245,20 @@ def generate_proposal_target(rpn_rois,
         rois_inside_weights, axis=0).astype(np.float32)
     rois_outside_weights = np.concatenate(
         rois_outside_weights, axis=0).astype(np.float32)
+    sampled_max_overlaps = np.concatenate(
+        sampled_max_overlaps, axis=0).astype(np.float32)
     new_rois_num = np.asarray(new_rois_num, np.int32)
-    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, new_rois_num
+    return rois, tgt_labels, tgt_deltas, rois_inside_weights, rois_outside_weights, new_rois_num, sampled_max_overlaps
 
 
 @jit
-def label_bbox(boxes,
-               gt_boxes,
-               gt_classes,
-               is_crowd,
-               class_nums=81,
-               is_cascade_rcnn=False):
+def label_bbox(boxes, gt_boxes, gt_classes, is_crowd, class_nums=81):
 
     iou = bbox_overlaps(boxes, gt_boxes)
 
     # every roi's gt box's index  
     roi_gt_bbox_inds = np.zeros((boxes.shape[0]), dtype=np.int32)
-    roi_gt_bbox_iou = np.zeros((boxes.shape[0], class_nums))
+    roi_gt_bbox_iou = np.zeros((boxes.shape[0], class_nums), dtype=np.float32)
 
     iou_argmax = iou.argmax(axis=1)
     iou_max = iou.max(axis=1)
@@ -267,13 +272,14 @@ def label_bbox(boxes,
     crowd_ind = np.where(is_crowd)[0]
     roi_gt_bbox_iou[crowd_ind] = -1
 
+    max_overlap = roi_gt_bbox_iou.max(axis=1)
     labels = roi_gt_bbox_iou.argmax(axis=1)
 
-    return roi_gt_bbox_inds, roi_gt_bbox_iou, labels
+    return roi_gt_bbox_inds, labels, max_overlap
 
 
 @jit
-def sample_bbox(roi_gt_bbox_iou,
+def sample_bbox(max_overlap,
                 batch_size_per_im,
                 fg_fraction,
                 fg_thresh,
@@ -285,27 +291,26 @@ def sample_bbox(roi_gt_bbox_iou,
                 is_cls_agnostic=False,
                 is_cascade_rcnn=False):
 
-    roi_gt_bbox_iou_max = roi_gt_bbox_iou.max(axis=1)
     rois_per_image = int(batch_size_per_im)
     fg_rois_per_im = int(np.round(fg_fraction * rois_per_image))
 
     if is_cascade_rcnn:
-        fg_inds = np.where(roi_gt_bbox_iou_max >= fg_thresh)[0]
-        bg_inds = np.where((roi_gt_bbox_iou_max < bg_thresh_hi) & (
-            roi_gt_bbox_iou_max >= bg_thresh_lo))[0]
+        fg_inds = np.where(max_overlap >= fg_thresh)[0]
+        bg_inds = np.where((max_overlap < bg_thresh_hi) & (max_overlap >=
+                                                           bg_thresh_lo))[0]
         fg_nums = fg_inds.shape[0]
         bg_nums = bg_inds.shape[0]
     else:
         # sampe fg 
-        fg_inds = np.where(roi_gt_bbox_iou_max >= fg_thresh)[0]
+        fg_inds = np.where(max_overlap >= fg_thresh)[0]
         fg_nums = np.minimum(fg_rois_per_im, fg_inds.shape[0])
         if (fg_inds.shape[0] > fg_nums) and use_random:
             fg_inds = np.random.choice(fg_inds, size=fg_nums, replace=False)
         fg_inds = fg_inds[:fg_nums]
 
         # sample bg 
-        bg_inds = np.where((roi_gt_bbox_iou_max < bg_thresh_hi) & (
-            roi_gt_bbox_iou_max >= bg_thresh_lo))[0]
+        bg_inds = np.where((max_overlap < bg_thresh_hi) & (max_overlap >=
+                                                           bg_thresh_lo))[0]
         bg_nums = rois_per_image - fg_nums
         bg_nums = np.minimum(bg_nums, bg_inds.shape[0])
         if (bg_inds.shape[0] > bg_nums) and use_random:
