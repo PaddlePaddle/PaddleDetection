@@ -79,7 +79,7 @@ class ResizeOp(object):
         im_info['scale_factor'] = np.array(
             [im_scale_y, im_scale_x]).astype('float32')
         # padding im when image_shape fixed by infer_cfg.yml
-        if self.keep_ratio:
+        if self.keep_ratio and im_info['input_shape'][1] is not None:
             max_size = im_info['input_shape'][1]
             padding_im = np.zeros(
                 (max_size, max_size, im_channel), dtype=np.float32)

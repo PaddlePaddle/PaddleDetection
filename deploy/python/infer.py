@@ -133,7 +133,7 @@ class Detector(object):
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
             if self.pred_config.mask_resolution is not None:
-                masks_tensor = self.predictor.get_output_handle(output_names[1])
+                masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
         t2 = time.time()
         ms = (t2 - t1) * 1000.0 / repeats

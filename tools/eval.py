@@ -75,12 +75,18 @@ def run(FLAGS, cfg, place):
     outs_res = []
     start_time = time.time()
     sample_num = 0
+    im_info = []
     for iter_id, data in enumerate(eval_loader):
         # forward
+        fields = cfg['EvalReader']['inputs_def']['fields']
         model.eval()
-        outs = model(data, cfg['EvalReader']['inputs_def']['fields'], 'infer')
+        outs = model(data=data, input_def=fields, mode='infer')
         outs_res.append(outs)
-
+        im_info.append([
+            data[fields.index('im_shape')].numpy(),
+            data[fields.index('scale_factor')].numpy(),
+            data[fields.index('im_id')].numpy()
+        ])
         # log
         sample_num += len(data)
         if iter_id % 100 == 0:
@@ -102,7 +108,15 @@ def run(FLAGS, cfg, place):
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
-    infer_res = get_infer_results(outs_res, eval_type, clsid2catid)
+    mask_resolution = None
+    if cfg['MaskPostProcess']['mask_resolution'] is not None:
+        mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
+    infer_res = get_infer_results(
+        outs_res,
+        eval_type,
+        clsid2catid,
+        im_info,
+        mask_resolution=mask_resolution)
     eval_results(infer_res, cfg.metric, anno_file)
 
 

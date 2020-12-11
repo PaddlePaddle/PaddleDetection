@@ -35,6 +35,7 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
+from export_model import dygraph_to_static
 from paddle.distributed import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -149,6 +150,8 @@ def run(FLAGS, cfg, place):
         model = paddle.DataParallel(model)
 
     fields = train_loader.collate_fn.output_fields
+    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
+    save_dir = os.path.join(cfg.save_dir, cfg_name)
     # Run Train
     time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
@@ -167,7 +170,7 @@ def run(FLAGS, cfg, place):
 
             # Model Forward
             model.train()
-            outputs = model(data, fields, 'train')
+            outputs = model(data=data, input_def=fields, mode='train')
 
             # Model Backward
             loss = outputs['loss']
@@ -193,11 +196,12 @@ def run(FLAGS, cfg, place):
         if ParallelEnv().local_rank == 0 and (
                 cur_eid % cfg.snapshot_epoch == 0 or
             (cur_eid + 1) == int(cfg.epoch)):
-            cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
-            save_dir = os.path.join(cfg.save_dir, cfg_name)
             save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
+        # TODO(guanghua): dygraph model to static model
+        # if ParallelEnv().local_rank == 0 and (cur_eid + 1) == int(cfg.epoch)):
+        #     dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'), cfg)
 
 
 def main():

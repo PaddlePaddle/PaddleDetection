@@ -36,7 +36,6 @@ class RoIAlign(object):
 
     def __call__(self, feats, rois, spatial_scale):
         roi, rois_num = rois
-
         if self.start_level == self.end_level:
             rois_feat = ops.roi_align(
                 feats[self.start_level],
@@ -44,28 +43,28 @@ class RoIAlign(object):
                 self.resolution,
                 spatial_scale,
                 rois_num=rois_num)
-            return rois_feat
-        offset = 2
-        k_min = self.start_level + offset
-        k_max = self.end_level + offset
-        rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
-            roi,
-            k_min,
-            k_max,
-            self.canconical_level,
-            self.canonical_size,
-            rois_num=rois_num)
-        rois_feat_list = []
-        for lvl in range(self.start_level, self.end_level + 1):
-            roi_feat = ops.roi_align(
-                feats[lvl],
-                rois_dist[lvl],
-                self.resolution,
-                spatial_scale[lvl],
-                sampling_ratio=self.sampling_ratio,
-                rois_num=rois_num_dist[lvl])
-            rois_feat_list.append(roi_feat)
-        rois_feat_shuffle = paddle.concat(rois_feat_list)
-        rois_feat = paddle.gather(rois_feat_shuffle, restore_index)
+        else:
+            offset = 2
+            k_min = self.start_level + offset
+            k_max = self.end_level + offset
+            rois_dist, restore_index, rois_num_dist = ops.distribute_fpn_proposals(
+                roi,
+                k_min,
+                k_max,
+                self.canconical_level,
+                self.canonical_size,
+                rois_num=rois_num)
+            rois_feat_list = []
+            for lvl in range(self.start_level, self.end_level + 1):
+                roi_feat = ops.roi_align(
+                    feats[lvl],
+                    rois_dist[lvl],
+                    self.resolution,
+                    spatial_scale[lvl],
+                    sampling_ratio=self.sampling_ratio,
+                    rois_num=rois_num_dist[lvl])
+                rois_feat_list.append(roi_feat)
+            rois_feat_shuffle = paddle.concat(rois_feat_list)
+            rois_feat = paddle.gather(rois_feat_shuffle, restore_index)
 
         return rois_feat
