@@ -171,7 +171,7 @@ class OptimizerBuilder():
 
 class ModelEMA(object):
     def __init__(self, decay, use_thres_step=False):
-        self.iters = 0
+        self.step = 0
         self.decay = decay
         self.use_thres_step = use_thres_step
 
@@ -184,11 +184,14 @@ class ModelEMA(object):
         model.set_dict(self.state_dict)
 
     def update(self, model):
+        self.step += 1
         model_dict = model.state_dict()
-        decay = min(self.decay, (1 + self.iters) / (10 + self.iters))
+        decay = min(self.decay, (1 + self.step) / (10 + self.step))
         for k, v in self.state_dict.items():
             if '_mean' not in k and '_variance' not in k:
                 v = decay * v + (1 - decay) * model_dict[k]
+                v = v / (1 - decay**self.step)
                 v.stop_gradient = True
                 self.state_dict[k] = v
-        self.iters += 1
+            else:
+                self.state_dict[k] = model_dict[k]
