@@ -92,12 +92,10 @@ class FasterRCNN(BaseArch):
         loss.update({'loss': total_loss})
         return loss
 
-    def get_pred(self, return_numpy=True):
+    def get_pred(self):
         bbox, bbox_num = self.bboxes
         output = {
-            'bbox': bbox.numpy(),
-            'bbox_num': bbox_num.numpy(),
-            'im_id': self.inputs['im_id'].numpy()
+            'bbox': bbox,
+            'bbox_num': bbox_num,
         }
-
         return output

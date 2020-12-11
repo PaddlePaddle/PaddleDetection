@@ -78,13 +78,15 @@ def run(FLAGS, cfg, place):
     im_info = []
     for iter_id, data in enumerate(eval_loader):
         # forward
+        fields = cfg['EvalReader']['inputs_def']['fields']
         model.eval()
-        outs = model(
-            data=data,
-            input_def=cfg['EvalReader']['inputs_def']['fields'],
-            mode='infer')
+        outs = model(data=data, input_def=fields, mode='infer')
         outs_res.append(outs)
-        im_info.append([data[1].numpy(), data[2].numpy(), data[3].numpy()])
+        im_info.append([
+            data[fields.index('im_shape')].numpy(),
+            data[fields.index('scale_factor')].numpy(),
+            data[fields.index('im_id')].numpy()
+        ])
         # log
         sample_num += len(data)
         if iter_id % 100 == 0:

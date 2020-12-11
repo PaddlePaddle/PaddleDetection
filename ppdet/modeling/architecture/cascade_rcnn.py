@@ -158,17 +158,12 @@ class CascadeRCNN(BaseArch):
         loss.update({'loss': total_loss})
         return loss
 
-    def get_pred(self, return_numpy=True):
+    def get_pred(self):
         bbox, bbox_num = self.bboxes
         output = {
-            'bbox': bbox.numpy(),
-            'bbox_num': bbox_num.numpy(),
-            'im_id': self.inputs['im_id'].numpy(),
+            'bbox': bbox,
+            'bbox_num': bbox_num,
         }
-
         if self.with_mask:
-            mask = self.mask_post_process(self.bboxes, self.mask_head_out,
-                                          self.inputs['im_shape'],
-                                          self.inputs['scale_factor'])
-            output.update(mask)
+            output.update(self.mask_head_out)
         return output
