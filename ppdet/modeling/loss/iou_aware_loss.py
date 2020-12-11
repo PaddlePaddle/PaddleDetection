@@ -20,7 +20,6 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
 from ..utils import xywh2xyxy, bbox_iou, decode_yolo
-from paddle import fluid
 
 
 @register
@@ -44,6 +43,6 @@ class IouAwareLoss(IouLoss):
         iou.stop_gradient = True
         iou = iou.reshape((b, h, w, na)).transpose((0, 3, 1, 2))
         ioup = F.sigmoid(ioup)
-        loss_iou_aware = fluid.layers.cross_entropy(ioup, iou, soft_label=True)
+        loss_iou_aware = F.cross_entropy(ioup, iou, soft_label=True)
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

@@ -141,6 +141,7 @@ def deform_conv2d(x,
             out = pre_bias
     return out
 
+
 @paddle.jit.not_to_static
 def roi_pool(input,
              rois,
@@ -1293,14 +1294,11 @@ def matrix_nms(bboxes,
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
         out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
-<<<<<<< a88341f4e8540df345de2f74c4973385e36daf17
-        if return_index:
-            if return_rois_num:
-                return out, index, rois_num
-            return out, index
-        if return_rois_num:
-            return out, rois_num
-        return out
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return out, rois_num, index
     else:
         helper = LayerHelper('matrix_nms', **locals())
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
@@ -1327,51 +1325,11 @@ def matrix_nms(bboxes,
             outputs=outputs)
         output.stop_gradient = True
 
-        if return_index:
-            if return_rois_num:
-                return output, index, rois_num
-            return output, index
-        if return_rois_num:
-            return output, rois_num
-        return output
-=======
         if not return_index:
             index = None
         if not return_rois_num:
             rois_num = None
         return out, rois_num, index
-
-    helper = LayerHelper('matrix_nms', **locals())
-    output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-    index = helper.create_variable_for_type_inference(dtype='int')
-    outputs = {'Out': output, 'Index': index}
-    if return_rois_num:
-        rois_num = helper.create_variable_for_type_inference(dtype='int')
-        outputs['RoisNum'] = rois_num
-
-    helper.append_op(
-        type="matrix_nms",
-        inputs={'BBoxes': bboxes,
-                'Scores': scores},
-        attrs={
-            'background_label': background_label,
-            'score_threshold': score_threshold,
-            'post_threshold': post_threshold,
-            'nms_top_k': nms_top_k,
-            'gaussian_sigma': gaussian_sigma,
-            'use_gaussian': use_gaussian,
-            'keep_top_k': keep_top_k,
-            'normalized': normalized
-        },
-        outputs=outputs)
-    output.stop_gradient = True
-
-    if not return_index:
-        index = None
-    if not return_rois_num:
-        rois_num = None
-    return out, rois_num, index
->>>>>>> modify code to train and eval successfully
 
 
 @paddle.jit.not_to_static
