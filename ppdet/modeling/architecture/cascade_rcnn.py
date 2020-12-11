@@ -165,5 +165,5 @@ class CascadeRCNN(BaseArch):
             'bbox_num': bbox_num,
         }
         if self.with_mask:
-            output.update(self.mask_head_out)
+            output.update({'mask': self.mask_head_out})
         return output
