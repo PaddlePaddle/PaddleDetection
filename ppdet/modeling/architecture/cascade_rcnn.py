@@ -113,12 +113,9 @@ class CascadeRCNN(BaseArch):
         if self.inputs['mode'] == 'infer':
             bbox_pred, bboxes = self.bbox_head.get_cascade_prediction(
                 self.bbox_head_list, rois_list)
-            self.bboxes = self.bbox_post_process(
-                bbox_pred,
-                bboxes,
-                self.inputs['im_shape'],
-                self.inputs['scale_factor'],
-                var_weight=3.)
+            self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
+                                                 self.inputs['im_shape'],
+                                                 self.inputs['scale_factor'])
 
         if self.with_mask:
             rois = rois_list[-1]

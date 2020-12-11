@@ -61,7 +61,9 @@ def dygraph_to_static(model, save_dir, cfg):
     if image_shape is None:
         image_shape = [3, None, None]
     # Save infer cfg
-    dump_infer_config(cfg, os.path.join(save_dir, 'infer_cfg.yml'), image_shape)
+    dump_infer_config(cfg,
+                      os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                      model)
 
     input_spec = [{
         "image": InputSpec(
