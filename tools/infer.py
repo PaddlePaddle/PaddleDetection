@@ -161,7 +161,8 @@ def run(FLAGS, cfg, place):
         im_ids = data[fields.index('im_id')].numpy()
 
         mask_resolution = None
-        if cfg['MaskPostProcess']['mask_resolution'] is not None:
+        if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
+                'mask_resolution'] is not None:
             mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
         batch_res = get_infer_results(
             [outs],
