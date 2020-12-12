@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
@@ -43,6 +44,7 @@ class IouAwareLoss(IouLoss):
         iou.stop_gradient = True
         iou = iou.reshape((b, h, w, na)).transpose((0, 3, 1, 2))
         ioup = F.sigmoid(ioup)
-        loss_iou_aware = F.cross_entropy(ioup, iou, soft_label=True)
+        loss_iou_aware = (-iou * paddle.log(ioup)).sum(-1, keepdim=True)
+        # loss_iou_aware = F.cross_entropy(ioup, iou, soft_label=True, reduction='none')
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

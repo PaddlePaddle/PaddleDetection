@@ -109,7 +109,8 @@ def run(FLAGS, cfg, place):
                                                 use_default_label)
 
     mask_resolution = None
-    if cfg['MaskPostProcess']['mask_resolution'] is not None:
+    if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
+            'mask_resolution'] is not None:
         mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
     infer_res = get_infer_results(
         outs_res,

@@ -178,7 +178,7 @@ class ModelEMA(object):
     def resume(self, model, optimizer=None):
         self.state_dict = model.state_dict()
         if optimizer is not None:
-            self.iters = optimizer.state_dict()['LR_Scheduler']['last_epoch']
+            self.step = optimizer.state_dict()['LR_Scheduler']['last_epoch']
 
     def restore(self, model):
         model.set_dict(self.state_dict)

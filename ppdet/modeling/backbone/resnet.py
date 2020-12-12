@@ -17,7 +17,7 @@ from paddle import ParamAttr
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D
+from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D, SyncBatchNorm
 
 from ppdet.core.workspace import register, serializable
 
@@ -85,14 +85,18 @@ class ConvNormLayer(nn.Layer):
             trainable=False if freeze_norm else True)
 
         global_stats = True if freeze_norm else False
-        self.norm = BatchNorm(
-            ch_out,
-            act=act,
-            param_attr=param_attr,
-            bias_attr=bias_attr,
-            use_global_stats=global_stats,
-            moving_mean_name=bn_name + '_mean',
-            moving_variance_name=bn_name + '_variance')
+        if norm_type == 'sync_bn':
+            self.norm = SyncBatchNorm(
+                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        else:
+            self.norm = BatchNorm(
+                ch_out,
+                act=act,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=global_stats,
+                moving_mean_name=bn_name + '_mean',
+                moving_variance_name=bn_name + '_variance')
         norm_params = self.norm.parameters()
 
         if freeze_norm:
@@ -101,7 +105,7 @@ class ConvNormLayer(nn.Layer):
 
     def forward(self, inputs):
         out = self.conv(inputs)
-        if self.norm_type == 'bn':
+        if self.norm_type in ['bn', 'sync_bn']:
             out = self.norm(out)
         return out
 
