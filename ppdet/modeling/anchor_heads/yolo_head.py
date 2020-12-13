@@ -241,10 +241,11 @@ class YOLOv3Head(object):
                 padding=0,
                 name='{}.{}.0'.format(name, j))
             if self.use_spp and is_first and j == 1:
+                c = conv.shape[1]
                 conv = self._spp_module(conv, name="spp")
                 conv = self._conv_bn(
                     conv,
-                    512,
+                    c,
                     filter_size=1,
                     stride=1,
                     padding=0,
@@ -264,7 +265,15 @@ class YOLOv3Head(object):
                     is_test=is_test)
 
         if self.use_spp and conv_block_num == 0 and is_first:
+            c = conv.shape[1]
             conv = self._spp_module(conv, name="spp")
+            conv = self._conv_bn(
+                conv,
+                c,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                name='{}.spp.conv'.format(name))
 
         if self.drop_block and (is_first or conv_block_num == 0):
             conv = DropBlock(

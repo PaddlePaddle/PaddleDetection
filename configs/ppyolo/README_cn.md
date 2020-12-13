@@ -68,14 +68,24 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 ### PP-YOLO 轻量级模型
 
-|          模型                | GPU个数 | 每GPU图片个数 |  模型体积  | 输入尺寸 | Box AP<sup>val</sup> | Kirin 990 (FPS) | 模型下载 | 配置文件 |
-|:----------------------------:|:-------:|:-------------:|:----------:| :-------:| :------------------: | :-------------: |------------: | :---------------------: |
-| PP-YOLO_MobileNetV3_large    |    4    |      32       |    18MB    |   320    |         22.0         |       14.1      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
-| PP-YOLO_MobileNetV3_small    |    4    |      32       |    11MB    |   320    |         16.8         |       21.5      | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
+|          模型                | GPU个数 | 每GPU图片个数 |  模型体积  | 输入尺寸 | Box AP<sup>val</sup> |  Box AP50<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 预测模型下载 | 配置文件 |
+|:----------------------------:|:-------:|:-------------:|:----------:| :-------:| :------------------: |  :--------------------: | :--------------------: | :------: | :----------: | :------: |
+| PP-YOLO_MobileNetV3_large    |    4    |      32       |    18MB    |   320    |         23.2         |           42.6          |           14.1         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
+| PP-YOLO_MobileNetV3_small    |    4    |      32       |    11MB    |   320    |         17.2         |           33.8          |           21.5         | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
-- PP-YOLO_MobileNetV3 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP50<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果。
+- PP-YOLO_MobileNetV3 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果, Box AP50<sup>val</sup>为`mAP(IoU=0.5)`评估结果。
 - PP-YOLO_MobileNetV3 模型训练过程中使用4GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
 - PP-YOLO_MobileNetV3 模型推理速度测试环境配置为麒麟990芯片单线程。
+
+### PP-YOLO 轻量级裁剪模型
+
+|            模型              |  GPU 个数  | 每GPU图片个数 |   裁剪率    |         Teacher模型       |  模型体积  |   输入尺寸  | Box AP<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 预测模型下载 | 配置文件 |
+|:----------------------------:|:----------:|:-------------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :--------------------: | :------: | :----------: | :------: |
+| PP-YOLO_MobileNetV3_small    |     4      |       32      |     75%     | PP-YOLO_MobileNetV3_large |   4.2MB    |     320     |         16.2         |          39.8          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.pdparams) | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
+
+- PP-YOLO 轻量级裁剪模型采用[蒸馏通道剪裁模型](../../slim/extentions/distill_pruned_model/README.md) 的方式训练得到，基于 PP-YOLO_MobileNetV3_small 模型对Head部分做卷积通道剪裁后使用 PP-YOLO_MobileNetV3_large 模型进行蒸馏训练
+- 卷积通道检测对Head部分剪裁掉75%的通道数，及剪裁参数为`--pruned_params="yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights" --pruned_ratios="0.75,0.75,0.75,0.75"`
+- PP-YOLO 轻量级裁剪模型的训练、评估、预测及模型导出方法见[蒸馏通道剪裁模型](../../slim/extentions/distill_pruned_model/README.md)
 
 ### Pascal VOC数据集上的PP-YOLO
 
