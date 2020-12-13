@@ -43,16 +43,12 @@ class YOLOv3(BaseArch):
         loss = self.yolo_head.get_loss(self.yolo_head_outs, self.inputs)
         return loss
 
-    def get_pred(self, return_numpy=True):
+    def get_pred(self):
         bbox, bbox_num = self.post_process(
             self.yolo_head_outs, self.yolo_head.mask_anchors,
             self.inputs['im_shape'], self.inputs['scale_factor'])
-        if return_numpy:
-            outs = {
-                "bbox": bbox.numpy(),
-                "bbox_num": bbox_num.numpy(),
-                'im_id': self.inputs['im_id'].numpy()
-            }
-        else:
-            outs = [bbox, bbox_num]
+        outs = {
+            "bbox": bbox,
+            "bbox_num": bbox_num,
+        }
         return outs

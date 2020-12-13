@@ -147,15 +147,33 @@ def run(FLAGS, cfg, place):
     # Run Infer 
     for iter_id, data in enumerate(test_loader):
         # forward
+        fields = cfg.TestReader['inputs_def']['fields']
         model.eval()
-        outs = model(data, cfg.TestReader['inputs_def']['fields'], 'infer')
+        outs = model(
+            data=data,
+            input_def=cfg.TestReader['inputs_def']['fields'],
+            mode='infer')
+        im_info = [[
+            data[fields.index('im_shape')].numpy(),
+            data[fields.index('scale_factor')].numpy(),
+            data[fields.index('im_id')].numpy()
+        ]]
+        im_ids = data[fields.index('im_id')].numpy()
 
-        batch_res = get_infer_results([outs], outs.keys(), clsid2catid)
+        mask_resolution = None
+        if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
+                'mask_resolution'] is not None:
+            mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
+        batch_res = get_infer_results(
+            [outs],
+            outs.keys(),
+            clsid2catid,
+            im_info,
+            mask_resolution=mask_resolution)
         logger.info('Infer iter {}'.format(iter_id))
         bbox_res = None
         mask_res = None
 
-        im_ids = outs['im_id']
         bbox_num = outs['bbox_num']
         start = 0
         for i, im_id in enumerate(im_ids):

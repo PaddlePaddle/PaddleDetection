@@ -35,6 +35,7 @@ from ppdet.utils.stats import TrainingStats
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
+from export_model import dygraph_to_static
 from paddle.distributed import ParallelEnv
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -128,8 +129,9 @@ def run(FLAGS, cfg, place):
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
+    start_epoch = 0
     if FLAGS.weight_type == 'resume':
-        load_weight(model, cfg.pretrain_weights, optimizer)
+        start_epoch = load_weight(model, cfg.pretrain_weights, optimizer)
     else:
         load_pretrain_weight(model, cfg.pretrain_weights,
                              cfg.get('load_static_weights', False),
@@ -148,14 +150,14 @@ def run(FLAGS, cfg, place):
         model = paddle.DataParallel(model)
 
     fields = train_loader.collate_fn.output_fields
+    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
+    save_dir = os.path.join(cfg.save_dir, cfg_name)
     # Run Train
     time_stat = deque(maxlen=cfg.log_iter)
     start_time = time.time()
     end_time = time.time()
     # Run Train
-    start_epoch = optimizer.state_dict()['LR_Scheduler']['last_epoch']
-    for epoch_id in range(int(cfg.epoch)):
-        cur_eid = epoch_id + start_epoch
+    for cur_eid in range(start_epoch, int(cfg.epoch)):
         train_loader.dataset.epoch = cur_eid
         for iter_id, data in enumerate(train_loader):
             start_time = end_time
@@ -168,16 +170,11 @@ def run(FLAGS, cfg, place):
 
             # Model Forward
             model.train()
-            outputs = model(data, fields, 'train')
+            outputs = model(data=data, input_def=fields, mode='train')
 
             # Model Backward
             loss = outputs['loss']
-            if ParallelEnv().nranks > 1:
-                loss = model.scale_loss(loss)
-                loss.backward()
-                model.apply_collective_grads()
-            else:
-                loss.backward()
+            loss.backward()
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
@@ -185,7 +182,7 @@ def run(FLAGS, cfg, place):
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                 # Log state 
-                if epoch_id == 0 and iter_id == 0:
+                if cur_eid == start_epoch and iter_id == 0:
                     train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
@@ -199,11 +196,12 @@ def run(FLAGS, cfg, place):
         if ParallelEnv().local_rank == 0 and (
                 cur_eid % cfg.snapshot_epoch == 0 or
             (cur_eid + 1) == int(cfg.epoch)):
-            cfg_name = os.path.basename(FLAGS.config).split('.')[0]
             save_name = str(cur_eid) if cur_eid + 1 != int(
                 cfg.epoch) else "model_final"
-            save_dir = os.path.join(cfg.save_dir, cfg_name)
-            save_model(model, optimizer, save_dir, save_name)
+            save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
+        # TODO(guanghua): dygraph model to static model
+        # if ParallelEnv().local_rank == 0 and (cur_eid + 1) == int(cfg.epoch)):
+        #     dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'), cfg)
 
 
 def main():

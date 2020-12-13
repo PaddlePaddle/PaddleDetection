@@ -36,7 +36,6 @@ class Anchor(object):
 
             anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
             var = fluid.layers.reshape(var, shape=(-1, 4))
-
             rpn_score_list.append(rpn_score)
             rpn_delta_list.append(rpn_delta)
             anchor_list.append(anchor)
@@ -128,7 +127,12 @@ class Proposal(object):
             rois_num_per_level=rpn_rois_num_list)
         return rois_collect, rois_num_collect
 
-    def generate_proposal_target(self, inputs, rois, rois_num, stage=0):
+    def generate_proposal_target(self,
+                                 inputs,
+                                 rois,
+                                 rois_num,
+                                 stage=0,
+                                 max_overlap=None):
         outs = self.proposal_target_generator(
             rpn_rois=rois,
             rpn_rois_num=rois_num,
@@ -136,32 +140,36 @@ class Proposal(object):
             is_crowd=inputs['is_crowd'],
             gt_boxes=inputs['gt_bbox'],
             im_info=inputs['im_info'],
-            stage=stage)
+            stage=stage,
+            max_overlap=max_overlap)
         rois = outs[0]
-        rois_num = outs[-1]
+        max_overlap = outs[-1]
+        rois_num = outs[-2]
         targets = {
             'labels_int32': outs[1],
             'bbox_targets': outs[2],
             'bbox_inside_weights': outs[3],
             'bbox_outside_weights': outs[4]
         }
-        return rois, rois_num, targets
+        return rois, rois_num, targets, max_overlap
 
-    def refine_bbox(self, rois, bbox_delta, stage=0):
-        out_dim = bbox_delta.shape[1] / 4
-        bbox_delta_r = fluid.layers.reshape(bbox_delta, (-1, out_dim, 4))
-        bbox_delta_s = fluid.layers.slice(
+    def refine_bbox(self, roi, bbox_delta, stage=1):
+        out_dim = bbox_delta.shape[1] // 4
+        bbox_delta_r = paddle.reshape(bbox_delta, (-1, out_dim, 4))
+        bbox_delta_s = paddle.slice(
             bbox_delta_r, axes=[1], starts=[1], ends=[2])
 
+        reg_weights = [
+            i / stage for i in self.proposal_target_generator.bbox_reg_weights
+        ]
         refined_bbox = ops.box_coder(
-            prior_box=rois,
-            prior_box_var=self.proposal_target_generator.bbox_reg_weights[
-                stage],
+            prior_box=roi,
+            prior_box_var=reg_weights,
             target_box=bbox_delta_s,
             code_type='decode_center_size',
             box_normalized=False,
             axis=1)
-        refined_bbox = fluid.layers.reshape(refined_bbox, shape=[-1, 4])
+        refined_bbox = paddle.reshape(refined_bbox, shape=[-1, 4])
         return refined_bbox
 
     def __call__(self,
@@ -170,30 +178,26 @@ class Proposal(object):
                  anchor_out,
                  stage=0,
                  proposal_out=None,
-                 bbox_head_outs=None,
-                 refined=False):
-        if refined:
-            assert proposal_out is not None, "If proposal has been refined, proposal_out should not be None."
-            return proposal_out
+                 bbox_head_out=None,
+                 max_overlap=None):
         if stage == 0:
             roi, rois_num = self.generate_proposal(inputs, rpn_head_out,
                                                    anchor_out)
-            self.proposals_list = []
             self.targets_list = []
+            self.max_overlap = None
 
         else:
-            bbox_delta = bbox_head_outs[stage][0]
-            roi = self.refine_bbox(proposal_out[0], bbox_delta, stage - 1)
+            bbox_delta = bbox_head_out[1]
+            roi = self.refine_bbox(proposal_out[0], bbox_delta, stage)
             rois_num = proposal_out[1]
         if inputs['mode'] == 'train':
-            roi, rois_num, targets = self.generate_proposal_target(
-                inputs, roi, rois_num, stage)
+            roi, rois_num, targets, self.max_overlap = self.generate_proposal_target(
+                inputs, roi, rois_num, stage, self.max_overlap)
             self.targets_list.append(targets)
-        self.proposals_list.append((roi, rois_num))
         return roi, rois_num
 
     def get_targets(self):
         return self.targets_list
 
-    def get_proposals(self):
-        return self.proposals_list
+    def get_max_overlap(self):
+        return self.max_overlap

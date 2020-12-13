@@ -73,7 +73,8 @@ def bbox_post_process(bboxes,
 
 
 @jit
-def mask_post_process(bboxes,
+def mask_post_process(bbox,
+                      bbox_nums,
                       masks,
                       im_shape,
                       scale_factor,
@@ -81,7 +82,6 @@ def mask_post_process(bboxes,
                       binary_thresh=0.5):
     if masks.shape[0] == 0:
         return masks
-    bbox, bbox_nums = bboxes
     M = resolution
     scale = (M + 2.0) / M
     boxes = bbox[:, 2:]
@@ -98,7 +98,6 @@ def mask_post_process(bboxes,
         boxes_n = boxes[st_num:end_num]
         labels_n = labels[st_num:end_num]
         masks_n = masks[st_num:end_num]
-
         im_h = int(round(im_shape[i][0] / scale_factor[i]))
         im_w = int(round(im_shape[i][1] / scale_factor[i]))
         boxes_n = expand_bbox(boxes_n, scale)
@@ -141,7 +140,7 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
     det_res = []
     k = 0
     for i in range(len(bbox_nums)):
-        image_id = int(image_id[i][0])
+        cur_image_id = int(image_id[i][0])
         det_nums = bbox_nums[i]
         for j in range(det_nums):
             dt = bboxes[k]
@@ -152,7 +151,7 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
             h = ymax - ymin + 1
             bbox = [xmin, ymin, w, h]
             dt_res = {
-                'image_id': image_id,
+                'image_id': cur_image_id,
                 'category_id': category_id,
                 'bbox': bbox,
                 'score': score
@@ -166,7 +165,7 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
     seg_res = []
     k = 0
     for i in range(len(mask_nums)):
-        image_id = int(image_id[i][0])
+        cur_image_id = int(image_id[i][0])
         det_nums = mask_nums[i]
         for j in range(det_nums):
             dt = masks[k]
@@ -177,7 +176,7 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
                 if 'counts' in sg:
                     sg['counts'] = sg['counts'].decode("utf8")
             sg_res = {
-                'image_id': image_id,
+                'image_id': cur_image_id,
                 'category_id': cat_id,
                 'segmentation': sg,
                 'score': score
