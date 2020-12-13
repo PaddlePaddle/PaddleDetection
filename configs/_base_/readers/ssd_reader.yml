@@ -1,4 +1,4 @@
-worker_num: 0
+worker_num: 2
 TrainReader:
   inputs_def:
     fields: ['image', 'gt_bbox', 'gt_class']
@@ -6,11 +6,12 @@ TrainReader:
 
   sample_transforms:
     - DecodeOp: {}
-    - ColorDistort: {}
+    # - ColorDistort: {}
+    - RandomDistort: {brightness_lower: 0.875, brightness_upper: 1.125, is_order: true}
     - RandomExpandOp: {fill_value: [104., 117., 123.]}
-    - RandomCropOp: {}
-    - RandomFlipImage: {is_normalized: false}
+    - RandomCropOp: {allow_no_crop: true}
     - NormalizeBoxOp: {}
+    - RandomFlipImage: {is_normalized: true}
     - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
     - PadBoxOp: {num_max_boxes: 90}
 

@@ -1,0 +1,36 @@
+_BASE_: [
+  './_base_/models/ssd_vgg16_300.yml',
+  './_base_/optimizers/ssd_120e.yml',
+  './_base_/datasets/voc.yml',
+  './_base_/readers/ssd_reader.yml',
+  './_base_/runtime.yml',
+]
+
+epoch: 240
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 160
+    - 200
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+AnchorGeneratorSSD:
+  steps: [8, 16, 32, 64, 100, 300]
+  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]]
+  min_ratio: 20
+  max_ratio: 90
+  min_sizes: [30.0, 60.0, 111.0, 162.0, 213.0, 264.0]
+  max_sizes: [60.0, 111.0, 162.0, 213.0, 264.0, 315.0]
+  offset: 0.5
+  flip: true
+  min_max_aspect_ratios_order: true
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_shape',  'scale_factor', 'im_id', 'gt_bbox', 'gt_class', 'difficult']
