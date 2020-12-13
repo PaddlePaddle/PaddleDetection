@@ -63,46 +63,46 @@ def bbox_eval(results,
         evaluate_difficult=evaluate_difficult)
 
     for t in results:
-        bboxes = t['bbox'][0]
-        bbox_lengths = t['bbox'][1][0]
+        bboxes = t['bbox']
+        bbox_lengths = t['bbox_num']
 
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
-        gt_boxes = t['gt_bbox'][0]
-        gt_labels = t['gt_class'][0]
-        difficults = t['is_difficult'][0] if not evaluate_difficult \
+        gt_boxes = t['gt_bbox']
+        gt_labels = t['gt_class']
+        difficults = t['difficult'] if not evaluate_difficult \
                             else None
 
-        if len(t['gt_bbox'][1]) == 0:
-            # gt_bbox, gt_class, difficult read as zero padded Tensor
-            bbox_idx = 0
-            for i in range(len(gt_boxes)):
-                gt_box = gt_boxes[i]
-                gt_label = gt_labels[i]
-                difficult = None if difficults is None \
-                                else difficults[i]
-                bbox_num = bbox_lengths[i]
-                bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
-                gt_box, gt_label, difficult = prune_zero_padding(
-                    gt_box, gt_label, difficult)
-                detection_map.update(bbox, gt_box, gt_label, difficult)
-                bbox_idx += bbox_num
-        else:
-            # gt_box, gt_label, difficult read as LoDTensor
-            gt_box_lengths = t['gt_bbox'][1][0]
-            bbox_idx = 0
-            gt_box_idx = 0
-            for i in range(len(bbox_lengths)):
-                bbox_num = bbox_lengths[i]
-                gt_box_num = gt_box_lengths[i]
-                bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
-                gt_box = gt_boxes[gt_box_idx:gt_box_idx + gt_box_num]
-                gt_label = gt_labels[gt_box_idx:gt_box_idx + gt_box_num]
-                difficult = None if difficults is None else \
-                            difficults[gt_box_idx: gt_box_idx + gt_box_num]
-                detection_map.update(bbox, gt_box, gt_label, difficult)
-                bbox_idx += bbox_num
-                gt_box_idx += gt_box_num
+        # if len(t['gt_bbox'][1]) == 0:
+        # gt_bbox, gt_class, difficult read as zero padded Tensor
+        bbox_idx = 0
+        for i in range(gt_boxes.shape[0]):
+            gt_box = gt_boxes[i]
+            gt_label = gt_labels[i]
+            difficult = None if difficults is None \
+                            else difficults[i]
+            bbox_num = bbox_lengths[i]
+            bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+            gt_box, gt_label, difficult = prune_zero_padding(gt_box, gt_label,
+                                                             difficult)
+            detection_map.update(bbox, gt_box, gt_label, difficult)
+            bbox_idx += bbox_num
+        # else:
+        #     # gt_box, gt_label, difficult read as LoDTensor
+        #     gt_box_lengths = t['gt_bbox'][1][0]
+        #     bbox_idx = 0
+        #     gt_box_idx = 0
+        #     for i in range(len(bbox_lengths)):
+        #         bbox_num = bbox_lengths[i]
+        #         gt_box_num = gt_box_lengths[i]
+        #         bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+        #         gt_box = gt_boxes[gt_box_idx:gt_box_idx + gt_box_num]
+        #         gt_label = gt_labels[gt_box_idx:gt_box_idx + gt_box_num]
+        #         difficult = None if difficults is None else \
+        #                     difficults[gt_box_idx: gt_box_idx + gt_box_num]
+        #         detection_map.update(bbox, gt_box, gt_label, difficult)
+        #         bbox_idx += bbox_num
+        #         gt_box_idx += gt_box_num
 
     logger.info("Accumulating evaluatation results...")
     detection_map.accumulate()

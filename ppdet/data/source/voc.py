@@ -159,11 +159,13 @@ class VOCDataSet(DetDataset):
                 ct += 1
                 if self.sample_num > 0 and ct >= self.sample_num:
                     break
-        records = records[:100]
         assert len(records) > 0, 'not found any voc record in %s' % (
             self.anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
+
+    def get_label_list(self):
+        return self.label_list
 
 
 def pascalvoc_label(with_background=True):

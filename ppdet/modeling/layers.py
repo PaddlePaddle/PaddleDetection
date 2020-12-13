@@ -122,7 +122,8 @@ class AnchorGeneratorSSD(object):
                  max_sizes=[60.0, 111.0, 162.0, 213.0, 264.0, 315.0],
                  offset=0.5,
                  flip=True,
-                 clip=False):
+                 clip=False,
+                 min_max_aspect_ratios_order=False):
         self.steps = steps
         self.aspect_ratios = aspect_ratios
         self.min_ratio = min_ratio
@@ -132,6 +133,7 @@ class AnchorGeneratorSSD(object):
         self.offset = offset
         self.flip = flip
         self.clip = clip
+        self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
 
         self.num_priors = []
         for aspect_ratio, min_size, max_size in zip(aspect_ratios, min_sizes,
@@ -153,7 +155,8 @@ class AnchorGeneratorSSD(object):
                 flip=self.flip,
                 clip=self.clip,
                 steps=[step, step],
-                offset=self.offset)
+                offset=self.offset,
+                min_max_aspect_ratios_order=self.min_max_aspect_ratios_order)
             boxes.append(paddle.reshape(box, [-1, 4]))
         return boxes
 

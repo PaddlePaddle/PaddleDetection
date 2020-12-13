@@ -64,7 +64,7 @@ def get_infer_results(outs_res, eval_type, catid):
     return infer_res
 
 
-def eval_results(res, metric, anno_file):
+def eval_results(res, metric, dataset):
     """
     Evalute the inference result
     """
@@ -77,7 +77,8 @@ def eval_results(res, metric, anno_file):
                 json.dump(res['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
-            bbox_stats = cocoapi_eval('bbox.json', 'bbox', anno_file=anno_file)
+            bbox_stats = cocoapi_eval(
+                'bbox.json', 'bbox', anno_file=dataset.get_anno())
             eval_res.append(bbox_stats)
             sys.stdout.flush()
         if 'mask' in res:
@@ -85,9 +86,14 @@ def eval_results(res, metric, anno_file):
                 json.dump(res['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval('mask.json', 'segm', anno_file=anno_file)
+            seg_stats = cocoapi_eval(
+                'mask.json', 'segm', anno_file=dataset.get_anno())
             eval_res.append(seg_stats)
             sys.stdout.flush()
+    elif metric == 'VOC':
+        from ppdet.utils.voc_eval import bbox_eval
+
+        bbox_stats = bbox_eval(res, 21)
     else:
         raise NotImplemented("Only COCO metric is supported now.")
 
