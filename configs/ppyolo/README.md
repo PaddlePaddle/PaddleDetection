@@ -67,22 +67,26 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 ### PP-YOLO for mobile
 
-|            Model             | GPU number | images/GPU | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
-|:----------------------------:|:----------:|:----------:| :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
-| PP-YOLO_MobileNetV3_large    |     4      |      32    |    18MB    |     320     |         22.0         |      14.1      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
-| PP-YOLO_MobileNetV3_small    |     4      |      32    |    11MB    |     320     |         16.8         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
+|            Model             | GPU number | images/GPU | Model Size | input shape | Box AP<sup>val</sup> |  Box AP50<sup>val</sup> | Kirin 990 1xCore(FPS) | download | inference model download | config  |
+|:----------------------------:|:----------:|:----------:| :--------: | :----------:| :------------------: |  :--------------------: | :-------------------: | :------: | :----------------------: | :-----: |
+| PP-YOLO_MobileNetV3_large    |     4      |      32    |    18MB    |     320     |         23.2         |           42.6          |          15.6         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.pdparams) | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_large.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_large.yml)                   |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |    11MB    |     320     |         17.2         |           33.8          |          28.6         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
 **Notes:**
 
-- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
+- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`, Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
 - PP-YOLO_MobileNetV3 used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](../../docs/FAQ.md).
 - PP-YOLO_MobileNetV3 inference speed is tested on Kirin 990 with 1 thread.
 
 ### Slim PP-YOLO
 
-|            Model             | GPU number | images/GPU | Prune Ratio |        Teacher Model      | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990(FPS) | download | config  |
-|:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :------------: | :------: | :-----: |
-| PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.1MB    |     320     |         14.4         |      21.5      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
+|            Model             | GPU number | images/GPU | Prune Ratio |        Teacher Model      | Model Size | input shape | Box AP<sup>val</sup> | Kirin 990 1xCore(FPS) | download | inference model download | config  |
+|:----------------------------:|:----------:|:----------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :-------------------: | :------: | :----------------------: | :-----: |
+| PP-YOLO_MobileNetV3_small    |     4      |      32    |     75%     | PP-YOLO_MobileNetV3_large |   4.2MB    |     320     |         16.2         |      39.8      | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.pdparams) | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
+
+- Slim PP-YOLO is trained by slim traing method from [Distill pruned model](../../slim/extentions/distill_pruned_model/README.md)，distill training pruned PP-YOLO_MobileNetV3_small model with PP-YOLO_MobileNetV3_large model as the teacher model
+- Pruning detectiom head of PP-YOLO model with ratio as 75%, while the arguments are `--pruned_params="yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights" --pruned_ratios="0.75,0.75,0.75,0.75"`
+- For Slim PP-YOLO training, evaluation, inference and model exporting, please see [Distill pruned model](../../slim/extentions/distill_pruned_model/README.md)
 
 ### PP-YOLO on Pascal VOC
 
