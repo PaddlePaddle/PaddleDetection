@@ -237,6 +237,14 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
 
+## 第三方教程推荐
+
+- [PaddleDetection在Windows下的部署(一)](https://zhuanlan.zhihu.com/p/268657833)
+- [PaddleDetection在Windows下的部署(二)](https://zhuanlan.zhihu.com/p/280206376)
+- [Jetson Nano上部署PaddleDection 原生预测方法经验分享](https://zhuanlan.zhihu.com/p/319371293)
+- [安全帽检测YOLOv3模型在树莓派上的部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/yolov3_for_raspi.md)
+- [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
+
 ## 版本更新
 v0.5.0版本已经在`11/2020`发布，增加SOLOv2等多个模型，新增Android移动端Demo，新增PACT量化策略，新增目标检测全流程和Jetson平台部署等教程，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
