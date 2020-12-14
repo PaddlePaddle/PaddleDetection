@@ -80,7 +80,8 @@ def main():
     # check if paddlepaddle version is satisfied
     check_version()
 
-    assert not (use_xpu and cfg.use_gpu), 'Can not run on both XPU and GPU' 
+    assert not (use_xpu and cfg.use_gpu), \
+            'Can not run on both XPU and GPU' 
 
     save_only = getattr(cfg, 'save_prediction_only', False)
     if save_only:
