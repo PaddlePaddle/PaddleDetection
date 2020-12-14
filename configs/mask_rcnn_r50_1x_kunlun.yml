@@ -7,7 +7,7 @@ log_iter: 1
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
 metric: COCO
-weights: output/mask_rcnn_r50_1x/model_final
+weights: output/mask_rcnn_r50_1x_kunlun/model_final
 num_classes: 9
 
 MaskRCNN:
