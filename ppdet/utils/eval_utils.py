@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import json
-from ppdet.py_op.post_process import get_det_res, get_seg_res, mask_post_process
+from ppdet.py_op.post_process import get_det_res, get_seg_res
 import logging
 logger = logging.getLogger(__name__)
 
@@ -33,8 +33,7 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             logger.info("{} not exists!".format(v_json))
 
 
-def get_infer_results(outs_res, eval_type, catid, im_info,
-                      mask_resolution=None):
+def get_infer_results(outs_res, eval_type, catid, im_info):
     """
     Get result at the stage of inference.
     The output format is dictionary containing bbox or mask result.
@@ -52,8 +51,8 @@ def get_infer_results(outs_res, eval_type, catid, im_info,
         box_res = []
         for i, outs in enumerate(outs_res):
             im_ids = im_info[i][2]
-            box_res += get_det_res(outs['bbox'].numpy(),
-                                   outs['bbox_num'].numpy(), im_ids, catid)
+            box_res += get_det_res(outs['bbox'], outs['bbox_num'], im_ids,
+                                   catid)
         infer_res['bbox'] = box_res
 
     if 'mask' in eval_type:
@@ -63,12 +62,8 @@ def get_infer_results(outs_res, eval_type, catid, im_info,
             im_shape = im_info[i][0]
             scale_factor = im_info[i][1]
             im_ids = im_info[i][2]
-            mask = mask_post_process(outs['bbox'].numpy(),
-                                     outs['bbox_num'].numpy(),
-                                     outs['mask'].numpy(), im_shape,
-                                     scale_factor[0], mask_resolution)
-            seg_res += get_seg_res(mask, outs['bbox_num'].numpy(), im_ids,
-                                   catid)
+            mask = outs['mask']
+            seg_res += get_seg_res(mask, outs['bbox_num'], im_ids, catid)
         infer_res['mask'] = seg_res
 
     return infer_res

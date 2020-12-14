@@ -73,33 +73,34 @@ def bbox_post_process(bboxes,
 
 
 @jit
-def mask_post_process(bbox,
-                      bbox_nums,
-                      masks,
+def mask_post_process(det_res,
                       im_shape,
                       scale_factor,
                       resolution=14,
                       binary_thresh=0.5):
+    bbox = det_res['bbox']
+    bbox_num = det_res['bbox_num']
+    masks = det_res['mask']
     if masks.shape[0] == 0:
         return masks
     M = resolution
     scale = (M + 2.0) / M
     boxes = bbox[:, 2:]
     labels = bbox[:, 0]
-    segms_results = [[] for _ in range(len(bbox_nums))]
+    segms_results = [[] for _ in range(len(bbox_num))]
     sum = 0
     st_num = 0
     end_num = 0
-    for i in range(len(bbox_nums)):
-        bbox_num = bbox_nums[i]
-        end_num += bbox_num
-
+    for i in range(len(bbox_num)):
+        length = bbox_num[i]
+        end_num += length
         cls_segms = []
         boxes_n = boxes[st_num:end_num]
         labels_n = labels[st_num:end_num]
         masks_n = masks[st_num:end_num]
-        im_h = int(round(im_shape[i][0] / scale_factor[i]))
-        im_w = int(round(im_shape[i][1] / scale_factor[i]))
+
+        im_h = int(round(im_shape[i][0] / scale_factor[i, 0]))
+        im_w = int(round(im_shape[i][1] / scale_factor[i, 0]))
         boxes_n = expand_bbox(boxes_n, scale)
         boxes_n = boxes_n.astype(np.int32)
         padded_mask = np.zeros((M + 2, M + 2), dtype=np.float32)
@@ -129,8 +130,8 @@ def mask_post_process(bbox,
                     im_mask[:, :, np.newaxis], order='F'))[0]
             cls_segms.append(rle)
         segms_results[i] = np.array(cls_segms)[:, np.newaxis]
-        st_num += bbox_num
-    segms_results = np.vstack([segms_results[k] for k in range(len(bbox_nums))])
+        st_num += length
+    segms_results = np.vstack([segms_results[k] for k in range(len(bbox_num))])
     bboxes = np.hstack([segms_results, bbox])
     return bboxes[:, :3]
 

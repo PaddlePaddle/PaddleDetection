@@ -192,8 +192,8 @@ class PadStride(object):
             im_info (dict): info of processed image
         """
         coarsest_stride = self.coarsest_stride
-        if coarsest_stride == 0:
-            return im
+        if coarsest_stride <= 0:
+            return im, im_info
         im_c, im_h, im_w = im.shape
         pad_h = int(np.ceil(float(im_h) / coarsest_stride) * coarsest_stride)
         pad_w = int(np.ceil(float(im_w) / coarsest_stride) * coarsest_stride)

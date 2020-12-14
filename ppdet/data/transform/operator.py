@@ -577,7 +577,7 @@ class RandomFlipOp(BaseOperator):
 
 @register_op
 class ResizeOp(BaseOperator):
-    def __init__(self, target_size, keep_ratio=True, interp=cv2.INTER_LINEAR):
+    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
