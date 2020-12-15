@@ -6,7 +6,6 @@ import numpy as np
 import paddle
 import paddle.nn as nn
 from ppdet.core.workspace import register
-from ppdet.utils.data_structure import BufferDict
 
 __all__ = ['BaseArch']
 
