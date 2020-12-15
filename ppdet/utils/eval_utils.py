@@ -54,15 +54,13 @@ def get_infer_results(outs_res, eval_type, catid):
 
         if 'bbox' in eval_type:
             box_res = []
-            box_res += get_det_res(outs['bbox'].numpy(),
-                                   outs['bbox_num'].numpy(), im_id, catid)
+            box_res += get_det_res(outs['bbox'], outs['bbox_num'], im_id, catid)
             infer_res['bbox'] = box_res
 
         if 'mask' in eval_type:
             seg_res = []
             # mask post process
-            seg_res += get_seg_res(outs['mask'], outs['bbox_num'].numpy(),
-                                   im_id, catid)
+            seg_res += get_seg_res(outs['mask'], outs['bbox_num'], im_id, catid)
             infer_res['mask'] = seg_res
 
     return infer_res

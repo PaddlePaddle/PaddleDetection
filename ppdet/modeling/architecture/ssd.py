@@ -45,9 +45,9 @@ class SSD(BaseArch):
                                            self.inputs['scale_factor'])
         if return_numpy:
             outs = {
-                "bbox": bbox.numpy(),
-                "bbox_num": bbox_num.numpy(),
-                'im_id': self.inputs['im_id'].numpy()
+                "bbox": bbox,
+                "bbox_num": bbox_num,
+                'im_id': self.inputs['im_id']
             }
         else:
             outs = [bbox, bbox_num]
