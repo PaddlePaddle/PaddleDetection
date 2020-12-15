@@ -45,7 +45,8 @@ def get_infer_results(outs_res, eval_type, catid):
         raise ValueError(
             'The number of valid detection result if zero. Please use reasonable model and check input data.'
         )
-    infer_res = {}
+
+    infer_res = {k: [] for k in eval_type}
 
     for i, outs in enumerate(outs_res):
         im_id = outs['im_id']
@@ -53,14 +54,13 @@ def get_infer_results(outs_res, eval_type, catid):
         scale_factor = outs['scale_factor']
 
         if 'bbox' in eval_type:
-            box_res = []
-            box_res += get_det_res(outs['bbox'], outs['bbox_num'], im_id, catid)
-            infer_res['bbox'] = box_res
+            infer_res['bbox'] += get_det_res(outs['bbox'], outs['bbox_num'],
+                                             im_id, catid)
 
         if 'mask' in eval_type:
-            seg_res = []
             # mask post process
-            seg_res += get_seg_res(outs['mask'], outs['bbox_num'], im_id, catid)
+            infer_res['mask'] += get_seg_res(outs['mask'], outs['bbox_num'],
+                                             im_id, catid)
             infer_res['mask'] = seg_res
 
     return infer_res
