@@ -91,12 +91,12 @@ def run(FLAGS, cfg, place):
         if 'mask' in outs and 'bbox' in outs:
             mask_resolution = model.mask_post_process.mask_resolution
             from ppdet.py_op.post_process import mask_post_process
-            outs['mask'] = mask_post_process(outs, im_shape, scale_factor,
-                                             mask_resolution)
+            outs['mask'] = mask_post_process(
+                outs, outs['im_shape'], outs['scale_factor'], mask_resolution)
 
         outs_res.append(outs)
         # log
-        sample_num += outs['im_shape'].shape[0]
+        sample_num += outs['im_id'].shape[0]
         if iter_id % 100 == 0:
             logger.info("Eval iter: {}".format(iter_id))
 

@@ -61,7 +61,6 @@ def get_infer_results(outs_res, eval_type, catid):
             # mask post process
             infer_res['mask'] += get_seg_res(outs['mask'], outs['bbox_num'],
                                              im_id, catid)
-            infer_res['mask'] = seg_res
 
     return infer_res
 
