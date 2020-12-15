@@ -109,18 +109,24 @@ class WIDERFaceDataSet(DataSet):
 
         file_dict = {}
         num_class = 0
+        exts = ['jpg', 'jpeg', 'png', 'bmp']
+        exts += [ext.upper() for ext in exts]
         for i in range(len(lines_input_txt)):
             line_txt = lines_input_txt[i].strip('\n\t\r')
-            if '.jpg' in line_txt:
-                if i != 0:
-                    num_class += 1
-                file_dict[num_class] = []
-                file_dict[num_class].append(line_txt)
-            if '.jpg' not in line_txt:
+            split_str = line_txt.split(' ')
+            if len(split_str) == 1:
+                img_file_name = os.path.split(split_str[0])[1]
+                split_txt = img_file_name.split('.')
+                if len(split_txt) < 2:
+                    continue
+                elif split_txt[-1] in exts:
+                    if i != 0:
+                        num_class += 1
+                    file_dict[num_class] = [line_txt]
+            else:
                 if len(line_txt) <= 6:
                     continue
                 result_boxs = []
-                split_str = line_txt.split(' ')
                 xmin = float(split_str[0])
                 ymin = float(split_str[1])
                 w = float(split_str[2])

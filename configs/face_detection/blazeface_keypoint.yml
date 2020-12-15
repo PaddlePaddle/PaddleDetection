@@ -9,6 +9,7 @@ save_dir: output
 weights: output/blazeface_keypoint/model_final.pdparams
 # 1(label_class) + 1(background)
 num_classes: 2
+with_lmk: true
 
 BlazeFace:
   backbone: BlazeNet
@@ -19,7 +20,6 @@ BlazeFace:
     score_threshold: 0.01
   min_sizes: [[16.,24.], [32., 48., 64., 80., 96., 128.]]
   use_density_prior_box: false
-  with_lmk: true
   lmk_loss:
     overlap_threshold: 0.35
     neg_overlap: 0.35
@@ -103,12 +103,11 @@ EvalReader:
   - !DecodeImage
     to_rgb: true
   - !NormalizeBox {}
-  - !NormalizeImage
-    is_channel_first: false
-    is_scale: false
-    mean: [123, 117, 104]
-    std: [127.502231, 127.502231, 127.502231]
   - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [104, 117, 123]
+    std: [127.502231, 127.502231, 127.502231]
   batch_size: 1
 
 TestReader:
@@ -120,10 +119,12 @@ TestReader:
   sample_transforms:
   - !DecodeImage
     to_rgb: true
-  - !NormalizeImage
-    is_channel_first: false
-    is_scale: false
-    mean: [123, 117, 104]
-    std: [127.502231, 127.502231, 127.502231]
+  - !ResizeImage
+    target_size: 640
+    interp: 1
   - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [104, 117, 123]
+    std: [127.502231, 127.502231, 127.502231]
   batch_size: 1
