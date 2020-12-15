@@ -141,6 +141,10 @@ def dump_infer_config(FLAGS, config):
                 infer_arch))
         os._exit(0)
 
+    # support land mark output
+    if 'with_lmk' in config and config['with_lmk'] == True:
+        infer_cfg['with_lmk'] = True
+
     if 'Mask' in config['architecture']:
         infer_cfg['mask_resolution'] = config['MaskHead']['resolution']
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[

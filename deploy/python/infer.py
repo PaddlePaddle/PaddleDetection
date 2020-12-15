@@ -34,8 +34,7 @@ import numpy as np
 import paddle
 import paddle.fluid as fluid
 from preprocess import preprocess, Resize, Normalize, Permute, PadStride
-from visualize import visualize_box_mask
-from ppdet.utils.check import enable_static_mode
+from visualize import visualize_box_mask, lmk2out
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -90,9 +89,12 @@ class Detector(object):
         inputs = create_inputs(im, im_info, self.config.arch)
         return inputs, im_info
 
-    def postprocess(self, np_boxes, np_masks, im_info, threshold=0.5):
+    def postprocess(self, np_boxes, np_masks, np_lmk, im_info, threshold=0.5):
         # postprocess output of predictor
         results = {}
+        if np_lmk is not None:
+            results['landmark'] = lmk2out(np_boxes, np_lmk, im_info, threshold)
+
         if self.config.arch in ['SSD', 'Face']:
             w, h = im_info['origin_shape']
             np_boxes[:, 2] *= h
@@ -129,7 +131,7 @@ class Detector(object):
                             shape:[N, class_num, mask_resolution, mask_resolution]
         '''
         inputs, im_info = self.preprocess(image)
-        np_boxes, np_masks = None, None
+        np_boxes, np_masks, np_lmk = None, None, None
         if self.config.use_python_inference:
             for i in range(warmup):
                 outs = self.executor.run(self.program,
@@ -164,6 +166,17 @@ class Detector(object):
                         output_names[1])
                     np_masks = masks_tensor.copy_to_cpu()
 
+                if self.config.with_lmk is not None and self.config.with_lmk == True:
+                    face_index = self.predictor.get_output_tensor(output_names[
+                        1])
+                    landmark = self.predictor.get_output_tensor(output_names[2])
+                    prior_boxes = self.predictor.get_output_tensor(output_names[
+                        3])
+                    np_face_index = face_index.copy_to_cpu()
+                    np_prior_boxes = prior_boxes.copy_to_cpu()
+                    np_landmark = landmark.copy_to_cpu()
+                    np_lmk = [np_face_index, np_landmark, np_prior_boxes]
+
             t1 = time.time()
             for i in range(repeats):
                 self.predictor.zero_copy_run()
@@ -174,6 +187,17 @@ class Detector(object):
                     masks_tensor = self.predictor.get_output_tensor(
                         output_names[1])
                     np_masks = masks_tensor.copy_to_cpu()
+
+                if self.config.with_lmk is not None and self.config.with_lmk == True:
+                    face_index = self.predictor.get_output_tensor(output_names[
+                        1])
+                    landmark = self.predictor.get_output_tensor(output_names[2])
+                    prior_boxes = self.predictor.get_output_tensor(output_names[
+                        3])
+                    np_face_index = face_index.copy_to_cpu()
+                    np_prior_boxes = prior_boxes.copy_to_cpu()
+                    np_landmark = landmark.copy_to_cpu()
+                    np_lmk = [np_face_index, np_landmark, np_prior_boxes]
             t2 = time.time()
             ms = (t2 - t1) * 1000.0 / repeats
             print("Inference: {} ms per batch image".format(ms))
@@ -186,7 +210,7 @@ class Detector(object):
                 results = {'boxes': np.array([])}
             else:
                 results = self.postprocess(
-                    np_boxes, np_masks, im_info, threshold=threshold)
+                    np_boxes, np_masks, np_lmk, im_info, threshold=threshold)
 
         return results
 
@@ -325,6 +349,9 @@ class Config():
         self.mask_resolution = None
         if 'mask_resolution' in yml_conf:
             self.mask_resolution = yml_conf['mask_resolution']
+        self.with_lmk = None
+        if 'with_lmk' in yml_conf:
+            self.with_lmk = yml_conf['with_lmk']
         self.print_config()
 
     def check_model(self, yml_conf):
@@ -522,7 +549,10 @@ def main():
 
 
 if __name__ == '__main__':
-    enable_static_mode()
+    try:
+        paddle.enable_static()
+    except:
+        pass
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--model_dir",
