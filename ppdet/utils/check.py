@@ -28,10 +28,30 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     'check_gpu',
+    'check_xpu',
     'check_version',
     'check_config',
     'check_py_func',
 ]
+
+
+def check_xpu(use_xpu):
+    """
+    Log error and exit when set use_xpu=true in paddlepaddle
+    cpu/gpu version.
+    """
+    err = "Config use_xpu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-xpu to run model on XPU \n" \
+          "\t2. Set use_xpu as false in config file to run " \
+          "model on CPU/GPU"
+
+    try:
+        if use_xpu and not fluid.is_compiled_with_xpu():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
 
 
 def check_gpu(use_gpu):

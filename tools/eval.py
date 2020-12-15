@@ -27,7 +27,7 @@ import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
 
 from ppdet.data.reader import create_reader
 
@@ -49,15 +49,27 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    use_xpu = False
+    if hasattr(cfg, 'use_xpu'):
+        check_xpu(cfg.use_xpu)
+        use_xpu = cfg.use_xpu
     # check if paddlepaddle version is satisfied
     check_version()
+
+    assert not (use_xpu and cfg.use_gpu), \
+            'Can not run on both XPU and GPU'
 
     main_arch = cfg.architecture
 
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
 
     # define executor
-    place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
+    if cfg.use_gpu:
+        place = fluid.CUDAPlace(0)
+    elif use_xpu:
+        place = fluid.XPUPlace(0)
+    else:
+        place = CPUPlace()
     exe = fluid.Executor(place)
 
     # build program
@@ -91,6 +103,8 @@ def main():
         return
 
     compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
+    if use_xpu:
+        compile_program = eval_prog
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."
