@@ -29,6 +29,7 @@ import random
 import datetime
 import numpy as np
 from collections import deque
+
 import paddle
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.stats import TrainingStats
@@ -37,6 +38,7 @@ from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
 from export_model import dygraph_to_static
 from paddle.distributed import ParallelEnv
+
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
@@ -72,16 +74,6 @@ def parse_args():
         type=str,
         help="Evaluation directory, default is current directory.")
     parser.add_argument(
-        "--use_tb",
-        type=bool,
-        default=False,
-        help="whether to record the data to Tensorboard.")
-    parser.add_argument(
-        '--tb_log_dir',
-        type=str,
-        default="tb_log_dir/scalar",
-        help='Tensorboard logging directory for scalar.')
-    parser.add_argument(
         "--enable_ce",
         type=bool,
         default=False,
@@ -89,13 +81,6 @@ def parse_args():
         "This flag is only used for internal test.")
     parser.add_argument(
         "--use_gpu", action='store_true', default=False, help="data parallel")
-
-    parser.add_argument(
-        '--is_profiler',
-        type=int,
-        default=0,
-        help='The switch of profiler tools. (used for benchmark)')
-
     args = parser.parse_args()
     return args
 
