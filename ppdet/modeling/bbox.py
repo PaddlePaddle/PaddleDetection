@@ -1,5 +1,4 @@
 import numpy as np
-import paddle.fluid as fluid
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -29,20 +28,20 @@ class Anchor(object):
         rpn_delta_list = []
         anchor_list = []
         for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_feats, anchors):
-            rpn_score = fluid.layers.transpose(rpn_score, perm=[0, 2, 3, 1])
-            rpn_delta = fluid.layers.transpose(rpn_delta, perm=[0, 2, 3, 1])
-            rpn_score = fluid.layers.reshape(x=rpn_score, shape=(0, -1, 1))
-            rpn_delta = fluid.layers.reshape(x=rpn_delta, shape=(0, -1, 4))
+            rpn_score = paddle.transpose(rpn_score, perm=[0, 2, 3, 1])
+            rpn_delta = paddle.transpose(rpn_delta, perm=[0, 2, 3, 1])
+            rpn_score = paddle.reshape(x=rpn_score, shape=(0, -1, 1))
+            rpn_delta = paddle.reshape(x=rpn_delta, shape=(0, -1, 4))
 
-            anchor = fluid.layers.reshape(anchor, shape=(-1, 4))
-            var = fluid.layers.reshape(var, shape=(-1, 4))
+            anchor = paddle.reshape(anchor, shape=(-1, 4))
+            var = paddle.reshape(var, shape=(-1, 4))
             rpn_score_list.append(rpn_score)
             rpn_delta_list.append(rpn_delta)
             anchor_list.append(anchor)
 
-        rpn_scores = fluid.layers.concat(rpn_score_list, axis=1)
-        rpn_deltas = fluid.layers.concat(rpn_delta_list, axis=1)
-        anchors = fluid.layers.concat(anchor_list)
+        rpn_scores = paddle.concat(rpn_score_list, axis=1)
+        rpn_deltas = paddle.concat(rpn_delta_list, axis=1)
+        anchors = paddle.concat(anchor_list)
         return rpn_scores, rpn_deltas, anchors
 
     def generate_loss_inputs(self, inputs, rpn_head_out, anchors):
@@ -102,7 +101,7 @@ class Proposal(object):
         rpn_rois_num_list = []
         for (rpn_score, rpn_delta), (anchor, var) in zip(rpn_head_out,
                                                          anchor_out):
-            rpn_prob = fluid.layers.sigmoid(rpn_score)
+            rpn_prob = F.sigmoid(rpn_score)
             rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = self.proposal_generator(
                 scores=rpn_prob,
                 bbox_deltas=rpn_delta,

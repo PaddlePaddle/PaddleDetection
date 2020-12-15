@@ -84,11 +84,19 @@ def run(FLAGS, cfg, place):
         model.eval()
         outs = model(data, mode='infer')
         for key in extra_key:
-            outs[key] = data[key].numpy()
-        outs_res.append(outs)
+            outs[key] = data[key]
+        for key, value in outs.items():
+            outs[key] = value.numpy()
 
+        if 'mask' in outs and 'bbox' in outs:
+            mask_resolution = model.mask_post_process.mask_resolution
+            from ppdet.py_op.post_process import mask_post_process
+            outs['mask'] = mask_post_process(outs, im_shape, scale_factor,
+                                             mask_resolution)
+
+        outs_res.append(outs)
         # log
-        sample_num += len(data)
+        sample_num += outs['im_shape'].shape[0]
         if iter_id % 100 == 0:
             logger.info("Eval iter: {}".format(iter_id))
 
@@ -96,8 +104,10 @@ def run(FLAGS, cfg, place):
     logger.info('Total sample number: {}, averge FPS: {}'.format(
         sample_num, sample_num / cost_time))
 
-    eval_type = ['bbox']
-    if getattr(cfg, 'MaskHead', None):
+    eval_type = []
+    if 'bbox' in outs:
+        eval_type.append('bbox')
+    if 'mask' in outs:
         eval_type.append('mask')
     # Metric
     # TODO: support other metric
@@ -108,12 +118,7 @@ def run(FLAGS, cfg, place):
         clsid2catid, catid2name = get_category_info(
             dataset.get_anno(), with_background, use_default_label)
 
-        mask_resolution = None
-        if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
-                'mask_resolution'] is not None:
-            mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
-        infer_res = get_infer_results(
-            outs_res, eval_type, clsid2catid, mask_resolution=mask_resolution)
+        infer_res = get_infer_results(outs_res, eval_type, clsid2catid)
 
     elif cfg.metric == 'VOC':
         from ppdet.utils.voc_eval import get_category_info

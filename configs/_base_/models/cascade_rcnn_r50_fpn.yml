@@ -92,6 +92,7 @@ BBoxPostProcess:
     name: RCNNBox
     num_classes: 81
     batch_size: 1
+    var_weight: 3.
   nms:
     name: MultiClassNMS
     keep_top_k: 100

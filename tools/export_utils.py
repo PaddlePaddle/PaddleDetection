@@ -24,8 +24,6 @@ from collections import OrderedDict
 import logging
 logger = logging.getLogger(__name__)
 
-import paddle.fluid as fluid
-
 __all__ = ['dump_infer_config', 'save_infer_model']
 
 # Global dictionary
@@ -64,9 +62,11 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
         for key, value in st.items():
             p = {'type': key}
             if key == 'ResizeOp':
-                if value.get('keep_ratio', False):
+                if value.get('keep_ratio',
+                             False) and image_shape[1] is not None:
                     max_size = max(image_shape[1:])
                     image_shape = [3, max_size, max_size]
+                    value['target_size'] = image_shape[1:]
             p.update(value)
             preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
@@ -74,7 +74,7 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
         methods = [list(bt.keys())[0] for bt in batch_transforms]
         for bt in batch_transforms:
             for key, value in bt.items():
-                if key == 'PadBatch':
+                if key == 'PadBatchOp':
                     preprocess_list.append({'type': 'PadStride'})
                     preprocess_list[-1].update({
                         'stride': value['pad_to_stride']
@@ -84,7 +84,7 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     return with_background, preprocess_list, label_list, image_shape
 
 
-def dump_infer_config(config, path, image_shape):
+def dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
@@ -107,10 +107,8 @@ def dump_infer_config(config, path, image_shape):
             'Architecture: {} is not supported for exporting model now'.format(
                 infer_arch))
         os._exit(0)
-
-    if 'Mask' in config['architecture']:
-        infer_cfg['mask_resolution'] = config['MaskPostProcess'][
-            'mask_resolution']
+    if getattr(model.__dict__, 'mask_post_process', None):
+        infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],

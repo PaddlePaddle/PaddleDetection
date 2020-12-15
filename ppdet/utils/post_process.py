@@ -19,7 +19,6 @@ from __future__ import print_function
 import logging
 import numpy as np
 import cv2
-import paddle.fluid as fluid
 
 __all__ = ['nms']
 

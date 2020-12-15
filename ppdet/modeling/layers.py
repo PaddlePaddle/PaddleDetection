@@ -321,7 +321,8 @@ class RCNNBox(object):
                  prior_box_var=[0.1, 0.1, 0.2, 0.2],
                  code_type="decode_center_size",
                  box_normalized=False,
-                 axis=1):
+                 axis=1,
+                 var_weight=1.):
         super(RCNNBox, self).__init__()
         self.num_classes = num_classes
         self.batch_size = batch_size
@@ -329,13 +330,9 @@ class RCNNBox(object):
         self.code_type = code_type
         self.box_normalized = box_normalized
         self.axis = axis
+        self.var_weight = var_weight
 
-    def __call__(self,
-                 bbox_head_out,
-                 rois,
-                 im_shape,
-                 scale_factor,
-                 var_weight=1.):
+    def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred, cls_prob = bbox_head_out
         roi, rois_num = rois
         origin_shape = im_shape / scale_factor
@@ -354,7 +351,7 @@ class RCNNBox(object):
         origin_shape = paddle.concat(origin_shape_list)
 
         bbox = roi / scale
-        prior_box_var = [i / var_weight for i in self.prior_box_var]
+        prior_box_var = [i / self.var_weight for i in self.prior_box_var]
         bbox = ops.box_coder(
             prior_box=bbox,
             prior_box_var=prior_box_var,

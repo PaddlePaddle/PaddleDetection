@@ -19,7 +19,6 @@ from __future__ import print_function
 import sys
 
 import paddle
-from paddle import fluid
 import logging
 import six
 import paddle.version as fluid_version
@@ -40,7 +39,7 @@ def check_gpu(use_gpu):
           "model on CPU"
 
     try:
-        if use_gpu and not fluid.is_compiled_with_cuda():
+        if use_gpu and not paddle.is_compiled_with_cuda():
             logger.error(err)
             sys.exit(1)
     except Exception as e:
