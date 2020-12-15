@@ -4,20 +4,34 @@ TrainReader:
     fields: ['image', 'gt_bbox', 'gt_class']
     num_max_boxes: 90
 
+  # sample_transforms:
+  #   - DecodeOp: {}
+  #   # - ColorDistort: {}
+  #   - RandomDistort: {brightness_lower: 0.875, brightness_upper: 1.125, is_order: true}
+  #   - RandomExpandOp: {fill_value: [104., 117., 123.]}
+  #   - RandomCropOp: {allow_no_crop: true}
+  #   - NormalizeBoxOp: {}
+  #   - RandomFlipImage: {is_normalized: true}
+  #   - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
+  #   - PadBoxOp: {num_max_boxes: 90}
+  #
+  # batch_transforms:
+  #   - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+  #   - PermuteOp: {}
+
   sample_transforms:
     - DecodeOp: {}
-    # - ColorDistort: {}
     - RandomDistort: {brightness_lower: 0.875, brightness_upper: 1.125, is_order: true}
-    - RandomExpandOp: {fill_value: [104., 117., 123.]}
-    - RandomCropOp: {allow_no_crop: true}
-    - NormalizeBoxOp: {}
-    - RandomFlipImage: {is_normalized: true}
+    - RandomExpand: {fill_value: [104., 117., 123.]}
+    - RandomCrop: {allow_no_crop: true}
+    - NormalizeBox: {}
     - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
+    - RandomFlipImage: {is_normalized: true}
     - PadBoxOp: {num_max_boxes: 90}
 
   batch_transforms:
-    - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
-    - PermuteOp: {}
+    - Permute: {to_bgr: false}
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
 
   batch_size: 8
   shuffle: true
@@ -26,7 +40,7 @@ TrainReader:
 
 EvalReader:
   inputs_def:
-    fields: ['image', 'im_shape',  'scale_factor', 'im_id']
+    fields: ['image', 'im_shape',  'scale_factor', 'im_id', 'gt_bbox', 'gt_class', 'difficult']
   sample_transforms:
     - DecodeOp: {}
     # - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
