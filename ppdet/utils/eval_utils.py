@@ -33,8 +33,7 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             logger.info("{} not exists!".format(v_json))
 
 
-def get_infer_results(outs_res, eval_type, catid, im_info,
-                      mask_resolution=None):
+def get_infer_results(outs_res, eval_type, catid, mask_resolution=None):
     """
     Get result at the stage of inference.
     The output format is dictionary containing bbox or mask result.
@@ -48,28 +47,27 @@ def get_infer_results(outs_res, eval_type, catid, im_info,
         )
     infer_res = {}
 
-    if 'bbox' in eval_type:
-        box_res = []
-        for i, outs in enumerate(outs_res):
-            im_ids = im_info[i][2]
-            box_res += get_det_res(outs['bbox'].numpy(),
-                                   outs['bbox_num'].numpy(), im_ids, catid)
-        infer_res['bbox'] = box_res
+    for i, outs in enumerate(outs_res):
+        im_id = outs['im_id']
+        im_shape = outs['im_shape']
+        scale_factor = outs['scale_factor']
+        print(outs)
 
-    if 'mask' in eval_type:
-        seg_res = []
-        # mask post process
-        for i, outs in enumerate(outs_res):
-            im_shape = im_info[i][0]
-            scale_factor = im_info[i][1]
-            im_ids = im_info[i][2]
+        if 'bbox' in eval_type:
+            box_res = []
+            box_res += get_det_res(outs['bbox'].numpy(),
+                                   outs['bbox_num'].numpy(), im_id, catid)
+            infer_res['bbox'] = box_res
+
+        if 'mask' in eval_type:
+            seg_res = []
+            # mask post process
             mask = mask_post_process(outs['bbox'].numpy(),
                                      outs['bbox_num'].numpy(),
                                      outs['mask'].numpy(), im_shape,
                                      scale_factor[0], mask_resolution)
-            seg_res += get_seg_res(mask, outs['bbox_num'].numpy(), im_ids,
-                                   catid)
-        infer_res['mask'] = seg_res
+            seg_res += get_seg_res(mask, outs['bbox_num'].numpy(), im_id, catid)
+            infer_res['mask'] = seg_res
 
     return infer_res
 

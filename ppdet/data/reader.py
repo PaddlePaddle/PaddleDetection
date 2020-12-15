@@ -2,6 +2,7 @@ import copy
 import traceback
 import logging
 import threading
+import six
 import sys
 if sys.version_info >= (3, 0):
     import queue as Queue
@@ -118,25 +119,25 @@ class BaseDataLoader(object):
                  batch_sampler=None,
                  return_list=False,
                  use_prefetch=True):
-        self._dataset = dataset
-        self._dataset.parse_dataset(self.with_background)
+        self.dataset = dataset
+        self.dataset.parse_dataset(self.with_background)
         # get data
-        self._dataset.set_out(self._sample_transforms,
-                              copy.deepcopy(self._fields))
+        self.dataset.set_out(self._sample_transforms,
+                             copy.deepcopy(self._fields))
         # set kwargs
-        self._dataset.set_kwargs(**self.kwargs)
+        self.dataset.set_kwargs(**self.kwargs)
         # batch sampler
         if batch_sampler is None:
             self._batch_sampler = DistributedBatchSampler(
-                self._dataset,
+                self.dataset,
                 batch_size=self.batch_size,
                 shuffle=self.shuffle,
                 drop_last=self.drop_last)
         else:
             self._batch_sampler = batch_sampler
 
-        loader = DataLoader(
-            dataset=self._dataset,
+        self.loader = DataLoader(
+            dataset=self.dataset,
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,
@@ -144,8 +145,29 @@ class BaseDataLoader(object):
             return_list=return_list,
             use_buffer_reader=use_prefetch,
             use_shared_memory=False)
+        self.loader = iter(self.loader)
 
-        return loader, len(self._batch_sampler)
+        return self
+
+    def __len__(self):
+        return len(self._batch_sampler)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        # pack {filed_name: field_data} here
+        # looking forward to support dictionary
+        # data structure in paddle.io.DataLoader
+        try:
+            data = next(self.loader)
+            return {k: v for k, v in zip(self._fields, data)}
+        except StopIteration:
+            six.reraise(*sys.exc_info())
+
+    def next(self):
+        # python2 compatibility
+        return self.__next__()
 
 
 @register

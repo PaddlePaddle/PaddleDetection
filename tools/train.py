@@ -118,8 +118,8 @@ def run(FLAGS, cfg, place):
 
     # Data 
     dataset = cfg.TrainDataset
-    train_loader, step_per_epoch = create('TrainReader')(
-        dataset, cfg['worker_num'], place)
+    train_loader = create('TrainReader')(dataset, cfg['worker_num'], place)
+    step_per_epoch = len(train_loader)
 
     # Model
     model = create(cfg.architecture)
@@ -149,7 +149,6 @@ def run(FLAGS, cfg, place):
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
-    fields = train_loader.collate_fn.output_fields
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
     # Run Train
@@ -170,7 +169,7 @@ def run(FLAGS, cfg, place):
 
             # Model Forward
             model.train()
-            outputs = model(data=data, input_def=fields, mode='train')
+            outputs = model(data, mode='train')
 
             # Model Backward
             loss = outputs['loss']

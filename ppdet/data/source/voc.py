@@ -165,7 +165,7 @@ class VOCDataSet(DetDataset):
         self.roidbs, self.cname2cid = records, cname2cid
 
     def get_label_list(self):
-        return self.label_list
+        return os.path.join(self.dataset_dir, self.label_list)
 
 
 def pascalvoc_label(with_background=True):

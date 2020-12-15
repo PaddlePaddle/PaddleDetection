@@ -15,7 +15,9 @@
 from . import yolo_loss
 from . import iou_aware_loss
 from . import iou_loss
+from . import ssd_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
 from .iou_loss import *
+from .ssd_loss import *

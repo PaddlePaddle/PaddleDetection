@@ -16,17 +16,8 @@ class BaseArch(nn.Layer):
     def __init__(self):
         super(BaseArch, self).__init__()
 
-    def forward(self,
-                input_tensor=None,
-                data=None,
-                input_def=None,
-                mode='infer'):
-        if input_tensor is None:
-            assert data is not None and input_def is not None
-            self.inputs = self.build_inputs(data, input_def)
-        else:
-            self.inputs = input_tensor
-
+    def forward(self, inputs, mode='infer'):
+        self.inputs = inputs
         self.inputs['mode'] = mode
         self.model_arch()
 

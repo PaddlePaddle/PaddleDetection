@@ -69,24 +69,24 @@ def run(FLAGS, cfg, place):
 
     # Data Reader
     dataset = cfg.EvalDataset
-    eval_loader, _ = create('EvalReader')(dataset, cfg['worker_num'], place)
+    eval_loader = create('EvalReader')(dataset, cfg['worker_num'], place)
+
+    extra_key = ['im_shape', 'scale_factor', 'im_id']
+    if cfg.metric == 'VOC':
+        extra_key += ['gt_bbox', 'gt_class', 'difficult']
 
     # Run Eval
     outs_res = []
     start_time = time.time()
     sample_num = 0
-    im_info = []
     for iter_id, data in enumerate(eval_loader):
         # forward
-        fields = cfg['EvalReader']['inputs_def']['fields']
         model.eval()
-        outs = model(data=data, input_def=fields, mode='infer')
+        outs = model(data, mode='infer')
+        for key in extra_key:
+            outs[key] = data[key].numpy()
         outs_res.append(outs)
-        im_info.append([
-            data[fields.index('im_shape')].numpy(),
-            data[fields.index('scale_factor')].numpy(),
-            data[fields.index('im_id')].numpy()
-        ])
+
         # log
         sample_num += len(data)
         if iter_id % 100 == 0:
@@ -101,24 +101,27 @@ def run(FLAGS, cfg, place):
         eval_type.append('mask')
     # Metric
     # TODO: support other metric
-    from ppdet.utils.coco_eval import get_category_info
-    anno_file = dataset.get_anno()
     with_background = cfg.with_background
     use_default_label = dataset.use_default_label
-    clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                use_default_label)
+    if cfg.metric == 'COCO':
+        from ppdet.utils.coco_eval import get_category_info
+        clsid2catid, catid2name = get_category_info(
+            dataset.get_anno(), with_background, use_default_label)
 
-    mask_resolution = None
-    if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
-            'mask_resolution'] is not None:
-        mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
-    infer_res = get_infer_results(
-        outs_res,
-        eval_type,
-        clsid2catid,
-        im_info,
-        mask_resolution=mask_resolution)
-    eval_results(infer_res, cfg.metric, anno_file)
+        mask_resolution = None
+        if 'Mask' in cfg.architecture and cfg['MaskPostProcess'][
+                'mask_resolution'] is not None:
+            mask_resolution = int(cfg['MaskPostProcess']['mask_resolution'])
+        infer_res = get_infer_results(
+            outs_res, eval_type, clsid2catid, mask_resolution=mask_resolution)
+
+    elif cfg.metric == 'VOC':
+        from ppdet.utils.voc_eval import get_category_info
+        clsid2catid, catid2name = get_category_info(
+            dataset.get_label_list(), with_background, use_default_label)
+        infer_res = outs_res
+
+    eval_results(infer_res, cfg.metric, dataset)
 
 
 def main():

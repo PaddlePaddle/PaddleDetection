@@ -481,7 +481,12 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
         self.scale_x_y = scale_x_y
 
-    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
+    def __call__(self,
+                 yolo_head_out,
+                 anchors,
+                 im_shape,
+                 scale_factor,
+                 var_weight=None):
         boxes_list = []
         scores_list = []
         origin_shape = im_shape / scale_factor
@@ -501,14 +506,16 @@ class YOLOBox(object):
 @register
 @serializable
 class SSDBox(object):
-    __shared__ = ['num_classes']
-
-    def __init__(self, num_classes=80, is_normalized=True):
-        self.num_classes = num_classes
+    def __init__(self, is_normalized=True):
         self.is_normalized = is_normalized
         self.norm_delta = float(not self.is_normalized)
 
-    def __call__(self, preds, prior_boxes, im_shape, scale_factor):
+    def __call__(self,
+                 preds,
+                 prior_boxes,
+                 im_shape,
+                 scale_factor,
+                 var_weight=None):
         boxes, scores = preds['boxes'], preds['scores']
         outputs = []
         for box, score, prior_box in zip(boxes, scores, prior_boxes):
