@@ -15,36 +15,35 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
 import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-import time
 # ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
 import random
 import datetime
+import time
 import numpy as np
-from collections import deque
+
 import paddle
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.stats import TrainingStats
-from ppdet.utils.check import check_gpu, check_version, check_config
-from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
-from export_model import dygraph_to_static
 from paddle.distributed import ParallelEnv
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+
+from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
+import ppdet.utils.cli as cli
+import ppdet.utils.check as check
+import ppdet.utils.stats as stats
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('train')
 
 
 def parse_args():
-    parser = ArgsParser()
+    parser = cli.ArgsParser()
     parser.add_argument(
         "--weight_type",
         default='pretrain',
@@ -117,15 +116,15 @@ def run(FLAGS, cfg, place):
         paddle.distributed.init_parallel_env()
 
     # Data 
-    dataset = cfg.TrainDataset
-    train_loader, step_per_epoch = create('TrainReader')(
-        dataset, cfg['worker_num'], place)
+    datasets = cfg.TrainDataset
+    train_loader = create('TrainReader')(datasets, cfg['worker_num'])
+    steps = len(train_loader)
 
     # Model
     model = create(cfg.architecture)
 
     # Optimizer
-    lr = create('LearningRate')(step_per_epoch)
+    lr = create('LearningRate')(steps)
     optimizer = create('OptimizerBuilder')(lr, model.parameters())
 
     # Init Model & Optimzer   
@@ -152,56 +151,72 @@ def run(FLAGS, cfg, place):
     fields = train_loader.collate_fn.output_fields
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
+
     # Run Train
-    time_stat = deque(maxlen=cfg.log_iter)
-    start_time = time.time()
+    end_epoch = int(cfg.epoch)
+    batch_size = int(cfg['TrainReader']['batch_size'])
+    total_steps = (end_epoch - start_epoch) * steps
+    step_id = 0
+
+    train_stats = stats.TrainingStats(cfg.log_iter)
+    data_time = stats.SmoothedValue(fmt='{avg:.4f}')
+    batch_time = stats.SmoothedValue(fmt='{avg:.4f}')
+
+    delimiter = ' '
     end_time = time.time()
+    space_fmt = ':' + str(len(str(steps))) + 'd'
     # Run Train
-    for cur_eid in range(start_epoch, int(cfg.epoch)):
-        train_loader.dataset.epoch = cur_eid
+    for cur_eid in range(start_epoch, end_epoch):
+        datasets.set_epoch(cur_eid)
         for iter_id, data in enumerate(train_loader):
-            start_time = end_time
-            end_time = time.time()
-            time_stat.append(end_time - start_time)
-            time_cost = np.mean(time_stat)
-            eta_sec = (
-                (cfg.epoch - cur_eid) * step_per_epoch - iter_id) * time_cost
-            eta = str(datetime.timedelta(seconds=int(eta_sec)))
+            data_time.update(time.time() - end_time)
 
             # Model Forward
             model.train()
             outputs = model(data=data, input_def=fields, mode='train')
-
-            # Model Backward
             loss = outputs['loss']
+            # Model Backward
             loss.backward()
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
             optimizer.clear_grad()
 
+            batch_time.update(time.time() - end_time)
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
-                # Log state 
-                if cur_eid == start_epoch and iter_id == 0:
-                    train_stats = TrainingStats(cfg.log_iter, outputs.keys())
                 train_stats.update(outputs)
                 logs = train_stats.log()
                 if iter_id % cfg.log_iter == 0:
-                    ips = float(cfg['TrainReader']['batch_size']) / time_cost
-                    strs = 'Epoch:{}: iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
-                        cur_eid, iter_id, curr_lr, logs, eta, time_cost, ips)
-                    logger.info(strs)
-
+                    eta_sec = (total_steps - step_id) * batch_time.global_avg
+                    eta_str = str(datetime.timedelta(seconds=int(eta_sec)))
+                    ips = float(batch_size) / batch_time.avg
+                    fmt = delimiter.join([
+                        'Epoch: [{}]',
+                        '[{' + space_fmt + '}/{}]',
+                        '{meters}',
+                        'eta: {eta}',
+                        'batch_cost: {btime}',
+                        'data_cost: {dtime}',
+                        'ips: {ips:.4f} images/s',
+                    ])
+                    fmt = fmt.format(
+                        cur_eid,
+                        iter_id,
+                        steps,
+                        meters=logs,
+                        eta=eta_str,
+                        btime=str(batch_time),
+                        dtime=str(data_time),
+                        ips=ips)
+                    logger.info(fmt)
+            step_id += 1
+            end_time = time.time()
         # Save Stage 
-        if ParallelEnv().local_rank == 0 and (
-                cur_eid % cfg.snapshot_epoch == 0 or
-            (cur_eid + 1) == int(cfg.epoch)):
-            save_name = str(cur_eid) if cur_eid + 1 != int(
-                cfg.epoch) else "model_final"
+        if (ParallelEnv().local_rank == 0 and \
+            (cur_eid % cfg.snapshot_epoch) == 0) or (cur_eid + 1) == end_epoch:
+            save_name = str(
+                cur_eid) if cur_eid + 1 != end_epoch else "model_final"
             save_model(model, optimizer, save_dir, save_name, cur_eid + 1)
-        # TODO(guanghua): dygraph model to static model
-        # if ParallelEnv().local_rank == 0 and (cur_eid + 1) == int(cfg.epoch)):
-        #     dygraph_to_static(model, os.path.join(save_dir, 'static_model_final'), cfg)
 
 
 def main():
@@ -209,9 +224,9 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
-    check_config(cfg)
-    check_gpu(cfg.use_gpu)
-    check_version()
+    check.check_config(cfg)
+    check.check_gpu(cfg.use_gpu)
+    check.check_version()
 
     place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
     place = paddle.set_device(place)

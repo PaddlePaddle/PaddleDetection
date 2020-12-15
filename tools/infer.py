@@ -27,6 +27,7 @@ warnings.filterwarnings('ignore')
 import glob
 import numpy as np
 from PIL import Image
+
 import paddle
 from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
@@ -35,10 +36,9 @@ from ppdet.utils.visualizer import visualize_results
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight
 from ppdet.utils.eval_utils import get_infer_results
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('train')
 
 
 def parse_args():
@@ -129,7 +129,7 @@ def run(FLAGS, cfg, place):
     dataset = cfg.TestDataset
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     dataset.set_images(test_images)
-    test_loader, _ = create('TestReader')(dataset, cfg['worker_num'], place)
+    test_loader = create('TestReader')(dataset, cfg['worker_num'])
 
     # TODO: support other metrics
     imid2path = dataset.get_imid2path()

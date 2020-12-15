@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 import paddle.fluid as fluid
 
-__all__ = ['dump_infer_config', 'save_infer_model']
+__all__ = ['dump_infer_config']
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {

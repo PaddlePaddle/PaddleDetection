@@ -1,16 +1,26 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import copy
 import traceback
-import logging
-import threading
-import sys
-if sys.version_info >= (3, 0):
-    import queue as Queue
-else:
-    import Queue
 import numpy as np
+import logging
+
 from paddle.io import DataLoader
+from paddle.io import DistributedBatchSampler
+
 from ppdet.core.workspace import register, serializable, create
-from .sampler import DistributedBatchSampler
 from . import transform
 from .transform import operator, batch_operator
 
@@ -114,7 +124,6 @@ class BaseDataLoader(object):
     def __call__(self,
                  dataset,
                  worker_num,
-                 device=None,
                  batch_sampler=None,
                  return_list=False,
                  use_prefetch=True):
@@ -140,12 +149,11 @@ class BaseDataLoader(object):
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,
-            places=device,
             return_list=return_list,
             use_buffer_reader=use_prefetch,
             use_shared_memory=False)
 
-        return loader, len(self._batch_sampler)
+        return loader
 
 
 @register

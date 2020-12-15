@@ -27,19 +27,20 @@ warnings.filterwarnings('ignore')
 import glob
 import numpy as np
 from PIL import Image
+
 import paddle
+import paddle.nn as nn
+from paddle.static import InputSpec
+
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight
 from export_utils import dump_infer_config
 from paddle.jit import to_static
-import paddle.nn as nn
-from paddle.static import InputSpec
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('eval')
 
 
 def parse_args():

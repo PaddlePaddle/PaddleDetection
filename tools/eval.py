@@ -21,23 +21,23 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-import time
 # ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
 import random
 import numpy as np
 import paddle
+import time
+
 from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.eval_utils import get_infer_results, eval_results
 from ppdet.utils.checkpoint import load_weight
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('eval')
 
 
 def parse_args():
@@ -69,16 +69,16 @@ def run(FLAGS, cfg, place):
 
     # Data Reader
     dataset = cfg.EvalDataset
-    eval_loader, _ = create('EvalReader')(dataset, cfg['worker_num'], place)
+    eval_loader = create('EvalReader')(dataset, cfg['worker_num'])
 
     # Run Eval
     outs_res = []
-    start_time = time.time()
     sample_num = 0
     im_info = []
+    fields = cfg['EvalReader']['inputs_def']['fields']
+    start_time = time.time()
     for iter_id, data in enumerate(eval_loader):
         # forward
-        fields = cfg['EvalReader']['inputs_def']['fields']
         model.eval()
         outs = model(data=data, input_def=fields, mode='infer')
         for key, value in outs.items():
