@@ -23,7 +23,6 @@ import time
 import re
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from .download import get_weights_path
 import logging
 logger = logging.getLogger(__name__)

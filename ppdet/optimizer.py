@@ -23,7 +23,7 @@ import paddle
 import paddle.nn as nn
 
 import paddle.optimizer as optimizer
-import paddle.fluid.regularizer as regularizer
+import paddle.regularizer as regularizer
 from paddle import cos
 
 from ppdet.core.workspace import register, serializable

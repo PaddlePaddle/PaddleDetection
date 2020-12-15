@@ -1,5 +1,4 @@
 import numpy as np
-import paddle.fluid as fluid
 from ppdet.core.workspace import register
 
 
