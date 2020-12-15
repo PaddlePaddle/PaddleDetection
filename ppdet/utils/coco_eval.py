@@ -311,8 +311,8 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
             for j in range(num):
                 dt = bboxes[k]
                 clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
-                if clsid < 0: 
-                    k += 1
+                if clsid < 0:
+                    k += 1  #to continue to handle the subsequent bbox of current image
                     continue
                 catid = (clsid2catid[int(clsid)])
 
