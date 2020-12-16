@@ -73,11 +73,14 @@ def bbox_eval(results,
         difficults = t['difficult'] if not evaluate_difficult \
                             else None
 
-        # if len(t['gt_bbox'][1]) == 0:
-        # gt_bbox, gt_class, difficult read as zero padded Tensor
+        scale_factor = t['scale_factor'] if 'scale_factor' in t else np.ones(
+            (gt_boxes.shape[0], 2)).astype('float32')
+
         bbox_idx = 0
         for i in range(gt_boxes.shape[0]):
             gt_box = gt_boxes[i]
+            h, w = scale_factor[i]
+            gt_box = gt_box / np.array([w, h, w, h])
             gt_label = gt_labels[i]
             difficult = None if difficults is None \
                             else difficults[i]
@@ -87,22 +90,6 @@ def bbox_eval(results,
                                                              difficult)
             detection_map.update(bbox, gt_box, gt_label, difficult)
             bbox_idx += bbox_num
-        # else:
-        #     # gt_box, gt_label, difficult read as LoDTensor
-        #     gt_box_lengths = t['gt_bbox'][1][0]
-        #     bbox_idx = 0
-        #     gt_box_idx = 0
-        #     for i in range(len(bbox_lengths)):
-        #         bbox_num = bbox_lengths[i]
-        #         gt_box_num = gt_box_lengths[i]
-        #         bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
-        #         gt_box = gt_boxes[gt_box_idx:gt_box_idx + gt_box_num]
-        #         gt_label = gt_labels[gt_box_idx:gt_box_idx + gt_box_num]
-        #         difficult = None if difficults is None else \
-        #                     difficults[gt_box_idx: gt_box_idx + gt_box_num]
-        #         detection_map.update(bbox, gt_box, gt_label, difficult)
-        #         bbox_idx += bbox_num
-        #         gt_box_idx += gt_box_num
 
     logger.info("Accumulating evaluatation results...")
     detection_map.accumulate()
