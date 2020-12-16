@@ -28,8 +28,7 @@ EvalReader:
     fields: ['image', 'im_shape',  'scale_factor', 'im_id', 'gt_bbox', 'gt_class', 'difficult']
   sample_transforms:
     - DecodeOp: {}
-    # - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
-    - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
+    - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
     - PermuteOp: {}
   batch_size: 1
@@ -41,8 +40,8 @@ TestReader:
     fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
     - DecodeOp: {}
-    # - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
-    - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
+    - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    # - ResizeImage: {interp: 1, target_size: 300, use_cv2: false}
     - NormalizeImageOp: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
     - PermuteOp: {}
   batch_size: 1

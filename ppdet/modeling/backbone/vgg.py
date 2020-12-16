@@ -105,8 +105,9 @@ class L2NormScale(nn.Layer):
 
     def forward(self, inputs):
         out = F.normalize(inputs, axis=1, epsilon=1e-10)
-        out = self.scale.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(
-            out) * out
+        # out = self.scale.unsqueeze(0).unsqueeze(2).unsqueeze(3).expand_as(
+        #     out) * out
+        out = self.scale.unsqueeze(0).unsqueeze(2).unsqueeze(3) * out
         return out
 
 

@@ -43,12 +43,8 @@ class SSD(BaseArch):
         bbox, bbox_num = self.post_process(self.ssd_head_outs, self.anchors,
                                            self.inputs['im_shape'],
                                            self.inputs['scale_factor'])
-        if return_numpy:
-            outs = {
-                "bbox": bbox,
-                "bbox_num": bbox_num,
-                'im_id': self.inputs['im_id']
-            }
-        else:
-            outs = [bbox, bbox_num]
+        outs = {
+            "bbox": bbox,
+            "bbox_num": bbox_num,
+        }
         return outs

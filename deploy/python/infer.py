@@ -33,6 +33,7 @@ from paddle.inference import create_predictor
 SUPPORT_MODELS = {
     'YOLO',
     'RCNN',
+    'SSD',
 }
 
 
@@ -73,7 +74,7 @@ class Detector(object):
     def postprocess(self, np_boxes, np_masks, inputs, threshold=0.5):
         # postprocess output of predictor
         results = {}
-        if self.pred_config.arch in ['SSD', 'Face']:
+        if self.pred_config.arch in ['Face']:
             h, w = inputs['im_shape']
             scale_y, scale_x = inputs['scale_factor']
             w, h = float(h) / scale_y, float(w) / scale_x
