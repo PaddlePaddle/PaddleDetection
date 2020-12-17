@@ -241,7 +241,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - [PaddleDetection在Windows下的部署(一)](https://zhuanlan.zhihu.com/p/268657833)
 - [PaddleDetection在Windows下的部署(二)](https://zhuanlan.zhihu.com/p/280206376)
-- [Jetson Nano上部署PaddleDection 原生预测方法经验分享](https://zhuanlan.zhihu.com/p/319371293)
+- [Jetson Nano上部署PaddleDection经验分享](https://zhuanlan.zhihu.com/p/319371293)
 - [安全帽检测YOLOv3模型在树莓派上的部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/yolov3_for_raspi.md)
 - [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 
