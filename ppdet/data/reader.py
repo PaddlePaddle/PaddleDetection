@@ -88,9 +88,7 @@ class BatchCompose(Compose):
                     if k not in ['flipped', 'h', 'w']:
                         self.output_fields.append(k)
             self.lock.release()
-            sys.stdout.flush()
 
-        sys.stdout.flush()
         data = [[data[i][k] for k in self.output_fields]
                 for i in range(len(data))]
         data = list(zip(*data))

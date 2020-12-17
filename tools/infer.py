@@ -131,16 +131,18 @@ def run(FLAGS, cfg, place):
     dataset.set_images(test_images)
     test_loader = create('TestReader')(dataset, cfg['worker_num'])
     extra_key = ['im_shape', 'scale_factor', 'im_id']
-    if cfg.metric == 'VOC':
-        extra_key += ['gt_bbox', 'gt_class', 'difficult']
 
     # TODO: support other metrics
     imid2path = dataset.get_imid2path()
 
-    from ppdet.utils.coco_eval import get_category_info
     anno_file = dataset.get_anno()
     with_background = cfg.with_background
     use_default_label = dataset.use_default_label
+
+    if cfg.metric == 'COCO':
+        from ppdet.utils.coco_eval import get_category_info
+    if cfg.metric == 'VOC':
+        from ppdet.utils.voc_eval import get_category_info
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
