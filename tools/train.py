@@ -143,10 +143,9 @@ def run(FLAGS, cfg, place):
     step_id = 0
 
     train_stats = stats.TrainingStats(cfg.log_iter)
-    data_time = stats.SmoothedValue(fmt='{avg:.4f}')
     batch_time = stats.SmoothedValue(fmt='{avg:.4f}')
+    data_time = stats.SmoothedValue(fmt='{avg:.4f}')
 
-    delimiter = ' '
     end_time = time.time()
     space_fmt = ':' + str(len(str(steps))) + 'd'
     # Run Train
@@ -154,7 +153,6 @@ def run(FLAGS, cfg, place):
         datasets.set_epoch(cur_eid)
         for iter_id, data in enumerate(train_loader):
             data_time.update(time.time() - end_time)
-
             # Model Forward
             model.train()
             outputs = model(data=data, input_def=fields, mode='train')
@@ -174,7 +172,7 @@ def run(FLAGS, cfg, place):
                     eta_sec = (total_steps - step_id) * batch_time.global_avg
                     eta_str = str(datetime.timedelta(seconds=int(eta_sec)))
                     ips = float(batch_size) / batch_time.avg
-                    fmt = delimiter.join([
+                    fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
                         '{meters}',
@@ -194,7 +192,7 @@ def run(FLAGS, cfg, place):
                         ips=ips)
                     logger.info(fmt)
             step_id += 1
-            end_time = time.time()
+            end_time = time.time()  # after copy outputs to CPU.
         # Save Stage 
         if (ParallelEnv().local_rank == 0 and \
             (cur_eid % cfg.snapshot_epoch) == 0) or (cur_eid + 1) == end_epoch:
