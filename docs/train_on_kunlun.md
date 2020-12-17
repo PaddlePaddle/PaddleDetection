@@ -26,7 +26,7 @@ Prepare data roadsign
 
 ### train
 ```shell
-python3.7 -u tools/train.py -c configs/ppyolo/ppyolo_roadsign_kunlun.yml
+python3.7 -u tools/train.py --eval -c configs/ppyolo/ppyolo_roadsign_kunlun.yml
 ```
 
 
