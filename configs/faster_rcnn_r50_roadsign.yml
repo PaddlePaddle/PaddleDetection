@@ -95,7 +95,6 @@ BBoxHead:
 TwoFCHead:
   mlp_dim: 1024
 
-
 LearningRate:
   base_lr: 0.0001
   schedulers:
