@@ -86,6 +86,9 @@ class Resize(object):
         """
         im_channel = im.shape[2]
         im_scale_x, im_scale_y = self.generate_scale(im)
+        im_info['resize_shape'] = [
+            im_scale_x * float(im.shape[0]), im_scale_y * float(im.shape[1])
+        ]
         if self.use_cv2:
             im = cv2.resize(
                 im,
@@ -115,7 +118,6 @@ class Resize(object):
             im = padding_im
 
         im_info['scale'] = [im_scale_x, im_scale_y]
-        im_info['resize_shape'] = im.shape[:2]
         return im, im_info
 
     def generate_scale(self, im):
