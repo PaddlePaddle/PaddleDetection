@@ -212,10 +212,13 @@ class BBoxHead(nn.Layer):
 
     def get_loss(self, bbox_head_out, targets):
         loss_bbox = {}
+        cls_name = 'loss_bbox_cls'
+        reg_name = 'loss_bbox_reg'
         for lvl, (bboxhead, target) in enumerate(zip(bbox_head_out, targets)):
             score, delta = bboxhead
-            cls_name = 'loss_bbox_cls_{}'.format(lvl)
-            reg_name = 'loss_bbox_reg_{}'.format(lvl)
+            if len(targets) > 1:
+                cls_name = 'loss_bbox_cls_{}'.format(lvl)
+                reg_name = 'loss_bbox_reg_{}'.format(lvl)
             loss_bbox_cls, loss_bbox_reg = self._get_head_loss(score, delta,
                                                                target)
             loss_weight = 1. / 2**lvl

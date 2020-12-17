@@ -21,10 +21,10 @@ import yaml
 import numpy as np
 from collections import OrderedDict
 
-import logging
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('export_utils')
 
-__all__ = ['dump_infer_config', 'save_infer_model']
+__all__ = ['dump_infer_config']
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {

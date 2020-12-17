@@ -65,9 +65,9 @@ def _walk_voc_dir(devkit_dir, year, output_dir):
     for _, _, files in os.walk(filelist_dir):
         for fname in files:
             img_ann_list = []
-            if re.match('[a-z]+_trainval\.txt', fname):
+            if re.match(r'[a-z]+_trainval\.txt', fname):
                 img_ann_list = trainval_list
-            elif re.match('[a-z]+_test\.txt', fname):
+            elif re.match(r'[a-z]+_test\.txt', fname):
                 img_ann_list = test_list
             else:
                 continue
