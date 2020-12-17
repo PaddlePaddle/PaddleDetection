@@ -120,6 +120,9 @@ class BaseDataLoader(object):
             self._batch_transforms = Compose(batch_transforms,
                                              copy.deepcopy(self._fields),
                                              transform, num_classes)
+            self.output_fields = self._batch_transforms.output_fields
+        else:
+            self.output_fields = self._fields
 
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -150,7 +153,7 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
-        self.loader = DataLoader(
+        self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
@@ -158,7 +161,7 @@ class BaseDataLoader(object):
             return_list=return_list,
             use_buffer_reader=use_prefetch,
             use_shared_memory=False)
-        self.loader = iter(self.loader)
+        self.loader = iter(self.dataloader)
 
         return self
 
@@ -174,8 +177,9 @@ class BaseDataLoader(object):
         # data structure in paddle.io.DataLoader
         try:
             data = next(self.loader)
-            return {k: v for k, v in zip(self._fields, data)}
+            return {k: v for k, v in zip(self.output_fields, data)}
         except StopIteration:
+            self.loader = iter(self.dataloader)
             six.reraise(*sys.exc_info())
 
     def next(self):
