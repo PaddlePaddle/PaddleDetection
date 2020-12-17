@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import math
 import numpy as np
 from numbers import Integral
 
@@ -22,6 +23,12 @@ from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_tar
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
 import paddle.nn.functional as F
+
+
+def _to_list(l):
+    if isinstance(l, (list, tuple)):
+        return list(l)
+    return [l]
 
 
 @register
@@ -101,6 +108,57 @@ class AnchorTargetGeneratorRPN(object):
         pred_bbox_pred = paddle.gather(bbox_pred, loc_indexes)
 
         return pred_cls_logits, pred_bbox_pred, tgt_labels, tgt_bboxes, bbox_inside_weights
+
+
+@register
+@serializable
+class AnchorGeneratorSSD(object):
+    def __init__(self,
+                 steps=[8, 16, 32, 64, 100, 300],
+                 aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]],
+                 min_ratio=15,
+                 max_ratio=90,
+                 min_sizes=[30.0, 60.0, 111.0, 162.0, 213.0, 264.0],
+                 max_sizes=[60.0, 111.0, 162.0, 213.0, 264.0, 315.0],
+                 offset=0.5,
+                 flip=True,
+                 clip=False,
+                 min_max_aspect_ratios_order=False):
+        self.steps = steps
+        self.aspect_ratios = aspect_ratios
+        self.min_ratio = min_ratio
+        self.max_ratio = max_ratio
+        self.min_sizes = min_sizes
+        self.max_sizes = max_sizes
+        self.offset = offset
+        self.flip = flip
+        self.clip = clip
+        self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
+
+        self.num_priors = []
+        for aspect_ratio, min_size, max_size in zip(aspect_ratios, min_sizes,
+                                                    max_sizes):
+            self.num_priors.append((len(aspect_ratio) * 2 + 1) * len(
+                _to_list(min_size)) + len(_to_list(max_size)))
+
+    def __call__(self, inputs, image):
+        boxes = []
+        for input, min_size, max_size, aspect_ratio, step in zip(
+                inputs, self.min_sizes, self.max_sizes, self.aspect_ratios,
+                self.steps):
+            box, _ = ops.prior_box(
+                input=input,
+                image=image,
+                min_sizes=_to_list(min_size),
+                max_sizes=_to_list(max_size),
+                aspect_ratios=aspect_ratio,
+                flip=self.flip,
+                clip=self.clip,
+                steps=[step, step],
+                offset=self.offset,
+                min_max_aspect_ratios_order=self.min_max_aspect_ratios_order)
+            boxes.append(paddle.reshape(box, [-1, 4]))
+        return boxes
 
 
 @register
@@ -420,7 +478,12 @@ class YOLOBox(object):
         self.clip_bbox = clip_bbox
         self.scale_x_y = scale_x_y
 
-    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
+    def __call__(self,
+                 yolo_head_out,
+                 anchors,
+                 im_shape,
+                 scale_factor,
+                 var_weight=None):
         boxes_list = []
         scores_list = []
         origin_shape = im_shape / scale_factor
@@ -435,6 +498,54 @@ class YOLOBox(object):
         yolo_boxes = paddle.concat(boxes_list, axis=1)
         yolo_scores = paddle.concat(scores_list, axis=2)
         return yolo_boxes, yolo_scores
+
+
+@register
+@serializable
+class SSDBox(object):
+    def __init__(self, is_normalized=True):
+        self.is_normalized = is_normalized
+        self.norm_delta = float(not self.is_normalized)
+
+    def __call__(self,
+                 preds,
+                 prior_boxes,
+                 im_shape,
+                 scale_factor,
+                 var_weight=None):
+        boxes, scores = preds['boxes'], preds['scores']
+        outputs = []
+        for box, score, prior_box in zip(boxes, scores, prior_boxes):
+            pb_w = prior_box[:, 2] - prior_box[:, 0] + self.norm_delta
+            pb_h = prior_box[:, 3] - prior_box[:, 1] + self.norm_delta
+            pb_x = prior_box[:, 0] + pb_w * 0.5
+            pb_y = prior_box[:, 1] + pb_h * 0.5
+            out_x = pb_x + box[:, :, 0] * pb_w * 0.1
+            out_y = pb_y + box[:, :, 1] * pb_h * 0.1
+            out_w = paddle.exp(box[:, :, 2] * 0.2) * pb_w
+            out_h = paddle.exp(box[:, :, 3] * 0.2) * pb_h
+
+            if self.is_normalized:
+                h = im_shape[:, 0] / scale_factor[:, 0]
+                w = im_shape[:, 1] / scale_factor[:, 1]
+                output = paddle.stack(
+                    [(out_x - out_w / 2.) * w, (out_y - out_h / 2.) * h,
+                     (out_x + out_w / 2.) * w, (out_y + out_h / 2.) * h],
+                    axis=-1)
+            else:
+                output = paddle.stack(
+                    [
+                        out_x - out_w / 2., out_y - out_h / 2.,
+                        out_x + out_w / 2. - 1., out_y + out_h / 2. - 1.
+                    ],
+                    axis=-1)
+            outputs.append(output)
+        boxes = paddle.concat(outputs, axis=1)
+
+        scores = F.softmax(paddle.concat(scores, axis=1))
+        scores = paddle.transpose(scores, [0, 2, 1])
+
+        return boxes, scores
 
 
 @register

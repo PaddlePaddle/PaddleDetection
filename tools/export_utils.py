@@ -49,6 +49,8 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     if metric == 'COCO':
         from ppdet.utils.coco_eval import get_category_info
+    elif metric == 'VOC':
+        from ppdet.utils.voc_eval import get_category_info
     else:
         raise ValueError("metric only supports COCO, but received {}".format(
             metric))

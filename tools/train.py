@@ -132,7 +132,6 @@ def run(FLAGS, cfg, place):
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
 
-    fields = train_loader.collate_fn.output_fields
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
 
@@ -155,7 +154,7 @@ def run(FLAGS, cfg, place):
             data_time.update(time.time() - end_time)
             # Model Forward
             model.train()
-            outputs = model(data=data, input_def=fields, mode='train')
+            outputs = model(data, mode='train')
             loss = outputs['loss']
             # Model Backward
             loss.backward()

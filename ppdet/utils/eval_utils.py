@@ -33,7 +33,7 @@ def json_eval_results(metric, json_directory=None, dataset=None):
             logger.info("{} not exists!".format(v_json))
 
 
-def get_infer_results(outs_res, eval_type, catid, im_info):
+def get_infer_results(outs_res, eval_type, catid):
     """
     Get result at the stage of inference.
     The output format is dictionary containing bbox or mask result.
@@ -45,31 +45,27 @@ def get_infer_results(outs_res, eval_type, catid, im_info):
         raise ValueError(
             'The number of valid detection result if zero. Please use reasonable model and check input data.'
         )
-    infer_res = {}
 
-    if 'bbox' in eval_type:
-        box_res = []
-        for i, outs in enumerate(outs_res):
-            im_ids = im_info[i][2]
-            box_res += get_det_res(outs['bbox'], outs['bbox_num'], im_ids,
-                                   catid)
-        infer_res['bbox'] = box_res
+    infer_res = {k: [] for k in eval_type}
 
-    if 'mask' in eval_type:
-        seg_res = []
-        # mask post process
-        for i, outs in enumerate(outs_res):
-            im_shape = im_info[i][0]
-            scale_factor = im_info[i][1]
-            im_ids = im_info[i][2]
-            mask = outs['mask']
-            seg_res += get_seg_res(mask, outs['bbox_num'], im_ids, catid)
-        infer_res['mask'] = seg_res
+    for i, outs in enumerate(outs_res):
+        im_id = outs['im_id']
+        im_shape = outs['im_shape']
+        scale_factor = outs['scale_factor']
+
+        if 'bbox' in eval_type:
+            infer_res['bbox'] += get_det_res(outs['bbox'], outs['bbox_num'],
+                                             im_id, catid)
+
+        if 'mask' in eval_type:
+            # mask post process
+            infer_res['mask'] += get_seg_res(outs['mask'], outs['bbox_num'],
+                                             im_id, catid)
 
     return infer_res
 
 
-def eval_results(res, metric, anno_file):
+def eval_results(res, metric, dataset):
     """
     Evalute the inference result
     """
@@ -82,7 +78,8 @@ def eval_results(res, metric, anno_file):
                 json.dump(res['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
-            bbox_stats = cocoapi_eval('bbox.json', 'bbox', anno_file=anno_file)
+            bbox_stats = cocoapi_eval(
+                'bbox.json', 'bbox', anno_file=dataset.get_anno())
             eval_res.append(bbox_stats)
             sys.stdout.flush()
         if 'mask' in res:
@@ -90,9 +87,14 @@ def eval_results(res, metric, anno_file):
                 json.dump(res['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval('mask.json', 'segm', anno_file=anno_file)
+            seg_stats = cocoapi_eval(
+                'mask.json', 'segm', anno_file=dataset.get_anno())
             eval_res.append(seg_stats)
             sys.stdout.flush()
+    elif metric == 'VOC':
+        from ppdet.utils.voc_eval import bbox_eval
+
+        bbox_stats = bbox_eval(res, 21)
     else:
         raise NotImplemented("Only COCO metric is supported now.")
 
