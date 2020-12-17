@@ -40,7 +40,7 @@ def setup_logger(name="ppdet", output=None):
     if name in logger_initialized:
         return logger
 
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.propagate = False
 
     formatter = logging.Formatter(
