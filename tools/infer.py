@@ -129,7 +129,11 @@ def run(FLAGS, cfg, place):
     dataset = cfg.TestDataset
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
     dataset.set_images(test_images)
-    test_loader, _ = create('TestReader')(dataset, cfg['worker_num'], place)
+    test_loader = create('TestReader')(dataset, cfg['worker_num'], place)
+
+    extra_key = ['im_shape', 'scale_factor', 'im_id']
+    if cfg.metric == 'VOC':
+        extra_key += ['gt_bbox', 'gt_class', 'difficult']
 
     # TODO: support other metrics
     imid2path = dataset.get_imid2path()
@@ -147,24 +151,18 @@ def run(FLAGS, cfg, place):
     # Run Infer 
     for iter_id, data in enumerate(test_loader):
         # forward
-        fields = cfg.TestReader['inputs_def']['fields']
         model.eval()
-        outs = model(
-            data=data,
-            input_def=cfg.TestReader['inputs_def']['fields'],
-            mode='infer')
+        outs = model(data, mode='infer')
+        for key in extra_key:
+            outs[key] = data[key]
         for key, value in outs.items():
             outs[key] = value.numpy()
-        im_shape = data[fields.index('im_shape')].numpy()
-        scale_factor = data[fields.index('scale_factor')].numpy()
-        im_ids = data[fields.index('im_id')].numpy()
-        im_info = [im_shape, scale_factor, im_ids]
 
         if 'mask' in outs and 'bbox' in outs:
             mask_resolution = model.mask_post_process.mask_resolution
             from ppdet.py_op.post_process import mask_post_process
-            outs['mask'] = mask_post_process(outs, im_shape, scale_factor,
-                                             mask_resolution)
+            outs['mask'] = mask_post_process(
+                outs, outs['im_shape'], outs['scale_factor'], mask_resolution)
 
         eval_type = []
         if 'bbox' in outs:
@@ -172,14 +170,14 @@ def run(FLAGS, cfg, place):
         if 'mask' in outs:
             eval_type.append('mask')
 
-        batch_res = get_infer_results([outs], eval_type, clsid2catid, [im_info])
+        batch_res = get_infer_results([outs], eval_type, clsid2catid)
         logger.info('Infer iter {}'.format(iter_id))
         bbox_res = None
         mask_res = None
 
         bbox_num = outs['bbox_num']
         start = 0
-        for i, im_id in enumerate(im_ids):
+        for i, im_id in enumerate(outs['im_id']):
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
             end = start + bbox_num[i]
@@ -197,7 +195,7 @@ def run(FLAGS, cfg, place):
                 mask_res = batch_res['mask'][start:end]
 
             image = visualize_results(image, bbox_res, mask_res,
-                                      int(im_id), catid2name,
+                                      int(outs['im_id']), catid2name,
                                       FLAGS.draw_threshold)
 
             # use VisualDL to log image with bbox

@@ -376,6 +376,31 @@ class TestIoUSimilarity(LayerTest):
         self.assertTrue(np.array_equal(iou_np, iou_dy_np))
 
 
+class TestBipartiteMatch(LayerTest):
+    def test_bipartite_match(self):
+        distance = np.random.random((20, 10)).astype('float32')
+        with self.static_graph():
+            x = paddle.static.data(name='x', shape=[20, 10], dtype='float32')
+
+            match_indices, match_dist = ops.bipartite_match(
+                x, match_type='per_prediction', dist_threshold=0.5)
+            match_indices_np, match_dist_np = self.get_static_graph_result(
+                feed={'x': distance, },
+                fetch_list=[match_indices, match_dist],
+                with_lod=False)
+
+        with self.dynamic_graph():
+            x_dy = base.to_variable(distance)
+
+            match_indices_dy, match_dist_dy = ops.bipartite_match(
+                x_dy, match_type='per_prediction', dist_threshold=0.5)
+            match_indices_dy_np = match_indices_dy.numpy()
+            match_dist_dy_np = match_dist_dy.numpy()
+
+        self.assertTrue(np.array_equal(match_indices_np, match_indices_dy_np))
+        self.assertTrue(np.array_equal(match_dist_np, match_dist_dy_np))
+
+
 class TestYoloBox(LayerTest):
     def test_yolo_box(self):
 

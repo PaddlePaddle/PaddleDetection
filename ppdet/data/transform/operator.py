@@ -1668,7 +1668,7 @@ class PadBoxOp(BaseOperator):
         # in training, for example in op ExpandImage,
         # the bbox and gt_class is expandded, but the difficult is not,
         # so, judging by it's length
-        if 'is_difficult' in sample:
+        if 'difficult' in sample:
             pad_diff = np.zeros((num_max, ), dtype=np.int32)
             if gt_num > 0:
                 pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]

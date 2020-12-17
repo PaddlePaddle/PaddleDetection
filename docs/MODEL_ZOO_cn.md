@@ -41,3 +41,11 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet50-FPN         | Cascade Faster         |    1    |   1x    |     ----     |  41.1  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_faster_rcnn_r50_fpn_1x_coco.yml) |
 | ResNet50-FPN         | Cascade Mask         |    1    |   1x    |     ----     |  41.6  |    35.3    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_mask_rcnn_r50_fpn_1x_coco.yml) |
 | DarkNet53         | YOLOv3         |    1    |   270e    |     ----     |  39.0  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
+
+### SSD on Pascal VOC
+
+| 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
+| :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
+| VGG             | SSD            |    8    |   240e    |     ----     |  78.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/ssd_vgg16_300_240e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ssd_vgg16_300_240e_voc.yml) |
+
+**注意：** SSD使用4GPU训练，训练240个epoch
