@@ -56,6 +56,8 @@ def visualize_box_mask(im, results, labels, mask_resolution=14, threshold=0.5):
             results['score'],
             labels,
             threshold=threshold)
+    if 'landmark' in results:
+        im = draw_lmk(im, results['landmark'])
     return im
 
 
@@ -247,3 +249,50 @@ def draw_segm(im,
             1,
             lineType=cv2.LINE_AA)
     return Image.fromarray(im.astype('uint8'))
+
+
+def lmk2out(bboxes, np_lmk, im_info, threshold=0.5, is_bbox_normalized=True):
+    image_w, image_h = im_info['origin_shape']
+    scale = im_info['scale']
+    face_index, landmark, prior_box = np_lmk[:]
+    xywh_res = []
+    if bboxes.shape == (1, 1) or bboxes is None:
+        return np.array([])
+    prior = np.reshape(prior_box, (-1, 4))
+    predict_lmk = np.reshape(landmark, (-1, 10))
+    k = 0
+    for i in range(bboxes.shape[0]):
+        score = bboxes[i][1]
+        if score < threshold:
+            continue
+        theindex = face_index[i][0]
+        me_prior = prior[theindex, :]
+        lmk_pred = predict_lmk[theindex, :]
+        prior_h = me_prior[2] - me_prior[0]
+        prior_w = me_prior[3] - me_prior[1]
+        prior_h_center = (me_prior[2] + me_prior[0]) / 2
+        prior_w_center = (me_prior[3] + me_prior[1]) / 2
+        lmk_decode = np.zeros((10))
+        for j in [0, 2, 4, 6, 8]:
+            lmk_decode[j] = lmk_pred[j] * 0.1 * prior_w + prior_h_center
+        for j in [1, 3, 5, 7, 9]:
+            lmk_decode[j] = lmk_pred[j] * 0.1 * prior_h + prior_w_center
+
+        if is_bbox_normalized:
+            lmk_decode = lmk_decode * np.array([
+                image_h, image_w, image_h, image_w, image_h, image_w, image_h,
+                image_w, image_h, image_w
+            ])
+        xywh_res.append(lmk_decode)
+    return np.asarray(xywh_res)
+
+
+def draw_lmk(image, lmk_results):
+    draw = ImageDraw.Draw(image)
+    for lmk_decode in lmk_results:
+        for j in range(5):
+            x1 = int(round(lmk_decode[2 * j]))
+            y1 = int(round(lmk_decode[2 * j + 1]))
+            draw.ellipse(
+                (x1 - 2, y1 - 2, x1 + 3, y1 + 3), fill='green', outline='green')
+    return image
