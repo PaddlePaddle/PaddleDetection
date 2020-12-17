@@ -28,9 +28,10 @@ class COCODataSet(DetDataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=[],
                  sample_num=-1):
         super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num)
+                                          data_fields, sample_num)
         self.load_image_only = False
         self.load_semantic = False
 
@@ -82,13 +83,6 @@ class COCODataSet(DetDataset):
                                                                    img_id))
                 continue
 
-            coco_rec = {
-                'im_file': im_path,
-                'im_id': np.array([img_id]),
-                'h': im_h,
-                'w': im_w,
-            }
-
             if not self.load_image_only:
                 ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
                 instances = coco.loadAnns(ins_anno_ids)
@@ -121,7 +115,6 @@ class COCODataSet(DetDataset):
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
-                gt_score = np.ones((num_bbox, 1), dtype=np.float32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
                 difficult = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
@@ -142,15 +135,25 @@ class COCODataSet(DetDataset):
                 if has_segmentation and not any(gt_poly):
                     continue
 
-                coco_rec.update({
+                coco_rec = {
+                    'im_file': im_path,
+                    'im_id': np.array([img_id]),
+                    'h': im_h,
+                    'w': im_w,
+                } if 'image' in self.data_fields else {}
+
+                gt_rec = {
                     'is_crowd': is_crowd,
                     'gt_class': gt_class,
                     'gt_bbox': gt_bbox,
-                    'gt_score': gt_score,
                     'gt_poly': gt_poly,
-                })
+                }
+                for k, v in gt_rec.items():
+                    if k in self.data_fields:
+                        coco_rec[k] = v
+
                 # TODO: remove load_semantic
-                if self.load_semantic:
+                if self.load_semantic and 'semantic' in self.data_fields:
                     seg_path = os.path.join(self.dataset_dir, 'stuffthingmaps',
                                             'train2017', im_fname[:-3] + 'png')
                     coco_rec.update({'semantic': seg_path})

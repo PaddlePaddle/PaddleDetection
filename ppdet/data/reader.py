@@ -1,7 +1,8 @@
+import sys
 import copy
 import traceback
 import logging
-import threading
+import multiprocessing as mp
 import six
 import sys
 if sys.version_info >= (3, 0):
@@ -9,7 +10,7 @@ if sys.version_info >= (3, 0):
 else:
     import Queue
 import numpy as np
-from paddle.io import DataLoader
+from paddle.io import DataLoader, get_worker_info
 from ppdet.core.workspace import register, serializable, create
 from .sampler import DistributedBatchSampler
 from . import transform
@@ -19,38 +20,17 @@ logger = logging.getLogger(__name__)
 
 
 class Compose(object):
-    def __init__(self, transforms, fields=None, from_=transform,
-                 num_classes=81):
+    def __init__(self, transforms, num_classes=81):
         self.transforms = transforms
         self.transforms_cls = []
-        output_fields = None
         for t in self.transforms:
             for k, v in t.items():
-                op_cls = getattr(from_, k)
+                op_cls = getattr(transform, k)
                 self.transforms_cls.append(op_cls(**v))
                 if hasattr(op_cls, 'num_classes'):
                     op_cls.num_classes = num_classes
 
-                # TODO: should be refined in the future
-                if op_cls in [
-                        transform.Gt2YoloTargetOp, transform.Gt2YoloTarget
-                ]:
-                    output_fields = ['image', 'gt_bbox']
-                    output_fields.extend([
-                        'target{}'.format(i)
-                        for i in range(len(v['anchor_masks']))
-                    ])
-
-        self.fields = fields
-        self.output_fields = output_fields if output_fields else fields
-
     def __call__(self, data):
-        if self.fields is not None:
-            data_new = []
-            for item in data:
-                data_new.append(dict(zip(self.fields, item)))
-            data = data_new
-
         for f in self.transforms_cls:
             try:
                 data = f(data)
@@ -60,23 +40,48 @@ class Compose(object):
                             format(f, e, str(stack_info)))
                 raise e
 
-        if self.output_fields is not None:
-            data_new = []
-            for item in data:
-                batch = []
-                for k in self.output_fields:
-                    batch.append(item[k])
-                data_new.append(batch)
-            batch_size = len(data_new)
-            data_new = list(zip(*data_new))
-            if batch_size > 1:
-                data = [
-                    np.array(item).astype(item[0].dtype) for item in data_new
-                ]
-            else:
-                data = data_new
-
         return data
+
+
+class BatchCompose(Compose):
+    def __init__(self, transforms, num_classes=81):
+        super(BatchCompose, self).__init__(transforms, num_classes)
+        self.output_fields = mp.Manager().list([])
+        self.lock = mp.Lock()
+
+    def __call__(self, data):
+        for f in self.transforms_cls:
+            try:
+                data = f(data)
+            except Exception as e:
+                stack_info = traceback.format_exc()
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                            format(f, e, str(stack_info)))
+                raise e
+
+        # parse output fields by first sample
+        # **this shoule be fixed if paddle.io.DataLoader support**
+        # For paddle.io.DataLoader not support dict currently,
+        # we need to parse the key from the first sample,
+        # BatchCompose.__call__ will be called in each worker
+        # process, so lock is need here.
+        if len(self.output_fields) == 0:
+            self.lock.acquire()
+            if len(self.output_fields) == 0:
+                for k, v in data[0].items():
+                    # FIXME(dkp): for more elegent coding
+                    if k not in ['flipped', 'h', 'w']:
+                        self.output_fields.append(k)
+            self.lock.release()
+            sys.stdout.flush()
+
+        sys.stdout.flush()
+        data = [[data[i][k] for k in self.output_fields]
+                for i in range(len(data))]
+        data = list(zip(*data))
+
+        batch_data = [np.stack(d, axis=0) for d in data]
+        return batch_data
 
 
 class BaseDataLoader(object):
@@ -84,8 +89,8 @@ class BaseDataLoader(object):
 
     def __init__(self,
                  inputs_def=None,
-                 sample_transforms=None,
-                 batch_transforms=None,
+                 sample_transforms=[],
+                 batch_transforms=[],
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
@@ -93,18 +98,12 @@ class BaseDataLoader(object):
                  num_classes=81,
                  with_background=True,
                  **kwargs):
-        # out fields 
-        self._fields = inputs_def['fields'] if inputs_def else None
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
         # batch transfrom 
-        self._batch_transforms = None
-        if batch_transforms:
-            self._batch_transforms = Compose(batch_transforms,
-                                             copy.deepcopy(self._fields),
-                                             transform, num_classes)
+        self._batch_transforms = BatchCompose(batch_transforms, num_classes)
 
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -122,8 +121,7 @@ class BaseDataLoader(object):
         self.dataset = dataset
         self.dataset.parse_dataset(self.with_background)
         # get data
-        self.dataset.set_out(self._sample_transforms,
-                             copy.deepcopy(self._fields))
+        self.dataset.set_transform(self._sample_transforms)
         # set kwargs
         self.dataset.set_kwargs(**self.kwargs)
         # batch sampler
@@ -161,7 +159,10 @@ class BaseDataLoader(object):
         # data structure in paddle.io.DataLoader
         try:
             data = next(self.loader)
-            return {k: v for k, v in zip(self._fields, data)}
+            return {
+                k: v
+                for k, v in zip(self._batch_transforms.output_fields, data)
+            }
         except StopIteration:
             self.loader = iter(self.dataloader)
             six.reraise(*sys.exc_info())
@@ -175,8 +176,8 @@ class BaseDataLoader(object):
 class TrainReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 sample_transforms=None,
-                 batch_transforms=None,
+                 sample_transforms=[],
+                 batch_transforms=[],
                  batch_size=1,
                  shuffle=True,
                  drop_last=True,
@@ -194,8 +195,8 @@ class TrainReader(BaseDataLoader):
 class EvalReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 sample_transforms=None,
-                 batch_transforms=None,
+                 sample_transforms=[],
+                 batch_transforms=[],
                  batch_size=1,
                  shuffle=False,
                  drop_last=True,
@@ -213,8 +214,8 @@ class EvalReader(BaseDataLoader):
 class TestReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
-                 sample_transforms=None,
-                 batch_transforms=None,
+                 sample_transforms=[],
+                 batch_transforms=[],
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,

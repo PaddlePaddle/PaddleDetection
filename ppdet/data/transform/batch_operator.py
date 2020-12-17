@@ -303,6 +303,11 @@ class Gt2YoloTargetOp(BaseOperator):
                                 # classification
                                 target[idx, 6 + cls, gj, gi] = 1.
                 sample['target{}'.format(i)] = target
+
+            # remove useless gt_class and gt_score after target calculated
+            sample.pop('gt_class')
+            sample.pop('gt_score')
+
         return samples
 
 
