@@ -1,0 +1,8 @@
+tqdm
+typeguard ; python_version >= '3.4'
+visualdl>=2.0.0b
+opencv-python
+PyYAML
+shapely
+llvmlite==0.33
+numba==0.50

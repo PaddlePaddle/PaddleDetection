@@ -1,0 +1,7 @@
+_BASE_: [
+  './_base_/models/ssd_vgg16_300.yml',
+  './_base_/optimizers/ssd_240e.yml',
+  './_base_/datasets/voc.yml',
+  './_base_/readers/ssd_reader.yml',
+  './_base_/runtime.yml',
+]
