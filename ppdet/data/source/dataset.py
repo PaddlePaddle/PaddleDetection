@@ -31,7 +31,7 @@ class DetDataset(Dataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
-                 data_fields=[],
+                 data_fields=['image'],
                  sample_num=-1,
                  use_default_label=None,
                  **kwargs):

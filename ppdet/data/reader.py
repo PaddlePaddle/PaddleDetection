@@ -28,7 +28,6 @@ from paddle.io import DistributedBatchSampler
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
-from .transform import operator, batch_operator
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
