@@ -14,11 +14,12 @@
 
 import os
 import numpy as np
-import logging
-logger = logging.getLogger(__name__)
 
 from ppdet.core.workspace import register, serializable
 from .dataset import DataSet
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @register

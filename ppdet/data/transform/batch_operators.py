@@ -21,14 +21,14 @@ try:
 except Exception:
     from collections import Sequence
 
-import logging
 import cv2
 import numpy as np
 from .operator import register_op, BaseOperator
 from .op_helper import jaccard_overlap, gaussian2D
 from .operators import NormalizeImage, Permute
 
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch',

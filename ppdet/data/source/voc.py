@@ -20,8 +20,9 @@ import xml.etree.ElementTree as ET
 from ppdet.core.workspace import register, serializable
 
 from .dataset import DetDataset
-import logging
-logger = logging.getLogger(__name__)
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @register

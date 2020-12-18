@@ -25,8 +25,8 @@ from ..data.source.voc import pascalvoc_label
 from .map_utils import DetectionMAP
 from .coco_eval import bbox2out
 
-import logging
-logger = logging.getLogger(__name__)
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ['bbox_eval', 'bbox2out', 'get_category_info']
 

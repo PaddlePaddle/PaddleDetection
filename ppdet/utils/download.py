@@ -27,8 +27,8 @@ import zipfile
 
 from .voc_utils import create_list
 
-import logging
-logger = logging.getLogger(__name__)
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = [
     'get_weights_path', 'get_dataset_path', 'download_dataset',

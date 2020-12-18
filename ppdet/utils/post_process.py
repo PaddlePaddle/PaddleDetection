@@ -16,13 +16,13 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
 import numpy as np
 import cv2
 
-__all__ = ['nms']
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
-logger = logging.getLogger(__name__)
+__all__ = ['nms']
 
 
 def box_flip(boxes, im_shape):

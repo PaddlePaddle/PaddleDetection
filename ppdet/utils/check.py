@@ -19,10 +19,11 @@ from __future__ import print_function
 import sys
 
 import paddle
-import logging
 import six
 import paddle.version as fluid_version
-logger = logging.getLogger(__name__)
+
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ['check_gpu', 'check_version', 'check_config']
 

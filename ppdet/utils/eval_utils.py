@@ -6,8 +6,9 @@ import os
 import sys
 import json
 from ppdet.py_op.post_process import get_det_res, get_seg_res
-import logging
-logger = logging.getLogger(__name__)
+
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 
 def json_eval_results(metric, json_directory=None, dataset=None):

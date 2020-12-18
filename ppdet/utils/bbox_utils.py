@@ -16,12 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
 import numpy as np
 
-__all__ = ["bbox_overlaps", "box_to_delta"]
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
-logger = logging.getLogger(__name__)
+__all__ = ["bbox_overlaps", "box_to_delta"]
 
 
 def bbox_overlaps(boxes_1, boxes_2):

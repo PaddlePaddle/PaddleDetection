@@ -24,8 +24,9 @@ import re
 import numpy as np
 import paddle
 from .download import get_weights_path
-import logging
-logger = logging.getLogger(__name__)
+
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 
 def is_url(path):
