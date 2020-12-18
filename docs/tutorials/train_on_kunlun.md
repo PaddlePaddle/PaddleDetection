@@ -1,5 +1,8 @@
 # How to train on kunlun
 
+## prepare kunlun environment
+[Paddle installation for machines with Kunlun XPU card](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/2.0-rc1/install/install_Kunlun_zh.html)
+
 ## yolov3
 
 ### Prepare data

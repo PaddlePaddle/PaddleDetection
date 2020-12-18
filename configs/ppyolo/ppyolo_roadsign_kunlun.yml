@@ -1,7 +1,7 @@
 architecture: YOLOv3
 use_gpu: false
 use_xpu: true
-max_iters: 20000
+max_iters: 5000
 log_iter: 1
 save_dir: output
 snapshot_iter: 500
