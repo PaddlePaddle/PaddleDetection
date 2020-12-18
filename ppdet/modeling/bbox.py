@@ -45,10 +45,11 @@ class Anchor(object):
         return rpn_scores, rpn_deltas, anchors
 
     def generate_loss_inputs(self, inputs, rpn_head_out, anchors):
-        assert len(rpn_head_out) == len(
-            anchors
-        ), "rpn_head_out and anchors should have same length, but received rpn_head_out' length is {} and anchors' length is {}".format(
-            len(rpn_head_out), len(anchors))
+        if len(rpn_head_out) != len(anchors):
+            raise ValueError(
+                "rpn_head_out and anchors should have same length, "
+                " but received rpn_head_out' length is {} and anchors' "
+                " length is {}".format(len(rpn_head_out), len(anchors)))
         rpn_score, rpn_delta, anchors = self._get_target_input(rpn_head_out,
                                                                anchors)
 
@@ -67,18 +68,6 @@ class Anchor(object):
             'rpn_rois_weight': roi_weight
         }
         return outs
-
-
-@register
-class AnchorYOLO(object):
-    __inject__ = ['anchor_generator']
-
-    def __init__(self, anchor_generator):
-        super(AnchorYOLO, self).__init__()
-        self.anchor_generator = anchor_generator
-
-    def __call__(self):
-        return self.anchor_generator()
 
 
 @register
