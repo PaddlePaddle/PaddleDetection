@@ -31,6 +31,7 @@ class DetDataset(Dataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
                  use_default_label=None,
                  **kwargs):
@@ -38,6 +39,7 @@ class DetDataset(Dataset):
         self.dataset_dir = dataset_dir if dataset_dir is not None else ''
         self.anno_path = anno_path
         self.image_dir = image_dir if image_dir is not None else ''
+        self.data_fields = data_fields
         self.sample_num = sample_num
         self.use_default_label = use_default_label
         self._epoch = 0
@@ -63,25 +65,18 @@ class DetDataset(Dataset):
                 for _ in range(3)
             ]
 
-        # data augment
-        roidb = self.transform(roidb)
-        # data item 
-        out = OrderedDict()
-        for k in self.fields:
-            out[k] = roidb[k]
-        return out.values()
+        return self.transform(roidb)
 
     def set_kwargs(self, **kwargs):
         self.mixup_epoch = kwargs.get('mixup_epoch', -1)
         self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
         self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
 
+    def set_transform(self, transform):
+        self.transform = transform
+
     def set_epoch(self, epoch_id):
         self._epoch = epoch_id
-
-    def set_out(self, sample_transform, fields):
-        self.transform = sample_transform
-        self.fields = fields
 
     def parse_dataset(self, with_background=True):
         raise NotImplemented(

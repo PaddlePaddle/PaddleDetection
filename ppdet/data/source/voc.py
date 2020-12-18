@@ -46,12 +46,14 @@ class VOCDataSet(DetDataset):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
                  label_list=None):
         super(VOCDataSet, self).__init__(
             dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
+            data_fields=data_fields,
             sample_num=sample_num)
         self.label_list = label_list
 
@@ -113,7 +115,6 @@ class VOCDataSet(DetDataset):
                 gt_bbox = []
                 gt_class = []
                 gt_score = []
-                is_crowd = []
                 difficult = []
                 for i, obj in enumerate(objs):
                     cname = obj.find('name').text
@@ -130,7 +131,6 @@ class VOCDataSet(DetDataset):
                         gt_bbox.append([x1, y1, x2, y2])
                         gt_class.append([cname2cid[cname]])
                         gt_score.append([1.])
-                        is_crowd.append([0])
                         difficult.append([_difficult])
                     else:
                         logger.warn(
@@ -140,19 +140,25 @@ class VOCDataSet(DetDataset):
                 gt_bbox = np.array(gt_bbox).astype('float32')
                 gt_class = np.array(gt_class).astype('int32')
                 gt_score = np.array(gt_score).astype('float32')
-                is_crowd = np.array(is_crowd).astype('int32')
                 difficult = np.array(difficult).astype('int32')
+
                 voc_rec = {
                     'im_file': img_file,
                     'im_id': im_id,
                     'h': im_h,
-                    'w': im_w,
-                    'is_crowd': is_crowd,
+                    'w': im_w
+                } if 'image' in self.data_fields else {}
+
+                gt_rec = {
                     'gt_class': gt_class,
                     'gt_score': gt_score,
                     'gt_bbox': gt_bbox,
                     'difficult': difficult
                 }
+                for k, v in gt_rec.items():
+                    if k in self.data_fields:
+                        voc_rec[k] = v
+
                 if len(objs) != 0:
                     records.append(voc_rec)
 

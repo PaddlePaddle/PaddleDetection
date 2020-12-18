@@ -1,7 +1,6 @@
 worker_num: 2
 TrainReader:
   inputs_def:
-    fields: ['image', 'gt_bbox', 'gt_class']
     num_max_boxes: 90
 
   sample_transforms:
@@ -24,8 +23,6 @@ TrainReader:
 
 
 EvalReader:
-  inputs_def:
-    fields: ['image', 'im_shape',  'scale_factor', 'im_id', 'gt_bbox', 'gt_class', 'difficult']
   sample_transforms:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
@@ -37,7 +34,6 @@ EvalReader:
 TestReader:
   inputs_def:
     image_shape: [3, 300, 300]
-    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
