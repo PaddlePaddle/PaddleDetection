@@ -17,8 +17,6 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import logging
-
 import paddle
 import paddle.nn as nn
 
@@ -30,7 +28,8 @@ from ppdet.core.workspace import register, serializable
 
 __all__ = ['LearningRate', 'OptimizerBuilder']
 
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @serializable

@@ -28,7 +28,6 @@ except Exception:
 from numbers import Number
 
 import uuid
-import logging
 import random
 import math
 import numpy as np
@@ -47,7 +46,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox_square, bbox_area_sampling,
                         is_poly, gaussian_radius, draw_gaussian)
 
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @register_op
