@@ -26,6 +26,8 @@ from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
 
+__all__ = ['ResNet', 'Res5Head']
+
 
 class ConvNormLayer(nn.Layer):
     def __init__(self,
