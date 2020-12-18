@@ -1,9 +1,7 @@
 worker_num: 2
 TrainReader:
-  inputs_def:
-    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
   sample_transforms:
-  - DecodeImage: {to_rgb: true}
+  - DecodeOp: { }
   - RandomFlipImage: {prob: 0.5}
   - NormalizeImage: {is_channel_first: false, is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - ResizeImage: {target_size: 800, max_size: 1333, interp: 1, use_cv2: true}
@@ -16,8 +14,6 @@ TrainReader:
 
 
 EvalReader:
-  inputs_def:
-    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
   - DecodeOp: { }
   - NormalizeImageOp: { is_scale: true, mean: [ 0.485,0.456,0.406 ], std: [ 0.229, 0.224,0.225 ] }
@@ -32,8 +28,6 @@ EvalReader:
 
 
 TestReader:
-  inputs_def:
-    fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
   - DecodeOp: { }
   - NormalizeImageOp: { is_scale: true, mean: [ 0.485,0.456,0.406 ], std: [ 0.229, 0.224,0.225 ] }
