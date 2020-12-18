@@ -104,8 +104,8 @@ def main():
 
     cfg = load_config(FLAGS.config)
     # TODO: to be refined in the future
-    #    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
-    #        FLAGS.opt['norm_type'] = 'bn'
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
+        FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
