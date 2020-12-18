@@ -1,0 +1,95 @@
+architecture: BlazeFace
+max_iters: 5000
+use_gpu: true
+log_iter: 20
+metric: WIDERFACE
+save_dir: nas_checkpoint
+# 1(label_class) + 1(background)
+num_classes: 2
+
+# nas config start
+reduce_rate: 0.85
+init_temperature: 10.24
+is_server: true
+search_steps: 300
+server_ip: ""
+server_port: 8999
+search_space: BlazeFaceNasSpace
+
+Constraint:
+  # choice: flops, latency
+  ctype: latency
+  max_constraint: 57489
+  min_constraint: 18000
+  # only need in latency search
+  table_file: latency_855.txt
+# nas config end
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [240000, 300000]
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.0
+    type: RMSPropOptimizer
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+TrainReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+    fields: ['image', 'gt_bbox', 'gt_class']
+  dataset:
+    !WIDERFaceDataSet
+    dataset_dir: dataset/wider_face
+    anno_path: wider_face_split/wider_face_train_bbx_gt.txt
+    image_dir: WIDER_train/images
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !RandomDistort
+    brightness_lower: 0.875
+    brightness_upper: 1.125
+    is_order: true
+  - !ExpandImage
+    max_ratio: 4
+    prob: 0.5
+  - !RandomInterpImage
+    target_size: 640
+  - !RandomFlipImage
+    is_normalized: true
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [104, 117, 123]
+    std: [127.502231, 127.502231, 127.502231]
+  batch_size: 8
+  use_process: True
+  worker_num: 8
+  shuffle: true
+  memsize: 6G
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'im_shape', 'gt_bbox']
+  dataset:
+    !WIDERFaceDataSet
+    dataset_dir: dataset/wider_face
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
+    image_dir: WIDER_val/images
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [104, 117, 123]
+    std: [127.502231, 127.502231, 127.502231]
+  batch_size: 1

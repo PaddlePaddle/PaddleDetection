@@ -1,0 +1,157 @@
+architecture: EfficientDet
+max_iters: 281250
+use_gpu: true
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/EfficientNetB0_pretrained.tar
+weights: output/efficientdet_d0/model_final
+log_iter: 20
+snapshot_iter: 10000
+metric: COCO
+save_dir: output
+num_classes: 81
+use_ema: true
+ema_decay: 0.9998
+
+EfficientDet:
+  backbone: EfficientNet
+  fpn: BiFPN
+  efficient_head: EfficientHead
+  anchor_grid: AnchorGrid
+  box_loss_weight: 50.
+
+EfficientNet:
+  # norm_type: sync_bn
+  # TODO
+  norm_type: bn
+  scale: b0
+  use_se: true
+
+BiFPN:
+  num_chan: 64
+  repeat: 3
+  levels: 5
+
+EfficientHead:
+  repeat: 3
+  num_chan: 64
+  prior_prob: 0.01
+  num_anchors: 9
+  gamma: 1.5
+  alpha: 0.25
+  delta: 0.1
+  output_decoder:
+    score_thresh: 0.05   # originally 0.
+    nms_thresh: 0.5
+    pre_nms_top_n: 1000  # originally 5000
+    detections_per_im: 100
+    nms_eta: 1.0
+
+AnchorGrid:
+  anchor_base_scale: 4
+  num_scales: 3
+  aspect_ratios: [[1, 1], [1.4, 0.7], [0.7, 1.4]]
+
+LearningRate:
+  base_lr: 0.16
+  schedulers:
+  - !CosineDecayWithSkip
+    total_steps: 281250
+    skip_steps: 938
+  - !LinearWarmup
+    start_factor: 0.05
+    steps: 938
+
+OptimizerBuilder:
+  clip_grad_by_norm: 10.
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.00004
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'fg_num', 'gt_label', 'gt_target']
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !RandomScaledCrop
+    target_dim: 512
+    scale_range: [.1, 2.]
+    interp: 1
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  - !TargetAssign
+    image_size: 512
+  batch_size: 16
+  shuffle: true
+  worker_num: 32
+  bufsize: 16
+  use_process: true
+  drop_empty: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id']
+  dataset:
+    !COCODataSet
+    image_dir: val2017
+    anno_path: annotations/instances_val2017.json
+    dataset_dir: dataset/coco
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeAndPad
+    target_dim: 512
+    interp: 1
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  drop_empty: false
+  batch_size: 16
+  shuffle: false
+  worker_num: 2
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id']
+    image_shape: [3, 512, 512]
+  dataset:
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !ResizeAndPad
+    target_dim: 512
+    interp: 1
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_size: 16
+  shuffle: false

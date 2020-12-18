@@ -1,0 +1,101 @@
+architecture: SOLOv2
+use_gpu: true
+max_iters: 270000
+snapshot_iter: 30000
+log_smooth_window: 20
+save_dir: output
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+metric: COCO
+weights: output/solov2/solov2_r50_fpn_3x/model_final
+num_classes: 81
+
+SOLOv2:
+  backbone: ResNet
+  fpn: FPN
+  bbox_head: SOLOv2Head
+  mask_head: SOLOv2MaskHead
+
+ResNet:
+  depth: 50
+  feature_maps: [2, 3, 4, 5]
+  freeze_at: 2
+  norm_type: bn
+
+FPN:
+  max_level: 6
+  min_level: 2
+  num_chan: 256
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+  reverse_out: True
+
+SOLOv2Head:
+  seg_feat_channels: 512
+  stacked_convs: 4
+  num_grids: [40, 36, 24, 16, 12]
+  kernel_out_channels: 256
+  solov2_loss: SOLOv2Loss
+  mask_nms: MaskMatrixNMS
+
+SOLOv2MaskHead:
+  in_channels: 128
+  out_channels: 256
+  start_level: 0
+  end_level: 3
+
+SOLOv2Loss:
+  ins_loss_weight: 3.0
+  focal_loss_gamma: 2.0
+  focal_loss_alpha: 0.25
+
+MaskMatrixNMS:
+  pre_nms_top_n: 500
+  post_nms_top_n: 100
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [180000, 240000]
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+_READER_: 'solov2_reader.yml'
+TrainReader:
+  batch_size: 2
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !Poly2Mask {}
+  - !ResizeImage
+    target_size: [640, 672, 704, 736, 768, 800]
+    max_size: 1333
+    interp: 1
+    use_cv2: true
+    resize_box: true
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean: [0.485,0.456,0.406]
+    std: [0.229, 0.224,0.225]
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+  - !Gt2Solov2Target
+    num_grids: [40, 36, 24, 16, 12]
+    scale_ranges: [[1, 96], [48, 192], [96, 384], [192, 768], [384, 2048]]
+    coord_sigma: 0.2

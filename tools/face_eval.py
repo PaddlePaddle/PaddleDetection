@@ -17,19 +17,24 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
+import paddle
 import paddle.fluid as fluid
 import numpy as np
-from PIL import Image
+import cv2
 from collections import OrderedDict
 
 import ppdet.utils.checkpoint as checkpoint
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 from ppdet.utils.widerface_eval_utils import get_shrink, bbox_vote, \
     save_widerface_bboxes, save_fddb_bboxes, to_chw_bgr
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -53,7 +58,7 @@ def face_img_process(image,
 def face_eval_run(exe,
                   compile_program,
                   fetches,
-                  img_root_dir,
+                  image_dir,
                   gt_file,
                   pred_dir='output/pred',
                   eval_mode='widerface',
@@ -73,12 +78,14 @@ def face_eval_run(exe,
 
     dets_dist = OrderedDict()
     for iter_id, im_path in enumerate(imid2path):
-        image_path = os.path.join(img_root_dir, im_path)
+        image_path = os.path.join(image_dir, im_path)
         if eval_mode == 'fddb':
             image_path += '.jpg'
-        image = Image.open(image_path).convert('RGB')
+        assert os.path.exists(image_path)
+        image = cv2.imread(image_path)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         if multi_scale:
-            shrink, max_shrink = get_shrink(image.size[1], image.size[0])
+            shrink, max_shrink = get_shrink(image.shape[0], image.shape[1])
             det0 = detect_face(exe, compile_program, fetches, image, shrink)
             det1 = flip_test(exe, compile_program, fetches, image, shrink)
             [det2, det3] = multi_scale_test(exe, compile_program, fetches,
@@ -101,10 +108,10 @@ def face_eval_run(exe,
 
 
 def detect_face(exe, compile_program, fetches, image, shrink):
-    image_shape = [3, image.size[1], image.size[0]]
+    image_shape = [3, image.shape[0], image.shape[1]]
     if shrink != 1:
         h, w = int(image_shape[1] * shrink), int(image_shape[2] * shrink)
-        image = image.resize((w, h), Image.ANTIALIAS)
+        image = cv2.resize(image, (w, h))
         image_shape = [3, h, w]
 
     img = face_img_process(image)
@@ -128,13 +135,13 @@ def detect_face(exe, compile_program, fetches, image, shrink):
 
 
 def flip_test(exe, compile_program, fetches, image, shrink):
-    img = image.transpose(Image.FLIP_LEFT_RIGHT)
+    img = cv2.flip(image, 1)
     det_f = detect_face(exe, compile_program, fetches, img, shrink)
     det_t = np.zeros(det_f.shape)
-    # image.size: [width, height]
-    det_t[:, 0] = image.size[0] - det_f[:, 2]
+    img_width = image.shape[1]
+    det_t[:, 0] = img_width - det_f[:, 2]
     det_t[:, 1] = det_f[:, 1]
-    det_t[:, 2] = image.size[0] - det_f[:, 0]
+    det_t[:, 2] = img_width - det_f[:, 0]
     det_t[:, 3] = det_f[:, 3]
     det_t[:, 4] = det_f[:, 4]
     return det_t
@@ -210,20 +217,13 @@ def main():
     Main evaluate function
     """
     cfg = load_config(FLAGS.config)
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    check_version()
 
-    if 'eval_feed' not in cfg:
-        eval_feed = create(main_arch + 'EvalFeed')
-    else:
-        eval_feed = create(cfg.eval_feed)
+    main_arch = cfg.architecture
 
     # define executor
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
@@ -235,7 +235,9 @@ def main():
     eval_prog = fluid.Program()
     with fluid.program_guard(eval_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(eval_feed, iterable=True)
+            inputs_def = cfg['EvalReader']['inputs_def']
+            inputs_def['use_dataloader'] = False
+            feed_vars, _ = model.build_inputs(**inputs_def)
             fetches = model.eval(feed_vars)
 
     eval_prog = eval_prog.clone(True)
@@ -248,34 +250,29 @@ def main():
     assert cfg.metric in ['WIDERFACE'], \
             "unknown metric type {}".format(cfg.metric)
 
-    annotation_file = getattr(eval_feed.dataset, 'annotation', None)
-    dataset_dir = FLAGS.dataset_dir if FLAGS.dataset_dir else \
-        getattr(eval_feed.dataset, 'dataset_dir', None)
-    img_root_dir = dataset_dir
-    if FLAGS.eval_mode == "widerface":
-        image_dir = getattr(eval_feed.dataset, 'image_dir', None)
-        img_root_dir = os.path.join(dataset_dir, image_dir)
-    gt_file = os.path.join(dataset_dir, annotation_file)
+    dataset = cfg['EvalReader']['dataset']
+
+    annotation_file = dataset.get_anno()
+    dataset_dir = dataset.dataset_dir
+    image_dir = os.path.join(
+        dataset_dir,
+        dataset.image_dir) if FLAGS.eval_mode == 'widerface' else dataset_dir
+
     pred_dir = FLAGS.output_eval if FLAGS.output_eval else 'output/pred'
     face_eval_run(
         exe,
         eval_prog,
         fetches,
-        img_root_dir,
-        gt_file,
+        image_dir,
+        annotation_file,
         pred_dir=pred_dir,
         eval_mode=FLAGS.eval_mode,
         multi_scale=FLAGS.multi_scale)
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
-    parser.add_argument(
-        "-d",
-        "--dataset_dir",
-        default=None,
-        type=str,
-        help="Dataset path, same as DataFeed.dataset.dataset_dir")
     parser.add_argument(
         "-f",
         "--output_eval",

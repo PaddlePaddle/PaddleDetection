@@ -1,141 +1,251 @@
->运行该示例前请安装Paddle1.6或更高版本
+>运行该示例前请安装PaddleSlim和Paddle1.6或更高版本
 
-# 检测模型蒸馏示例
+# 模型蒸馏教程
 
 ## 概述
 
-该示例使用PaddleSlim提供的[蒸馏策略](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/tutorial.md#3-蒸馏)对检测库中的模型进行蒸馏训练。
+该示例使用PaddleSlim提供的[蒸馏策略](https://paddlepaddle.github.io/PaddleSlim/algo/algo/#3)对检测库中的模型进行蒸馏训练。
 在阅读该示例前，建议您先了解以下内容：
 
 - [检测库的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
-- [PaddleSlim使用文档](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md)
+- [PaddleSlim蒸馏API文档](https://paddlepaddle.github.io/PaddleSlim/api/single_distiller_api/)
 
+已发布蒸馏模型见[压缩模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/README.md)
 
-## 配置文件说明
+## 安装PaddleSlim
+可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim
 
-关于配置文件如何编写您可以参考：
+## 蒸馏策略说明
 
-- [PaddleSlim配置文件编写说明](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md#122-%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%9A%84%E4%BD%BF%E7%94%A8)
-- [蒸馏策略配置文件编写说明](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md#23-蒸馏)
+关于蒸馏API如何使用您可以参考PaddleSlim蒸馏API文档
 
-这里以ResNet34-YoloV3蒸馏MobileNetV1-YoloV3模型为例，首先，为了对`student model`和`teacher model`有个总体的认识，从而进一步确认蒸馏的对象，我们通过以下命令分别观察两个网络变量（Variable）的名称和形状：
+### MobileNetV1-YOLOv3在VOC数据集上的蒸馏
+
+这里以ResNet34-YOLOv3蒸馏训练MobileNetV1-YOLOv3模型为例，首先，为了对`student model`和`teacher model`有个总体的认识，进一步确认蒸馏的对象，我们通过以下命令分别观察两个网络变量（Variables）的名称和形状：
 
 ```python
-# 观察student model的Variable
+# 观察student model的Variables
+student_vars = []
 for v in fluid.default_main_program().list_vars():
-    if "py_reader" not in v.name and "double_buffer" not in v.name and "generated_var" not in v.name:
-        print(v.name, v.shape)
-# 观察teacher model的Variable
+    try:
+        student_vars.append((v.name, v.shape))
+    except:
+        pass
+print("="*50+"student_model_vars"+"="*50)
+print(student_vars)
+# 观察teacher model的Variables
+teacher_vars = []
 for v in teacher_program.list_vars():
-    print(v.name, v.shape)
+    try:
+        teacher_vars.append((v.name, v.shape))
+    except:
+        pass
+print("="*50+"teacher_model_vars"+"="*50)
+print(teacher_vars)
 ```
 
-经过对比可以发现，`student model`和`teacher model`的部分中间结果分别为：
+经过对比可以发现，`student model`和`teacher model`输入到3个`yolov3_loss`的特征图分别为：
 
 ```bash
 # student model
-conv2d_15.tmp_0
+conv2d_20.tmp_1, conv2d_28.tmp_1, conv2d_36.tmp_1
 # teacher model
-teacher_teacher_conv2d_1.tmp_0
+conv2d_6.tmp_1, conv2d_14.tmp_1, conv2d_22.tmp_1
 ```
 
 
-所以，我们用`l2_distiller`对这两个特征图做蒸馏。在配置文件中进行如下配置：
+它们形状两两相同，且分别处于两个网络的输出部分。所以，我们用`l2_loss`对这几个特征图两两对应添加蒸馏loss。需要注意的是，teacher的Variable在merge过程中被自动添加了一个`name_prefix`，所以这里也需要加上这个前缀`"teacher_"`，merge过程请参考[蒸馏API文档](https://paddlepaddle.github.io/PaddleSlim/api/single_distiller_api/#merge)
 
-```yaml
-distillers:
-    l2_distiller:
-        class: 'L2Distiller'
-        teacher_feature_map: 'teacher_teacher_conv2d_1.tmp_0'
-        student_feature_map: 'conv2d_15.tmp_0'
-        distillation_loss_weight: 1
-strategies:
-    distillation_strategy:
-        class: 'DistillationStrategy'
-        distillers: ['l2_distiller']
-        start_epoch: 0
-        end_epoch: 270
+```python
+dist_loss_1 = l2_loss('teacher_conv2d_6.tmp_1', 'conv2d_20.tmp_1')
+dist_loss_2 = l2_loss('teacher_conv2d_14.tmp_1', 'conv2d_28.tmp_1')
+dist_loss_3 = l2_loss('teacher_conv2d_22.tmp_1', 'conv2d_36.tmp_1')
 ```
 
-我们也可以根据上述操作为蒸馏策略选择其他loss，PaddleSlim支持的有`FSP_loss`, `L2_loss`和`softmax_with_cross_entropy_loss` 。
+我们也可以根据上述操作为蒸馏策略选择其他loss，PaddleSlim支持的有`FSP_loss`, `L2_loss`, `softmax_with_cross_entropy_loss` 以及自定义的任何loss。
+
+### MobileNetV1-YOLOv3在COCO数据集上的蒸馏
+
+这里以ResNet34-YOLOv3作为蒸馏训练的teacher网络, 对MobileNetV1-YOLOv3结构的student网络进行蒸馏。
+
+COCO数据集作为目标检测任务的训练目标难度更大，意味着teacher网络会预测出更多的背景bbox，如果直接用teacher的预测输出作为student学习的`soft label`会有严重的类别不均衡问题。解决这个问题需要引入新的方法，详细背景请参考论文:[Object detection at 200 Frames Per Second](https://arxiv.org/abs/1805.06361)
+
+为了确定蒸馏的对象，我们首先需要找到student和teacher网络得到的`x,y,w,h,cls.objness`等变量在PaddlePaddle框架中的实际名称(var.name)。进而根据名称取出这些变量，用teacher得到的结果指导student训练。找到的所有变量如下：
+
+```python
+yolo_output_names = [
+        'strided_slice_0.tmp_0', 'strided_slice_1.tmp_0',
+        'strided_slice_2.tmp_0', 'strided_slice_3.tmp_0',
+        'strided_slice_4.tmp_0', 'transpose_0.tmp_0', 'strided_slice_5.tmp_0',
+        'strided_slice_6.tmp_0', 'strided_slice_7.tmp_0',
+        'strided_slice_8.tmp_0', 'strided_slice_9.tmp_0', 'transpose_2.tmp_0',
+        'strided_slice_10.tmp_0', 'strided_slice_11.tmp_0',
+        'strided_slice_12.tmp_0', 'strided_slice_13.tmp_0',
+        'strided_slice_14.tmp_0', 'transpose_4.tmp_0'
+    ]
+```
+
+然后，就可以根据论文<<Object detection at 200 Frames Per Second>>的方法为YOLOv3中分类、回归、objness三个不同的head适配不同的蒸馏损失函数，并对分类和回归的损失函数用objness分值进行抑制，以解决前景背景类别不均衡问题。
 
 ## 训练
 
-根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/tree/master/tools/train.py)编写压缩脚本compress.py。
-在该脚本中定义了Compressor对象，用于执行压缩任务。
+根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py)编写压缩脚本`distill.py`。
+在该脚本中定义了teacher_model和student_model，用teacher_model的输出指导student_model的训练
 
+### 执行示例
 
+step1: 设置GPU卡
 
+```shell
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+```
 
-您可以通过运行脚本`run.sh`运行该示例。
+step2: 开始训练
+
+```bash
+# yolov3_mobilenet_v1在voc数据集上蒸馏
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1_voc.yml \
+    -t configs/yolov3_r34_voc.yml \
+    --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
+```
+
+```bash
+# yolov3_mobilenet_v1在COCO数据集上蒸馏
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1.yml \
+    -o use_fine_grained_loss=true \
+    -t configs/yolov3_r34.yml \
+    --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar
+```
+
+如果要调整训练卡数，需要调整配置文件`yolov3_mobilenet_v1_voc.yml`中的以下参数：
+
+- **max_iters:** 训练过程迭代总步数。
+- **YOLOv3Loss.batch_size:** 该参数表示单张GPU卡上的`batch_size`, 总`batch_size`是GPU卡数乘以这个值， `batch_size`的设定受限于显存大小。
+- **LeaningRate.base_lr:** 根据多卡的总`batch_size`调整`base_lr`，两者大小正相关，可以简单的按比例进行调整。
+- **LearningRate.schedulers.PiecewiseDecay.milestones：** 请根据batch size的变化对其调整。
+- **LearningRate.schedulers.PiecewiseDecay.LinearWarmup.steps：** 请根据batch size的变化对其进行调整。
+
+以下为4卡训练示例，通过命令行-o参数覆盖`yolov3_mobilenet_v1_voc.yml`中的参数, 修改GPU卡数后应尽量确保总batch_size(GPU卡数\*YoloTrainFeed.batch_size)不变, 以确保训练效果不因bs大小受影响:
+
+```bash
+# yolov3_mobilenet_v1在VOC数据集上蒸馏
+CUDA_VISIBLE_DEVICES=0,1,2,3
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1_voc.yml \
+    -t configs/yolov3_r34_voc.yml \
+    -o YOLOv3Loss.batch_size=16 \
+    --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
+```
+
+```bash
+# yolov3_mobilenet_v1在COCO数据集上蒸馏
+CUDA_VISIBLE_DEVICES=0,1,2,3
+python slim/distillation/distill.py \
+    -c configs/yolov3_mobilenet_v1.yml \
+    -t configs/yolov3_r34.yml \
+    -o use_fine_grained_loss=true YOLOv3Loss.batch_size=16 \
+    --teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar
+```
+
 
 
 ### 保存断点（checkpoint）
 
-如果在配置文件中设置了`checkpoint_path`, 则在蒸馏任务执行过程中会自动保存断点，当任务异常中断时，
-重启任务会自动从`checkpoint_path`路径下按数字顺序加载最新的checkpoint文件。如果不想让重启的任务从断点恢复，
-需要修改配置文件中的`checkpoint_path`，或者将`checkpoint_path`路径下文件清空。
+蒸馏任务执行过程中会自动保存断点。如果需要从断点继续训练请用`-r`参数指定checkpoint路径，示例如下：
 
->注意：配置文件中的信息不会保存在断点中，重启前对配置文件的修改将会生效。
+```bash
+# yolov3_mobilenet_v1在VOC数据集上恢复断点
+python -u slim/distillation/distill.py \
+-c configs/yolov3_mobilenet_v1_voc.yml \
+-t configs/yolov3_r34_voc.yml \
+-r output/yolov3_mobilenet_v1_voc/10000 \
+--teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34_voc.tar
+```
+
+```bash
+# yolov3_mobilenet_v1在COCO数据集上恢复断点
+python -u slim/distillation/distill.py \
+-c configs/yolov3_mobilenet_v1.yml \
+-t configs/yolov3_r34.yml \
+-o use_fine_grained_loss=true \
+-r output/yolov3_mobilenet_v1/10000 \
+--teacher_pretrained https://paddlemodels.bj.bcebos.com/object_detection/yolov3_r34.tar
+```
+
 
 
 ## 评估
 
-如果在配置文件中设置了`checkpoint_path`，则每个epoch会保存一个压缩后的用于评估的模型，
-该模型会保存在`${checkpoint_path}/${epoch_id}/eval_model/`路径下，包含`__model__`和`__params__`两个文件。
-其中，`__model__`用于保存模型结构信息，`__params__`用于保存参数（parameters）信息。
-
-如果不需要保存评估模型，可以在定义Compressor对象时，将`save_eval_model`选项设置为False（默认为True）。
+每隔`snap_shot_iter`步后会保存一个checkpoint模型可以用于评估，使用PaddleDetection目录下[tools/eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/eval.py)评估脚本，并指定`weights`为训练得到的模型路径
 
 运行命令为：
+```bash
+# yolov3_mobilenet_v1在VOC数据集上评估
+export CUDA_VISIBLE_DEVICES=0
+python -u tools/eval.py -c configs/yolov3_mobilenet_v1_voc.yml \
+       -o weights=output/yolov3_mobilenet_v1_voc/model_final \
 ```
-python ../eval.py \
-    --model_path ${checkpoint_path}/${epoch_id}/eval_model/ \
-    --model_name __model__ \
-    --params_name __params__ \
-    -c ../../configs/yolov3_mobilenet_v1_voc.yml \
-    -d "../../dataset/voc"
+
+```bash
+# yolov3_mobilenet_v1在COCO数据集上评估
+export CUDA_VISIBLE_DEVICES=0
+python -u tools/eval.py -c configs/yolov3_mobilenet_v1.yml \
+       -o weights=output/yolov3_mobilenet_v1/model_final \
 ```
 
 ## 预测
 
-如果在配置文件中设置了`checkpoint_path`，并且在定义Compressor对象时指定了`prune_infer_model`选项，则每个epoch都会
-保存一个`inference model`。该模型是通过删除eval_program中多余的operators而得到的。
+每隔`snap_shot_iter`步后保存的checkpoint模型也可以用于预测，使用PaddleDetection目录下[tools/infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/infer.py)评估脚本，并指定`weights`为训练得到的模型路径
 
-该模型会保存在`${checkpoint_path}/${epoch_id}/eval_model/`路径下，包含`__model__.infer`和`__params__`两个文件。
-其中，`__model__.infer`用于保存模型结构信息，`__params__`用于保存参数（parameters）信息。
-
-更多关于`prune_infer_model`选项的介绍，请参考：[Compressor介绍](https://github.com/PaddlePaddle/models/blob/develop/PaddleSlim/docs/usage.md#121-%E5%A6%82%E4%BD%95%E6%94%B9%E5%86%99%E6%99%AE%E9%80%9A%E8%AE%AD%E7%BB%83%E8%84%9A%E6%9C%AC)
-
-### python预测
-
-在脚本<a href="../infer.py">slim/infer.py</a>中展示了如何使用fluid python API加载使用预测模型进行预测。
+### Python预测
 
 运行命令为：
 ```
-python ../infer.py \
-    --model_path ${checkpoint_path}/${epoch_id}/eval_model/ \
-    --model_name __model__.infer \
-    --params_name __params__ \
-    -c ../../configs/yolov3_mobilenet_v1_voc.yml \
-    --infer_dir ../../demo
+# 使用yolov3_mobilenet_v1_voc模型进行预测
+export CUDA_VISIBLE_DEVICES=0
+python -u tools/infer.py -c configs/yolov3_mobilenet_v1_voc.yml \
+                    --infer_img=demo/000000570688.jpg \
+                    --output_dir=infer_output/ \
+                    --draw_threshold=0.5 \
+                    -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
 
-### PaddleLite
-
-该示例中产出的预测（inference）模型可以直接用PaddleLite进行加载使用。
-关于PaddleLite如何使用，请参考：[PaddleLite使用文档](https://github.com/PaddlePaddle/Paddle-Lite/wiki#%E4%BD%BF%E7%94%A8)
+```
+# 使用yolov3_mobilenet_v1_coco模型进行预测
+export CUDA_VISIBLE_DEVICES=0
+python -u tools/infer.py -c configs/yolov3_mobilenet_v1.yml \
+                    --infer_img=demo/000000570688.jpg \
+                    --output_dir=infer_output/ \
+                    --draw_threshold=0.5 \
+                    -o weights=output/yolov3_mobilenet_v1/model_final
+```
 
 ## 示例结果
 
->当前release的结果并非超参调优后的最好结果，仅做示例参考，后续我们会优化当前结果。
+### MobileNetV1-YOLO-V3-VOC
 
-### MobileNetV1-YOLO-V3
+| FLOPS |输入尺寸|每张GPU图片个数|推理时间（fps）|Box AP|下载|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|baseline|608     |16|104.291|76.2|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|608 |16|106.914|79.0|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_voc_distilled.tar)|
+|baseline|416 |16|-|76.7|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|416 |16|-|78.2|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_voc_distilled.tar)|
+|baseline|320 |16|-|75.3|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|320 |16|-|75.5|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_voc_distilled.tar)|
 
-| FLOPS |Box AP|
-|---|---|
-|baseline|76.2     |
-|蒸馏后|- |
+> 蒸馏后的结果用ResNet34-YOLO-V3做teacher，4GPU总batch_size64训练90000 iter得到
 
+### MobileNetV1-YOLO-V3-COCO
 
-## FAQ
+| FLOPS |输入尺寸|每张GPU图片个数|推理时间（fps）|Box AP|下载|
+|:-:|:-:|:-:|:-:|:-:|:-:|
+|baseline|608     |16|78.302|29.3|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|608 |16|78.523|31.4|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_distilled.tar)|
+|baseline|416 |16|-|29.3|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|416 |16|-|30.0|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_distilled.tar)|
+|baseline|320 |16|-|27.0|[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_voc.tar)|
+|蒸馏后|320 |16|-|27.1|[下载链接](https://paddlemodels.bj.bcebos.com/PaddleSlim/yolov3_mobilenetv1_coco_distilled.tar)|
+
+> 蒸馏后的结果用ResNet34-YOLO-V3做teacher，4GPU总batch_size64训练600000 iter得到

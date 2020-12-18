@@ -21,7 +21,11 @@ from paddle import fluid
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import BBoxAssigner, MaskAssigner
 
-__all__ = ['BBoxAssigner', 'MaskAssigner', 'CascadeBBoxAssigner']
+__all__ = [
+    'BBoxAssigner',
+    'MaskAssigner',
+    'CascadeBBoxAssigner',
+]
 
 
 @register
@@ -49,7 +53,7 @@ class CascadeBBoxAssigner(object):
         self.use_random = shuffle_before_sample
         self.class_aware = class_aware
 
-    def __call__(self, input_rois, feed_vars, curr_stage):
+    def __call__(self, input_rois, feed_vars, curr_stage, max_overlap=None):
 
         curr_bbox_reg_w = [
             1. / self.bbox_reg_weights[curr_stage],
@@ -59,9 +63,9 @@ class CascadeBBoxAssigner(object):
         ]
         outs = fluid.layers.generate_proposal_labels(
             rpn_rois=input_rois,
-            gt_classes=feed_vars['gt_label'],
+            gt_classes=feed_vars['gt_class'],
             is_crowd=feed_vars['is_crowd'],
-            gt_boxes=feed_vars['gt_box'],
+            gt_boxes=feed_vars['gt_bbox'],
             im_info=feed_vars['im_info'],
             batch_size_per_im=self.batch_size_per_im,
             fg_thresh=self.fg_thresh[curr_stage],
@@ -71,5 +75,8 @@ class CascadeBBoxAssigner(object):
             use_random=self.use_random,
             class_nums=self.class_nums if self.class_aware else 2,
             is_cls_agnostic=not self.class_aware,
-            is_cascade_rcnn=True if curr_stage > 0 and not self.class_aware else False)
+            is_cascade_rcnn=True
+            if curr_stage > 0 and not self.class_aware else False,
+            max_overlap=max_overlap,
+            return_max_overlap=True)
         return outs

@@ -1,0 +1,141 @@
+architecture: TTFNet
+use_gpu: true
+max_iters: 15000
+log_iter: 20
+save_dir: output
+snapshot_iter: 1000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+weights: output/ttfnet_darknet/model_final
+num_classes: 80
+
+TTFNet:
+  backbone: DarkNet
+  ttf_head: TTFHead
+
+DarkNet:
+  norm_type: bn
+  norm_decay: 0.0004
+  depth: 53
+  freeze_at: 1
+
+TTFHead:
+  head_conv: 128
+  wh_conv: 64
+  hm_head_conv_num: 2
+  wh_head_conv_num: 2
+  wh_offset_base: 16
+  wh_loss: GiouLoss
+
+GiouLoss:
+  loss_weight: 5.
+  do_average: false
+  use_class_weight: false
+
+LearningRate:
+  base_lr: 0.015
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 11250
+    - 13750
+  - !LinearWarmup
+    start_factor: 0.2
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0004
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'ttf_heatmap', 'ttf_box_target', 'ttf_reg_weight']
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !Resize
+    target_dim: 512
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123.675, 116.28, 103.53]
+    std: [58.395, 57.12, 57.375]
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  batch_transforms:
+  - !Gt2TTFTarget
+    num_classes: 80
+    down_ratio: 4
+  - !PadBatch
+    pad_to_stride: 32
+  batch_size: 12
+  shuffle: true
+  worker_num: 8
+  bufsize: 2
+  use_process: true
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !COCODataSet
+      image_dir: val2017
+      anno_path: annotations/instances_val2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      target_dim: 512
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
+  drop_empty: false
+  worker_num: 8
+  bufsize: 16
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !ImageFolder
+      anno_path: annotations/instances_val2017.json
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      interp: 1
+      target_dim: 512
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1

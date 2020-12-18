@@ -4,6 +4,7 @@
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.ipynb_checkpoints/
 *.py[cod]
 
 # C extensions
@@ -11,6 +12,9 @@ __pycache__/
 
 # json file
 *.json
+
+# log file
+*.log
 
 # Distribution / packaging
 /bin/
@@ -21,6 +25,7 @@ __pycache__/
 /lib/
 /lib64/
 /output/
+/inference_model/
 /parts/
 /sdist/
 /var/
@@ -57,7 +62,9 @@ coverage.xml
 
 *.json
 *.tar
+*.pyc
 
+.idea/
 
 dataset/coco/annotations
 dataset/coco/train2017

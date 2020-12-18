@@ -23,13 +23,18 @@ import re
 try:
     from docstring_parser import parse as doc_parse
 except Exception:
+
     def doc_parse(*args):
         pass
+
+
 try:
     from typeguard import check_type
 except Exception:
+
     def check_type(*args):
         pass
+
 
 __all__ = ['SchemaValue', 'SchemaDict', 'SharedConfig', 'extract_schema']
 

@@ -1,0 +1,145 @@
+architecture: CornerNetSqueeze
+use_gpu: true
+max_iters: 500000
+log_iter: 20
+save_dir: output
+snapshot_iter: 10000
+metric: COCO
+pretrain_weights: NULL
+weights: output/cornernet_squeeze_hg104/model_final
+num_classes: 80
+stack: 2
+
+CornerNetSqueeze:
+  backbone: Hourglass
+  corner_head: CornerHead
+
+Hourglass:
+  dims: [256, 256, 384, 384, 512]
+  modules: [2, 2, 2, 2, 4]
+
+CornerHead:
+  test_batch_size: 1
+  ae_threshold: 0.5
+  num_dets: 100
+  top_k: 20
+
+PostProcess:
+  use_soft_nms: true
+  detections_per_im: 100
+  nms_thresh: 0.001
+  sigma: 0.5
+
+LearningRate:
+  base_lr: 0.00025
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 450000
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+
+TrainReader:
+  inputs_def:
+    image_shape: [3, 511, 511]
+    fields: ['image', 'im_id', 'gt_bbox', 'gt_class', 'tl_heatmaps', 'br_heatmaps', 'tl_regrs', 'br_regrs', 'tl_tags', 'br_tags', 'tag_masks']
+    output_size: 64
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir:  dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: False
+  - !CornerCrop
+    input_size: 511
+  - !Resize
+    target_dim: 511
+  - !RandomFlipImage
+    prob: 0.5
+  - !CornerRandColor
+    saturation: 0.4
+    contrast: 0.4
+    brightness: 0.4
+  - !Lighting
+    eigval: [0.2141788, 0.01817699, 0.00341571]
+    eigvec: [[-0.58752847, -0.69563484, 0.41340352],
+           [-0.5832747, 0.00994535, -0.81221408],
+           [-0.56089297, 0.71832671, 0.41158938]]
+  - !NormalizeImage
+    mean: [0.40789654, 0.44719302, 0.47026115]
+    std: [0.28863828, 0.27408164, 0.2780983]
+    is_scale: False
+    is_channel_first: False
+  - !Permute
+    to_bgr: False
+  - !CornerTarget
+    output_size: [64, 64]
+    num_classes: 80
+  batch_size: 14
+  shuffle: true
+  drop_last: true
+  worker_num: 2
+  use_process: true
+  drop_empty: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'ratios', 'borders']
+    output_size: 64
+  dataset:
+    !COCODataSet
+      image_dir: val2017
+      anno_path: annotations/instances_val2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: false
+  - !CornerCrop
+    is_train: false
+  - !CornerRatio
+    input_size: 511
+    output_size: 64
+  - !Permute
+    to_bgr: False
+  - !NormalizeImage
+    mean: [0.40789654, 0.44719302, 0.47026115]
+    std: [0.28863828, 0.27408164, 0.2780983]
+    is_scale: True
+    is_channel_first: True
+  batch_size: 1
+  drop_empty: false
+  worker_num: 2
+  use_process: true
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'ratios', 'borders']
+    output_size: 64
+  dataset:
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: false
+  - !CornerCrop
+    is_train: false
+  - !CornerRatio
+    input_size: 511
+    output_size: 64
+  - !Permute
+    to_bgr: False
+  - !NormalizeImage
+    mean: [0.40789654, 0.44719302, 0.47026115]
+    std: [0.28863828, 0.27408164, 0.2780983]
+    is_scale: True
+    is_channel_first: True
+  batch_size: 1

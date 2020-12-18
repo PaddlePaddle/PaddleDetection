@@ -40,16 +40,18 @@ class SSD(object):
     """
 
     __category__ = 'architecture'
-    __inject__ = ['backbone', 'multi_box_head', 'output_decoder']
+    __inject__ = ['backbone', 'multi_box_head', 'output_decoder', 'fpn']
     __shared__ = ['num_classes']
 
     def __init__(self,
                  backbone,
+                 fpn=None,
                  multi_box_head='MultiBoxHead',
                  output_decoder=SSDOutputDecoder().__dict__,
                  num_classes=21):
         super(SSD, self).__init__()
         self.backbone = backbone
+        self.fpn = fpn
         self.multi_box_head = multi_box_head
         self.num_classes = num_classes
         self.output_decoder = output_decoder
@@ -59,8 +61,8 @@ class SSD(object):
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
         if mode == 'train' or mode == 'eval':
-            gt_box = feed_vars['gt_box']
-            gt_label = feed_vars['gt_label']
+            gt_bbox = feed_vars['gt_bbox']
+            gt_class = feed_vars['gt_class']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
         # cast inputs to FP16
@@ -69,6 +71,9 @@ class SSD(object):
 
         # backbone
         body_feats = self.backbone(im)
+
+        if self.fpn is not None:
+            body_feats, spatial_scale = self.fpn.get_output(body_feats)
 
         if isinstance(body_feats, OrderedDict):
             body_feat_names = list(body_feats.keys())
@@ -82,7 +87,7 @@ class SSD(object):
             inputs=body_feats, image=im, num_classes=self.num_classes)
 
         if mode == 'train':
-            loss = fluid.layers.ssd_loss(locs, confs, gt_box, gt_label, box,
+            loss = fluid.layers.ssd_loss(locs, confs, gt_bbox, gt_class, box,
                                          box_var)
             loss = fluid.layers.reduce_sum(loss)
             return {'loss': loss}
@@ -90,13 +95,48 @@ class SSD(object):
             pred = self.output_decoder(locs, confs, box, box_var)
             return {'bbox': pred}
 
+    def _inputs_def(self, image_shape):
+        im_shape = [None] + image_shape
+        # yapf: disable
+        inputs_def = {
+            'image':        {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
+            'im_id':        {'shape': [None, 1], 'dtype': 'int64',   'lod_level': 0},
+            'gt_bbox':      {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'gt_class':     {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'im_shape':     {'shape': [None, 3], 'dtype': 'int32',   'lod_level': 0},
+            'is_difficult': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+        }
+        # yapf: enable
+        return inputs_def
+
+    def build_inputs(
+            self,
+            image_shape=[3, None, None],
+            fields=['image', 'im_id', 'gt_bbox', 'gt_class'],  # for train
+            use_dataloader=True,
+            iterable=False):
+        inputs_def = self._inputs_def(image_shape)
+        feed_vars = OrderedDict([(key, fluid.data(
+            name=key,
+            shape=inputs_def[key]['shape'],
+            dtype=inputs_def[key]['dtype'],
+            lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        loader = fluid.io.DataLoader.from_generator(
+            feed_list=list(feed_vars.values()),
+            capacity=16,
+            use_double_buffer=True,
+            iterable=iterable) if use_dataloader else None
+        return feed_vars, loader
+
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
     def eval(self, feed_vars):
         return self.build(feed_vars, 'eval')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')
 
     def is_bbox_normalized(self):

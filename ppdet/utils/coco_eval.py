@@ -22,8 +22,6 @@ import sys
 import json
 import cv2
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
 
 import logging
 logger = logging.getLogger(__name__)
@@ -39,11 +37,13 @@ __all__ = [
 ]
 
 
-def clip_bbox(bbox):
-    xmin = max(min(bbox[0], 1.), 0.)
-    ymin = max(min(bbox[1], 1.), 0.)
-    xmax = max(min(bbox[2], 1.), 0.)
-    ymax = max(min(bbox[3], 1.), 0.)
+def clip_bbox(bbox, im_size=None):
+    h = 1. if im_size is None else im_size[0]
+    w = 1. if im_size is None else im_size[1]
+    xmin = max(min(bbox[0], w), 0.)
+    ymin = max(min(bbox[1], h), 0.)
+    xmax = max(min(bbox[2], w), 0.)
+    ymax = max(min(bbox[3], h), 0.)
     return xmin, ymin, xmax, ymax
 
 
@@ -68,7 +68,8 @@ def bbox_eval(results,
               anno_file,
               outfile,
               with_background=True,
-              is_bbox_normalized=False):
+              is_bbox_normalized=False,
+              save_only=False):
     assert 'bbox' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -93,13 +94,27 @@ def bbox_eval(results,
     with open(outfile, 'w') as f:
         json.dump(xywh_results, f)
 
+    if save_only:
+        logger.info('The bbox result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
     map_stats = cocoapi_eval(outfile, 'bbox', coco_gt=coco_gt)
     # flush coco evaluation result
     sys.stdout.flush()
     return map_stats
 
 
-def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
+def mask_eval(results,
+              anno_file,
+              outfile,
+              resolution,
+              thresh_binarize=0.5,
+              save_only=False):
+    """
+    Format the output of mask and get mask ap by coco api evaluation.
+    It will be used in Mask-RCNN.
+    """
     assert 'mask' in results[0]
     assert outfile.endswith('.json')
     from pycocotools.coco import COCO
@@ -107,7 +122,36 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     coco_gt = COCO(anno_file)
     clsid2catid = {i + 1: v for i, v in enumerate(coco_gt.getCatIds())}
 
-    segm_results = mask2out(results, clsid2catid, resolution, thresh_binarize)
+    segm_results = []
+    for t in results:
+        im_ids = np.array(t['im_id'][0])
+        bboxes = t['bbox'][0]
+        lengths = t['bbox'][1][0]
+        masks = t['mask']
+        if bboxes.shape == (1, 1) or bboxes is None:
+            continue
+        if len(bboxes.tolist()) == 0:
+            continue
+        s = 0
+        for i in range(len(lengths)):
+            num = lengths[i]
+            im_id = int(im_ids[i][0])
+            clsid_scores = bboxes[s:s + num][:, 0:2]
+            mask = masks[s:s + num]
+            s += num
+            for j in range(num):
+                clsid, score = clsid_scores[j].tolist()
+                catid = int(clsid2catid[clsid])
+                segm = mask[j]
+                segm['counts'] = segm['counts'].decode('utf8')
+                coco_res = {
+                    'image_id': im_id,
+                    'category_id': int(catid),
+                    'segmentation': segm,
+                    'score': score
+                }
+                segm_results.append(coco_res)
+
     if len(segm_results) == 0:
         logger.warning("The number of valid mask detected is zero.\n \
             Please use reasonable model and check input data.")
@@ -116,7 +160,58 @@ def mask_eval(results, anno_file, outfile, resolution, thresh_binarize=0.5):
     with open(outfile, 'w') as f:
         json.dump(segm_results, f)
 
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
     cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+
+
+def segm_eval(results, anno_file, outfile, save_only=False):
+    """
+    Format the output of segmentation, category_id and score in mask.josn, and
+    get mask ap by coco api evaluation. It will be used in instance segmentation
+    networks, such as: SOLOv2.
+    """
+    assert 'segm' in results[0]
+    assert outfile.endswith('.json')
+    from pycocotools.coco import COCO
+    coco_gt = COCO(anno_file)
+    clsid2catid = {i: v for i, v in enumerate(coco_gt.getCatIds())}
+    segm_results = []
+    for t in results:
+        im_id = int(t['im_id'][0][0])
+        segs = t['segm']
+        for mask in segs:
+            catid = int(clsid2catid[mask[0]])
+            masks = mask[1]
+            mask_score = masks[1]
+            segm = masks[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': mask_score
+            }
+            segm_results.append(coco_res)
+
+    if len(segm_results) == 0:
+        logger.warning("The number of valid mask detected is zero.\n \
+            Please use reasonable model and check input data.")
+        return
+
+    with open(outfile, 'w') as f:
+        json.dump(segm_results, f)
+
+    if save_only:
+        logger.info('The mask result is saved to {} and do not '
+                    'evaluate the mAP.'.format(outfile))
+        return
+
+    map_stats = cocoapi_eval(outfile, 'segm', coco_gt=coco_gt)
+    return map_stats
 
 
 def cocoapi_eval(jsonfile,
@@ -158,14 +253,15 @@ def proposal2out(results, is_bbox_normalized=False):
     for t in results:
         bboxes = t['proposal'][0]
         lengths = t['proposal'][1][0]
-        im_ids = np.array(t['im_id'][0])
+        im_ids = np.array(t['im_id'][0]).flatten()
+        assert len(lengths) == im_ids.size
         if bboxes.shape == (1, 1) or bboxes is None:
             continue
 
         k = 0
         for i in range(len(lengths)):
             num = lengths[i]
-            im_id = int(im_ids[i][0])
+            im_id = int(im_ids[i])
             for j in range(num):
                 dt = bboxes[k]
                 xmin, ymin, xmax, ymax = dt.tolist()
@@ -202,18 +298,20 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
     xywh_res = []
     for t in results:
         bboxes = t['bbox'][0]
+        if len(t['bbox'][1]) == 0: continue
         lengths = t['bbox'][1][0]
-        im_ids = np.array(t['im_id'][0])
-        if bboxes.shape == (1, 1) or bboxes is None:
+        im_ids = np.array(t['im_id'][0]).flatten()
+        if bboxes.shape == (1, 1) or bboxes is None or len(bboxes) == 0:
             continue
 
         k = 0
         for i in range(len(lengths)):
             num = lengths[i]
-            im_id = int(im_ids[i][0])
+            im_id = int(im_ids[i])
             for j in range(num):
                 dt = bboxes[k]
                 clsid, score, xmin, ymin, xmax, ymax = dt.tolist()
+                if clsid < 0: continue
                 catid = (clsid2catid[int(clsid)])
 
                 if is_bbox_normalized:
@@ -221,12 +319,16 @@ def bbox2out(results, clsid2catid, is_bbox_normalized=False):
                             clip_bbox([xmin, ymin, xmax, ymax])
                     w = xmax - xmin
                     h = ymax - ymin
-                    im_height, im_width = t['im_shape'][0][i].tolist()
+                    im_shape = t['im_shape'][0][i].tolist()
+                    im_height, im_width = int(im_shape[0]), int(im_shape[1])
                     xmin *= im_width
                     ymin *= im_height
                     w *= im_width
                     h *= im_height
                 else:
+                    # for yolov4
+                    # w = xmax - xmin
+                    # h = ymax - ymin
                     w = xmax - xmin + 1
                     h = ymax - ymin + 1
 
@@ -322,6 +424,43 @@ def mask2out(results, clsid2catid, resolution, thresh_binarize=0.5):
     return segm_res
 
 
+def segm2out(results, clsid2catid, thresh_binarize=0.5):
+    import pycocotools.mask as mask_util
+    segm_res = []
+
+    # for each batch
+    for t in results:
+        segms = t['segm'][0].astype(np.uint8)
+        clsid_labels = t['cate_label'][0]
+        clsid_scores = t['cate_score'][0]
+        lengths = segms.shape[0]
+        im_id = int(t['im_id'][0][0])
+        im_shape = t['im_shape'][0][0]
+        if lengths == 0 or segms is None:
+            continue
+        # for each sample
+        for i in range(lengths - 1):
+            im_h = int(im_shape[0])
+            im_w = int(im_shape[1])
+
+            clsid = int(clsid_labels[i]) + 1
+            catid = clsid2catid[clsid]
+            score = clsid_scores[i]
+            mask = segms[i]
+            segm = mask_util.encode(
+                np.array(
+                    mask[:, :, np.newaxis], order='F'))[0]
+            segm['counts'] = segm['counts'].decode('utf8')
+            coco_res = {
+                'image_id': im_id,
+                'category_id': catid,
+                'segmentation': segm,
+                'score': score
+            }
+            segm_res.append(coco_res)
+    return segm_res
+
+
 def expand_boxes(boxes, scale):
     """
     Expand an array of boxes by a given scale.
@@ -374,7 +513,9 @@ def get_category_info_from_anno(anno_file, with_background=True):
         for i, cat in enumerate(cats)
     }
     catid2name = {cat['id']: cat['name'] for cat in cats}
-
+    if with_background:
+        clsid2catid.update({0: 0})
+        catid2name.update({0: 'background'})
     return clsid2catid, catid2name
 
 
@@ -556,5 +697,8 @@ def coco17_category_info(with_background=True):
 
     if not with_background:
         clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+        catid2name.pop(0)
+    else:
+        clsid2catid.update({0: 0})
 
     return clsid2catid, catid2name

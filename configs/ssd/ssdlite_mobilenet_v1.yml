@@ -1,0 +1,158 @@
+architecture: SSD
+use_gpu: true
+max_iters: 400000
+snapshot_iter: 20000
+log_iter: 20
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_ssld_pretrained.tar
+save_dir: output
+weights: output/ssdlite_mobilenet_v1/model_final
+num_classes: 81
+
+SSD:
+  backbone: MobileNet
+  multi_box_head: SSDLiteMultiBoxHead
+  output_decoder:
+    background_label: 0
+    keep_top_k: 200
+    nms_eta: 1.0
+    nms_threshold: 0.45
+    nms_top_k: 400
+    score_threshold: 0.01
+
+MobileNet:
+  conv_decay: 0.00004
+  conv_group_scale: 1
+  extra_block_filters: [[256, 512], [128, 256], [128, 256], [64, 128]]
+  with_extra_blocks: true
+
+SSDLiteMultiBoxHead:
+  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.], [2., 3.]]
+  base_size: 300
+  steps: [16, 32, 64, 100, 150, 300]
+  flip: true
+  clip: true
+  max_ratio: 95
+  min_ratio: 20
+  offset: 0.5
+  conv_decay: 0.00004
+
+LearningRate:
+  base_lr: 0.4
+  schedulers:
+  - !CosineDecay
+    max_iters: 400000
+  - !LinearWarmup
+    start_factor: 0.33333
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+TrainReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class']
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/coco
+    anno_path: annotations/instances_train2017.json
+    image_dir: train2017
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !RandomDistort
+    brightness_lower: 0.875
+    brightness_upper: 1.125
+    is_order: true
+  - !RandomExpand
+    fill_value: [123.675, 116.28, 103.53]
+  - !RandomCrop
+    allow_no_crop: false
+  - !NormalizeBox {}
+  - !ResizeImage
+    interp: 1
+    target_size: 300
+    use_cv2: false
+  - !RandomFlipImage
+    is_normalized: false
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  batch_size: 64
+  shuffle: true
+  drop_last: true
+  # Number of working threads/processes. To speed up, can be set to 16 or 32 etc.
+  worker_num: 8
+  # Size of shared memory used in result queue. After increasing `worker_num`, need expand `memsize`.
+  memsize: 8G
+  # Buffer size for multi threads/processes.one instance in buffer is one batch data.
+  # To speed up, can be set to 64 or 128 etc.
+  bufsize: 32
+  use_process: true
+
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+    fields: ['image', 'gt_bbox', 'gt_class', 'im_shape', 'im_id']
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/coco
+    anno_path: annotations/instances_val2017.json
+    image_dir: val2017
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !ResizeImage
+    interp: 1
+    target_size: 300
+    use_cv2: false
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: True
+  batch_size: 8
+  worker_num: 8
+  bufsize: 32
+  use_process: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3,300,300]
+    fields: ['image', 'im_id', 'im_shape']
+  dataset:
+    !ImageFolder
+    anno_path: annotations/instances_val2017.json
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !ResizeImage
+    interp: 1
+    max_size: 0
+    target_size: 300
+    use_cv2: true
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: True
+  batch_size: 1

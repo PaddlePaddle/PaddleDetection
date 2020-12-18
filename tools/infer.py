@@ -16,36 +16,29 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
+
 import glob
-
 import numpy as np
-from PIL import Image
+import six
+from PIL import Image, ImageOps
 
-
-def set_paddle_flags(**kwargs):
-    for key, value in kwargs.items():
-        if os.environ.get(key, None) is None:
-            os.environ[key] = str(value)
-
-
-# NOTE(paddle-dev): All of these flags should be set before
-# `import paddle`. Otherwise, it would not take any effect.
-set_paddle_flags(
-    FLAGS_eager_delete_tensor_gb=0,  # enable GC to save memory
-)
-
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
-from ppdet.data.data_feed import create_reader
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
+
+from ppdet.data.reader import create_reader
 
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -74,20 +67,20 @@ def get_test_images(infer_dir, infer_img):
             "{} is not a file".format(infer_img)
     assert infer_dir is None or os.path.isdir(infer_dir), \
             "{} is not a directory".format(infer_dir)
-    images = []
 
     # infer_img has a higher priority
     if infer_img and os.path.isfile(infer_img):
-        images.append(infer_img)
-        return images
+        return [infer_img]
 
+    images = set()
     infer_dir = os.path.abspath(infer_dir)
     assert os.path.isdir(infer_dir), \
         "infer_dir {} is not a directory".format(infer_dir)
     exts = ['jpg', 'jpeg', 'png', 'bmp']
     exts += [ext.upper() for ext in exts]
     for ext in exts:
-        images.extend(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+    images = list(images)
 
     assert len(images) > 0, "no image found in {}".format(infer_dir)
     logger.info("Found {} inference images in total.".format(len(images)))
@@ -98,25 +91,19 @@ def get_test_images(infer_dir, infer_img):
 def main():
     cfg = load_config(FLAGS.config)
 
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
-
+    check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
     # check if paddlepaddle version is satisfied
     check_version()
 
-    if 'test_feed' not in cfg:
-        test_feed = create(main_arch + 'TestFeed')
-    else:
-        test_feed = create(cfg.test_feed)
+    main_arch = cfg.architecture
+
+    dataset = cfg.TestReader['dataset']
 
     test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
-    test_feed.dataset.add_images(test_images)
+    dataset.set_images(test_images)
 
     place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
@@ -127,11 +114,13 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            loader, feed_vars = create_feed(test_feed, iterable=True)
+            inputs_def = cfg['TestReader']['inputs_def']
+            inputs_def['iterable'] = True
+            feed_vars, loader = model.build_inputs(**inputs_def)
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
-    reader = create_reader(test_feed)
+    reader = create_reader(cfg.TestReader, devices_num=1)
     loader.set_sample_list_generator(reader, place)
 
     exe.run(startup_prog)
@@ -150,17 +139,18 @@ def main():
 
     # parse dataset category
     if cfg.metric == 'COCO':
-        from ppdet.utils.coco_eval import bbox2out, mask2out, get_category_info
+        from ppdet.utils.coco_eval import bbox2out, mask2out, segm2out, get_category_info
     if cfg.metric == 'OID':
         from ppdet.utils.oid_eval import bbox2out, get_category_info
     if cfg.metric == "VOC":
         from ppdet.utils.voc_eval import bbox2out, get_category_info
     if cfg.metric == "WIDERFACE":
-        from ppdet.utils.widerface_eval_utils import bbox2out, get_category_info
+        from ppdet.utils.widerface_eval_utils import bbox2out, lmk2out, get_category_info
 
-    anno_file = getattr(test_feed.dataset, 'annotation', None)
-    with_background = getattr(test_feed, 'with_background', True)
-    use_default_label = getattr(test_feed, 'use_default_label', False)
+    anno_file = dataset.get_anno()
+    with_background = dataset.with_background
+    use_default_label = dataset.use_default_label
+
     clsid2catid, catid2name = get_category_info(anno_file, with_background,
                                                 use_default_label)
 
@@ -170,14 +160,15 @@ def main():
             callable(model.is_bbox_normalized):
         is_bbox_normalized = model.is_bbox_normalized()
 
-    # use tb-paddle to log image
-    if FLAGS.use_tb:
-        from tb_paddle import SummaryWriter
-        tb_writer = SummaryWriter(FLAGS.tb_log_dir)
-        tb_image_step = 0
-        tb_image_frame = 0  # each frame can display ten pictures at most. 
+    # use VisualDL to log image
+    if FLAGS.use_vdl:
+        assert six.PY3, "VisualDL requires Python >= 3.5"
+        from visualdl import LogWriter
+        vdl_writer = LogWriter(FLAGS.vdl_log_dir)
+        vdl_image_step = 0
+        vdl_image_frame = 0  # each frame can display ten pictures at most.
 
-    imid2path = reader.imid2path
+    imid2path = dataset.get_imid2path()
     for iter_id, data in enumerate(loader()):
         outs = exe.run(infer_prog,
                        feed=data,
@@ -188,47 +179,55 @@ def main():
             for k, v in zip(keys, outs)
         }
         logger.info('Infer iter {}'.format(iter_id))
+        if 'TTFNet' in cfg.architecture:
+            res['bbox'][1].append([len(res['bbox'][0])])
+        if 'CornerNet' in cfg.architecture:
+            from ppdet.utils.post_process import corner_post_process
+            post_config = getattr(cfg, 'PostProcess', None)
+            corner_post_process(res, post_config, cfg.num_classes)
 
         bbox_results = None
         mask_results = None
+        segm_results = None
+        lmk_results = None
         if 'bbox' in res:
             bbox_results = bbox2out([res], clsid2catid, is_bbox_normalized)
         if 'mask' in res:
             mask_results = mask2out([res], clsid2catid,
                                     model.mask_head.resolution)
+        if 'segm' in res:
+            segm_results = segm2out([res], clsid2catid)
+        if 'landmark' in res:
+            lmk_results = lmk2out([res], is_bbox_normalized)
 
         # visualize result
         im_ids = res['im_id'][0]
         for im_id in im_ids:
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
+            image = ImageOps.exif_transpose(image)
 
-            # use tb-paddle to log original image           
-            if FLAGS.use_tb:
+            # use VisualDL to log original image
+            if FLAGS.use_vdl:
                 original_image_np = np.array(image)
-                tb_writer.add_image(
-                    "original/frame_{}".format(tb_image_frame),
-                    original_image_np,
-                    tb_image_step,
-                    dataformats='HWC')
+                vdl_writer.add_image(
+                    "original/frame_{}".format(vdl_image_frame),
+                    original_image_np, vdl_image_step)
 
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
-                                      mask_results)
+                                      mask_results, segm_results, lmk_results)
 
-            # use tb-paddle to log image with bbox
-            if FLAGS.use_tb:
+            # use VisualDL to log image with bbox
+            if FLAGS.use_vdl:
                 infer_image_np = np.array(image)
-                tb_writer.add_image(
-                    "bbox/frame_{}".format(tb_image_frame),
-                    infer_image_np,
-                    tb_image_step,
-                    dataformats='HWC')
-                tb_image_step += 1
-                if tb_image_step % 10 == 0:
-                    tb_image_step = 0
-                    tb_image_frame += 1
+                vdl_writer.add_image("bbox/frame_{}".format(vdl_image_frame),
+                                     infer_image_np, vdl_image_step)
+                vdl_image_step += 1
+                if vdl_image_step % 10 == 0:
+                    vdl_image_step = 0
+                    vdl_image_frame += 1
 
             save_name = get_save_image_name(FLAGS.output_dir, image_path)
             logger.info("Detection bbox results save in {}".format(save_name))
@@ -236,6 +235,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--infer_dir",
@@ -258,14 +258,14 @@ if __name__ == '__main__':
         default=0.5,
         help="Threshold to reserve the result for visualization.")
     parser.add_argument(
-        "--use_tb",
+        "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to Tensorboard.")
+        help="whether to record the data to VisualDL.")
     parser.add_argument(
-        '--tb_log_dir',
+        '--vdl_log_dir',
         type=str,
-        default="tb_log_dir/image",
-        help='Tensorboard logging directory for image.')
+        default="vdl_log_dir/image",
+        help='VisualDL logging directory for image.')
     FLAGS = parser.parse_args()
     main()

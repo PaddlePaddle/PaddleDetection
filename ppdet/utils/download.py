@@ -22,6 +22,8 @@ import shutil
 import requests
 import tqdm
 import hashlib
+import binascii
+import base64
 import tarfile
 import zipfile
 
@@ -30,7 +32,10 @@ from .voc_utils import create_list
 import logging
 logger = logging.getLogger(__name__)
 
-__all__ = ['get_weights_path', 'get_dataset_path', 'download_dataset', 'create_voc_list']
+__all__ = [
+    'get_weights_path', 'get_dataset_path', 'download_dataset',
+    'create_voc_list'
+]
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
@@ -72,8 +77,15 @@ DATASETS = {
             'a4a898d6193db4b9ef3260a68bad0dc7', ),
     ], ["WIDER_train", "WIDER_val", "wider_face_split"]),
     'fruit': ([(
-        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar',
-        'ee4a1bf2e321b75b0850cc6e063f79d7', ), ], ["fruit-detection"]),
+        'https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit.tar',
+        'baa8806617a54ccf3685fa7153388ae6', ), ],
+              ['Annotations', 'JPEGImages']),
+    'roadsign_voc': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar',
+        '8d629c0f880dd8b48de9aeff44bf1f3e', ), ], ['annotations', 'images']),
+    'roadsign_coco': ([(
+        'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
+        '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
     'objects365': (),
 }
 
@@ -101,17 +113,19 @@ def get_dataset_path(path, annotation, image_dir):
                 "downloading dataset...".format(
                     osp.realpath(path), DATASET_HOME))
 
+    data_name = os.path.split(path.strip().lower())[-1]
     for name, dataset in DATASETS.items():
-        if os.path.split(path.strip().lower())[-1] == name:
-            logger.info("Parse dataset_dir {} as dataset "
-                        "{}".format(path, name))
+        if data_name == name:
+            logger.debug("Parse dataset_dir {} as dataset "
+                         "{}".format(path, name))
             if name == 'objects365':
                 raise NotImplementedError(
-                    "Dataset {} is not valid for download automatically. Please apply and download the dataset from https://www.objects365.org/download.html".
-                    format(name))
+                    "Dataset {} is not valid for download automatically. "
+                    "Please apply and download the dataset from "
+                    "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
-            # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
-            if name == 'voc':
+            # For VOC-style datasets, only check subdirs
+            if name in ['voc', 'fruit', 'roadsign_voc']:
                 exists = True
                 for sub_dir in dataset[1]:
                     check_dir = osp.join(data_dir, sub_dir)
@@ -123,7 +137,7 @@ def get_dataset_path(path, annotation, image_dir):
                     return data_dir
 
             # voc exist is checked above, voc is not exist here
-            check_exist = name != 'voc'
+            check_exist = name != 'voc' and name != 'fruit' and name != 'roadsign_voc'
             for url, md5sum in dataset[0]:
                 get_path(url, data_dir, md5sum, check_exist)
 
@@ -133,23 +147,24 @@ def get_dataset_path(path, annotation, image_dir):
             return data_dir
 
     # not match any dataset in DATASETS
-    raise ValueError("Dataset {} is not valid and cannot parse dataset type "
-                     "'{}' for automaticly downloading, which only supports "
-                     "'voc' , 'coco', 'wider_face' and 'fruit' currently".
-                     format(path, osp.split(path)[-1]))
+    raise ValueError(
+        "Dataset {} is not valid and cannot parse dataset type "
+        "'{}' for automaticly downloading, which only supports "
+        "'voc' , 'coco', 'wider_face', 'fruit' and 'roadsign_voc' currently".
+        format(path, osp.split(path)[-1]))
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
-    logger.info("Create voc file list...")
+    logger.debug("Create voc file list...")
     devkit_dir = osp.join(data_dir, devkit_subdir)
-    years = ['2007', '2012']
+    year_dirs = [osp.join(devkit_dir, x) for x in os.listdir(devkit_dir)]
 
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
-    # label, see ../data/source/voc_loader.py
-    create_list(devkit_dir, years, data_dir)
-    logger.info("Create voc file list finished")
+    # label, see ../data/source/voc.py
+    create_list(year_dirs, data_dir)
+    logger.debug("Create voc file list finished")
 
 
 def map_path(url, root_dir):
@@ -188,16 +203,29 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
         if fullpath.find(k) >= 0:
             fullpath = osp.join(osp.split(fullpath)[0], v)
 
-    exist_flag = False
     if osp.exists(fullpath) and check_exist:
-        exist_flag = True
-        logger.info("Found {}".format(fullpath))
-    else:
-        exist_flag = False
-        fullname = _download(url, root_dir, md5sum)
+        # If fullpath is a directory, it has been decompressed
+        # checking MD5 is impossible, so we skip checking when
+        # fullpath is a directory here
+        if osp.isdir(fullpath) or \
+                _md5check_from_req(fullpath,
+                        requests.get(url, stream=True)):
+            logger.debug("Found {}".format(fullpath))
+            return fullpath, True
+        else:
+            if osp.isdir(fullpath):
+                shutil.rmtree(fullpath)
+            else:
+                os.remove(fullpath)
+
+    fullname = _download(url, root_dir, md5sum)
+
+    # new weights format whose postfix is 'pdparams',
+    # which is not need to decompress
+    if osp.splitext(fullname)[-1] != '.pdparams':
         _decompress(fullname)
 
-    return fullpath, exist_flag
+    return fullpath, False
 
 
 def download_dataset(path, dataset=None):
@@ -208,7 +236,7 @@ def download_dataset(path, dataset=None):
     dataset_info = DATASETS[dataset][0]
     for info in dataset_info:
         get_path(info[0], path, info[1], False)
-    logger.info("Download dataset {} finished.".format(dataset))
+    logger.debug("Download dataset {} finished.".format(dataset))
 
 
 def _dataset_exists(path, annotation, image_dir):
@@ -216,23 +244,29 @@ def _dataset_exists(path, annotation, image_dir):
     Check if user define dataset exists
     """
     if not osp.exists(path):
-        logger.info("Config dataset_dir {} is not exits, "
-                    "dataset config is not valid".format(path))
+        logger.debug("Config dataset_dir {} is not exits, "
+                     "dataset config is not valid".format(path))
         return False
 
     if annotation:
         annotation_path = osp.join(path, annotation)
+        if not osp.exists(annotation_path):
+            logger.error("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isfile(annotation_path):
-            logger.info("Config annotation {} is not a "
-                        "file, dataset config is not "
-                        "valid".format(annotation_path))
+            logger.warning("Config annotation {} is not a "
+                           "file, dataset config is not "
+                           "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
+        if not osp.exists(image_path):
+            logger.warning("Config dataset_dir {} is not exits!".format(path))
+
         if not osp.isdir(image_path):
-            logger.info("Config image_dir {} is not a "
-                        "directory, dataset config is not "
-                        "valid".format(image_path))
+            logger.warning("Config image_dir {} is not a "
+                           "directory, dataset config is not "
+                           "valid".format(image_path))
             return False
     return True
 
@@ -281,16 +315,36 @@ def _download(url, path, md5sum=None):
                 for chunk in req.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
-        shutil.move(tmp_fullname, fullname)
 
-    return fullname
+        # check md5 after download in Content-MD5 in req.headers
+        if _md5check_from_req(tmp_fullname, req):
+            shutil.move(tmp_fullname, fullname)
+            return fullname
+        else:
+            logger.warn(
+                "Download from url imcomplete, try downloading again...")
+            os.remove(tmp_fullname)
+            continue
+
+
+def _md5check_from_req(weights_path, req):
+    # For weights in bcebos URLs, MD5 value is contained
+    # in request header as 'content_md5'
+    content_md5 = req.headers.get('content-md5')
+    if not content_md5 or _md5check(
+            weights_path,
+            binascii.hexlify(base64.b64decode(content_md5.strip('"'))).decode(
+            )):
+        return True
+    else:
+        return False
 
 
 def _md5check(fullname, md5sum=None):
     if md5sum is None:
         return True
 
-    logger.info("File {} md5 checking...".format(fullname))
+    logger.debug("File {} md5 checking...".format(fullname))
     md5 = hashlib.md5()
     with open(fullname, 'rb') as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -298,8 +352,8 @@ def _md5check(fullname, md5sum=None):
     calc_md5sum = md5.hexdigest()
 
     if calc_md5sum != md5sum:
-        logger.info("File {} md5 check failed, {}(calc) != "
-                    "{}(base)".format(fullname, calc_md5sum, md5sum))
+        logger.warning("File {} md5 check failed, {}(calc) != "
+                       "{}(base)".format(fullname, calc_md5sum, md5sum))
         return False
     return True
 
@@ -344,6 +398,8 @@ def _move_and_merge_tree(src, dst):
     merge src to dst
     """
     if not osp.exists(dst):
+        shutil.move(src, dst)
+    elif osp.isfile(src):
         shutil.move(src, dst)
     else:
         for fp in os.listdir(src):

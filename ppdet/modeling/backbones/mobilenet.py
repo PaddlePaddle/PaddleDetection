@@ -20,6 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
+from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
 
 __all__ = ['MobileNet']
@@ -33,6 +34,7 @@ class MobileNet(object):
     Args:
         norm_type (str): normalization type, 'bn' and 'sync_bn' are supported
         norm_decay (float): weight decay for normalization layer weights
+        conv_decay (float): weight decay for convolution layer weights.
         conv_group_scale (int): scaling factor for convolution groups
         with_extra_blocks (bool): if extra blocks should be added
         extra_block_filters (list): number of filter for each extra block
@@ -42,6 +44,7 @@ class MobileNet(object):
     def __init__(self,
                  norm_type='bn',
                  norm_decay=0.,
+                 conv_decay=0.,
                  conv_group_scale=1,
                  conv_learning_rate=1.0,
                  with_extra_blocks=False,
@@ -50,6 +53,7 @@ class MobileNet(object):
                  weight_prefix_name=''):
         self.norm_type = norm_type
         self.norm_decay = norm_decay
+        self.conv_decay = conv_decay
         self.conv_group_scale = conv_group_scale
         self.conv_learning_rate = conv_learning_rate
         self.with_extra_blocks = with_extra_blocks
@@ -69,6 +73,7 @@ class MobileNet(object):
         parameter_attr = ParamAttr(
             learning_rate=self.conv_learning_rate,
             initializer=fluid.initializer.MSRA(),
+            regularizer=L2Decay(self.conv_decay),
             name=name + "_weights")
         conv = fluid.layers.conv2d(
             input=input,
@@ -104,6 +109,7 @@ class MobileNet(object):
                             stride,
                             scale,
                             name=None):
+        mixed_precision_enabled = mixed_precision_global_state() is not None
         depthwise_conv = self._conv_norm(
             input=input,
             filter_size=3,
@@ -111,7 +117,7 @@ class MobileNet(object):
             stride=stride,
             padding=1,
             num_groups=int(num_groups * scale),
-            use_cudnn=False,
+            use_cudnn=mixed_precision_enabled,
             name=name + "_dw")
 
         pointwise_conv = self._conv_norm(
@@ -137,6 +143,7 @@ class MobileNet(object):
             stride=1,
             num_groups=int(num_groups),
             padding=0,
+            act='relu6',
             name=name + "_extra1")
         normal_conv = self._conv_norm(
             input=pointwise_conv,
@@ -145,6 +152,7 @@ class MobileNet(object):
             stride=2,
             num_groups=int(num_groups),
             padding=1,
+            act='relu6',
             name=name + "_extra2")
         return normal_conv
 

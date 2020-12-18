@@ -17,7 +17,17 @@ from __future__ import absolute_import
 from . import rpn_head
 from . import yolo_head
 from . import retina_head
+from . import fcos_head
+from . import corner_head
+from . import efficient_head
+from . import ttf_head
+from . import solov2_head
 
 from .rpn_head import *
 from .yolo_head import *
 from .retina_head import *
+from .fcos_head import *
+from .corner_head import *
+from .efficient_head import *
+from .ttf_head import *
+from .solov2_head import *

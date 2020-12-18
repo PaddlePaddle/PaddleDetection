@@ -28,6 +28,7 @@ from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
 from .nonlocal_helper import add_space_nonlocal
+from .gc_block import add_gc_block
 from .name_adapter import NameAdapter
 
 __all__ = ['ResNet', 'ResNetC5']
@@ -48,6 +49,13 @@ class ResNet(object):
         feature_maps (list): index of stages whose feature maps are returned
         dcn_v2_stages (list): index of stages who select deformable conv v2
         nonlocal_stages (list): index of stages who select nonlocal networks
+        gcb_stages (list): index of stages who select gc blocks
+        gcb_params (dict): gc blocks config, includes ratio(default as 1.0/16),
+                           pooling_type(default as "att") and
+                           fusion_types(default as ['channel_add'])
+        lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                             lower learning rate ratio is need for pretrained model 
+                             got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
     """
     __shared__ = ['norm_type', 'freeze_norm', 'weight_prefix_name']
 
@@ -61,7 +69,10 @@ class ResNet(object):
                  feature_maps=[2, 3, 4, 5],
                  dcn_v2_stages=[],
                  weight_prefix_name='',
-                 nonlocal_stages=[]):
+                 nonlocal_stages=[],
+                 gcb_stages=[],
+                 gcb_params=dict(),
+                 lr_mult_list=[1., 1., 1., 1.]):
         super(ResNet, self).__init__()
 
         if isinstance(feature_maps, Integral):
@@ -75,6 +86,9 @@ class ResNet(object):
         assert norm_type in ['bn', 'sync_bn', 'affine_channel']
         assert not (len(nonlocal_stages)>0 and depth<50), \
                     "non-local is not supported for resnet18 or resnet34"
+        assert len(lr_mult_list
+                   ) == 4, "lr_mult_list length must be 4 but got {}".format(
+                       len(lr_mult_list))
 
         self.depth = depth
         self.freeze_at = freeze_at
@@ -97,14 +111,21 @@ class ResNet(object):
         self._c1_out_chan_num = 64
         self.na = NameAdapter(self)
         self.prefix_name = weight_prefix_name
-        
+
         self.nonlocal_stages = nonlocal_stages
         self.nonlocal_mod_cfg = {
-            50  : 2,
-            101 : 5,
-            152 : 8,
-            200 : 12,
+            50: 2,
+            101: 5,
+            152: 8,
+            200: 12,
         }
+
+        self.gcb_stages = gcb_stages
+        self.gcb_params = gcb_params
+
+        self.lr_mult_list = lr_mult_list
+        # var denoting curr stage
+        self.stage_num = -1
 
     def _conv_offset(self,
                      input,
@@ -138,6 +159,13 @@ class ResNet(object):
                    name=None,
                    dcn_v2=False):
         _name = self.prefix_name + name if self.prefix_name != '' else name
+
+        # need fine lr for distilled model, default as 1.0
+        lr_mult = 1.0
+        mult_idx = max(self.stage_num - 2, 0)
+        mult_idx = min(self.stage_num - 2, 3)
+        lr_mult = self.lr_mult_list[mult_idx]
+
         if not dcn_v2:
             conv = fluid.layers.conv2d(
                 input=input,
@@ -147,7 +175,8 @@ class ResNet(object):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 act=None,
-                param_attr=ParamAttr(name=_name + "_weights"),
+                param_attr=ParamAttr(
+                    name=_name + "_weights", learning_rate=lr_mult),
                 bias_attr=False,
                 name=_name + '.conv2d.output.1')
         else:
@@ -177,14 +206,15 @@ class ResNet(object):
                 groups=groups,
                 deformable_groups=1,
                 im2col_step=1,
-                param_attr=ParamAttr(name=_name + "_weights"),
+                param_attr=ParamAttr(
+                    name=_name + "_weights", learning_rate=lr_mult),
                 bias_attr=False,
                 name=_name + ".conv2d.output.1")
 
         bn_name = self.na.fix_conv_norm_name(name)
         bn_name = self.prefix_name + bn_name if self.prefix_name != '' else bn_name
 
-        norm_lr = 0. if self.freeze_norm else 1.
+        norm_lr = 0. if self.freeze_norm else lr_mult
         norm_decay = self.norm_decay
         pattr = ParamAttr(
             name=bn_name + '_scale',
@@ -257,7 +287,9 @@ class ResNet(object):
                    stride,
                    is_first,
                    name,
-                   dcn_v2=False):
+                   dcn_v2=False,
+                   gcb=False,
+                   gcb_name=None):
         if self.variant == 'a':
             stride1, stride2 = stride, 1
         else:
@@ -309,6 +341,8 @@ class ResNet(object):
         if callable(getattr(self, '_squeeze_excitation', None)):
             residual = self._squeeze_excitation(
                 input=residual, num_channels=num_filters, name='fc' + name)
+        if gcb:
+            residual = add_gc_block(residual, name=gcb_name, **self.gcb_params)
         return fluid.layers.elementwise_add(
             x=short, y=residual, act='relu', name=name + ".add.output.5")
 
@@ -318,8 +352,11 @@ class ResNet(object):
                    stride,
                    is_first,
                    name,
-                   dcn_v2=False):
+                   dcn_v2=False,
+                   gcb=False,
+                   gcb_name=None):
         assert dcn_v2 is False, "Not implemented yet."
+        assert gcb is False, "Not implemented yet."
         conv0 = self._conv_norm(
             input=input,
             num_filters=num_filters,
@@ -348,17 +385,20 @@ class ResNet(object):
         """
         assert stage_num in [2, 3, 4, 5]
 
+        self.stage_num = stage_num
+
         stages, block_func = self.depth_cfg[self.depth]
         count = stages[stage_num - 2]
 
         ch_out = self.stage_filters[stage_num - 2]
         is_first = False if stage_num != 2 else True
         dcn_v2 = True if stage_num in self.dcn_v2_stages else False
-        
+
         nonlocal_mod = 1000
         if stage_num in self.nonlocal_stages:
-            nonlocal_mod = self.nonlocal_mod_cfg[self.depth] if stage_num==4 else 2
-        
+            nonlocal_mod = self.nonlocal_mod_cfg[
+                self.depth] if stage_num == 4 else 2
+
         # Make the layer name and parameter name consistent
         # with ImageNet pre-trained model
         conv = input
@@ -366,21 +406,26 @@ class ResNet(object):
             conv_name = self.na.fix_layer_warp_name(stage_num, count, i)
             if self.depth < 50:
                 is_first = True if i == 0 and stage_num == 2 else False
+
+            gcb = stage_num in self.gcb_stages
+            gcb_name = "gcb_res{}_b{}".format(stage_num, i)
             conv = block_func(
                 input=conv,
                 num_filters=ch_out,
                 stride=2 if i == 0 and stage_num != 2 else 1,
                 is_first=is_first,
                 name=conv_name,
-                dcn_v2=dcn_v2)
-            
+                dcn_v2=dcn_v2,
+                gcb=gcb,
+                gcb_name=gcb_name)
+
             # add non local model
             dim_in = conv.shape[1]
-            nonlocal_name = "nonlocal_conv{}".format( stage_num )
+            nonlocal_name = "nonlocal_conv{}".format(stage_num)
             if i % nonlocal_mod == nonlocal_mod - 1:
-                conv = add_space_nonlocal(
-                    conv, dim_in, dim_in,
-                    nonlocal_name + '_{}'.format(i), int(dim_in / 2) )
+                conv = add_space_nonlocal(conv, dim_in, dim_in,
+                                          nonlocal_name + '_{}'.format(i),
+                                          int(dim_in / 2))
         return conv
 
     def c1_stage(self, input):

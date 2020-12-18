@@ -1,0 +1,123 @@
+architecture: BlazeFace
+max_iters: 320000
+pretrain_weights:
+use_gpu: true
+snapshot_iter: 10000
+log_iter: 20
+metric: WIDERFACE
+save_dir: output
+weights: output/blazeface_nas_v2/model_final
+# 1(label_class) + 1(background)
+num_classes: 2
+
+BlazeFace:
+  backbone: BlazeNet
+  output_decoder:
+    keep_top_k: 750
+    nms_threshold: 0.3
+    nms_top_k: 5000
+    score_threshold: 0.01
+  min_sizes: [[16.,24.], [32., 48., 64., 80., 96., 128.]]
+  use_density_prior_box: false
+
+BlazeNet:
+  blaze_filters: [[12, 12], [12, 12, 2], [12, 12]]
+  double_blaze_filters: [[12, 16, 32, 2], [32, 32, 32], [32, 16, 72, 2], [72, 24, 72]]
+  with_extra_blocks: true
+  lite_edition: false
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [240000, 300000]
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.0
+    type: RMSPropOptimizer
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+TrainReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+    fields: ['image', 'gt_bbox', 'gt_class']
+  dataset:
+    !WIDERFaceDataSet
+    dataset_dir: dataset/wider_face
+    anno_path: wider_face_split/wider_face_train_bbx_gt.txt
+    image_dir: WIDER_train/images
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !RandomDistort
+    brightness_lower: 0.875
+    brightness_upper: 1.125
+    is_order: true
+  - !ExpandImage
+    max_ratio: 4
+    prob: 0.5
+  - !CropImageWithDataAchorSampling
+    anchor_sampler:
+    - [1, 10, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.2, 0.0]
+    batch_sampler:
+    - [1, 50, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    - [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]
+    target_size: 640
+  - !RandomInterpImage
+    target_size: 640
+  - !RandomFlipImage
+    is_normalized: true
+  - !Permute {}
+  - !NormalizeImage
+    is_scale: false
+    mean: [104, 117, 123]
+    std: [127.502231, 127.502231, 127.502231]
+  batch_size: 8
+  use_process: true
+  worker_num: 8
+  shuffle: true
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_id']
+  dataset:
+    !WIDERFaceDataSet
+    dataset_dir: dataset/wider_face
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
+    image_dir: WIDER_val/images
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeBox {}
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123, 117, 104]
+    std: [127.502231, 127.502231, 127.502231]
+  - !Permute {}
+  batch_size: 1
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_id', 'im_shape']
+  dataset:
+    !ImageFolder
+    use_default_label: true
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123, 117, 104]
+    std: [127.502231, 127.502231, 127.502231]
+  - !Permute {}
+  batch_size: 1

@@ -19,11 +19,18 @@ from __future__ import print_function
 import unittest
 import numpy as np
 
+import paddle
 import paddle.fluid as fluid
+import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
+from ppdet.utils.check import enable_static_mode
 
 
 class TestFasterRCNN(unittest.TestCase):
@@ -37,16 +44,18 @@ class TestFasterRCNN(unittest.TestCase):
 
     @prog_scope()
     def test_train(self):
-        train_feed = create(self.cfg['train_feed'])
         model = create(self.detector_type)
-        _, feed_vars = create_feed(train_feed)
+        inputs_def = self.cfg['TrainReader']['inputs_def']
+        inputs_def['image_shape'] = [3, None, None]
+        feed_vars, _ = model.build_inputs(**inputs_def)
         train_fetches = model.train(feed_vars)
 
     @prog_scope()
     def test_test(self):
-        test_feed = create(self.cfg['eval_feed'])
+        inputs_def = self.cfg['EvalReader']['inputs_def']
+        inputs_def['image_shape'] = [3, None, None]
         model = create(self.detector_type)
-        _, feed_vars = create_feed(test_feed)
+        feed_vars, _ = model.build_inputs(**inputs_def)
         test_fetches = model.eval(feed_vars)
 
 
@@ -55,11 +64,18 @@ class TestMaskRCNN(TestFasterRCNN):
         self.cfg_file = 'configs/mask_rcnn_r50_1x.yml'
 
 
+@unittest.skip(
+    reason="It should be fixed to adapt https://github.com/PaddlePaddle/Paddle/pull/23797"
+)
 class TestCascadeRCNN(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/cascade_rcnn_r50_fpn_1x.yml'
 
 
+@unittest.skipIf(
+    paddle.version.full_version < "1.8.4",
+    "Paddle 2.0 should be used for YOLOv3 takes scale_x_y as inputs, "
+    "disable this unittest for Paddle major version < 2")
 class TestYolov3(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/yolov3_darknet.yml'
@@ -76,4 +92,5 @@ class TestSSD(TestFasterRCNN):
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     unittest.main()

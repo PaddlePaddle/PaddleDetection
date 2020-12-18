@@ -17,75 +17,34 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.modeling.model_input import create_feed
 from ppdet.utils.cli import ArgsParser
 import ppdet.utils.checkpoint as checkpoint
-
+from ppdet.utils.export_utils import save_infer_model, dump_infer_config
+from ppdet.utils.check import check_config, check_version, check_py_func, enable_static_mode
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 
-def prune_feed_vars(feeded_var_names, target_vars, prog):
-    """
-    Filter out feed variables which are not in program,
-    pruned feed variables are only used in post processing
-    on model output, which are not used in program, such
-    as im_id to identify image order, im_shape to clip bbox
-    in image.
-    """
-    exist_var_names = []
-    prog = prog.clone()
-    prog = prog._prune(targets=target_vars)
-    global_block = prog.global_block()
-    for name in feeded_var_names:
-        try:
-            v = global_block.var(name)
-            exist_var_names.append(str(v.name))
-        except Exception:
-            logger.info('save_inference_model pruned unused feed '
-                        'variables {}'.format(name))
-            pass
-    return exist_var_names
-
-
-def save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog):
-    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
-    feed_var_names = [var.name for var in feed_vars.values()]
-    target_vars = list(test_fetches.values())
-    feed_var_names = prune_feed_vars(feed_var_names, target_vars, infer_prog)
-    logger.info("Export inference model to {}, input: {}, output: "
-                "{}...".format(save_dir, feed_var_names,
-                               [str(var.name) for var in target_vars]))
-    fluid.io.save_inference_model(
-        save_dir,
-        feeded_var_names=feed_var_names,
-        target_vars=target_vars,
-        executor=exe,
-        main_program=infer_prog,
-        params_filename="__params__")
-
-
 def main():
     cfg = load_config(FLAGS.config)
-
-    if 'architecture' in cfg:
-        main_arch = cfg.architecture
-    else:
-        raise ValueError("'architecture' not specified in config file.")
-
     merge_config(FLAGS.opt)
+    check_config(cfg)
 
-    if 'test_feed' not in cfg:
-        test_feed = create(main_arch + 'TestFeed')
-    else:
-        test_feed = create(cfg.test_feed)
+    check_version()
+
+    main_arch = cfg.architecture
 
     # Use CPU for exporting inference model instead of GPU
     place = fluid.CPUPlace()
@@ -97,22 +56,34 @@ def main():
     infer_prog = fluid.Program()
     with fluid.program_guard(infer_prog, startup_prog):
         with fluid.unique_name.guard():
-            _, feed_vars = create_feed(test_feed, iterable=True)
-            test_fetches = model.test(feed_vars)
+            inputs_def = cfg['TestReader']['inputs_def']
+            inputs_def['use_dataloader'] = False
+            feed_vars, _ = model.build_inputs(**inputs_def)
+            # postprocess not need in exclude_nms, exclude NMS in exclude_nms mode
+            test_fetches = model.test(feed_vars, exclude_nms=FLAGS.exclude_nms)
     infer_prog = infer_prog.clone(True)
+    check_py_func(infer_prog)
 
     exe.run(startup_prog)
     checkpoint.load_params(exe, infer_prog, cfg.weights)
 
+    dump_infer_config(FLAGS, cfg)
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",
         type=str,
         default="output",
         help="Directory for storing the output model files.")
+    parser.add_argument(
+        "--exclude_nms",
+        action='store_true',
+        default=False,
+        help="Whether prune NMS for benchmark")
+
     FLAGS = parser.parse_args()
     main()

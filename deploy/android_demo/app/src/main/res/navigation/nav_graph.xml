@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/ContentFragment">
+
+    <fragment
+        android:id="@+id/CameraFragment"
+        android:name="com.baidu.paddledetection.detection.CameraFragment"
+        android:label="Camera Fragment"
+        tools:layout="@layout/fragment_camera"/>
+
+    <fragment
+        android:id="@+id/PhotoFragment"
+        android:name="com.baidu.paddledetection.detection.PhotoFragment"
+        android:label="Photo Fragment"
+        tools:layout="@layout/fragment_photo"/>
+
+    <fragment
+        android:id="@+id/ContentFragment"
+        android:name="com.baidu.paddledetection.detection.ContentFragment"
+        android:label="Content Fragment"
+        tools:layout="@layout/fragment_content">
+
+        <action
+            android:id="@+id/action_ContentFragment_to_CameraFragment"
+            app:destination="@id/CameraFragment" />
+        <action
+            android:id="@+id/action_ContentFragment_to_PhotoFragment"
+            app:destination="@id/PhotoFragment" />
+    </fragment>
+
+</navigation>

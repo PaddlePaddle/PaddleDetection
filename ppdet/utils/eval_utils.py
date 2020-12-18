@@ -23,8 +23,8 @@ import time
 
 import paddle.fluid as fluid
 
-from ppdet.utils.voc_eval import bbox_eval as voc_bbox_eval
-from ppdet.utils.post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
+from .voc_eval import bbox_eval as voc_bbox_eval
+from .post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
 
 __all__ = ['parse_fetches', 'eval_run', 'eval_results', 'json_eval_results']
 
@@ -41,7 +41,7 @@ def parse_fetches(fetches, prog=None, extra_keys=None):
     for k, v in fetches.items():
         if hasattr(v, 'name'):
             keys.append(k)
-            v.persistable = True
+            #v.persistable = True
             values.append(v.name)
         else:
             cls.append(v)
@@ -94,6 +94,25 @@ def clean_res(result, keep_name_list):
     return clean_result
 
 
+def get_masks(result):
+    import pycocotools.mask as mask_util
+    if result is None:
+        return {}
+    seg_pred = result['segm'][0].astype(np.uint8)
+    cate_label = result['cate_label'][0].astype(np.int)
+    cate_score = result['cate_score'][0].astype(np.float)
+    num_ins = seg_pred.shape[0]
+    masks = []
+    for idx in range(num_ins - 1):
+        cur_mask = seg_pred[idx, ...]
+        rle = mask_util.encode(
+            np.array(
+                cur_mask[:, :, np.newaxis], order='F'))[0]
+        rst = (rle, cate_score[idx])
+        masks.append([cate_label[idx], rst])
+    return masks
+
+
 def eval_run(exe,
              compile_program,
              loader,
@@ -103,7 +122,8 @@ def eval_run(exe,
              cfg=None,
              sub_prog=None,
              sub_keys=None,
-             sub_values=None):
+             sub_values=None,
+             resolution=None):
     """
     Run evaluation program, return program outputs.
     """
@@ -134,7 +154,8 @@ def eval_run(exe,
             mask_multi_scale_test = multi_scale_test and 'Mask' in cfg.architecture
 
             if multi_scale_test:
-                post_res = mstest_box_post_process(res, cfg)
+                post_res = mstest_box_post_process(res, multi_scale_test,
+                                                   cfg.num_classes)
                 res.update(post_res)
             if mask_multi_scale_test:
                 place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
@@ -152,10 +173,23 @@ def eval_run(exe,
             if multi_scale_test:
                 res = clean_res(
                     res, ['im_info', 'bbox', 'im_id', 'im_shape', 'mask'])
+            if 'mask' in res:
+                from ppdet.utils.post_process import mask_encode
+                res['mask'] = mask_encode(res, resolution)
+            post_config = getattr(cfg, 'PostProcess', None)
+            if 'Corner' in cfg.architecture and post_config is not None:
+                from ppdet.utils.post_process import corner_post_process
+                corner_post_process(res, post_config, cfg.num_classes)
+            if 'TTFNet' in cfg.architecture:
+                res['bbox'][1].append([len(res['bbox'][0])])
+            if 'segm' in res:
+                res['segm'] = get_masks(res)
             results.append(res)
             if iter_id % 100 == 0:
                 logger.info('Test iter {}'.format(iter_id))
             iter_id += 1
+            if 'bbox' not in res or len(res['bbox'][1]) == 0:
+                has_bbox = False
             images_num += len(res['bbox'][1][0]) if has_bbox else 1
     except (StopIteration, fluid.core.EOFException):
         loader.reset()
@@ -174,19 +208,20 @@ def eval_run(exe,
 
 
 def eval_results(results,
-                 feed,
                  metric,
                  num_classes,
                  resolution=None,
                  is_bbox_normalized=False,
                  output_directory=None,
-                 map_type='11point'):
+                 map_type='11point',
+                 dataset=None,
+                 save_only=False):
     """Evaluation for evaluation program results"""
     box_ap_stats = []
     if metric == 'COCO':
-        from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval
-        anno_file = getattr(feed.dataset, 'annotation', None)
-        with_background = getattr(feed, 'with_background', True)
+        from ppdet.utils.coco_eval import proposal_eval, bbox_eval, mask_eval, segm_eval
+        anno_file = dataset.get_anno()
+        with_background = dataset.with_background
         if 'proposal' in results[0]:
             output = 'proposal.json'
             if output_directory:
@@ -202,13 +237,23 @@ def eval_results(results,
                 anno_file,
                 output,
                 with_background,
-                is_bbox_normalized=is_bbox_normalized)
+                is_bbox_normalized=is_bbox_normalized,
+                save_only=save_only)
 
         if 'mask' in results[0]:
             output = 'mask.json'
             if output_directory:
                 output = os.path.join(output_directory, 'mask.json')
-            mask_eval(results, anno_file, output, resolution)
+            mask_eval(
+                results, anno_file, output, resolution, save_only=save_only)
+        if 'segm' in results[0]:
+            output = 'segm.json'
+            if output_directory:
+                output = os.path.join(output_directory, output)
+            mask_ap_stats = segm_eval(
+                results, anno_file, output, save_only=save_only)
+            if len(box_ap_stats) == 0:
+                box_ap_stats = mask_ap_stats
     else:
         if 'accum_map' in results[-1]:
             res = np.mean(results[-1]['accum_map'][0])
@@ -224,13 +269,13 @@ def eval_results(results,
     return box_ap_stats
 
 
-def json_eval_results(feed, metric, json_directory=None):
+def json_eval_results(metric, json_directory=None, dataset=None):
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
     """
     assert metric == 'COCO'
     from ppdet.utils.coco_eval import cocoapi_eval
-    anno_file = getattr(feed.dataset, 'annotation', None)
+    anno_file = dataset.get_anno()
     json_file_list = ['proposal.json', 'bbox.json', 'mask.json']
     if json_directory:
         assert os.path.exists(

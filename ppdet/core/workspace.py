@@ -22,6 +22,7 @@ import sys
 
 import yaml
 import copy
+import collections
 
 from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
@@ -65,6 +66,8 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
+READER_KEY = '_READER_'
+
 
 def load_config(file_path):
     """
@@ -77,25 +80,69 @@ def load_config(file_path):
     """
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
+
+    cfg = AttrDict()
     with open(file_path) as f:
-        merge_config(yaml.load(f, Loader=yaml.Loader))
+        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
+
+    if READER_KEY in cfg:
+        reader_cfg = cfg[READER_KEY]
+        if reader_cfg.startswith("~"):
+            reader_cfg = os.path.expanduser(reader_cfg)
+        if not reader_cfg.startswith('/'):
+            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
+
+        with open(reader_cfg) as f:
+            merge_config(yaml.load(f, Loader=yaml.Loader))
+        del cfg[READER_KEY]
+
+    merge_config(cfg)
+
     return global_config
 
 
-def merge_config(config):
+def dict_merge(dct, merge_dct):
+    """ Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
+    updating only top-level keys, dict_merge recurses down into dicts nested
+    to an arbitrary depth, updating keys. The ``merge_dct`` is merged into
+    ``dct``.
+
+    Args:
+        dct: dict onto which the merge is executed
+        merge_dct: dct merged into dct
+
+    Returns: dct
     """
-    Merge config into global config.
+    for k, v in merge_dct.items():
+        if (k in dct and isinstance(dct[k], dict) and
+                isinstance(merge_dct[k], collections.Mapping)):
+            dict_merge(dct[k], merge_dct[k])
+        else:
+            dct[k] = merge_dct[k]
+    return dct
+
+
+def merge_config(config, another_cfg=None):
+    """
+    Merge config into global config or another_cfg.
 
     Args:
         config (dict): Config to be merged.
 
     Returns: global config
     """
-    for key, value in config.items():
-        if isinstance(value, dict) and key in global_config:
-            global_config[key].update(value)
-        else:
-            global_config[key] = value
+    global global_config
+    dct = another_cfg if another_cfg is not None else global_config
+    dct = dict_merge(dct, config)
+
+    # NOTE: training batch size defined only in TrainReader, sychornized
+    #       batch size config to global, models can get batch size config
+    #       from global config when building model.
+    #       batch size in evaluation or inference can also be added here
+    if 'TrainReader' in dct and 'batch_size' in dct['TrainReader']:
+        dct['train_batch_size'] = dct['TrainReader']['batch_size']
+
+    return dct
 
 
 def get_registered_modules():
@@ -103,8 +150,22 @@ def get_registered_modules():
 
 
 def make_partial(cls):
-    op_module = importlib.import_module(cls.__op__.__module__)
-    op = getattr(op_module, cls.__op__.__name__)
+    if isinstance(cls.__op__, str):
+        sep = cls.__op__.split('.')
+        op_name = sep[-1]
+        op_module = importlib.import_module('.'.join(sep[:-1]))
+    else:
+        op_name = cls.__op__.__name__
+        op_module = importlib.import_module(cls.__op__.__module__)
+
+    if not hasattr(op_module, op_name):
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warn('{} OP not found, maybe a newer version of paddle '
+                    'is required.'.format(cls.__op__))
+        return cls
+
+    op = getattr(op_module, op_name)
     cls.__category__ = getattr(cls, '__category__', None) or 'op'
 
     def partial_apply(self, *args, **kwargs):

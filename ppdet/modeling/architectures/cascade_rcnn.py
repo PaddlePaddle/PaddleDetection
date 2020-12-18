@@ -16,12 +16,15 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import copy
 from collections import OrderedDict
 
 import paddle.fluid as fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
+from .input_helper import multiscale_def
 
 __all__ = ['CascadeRCNN']
 
@@ -55,6 +58,7 @@ class CascadeRCNN(object):
                  rpn_only=False,
                  fpn='FPN'):
         super(CascadeRCNN, self).__init__()
+        check_version('2.0.0-rc0')
         assert fpn is not None, "cascade RCNN requires FPN"
         self.backbone = backbone
         self.fpn = fpn
@@ -75,7 +79,7 @@ class CascadeRCNN(object):
 
     def build(self, feed_vars, mode='train'):
         if mode == 'train':
-            required_fields = ['gt_label', 'gt_box', 'is_crowd', 'im_info']
+            required_fields = ['gt_class', 'gt_bbox', 'is_crowd', 'im_info']
         else:
             required_fields = ['im_shape', 'im_info']
         self._input_check(required_fields, feed_vars)
@@ -84,7 +88,7 @@ class CascadeRCNN(object):
         im_info = feed_vars['im_info']
 
         if mode == 'train':
-            gt_box = feed_vars['gt_box']
+            gt_bbox = feed_vars['gt_bbox']
             is_crowd = feed_vars['is_crowd']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -108,7 +112,9 @@ class CascadeRCNN(object):
         rpn_rois = self.rpn_head.get_proposals(body_feats, im_info, mode=mode)
 
         if mode == 'train':
-            rpn_loss = self.rpn_head.get_loss(im_info, gt_box, is_crowd)
+            #fluid.layers.Print(gt_bbox)
+            #fluid.layers.Print(is_crowd)
+            rpn_loss = self.rpn_head.get_loss(im_info, gt_bbox, is_crowd)
         else:
             if self.rpn_only:
                 im_scale = fluid.layers.slice(
@@ -124,6 +130,7 @@ class CascadeRCNN(object):
 
         proposals = None
         bbox_pred = None
+        max_overlap = None
         for i in range(3):
             if i > 0:
                 refined_bbox = self._decode_box(
@@ -135,10 +142,14 @@ class CascadeRCNN(object):
 
             if mode == 'train':
                 outs = self.bbox_assigner(
-                    input_rois=refined_bbox, feed_vars=feed_vars, curr_stage=i)
+                    input_rois=refined_bbox,
+                    feed_vars=feed_vars,
+                    curr_stage=i,
+                    max_overlap=max_overlap)
 
                 proposals = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
             else:
                 proposals = refined_bbox
             proposal_list.append(proposals)
@@ -171,24 +182,18 @@ class CascadeRCNN(object):
     def build_multi_scale(self, feed_vars):
         required_fields = ['image', 'im_shape', 'im_info']
         self._input_check(required_fields, feed_vars)
-        ims = []
-        for k in feed_vars.keys():
-            if 'image' in k:
-                ims.append(feed_vars[k])
+
         result = {}
-        result.update(feed_vars)
-        for i, im in enumerate(ims):
-            im_info = fluid.layers.slice(
-                input=feed_vars['im_info'],
-                axes=[1],
-                starts=[3 * i],
-                ends=[3 * i + 3])
-            im_shape = feed_vars['im_shape']
+        im_shape = feed_vars['im_shape']
+        result['im_shape'] = im_shape
+
+        for i in range(len(self.im_info_names) // 2):
+            im = feed_vars[self.im_info_names[2 * i]]
+            im_info = feed_vars[self.im_info_names[2 * i + 1]]
 
             # backbone
             body_feats = self.backbone(im)
             result.update(body_feats)
-            body_feat_names = list(body_feats.keys())
 
             # FPN
             if self.fpn is not None:
@@ -277,6 +282,54 @@ class CascadeRCNN(object):
 
         return refined_bbox
 
+    def _inputs_def(self, image_shape):
+        im_shape = [None] + image_shape
+        # yapf: disable
+        inputs_def = {
+            'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
+            'im_info':  {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'im_shape': {'shape': [None, 3], 'dtype': 'float32', 'lod_level': 0},
+            'im_id':    {'shape': [None, 1], 'dtype': 'int64',   'lod_level': 0},
+            'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'is_crowd': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'is_difficult': {'shape': [None, 1], 'dtype': 'int32', 'lod_level': 1},
+        }
+        # yapf: enable
+        return inputs_def
+
+    def build_inputs(self,
+                     image_shape=[3, None, None],
+                     fields=[
+                         'image', 'im_info', 'im_id', 'gt_bbox', 'gt_class',
+                         'is_crowd'
+                     ],
+                     multi_scale=False,
+                     num_scales=-1,
+                     use_flip=None,
+                     use_dataloader=True,
+                     iterable=False):
+        inputs_def = self._inputs_def(image_shape)
+        fields = copy.deepcopy(fields)
+        if multi_scale:
+            ms_def, ms_fields = multiscale_def(image_shape, num_scales,
+                                               use_flip)
+            inputs_def.update(ms_def)
+            fields += ms_fields
+            self.im_info_names = ['image', 'im_info'] + ms_fields
+
+        feed_vars = OrderedDict([(key, fluid.data(
+            name=key,
+            shape=inputs_def[key]['shape'],
+            dtype=inputs_def[key]['dtype'],
+            lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        loader = fluid.io.DataLoader.from_generator(
+            feed_list=list(feed_vars.values()),
+            capacity=16,
+            use_double_buffer=True,
+            iterable=iterable) if use_dataloader else None
+        return feed_vars, loader
+
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
@@ -285,5 +338,7 @@ class CascadeRCNN(object):
             return self.build_multi_scale(feed_vars)
         return self.build(feed_vars, 'test')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')

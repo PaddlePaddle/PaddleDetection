@@ -1,0 +1,162 @@
+architecture: CascadeRCNNClsAware
+max_iters: 90000
+snapshot_iter: 10000
+use_gpu: true
+log_iter: 20
+save_dir: output
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
+weights: output/cascade_rcnn_cls_aware_r101_vd_fpn_ms_test/model_final
+metric: COCO
+num_classes: 81
+
+CascadeRCNNClsAware:
+  backbone: ResNet
+  fpn: FPN
+  rpn_head: FPNRPNHead
+  roi_extractor: FPNRoIAlign
+  bbox_head: CascadeBBoxHead
+  bbox_assigner: CascadeBBoxAssigner
+
+ResNet:
+  norm_type: bn
+  depth: 101
+  feature_maps: [2, 3, 4, 5]
+  freeze_at: 2
+  variant: d
+
+FPN:
+  min_level: 2
+  max_level: 6
+  num_chan: 256
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+
+FPNRPNHead:
+  anchor_generator:
+    anchor_sizes: [32, 64, 128, 256, 512]
+    aspect_ratios: [0.5, 1.0, 2.0]
+    stride: [16.0, 16.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
+  anchor_start_size: 32
+  min_level: 2
+  max_level: 6
+  num_chan: 256
+  rpn_target_assign:
+    rpn_batch_size_per_im: 256
+    rpn_fg_fraction: 0.5
+    rpn_positive_overlap: 0.7
+    rpn_negative_overlap: 0.3
+    rpn_straddle_thresh: 0.0
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 2000
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+
+FPNRoIAlign:
+  canconical_level: 4
+  canonical_size: 224
+  min_level: 2
+  max_level: 5
+  box_resolution: 14
+  sampling_ratio: 2
+
+CascadeBBoxAssigner:
+  batch_size_per_im: 512
+  bbox_reg_weights: [10, 20, 30]
+  bg_thresh_lo: [0.0, 0.0, 0.0]
+  bg_thresh_hi: [0.5, 0.6, 0.7]
+  fg_thresh: [0.5, 0.6, 0.7]
+  fg_fraction: 0.25
+  class_aware: True
+
+CascadeBBoxHead:
+  head: CascadeTwoFCHead
+  nms:
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
+
+CascadeTwoFCHead:
+  mlp_dim: 1024
+
+MultiScaleTEST:
+  score_thresh: 0.05
+  nms_thresh: 0.5
+  detections_per_im: 100
+  enable_voting: true
+  vote_thresh: 0.9
+
+LearningRate:
+  base_lr: 0.02
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [60000, 80000]
+  - !LinearWarmup
+    start_factor: 0.0
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+
+_READER_: 'faster_fpn_reader.yml'
+TrainReader:
+  batch_size: 2
+
+EvalReader:
+  batch_size: 1
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+    multi_scale: true
+    num_scales: 18
+    use_flip: true
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/coco
+    anno_path: annotations/instances_val2017.json
+    image_dir: val2017
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: true
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+  - !MultiscaleTestResize
+    origin_target_size: 800
+    origin_max_size: 1333
+    target_size:
+    - 400
+    - 500
+    - 600
+    - 700
+    - 900
+    - 1000
+    - 1100
+    - 1200
+    max_size: 2000
+    use_flip: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  - !PadMultiScaleTest
+    pad_to_stride: 32
+  worker_num: 2

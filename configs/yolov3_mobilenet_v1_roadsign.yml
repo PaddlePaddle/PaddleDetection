@@ -1,0 +1,175 @@
+architecture: YOLOv3
+use_gpu: true
+max_iters: 3600
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 200
+metric: VOC
+map_type: integral
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1.tar
+weights: output/yolov3_mobilenet_v1_roadsign/best_model
+num_classes: 4
+finetune_exclude_pretrained_params: ['yolo_output']
+use_fine_grained_loss: false
+
+YOLOv3:
+  backbone: MobileNet
+  yolo_head: YOLOv3Head
+
+MobileNet:
+  norm_decay: 0.
+  conv_group_scale: 1
+  with_extra_blocks: false
+
+YOLOv3Head:
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  yolo_loss: YOLOv3Loss
+  nms:
+    background_label: -1
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    normalized: false
+    score_threshold: 0.01
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  label_smooth: true
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 2400
+    - 3300
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
+
+# _READER_: 'yolov3_reader.yml'
+TrainReader:
+  inputs_def:
+    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
+    num_max_boxes: 50
+  dataset:
+    !VOCDataSet
+      dataset_dir: dataset/roadsign_voc
+      anno_path: train.txt
+      with_background: false
+      use_default_label: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+      with_mixup: True
+    - !MixupImage
+      alpha: 1.5
+      beta: 1.5
+    - !ColorDistort {}
+    - !RandomExpand
+      fill_value: [123.675, 116.28, 103.53]
+      ratio: 1.5
+    - !RandomCrop {}
+    - !RandomFlipImage
+      is_normalized: false
+    - !NormalizeBox {}
+    - !PadBox
+      num_max_boxes: 50
+    - !BboxXYXY2XYWH {}
+  batch_transforms:
+  - !RandomShape
+    sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+    random_inter: True
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: True
+    is_channel_first: false
+  - !Permute
+    to_bgr: false
+    channel_first: True
+  # Gt2YoloTarget is only used when use_fine_grained_loss set as true,
+  # this operator will be deleted automatically if use_fine_grained_loss
+  # is set as false
+  - !Gt2YoloTarget
+    anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+    anchors: [[10, 13], [16, 30], [33, 23],
+              [30, 61], [62, 45], [59, 119],
+              [116, 90], [156, 198], [373, 326]]
+    downsample_ratios: [32, 16, 8]
+  batch_size: 8
+  shuffle: true
+  mixup_epoch: 250
+  drop_last: true
+  worker_num: 4
+  bufsize: 2
+  use_process: true
+
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_size', 'im_id', 'gt_bbox', 'gt_class', 'is_difficult']
+    num_max_boxes: 50
+  dataset:
+    !VOCDataSet
+      dataset_dir: dataset/roadsign_voc
+      anno_path: valid.txt
+      with_background: false
+      use_default_label: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 608
+      interp: 2
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: True
+      is_channel_first: false
+    - !PadBox
+      num_max_boxes: 50
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
+  drop_empty: false
+  worker_num: 4
+  bufsize: 2
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 608, 608]
+    fields: ['image', 'im_size', 'im_id']
+  dataset:
+    !ImageFolder
+      anno_path: dataset/roadsign_voc/label_list.txt
+      with_background: false
+      use_default_label: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !ResizeImage
+      target_size: 608
+      interp: 2
+    - !NormalizeImage
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+      is_scale: True
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1

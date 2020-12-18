@@ -17,8 +17,9 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-from paddle import fluid
+from collections import OrderedDict
 
+from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
@@ -31,8 +32,8 @@ __all__ = ['FaceBoxes']
 @register
 class FaceBoxes(object):
     """
-    FaceBoxes: Sub-millisecond Neural Face Detection on Mobile GPUs,
-               see https://https://arxiv.org/abs/1708.05234
+    FaceBoxes: A CPU Real-time Face Detector with High Accuracy.
+               see https://arxiv.org/abs/1708.05234
 
     Args:
         backbone (object): backbone instance
@@ -41,7 +42,8 @@ class FaceBoxes(object):
             this attribute should be a list or tuple of integers.
         fixed_sizes (list|None): the fixed sizes of generated density prior boxes,
             this attribute should a list or tuple of same length with `densities`.
-        num_classes (int): number of output classes
+        num_classes (int): number of output classes.
+        steps (list|None): step size of adjacent prior boxes on each feature map.
     """
 
     __category__ = 'architecture'
@@ -53,7 +55,8 @@ class FaceBoxes(object):
                  output_decoder=SSDOutputDecoder().__dict__,
                  densities=[[4, 2, 1], [1], [1]],
                  fixed_sizes=[[32., 64., 128.], [256.], [512.]],
-                 num_classes=2):
+                 num_classes=2,
+                 steps=[8., 16., 32.]):
         super(FaceBoxes, self).__init__()
         self.backbone = backbone
         self.num_classes = num_classes
@@ -62,12 +65,13 @@ class FaceBoxes(object):
             self.output_decoder = SSDOutputDecoder(**output_decoder)
         self.densities = densities
         self.fixed_sizes = fixed_sizes
+        self.steps = steps
 
     def build(self, feed_vars, mode='train'):
         im = feed_vars['image']
         if mode == 'train':
-            gt_box = feed_vars['gt_box']
-            gt_label = feed_vars['gt_label']
+            gt_bbox = feed_vars['gt_bbox']
+            gt_class = feed_vars['gt_class']
 
         body_feats = self.backbone(im)
         locs, confs, box, box_var = self._multi_box_head(
@@ -77,14 +81,13 @@ class FaceBoxes(object):
             loss = fluid.layers.ssd_loss(
                 locs,
                 confs,
-                gt_box,
-                gt_label,
+                gt_bbox,
+                gt_class,
                 box,
                 box_var,
                 overlap_threshold=0.35,
                 neg_overlap=0.35)
             loss = fluid.layers.reduce_sum(loss)
-            loss.persistable = True
             return {'loss': loss}
         else:
             pred = self.output_decoder(locs, confs, box, box_var)
@@ -113,7 +116,8 @@ class FaceBoxes(object):
                 fixed_sizes=fixed_sizes,
                 fixed_ratios=[1.],
                 clip=False,
-                offset=0.5)
+                offset=0.5,
+                steps=[self.steps[i]] * 2)
 
             num_boxes = box.shape[2]
 
@@ -141,13 +145,47 @@ class FaceBoxes(object):
         box_vars = fluid.layers.concat(vars)
         return face_mbox_loc, face_mbox_conf, prior_boxes, box_vars
 
+    def _inputs_def(self, image_shape):
+        im_shape = [None] + image_shape
+        # yapf: disable
+        inputs_def = {
+            'image':    {'shape': im_shape,  'dtype': 'float32', 'lod_level': 0},
+            'im_id':    {'shape': [None, 1], 'dtype': 'int64',   'lod_level': 0},
+            'gt_bbox':  {'shape': [None, 4], 'dtype': 'float32', 'lod_level': 1},
+            'gt_class': {'shape': [None, 1], 'dtype': 'int32',   'lod_level': 1},
+            'im_shape': {'shape': [None, 3], 'dtype': 'int32',   'lod_level': 0},
+        }
+        # yapf: enable
+        return inputs_def
+
+    def build_inputs(
+            self,
+            image_shape=[3, None, None],
+            fields=['image', 'im_id', 'gt_bbox', 'gt_class'],  # for train
+            use_dataloader=True,
+            iterable=False):
+        inputs_def = self._inputs_def(image_shape)
+        feed_vars = OrderedDict([(key, fluid.data(
+            name=key,
+            shape=inputs_def[key]['shape'],
+            dtype=inputs_def[key]['dtype'],
+            lod_level=inputs_def[key]['lod_level'])) for key in fields])
+        loader = fluid.io.DataLoader.from_generator(
+            feed_list=list(feed_vars.values()),
+            capacity=16,
+            use_double_buffer=True,
+            iterable=iterable) if use_dataloader else None
+        return feed_vars, loader
+
     def train(self, feed_vars):
         return self.build(feed_vars, 'train')
 
     def eval(self, feed_vars):
         return self.build(feed_vars, 'eval')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
+        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
+            self.__class__.__name__)
         return self.build(feed_vars, 'test')
 
     def is_bbox_normalized(self):
