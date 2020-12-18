@@ -116,6 +116,7 @@ class DecodeOp(BaseOperator):
         if 'image' not in sample:
             with open(sample['im_file'], 'rb') as f:
                 sample['image'] = f.read()
+            sample.pop('im_file')
 
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
@@ -1570,9 +1571,9 @@ class MixupOp(BaseOperator):
             gt_class2 = sample[1]['gt_class']
             gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
             result['gt_class'] = gt_class
-        if 'gt_score' in sample[0]:
-            gt_score1 = sample[0]['gt_score']
-            gt_score2 = sample[1]['gt_score']
+
+            gt_score1 = np.ones_like(sample[0]['gt_class'])
+            gt_score2 = np.ones_like(sample[1]['gt_class'])
             gt_score = np.concatenate(
                 (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
             result['gt_score'] = gt_score
@@ -1673,6 +1674,11 @@ class PadBoxOp(BaseOperator):
             if gt_num > 0:
                 pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
             sample['difficult'] = pad_diff
+        if 'is_crowd' in sample:
+            pad_crowd = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
+            sample['is_crowd'] = pad_crowd
         return sample
 
 
