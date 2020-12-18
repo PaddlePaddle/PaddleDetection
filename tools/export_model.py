@@ -101,6 +101,7 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
