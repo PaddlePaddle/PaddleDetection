@@ -1,0 +1,5 @@
+# add python requirements for unittests here, note install pycocotools
+# directly is not supported in travis ci, it is installed by compiling
+# from source files in unittest.sh
+tqdm
+cython
