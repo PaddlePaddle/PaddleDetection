@@ -4,7 +4,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ..backbone.darknet import ConvBNLayer
+from ..backbones.darknet import ConvBNLayer
 
 
 @register

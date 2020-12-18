@@ -17,7 +17,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
-from ..backbone.darknet import ConvBNLayer
+from ..backbones.darknet import ConvBNLayer
 
 
 class YoloDetBlock(nn.Layer):
