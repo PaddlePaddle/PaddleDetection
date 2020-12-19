@@ -26,6 +26,8 @@ from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
 
+__all__ = ['ResNet', 'Res5Head']
+
 
 class ConvNormLayer(nn.Layer):
     def __init__(self,
@@ -317,3 +319,20 @@ class ResNet(nn.Layer):
             if idx in self.return_idx:
                 outs.append(x)
         return outs
+
+
+@register
+class Res5Head(nn.Layer):
+    def __init__(self, feat_in=1024, feat_out=512):
+        super(Res5Head, self).__init__()
+        na = NameAdapter(self)
+        self.res5_conv = []
+        self.res5 = self.add_sublayer(
+            'res5_roi_feat',
+            Blocks(
+                feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
+        self.feat_out = feat_out * 4
+
+    def forward(self, roi_feat, stage=0):
+        y = self.res5(roi_feat)
+        return y

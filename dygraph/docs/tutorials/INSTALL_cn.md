@@ -3,23 +3,16 @@
 ---
 ## 目录
 
-- [简介](#简介)
 - [安装PaddlePaddle](#安装PaddlePaddle)
 - [其他依赖安装](#其他依赖安装)
 - [PaddleDetection](#PaddleDetection)
-
-
-## 简介
-
-这份文档介绍了如何安装PaddleDetection及其依赖项(包括PaddlePaddle)。
-
-PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/README.md).
 
 
 ## 安装PaddlePaddle
 
 **环境需求:**
 
+- paddlepaddle >= 2.0rc1
 - OS 64位操作系统
 - Python 3(3.5.1+/3.6/3.7)，64位版本
 - pip/pip3(9.0.1+)，64位版本操作系统是
@@ -50,7 +43,7 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 **安装Python依赖库：**
 
-Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
+Python依赖库在[requirements.txt](../../../requirements.txt)中给出，可通过如下命令安装：
 
 ```
 pip install -r requirements.txt
