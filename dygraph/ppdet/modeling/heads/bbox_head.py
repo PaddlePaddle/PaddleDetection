@@ -22,9 +22,6 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
 
-from ..backbone.name_adapter import NameAdapter
-from ..backbone.resnet import Blocks
-
 
 @register
 class TwoFCHead(nn.Layer):
@@ -78,23 +75,6 @@ class TwoFCHead(nn.Layer):
         fc7 = self.fc7_list[stage](fc6_relu)
         fc7_relu = self.fc7_relu_list[stage](fc7)
         return fc7_relu
-
-
-@register
-class Res5Head(nn.Layer):
-    def __init__(self, feat_in=1024, feat_out=512):
-        super(Res5Head, self).__init__()
-        na = NameAdapter(self)
-        self.res5_conv = []
-        self.res5 = self.add_sublayer(
-            'res5_roi_feat',
-            Blocks(
-                feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
-        self.feat_out = feat_out * 4
-
-    def forward(self, roi_feat, stage=0):
-        y = self.res5(roi_feat)
-        return y
 
 
 @register

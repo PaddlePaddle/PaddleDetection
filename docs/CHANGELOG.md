@@ -2,6 +2,20 @@
 
 ## 最新版本信息
 
+### v2.0-beta(12.20/2020)
+  - 动态图支持:
+    - 支持Faster-RCNN, Mask-RCNN, FPN, Cascade Faster/Mask RCNN, YOLOv3和SSD模型，试用版本。
+  - 模型提升：
+    - 更新PP-YOLO MobileNetv3 large和small模型，精度提升，并新增裁剪和蒸馏后的模型。
+  - 新功能：
+    - 支持VisualDL可视化数据预处理图片。
+
+  - Bug修复:
+    - 修复BlazeFace人脸关键点预测bug。
+
+
+## 历史版本信息
+
 ### v0.5.0(11/2020)
   - 模型丰富度提升：
     - 发布SOLOv2系列模型，其中SOLOv2-Light-R50-VD-DCN-FPN 模型在单卡V100上达到 38.6 FPS，加速24% ，COCO验证集精度达到38.8%, 提升2.4绝对百分点。
@@ -19,10 +33,6 @@
   - 文档：
     - 新增目标检测全流程教程，新增Jetson平台部署教程。
 
-
-
-
-## 历史版本信息
 
 ### v0.4.0(07/2020)
   - 模型丰富度提升：
