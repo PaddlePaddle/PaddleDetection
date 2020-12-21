@@ -7,7 +7,7 @@ save_dir: output
 snapshot_iter: 500
 metric: VOC
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar
-weights: output/faster_rcnn_r50_vd_fpn_roadsign/model_final
+weights: output/faster_rcnn_r50_vd_fpn_roadsign_kunlun/model_final
 num_classes: 5
 finetune_exclude_pretrained_params: ['cls_score, bbox_pred']
 
