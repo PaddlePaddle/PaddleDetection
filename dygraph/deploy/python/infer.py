@@ -23,7 +23,6 @@ from PIL import Image
 import cv2
 import numpy as np
 import paddle
-import paddle.fluid as fluid
 from preprocess import preprocess, ResizeOp, NormalizeImageOp, PermuteOp, PadStride
 from visualize import visualize_box_mask
 from paddle.inference import Config
