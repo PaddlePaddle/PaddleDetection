@@ -11,7 +11,7 @@ TrainReader:
   - Gt2FCOSTarget: {object_sizes_boundary: [64, 128, 256, 512], center_sampling_radius: 1.5, downsample_ratios: [8, 16, 32, 64, 128], norm_reg_targets: True}
   batch_size: 2
   shuffle: true
-  drop_last: false
+  drop_last: true
 
 
 EvalReader:
