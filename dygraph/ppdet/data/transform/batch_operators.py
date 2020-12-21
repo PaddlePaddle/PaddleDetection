@@ -438,12 +438,11 @@ class Gt2FCOSTarget(BaseOperator):
             "object_sizes_of_interest', and 'downsample_ratios' should have same length."
 
         for sample in samples:
-            # im, gt_bbox, gt_class, gt_score = sample
+            # im, gt_bbox, gt_class = sample
             im = sample['image']
             im_info = sample['im_info']
             bboxes = sample['gt_bbox']
             gt_class = sample['gt_class']
-            gt_score = sample['gt_score']
             bboxes[:, [0, 2]] = bboxes[:, [0, 2]] * np.floor(im_info[1]) / \
                 np.floor(im_info[1] / im_info[2])
             bboxes[:, [1, 3]] = bboxes[:, [1, 3]] * np.floor(im_info[0]) / \
