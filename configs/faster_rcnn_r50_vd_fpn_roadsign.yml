@@ -1,12 +1,13 @@
 architecture: FasterRCNN
-use_gpu: true
+use_gpu: false
+use_xpu: true
 max_iters: 2000
 log_iter: 1
 save_dir: output
 snapshot_iter: 500
-metric: COCO
+metric: VOC
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar
-weights: output/faster_rcnn_r50_vd_fpn_roadsign_coco_template/best_model
+weights: output/faster_rcnn_r50_vd_fpn_roadsign/model_final
 num_classes: 5
 finetune_exclude_pretrained_params: ['cls_score, bbox_pred']
 
@@ -170,7 +171,7 @@ EvalReader:
   worker_num: 1
 
   inputs_def:
-    fields: ['image', 'im_info', 'im_id', 'im_shape']
+    fields: ['image', 'im_info', 'im_id', 'im_shape', 'gt_bbox', 'gt_class', 'is_difficult']
 
   dataset:
     !VOCDataSet
@@ -211,7 +212,7 @@ TestReader:
 
   dataset:
     !ImageFolder
-    anno_path: annotations/valid.json
+    anno_path: dataset/roadsign_voc/label_list.txt
     with_background: true
 
   sample_transforms:
