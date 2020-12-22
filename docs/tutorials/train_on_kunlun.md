@@ -39,7 +39,7 @@ python3.7 -u tools/eval.py -c configs/ppyolo/ppyolo_roadsign_kunlun.yml
 ```
 
 
-## maxk_rcnn
+## mask_rcnn
 
 ### Prepare data
 Download dataset from https://dataset.bj.bcebos.com/PaddleDetection_demo/cocome.tar and put it in the dataset directory.
