@@ -10,6 +10,7 @@
 - Cascade RCNN
 - YOLOv3
 - SSD
+- FCOS
 
 扩展特性：
 

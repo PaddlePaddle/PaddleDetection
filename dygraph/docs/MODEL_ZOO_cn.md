@@ -49,3 +49,9 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | VGG             | SSD            |    8    |   240e    |     ----     |  78.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/ssd_vgg16_300_240e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ssd_vgg16_300_240e_voc.yml) |
 
 **注意：** SSD使用4GPU训练，训练240个epoch
+
+### FCOS
+
+| 骨架网络             | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
+| :------------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----: | :-----------------------------------------------------: | :-----: |
+| ResNet50             | FCOS         |    2    |   1x    |     ----     |  38.8  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/fcos_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos_r50_fpn_1x_coco.yml) |
