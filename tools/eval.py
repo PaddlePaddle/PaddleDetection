@@ -69,7 +69,7 @@ def main():
     elif use_xpu:
         place = fluid.XPUPlace(0)
     else:
-        place = CPUPlace()
+        place = fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     # build program
