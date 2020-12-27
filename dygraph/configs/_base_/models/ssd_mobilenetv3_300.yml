@@ -1,0 +1,46 @@
+architecture: SSD
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/MobileNetV3_large_x1_0_ssld_pretrained.tar
+weights: output/ssd_mobilenetv3/model_final
+
+# Model Achitecture
+SSD:
+  # model feat info flow
+  backbone: MobileNetV3
+  ssd_head: SSDHead
+  # post process
+  post_process: BBoxPostProcess
+
+MobileNetV3:
+  scale: 1.0
+  model_name: large
+  extra_block_filters: [[256, 512], [128, 256], [128, 256], [64, 128]]
+  feature_maps: [13, 15, 17, 18, 19, 20] #[5, 7, 8, 9, 10, 11] # [6, 12, 15]
+  lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
+  conv_decay: 0.00004
+  multiplier: 0.5
+
+SSDHead:
+  in_channels: [512, 1024, 512, 256, 256, 256]
+  anchor_generator: AnchorGeneratorSSD
+
+AnchorGeneratorSSD:
+  steps: [8, 16, 32, 64, 100, 300]
+  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.], [2., 3.]]
+  min_ratio: 20
+  max_ratio: 90
+  min_sizes: [60.0, 105.0, 150.0, 195.0, 240.0, 285.0]
+  max_sizes: [[], 150.0, 195.0, 240.0, 285.0, 300.0]
+  offset: 0.5
+  flip: true
+  min_max_aspect_ratios_order: true
+
+BBoxPostProcess:
+  decode:
+    name: SSDBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 200
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 400
+    nms_eta: 1.0
