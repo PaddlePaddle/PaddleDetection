@@ -72,10 +72,10 @@ class ConvBNLayer(nn.Layer):
         if norm_type in ['bn', 'sync_bn']:
             self.bn = nn.BatchNorm2D(
                 out_c,
-                param_attr=ParamAttr(
-                    learning_rate=norm_lr, regularizer=L2Decay(norm_decay), name + "_bn_scale"),
+                weight_attr=ParamAttr(
+                    learning_rate=norm_lr, regularizer=L2Decay(norm_decay), name=name + "_bn_scale"),
                 bias_attr=ParamAttr(
-                    learning_rate=norm_lr, regularizer=L2Decay(norm_decay), name + "_bn_offset"))
+                    learning_rate=norm_lr, regularizer=L2Decay(norm_decay), name=name + "_bn_offset"))
         else:
             raise NotImplementedError("The norm_type is selected incorrectly.")
 
@@ -192,7 +192,7 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult, regularizer=L2Decay(conv_decay), name + "_2_weights"),
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay), name=name + "_2_weights"),
             bias_attr=ParamAttr(
                 learning_rate=lr_mult, regularizer=L2Decay(conv_decay), name=name + "_2_offset"))
 

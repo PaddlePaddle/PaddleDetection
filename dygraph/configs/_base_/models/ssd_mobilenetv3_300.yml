@@ -44,3 +44,4 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 400
     nms_eta: 1.0
+  

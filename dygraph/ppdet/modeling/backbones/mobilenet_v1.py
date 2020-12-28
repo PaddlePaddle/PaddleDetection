@@ -59,10 +59,10 @@ class ConvBNLayer(nn.Layer):
         # self._batch_norm = nn.BatchNorm2D(out_channels)
         self._batch_norm = nn.BatchNorm2D(
             out_channels,
-            param_attr=ParamAttr(
-                regularizer=L2Decay(norm_decay), name + "_bn_scale"),
+            weight_attr=ParamAttr(
+                regularizer=L2Decay(norm_decay), name=name + "_bn_scale"),
             bias_attr=ParamAttr(
-                regularizer=L2Decay(norm_decay), name + "_bn_offset"))
+                regularizer=L2Decay(norm_decay), name=name + "_bn_offset"))
 
     def forward(self, x):
         x = self._conv(x)
@@ -285,7 +285,7 @@ class MobileNet(nn.Layer):
             tmp = self.add_sublayer(
                 "conv5_" + str(i + 1),
                 sublayer=DepthwiseSeparable(
-                    in_channels=512
+                    in_channels=512,
                     out_channels1=512,
                     out_channels2=512,
                     num_groups=512,
