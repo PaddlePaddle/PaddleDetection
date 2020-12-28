@@ -56,3 +56,21 @@ python3.7 -u tools/train.py --eval -c configs/mask_rcnn_r50_1x_cocome_kunlun.yml
 ```shell
 python3.7 -u tools/eval.py -c configs/mask_rcnn_r50_1x_cocome_kunlun.yml
 ```
+
+
+## faster_rcnn
+
+### Prepare data
+Prepare data roadsign
+
+
+### Train
+```shell
+python3.7 -u tools/train.py -c configs/faster_rcnn_r50_vd_fpn_roadsign_kunlun.yml
+```
+
+
+### Eval
+```shell
+python3.7 -u tools/eval.py -c configs/faster_rcnn_r50_vd_fpn_roadsign_kunlun.yml
+```
