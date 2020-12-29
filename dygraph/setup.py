@@ -70,7 +70,7 @@ if __name__ == "__main__":
         long_description_content_type='text/markdown',
         url='https://github.com/PaddlePaddle/PaddleDetection',
         download_url='https://github.com/PaddlePaddle/PaddleDetection.git',
-        keywords=['gan paddlegan'],
+        keywords=['ppdet paddle ppyolo'],
         classifiers=[
             'Intended Audience :: Developers',
             'License :: OSI Approved :: Apache Software License',
