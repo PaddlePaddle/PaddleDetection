@@ -31,7 +31,7 @@ from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.checkpoint import load_weight
-from ppdet.engine import dump_infer_config, dygraph_to_static
+from ppdet.engine import export_detector
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
@@ -60,7 +60,7 @@ def run(FLAGS, cfg):
     load_weight(model, cfg.weights)
 
     # export config and model
-    dygraph_to_static(model, save_dir, cfg)
+    export_detector(model, cfg, save_dir)
     logger.info('Export model to {}'.format(save_dir))
 
 

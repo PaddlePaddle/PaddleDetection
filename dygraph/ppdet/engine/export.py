@@ -28,7 +28,7 @@ from paddle.jit import to_static
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['dump_infer_config', 'dygraph_to_static']
+__all__ = ['export_detector']
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
@@ -44,7 +44,7 @@ TRT_MIN_SUBGRAPH = {
 }
 
 
-def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
+def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     preprocess_list = []
 
     anno_file = dataset_cfg.get_anno()
@@ -90,7 +90,7 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     return with_background, preprocess_list, label_list, image_shape
 
 
-def dump_infer_config(config, path, image_shape, model):
+def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
@@ -116,7 +116,7 @@ def dump_infer_config(config, path, image_shape, model):
     if getattr(model.__dict__, 'mask_post_process', None):
         infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
-        'label_list'], image_shape = parse_reader(
+        'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],
             infer_cfg['arch'], image_shape)
 
@@ -125,7 +125,7 @@ def dump_infer_config(config, path, image_shape, model):
     return image_shape
 
 
-def dygraph_to_static(model, save_dir, cfg):
+def export_detector(model, cfg, save_dir):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     image_shape = None
@@ -134,10 +134,11 @@ def dygraph_to_static(model, save_dir, cfg):
         image_shape = inputs_def.get('image_shape', None)
     if image_shape is None:
         image_shape = [3, None, None]
+
     # Save infer cfg
-    dump_infer_config(cfg,
-                      os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
-                      model)
+    _dump_infer_config(cfg,
+                       os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                       model)
 
     input_spec = [{
         "image": InputSpec(
