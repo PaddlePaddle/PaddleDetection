@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+from . import source
+from . import transform
+from . import reader
+
 from .source import *
 from .transform import *
 from .reader import *

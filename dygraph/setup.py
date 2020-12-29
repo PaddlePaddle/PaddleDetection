@@ -46,6 +46,17 @@ def package_model_zoo():
     return [model_zoo_file]
 
 
+packages = [
+    'ppdet',
+    'ppdet.core',
+    'ppdet.data',
+    'ppdet.engine',
+    'ppdet.modeling',
+    'ppdet.model_zoo',
+    'ppdet.py_op',
+    'ppdet.utils',
+]
+
 if __name__ == "__main__":
     setup(
         name='ppdet',
