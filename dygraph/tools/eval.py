@@ -32,8 +32,8 @@ import time
 from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.engine import eval_detector
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.eval_utils import get_infer_results, eval_results
 from ppdet.utils.checkpoint import load_weight
 
 from ppdet.utils.logger import setup_logger
@@ -58,7 +58,7 @@ def parse_args():
     return args
 
 
-def run(FLAGS, cfg, place):
+def run(FLAGS, cfg):
 
     # Model
     main_arch = cfg.architecture
@@ -70,62 +70,9 @@ def run(FLAGS, cfg, place):
     # Data Reader
     dataset = cfg.EvalDataset
     eval_loader = create('EvalReader')(dataset, cfg['worker_num'])
-    extra_key = ['im_shape', 'scale_factor', 'im_id']
-    if cfg.metric == 'VOC':
-        extra_key += ['gt_bbox', 'gt_class', 'difficult']
 
-    # Run Eval
-    outs_res = []
-    sample_num = 0
-    start_time = time.time()
-    for iter_id, data in enumerate(eval_loader):
-        # forward
-        model.eval()
-        outs = model(data, mode='infer')
-        for key in extra_key:
-            outs[key] = data[key]
-        for key, value in outs.items():
-            outs[key] = value.numpy()
-
-        if 'mask' in outs and 'bbox' in outs:
-            mask_resolution = model.mask_post_process.mask_resolution
-            from ppdet.py_op.post_process import mask_post_process
-            outs['mask'] = mask_post_process(
-                outs, outs['im_shape'], outs['scale_factor'], mask_resolution)
-
-        outs_res.append(outs)
-        # log
-        sample_num += outs['im_id'].shape[0]
-        if iter_id % 100 == 0:
-            logger.info("Eval iter: {}".format(iter_id))
-
-    cost_time = time.time() - start_time
-    logger.info('Total sample number: {}, averge FPS: {}'.format(
-        sample_num, sample_num / cost_time))
-
-    eval_type = []
-    if 'bbox' in outs:
-        eval_type.append('bbox')
-    if 'mask' in outs:
-        eval_type.append('mask')
-    # Metric
-    # TODO: support other metric
-    with_background = cfg.with_background
-    use_default_label = dataset.use_default_label
-    if cfg.metric == 'COCO':
-        from ppdet.utils.coco_eval import get_category_info
-        clsid2catid, catid2name = get_category_info(
-            dataset.get_anno(), with_background, use_default_label)
-
-        infer_res = get_infer_results(outs_res, eval_type, clsid2catid)
-
-    elif cfg.metric == 'VOC':
-        from ppdet.utils.voc_eval import get_category_info
-        clsid2catid, catid2name = get_category_info(
-            dataset.get_label_list(), with_background, use_default_label)
-        infer_res = outs_res
-
-    eval_results(infer_res, cfg.metric, dataset)
+    # evaluation
+    eval_detector(model, eval_loader, cfg)
 
 
 def main():
@@ -139,7 +86,8 @@ def main():
 
     place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
     place = paddle.set_device(place)
-    run(FLAGS, cfg, place)
+
+    run(FLAGS, cfg)
 
 
 if __name__ == '__main__':
