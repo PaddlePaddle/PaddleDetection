@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -21,10 +21,14 @@ import yaml
 import numpy as np
 from collections import OrderedDict
 
-from ppdet.utils.logger import setup_logger
-logger = setup_logger('export_utils')
+import paddle
+from paddle.static import InputSpec
+from paddle.jit import to_static
 
-__all__ = ['dump_infer_config']
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
+
+__all__ = ['dump_infer_config', 'dygraph_to_static']
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
@@ -119,3 +123,31 @@ def dump_infer_config(config, path, image_shape, model):
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))
     return image_shape
+
+
+def dygraph_to_static(model, save_dir, cfg):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    image_shape = None
+    if 'inputs_def' in cfg['TestReader']:
+        inputs_def = cfg['TestReader']['inputs_def']
+        image_shape = inputs_def.get('image_shape', None)
+    if image_shape is None:
+        image_shape = [3, None, None]
+    # Save infer cfg
+    dump_infer_config(cfg,
+                      os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                      model)
+
+    input_spec = [{
+        "image": InputSpec(
+            shape=[None] + image_shape, name='image'),
+        "im_shape": InputSpec(
+            shape=[None, 2], name='im_shape'),
+        "scale_factor": InputSpec(
+            shape=[None, 2], name='scale_factor')
+    }]
+
+    export_model = to_static(model, input_spec=input_spec)
+    # save Model
+    paddle.jit.save(export_model, os.path.join(save_dir, 'model'))

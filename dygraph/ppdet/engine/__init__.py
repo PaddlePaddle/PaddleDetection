@@ -21,6 +21,10 @@ from .evaluate import *
 from . import inference
 from .inference import *
 
+from . import export
+from .export import *
+
 __all__ = train.__all__ \
         + evaluate.__all__ \
-        + inference.__all__
+        + inference.__all__ \
+        + export.__all__
