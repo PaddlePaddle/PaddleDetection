@@ -217,6 +217,7 @@ class ExtraBlockDW(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=False,
                  name=None):
+        super(ExtraBlockDW, self).__init__()
         self.pointwise_conv = ConvBNLayer(
             in_c=in_c,
             out_c=ch_1,
@@ -236,7 +237,7 @@ class ExtraBlockDW(nn.Layer):
             out_c=ch_2,
             filter_size=3,
             stride=stride,
-            padding=0,
+            padding=1, 
             num_groups=int(ch_1),
             if_act=True,
             act='relu6',
@@ -416,13 +417,13 @@ class MobileNetV3(nn.Layer):
             self.extra_block_list.append(conv_extra)
             i += 1
 
-            for i, block_filter in enumerate(self.extra_block_filters):
-                in_c = extra_out_c if i == 0 else block_filter[0]
+            for j, block_filter in enumerate(self.extra_block_filters):
+                in_c = extra_out_c if j == 0 else self.extra_block_filters[j-1][1]
                 conv_extra = self.add_sublayer(
                     "conv"+ str(i + 2),
                     sublayer=ExtraBlockDW(
                         in_c,
-                        block_filter[1],
+                        block_filter[0],
                         block_filter[1],
                         stride=2,
                         lr_mult=lr_mult,
