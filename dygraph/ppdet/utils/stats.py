@@ -83,7 +83,7 @@ class TrainingStats(object):
             for k, v in extras.items():
                 stats[k] = v
         for k, v in self.meters.items():
-            stats[k] = format(v.median, '.4f')
+            stats[k] = format(v.median, '.6f')
 
         return stats
 

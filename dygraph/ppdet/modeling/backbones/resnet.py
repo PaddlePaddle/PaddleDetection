@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 import numpy as np
@@ -17,14 +17,12 @@ from paddle import ParamAttr
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm
-from paddle.nn import MaxPool2D
-
+from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D, SyncBatchNorm
 from ppdet.core.workspace import register, serializable
-
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
+# from ppdet.modeling.layers import DeformableConvV2
 
 __all__ = ['ResNet', 'Res5Head']
 
@@ -41,6 +39,7 @@ class ConvNormLayer(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  lr=1.0,
+                 dcn_v2=False,
                  name=None):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn']
@@ -72,14 +71,18 @@ class ConvNormLayer(nn.Layer):
             trainable=False if freeze_norm else True)
 
         global_stats = True if freeze_norm else False
-        self.norm = BatchNorm(
-            ch_out,
-            act=act,
-            param_attr=param_attr,
-            bias_attr=bias_attr,
-            use_global_stats=global_stats,
-            moving_mean_name=bn_name + '_mean',
-            moving_variance_name=bn_name + '_variance')
+        if norm_type == 'sync_bn':
+            self.norm = SyncBatchNorm(
+                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        else:
+            self.norm = BatchNorm(
+                ch_out,
+                act=act,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=global_stats,
+                moving_mean_name=bn_name + '_mean',
+                moving_variance_name=bn_name + '_variance')
         norm_params = self.norm.parameters()
 
         if freeze_norm:
@@ -88,7 +91,7 @@ class ConvNormLayer(nn.Layer):
 
     def forward(self, inputs):
         out = self.conv(inputs)
-        if self.norm_type == 'bn':
+        if self.norm_type in ['bn', 'sync_bn']:
             out = self.norm(out)
         return out
 
@@ -105,7 +108,8 @@ class BottleNeck(nn.Layer):
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=True):
+                 freeze_norm=True,
+                 dcn_v2=False):
         super(BottleNeck, self).__init__()
         if variant == 'a':
             stride1, stride2 = stride, 1
@@ -117,17 +121,41 @@ class BottleNeck(nn.Layer):
 
         self.shortcut = shortcut
         if not shortcut:
-            self.short = ConvNormLayer(
-                ch_in=ch_in,
-                ch_out=ch_out * 4,
-                filter_size=1,
-                stride=stride,
-                name_adapter=name_adapter,
-                norm_type=norm_type,
-                norm_decay=norm_decay,
-                freeze_norm=freeze_norm,
-                lr=lr,
-                name=shortcut_name)
+            if variant == 'd' and stride == 2:
+                self.short = nn.Sequential()
+                self.short.add_sublayer(
+                    'pool',
+                    Pool2D(
+                        pool_size=2,
+                        pool_type='avg',
+                        pool_stride=stride,
+                        pool_padding=0,
+                        ceil_mode=True))
+                self.short.add_sublayer(
+                    'conv',
+                    ConvNormLayer(
+                        ch_in=ch_in,
+                        ch_out=ch_out * 4,
+                        filter_size=1,
+                        stride=1,
+                        name_adapter=name_adapter,
+                        norm_type=norm_type,
+                        norm_decay=norm_decay,
+                        freeze_norm=freeze_norm,
+                        lr=lr,
+                        name=shortcut_name))
+            else:
+                self.short = ConvNormLayer(
+                    ch_in=ch_in,
+                    ch_out=ch_out * 4,
+                    filter_size=1,
+                    stride=stride,
+                    name_adapter=name_adapter,
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    lr=lr,
+                    name=shortcut_name)
 
         self.branch2a = ConvNormLayer(
             ch_in=ch_in,
@@ -153,6 +181,7 @@ class BottleNeck(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
+            dcn_v2=dcn_v2,
             name=conv_name2)
 
         self.branch2c = ConvNormLayer(
@@ -168,16 +197,16 @@ class BottleNeck(nn.Layer):
             name=conv_name3)
 
     def forward(self, inputs):
-
         out = self.branch2a(inputs)
         out = self.branch2b(out)
         out = self.branch2c(out)
+
         if self.shortcut:
             short = inputs
         else:
             short = self.short(inputs)
 
-        out = paddle.add(x=out, y=short)
+        out = paddle.add(x=short, y=out)
         out = F.relu(out)
 
         return out
@@ -193,7 +222,8 @@ class Blocks(nn.Layer):
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=True):
+                 freeze_norm=True,
+                 dcn_v2=False):
         super(Blocks, self).__init__()
 
         self.blocks = []
@@ -213,7 +243,8 @@ class Blocks(nn.Layer):
                     lr=lr,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
-                    freeze_norm=freeze_norm))
+                    freeze_norm=freeze_norm,
+                    dcn_v2=dcn_v2))
             self.blocks.append(block)
 
     def forward(self, inputs):
@@ -229,6 +260,8 @@ ResNet_cfg = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}
 @register
 @serializable
 class ResNet(nn.Layer):
+    __shared__ = ['norm_type']
+
     def __init__(self,
                  depth=50,
                  variant='b',
@@ -238,6 +271,7 @@ class ResNet(nn.Layer):
                  freeze_norm=True,
                  freeze_at=0,
                  return_idx=[0, 1, 2, 3],
+                 dcn_v2_stages=None,
                  num_stages=4):
         super(ResNet, self).__init__()
         self.depth = depth
@@ -254,6 +288,13 @@ class ResNet(nn.Layer):
             'is {}'.format(max(return_idx), num_stages)
         self.return_idx = return_idx
         self.num_stages = num_stages
+        assert num_stages >= 1 and num_stages <= 4
+
+        if dcn_v2_stages is not None:
+            assert max(dcn_v2_stages) < num_stages
+        else:
+            dcn_v2_stages = [None] * num_stages
+        self.dcn_v2_stages = dcn_v2_stages
 
         block_nums = ResNet_cfg[depth]
         na = NameAdapter(self)
@@ -304,7 +345,8 @@ class ResNet(nn.Layer):
                     lr=lr_mult,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
-                    freeze_norm=freeze_norm))
+                    freeze_norm=freeze_norm,
+                    dcn_v2=(i in self.dcn_v2_stages)))
             self.res_layers.append(res_layer)
 
     def forward(self, inputs):
