@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 import time
+import random
 import datetime
 
 import paddle
