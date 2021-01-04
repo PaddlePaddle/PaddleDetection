@@ -66,7 +66,7 @@ Prepare data roadsign
 
 ### Train
 ```shell
-python3.7 -u tools/train.py -c configs/faster_rcnn_r50_vd_fpn_roadsign_kunlun.yml
+python3.7 -u tools/train.py --eval -c configs/faster_rcnn_r50_vd_fpn_roadsign_kunlun.yml
 ```
 
 
