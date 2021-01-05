@@ -17,3 +17,9 @@ ResNet:
   return_idx: [0,1,2,3]
   num_stages: 4
 
+FPN:
+  in_channels: [64, 128, 256, 512]
+  out_channel: 256
+  min_level: 0
+  max_level: 4
+  spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
