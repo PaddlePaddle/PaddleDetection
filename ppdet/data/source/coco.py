@@ -101,7 +101,7 @@ class COCODataSet(DataSet):
                         'and load image information only.'.format(anno_path))
 
         for img_id in img_ids:
-            img_anno = coco.loadImgs(img_id)[0]
+            img_anno = coco.loadImgs([img_id])[0]
             im_fname = img_anno['file_name']
             im_w = float(img_anno['width'])
             im_h = float(img_anno['height'])
@@ -127,7 +127,7 @@ class COCODataSet(DataSet):
             }
 
             if not self.load_image_only:
-                ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
+                ins_anno_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=False)
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
