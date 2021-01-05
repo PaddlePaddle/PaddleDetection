@@ -22,13 +22,79 @@ from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
+
+import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle.regularizer import L2Decay
+
+from paddle import ParamAttr
+from paddle.nn.initializer import Normal, Constant
 
 
 def _to_list(l):
     if isinstance(l, (list, tuple)):
         return list(l)
     return [l]
+
+
+class ConvNormLayer(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 filter_size,
+                 stride,
+                 norm_type='bn',
+                 use_dcn=False,
+                 norm_name=None,
+                 name=None):
+        super(ConvNormLayer, self).__init__()
+        assert norm_type in ['bn', 'sync_bn', 'gn']
+
+        self.conv = nn.Conv2D(
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=filter_size,
+            stride=stride,
+            padding=(filter_size - 1) // 2,
+            groups=1,
+            weight_attr=ParamAttr(
+                name=name + "_weight",
+                initializer=Normal(mean=0., std=0.01),
+                learning_rate=1.),
+            bias_attr = ParamAttr(
+                name=name + "_bias",
+                initializer=Constant(value=0),
+                learning_rate=2.))
+
+        param_attr = ParamAttr(
+            name=norm_name + "_scale",
+            learning_rate=1.,
+            regularizer=L2Decay(0.))
+        bias_attr = ParamAttr(
+            name=norm_name + "_offset",
+            learning_rate=1.,
+            regularizer=L2Decay(0.))
+        if norm_type == 'bn':
+            self.norm = nn.BatchNorm2D(
+                ch_out,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+        elif norm_type == 'sync_bn':
+            self.norm = nn.SyncBatchNorm(
+                ch_out,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+        elif norm_type == 'gn':
+            self.norm = nn.GroupNorm(
+                num_groups=32,
+                num_channels=ch_out,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+
+    def forward(self, inputs):
+        out = self.conv(inputs)
+        out = self.norm(out)
+        return out
 
 
 @register
@@ -689,7 +755,7 @@ class FCOSBox(object):
 
         act_shape_reg = self._merge_hw(box_reg)
         box_reg_ch_last = paddle.reshape(x=box_reg, shape=act_shape_reg)
-        box_reg_ch_last = paddle.transpose(box_reg_ch_last, perm=[0, 2, 1]) # fix
+        box_reg_ch_last = paddle.transpose(box_reg_ch_last, perm=[0, 2, 1]) 
         box_reg_decoding = paddle.stack(
             [
                 locations[:, 0] - box_reg_ch_last[:, :, 0],

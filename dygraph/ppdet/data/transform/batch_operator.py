@@ -502,7 +502,7 @@ class Gt2FCOSTargetOp(BaseOperator):
                     labels_by_level[lvl], newshape=[grid_h, grid_w, 1])
                 sample['centerness{}'.format(lvl)] = np.reshape(
                     ctn_targets_by_level[lvl], newshape=[grid_h, grid_w, 1])
-            sample.pop('im_file')
+
             sample.pop('is_crowd')
             sample.pop('gt_class')
             sample.pop('gt_bbox')

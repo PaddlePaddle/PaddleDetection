@@ -4,69 +4,13 @@ from __future__ import print_function
 
 import math
 import paddle
-import paddle.nn.functional as F
 import paddle.nn as nn
+import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn import Layer, Sequential
-from paddle.nn import Conv2D, BatchNorm2D, GroupNorm, SyncBatchNorm
-from paddle.nn.initializer import Normal, Constant, XavierUniform
-from paddle.regularizer import L2Decay
+from paddle.nn.initializer import Normal, Constant
+
 from ppdet.core.workspace import register
-from ppdet.modeling import ops
-
-class ConvNormLayer(nn.Layer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 filter_size,
-                 stride,
-                 norm_type='bn',
-                 use_dcn=False,
-                 norm_name=None,
-                 name=None):
-        super(ConvNormLayer, self).__init__()
-        assert norm_type in ['bn', 'sync_bn', 'gn']
-
-        self.conv = Conv2D(
-            in_channels=ch_in,
-            out_channels=ch_out,
-            kernel_size=filter_size,
-            stride=stride,
-            padding=(filter_size - 1) // 2,
-            groups=1,
-            weight_attr=ParamAttr(
-                name=name + "_weight",
-                initializer=Normal(mean=0., std=0.01),
-                learning_rate=1.),
-            bias_attr = ParamAttr(
-                name=name + "_bias",
-                initializer=Constant(value=0),
-                learning_rate=2.))
-
-        param_attr = ParamAttr(
-            name=norm_name + "_scale",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
-        bias_attr = ParamAttr(
-            name=norm_name + "_offset",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
-        if norm_type in ['bn', 'sync_bn']:
-            self.norm = BatchNorm2D(
-                ch_out,
-                weight_attr=param_attr,
-                bias_attr=bias_attr)
-        elif norm_type == 'gn':
-            self.norm = GroupNorm(
-                num_groups=32,
-                num_channels=ch_out,
-                weight_attr=param_attr,
-                bias_attr=bias_attr)
-
-    def forward(self, inputs):
-        out = self.conv(inputs)
-        out = self.norm(out)
-        return out
+from ppdet.modeling.layers import ConvNormLayer
 
 
 class ScaleReg(nn.Layer):
@@ -166,7 +110,7 @@ class FCOSHead(nn.Layer):
         bias_init_value = -math.log((1 - self.prior_prob) / self.prior_prob)
         self.fcos_head_cls = self.add_sublayer(
             conv_cls_name,
-            Conv2D(
+            nn.Conv2D(
                 in_channels=256,
                 out_channels=self.num_classes,
                 kernel_size=3,
@@ -177,12 +121,12 @@ class FCOSHead(nn.Layer):
                     initializer=Normal(mean=0., std=0.01)),
                 bias_attr=ParamAttr(
                     name=conv_cls_name + "_bias",
-                    initializer=Constant(value=bias_init_value)))) #
+                    initializer=Constant(value=bias_init_value))))
 
         conv_reg_name = "fcos_head_reg"
         self.fcos_head_reg = self.add_sublayer(
             conv_reg_name,
-            Conv2D(
+            nn.Conv2D(
                 in_channels=256,
                 out_channels=4,
                 kernel_size=3,
@@ -198,7 +142,7 @@ class FCOSHead(nn.Layer):
         conv_centerness_name = "fcos_head_centerness"
         self.fcos_head_centerness = self.add_sublayer(
             conv_centerness_name,
-            Conv2D(
+            nn.Conv2D(
                 in_channels=256,
                 out_channels=1,
                 kernel_size=3,
@@ -275,5 +219,5 @@ class FCOSHead(nn.Layer):
 
     def get_loss(self, fcos_head_outs, tag_labels, tag_bboxes, tag_centerness):
         cls_logits, bboxes_reg, centerness = fcos_head_outs
-        return self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels, tag_bboxes, tag_centerness)
-
+        return self.fcos_loss(cls_logits, bboxes_reg, centerness, 
+                              tag_labels, tag_bboxes, tag_centerness)

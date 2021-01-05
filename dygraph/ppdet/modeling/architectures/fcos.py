@@ -31,13 +31,10 @@ class FCOS(BaseArch):
         self.fcos_post_process = fcos_post_process
 
     def model_arch(self, ):
-        # Backbone
         body_feats = self.backbone(self.inputs)
 
-        # Neck
         fpn_feats, spatial_scale = self.neck(body_feats)
 
-        # FCOS_head
         mode = self.inputs['mode'] 
         self.fcos_head_outs = self.fcos_head(fpn_feats, mode)
 
@@ -59,7 +56,8 @@ class FCOS(BaseArch):
             if k_ctn in self.inputs:
                 tag_centerness.append(self.inputs[k_ctn])
 
-        loss_fcos = self.fcos_head.get_loss(self.fcos_head_outs, tag_labels, tag_bboxes, tag_centerness)
+        loss_fcos = self.fcos_head.get_loss(self.fcos_head_outs, tag_labels, 
+                                            tag_bboxes, tag_centerness)
         loss.update(loss_fcos)
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
@@ -69,6 +67,6 @@ class FCOS(BaseArch):
         bbox, bbox_num = self.bboxes
         output = {
             'bbox': bbox,
-            'bbox_num': bbox_num
+            'bbox_num': bbox_num,
         }
         return output

@@ -192,13 +192,10 @@ class FCOSLoss(nn.Layer):
 
         # 1. cls_logits: sigmoid_focal_loss
         # expand onehot labels
-        categories = cls_logits_flatten.shape[-1]
-        tag_labels_bin = np.zeros(shape=(tag_labels_flatten.shape[0], categories))
-        tag_labels_flatten_b = paddle.squeeze(tag_labels_flatten, axis=-1).numpy()
-        inds = np.nonzero((tag_labels_flatten_b > 0) & (tag_labels_flatten_b <= categories))[0]
-        if len(inds) > 0:
-            tag_labels_bin[inds, tag_labels_flatten_b[inds]-1] = 1
-        tag_labels_flatten_bin = paddle.to_tensor(tag_labels_bin.astype('float32'))
+        num_classes = cls_logits_flatten.shape[-1]
+        tag_labels_flatten = paddle.squeeze(tag_labels_flatten, axis=-1)
+        tag_labels_flatten_bin = F.one_hot(tag_labels_flatten, num_classes=1+num_classes)
+        tag_labels_flatten_bin = tag_labels_flatten_bin[:, 1:]
         # sigmoid_focal_loss
         cls_loss = F.sigmoid_focal_loss(cls_logits_flatten, tag_labels_flatten_bin) / num_positive_fp32
 
