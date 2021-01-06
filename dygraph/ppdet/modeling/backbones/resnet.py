@@ -21,9 +21,6 @@ from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
-# from ppdet.modeling.layers import DeformableConvV2
-from IPython import embed
-__all__ = ['ResNet', 'Res5Head']
 
 
 class ConvNormLayer(nn.Layer):
@@ -285,7 +282,7 @@ class BottleNeck(nn.Layer):
             filter_size=3,
             stride=stride2,
             name_adapter=name_adapter,
-            groups=groups, #
+            groups=groups,
             act='relu',
             norm_type=norm_type,
             norm_decay=norm_decay,
@@ -405,6 +402,9 @@ class ResNet(nn.Layer):
 
     def __init__(self,
                  depth=50,
+                 groups=1,
+                 base_width=-1,
+                 base_channels=-1,
                  variant='b',
                  norm_type='bn',
                  norm_decay=0,
@@ -415,13 +415,8 @@ class ResNet(nn.Layer):
                  num_stages=4,
                  lr_mult_list=[1.0, 1.0, 1.0, 1.0]):
         super(ResNet, self).__init__()
-        self._model_type = 'ResNet'
-
-        self.depth = depth
-        self.variant = variant
-        self.norm_type = norm_type
-        self.norm_decay = norm_decay
-        self.freeze_norm = freeze_norm
+        self._model_type = 'ResNet' if groups == 1 else 'ResNeXt'
+        assert num_stages >= 1 and num_stages <= 4
         self.freeze_at = freeze_at
         if isinstance(return_idx, Integral):
             return_idx = [return_idx]
@@ -430,20 +425,15 @@ class ResNet(nn.Layer):
             'but received maximum return index is {} and num_stages ' \
             'is {}'.format(max(return_idx), num_stages)
         self.return_idx = return_idx
-        self.num_stages = num_stages
-        assert num_stages >= 1 and num_stages <= 4
 
         assert len(lr_mult_list) == 4, \
             "lr_mult_list length must be 4 but got {}".format(len(lr_mult_list))
-        self.lr_mult_list = lr_mult_list
-
         if dcn_v2_stages is not None:
             if isinstance(dcn_v2_stages, Integral):
                 dcn_v2_stages = [dcn_v2_stages]
             assert max(dcn_v2_stages) < num_stages
         else:
             dcn_v2_stages = [None] * num_stages
-        self.dcn_v2_stages = dcn_v2_stages
 
         block_nums = ResNet_cfg[depth]
         na = NameAdapter(self)
@@ -480,14 +470,9 @@ class ResNet(nn.Layer):
         ch_in_list = [64, 256, 512, 1024]
         ch_out_list = [64, 128, 256, 512]
 
-        # ResNeXt
-        groups = getattr(self, 'groups', 1)
-        base_width = getattr(self, 'base_width', -1)
-        base_channels = getattr(self, 'base_channels', -1)
-
         self.res_layers = []
         for i in range(num_stages):
-            lr_mult = self.lr_mult_list[i]
+            lr_mult = lr_mult_list[i]
             stage_num = i + 2
             res_name = "res{}".format(stage_num)
             res_layer = self.add_sublayer(
@@ -506,7 +491,7 @@ class ResNet(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
-                    dcn_v2=(i in self.dcn_v2_stages)))
+                    dcn_v2=(i in dcn_v2_stages)))
             self.res_layers.append(res_layer)
 
     def forward(self, inputs):
