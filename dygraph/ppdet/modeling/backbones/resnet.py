@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-from paddle import ParamAttr
+import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D, SyncBatchNorm
+from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
 # from ppdet.modeling.layers import DeformableConvV2
-
+from IPython import embed
 __all__ = ['ResNet', 'Res5Head']
 
 
@@ -34,6 +33,7 @@ class ConvNormLayer(nn.Layer):
                  filter_size,
                  stride,
                  name_adapter,
+                 groups=1,
                  act=None,
                  norm_type='bn',
                  norm_decay=0.,
@@ -46,13 +46,13 @@ class ConvNormLayer(nn.Layer):
         self.norm_type = norm_type
         self.act = act
 
-        self.conv = Conv2D(
+        self.conv = nn.Conv2D(
             in_channels=ch_in,
             out_channels=ch_out,
             kernel_size=filter_size,
             stride=stride,
             padding=(filter_size - 1) // 2,
-            groups=1,
+            groups=groups,
             weight_attr=ParamAttr(
                 learning_rate=lr, name=name + "_weights"),
             bias_attr=False)
@@ -72,10 +72,10 @@ class ConvNormLayer(nn.Layer):
 
         global_stats = True if freeze_norm else False
         if norm_type == 'sync_bn':
-            self.norm = SyncBatchNorm(
+            self.norm = nn.SyncBatchNorm(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
         else:
-            self.norm = BatchNorm(
+            self.norm = nn.BatchNorm(
                 ch_out,
                 act=act,
                 param_attr=param_attr,
@@ -120,7 +120,7 @@ class BasicBlock(nn.Layer):
                 self.short = nn.Sequential()
                 self.short.add_sublayer(
                     'pool',
-                    Pool2D(
+                    nn.Pool2D(
                         pool_size=2,
                         pool_type='avg',
                         pool_stride=stride,
@@ -194,6 +194,8 @@ class BasicBlock(nn.Layer):
 
 
 class BottleNeck(nn.Layer):
+    expansion = 4
+
     def __init__(self,
                  ch_in,
                  ch_out,
@@ -201,6 +203,9 @@ class BottleNeck(nn.Layer):
                  shortcut,
                  name_adapter,
                  name,
+                 groups=1,
+                 base_width=4,
+                 base_channels=64,
                  variant='b',
                  lr=1.0,
                  norm_type='bn',
@@ -213,6 +218,12 @@ class BottleNeck(nn.Layer):
         else:
             stride1, stride2 = 1, stride
 
+        # ResNeXt
+        if groups == 1:
+            width = ch_out
+        else:
+            width = math.floor(ch_out * (base_width / base_channels)) * groups
+
         conv_name1, conv_name2, conv_name3, \
             shortcut_name = name_adapter.fix_bottleneck_name(name)
 
@@ -222,7 +233,7 @@ class BottleNeck(nn.Layer):
                 self.short = nn.Sequential()
                 self.short.add_sublayer(
                     'pool',
-                    Pool2D(
+                    nn.Pool2D(
                         pool_size=2,
                         pool_type='avg',
                         pool_stride=stride,
@@ -232,7 +243,7 @@ class BottleNeck(nn.Layer):
                     'conv',
                     ConvNormLayer(
                         ch_in=ch_in,
-                        ch_out=ch_out * 4,
+                        ch_out=ch_out * self.expansion,
                         filter_size=1,
                         stride=1,
                         name_adapter=name_adapter,
@@ -244,7 +255,7 @@ class BottleNeck(nn.Layer):
             else:
                 self.short = ConvNormLayer(
                     ch_in=ch_in,
-                    ch_out=ch_out * 4,
+                    ch_out=ch_out * self.expansion,
                     filter_size=1,
                     stride=stride,
                     name_adapter=name_adapter,
@@ -256,10 +267,11 @@ class BottleNeck(nn.Layer):
 
         self.branch2a = ConvNormLayer(
             ch_in=ch_in,
-            ch_out=ch_out,
+            ch_out=width,
             filter_size=1,
             stride=stride1,
             name_adapter=name_adapter,
+            groups=1,
             act='relu',
             norm_type=norm_type,
             norm_decay=norm_decay,
@@ -268,11 +280,12 @@ class BottleNeck(nn.Layer):
             name=conv_name1)
 
         self.branch2b = ConvNormLayer(
-            ch_in=ch_out,
-            ch_out=ch_out,
+            ch_in=width,
+            ch_out=width,
             filter_size=3,
             stride=stride2,
             name_adapter=name_adapter,
+            groups=groups, #
             act='relu',
             norm_type=norm_type,
             norm_decay=norm_decay,
@@ -282,11 +295,12 @@ class BottleNeck(nn.Layer):
             name=conv_name2)
 
         self.branch2c = ConvNormLayer(
-            ch_in=ch_out,
-            ch_out=ch_out * 4,
+            ch_in=width,
+            ch_out=ch_out * self.expansion,
             filter_size=1,
             stride=1,
             name_adapter=name_adapter,
+            groups=1,
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
@@ -317,6 +331,9 @@ class Blocks(nn.Layer):
                  count,
                  name_adapter,
                  stage_num,
+                 groups,
+                 base_width,
+                 base_channels,
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
@@ -337,6 +354,9 @@ class Blocks(nn.Layer):
                         shortcut=False if i == 0 else True,
                         name_adapter=name_adapter,
                         name=conv_name,
+                        groups=groups,
+                        base_width=base_width,
+                        base_channels=base_channels,
                         variant=name_adapter.variant,
                         lr=lr,
                         norm_type=norm_type,
@@ -370,10 +390,10 @@ class Blocks(nn.Layer):
 
 
 ResNet_cfg = {
-    18: [2, 2, 2, 2], 
-    34: [3, 4, 6, 3], 
-    50: [3, 4, 6, 3], 
-    101: [3, 4, 23, 3], 
+    18: [2, 2, 2, 2],
+    34: [3, 4, 6, 3],
+    50: [3, 4, 6, 3],
+    101: [3, 4, 23, 3],
     152: [3, 8, 36, 3],
 }
 
@@ -395,6 +415,8 @@ class ResNet(nn.Layer):
                  num_stages=4,
                  lr_mult_list=[1.0, 1.0, 1.0, 1.0]):
         super(ResNet, self).__init__()
+        self._model_type = 'ResNet'
+
         self.depth = depth
         self.variant = variant
         self.norm_type = norm_type
@@ -445,6 +467,7 @@ class ResNet(nn.Layer):
                     filter_size=k,
                     stride=s,
                     name_adapter=na,
+                    groups=1,
                     act='relu',
                     norm_type=norm_type,
                     norm_decay=norm_decay,
@@ -452,10 +475,15 @@ class ResNet(nn.Layer):
                     lr=1.0,
                     name=_name))
 
-        self.pool = MaxPool2D(kernel_size=3, stride=2, padding=1)
+        self.pool = nn.MaxPool2D(kernel_size=3, stride=2, padding=1)
 
         ch_in_list = [64, 256, 512, 1024]
         ch_out_list = [64, 128, 256, 512]
+
+        # ResNeXt
+        groups = getattr(self, 'groups', 1)
+        base_width = getattr(self, 'base_width', -1)
+        base_channels = getattr(self, 'base_channels', -1)
 
         self.res_layers = []
         for i in range(num_stages):
@@ -471,6 +499,9 @@ class ResNet(nn.Layer):
                     count=block_nums[i],
                     name_adapter=na,
                     stage_num=stage_num,
+                    groups=groups,
+                    base_width=base_width,
+                    base_channels=base_channels,
                     lr=lr_mult,
                     norm_type=norm_type,
                     norm_decay=norm_decay,

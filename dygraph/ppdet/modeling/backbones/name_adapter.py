@@ -42,7 +42,7 @@ class NameAdapter(object):
         return conv_name1, conv_name2, conv_name3, shortcut_name
 
     def fix_basicblock_name(self, name):
-        if self.model_type == 'ResNeXt':
+        if self.model_type == 'SEResNeXt':
             conv_name1 = 'conv' + name + '_x1'
             conv_name2 = 'conv' + name + '_x2'
             shortcut_name = name

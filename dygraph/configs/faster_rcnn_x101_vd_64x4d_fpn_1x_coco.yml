@@ -25,6 +25,8 @@ FasterRCNN:
 ResNeXt:
   # index 0 stands for res2
   depth: 101
+  groups: 64
+  base_width: 4
   variant: d
   norm_type: bn
   freeze_at: 0
