@@ -39,12 +39,12 @@ class HRNet(object):
     """
     HRNet, see https://arxiv.org/abs/1908.07919
     Args:
-        depth (int): ResNet depth, should be 18, 34, 50, 101, 152.
+        width (int): network width, should be 18, 30, 32, 40, 44, 48, 60 or 64
+        has_se (bool): whether contain squeeze_excitation(SE) block or not
         freeze_at (int): freeze the backbone at which stage
-        norm_type (str): normalization type, 'bn'/'sync_bn'/'affine_channel'
+        norm_type (str): normalization type, 'bn'/'sync_bn'
         freeze_norm (bool): freeze normalization layers
         norm_decay (float): weight decay for normalization layer weights
-        variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
         feature_maps (list): index of stages whose feature maps are returned
     """
 
