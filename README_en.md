@@ -254,6 +254,9 @@ All these models can be get in [Model Zoo](#ModelZoo)
   - [Objects365 2019 Challenge champion model](docs/featured_model/champion_model/CACascadeRCNN.md)
   - [Best single model of Open Images 2019-Object Detction](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
+## Applications
+
+- [Christmas portrait automatic generation tool](application/christmas)
 
 ## Updates
 
