@@ -21,9 +21,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.functional.activation import hard_sigmoid, hard_swish
-from paddle.nn import Conv2D, BatchNorm, Linear, Dropout
-from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
-from paddle.nn.initializer import KaimingNormal
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
@@ -71,7 +68,7 @@ class ConvBNLayer(nn.Layer):
         super(ConvBNLayer, self).__init__()
         self.if_act = if_act
         self.act = act
-        self.conv = Conv2D(
+        self.conv = nn.Conv2D(
             in_channels=in_c,
             out_channels=out_c,
             kernel_size=filter_size,
@@ -84,6 +81,16 @@ class ConvBNLayer(nn.Layer):
     
         norm_lr = 0. if freeze_norm else lr_mult
         self.bn = batch_norm(out_c, norm_lr, norm_decay, norm_type=norm_type, name=name)
+        if norm_type == 'sync_bn':
+            batch_norm = nn.SyncBatchNorm
+        else:
+            batch_norm = nn.BatchNorm2D
+        self.bn = batch_norm(
+            out_c,
+            param_attr=ParamAttr(
+                learning_rate=norm_lr, name=name + "_bn_scale", regularizer=L2Decay(norm_decay)),
+            bias_attr=ParamAttr(
+                learning_rate=norm_lr, name=name + "_bn_offset", regularizer=L2Decay(norm_decay)))
 
     def forward(self, x):
         x = self.conv(x)
@@ -179,9 +186,9 @@ class ResidualUnit(nn.Layer):
 class SEModule(nn.Layer):
     def __init__(self, channel, lr_mult, conv_decay, reduction=4, name=""):
         super(SEModule, self).__init__()
-        self.avg_pool = AdaptiveAvgPool2D(1)
+        self.avg_pool = nn.AdaptiveAvgPool2D(1)
         mid_channels = int(channel // reduction)
-        self.conv1 = Conv2D(
+        self.conv1 = nn.Conv2D(
             in_channels=channel,
             out_channels=mid_channels,
             kernel_size=1,
@@ -191,7 +198,7 @@ class SEModule(nn.Layer):
                 learning_rate=lr_mult, regularizer=L2Decay(conv_decay), name=name + "_1_weights"),
             bias_attr=ParamAttr(
                 learning_rate=lr_mult, regularizer=L2Decay(conv_decay), name=name + "_1_offset"))
-        self.conv2 = Conv2D(
+        self.conv2 = nn.Conv2D(
             in_channels=mid_channels,
             out_channels=channel,
             kernel_size=1,

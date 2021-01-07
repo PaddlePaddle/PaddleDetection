@@ -17,30 +17,13 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm, Linear, Dropout
-from paddle.nn import AdaptiveAvgPool2D, MaxPool2D, AvgPool2D
+from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
-from .name_adapter import NameAdapter
 from numbers import Integral
-
-
-def batch_norm(ch, norm_lr=1., norm_decay=0., norm_type='bn', name=None):
-    if norm_type == 'sync_bn':
-        batch_norm = nn.SyncBatchNorm
-    else:
-        batch_norm = nn.BatchNorm2D
-
-    return batch_norm(
-        ch,
-        weight_attr=ParamAttr(
-            learning_rate=norm_lr, name=name + '_bn_scale', regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(
-            learning_rate=norm_lr, name=name + '_bn_offset', regularizer=L2Decay(norm_decay)))
 
 
 class ConvBNLayer(nn.Layer):
@@ -71,7 +54,16 @@ class ConvBNLayer(nn.Layer):
                 regularizer=L2Decay(conv_decay), name=name + "_weights"),
             bias_attr=False)
 
-        self._batch_norm = batch_norm(out_channels, norm_lr=conv_lr, norm_decay=norm_decay, norm_type=norm_type, name=name)
+        if norm_type == 'sync_bn':
+            batch_norm = nn.SyncBatchNorm
+        else:
+            batch_norm = nn.BatchNorm2D
+        self._batch_norm = batch_norm(
+            out_channels,
+            param_attr=ParamAttr(
+                name=name + "_bn_scale", regularizer=L2Decay(norm_decay)),
+            bias_attr=ParamAttr(
+                name=name + "_bn_offset", regularizer=L2Decay(norm_decay)))
 
     def forward(self, x):
         x = self._conv(x)
@@ -192,7 +184,8 @@ class MobileNet(nn.Layer):
                  with_extra_blocks=False,
                  extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]]):
         super(MobileNet, self).__init__()
-
+        if isinstance(feature_maps, Integral):
+            feature_maps = [feature_maps]
         self.feature_maps = feature_maps
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
