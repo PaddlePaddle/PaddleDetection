@@ -87,7 +87,7 @@ class MaskRCNN(BaseArch):
         # compute targets here when training
         rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out)
         # BBox Head
-        bbox_feat, self.bbox_head_out, self.bbox_head_feat_func = self.bbox_head(
+        bbox_feat, self.bbox_head_out, bbox_head_feat_func = self.bbox_head(
             body_feats, rois, spatial_scale)
 
         rois_has_mask_int32 = None
@@ -108,7 +108,7 @@ class MaskRCNN(BaseArch):
         # Mask Head 
         self.mask_head_out = self.mask_head(
             self.inputs, body_feats, self.bboxes, bbox_feat,
-            rois_has_mask_int32, spatial_scale, self.bbox_head_feat_func)
+            rois_has_mask_int32, spatial_scale, bbox_head_feat_func)
 
     def get_loss(self, ):
         loss = {}
