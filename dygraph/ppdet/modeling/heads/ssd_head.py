@@ -14,8 +14,6 @@ class SSDHead(nn.Layer):
                  num_classes=81,
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  anchor_generator='AnchorGeneratorSSD',
-                 kernel_size=3,
-                 padding=1,
                  loss='SSDLoss'):
         super(SSDHead, self).__init__()
         self.num_classes = num_classes
@@ -33,16 +31,16 @@ class SSDHead(nn.Layer):
                     nn.Conv2D(
                         in_channels=in_channels[i],
                         out_channels=num_prior * 4,
-                        kernel_size=kernel_size,
-                        padding=padding)))
+                        kernel_size=3,
+                        padding=1)))
             self.score_convs.append(
                 self.add_sublayer(
                     "scores{}".format(i),
                     nn.Conv2D(
                         in_channels=in_channels[i],
                         out_channels=num_prior * num_classes,
-                        kernel_size=kernel_size,
-                        padding=padding)))
+                        kernel_size=3,
+                        padding=1)))
 
     def forward(self, feats, image):
         box_preds = []
