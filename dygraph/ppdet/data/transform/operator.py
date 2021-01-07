@@ -568,7 +568,7 @@ class RandomFlipOp(BaseOperator):
             if 'semantic' in sample and sample['semantic']:
                 sample['semantic'] = sample['semantic'][:, ::-1]
 
-            if 'gt_segm' in sample and sample['gt_segm']:
+            if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
 
             sample['flipped'] = True

@@ -108,6 +108,8 @@ def run(FLAGS, cfg, place):
         eval_type.append('bbox')
     if 'mask' in outs:
         eval_type.append('mask')
+    if 'segm' in outs:
+        eval_type.append('segm')
     # Metric
     # TODO: support other metric
     with_background = cfg.with_background

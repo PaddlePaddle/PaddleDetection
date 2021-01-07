@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import json
-from ppdet.py_op.post_process import get_det_res, get_seg_res
+from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_res
 
 from .logger import setup_logger
 logger = setup_logger(__name__)
@@ -62,6 +62,8 @@ def get_infer_results(outs_res, eval_type, catid):
             # mask post process
             infer_res['mask'] += get_seg_res(outs['mask'], outs['bbox_num'],
                                              im_id, catid)
+        if 'segm' in eval_type:
+            infer_res['segm'] += get_solov2_res(outs, im_id, catid)
 
     return infer_res
 
@@ -90,6 +92,15 @@ def eval_results(res, metric, dataset):
 
             seg_stats = cocoapi_eval(
                 'mask.json', 'segm', anno_file=dataset.get_anno())
+            eval_res.append(seg_stats)
+            sys.stdout.flush()
+        if 'segm' in res:
+            with open("segm.json", 'w') as f:
+                json.dump(res['segm'], f)
+                logger.info('The segm result is saved to segm.json.')
+
+            seg_stats = cocoapi_eval(
+                'segm.json', 'segm', anno_file=dataset.get_anno())
             eval_res.append(seg_stats)
             sys.stdout.flush()
     elif metric == 'VOC':

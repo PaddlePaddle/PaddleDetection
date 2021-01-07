@@ -119,6 +119,7 @@ class ImageFolder(DetDataset):
                                           sample_num, use_default_label)
         self._imid2path = {}
         self.roidbs = None
+        self.sample_num = sample_num
 
     def parse_dataset(self, with_background=True):
         if not self.roidbs:

@@ -170,13 +170,14 @@ def run(FLAGS, cfg, place):
             eval_type.append('bbox')
         if 'mask' in outs:
             eval_type.append('mask')
-
+        if 'segm' in outs:
+            eval_type.append('segm')
         batch_res = get_infer_results([outs], eval_type, clsid2catid)
         logger.info('Infer iter {}'.format(iter_id))
         bbox_res = None
         mask_res = None
 
-        bbox_num = outs['bbox_num']
+        bbox_num = outs['bbox_num'] if 'bbox_num' in outs else [0]
         start = 0
         for i, im_id in enumerate(outs['im_id']):
             image_path = imid2path[int(im_id)]
@@ -194,8 +195,10 @@ def run(FLAGS, cfg, place):
                 bbox_res = batch_res['bbox'][start:end]
             if 'mask' in batch_res:
                 mask_res = batch_res['mask'][start:end]
+            if 'segm' in batch_res:
+                segm_res = batch_res['segm']
 
-            image = visualize_results(image, bbox_res, mask_res,
+            image = visualize_results(image, bbox_res, mask_res, segm_res,
                                       int(outs['im_id']), catid2name,
                                       FLAGS.draw_threshold)
 

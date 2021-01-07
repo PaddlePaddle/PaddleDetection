@@ -34,6 +34,9 @@ class FPN(Layer):
                  spatial_scale=[0.25, 0.125, 0.0625, 0.03125]):
 
         super(FPN, self).__init__()
+        self.min_level = min_level
+        self.max_level = max_level
+        self.spatial_scale = spatial_scale
         self.lateral_convs = []
         self.fpn_convs = []
         fan = out_channel * 3 * 3
@@ -69,10 +72,6 @@ class FPN(Layer):
                     bias_attr=ParamAttr(
                         learning_rate=2., regularizer=L2Decay(0.))))
             self.fpn_convs.append(fpn_conv)
-
-        self.min_level = min_level
-        self.max_level = max_level
-        self.spatial_scale = spatial_scale
 
     def forward(self, body_feats):
         laterals = []
