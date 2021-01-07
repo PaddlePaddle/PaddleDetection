@@ -27,11 +27,10 @@ warnings.filterwarnings('ignore')
 
 import paddle
 
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_weight
-from ppdet.engine import export_detector
+from ppdet.engine import Detector
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
@@ -49,19 +48,14 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    # build detector
+    detector = Detector(cfg, mode='test')
 
-    # Model
-    main_arch = cfg.architecture
-    model = create(cfg.architecture)
-    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
+    # load weights
+    detector.load_weights(cfg.weights, 'resume')
 
-    # Init Model
-    load_weight(model, cfg.weights)
-
-    # export config and model
-    export_detector(model, cfg, save_dir)
-    logger.info('Export model to {}'.format(save_dir))
+    # inference
+    detector.export(FLAGS.output_dir)
 
 
 def main():

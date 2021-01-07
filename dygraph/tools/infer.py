@@ -28,11 +28,10 @@ import glob
 
 import paddle
 from paddle.distributed import ParallelEnv
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.engine import infer_detector
+from ppdet.core.workspace import load_config, merge_config
+from ppdet.engine import Detector
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_weight
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('train')
@@ -106,27 +105,19 @@ def get_test_images(infer_dir, infer_img):
 
 
 def run(FLAGS, cfg):
+    # build detector
+    detector = Detector(cfg, mode='test')
 
-    # Model
-    main_arch = cfg.architecture
-    model = create(cfg.architecture)
+    # load weights
+    detector.load_weights(cfg.weights, 'resume')
 
-    # Init Model
-    load_weight(model, cfg.weights)
+    # get inference images
+    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
-    # data
-    dataset = cfg.TestDataset
-    test_images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
-    dataset.set_images(test_images)
-    test_loader = create('TestReader')(dataset, cfg['worker_num'])
-
-    infer_detector(
-        model,
-        test_loader,
-        cfg,
-        draw_threshold=FLAGS.draw_threshold,
-        output_dir=FLAGS.output_dir,
-        use_visual_dl=FLAGS.use_vdl)
+    # inference
+    detector.predict(images,
+                     draw_threshold=FLAGS.draw_threshold,
+                     output_dir=FLAGS.output_dir)
 
 
 def main():

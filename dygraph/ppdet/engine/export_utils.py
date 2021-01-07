@@ -18,17 +18,11 @@ from __future__ import print_function
 
 import os
 import yaml
-import numpy as np
 from collections import OrderedDict
-
-import paddle
-from paddle.static import InputSpec
-from paddle.jit import to_static
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['export_detector']
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
@@ -124,31 +118,3 @@ def _dump_infer_config(config, path, image_shape, model):
     logger.info("Export inference config file to {}".format(os.path.join(path)))
     return image_shape
 
-
-def export_detector(model, cfg, save_dir):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    image_shape = None
-    if 'inputs_def' in cfg['TestReader']:
-        inputs_def = cfg['TestReader']['inputs_def']
-        image_shape = inputs_def.get('image_shape', None)
-    if image_shape is None:
-        image_shape = [3, None, None]
-
-    # Save infer cfg
-    _dump_infer_config(cfg,
-                       os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
-                       model)
-
-    input_spec = [{
-        "image": InputSpec(
-            shape=[None] + image_shape, name='image'),
-        "im_shape": InputSpec(
-            shape=[None, 2], name='im_shape'),
-        "scale_factor": InputSpec(
-            shape=[None, 2], name='scale_factor')
-    }]
-
-    export_model = to_static(model, input_spec=input_spec)
-    # save Model
-    paddle.jit.save(export_model, os.path.join(save_dir, 'model'))

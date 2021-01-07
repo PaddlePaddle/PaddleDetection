@@ -15,6 +15,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+
 import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
@@ -24,17 +25,14 @@ if parent_path not in sys.path:
 # ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
-import random
-import numpy as np
-import paddle
-import time
 
+import paddle
 from paddle.distributed import ParallelEnv
-from ppdet.core.workspace import load_config, merge_config, create
+
+from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
-from ppdet.engine import eval_detector
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_weight
+from ppdet.engine import Detector
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('eval')
@@ -59,20 +57,14 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    # build detector
+    detector = Detector(cfg, mode='eval')
 
-    # Model
-    main_arch = cfg.architecture
-    model = create(cfg.architecture)
+    # load weights
+    detector.load_weights(cfg.weights, 'resume')
 
-    # Init Model
-    load_weight(model, cfg.weights)
-
-    # Data Reader
-    dataset = cfg.EvalDataset
-    eval_loader = create('EvalReader')(dataset, cfg['worker_num'])
-
-    # evaluation
-    eval_detector(model, eval_loader, cfg)
+    # training
+    detector.evaluate()
 
 
 def main():

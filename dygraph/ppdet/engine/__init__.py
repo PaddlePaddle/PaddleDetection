@@ -12,19 +12,15 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-from . import train
-from .train import *
+from . import detector
+from .detector import *
 
-from . import evaluate
-from .evaluate import *
+from . import hooks
+from .hooks import *
 
-from . import inference
-from .inference import *
+from . import env
+from .env import *
 
-from . import export
-from .export import *
-
-__all__ = train.__all__ \
-        + evaluate.__all__ \
-        + inference.__all__ \
-        + export.__all__
+__all__ = detector.__all__ \
+        + hooks.__all__ \
+        + env.__all__
