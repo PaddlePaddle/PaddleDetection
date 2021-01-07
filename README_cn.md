@@ -236,6 +236,9 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
     - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
+## 应用案例
+
+- [人像圣诞特效自动生成工具](application/christmas)
 
 ## 第三方教程推荐
 
