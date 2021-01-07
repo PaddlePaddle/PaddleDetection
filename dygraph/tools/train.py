@@ -128,6 +128,16 @@ def run(FLAGS, cfg, place):
     # if sync_bn:
     #     model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
+    # The parameter filter is temporary fix for training because of #28997
+    # in Paddle.
+    def no_grad(param):
+        if param.name.startswith("conv1_") or param.name.startswith("res2a_") \
+            or param.name.startswith("res2b_") or param.name.startswith("res2c_"):
+            return True
+
+    for param in filter(no_grad, model.parameters()):
+        param.stop_gradient = True
+
     # Parallel Model 
     if ParallelEnv().nranks > 1:
         model = paddle.DataParallel(model)
