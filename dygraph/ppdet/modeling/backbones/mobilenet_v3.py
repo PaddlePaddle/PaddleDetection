@@ -26,20 +26,6 @@ from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
 
-def batch_norm(ch, norm_lr=1., norm_decay=0., norm_type='bn', name=None):
-    if norm_type == 'sync_bn':
-        batch_norm = nn.SyncBatchNorm
-    else:
-        batch_norm = nn.BatchNorm2D
-
-    return batch_norm(
-        ch,
-        weight_attr=ParamAttr(
-            learning_rate=norm_lr, name=name + '_bn_scale', regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(
-            learning_rate=norm_lr, name=name + '_bn_offset', regularizer=L2Decay(norm_decay)))
-
-
 def make_divisible(v, divisor=8, min_value=None):
     if min_value is None:
         min_value = divisor
@@ -80,14 +66,13 @@ class ConvBNLayer(nn.Layer):
             bias_attr=False)
     
         norm_lr = 0. if freeze_norm else lr_mult
-        self.bn = batch_norm(out_c, norm_lr, norm_decay, norm_type=norm_type, name=name)
         if norm_type == 'sync_bn':
             batch_norm = nn.SyncBatchNorm
         else:
             batch_norm = nn.BatchNorm2D
         self.bn = batch_norm(
             out_c,
-            param_attr=ParamAttr(
+            weight_attr=ParamAttr(
                 learning_rate=norm_lr, name=name + "_bn_scale", regularizer=L2Decay(norm_decay)),
             bias_attr=ParamAttr(
                 learning_rate=norm_lr, name=name + "_bn_offset", regularizer=L2Decay(norm_decay)))
