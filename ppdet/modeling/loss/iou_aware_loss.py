@@ -39,12 +39,24 @@ class IouAwareLoss(IouLoss):
             loss_weight=loss_weight, giou=giou, diou=diou, ciou=ciou)
 
     def __call__(self, ioup, pbox, gbox, anchor, downsample):
-        b, na, h, w = ioup.shape
-        iou = self._iou(pbox, gbox, anchor, downsample)
+        pbox = self.bbox_transform(pbox, anchor, downsample)
+        gbox = self.bbox_transform(gbox, anchor, downsample)
+        iou = bbox_iou(
+            pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         iou.stop_gradient = True
-        iou = iou.reshape((b, h, w, na)).transpose((0, 3, 1, 2))
         ioup = F.sigmoid(ioup)
-        loss_iou_aware = (-iou * paddle.log(ioup)).sum(-1, keepdim=True)
+        loss_iou_aware = (-iou * paddle.log(ioup)).sum(-2, keepdim=True)
         # loss_iou_aware = F.cross_entropy(ioup, iou, soft_label=True, reduction='none')
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware
+
+    # def __call__(self, ioup, pbox, gbox, anchor, downsample):
+    #     b, na, h, w = ioup.shape
+    #     iou = self._iou(pbox, gbox, anchor, downsample)
+    #     iou.stop_gradient = True
+    #     iou = iou.reshape((b, h, w, na)).transpose((0, 3, 1, 2))
+    #     ioup = F.sigmoid(ioup)
+    #     loss_iou_aware = (-iou * paddle.log(ioup)).sum(-1, keepdim=True)
+    #     # loss_iou_aware = F.cross_entropy(ioup, iou, soft_label=True, reduction='none')
+    #     loss_iou_aware = loss_iou_aware * self.loss_weight
+    #     return loss_iou_aware

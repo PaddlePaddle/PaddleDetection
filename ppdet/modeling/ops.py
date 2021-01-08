@@ -53,7 +53,7 @@ def batch_norm(ch, norm_type='bn', name=None):
             name=bn_name + '.offset', regularizer=L2Decay(0.)))
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def deform_conv2d(x,
                   offset,
                   weight,
@@ -142,7 +142,7 @@ def deform_conv2d(x,
     return out
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def roi_pool(input,
              rois,
              output_size,
@@ -242,7 +242,7 @@ def roi_pool(input,
         return pool_out, argmaxes
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def roi_align(input,
               rois,
               output_size,
@@ -349,7 +349,7 @@ def roi_align(input,
         return align_out
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def iou_similarity(x, y, box_normalized=True, name=None):
     """
     Computes intersection-over-union (IOU) between two box lists.
@@ -413,7 +413,7 @@ def iou_similarity(x, y, box_normalized=True, name=None):
         return out
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def collect_fpn_proposals(multi_rois,
                           multi_scores,
                           min_level,
@@ -524,7 +524,7 @@ def collect_fpn_proposals(multi_rois,
         return output_rois, rois_num
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def distribute_fpn_proposals(fpn_rois,
                              min_level,
                              max_level,
@@ -648,7 +648,7 @@ def distribute_fpn_proposals(fpn_rois,
         return multi_rois, restore_ind, rois_num_per_level
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def yolo_box(
         x,
         origin_shape,
@@ -785,7 +785,7 @@ def yolo_box(
         return boxes, scores
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def prior_box(input,
               image,
               min_sizes,
@@ -929,7 +929,7 @@ def prior_box(input,
         return box, var
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def anchor_generator(input,
                      anchor_sizes=None,
                      aspect_ratios=None,
@@ -1040,7 +1040,7 @@ def anchor_generator(input,
         return anchor, var
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def multiclass_nms(bboxes,
                    scores,
                    score_threshold,
@@ -1195,7 +1195,7 @@ def multiclass_nms(bboxes,
         return output, nms_rois_num, index
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def matrix_nms(bboxes,
                scores,
                score_threshold,
@@ -1332,7 +1332,7 @@ def matrix_nms(bboxes,
         return out, rois_num, index
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def box_coder(prior_box,
               prior_box_var,
               target_box,
@@ -1486,7 +1486,7 @@ def box_coder(prior_box,
         return output_box
 
 
-@paddle.jit.not_to_static
+#@paddle.jit.not_to_static
 def generate_proposals(scores,
                        bbox_deltas,
                        im_shape,

@@ -2,8 +2,8 @@ architecture: YOLOv3
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
 weights: output/ppyolo_r50vd_dcn/model_final
 load_static_weights: true
-norm_type: sync_bn
-use_ema: true
+norm_type: bn
+use_ema: false
 ema_decay: 0.9998
 
 YOLOv3:
@@ -17,14 +17,14 @@ ResNet:
   variant: d
   return_idx: [1, 2, 3]
   dcn_v2_stages: [3]
-  freeze_at: 0
+  freeze_at: -1
   freeze_norm: false
   norm_decay: 0.
 
 PPYOLOFPN:
   feat_channels: [2048, 1280, 640]
   coord_conv: true
-  drop_block: true
+  drop_block: false
   block_size: 3
   keep_prob: 0.9
   spp: true
@@ -46,7 +46,7 @@ YOLOv3Loss:
   iou_loss: IouLoss
   iou_aware_loss: IouAwareLoss
 
-IoULoss:
+IouLoss:
   loss_weight: 2.5
   loss_square: true
 

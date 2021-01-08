@@ -662,6 +662,7 @@ class NormalizeImage(BaseOperator):
                     sample[k] = im
         if not batch_input:
             samples = samples[0]
+        np.save('im.npy', samples[0]['image'])
         return samples
 
 

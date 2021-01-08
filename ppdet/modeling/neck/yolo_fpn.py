@@ -108,7 +108,7 @@ class DropBlock(nn.Layer):
             for s in x.shape[2:]:
                 gamma *= s / (s - self.block_size + 1)
 
-            matrix = paddle.bernoulli(paddle.full_like(x, gamma))
+            matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
             mask_inv = F.max_pool2d(
                 matrix, self.block_size, stride=1, padding=self.block_size // 2)
             mask = 1. - mask_inv
