@@ -189,9 +189,9 @@ class ProposalGenerator(object):
                  anchors,
                  variances,
                  im_shape,
-                 mode='train'):
-        pre_nms_top_n = self.train_pre_nms_top_n if mode == 'train' else self.infer_pre_nms_top_n
-        post_nms_top_n = self.train_post_nms_top_n if mode == 'train' else self.infer_post_nms_top_n
+                 is_train=False):
+        pre_nms_top_n = self.train_pre_nms_top_n if is_train else self.infer_pre_nms_top_n
+        post_nms_top_n = self.train_post_nms_top_n if is_train else self.infer_post_nms_top_n
         # TODO delete im_info
         if im_shape.shape[1] > 2:
             import paddle.fluid as fluid

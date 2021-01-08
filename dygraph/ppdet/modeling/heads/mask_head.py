@@ -83,14 +83,13 @@ class MaskFeat(Layer):
                 mask_index,
                 spatial_scale,
                 stage=0,
-                bbox_head_feat_func=None,
-                mode='train'):
+                bbox_head_feat_func=None):
         if self.share_bbox_feat and mask_index is not None:
             rois_feat = paddle.gather(bbox_feat, mask_index)
         else:
             rois_feat = self.mask_roi_extractor(body_feats, bboxes,
                                                 spatial_scale)
-        if self.share_bbox_feat and bbox_head_feat_func is not None and mode == 'infer':
+        if self.share_bbox_feat and bbox_head_feat_func is not None and not self.training:
             rois_feat = bbox_head_feat_func(rois_feat)
 
         # upsample 
@@ -136,14 +135,8 @@ class MaskHead(Layer):
                       spatial_scale,
                       stage=0):
         # feat
-        mask_feat = self.mask_feat(
-            body_feats,
-            bboxes,
-            bbox_feat,
-            mask_index,
-            spatial_scale,
-            stage,
-            mode='train')
+        mask_feat = self.mask_feat(body_feats, bboxes, bbox_feat, mask_index,
+                                   spatial_scale, stage)
         # logits
         mask_head_out = self.mask_fcn_logits[stage](mask_feat)
         return mask_head_out
@@ -174,15 +167,9 @@ class MaskHead(Layer):
             scale_factor_list = paddle.reshape(scale_factor_list, shape=[-1, 1])
             scaled_bbox = paddle.multiply(bbox[:, 2:], scale_factor_list)
             scaled_bboxes = (scaled_bbox, bbox_num)
-            mask_feat = self.mask_feat(
-                body_feats,
-                scaled_bboxes,
-                bbox_feat,
-                mask_index,
-                spatial_scale,
-                stage,
-                bbox_head_feat_func,
-                mode='infer')
+            mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
+                                       mask_index, spatial_scale, stage,
+                                       bbox_head_feat_func)
             mask_logit = self.mask_fcn_logits[stage](mask_feat)
             mask_head_out = F.sigmoid(mask_logit)
         return mask_head_out
@@ -196,7 +183,7 @@ class MaskHead(Layer):
                 spatial_scale,
                 bbox_head_feat_func=None,
                 stage=0):
-        if inputs['mode'] == 'train':
+        if self.training:
             mask_head_out = self.forward_train(body_feats, bboxes, bbox_feat,
                                                mask_index, spatial_scale, stage)
         else:
