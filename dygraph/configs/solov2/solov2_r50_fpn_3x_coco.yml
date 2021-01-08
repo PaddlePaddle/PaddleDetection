@@ -1,0 +1,7 @@
+_BASE_: [
+  '../_base_/models/solov2_r50_fpn.yml',
+  '../_base_/optimizers/solov2_3x.yml',
+  '../_base_/datasets/coco_instance.yml',
+  '../_base_/readers/solov2_ms_reader.yml',
+  '../_base_/runtime.yml',
+]

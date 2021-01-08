@@ -1,12 +1,12 @@
-epoch: 12
-weights: output/solov2_r50_fpn_1x_coco/model_final
+epoch: 36
+weights: output/solov2_r50_fpn_3x_coco/model_final
 
 LearningRate:
   base_lr: 0.01
   schedulers:
   - !PiecewiseDecay
     gamma: 0.1
-    milestones: [8, 11]
+    milestones: [24, 33]
   - !LinearWarmup
     start_factor: 0.
     steps: 1000

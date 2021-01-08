@@ -52,12 +52,10 @@ class SOLOv2(BaseArch):
         if self.neck is not None:
             body_feats, spatial_scale = self.neck(body_feats)
 
-        # Mask Head
         self.seg_pred = self.mask_head(body_feats)
 
-        # SOLOv2 Head
         self.cate_pred_list, self.kernel_pred_list = self.solov2_head(
-            body_feats, mode=self.inputs['mode'])
+            body_feats)
 
     def get_loss(self, ):
         loss = {}

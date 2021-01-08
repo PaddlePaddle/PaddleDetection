@@ -5,7 +5,7 @@ from __future__ import print_function
 import os
 import sys
 import json
-from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_res
+from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_segm_res
 
 from .logger import setup_logger
 logger = setup_logger(__name__)
@@ -63,7 +63,7 @@ def get_infer_results(outs_res, eval_type, catid):
             infer_res['mask'] += get_seg_res(outs['mask'], outs['bbox_num'],
                                              im_id, catid)
         if 'segm' in eval_type:
-            infer_res['segm'] += get_solov2_res(outs, im_id, catid)
+            infer_res['segm'] += get_solov2_segm_res(outs, im_id, catid)
 
     return infer_res
 

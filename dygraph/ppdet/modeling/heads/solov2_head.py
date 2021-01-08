@@ -37,11 +37,11 @@ class SOLOv2MaskHead(nn.Layer):
     MaskHead of SOLOv2
 
     Args:
-        in_channels (int): The channel number of input variable.
-        out_channels (int): The channel number of output variable.
+        in_channels (int): The channel number of input Tensor.
+        out_channels (int): The channel number of output Tensor.
         start_level (int): The position where the input starts.
         end_level (int): The position where the input ends.
-        use_dcn_in_tower: Whether to use dcn in tower or not.
+        use_dcn_in_tower (bool): Whether to use dcn in tower or not.
     """
 
     def __init__(self,
@@ -123,9 +123,9 @@ class SOLOv2MaskHead(nn.Layer):
         Get SOLOv2MaskHead output.
 
         Args:
-            inputs(list[Variable]): feature map from each necks with shape of [N, C, H, W]
+            inputs(list[Tensor]): feature map from each necks with shape of [N, C, H, W]
         Returns:
-            ins_pred(Variable): Output of SOLOv2MaskHead head
+            ins_pred(Tensor): Output of SOLOv2MaskHead head
         """
         feat_all_level = F.relu(self.convs_all_levels[0](inputs[0]))
         for i in range(1, self.range_level):
@@ -164,7 +164,7 @@ class SOLOv2Head(nn.Layer):
         stacked_convs (int): Times of convolution operation.
         num_grids (list[int]): List of feature map grids size.
         kernel_out_channels (int): Number of output channels in kernel branch.
-        dcn_v2_stages (list): Which stage use dcn v2 in tower.
+        dcn_v2_stages (list): Which stage use dcn v2 in tower. It is between [0, stacked_convs).
         segm_strides (list[int]): List of segmentation area stride.
         solov2_loss (object): SOLOv2Loss instance.
         score_threshold (float): Threshold of categroy score.
@@ -281,29 +281,27 @@ class SOLOv2Head(nn.Layer):
                 align_corners=False,
                 align_mode=0))
 
-    def forward(self, input, mode='train'):
+    def forward(self, input):
         """
         Get SOLOv2 head output
 
         Args:
-            input (list): List of Variables, output of backbone or neck stages
-            is_eval (bool): whether in train or test mode
+            input (list): List of Tensors, output of backbone or neck stages
         Returns:
-            cate_pred_list (list): Variables of each category branch layer
-            kernel_pred_list (list): Variables of each kernel branch layer
+            cate_pred_list (list): Tensors of each category branch layer
+            kernel_pred_list (list): Tensors of each kernel branch layer
         """
         feats = self._split_feats(input)
         cate_pred_list = []
         kernel_pred_list = []
         for idx in range(len(self.seg_num_grids)):
-            cate_pred, kernel_pred = self._get_output_single(
-                feats[idx], idx, mode=mode)
+            cate_pred, kernel_pred = self._get_output_single(feats[idx], idx)
             cate_pred_list.append(cate_pred)
             kernel_pred_list.append(kernel_pred)
 
         return cate_pred_list, kernel_pred_list
 
-    def _get_output_single(self, input, idx, mode='train'):
+    def _get_output_single(self, input, idx):
         ins_kernel_feat = input
         # CoordConv
         x_range = paddle.linspace(
@@ -339,7 +337,7 @@ class SOLOv2Head(nn.Layer):
             cate_feat = F.relu(cate_layer(cate_feat))
         cate_pred = self.solo_cate(cate_feat)
 
-        if mode == 'infer':
+        if not self.training:
             cate_pred = self._points_nms(F.sigmoid(cate_pred), kernel_size=2)
             cate_pred = paddle.transpose(cate_pred, [0, 2, 3, 1])
         return cate_pred, kernel_pred
@@ -350,16 +348,16 @@ class SOLOv2Head(nn.Layer):
         Get loss of network of SOLOv2.
 
         Args:
-            cate_preds (list): Variable list of categroy branch output.
-            kernel_preds (list): Variable list of kernel branch output.
-            ins_pred (list): Variable list of instance branch output.
+            cate_preds (list): Tensor list of categroy branch output.
+            kernel_preds (list): Tensor list of kernel branch output.
+            ins_pred (list): Tensor list of instance branch output.
             ins_labels (list): List of instance labels pre batch.
             cate_labels (list): List of categroy labels pre batch.
             grid_order_list (list): List of index in pre grid.
             fg_num (int): Number of positive samples in a mini-batch.
         Returns:
-            loss_ins (Variable): The instance loss Variable of SOLOv2 network.
-            loss_cate (Variable): The category loss Variable of SOLOv2 network.
+            loss_ins (Tensor): The instance loss Tensor of SOLOv2 network.
+            loss_cate (Tensor): The category loss Tensor of SOLOv2 network.
         """
         batch_size = paddle.shape(grid_order_list[0])[0]
         ins_pred_list = []
@@ -421,9 +419,9 @@ class SOLOv2Head(nn.Layer):
             im_shape (Variables): [h, w] for input images.
             scale_factor (Variables): [scale, scale] for input images.
         Returns:
-            seg_masks (Variable): The prediction segmentation.
-            cate_labels (Variable): The prediction categroy label of each segmentation.
-            seg_masks (Variable): The prediction score of each segmentation.
+            seg_masks (Tensor): The prediction segmentation.
+            cate_labels (Tensor): The prediction categroy label of each segmentation.
+            seg_masks (Tensor): The prediction score of each segmentation.
         """
         num_levels = len(cate_preds)
         featmap_size = paddle.shape(seg_pred)[-2:]

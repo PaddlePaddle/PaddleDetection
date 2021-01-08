@@ -52,6 +52,4 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### SOLOv2
 
-| 骨架网络             | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps)  | Mask AP |                           下载                          | 配置文件 |
-| :------------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50             | SOLOv2         |    2    |   1x    |     ----     |    35.5    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/solov2_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2_r50_fpn_1x_coco.yml) |
+请参考[solov2](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2/)

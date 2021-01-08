@@ -186,7 +186,7 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
     return seg_res
 
 
-def get_solov2_res(results, image_id, num_id_to_cat_id_map):
+def get_solov2_segm_res(results, image_id, num_id_to_cat_id_map):
     import pycocotools.mask as mask_util
     segm_res = []
     # for each batch
