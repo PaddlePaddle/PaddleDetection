@@ -1,5 +1,4 @@
 epoch: 12
-weights: output/solov2_r50_fpn_1x_coco/model_final
 
 LearningRate:
   base_lr: 0.01

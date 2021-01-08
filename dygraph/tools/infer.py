@@ -176,6 +176,7 @@ def run(FLAGS, cfg, place):
         logger.info('Infer iter {}'.format(iter_id))
         bbox_res = None
         mask_res = None
+        segm_res = None
 
         bbox_num = outs['bbox_num'] if 'bbox_num' in outs else [0]
         start = 0
