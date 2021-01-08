@@ -9,13 +9,13 @@ TrainReader:
     - RandomExpandOp: {fill_value: [127.5, 127.5, 127.5]}
     - RandomCropOp: {allow_no_crop: Fasle}
     - RandomFlipOp: {}
-    - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeBoxOp: {}
+    - ResizeImage: {target_size: 300, interp: 1, use_cv2: false}
     - PadBoxOp: {num_max_boxes: 90}
 
   batch_transforms:
-    - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [27.502231, 127.502231, 127.502231], is_scale: false}
-    - PermuteOp: {}
+    - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
+    - Permute: {to_bgr: true}
 
   batch_size: 32
   shuffle: true
@@ -27,7 +27,7 @@ EvalReader:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
-    - PermuteOp: {}
+    - Permute: {to_bgr: true}
   batch_size: 1
   drop_empty: false
 
@@ -39,5 +39,6 @@ TestReader:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
-    - PermuteOp: {}
+    - Permute: {to_bgr: true}
   batch_size: 1
+
