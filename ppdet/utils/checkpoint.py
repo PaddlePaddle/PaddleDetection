@@ -101,7 +101,7 @@ def load_weight(model, weight, optimizer=None):
             last_epoch = optim_state_dict.pop('last_epoch')
         optimizer.set_state_dict(optim_state_dict)
         return last_epoch
-    return 0
+    return
 
 
 def load_pretrain_weight(model,

@@ -55,7 +55,6 @@ class IouLoss(object):
         gbox = self.bbox_transform(gbox, anchor, downsample)
         iou = bbox_iou(
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
-        # iou = self._iou(pbox, gbox, anchor, downsample)
         if self.loss_square:
             loss_iou = 1 - iou * iou
         else:
@@ -68,15 +67,3 @@ class IouLoss(object):
         pbox = decode_yolo(pbox, anchor, downsample)
         pbox = xywh2xyxy(pbox)
         return pbox
-
-    # def _iou(self, pbox, gbox, anchor, downsample):
-    #     b = pbox.shape[0]
-    #     pbox = decode_yolo(pbox, anchor, downsample)
-    #     pbox = pbox.reshape((b, -1, 4))
-    #     gbox = decode_yolo(gbox, anchor, downsample)
-    #     gbox = gbox.reshape((b, -1, 4))
-    #     pbox = xywh2xyxy(pbox)
-    #     gbox = xywh2xyxy(gbox)
-    #     iou = bbox_iou(
-    #         pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
-    #     return iou

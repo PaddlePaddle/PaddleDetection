@@ -180,31 +180,6 @@ def run(FLAGS, cfg, place):
             optimizer.step()
             curr_lr = optimizer.get_lr()
             lr.step()
-            for param in model.parameters():
-                if not param.stop_gradient:
-                    try:
-                        extra_keys = [
-                            'conv1_1_weights', 'conv1_2_weights',
-                            'conv1_3_weights', 'res2a_branch1_weights',
-                            'res2c_branch2c_weights', 'res3d_branch2c_weights',
-                            'res4f_branch2c_weights', 'res5c_branch2c_weights'
-                        ]
-                        # extra_keys = []
-                        for i in range(3):
-                            extra_keys += [
-                                'yolo_output.{}.conv.weights'.format(i),
-                                'yolo_output.{}.conv.bias'.format(i)
-                            ]
-                        if param.name in extra_keys:
-                            gradient = param.gradient()
-                            path = os.path.join('grad', '{}@GRAD_{}.npy'.format(
-                                param.name, cur_eid))
-                            np.save(path, gradient)
-                            print('eid {}, iter id {}, grad of {} saved'.format(
-                                cur_eid, iter_id, param.name))
-                    except Exception:
-                        print('exception: eid {}, iter id {}, param {}'.format(
-                            cur_eid, iter_id, param.name))
             optimizer.clear_grad()
 
             if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:

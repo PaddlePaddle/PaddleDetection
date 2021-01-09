@@ -116,8 +116,7 @@ class LearningRate(object):
     def __call__(self, step_per_epoch):
         # TODO: split warmup & decay 
         # warmup
-        # boundary, value = self.schedulers[1](self.base_lr)
-        boundary, value = [], [self.base_lr]
+        boundary, value = self.schedulers[1](self.base_lr)
         # decay
         decay_lr = self.schedulers[0](self.base_lr, boundary, value,
                                       step_per_epoch)
@@ -147,7 +146,7 @@ class OptimizerBuilder():
 
     def __call__(self, learning_rate, params=None):
         if self.clip_grad_by_norm is not None:
-            grad_clip = nn.GradientClipByGlobalNorm(
+            grad_clip = nn.ClipGradByGlobalNorm(
                 clip_norm=self.clip_grad_by_norm)
         else:
             grad_clip = None

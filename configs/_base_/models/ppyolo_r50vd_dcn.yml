@@ -24,7 +24,7 @@ ResNet:
 PPYOLOFPN:
   feat_channels: [2048, 1280, 640]
   coord_conv: true
-  drop_block: false
+  drop_block: true
   block_size: 3
   keep_prob: 0.9
   spp: true

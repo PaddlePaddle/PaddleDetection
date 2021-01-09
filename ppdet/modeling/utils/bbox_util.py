@@ -66,11 +66,11 @@ def iou_similarity(box1, box2, eps=1e-9):
     """Calculate iou of box1 and box2
 
     Args:
-        box1 (Tensor): box with the shape [b, m1, 4]
-        box2 (Tensor): box with the shape [b, m2, 4]
+        box1 (Tensor): box with the shape [N, M1, 4]
+        box2 (Tensor): box with the shape [N, M2, 4]
 
     Return:
-        iou (Tensor): iou between box1 and box2 with the shape [b, m1, m2]
+        iou (Tensor): iou between box1 and box2 with the shape [N, M1, M2]
     """
     box1 = box1.unsqueeze(2)  # [N, M1, 4] -> [N, M1, 1, 4]
     box2 = box2.unsqueeze(1)  # [N, M2, 4] -> [N, 1, M2, 4]
