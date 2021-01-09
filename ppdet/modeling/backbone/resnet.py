@@ -17,7 +17,7 @@ from paddle import ParamAttr
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm, Pool2D, MaxPool2D, SyncBatchNorm
+from paddle.nn import Conv2D, BatchNorm, AvgPool2D, MaxPool2D, SyncBatchNorm
 
 from ppdet.core.workspace import register, serializable
 
@@ -139,12 +139,8 @@ class BottleNeck(nn.Layer):
                 self.short = nn.Sequential()
                 self.short.add_sublayer(
                     'pool',
-                    Pool2D(
-                        pool_size=2,
-                        pool_type='avg',
-                        pool_stride=stride,
-                        pool_padding=0,
-                        ceil_mode=True))
+                    AvgPool2D(
+                        kernel_size=2, stride=2, padding=0, ceil_mode=True))
                 self.short.add_sublayer(
                     'conv',
                     ConvNormLayer(
