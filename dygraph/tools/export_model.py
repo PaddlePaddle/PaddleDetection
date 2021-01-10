@@ -54,7 +54,7 @@ def run(FLAGS, cfg):
     # load weights
     detector.load_weights(cfg.weights, 'resume')
 
-    # inference
+    # export model
     detector.export(FLAGS.output_dir)
 
 
