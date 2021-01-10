@@ -1,7 +1,6 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x1_0_pretrained.tar
-weights: output/yolov3_mobilenet_v3/model_final
-use_fine_grained_loss: false
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_small_x1_0_pretrained.tar
+weights: output/yolov3_mobilenet_v3_small/model_final
 load_static_weights: True
 norm_type: sync_bn
 
@@ -12,11 +11,11 @@ YOLOv3:
   post_process: BBoxPostProcess
 
 MobileNetV3:
-  norm_type: sync_bn
   model_name: small
   scale: 1.
+  with_extra_blocks: false
   extra_block_filters: []
-  feature_maps: [3, 8, 11]
+  feature_maps: [4, 9, 12]
 
 YOLOv3FPN:
   feat_channels: [96, 304, 152]
