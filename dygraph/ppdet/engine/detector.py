@@ -286,9 +286,11 @@ class Detector(object):
         name, ext = os.path.splitext(image_name)
         return os.path.join(output_dir, "{}".format(name)) + ext
 
-    def export(self, output_dir='output'):
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+    def export(self, output_dir='output_inference'):
+        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
+        save_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         image_shape = None
         if 'inputs_def' in self.cfg['TestReader']:
             inputs_def = self.cfg['TestReader']['inputs_def']
@@ -298,8 +300,8 @@ class Detector(object):
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
-                           os.path.join(output_dir, 'infer_cfg.yml'),
-                           image_shape, self.model)
+                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                           self.model)
 
         input_spec = [{
             "image": InputSpec(
@@ -312,4 +314,5 @@ class Detector(object):
 
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
-        paddle.jit.save(static_model, os.path.join(output_dir, 'model'))
+        paddle.jit.save(static_model, os.path.join(save_dir, 'model'))
+        logger.info("Export model and saved in {}".format(save_dir))

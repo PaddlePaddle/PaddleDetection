@@ -20,6 +20,8 @@ import os
 import yaml
 from collections import OrderedDict
 
+from ppdet.metrics import get_categories
+
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -42,17 +44,8 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     anno_file = dataset_cfg.get_anno()
     with_background = reader_cfg['with_background']
-    use_default_label = dataset_cfg.use_default_label
 
-    if metric == 'COCO':
-        from ppdet.utils.coco_eval import get_category_info
-    elif metric == 'VOC':
-        from ppdet.utils.voc_eval import get_category_info
-    else:
-        raise ValueError("metric only supports COCO, but received {}".format(
-            metric))
-    clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                use_default_label)
+    clsid2catid, catid2name = get_categories(metric, anno_file, with_background)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
