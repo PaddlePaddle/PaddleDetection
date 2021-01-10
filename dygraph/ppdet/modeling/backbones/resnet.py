@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 import math
@@ -21,6 +21,16 @@ from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from .name_adapter import NameAdapter
 from numbers import Integral
+
+__all__ = ['ResNet', 'Res5Head']
+
+ResNet_cfg = {
+    18: [2, 2, 2, 2],
+    34: [3, 4, 6, 3],
+    50: [3, 4, 6, 3],
+    101: [3, 4, 23, 3],
+    152: [3, 8, 36, 3],
+}
 
 
 class ConvNormLayer(nn.Layer):
@@ -117,11 +127,10 @@ class BasicBlock(nn.Layer):
                 self.short = nn.Sequential()
                 self.short.add_sublayer(
                     'pool',
-                    nn.Pool2D(
-                        pool_size=2,
-                        pool_type='avg',
-                        pool_stride=stride,
-                        pool_padding=0,
+                    nn.AvgPool2D(
+                        kernel_size=2,
+                        stride=2,
+                        padding=0,
                         ceil_mode=True))
                 self.short.add_sublayer(
                     'conv',
@@ -230,11 +239,10 @@ class BottleNeck(nn.Layer):
                 self.short = nn.Sequential()
                 self.short.add_sublayer(
                     'pool',
-                    nn.Pool2D(
-                        pool_size=2,
-                        pool_type='avg',
-                        pool_stride=stride,
-                        pool_padding=0,
+                    nn.AvgPool2D(
+                        kernel_size=2,
+                        stride=2,
+                        padding=0,
                         ceil_mode=True))
                 self.short.add_sublayer(
                     'conv',
@@ -331,6 +339,7 @@ class Blocks(nn.Layer):
                  groups,
                  base_width,
                  base_channels,
+                 variant='b',
                  lr=1.0,
                  norm_type='bn',
                  norm_decay=0.,
@@ -354,7 +363,7 @@ class Blocks(nn.Layer):
                         groups=groups,
                         base_width=base_width,
                         base_channels=base_channels,
-                        variant=name_adapter.variant,
+                        variant=variant,
                         lr=lr,
                         norm_type=norm_type,
                         norm_decay=norm_decay,
@@ -371,7 +380,7 @@ class Blocks(nn.Layer):
                         shortcut=False if i == 0 else True,
                         name_adapter=name_adapter,
                         name=conv_name,
-                        variant=name_adapter.variant,
+                        variant=variant,
                         lr=lr,
                         norm_type=norm_type,
                         norm_decay=norm_decay,
@@ -384,15 +393,6 @@ class Blocks(nn.Layer):
         for block in self.blocks:
             block_out = block(block_out)
         return block_out
-
-
-ResNet_cfg = {
-    18: [2, 2, 2, 2],
-    34: [3, 4, 6, 3],
-    50: [3, 4, 6, 3],
-    101: [3, 4, 23, 3],
-    152: [3, 8, 36, 3],
-}
 
 
 @register
@@ -487,6 +487,7 @@ class ResNet(nn.Layer):
                     groups=groups,
                     base_width=base_width,
                     base_channels=base_channels,
+                    variant=variant,
                     lr=lr_mult,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
