@@ -12,5 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import (core, data, engine, modeling, model_zoo, optimizer, metrics,
-               py_op, utils)
+from . import metrics
+from .metrics import *
+
+from . import category
+from .category import *
+
+__all__ = metrics.__all__ \
+        + category.__all__

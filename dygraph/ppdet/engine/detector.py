@@ -29,11 +29,11 @@ from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.eval_utils import get_infer_results, eval_results
 from ppdet.utils.visualizer import visualize_results
+from ppdet.metrics import COCOMetric, VOCMetric, get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
-from .hooks import HookBase, ComposeHook, LogPrinter, Checkpointer
+from .callbacks import CallbackBase, ComposeCallback, LogPrinter, Checkpointer
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
@@ -53,20 +53,22 @@ class Detector(object):
         self.model = create(cfg.architecture)
         if ParallelEnv().nranks > 1:
             self.model = paddle.DataParallel(self.model)
-        
+
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
         # TestDataset build after user set images, skip loader creation here
         if self.mode != 'test':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(self.dataset, cfg.worker_num)
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num)
 
         # build optimizer in train mode
         self.optimizer = None
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
-            self.optimizer = create('OptimizerBuilder')(self.lr, self.model.parameters())
-        
+            self.optimizer = create('OptimizerBuilder')(self.lr,
+                                                        self.model.parameters())
+
         self.status = {}
 
         self.start_epoch = 0
@@ -74,16 +76,53 @@ class Detector(object):
 
         self._weights_loaded = False
 
-        # initial default hooks
-        self._init_hooks()
+        # initial default callbacks
+        self._init_callbacks()
 
-    def _init_hooks(self):
+        # initial default metrics
+        self._init_metrics()
+        self._reset_metrics()
+
+    def _init_callbacks(self):
         if self.mode == 'train':
-            self._hooks = [LogPrinter(self), Checkpointer(self)]
-            self._compose_hook = ComposeHook(self._hooks)
+            self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            self._compose_callback = ComposeCallback(self._callbacks)
+        elif self.mode == 'eval':
+            self._callbacks = [LogPrinter(self)]
+            self._compose_callback = ComposeCallback(self._callbacks)
+        else:
+            self._callbacks = []
+            self._compose_callback = None
+
+    def _init_metrics(self):
         if self.mode == 'eval':
-            self._hooks = [LogPrinter(self)]
-            self._compose_hook = ComposeHook(self._hooks)
+            if self.cfg.metric == 'COCO':
+                mask_resolution = self.model.mask_post_process.mask_resolution if hasattr(
+                    self.model, 'mask_post_process') else None
+                self._metrics = [
+                    COCOMetric(
+                        anno_file=self.dataset.get_anno(),
+                        with_background=self.cfg.with_background,
+                        mask_resolution=mask_resolution)
+                ]
+            elif self.cfg.metric == 'VOC':
+                self._metrics = [
+                    VOCMetric(
+                        anno_file=self.dataset.get_anno(),
+                        with_background=self.cfg.with_background,
+                        class_num=self.cfg.num_classes,
+                        map_type=self.cfg.map_type)
+                ]
+            else:
+                logger.warn("Metric not support for metric type {}".format(
+                    self.cfg.metric))
+                self._metrics = []
+        else:
+            self._metrics = []
+
+    def _reset_metrics(self):
+        for metric in self._metrics:
+            metric.reset()
 
     def load_weights(self, weights, weight_type='pretrain'):
         assert weight_type in ['pretrain', 'resume', 'finetune'], \
@@ -93,14 +132,17 @@ class Detector(object):
             logger.debug("Resume weights of epoch {}".format(self.start_epoch))
         else:
             self.start_epoch = 0
-            load_pretrain_weight(self.model, weights, self.cfg.get('load_static_weights', False), weight_type)
-            logger.debug("Load {} weights {} to start training".format(weight_type, weights))
+            load_pretrain_weight(self.model, weights,
+                                 self.cfg.get('load_static_weights', False),
+                                 weight_type)
+            logger.debug("Load {} weights {} to start training".format(
+                weight_type, weights))
         self._weights_loaded = True
 
-    def register_hooks(self, hooks):
-        hooks = [h for h in list(hooks) if h is not None]
-        self._hooks.extend(hooks)
-        self._compose_hook = ComposeHook(self._hooks)
+    def register_callbacks(self, callbacks):
+        callbacks = [h for h in list(callbacks) if h is not None]
+        self._callbacks.extend(callbacks)
+        self._compose_callback = ComposeCallback(self._callbacks)
 
     def train(self):
         assert self.mode == 'train', "Model not in 'train' mode"
@@ -112,21 +154,24 @@ class Detector(object):
         self.status.update({
             'epoch_id': self.start_epoch,
             'step_id': 0,
-            'steps_per_epoch': len(self.loader)})
-        
-        self.status['batch_time'] = stats.SmoothedValue(self.cfg.log_iter, fmt='{avg:.4f}')
-        self.status['data_time'] = stats.SmoothedValue(self.cfg.log_iter, fmt='{avg:.4f}')
+            'steps_per_epoch': len(self.loader)
+        })
+
+        self.status['batch_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
+        self.status['data_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['epoch_id'] = epoch_id
-            self._compose_hook.on_epoch_begin(self.status)
+            self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
-                self.status['step_id'] = step_id 
-                self._compose_hook.on_step_begin(self.status)
+                self.status['step_id'] = step_id
+                self._compose_callback.on_step_begin(self.status)
 
                 # model forward
                 self.model.train()
@@ -144,86 +189,49 @@ class Detector(object):
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
-                self._compose_hook.on_step_end(self.status)
+                self._compose_callback.on_step_end(self.status)
 
-            self._compose_hook.on_epoch_end(self.status)
+            self._compose_callback.on_epoch_end(self.status)
 
     def evaluate(self):
-        extra_key = ['im_shape', 'scale_factor', 'im_id']
-        if self.cfg.metric == 'VOC':
-            extra_key += ['gt_bbox', 'gt_class', 'difficult']
-
-        # Run Eval
-        outs_res = []
         sample_num = 0
         tic = time.time()
-        self._compose_hook.on_epoch_begin(self.status)
+        self._compose_callback.on_epoch_begin(self.status)
         for step_id, data in enumerate(self.loader):
             self.status['step_id'] = step_id
-            self._compose_hook.on_step_begin(self.status)
+            self._compose_callback.on_step_begin(self.status)
             # forward
             self.model.eval()
             outs = self.model(data, mode='infer')
-            for key in extra_key:
-                outs[key] = data[key]
-            for key, value in outs.items():
-                outs[key] = value.numpy()
 
-            if 'mask' in outs and 'bbox' in outs:
-                mask_resolution = self.model.mask_post_process.mask_resolution
-                from ppdet.py_op.post_process import mask_post_process
-                outs['mask'] = mask_post_process(
-                    outs, outs['im_shape'], outs['scale_factor'], mask_resolution)
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data, outs)
 
-            outs_res.append(outs)
-            sample_num += outs['im_id'].shape[0]
-            self._compose_hook.on_step_end(self.status)
+            sample_num += data['im_id'].numpy().shape[0]
+            self._compose_callback.on_step_end(self.status)
 
         self.status['sample_num'] = sample_num
         self.status['cost_time'] = time.time() - tic
-        self._compose_hook.on_epoch_end(self.status)
+        self._compose_callback.on_epoch_end(self.status)
 
-        eval_type = [t for t in ['bbox', 'mask'] if t in outs]
-
-        # Metric
-        # TODO: compate as ppdet.metric module
-        with_background = self.cfg.with_background
-        use_default_label = self.loader.dataset.use_default_label
-        if self.cfg.metric == 'COCO':
-            from ppdet.utils.coco_eval import get_category_info
-            clsid2catid, catid2name = get_category_info(
-                self.loader.dataset.get_anno(), with_background, use_default_label)
-
-            infer_res = get_infer_results(outs_res, eval_type, clsid2catid)
-
-        elif self.cfg.metric == 'VOC':
-            from ppdet.utils.voc_eval import get_category_info
-            clsid2catid, catid2name = get_category_info(
-                self.loader.dataset.get_label_list(), with_background, use_default_label)
-            infer_res = outs_res
-
-        eval_results(infer_res, self.cfg.metric, self.loader.dataset)
+        # accumulate metric to log out
+        for metric in self._metrics:
+            metric.accumulate()
+            metric.log()
+        # reset metric states for metric may performed multiple times
+        self._reset_metrics()
 
     def predict(self, images, draw_threshold=0.5, output_dir='output'):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
-        extra_key = ['im_shape', 'scale_factor', 'im_id']
-
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
         with_background = self.cfg.with_background
-        use_default_label = self.dataset.use_default_label
-
-        if self.cfg.metric == 'COCO':
-            from ppdet.utils.coco_eval import get_category_info
-        elif self.cfg.metric == 'VOC':
-            from ppdet.utils.voc_eval import get_category_info
-        else:
-            raise ValueError("unrecongnized metric type: {}".format(self.cfg.metric))
-        clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                    use_default_label)
+        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file,
+                                                 with_background)
 
         # Run Infer 
         for step_id, data in enumerate(loader):
@@ -231,20 +239,20 @@ class Detector(object):
             # forward
             self.model.eval()
             outs = self.model(data, mode='infer')
-            for key in extra_key:
-                outs[key] = data[key]
             for key, value in outs.items():
                 outs[key] = value.numpy()
+            for key in ['im_shape', 'scale_factor', 'im_id']:
+                outs[key] = data[key]
 
+            # FIXME: for more elegent coding
             if 'mask' in outs and 'bbox' in outs:
-                # FIXME: for more elegent coding
-                mask_resolution = model.mask_post_process.mask_resolution
+                mask_resolution = self.model.mask_post_process.mask_resolution
                 from ppdet.py_op.post_process import mask_post_process
-                outs['mask'] = mask_post_process(
-                    outs, outs['im_shape'], outs['scale_factor'], mask_resolution)
+                outs['mask'] = mask_post_process(outs, outs['im_shape'],
+                                                 outs['scale_factor'],
+                                                 mask_resolution)
 
-            eval_type = [t for t in ['bbox', 'mask'] if t in outs]
-            batch_res = get_infer_results([outs], eval_type, clsid2catid)
+            batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
             start = 0
             for i, im_id in enumerate(outs['im_id']):
@@ -262,7 +270,8 @@ class Detector(object):
 
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
-                logger.info("Detection bbox results save in {}".format(save_name))
+                logger.info("Detection bbox results save in {}".format(
+                    save_name))
                 image.save(save_name, quality=95)
                 start = end
 
@@ -288,8 +297,8 @@ class Detector(object):
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
-                           os.path.join(output_dir, 'infer_cfg.yml'), image_shape,
-                           self.model)
+                           os.path.join(output_dir, 'infer_cfg.yml'),
+                           image_shape, self.model)
 
         input_spec = [{
             "image": InputSpec(
@@ -303,4 +312,3 @@ class Detector(object):
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
         paddle.jit.save(static_model, os.path.join(output_dir, 'model'))
-

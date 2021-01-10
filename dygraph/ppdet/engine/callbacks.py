@@ -27,10 +27,10 @@ from ppdet.utils.checkpoint import save_model
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['HookBase', 'ComposeHook', 'LogPrinter', 'Checkpointer']
+__all__ = ['CallbackBase', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
 
 
-class HookBase(object):
+class CallbackBase(object):
     def __init__(self, model):
         self.model = model
 
@@ -47,11 +47,12 @@ class HookBase(object):
         pass
 
 
-class ComposeHook(object):
+class ComposeCallback(object):
     def __init__(self, hooks):
         hooks = [h for h in list(hooks) if h is not None]
         for h in hooks:
-            assert isinstance(h, HookBase), "hook shoule be subclass of HookBase"
+            assert isinstance(
+                h, CallbackBase), "hook shoule be subclass of CallbackBase"
         self._hooks = hooks
 
     def on_step_begin(self, status):
@@ -71,10 +72,10 @@ class ComposeHook(object):
             h.on_epoch_end(status)
 
 
-class LogPrinter(HookBase):
+class LogPrinter(CallbackBase):
     def __init__(self, model):
         super(LogPrinter, self).__init__(model)
-    
+
     def on_step_end(self, status):
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
             if self.model.mode == 'train':
@@ -86,7 +87,8 @@ class LogPrinter(HookBase):
                 data_time = status['data_time']
 
                 epoches = self.model.cfg.epoch
-                batch_size = self.model.cfg['{}Reader'.format(self.model.mode.capitalize())]['batch_size']
+                batch_size = self.model.cfg['{}Reader'.format(
+                    self.model.mode.capitalize())]['batch_size']
 
                 logs = training_staus.log()
                 space_fmt = ':' + str(len(str(steps_per_epoch))) + 'd'
@@ -128,10 +130,10 @@ class LogPrinter(HookBase):
                     sample_num, sample_num / cost_time))
 
 
-class Checkpointer(HookBase):
+class Checkpointer(CallbackBase):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
-    
+
     def on_epoch_end(self, status):
         assert self.model.mode == 'train', \
             "Checkpointer can only be set during training"
@@ -139,6 +141,9 @@ class Checkpointer(HookBase):
             epoch_id = status['epoch_id']
             end_epoch = self.model.cfg.epoch
             if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
-                save_dir = os.path.join(self.model.cfg.save_dir, self.model.cfg.filename)
-                save_name = str(epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                save_model(self.model.model, self.model.optimizer, save_dir, save_name, epoch_id + 1)
+                save_dir = os.path.join(self.model.cfg.save_dir,
+                                        self.model.cfg.filename)
+                save_name = str(
+                    epoch_id) if epoch_id != end_epoch - 1 else "model_final"
+                save_model(self.model.model, self.model.optimizer, save_dir,
+                           save_name, epoch_id + 1)

@@ -15,12 +15,12 @@
 from . import detector
 from .detector import *
 
-from . import hooks
-from .hooks import *
+from . import callbacks
+from .callbacks import *
 
 from . import env
 from .env import *
 
 __all__ = detector.__all__ \
-        + hooks.__all__ \
+        + callbacks.__all__ \
         + env.__all__
