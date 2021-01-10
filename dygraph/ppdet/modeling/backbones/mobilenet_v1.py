@@ -25,6 +25,8 @@ from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
 
+__all__ = ['MobileNet']
+
 
 class ConvBNLayer(nn.Layer):
     def __init__(self,
@@ -175,7 +177,7 @@ class MobileNet(nn.Layer):
     __shared__ = ['norm_type']
 
     def __init__(self,
-                 norm_type='sync_bn',
+                 norm_type='bn',
                  norm_decay=0.,
                  conv_decay=0.,
                  scale=1,
@@ -346,59 +348,20 @@ class MobileNet(nn.Layer):
 
         if self.with_extra_blocks:
             self.extra_blocks = []
-            num_filters = self.extra_block_filters
-
-            conv7_1 = self.add_sublayer(
-                "conv7_1",
-                sublayer=ExtraBlock(
-                    1024,
-                    num_filters[0][0],
-                    num_filters[0][1],
-                    conv_lr=conv_learning_rate,
-                    conv_decay=conv_decay,
-                    norm_decay=norm_decay,
-                    norm_type=norm_type,
-                    name="conv7_1"))
-            self.extra_blocks.append(conv7_1)
-
-            conv7_2 = self.add_sublayer(
-                "conv7_2",
-                sublayer=ExtraBlock(
-                    num_filters[0][1],
-                    num_filters[1][0],
-                    num_filters[1][1],
-                    conv_lr=conv_learning_rate,
-                    conv_decay=conv_decay,
-                    norm_decay=norm_decay,
-                    norm_type=norm_type,
-                    name="conv7_2"))
-            self.extra_blocks.append(conv7_2)
-
-            conv7_3 = self.add_sublayer(
-                "conv7_3",
-                sublayer=ExtraBlock(
-                    num_filters[1][1],
-                    num_filters[2][0],
-                    num_filters[2][1],
-                    conv_lr=conv_learning_rate,
-                    conv_decay=conv_decay,
-                    norm_decay=norm_decay,
-                    norm_type=norm_type,
-                    name="conv7_3"))
-            self.extra_blocks.append(conv7_3)
-
-            conv7_4 = self.add_sublayer(
-                "conv7_4",
-                sublayer=ExtraBlock(
-                    num_filters[2][1],
-                    num_filters[3][0],
-                    num_filters[3][1],
-                    conv_lr=conv_learning_rate,
-                    conv_decay=conv_decay,
-                    norm_decay=norm_decay,
-                    norm_type=norm_type,
-                    name="conv7_4"))
-            self.extra_blocks.append(conv7_4)
+            for i, block_filter in enumerate(self.extra_block_filters):
+                in_c = 1024 if i == 0 else self.extra_block_filters[i-1][1]
+                conv_extra = self.add_sublayer(
+                    "conv7_"+ str(i + 1),
+                    sublayer=ExtraBlock(
+                        in_c,
+                        block_filter[0],
+                        block_filter[1],
+                        conv_lr=conv_learning_rate,
+                        conv_decay=conv_decay,
+                        norm_decay=norm_decay,
+                        norm_type=norm_type,
+                        name="conv7_" + str(i + 1)))
+                self.extra_blocks.append(conv_extra)
 
     def forward(self, inputs):
         outs = []
