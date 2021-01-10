@@ -184,6 +184,7 @@ class Detector(object):
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 self.optimizer.clear_grad()
+                self.status['learning_rate'] = curr_lr
 
                 if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
                     self.status['training_staus'].update(outputs)

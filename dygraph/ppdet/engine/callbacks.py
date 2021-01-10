@@ -100,6 +100,7 @@ class LogPrinter(CallbackBase):
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
+                        'learning_rate: {lr:.6f}',
                         '{meters}',
                         'eta: {eta}',
                         'batch_cost: {btime}',
@@ -110,6 +111,7 @@ class LogPrinter(CallbackBase):
                         epoch_id,
                         step_id,
                         steps_per_epoch,
+                        lr=status['learning_rate'],
                         meters=logs,
                         eta=eta_str,
                         btime=str(batch_time),
