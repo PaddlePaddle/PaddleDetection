@@ -23,7 +23,6 @@ from collections import OrderedDict
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
     'YOLO': 3,
@@ -117,4 +116,3 @@ def _dump_infer_config(config, path, image_shape, model):
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))
     return image_shape
-

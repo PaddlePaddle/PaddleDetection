@@ -115,9 +115,10 @@ def run(FLAGS, cfg):
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
     # inference
-    detector.predict(images,
-                     draw_threshold=FLAGS.draw_threshold,
-                     output_dir=FLAGS.output_dir)
+    detector.predict(
+        images,
+        draw_threshold=FLAGS.draw_threshold,
+        output_dir=FLAGS.output_dir)
 
 
 def main():
