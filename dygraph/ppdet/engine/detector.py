@@ -30,10 +30,10 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-from ppdet.metrics import COCOMetric, VOCMetric, get_categories, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
-from .callbacks import CallbackBase, ComposeCallback, LogPrinter, Checkpointer
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
@@ -124,6 +124,21 @@ class Detector(object):
         for metric in self._metrics:
             metric.reset()
 
+    def register_callbacks(self, callbacks):
+        callbacks = [h for h in list(callbacks) if h is not None]
+        for c in callbacks:
+            assert isinstance(c, Callback), \
+                    "metrics shoule be instances of subclass of Metric"
+        self._callbacks.extend(callbacks)
+        self._compose_callback = ComposeCallback(self._callbacks)
+
+    def register_metrics(self, metrics):
+        metrics = [m for m in list(metrics) if m is not None]
+        for m in metrics:
+            assert isinstance(m, Metric), \
+                    "metrics shoule be instances of subclass of Metric"
+        self._metrics.extend(metrics)
+
     def load_weights(self, weights, weight_type='pretrain'):
         assert weight_type in ['pretrain', 'resume', 'finetune'], \
                 "weight_type can only be 'pretrain', 'resume', 'finetune'"
@@ -138,11 +153,6 @@ class Detector(object):
             logger.debug("Load {} weights {} to start training".format(
                 weight_type, weights))
         self._weights_loaded = True
-
-    def register_callbacks(self, callbacks):
-        callbacks = [h for h in list(callbacks) if h is not None]
-        self._callbacks.extend(callbacks)
-        self._compose_callback = ComposeCallback(self._callbacks)
 
     def train(self):
         assert self.mode == 'train', "Model not in 'train' mode"
@@ -175,7 +185,7 @@ class Detector(object):
 
                 # model forward
                 self.model.train()
-                outputs = self.model(data, mode='train')
+                outputs = self.model(data)
                 loss = outputs['loss']
 
                 # model backward
@@ -203,7 +213,7 @@ class Detector(object):
             self._compose_callback.on_step_begin(self.status)
             # forward
             self.model.eval()
-            outs = self.model(data, mode='infer')
+            outs = self.model(data)
 
             # update metrics
             for metric in self._metrics:
@@ -239,7 +249,7 @@ class Detector(object):
             self.status['step_id'] = step_id
             # forward
             self.model.eval()
-            outs = self.model(data, mode='infer')
+            outs = self.model(data)
             for key, value in outs.items():
                 outs[key] = value.numpy()
             for key in ['im_shape', 'scale_factor', 'im_id']:

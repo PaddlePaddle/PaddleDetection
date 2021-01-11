@@ -27,10 +27,10 @@ from ppdet.utils.checkpoint import save_model
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['CallbackBase', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
+__all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
 
 
-class CallbackBase(object):
+class Callback(object):
     def __init__(self, model):
         self.model = model
 
@@ -48,31 +48,31 @@ class CallbackBase(object):
 
 
 class ComposeCallback(object):
-    def __init__(self, hooks):
-        hooks = [h for h in list(hooks) if h is not None]
-        for h in hooks:
-            assert isinstance(
-                h, CallbackBase), "hook shoule be subclass of CallbackBase"
-        self._hooks = hooks
+    def __init__(self, callbacks):
+        callbacks = [h for h in list(callbacks) if h is not None]
+        for h in callbacks:
+            assert isinstance(h,
+                              Callback), "hook shoule be subclass of Callback"
+        self._callbacks = callbacks
 
     def on_step_begin(self, status):
-        for h in self._hooks:
+        for h in self._callbacks:
             h.on_step_begin(status)
 
     def on_step_end(self, status):
-        for h in self._hooks:
+        for h in self._callbacks:
             h.on_step_end(status)
 
     def on_epoch_begin(self, status):
-        for h in self._hooks:
+        for h in self._callbacks:
             h.on_epoch_begin(status)
 
     def on_epoch_end(self, status):
-        for h in self._hooks:
+        for h in self._callbacks:
             h.on_epoch_end(status)
 
 
-class LogPrinter(CallbackBase):
+class LogPrinter(Callback):
     def __init__(self, model):
         super(LogPrinter, self).__init__(model)
 
@@ -132,7 +132,7 @@ class LogPrinter(CallbackBase):
                     sample_num, sample_num / cost_time))
 
 
-class Checkpointer(CallbackBase):
+class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
 
