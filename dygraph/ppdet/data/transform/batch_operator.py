@@ -229,6 +229,9 @@ class Gt2YoloTargetOp(BaseOperator):
             im = sample['image']
             gt_bbox = sample['gt_bbox']
             gt_class = sample['gt_class']
+            if 'gt_score' not in sample:
+                sample['gt_score'] = np.ones(
+                    (gt_bbox.shape[0], 1), dtype=np.float32)
             gt_score = sample['gt_score']
             for i, (
                     mask, downsample_ratio

@@ -806,12 +806,12 @@ def prior_box(input,
         cur_max_sizes = max_sizes
 
     if in_dygraph_mode():
-        assert cur_max_sizes is not None
-        attrs = ('min_sizes', min_sizes, 'max_sizes', cur_max_sizes,
-                 'aspect_ratios', aspect_ratios, 'variances', variance, 'flip',
-                 flip, 'clip', clip, 'step_w', steps[0], 'step_h', steps[1],
-                 'offset', offset, 'min_max_aspect_ratios_order',
-                 min_max_aspect_ratios_order)
+        attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
+                 'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
+                 steps[0], 'step_h', steps[1], 'offset', offset,
+                 'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
+        if cur_max_sizes is not None:
+            attrs += ('max_sizes', cur_max_sizes)
         box, var = core.ops.prior_box(input, image, *attrs)
         return box, var
     else:

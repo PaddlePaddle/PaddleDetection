@@ -1,0 +1,7 @@
+_BASE_: [
+  './_base_/models/ssdlite_mobilenet_v3_small_320.yml',
+  './_base_/optimizers/ssdlite_1000e.yml',
+  './_base_/datasets/coco_detection.yml',
+  './_base_/readers/ssdlite320_reader.yml',
+  './_base_/runtime.yml',
+]
