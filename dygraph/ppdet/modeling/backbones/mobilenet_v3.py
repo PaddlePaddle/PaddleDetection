@@ -379,7 +379,7 @@ class MobileNetV3(nn.Layer):
             lr_mult = lr_mult_list[lr_idx]
 
             # for SSD/SSDLite, first head input is after ResidualUnit expand_conv
-            return_list = i + 2 in self.feature_maps
+            return_list = self.with_extra_blocks and i + 2 in self.feature_maps
 
             block = self.add_sublayer(
                 "conv" + str(i + 2),
