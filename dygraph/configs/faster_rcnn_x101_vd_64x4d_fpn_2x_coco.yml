@@ -1,0 +1,23 @@
+_BASE_: [
+  './_base_/models/faster_rcnn_r50_fpn.yml',
+  './_base_/optimizers/rcnn_2x.yml',
+  './_base_/datasets/coco_detection.yml',
+  './_base_/readers/faster_fpn_reader.yml',
+  './_base_/runtime.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNeXt101_vd_64x4d_pretrained.tar
+weights: output/faster_rcnn_x101_vd_64x4d_fpn_2x_coco/model_final.pdparams
+
+ResNet:
+  # for ResNeXt: groups, base_width, base_channels
+  depth: 101
+  groups: 64
+  base_width: 4
+  base_channels: 64
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
