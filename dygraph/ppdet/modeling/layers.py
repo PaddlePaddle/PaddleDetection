@@ -17,6 +17,7 @@ import numpy as np
 from numbers import Integral
 
 import paddle
+from paddle import ParamAttr
 from paddle import to_tensor
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
