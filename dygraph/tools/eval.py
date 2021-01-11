@@ -32,7 +32,7 @@ from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.engine import Detector
+from ppdet.engine import Trainer
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('eval')
@@ -57,14 +57,14 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    # build detector
-    detector = Detector(cfg, mode='eval')
+    # build trainer 
+    trainer = Trainer(cfg, mode='eval')
 
     # load weights
-    detector.load_weights(cfg.weights, 'resume')
+    trainer.load_weights(cfg.weights, 'resume')
 
     # training
-    detector.evaluate()
+    trainer.evaluate()
 
 
 def main():

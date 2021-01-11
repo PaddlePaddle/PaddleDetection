@@ -39,10 +39,10 @@ from .export_utils import _dump_infer_config
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['Detector']
+__all__ = ['Trainer']
 
 
-class Detector(object):
+class Trainer(object):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
         assert mode.lower() in ['train', 'eval', 'test'], \

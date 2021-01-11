@@ -32,19 +32,18 @@ logger = setup_logger(__name__)
 __all__ = ['Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results']
 
 
-class Metric(object):
-    def reset(self):
-        pass
+class Metric(paddle.metric.Metric):
+    def name(self):
+        return self.__class__.__name__
 
-    def update(self, inputs, outputs):
-        pass
+    # paddle.metric.Metric defined :metch:`update`, :meth:`accumulate`
+    # :metch:`reset`, in ppdet, we also need following 2 methods:
 
-    def accumulate(self):
-        pass
-
+    # abstract method for logging metric results
     def log(self):
         pass
 
+    # abstract method for getting metric results
     def get_results(self):
         pass
 

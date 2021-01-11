@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-from . import detector
-from .detector import *
+from . import trainer
+from .trainer import *
 
 from . import callbacks
 from .callbacks import *
@@ -21,6 +21,6 @@ from .callbacks import *
 from . import env
 from .env import *
 
-__all__ = detector.__all__ \
+__all__ = trainer.__all__ \
         + callbacks.__all__ \
         + env.__all__

@@ -29,7 +29,7 @@ import glob
 import paddle
 from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Detector
+from ppdet.engine import Trainer
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 
@@ -105,17 +105,17 @@ def get_test_images(infer_dir, infer_img):
 
 
 def run(FLAGS, cfg):
-    # build detector
-    detector = Detector(cfg, mode='test')
+    # build trainer
+    trainer = Trainer(cfg, mode='test')
 
     # load weights
-    detector.load_weights(cfg.weights, 'resume')
+    trainer.load_weights(cfg.weights, 'resume')
 
     # get inference images
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
 
     # inference
-    detector.predict(
+    trainer.predict(
         images,
         draw_threshold=FLAGS.draw_threshold,
         output_dir=FLAGS.output_dir)

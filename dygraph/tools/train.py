@@ -33,7 +33,7 @@ from paddle.distributed import ParallelEnv
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.engine import Detector, init_parallel_env, set_random_seed
+from ppdet.engine import Trainer, init_parallel_env, set_random_seed
 
 import ppdet.utils.cli as cli
 import ppdet.utils.check as check
@@ -88,14 +88,14 @@ def run(FLAGS, cfg):
     if FLAGS.enable_ce:
         set_random_seed(0)
 
-    # build detector
-    detector = Detector(cfg, mode='train')
+    # build trainer
+    trainer = Trainer(cfg, mode='train')
 
     # load weights
-    detector.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
+    trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
 
     # training
-    detector.train()
+    trainer.train()
 
 
 def main():
