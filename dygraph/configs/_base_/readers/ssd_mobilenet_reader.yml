@@ -41,4 +41,3 @@ TestReader:
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
     - Permute: {to_bgr: true}
   batch_size: 1
-

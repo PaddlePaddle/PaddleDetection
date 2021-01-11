@@ -138,7 +138,7 @@ class AnchorGeneratorSSD(object):
         self.clip = clip
         self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
 
-        if self.min_sizes ==[] and self.max_sizes ==[]:
+        if self.min_sizes == [] and self.max_sizes == []:
             num_layer = len(aspect_ratios)
             step = int(
                 math.floor(((self.max_ratio - self.min_ratio)) / (num_layer - 2
@@ -151,8 +151,8 @@ class AnchorGeneratorSSD(object):
             self.max_sizes = [self.base_size * .20] + self.max_sizes
 
         self.num_priors = []
-        for aspect_ratio, min_size, max_size in zip(aspect_ratios, self.min_sizes,
-                                                    self.max_sizes):
+        for aspect_ratio, min_size, max_size in zip(
+                aspect_ratios, self.min_sizes, self.max_sizes):
             self.num_priors.append((len(aspect_ratio) * 2 + 1) * len(
                 _to_list(min_size)) + len(_to_list(max_size)))
 

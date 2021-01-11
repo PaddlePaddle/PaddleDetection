@@ -15,7 +15,7 @@ MobileNet:
   feature_maps: [11, 13, 14, 15, 16, 17]
 
 SSDHead:
-  in_channels: [512, 1024, 512, 256, 256, 128] 
+  in_channels: [512, 1024, 512, 256, 256, 128]
   anchor_generator: AnchorGeneratorSSD
   use_sepconv: True
   conv_decay: 0.00004

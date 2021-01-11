@@ -96,8 +96,9 @@ def list_modules(**kwargs):
         print("")
         max_len = max([len(mod.name) for mod in modules])
         for mod in modules:
-            print(color_tty.green(mod.name.ljust(max_len)),
-                  mod.doc.split('\n')[0])
+            print(
+                color_tty.green(mod.name.ljust(max_len)),
+                mod.doc.split('\n')[0])
         print("")
 
 

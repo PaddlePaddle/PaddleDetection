@@ -1585,7 +1585,8 @@ class MixupOp(BaseOperator):
         if 'difficult' in sample[0]:
             is_difficult1 = sample[0]['difficult']
             is_difficult2 = sample[1]['difficult']
-            is_difficult = np.concatenate((is_difficult1, is_difficult2), axis=0)
+            is_difficult = np.concatenate(
+                (is_difficult1, is_difficult2), axis=0)
             result['difficult'] = is_difficult
 
         return result

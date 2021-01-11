@@ -45,4 +45,3 @@ BBoxPostProcess:
     nms_top_k: 1000
     normalized: false
     background_label: -1
-

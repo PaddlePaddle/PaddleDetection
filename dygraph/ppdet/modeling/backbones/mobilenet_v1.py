@@ -52,8 +52,10 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=num_groups,
             weight_attr=ParamAttr(
-                learning_rate=conv_lr, initializer=KaimingNormal(),
-                regularizer=L2Decay(conv_decay), name=name + "_weights"),
+                learning_rate=conv_lr,
+                initializer=KaimingNormal(),
+                regularizer=L2Decay(conv_decay),
+                name=name + "_weights"),
             bias_attr=False)
 
         if norm_type == 'sync_bn':
@@ -184,7 +186,8 @@ class MobileNet(nn.Layer):
                  conv_learning_rate=1.0,
                  feature_maps=[4, 6, 13],
                  with_extra_blocks=False,
-                 extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]]):
+                 extra_block_filters=[[256, 512], [128, 256], [128, 256],
+                                      [64, 128]]):
         super(MobileNet, self).__init__()
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
@@ -349,9 +352,9 @@ class MobileNet(nn.Layer):
         if self.with_extra_blocks:
             self.extra_blocks = []
             for i, block_filter in enumerate(self.extra_block_filters):
-                in_c = 1024 if i == 0 else self.extra_block_filters[i-1][1]
+                in_c = 1024 if i == 0 else self.extra_block_filters[i - 1][1]
                 conv_extra = self.add_sublayer(
-                    "conv7_"+ str(i + 1),
+                    "conv7_" + str(i + 1),
                     sublayer=ExtraBlock(
                         in_c,
                         block_filter[0],
@@ -381,4 +384,3 @@ class MobileNet(nn.Layer):
             if idx + 1 in self.feature_maps:
                 outs.append(y)
         return outs
-

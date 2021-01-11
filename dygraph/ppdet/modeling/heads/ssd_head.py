@@ -5,8 +5,15 @@ from ppdet.core.workspace import register
 from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 
+
 class SepConvLayer(nn.Layer):
-    def __init__(self, in_channels, out_channels, kernel_size=3, padding=1, conv_decay=0, name=None):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=3,
+                 padding=1,
+                 conv_decay=0,
+                 name=None):
         super(SepConvLayer, self).__init__()
         self.dw_conv = nn.Conv2D(
             in_channels=in_channels,
