@@ -119,6 +119,7 @@ class ImageFolder(DetDataset):
                                           sample_num, use_default_label)
         self._imid2path = {}
         self.roidbs = None
+        self.sample_num = sample_num
 
     def parse_dataset(self, with_background=True):
         if not self.roidbs:
@@ -144,7 +145,7 @@ class ImageFolder(DetDataset):
         for image in images:
             assert image != '' and os.path.isfile(image), \
                     "Image {} not found".format(image)
-            if self.sample_num and self.sample_num > 0 and ct >= self.sample_num:
+            if self.sample_num > 0 and ct >= self.sample_num:
                 break
             rec = {'im_id': np.array([ct]), 'im_file': image}
             self._imid2path[ct] = image
