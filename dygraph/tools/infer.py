@@ -153,7 +153,7 @@ def run(FLAGS, cfg, place):
     for iter_id, data in enumerate(test_loader):
         # forward
         model.eval()
-        outs = model(data, mode='infer')
+        outs = model(data)
         for key in extra_key:
             outs[key] = data[key]
         for key, value in outs.items():

@@ -85,13 +85,14 @@ class MaskRCNN(BaseArch):
 
         # Proposal RoI 
         # compute targets here when training
-        rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out)
+        rois = self.proposal(self.inputs, self.rpn_head_out, self.anchor_out,
+                             self.training)
         # BBox Head
         bbox_feat, self.bbox_head_out, bbox_head_feat_func = self.bbox_head(
             body_feats, rois, spatial_scale)
 
         rois_has_mask_int32 = None
-        if self.inputs['mode'] == 'infer':
+        if not self.training:
             bbox_pred, bboxes = self.bbox_head.get_prediction(
                 self.bbox_head_out, rois)
             # Refine bbox by the output from bbox_head at test stage

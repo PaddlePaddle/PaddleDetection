@@ -164,7 +164,7 @@ def run(FLAGS, cfg, place):
             data_time.update(time.time() - end_time)
             # Model Forward
             model.train()
-            outputs = model(data, mode='train')
+            outputs = model(data)
             loss = outputs['loss']
             # Model Backward
             loss.backward()
