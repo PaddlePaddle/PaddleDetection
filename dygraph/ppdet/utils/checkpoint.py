@@ -35,10 +35,12 @@ def is_url(path):
     Args:
         path (string): URL string or not.
     """
-    return path.startswith('http://') or path.startswith('https://')
+    return path.startswith('http://') \
+            or path.startswith('https://') \
+            or path.startswith('ppdet://')
 
 
-def get_weight_path(path):
+def get_weights_path_dist(path):
     env = os.environ
     if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
@@ -79,7 +81,7 @@ def _strip_postfix(path):
 
 def load_weight(model, weight, optimizer=None):
     if is_url(weight):
-        weight = get_weight_path(weight)
+        weight = get_weights_path_dist(weight)
 
     path = _strip_postfix(weight)
     pdparam_path = path + '.pdparams'
@@ -110,7 +112,7 @@ def load_pretrain_weight(model,
                          weight_type='pretrain'):
     assert weight_type in ['pretrain', 'finetune']
     if is_url(pretrain_weight):
-        pretrain_weight = get_weight_path(pretrain_weight)
+        pretrain_weight = get_weights_path_dist(pretrain_weight)
 
     path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
