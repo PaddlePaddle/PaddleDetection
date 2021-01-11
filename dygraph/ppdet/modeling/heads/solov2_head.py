@@ -455,8 +455,8 @@ class SOLOv2Head(nn.Layer):
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,
                        im_shape, scale_factor):
-        h = int(paddle.cast(im_shape[0], 'int32').numpy()[0])
-        w = int(paddle.cast(im_shape[1], 'int32').numpy()[0])
+        h = paddle.cast(im_shape[0], 'int32')[0]
+        w = paddle.cast(im_shape[1], 'int32')[0]
         upsampled_size_out = [featmap_size[0] * 4, featmap_size[1] * 4]
 
         y = paddle.zeros(shape=paddle.shape(cate_preds), dtype='float32')
@@ -535,7 +535,9 @@ class SOLOv2Head(nn.Layer):
             size=upsampled_size_out,
             mode='bilinear',
             align_corners=False,
-            align_mode=0)[:, :, :h, :w]
+            align_mode=0)
+        seg_preds = paddle.slice(
+            seg_preds, axes=[2, 3], starts=[0, 0], ends=[h, w])
         seg_masks = paddle.squeeze(
             F.interpolate(
                 seg_preds,
