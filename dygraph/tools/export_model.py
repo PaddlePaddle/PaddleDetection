@@ -24,23 +24,16 @@ if parent_path not in sys.path:
 # ignore numba warning
 import warnings
 warnings.filterwarnings('ignore')
-import glob
-import numpy as np
-from PIL import Image
 
 import paddle
-import paddle.nn as nn
-from paddle.static import InputSpec
 
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.checkpoint import load_weight
-from export_utils import dump_infer_config
-from paddle.jit import to_static
+from ppdet.engine import Detector
 
 from ppdet.utils.logger import setup_logger
-logger = setup_logger('eval')
+logger = setup_logger('export_model')
 
 
 def parse_args():
@@ -54,48 +47,15 @@ def parse_args():
     return args
 
 
-def dygraph_to_static(model, save_dir, cfg):
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    image_shape = None
-    if 'inputs_def' in cfg['TestReader']:
-        inputs_def = cfg['TestReader']['inputs_def']
-        image_shape = inputs_def.get('image_shape', None)
-    if image_shape is None:
-        image_shape = [3, None, None]
-    # Save infer cfg
-    dump_infer_config(cfg,
-                      os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
-                      model)
-
-    input_spec = [{
-        "image": InputSpec(
-            shape=[None] + image_shape, name='image'),
-        "im_shape": InputSpec(
-            shape=[None, 2], name='im_shape'),
-        "scale_factor": InputSpec(
-            shape=[None, 2], name='scale_factor')
-    }]
-
-    export_model = to_static(model, input_spec=input_spec)
-    # save Model
-    paddle.jit.save(export_model, os.path.join(save_dir, 'model'))
-
-
 def run(FLAGS, cfg):
+    # build detector
+    detector = Detector(cfg, mode='test')
 
-    # Model
-    main_arch = cfg.architecture
-    model = create(cfg.architecture)
-    cfg_name = os.path.basename(FLAGS.config).split('.')[0]
-    save_dir = os.path.join(FLAGS.output_dir, cfg_name)
+    # load weights
+    detector.load_weights(cfg.weights, 'resume')
 
-    # Init Model
-    load_weight(model, cfg.weights)
-
-    # export config and model
-    dygraph_to_static(model, save_dir, cfg)
-    logger.info('Export model to {}'.format(save_dir))
+    # export model
+    detector.export(FLAGS.output_dir)
 
 
 def main():

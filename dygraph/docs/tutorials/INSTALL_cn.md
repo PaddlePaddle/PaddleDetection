@@ -41,16 +41,6 @@
 
 ## PaddleDetection
 
-**安装Python依赖库：**
-
-Python依赖库在[requirements.txt](../../../requirements.txt)中给出，可通过如下命令安装：
-
-```
-pip install -r requirements.txt
-```
-**注意：`llvmlite`需要安装`0.33`版本，`numba`需要安装`0.50`版本**
-
-
 **克隆PaddleDetection库：**
 
 您可以通过以下命令克隆PaddleDetection：
@@ -64,4 +54,11 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 ```
 cd <path/to/clone/PaddleDetection>
 git clone https://gitee.com/paddlepaddle/PaddleDetection
+```
+
+**安装PaddleDetection库:**
+
+```
+cd PaddleDetection
+python setup.py install
 ```

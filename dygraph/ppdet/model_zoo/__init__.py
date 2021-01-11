@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-from . import source
-from . import transform
-from . import reader
+from . import model_zoo
+from .model_zoo import *
 
-from .source import *
-from .transform import *
-from .reader import *
+__all__ = model_zoo.__all__

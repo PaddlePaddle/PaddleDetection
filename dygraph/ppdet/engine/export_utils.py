@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -18,13 +18,12 @@ from __future__ import print_function
 
 import os
 import yaml
-import numpy as np
 from collections import OrderedDict
 
-from ppdet.utils.logger import setup_logger
-logger = setup_logger('export_utils')
+from ppdet.metrics import get_categories
 
-__all__ = ['dump_infer_config']
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
@@ -40,22 +39,13 @@ TRT_MIN_SUBGRAPH = {
 }
 
 
-def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
+def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     preprocess_list = []
 
     anno_file = dataset_cfg.get_anno()
     with_background = reader_cfg['with_background']
-    use_default_label = dataset_cfg.use_default_label
 
-    if metric == 'COCO':
-        from ppdet.utils.coco_eval import get_category_info
-    elif metric == 'VOC':
-        from ppdet.utils.voc_eval import get_category_info
-    else:
-        raise ValueError("metric only supports COCO, but received {}".format(
-            metric))
-    clsid2catid, catid2name = get_category_info(anno_file, with_background,
-                                                use_default_label)
+    clsid2catid, catid2name = get_categories(metric, anno_file, with_background)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
@@ -86,7 +76,7 @@ def parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     return with_background, preprocess_list, label_list, image_shape
 
 
-def dump_infer_config(config, path, image_shape, model):
+def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
@@ -112,7 +102,7 @@ def dump_infer_config(config, path, image_shape, model):
     if getattr(model.__dict__, 'mask_post_process', None):
         infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
-        'label_list'], image_shape = parse_reader(
+        'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],
             infer_cfg['arch'], image_shape)
 

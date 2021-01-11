@@ -126,6 +126,7 @@ def load_config(file_path):
 
     # load config from file and merge into global config
     cfg = _load_config_with_base(file_path)
+    cfg['filename'] = os.path.splitext(os.path.split(file_path)[-1])[0]
     merge_config(cfg)
 
     # parse config from merged config

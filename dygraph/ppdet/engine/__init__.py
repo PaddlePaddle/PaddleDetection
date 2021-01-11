@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-from . import source
-from . import transform
-from . import reader
+from . import trainer
+from .trainer import *
 
-from .source import *
-from .transform import *
-from .reader import *
+from . import callbacks
+from .callbacks import *
+
+from . import env
+from .env import *
+
+__all__ = trainer.__all__ \
+        + callbacks.__all__ \
+        + env.__all__

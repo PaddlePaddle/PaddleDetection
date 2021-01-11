@@ -526,8 +526,10 @@ class SSDBox(object):
             out_h = paddle.exp(box[:, :, 3] * 0.2) * pb_h
 
             if self.is_normalized:
-                h = im_shape[:, 0] / scale_factor[:, 0]
-                w = im_shape[:, 1] / scale_factor[:, 1]
+                h = paddle.unsqueeze(
+                    im_shape[:, 0] / scale_factor[:, 0], axis=-1)
+                w = paddle.unsqueeze(
+                    im_shape[:, 1] / scale_factor[:, 1], axis=-1)
                 output = paddle.stack(
                     [(out_x - out_w / 2.) * w, (out_y - out_h / 2.) * h,
                      (out_x + out_w / 2.) * w, (out_y + out_h / 2.) * h],
