@@ -99,7 +99,8 @@ def _dump_infer_config(config, path, image_shape, model):
             'Architecture: {} is not supported for exporting model now'.format(
                 infer_arch))
         os._exit(0)
-    if getattr(model.__dict__, 'mask_post_process', None):
+    if 'mask_post_process' in model.__dict__ and model.__dict__[
+            'mask_post_process']:
         infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
     infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = _parse_reader(
