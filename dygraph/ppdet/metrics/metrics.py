@@ -62,7 +62,7 @@ class COCOMetric(Metric):
 
     def reset(self):
         # only bbox and mask evaluation support currently
-        self.results = {'bbox': [], 'mask': []}
+        self.results = {'bbox': [], 'mask': [], 'segm': []}
         self.eval_results = {}
 
     def update(self, inputs, outputs):
@@ -87,6 +87,8 @@ class COCOMetric(Metric):
             'bbox'] if 'bbox' in infer_results else []
         self.results['mask'] += infer_results[
             'mask'] if 'mask' in infer_results else []
+        self.results['segm'] += infer_results[
+            'segm'] if 'segm' in infer_results else []
 
     def accumulate(self):
         if len(self.results['bbox']) > 0:
@@ -106,6 +108,16 @@ class COCOMetric(Metric):
 
             seg_stats = cocoapi_eval(
                 'mask.json', 'segm', anno_file=self.anno_file)
+            self.eval_results['mask'] = seg_stats
+            sys.stdout.flush()
+
+        if len(self.results['segm']) > 0:
+            with open("segm.json", 'w') as f:
+                json.dump(self.results['segm'], f)
+                logger.info('The segm result is saved to segm.json.')
+
+            seg_stats = cocoapi_eval(
+                'segm.json', 'segm', anno_file=self.anno_file)
             self.eval_results['mask'] = seg_stats
             sys.stdout.flush()
 

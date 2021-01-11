@@ -10,6 +10,7 @@
 - Cascade RCNN
 - YOLOv3
 - SSD
+- SOLOv2
 
 扩展特性：
 

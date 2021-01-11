@@ -18,18 +18,76 @@ import numpy as np
 from numbers import Integral
 
 import paddle
+import paddle.nn as nn
+from paddle import ParamAttr
 from paddle import to_tensor
+from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
+import paddle.nn.functional as F
+from paddle.nn.initializer import Normal, Constant
+from paddle.regularizer import L2Decay
+
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
-import paddle.nn.functional as F
 
 
 def _to_list(l):
     if isinstance(l, (list, tuple)):
         return list(l)
     return [l]
+
+
+class ConvNormLayer(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 filter_size,
+                 stride,
+                 norm_type='bn',
+                 norm_groups=32,
+                 use_dcn=False,
+                 norm_name=None,
+                 name=None):
+        super(ConvNormLayer, self).__init__()
+        assert norm_type in ['bn', 'sync_bn', 'gn']
+
+        self.conv = Conv2D(
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=filter_size,
+            stride=stride,
+            padding=(filter_size - 1) // 2,
+            groups=1,
+            weight_attr=ParamAttr(
+                name=name + "_weight",
+                initializer=Normal(
+                    mean=0., std=0.01),
+                learning_rate=1.),
+            bias_attr=False)
+
+        param_attr = ParamAttr(
+            name=norm_name + "_scale",
+            learning_rate=1.,
+            regularizer=L2Decay(0.))
+        bias_attr = ParamAttr(
+            name=norm_name + "_offset",
+            learning_rate=1.,
+            regularizer=L2Decay(0.))
+        if norm_type in ['bn', 'sync_bn']:
+            self.norm = BatchNorm2D(
+                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        elif norm_type == 'gn':
+            self.norm = GroupNorm(
+                num_groups=norm_groups,
+                num_channels=ch_out,
+                weight_attr=param_attr,
+                bias_attr=bias_attr)
+
+    def forward(self, inputs):
+        out = self.conv(inputs)
+        out = self.norm(out)
+        return out
 
 
 @register
@@ -651,3 +709,119 @@ class AnchorGrid(object):
             self._anchor_vars = anchor_vars
 
         return self._anchor_vars
+
+
+@register
+@serializable
+class MaskMatrixNMS(object):
+    """
+    Matrix NMS for multi-class masks.
+    Args:
+        update_threshold (float): Updated threshold of categroy score in second time.
+        pre_nms_top_n (int): Number of total instance to be kept per image before NMS
+        post_nms_top_n (int): Number of total instance to be kept per image after NMS.
+        kernel (str):  'linear' or 'gaussian'.
+        sigma (float): std in gaussian method.
+    Input:
+        seg_preds (Variable): shape (n, h, w), segmentation feature maps
+        seg_masks (Variable): shape (n, h, w), segmentation feature maps
+        cate_labels (Variable): shape (n), mask labels in descending order
+        cate_scores (Variable): shape (n), mask scores in descending order
+        sum_masks (Variable): a float tensor of the sum of seg_masks
+    Returns:
+        Variable: cate_scores, tensors of shape (n)
+    """
+
+    def __init__(self,
+                 update_threshold=0.05,
+                 pre_nms_top_n=500,
+                 post_nms_top_n=100,
+                 kernel='gaussian',
+                 sigma=2.0):
+        super(MaskMatrixNMS, self).__init__()
+        self.update_threshold = update_threshold
+        self.pre_nms_top_n = pre_nms_top_n
+        self.post_nms_top_n = post_nms_top_n
+        self.kernel = kernel
+        self.sigma = sigma
+
+    def _sort_score(self, scores, top_num):
+        if paddle.shape(scores)[0] > top_num:
+            return paddle.topk(scores, top_num)[1]
+        else:
+            return paddle.argsort(scores, descending=True)
+
+    def __call__(self,
+                 seg_preds,
+                 seg_masks,
+                 cate_labels,
+                 cate_scores,
+                 sum_masks=None):
+        # sort and keep top nms_pre
+        sort_inds = self._sort_score(cate_scores, self.pre_nms_top_n)
+        seg_masks = paddle.gather(seg_masks, index=sort_inds)
+        seg_preds = paddle.gather(seg_preds, index=sort_inds)
+        sum_masks = paddle.gather(sum_masks, index=sort_inds)
+        cate_scores = paddle.gather(cate_scores, index=sort_inds)
+        cate_labels = paddle.gather(cate_labels, index=sort_inds)
+
+        seg_masks = paddle.flatten(seg_masks, start_axis=1, stop_axis=-1)
+        # inter.
+        inter_matrix = paddle.mm(seg_masks, paddle.transpose(seg_masks, [1, 0]))
+        n_samples = paddle.shape(cate_labels)
+        # union.
+        sum_masks_x = paddle.expand(sum_masks, shape=[n_samples, n_samples])
+        # iou.
+        iou_matrix = (inter_matrix / (
+            sum_masks_x + paddle.transpose(sum_masks_x, [1, 0]) - inter_matrix))
+        iou_matrix = paddle.triu(iou_matrix, diagonal=1)
+        # label_specific matrix.
+        cate_labels_x = paddle.expand(cate_labels, shape=[n_samples, n_samples])
+        label_matrix = paddle.cast(
+            (cate_labels_x == paddle.transpose(cate_labels_x, [1, 0])),
+            'float32')
+        label_matrix = paddle.triu(label_matrix, diagonal=1)
+
+        # IoU compensation
+        compensate_iou = paddle.max((iou_matrix * label_matrix), axis=0)
+        compensate_iou = paddle.expand(
+            compensate_iou, shape=[n_samples, n_samples])
+        compensate_iou = paddle.transpose(compensate_iou, [1, 0])
+
+        # IoU decay
+        decay_iou = iou_matrix * label_matrix
+
+        # matrix nms
+        if self.kernel == 'gaussian':
+            decay_matrix = paddle.exp(-1 * self.sigma * (decay_iou**2))
+            compensate_matrix = paddle.exp(-1 * self.sigma *
+                                           (compensate_iou**2))
+            decay_coefficient = paddle.min(decay_matrix / compensate_matrix,
+                                           axis=0)
+        elif self.kernel == 'linear':
+            decay_matrix = (1 - decay_iou) / (1 - compensate_iou)
+            decay_coefficient = paddle.min(decay_matrix, axis=0)
+        else:
+            raise NotImplementedError
+
+        # update the score.
+        cate_scores = cate_scores * decay_coefficient
+        y = paddle.zeros(shape=paddle.shape(cate_scores), dtype='float32')
+        keep = paddle.where(cate_scores >= self.update_threshold, cate_scores,
+                            y)
+        keep = paddle.nonzero(keep)
+        keep = paddle.squeeze(keep, axis=[1])
+        # Prevent empty and increase fake data
+        keep = paddle.concat(
+            [keep, paddle.cast(paddle.shape(cate_scores)[0] - 1, 'int64')])
+
+        seg_preds = paddle.gather(seg_preds, index=keep)
+        cate_scores = paddle.gather(cate_scores, index=keep)
+        cate_labels = paddle.gather(cate_labels, index=keep)
+
+        # sort and keep top_k
+        sort_inds = self._sort_score(cate_scores, self.post_nms_top_n)
+        seg_preds = paddle.gather(seg_preds, index=sort_inds)
+        cate_scores = paddle.gather(cate_scores, index=sort_inds)
+        cate_labels = paddle.gather(cate_labels, index=sort_inds)
+        return seg_preds, cate_scores, cate_labels
