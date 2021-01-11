@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import six
 import numpy as np
 from numbers import Integral
 
@@ -118,6 +119,7 @@ class AnchorGeneratorSSD(object):
                  aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]],
                  min_ratio=15,
                  max_ratio=90,
+                 base_size=300,
                  min_sizes=[30.0, 60.0, 111.0, 162.0, 213.0, 264.0],
                  max_sizes=[60.0, 111.0, 162.0, 213.0, 264.0, 315.0],
                  offset=0.5,
@@ -128,6 +130,7 @@ class AnchorGeneratorSSD(object):
         self.aspect_ratios = aspect_ratios
         self.min_ratio = min_ratio
         self.max_ratio = max_ratio
+        self.base_size = base_size
         self.min_sizes = min_sizes
         self.max_sizes = max_sizes
         self.offset = offset
@@ -135,9 +138,21 @@ class AnchorGeneratorSSD(object):
         self.clip = clip
         self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
 
+        if self.min_sizes == [] and self.max_sizes == []:
+            num_layer = len(aspect_ratios)
+            step = int(
+                math.floor(((self.max_ratio - self.min_ratio)) / (num_layer - 2
+                                                                  )))
+            for ratio in six.moves.range(self.min_ratio, self.max_ratio + 1,
+                                         step):
+                self.min_sizes.append(self.base_size * ratio / 100.)
+                self.max_sizes.append(self.base_size * (ratio + step) / 100.)
+            self.min_sizes = [self.base_size * .10] + self.min_sizes
+            self.max_sizes = [self.base_size * .20] + self.max_sizes
+
         self.num_priors = []
-        for aspect_ratio, min_size, max_size in zip(aspect_ratios, min_sizes,
-                                                    max_sizes):
+        for aspect_ratio, min_size, max_size in zip(
+                aspect_ratios, self.min_sizes, self.max_sizes):
             self.num_priors.append((len(aspect_ratio) * 2 + 1) * len(
                 _to_list(min_size)) + len(_to_list(max_size)))
 

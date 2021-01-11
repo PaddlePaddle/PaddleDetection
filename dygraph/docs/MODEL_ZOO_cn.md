@@ -40,7 +40,37 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 | ResNet50-FPN         | Mask         |    1    |   1x    |     ----     |  38.3  |    34.5    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_fpn_1x_coco.yml) |
 | ResNet50-FPN         | Cascade Faster         |    1    |   1x    |     ----     |  41.1  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_faster_rcnn_r50_fpn_1x_coco.yml) |
 | ResNet50-FPN         | Cascade Mask         |    1    |   1x    |     ----     |  41.6  |    35.3    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_mask_rcnn_r50_fpn_1x_coco.yml) |
-| DarkNet53         | YOLOv3         |    1    |   270e    |     ----     |  39.0  |    -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
+
+
+### YOLOv3 on COCO
+
+| 骨架网络             | 输入尺寸   | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
+| :------------------- | :------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
+| DarkNet53(paper)  | 608         |    8    |   270e    |     ----     |  33.0  |    -   |    -   |
+| DarkNet53(paper)  | 416         |    8    |   270e    |     ----     |  31.0  |    -   |    -   |
+| DarkNet53(paper)  | 320         |    8    |   270e    |     ----     |  28.2  |    -   |    -   |
+| DarkNet53         | 608         |    8    |   270e    |     ----     |  39.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
+| DarkNet53         | 416         |    8    |   270e    |     ----     |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
+| DarkNet53         | 320         |    8    |   270e    |     ----     |  34.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
+| MobileNet-V1         | 608         |    8    |   270e    |     ----     |  28.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
+| MobileNet-V1         | 416         |    8    |   270e    |     ----     |  28.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
+| MobileNet-V1         | 320         |    8    |   270e    |     ----     |  26.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
+| MobileNet-V3         | 608         |    8    |   270e    |     ----     |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
+| MobileNet-V3         | 416         |    8    |   270e    |     ----     |  29.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
+| MobileNet-V3         | 320         |    8    |   270e    |     ----     |  26.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
+
+### YOLOv3 on Pasacl VOC
+
+| 骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | 下载 | 配置文件 |
+| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: |
+| MobileNet-V1 | 608  |    8    |   270e  |      -        |  75.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
+| MobileNet-V1 | 416  |    8    |   270e  |      -        |  76.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
+| MobileNet-V1 | 320  |    8    |   270e  |      -        |  73.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
+| MobileNet-V3 | 608  |    8    |   270e  |      -        |  79.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
+| MobileNet-V3 | 416  |    8    |   270e  |      -        |  78.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
+| MobileNet-V3 | 320  |    8    |   270e  |      -        |  76.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
+
+**注意：** YOLOv3均使用8GPU训练，训练270个epoch
 
 ### SSD on Pascal VOC
 
