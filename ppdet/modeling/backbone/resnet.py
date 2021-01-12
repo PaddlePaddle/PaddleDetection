@@ -91,7 +91,7 @@ class ConvNormLayer(nn.Layer):
         else:
             self.norm = BatchNorm(
                 ch_out,
-                act=act,
+                act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
                 use_global_stats=global_stats,
@@ -107,6 +107,8 @@ class ConvNormLayer(nn.Layer):
         out = self.conv(inputs)
         if self.norm_type in ['bn', 'sync_bn']:
             out = self.norm(out)
+        if self.act:
+            out = getattr(F, self.act)(out)
         return out
 
 
