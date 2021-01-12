@@ -69,7 +69,7 @@ class SPP(nn.Layer):
         self.pool = []
         for size in pool_size:
             pool = self.add_sublayer(
-                '{}.spp.pool1'.format(name),
+                '{}.pool1'.format(name),
                 nn.MaxPool2D(
                     kernel_size=size,
                     stride=1,
@@ -77,12 +77,7 @@ class SPP(nn.Layer):
                     ceil_mode=False))
             self.pool.append(pool)
         self.conv = ConvBNLayer(
-            ch_in,
-            ch_out,
-            k,
-            padding=k // 2,
-            norm_type=norm_type,
-            name='{}.spp.conv'.format(name))
+            ch_in, ch_out, k, padding=k // 2, norm_type=norm_type, name=name)
 
     def forward(self, x):
         outs = [x]
@@ -125,7 +120,7 @@ class CoordConv(nn.Layer):
             filter_size=filter_size,
             padding=padding,
             norm_type=norm_type,
-            name='{}.conv'.format(name))
+            name=name)
 
     def forward(self, x):
         b, _, h, w = x.shape
@@ -148,11 +143,11 @@ class PPYOLODetBlock(nn.Layer):
         super(PPYOLODetBlock, self).__init__()
         self.conv_module = nn.Sequential()
         for idx, (conv_name, layer, args, kwargs) in enumerate(cfg[:-1]):
-            kwargs.update(name='{}.{}'.format(name + conv_name, idx))
+            kwargs.update(name='{}.{}'.format(name, conv_name))
             self.conv_module.add_sublayer(conv_name, layer(*args, **kwargs))
 
         conv_name, layer, args, kwargs = cfg[-1]
-        kwargs.update(name='{}.tip'.format(name + conv_name))
+        kwargs.update(name='{}.{}'.format(name, conv_name))
         self.tip = layer(*args, **kwargs)
 
     def forward(self, inputs):
