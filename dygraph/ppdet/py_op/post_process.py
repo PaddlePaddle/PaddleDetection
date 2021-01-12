@@ -184,3 +184,32 @@ def get_seg_res(masks, mask_nums, image_id, num_id_to_cat_id_map):
             }
             seg_res.append(sg_res)
     return seg_res
+
+
+def get_solov2_segm_res(results, image_id, num_id_to_cat_id_map):
+    import pycocotools.mask as mask_util
+    segm_res = []
+    # for each batch
+    segms = results['segm'].astype(np.uint8)
+    clsid_labels = results['cate_label']
+    clsid_scores = results['cate_score']
+    lengths = segms.shape[0]
+    im_id = int(image_id[0][0])
+    if lengths == 0 or segms is None:
+        return None
+    # for each sample
+    for i in range(lengths - 1):
+        clsid = int(clsid_labels[i]) + 1
+        catid = num_id_to_cat_id_map[clsid]
+        score = float(clsid_scores[i])
+        mask = segms[i]
+        segm = mask_util.encode(np.array(mask[:, :, np.newaxis], order='F'))[0]
+        segm['counts'] = segm['counts'].decode('utf8')
+        coco_res = {
+            'image_id': im_id,
+            'category_id': catid,
+            'segmentation': segm,
+            'score': score
+        }
+        segm_res.append(coco_res)
+    return segm_res

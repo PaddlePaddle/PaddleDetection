@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ from __future__ import unicode_literals
 import sys
 import numpy as np
 
-from .logger import setup_logger
+from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['bbox_area', 'jaccard_overlap', 'DetectionMAP']
+__all__ = ['bbox_area', 'jaccard_overlap', 'prune_zero_padding', 'DetectionMAP']
 
 
 def bbox_area(bbox, is_bbox_normalized):
@@ -53,6 +53,17 @@ def jaccard_overlap(pred, gt, is_bbox_normalized=False):
     gt_size = bbox_area(gt, is_bbox_normalized)
     overlap = float(inter_size) / (pred_size + gt_size - inter_size)
     return overlap
+
+
+def prune_zero_padding(gt_box, gt_label, difficult=None):
+    valid_cnt = 0
+    for i in range(len(gt_box)):
+        if gt_box[i, 0] == 0 and gt_box[i, 1] == 0 and \
+                gt_box[i, 2] == 0 and gt_box[i, 3] == 0:
+            break
+        valid_cnt += 1
+    return (gt_box[:valid_cnt], gt_label[:valid_cnt], difficult[:valid_cnt]
+            if difficult is not None else None)
 
 
 class DetectionMAP(object):

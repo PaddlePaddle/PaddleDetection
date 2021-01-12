@@ -236,12 +236,15 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [Objects365 2019 Challenge夺冠模型](docs/featured_model/champion_model/CACascadeRCNN.md)
     - [Open Images 2019-Object Detction比赛最佳单模型](docs/featured_model/champion_model/OIDV5_BASELINE_MODEL.md)
 
+## 应用案例
+
+- [人像圣诞特效自动生成工具](application/christmas)
 
 ## 第三方教程推荐
 
 - [PaddleDetection在Windows下的部署(一)](https://zhuanlan.zhihu.com/p/268657833)
 - [PaddleDetection在Windows下的部署(二)](https://zhuanlan.zhihu.com/p/280206376)
-- [Jetson Nano上部署PaddleDection经验分享](https://zhuanlan.zhihu.com/p/319371293)
+- [Jetson Nano上部署PaddleDetection经验分享](https://zhuanlan.zhihu.com/p/319371293)
 - [安全帽检测YOLOv3模型在树莓派上的部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/yolov3_for_raspi.md)
 - [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 

@@ -15,18 +15,14 @@ class BaseArch(nn.Layer):
     def __init__(self):
         super(BaseArch, self).__init__()
 
-    def forward(self, inputs, mode='infer'):
+    def forward(self, inputs):
         self.inputs = inputs
-        self.inputs['mode'] = mode
         self.model_arch()
 
-        if mode == 'train':
+        if self.training:
             out = self.get_loss()
-        elif mode == 'infer':
-            out = self.get_pred()
         else:
-            out = None
-            raise "Now, only support train and infer mode!"
+            out = self.get_pred()
         return out
 
     def build_inputs(self, data, input_def):

@@ -1,0 +1,239 @@
+architecture: FasterRCNN
+use_gpu: false
+use_xpu: true
+max_iters: 2000
+log_iter: 1
+save_dir: output
+snapshot_iter: 500
+metric: VOC
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_2x.tar
+weights: output/faster_rcnn_r50_vd_fpn_roadsign_kunlun/model_final
+num_classes: 5
+finetune_exclude_pretrained_params: ['cls_score, bbox_pred']
+
+FasterRCNN:
+  backbone: ResNet
+  fpn: FPN
+  rpn_head: FPNRPNHead
+  roi_extractor: FPNRoIAlign
+  bbox_head: BBoxHead
+  bbox_assigner: BBoxAssigner
+
+ResNet:
+  norm_type: affine_channel
+  depth: 50
+  feature_maps: [2, 3, 4, 5]
+  freeze_at: 2
+  variant: d
+
+ResNetC5:
+  depth: 50
+  norm_type: affine_channel
+  variant: d
+
+FPN:
+  max_level: 6
+  min_level: 2
+  num_chan: 256
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+
+FPNRPNHead:
+  anchor_generator:
+    anchor_sizes: [32, 64, 128, 256, 512]
+    aspect_ratios: [0.5, 1.0, 2.0]
+    stride: [16.0, 16.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
+
+  anchor_start_size: 32
+  min_level: 2
+  max_level: 6
+  num_chan: 256
+
+  rpn_target_assign:
+    rpn_batch_size_per_im: 256
+    rpn_fg_fraction: 0.5
+    rpn_negative_overlap: 0.3
+    rpn_positive_overlap: 0.7
+    rpn_straddle_thresh: 0.0
+    use_random: true
+
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 2000
+
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+
+FPNRoIAlign:
+  canconical_level: 4
+  canonical_size: 224
+  max_level: 5
+  min_level: 2
+  sampling_ratio: 2
+  box_resolution: 7
+  mask_resolution: 14
+
+BBoxAssigner:
+  batch_size_per_im: 512
+  bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
+  bg_thresh_hi: 0.5
+  bg_thresh_lo: 0.0
+  fg_fraction: 0.25
+  fg_thresh: 0.5
+
+BBoxHead:
+  head: TwoFCHead
+  nms:
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
+
+TwoFCHead:
+  mlp_dim: 1024
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 1300
+    - 1800
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 100
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+  dataset:
+    !VOCDataSet
+    dataset_dir: dataset/roadsign_voc
+    anno_path: train.txt
+    with_background: true
+
+  batch_size: 1
+  bufsize: 2
+  shuffle: true
+  drop_empty: true
+  drop_last: true
+  mixup_epoch: -1
+  use_process: false
+  worker_num: 2
+
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !RandomFlipImage
+    is_normalized: true
+    prob: 0.5
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: false
+
+
+EvalReader:
+  batch_size: 1
+  bufsize: 1
+  shuffle: false
+  drop_empty: false
+  drop_last: false
+  use_process: false
+  worker_num: 1
+
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape', 'gt_bbox', 'gt_class', 'is_difficult']
+
+  dataset:
+    !VOCDataSet
+    dataset_dir: dataset/roadsign_voc
+    anno_path: valid.txt
+    with_background: true
+
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+    use_cv2: true
+  - !Permute
+    to_bgr: false
+    channel_first: true
+
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: true
+
+
+TestReader:
+  batch_size: 1
+  drop_empty: false
+  drop_last: false
+
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+
+  dataset:
+    !ImageFolder
+    anno_path: dataset/roadsign_voc/label_list.txt
+    with_background: true
+
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_mixup: false
+  - !NormalizeImage
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+    is_scale: true
+    is_channel_first: false
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+    use_cv2: true
+  - !Permute
+    to_bgr: false
+    channel_first: true
+
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+    use_padded_im_info: true

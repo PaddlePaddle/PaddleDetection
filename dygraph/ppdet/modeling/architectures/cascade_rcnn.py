@@ -99,6 +99,7 @@ class CascadeRCNN(BaseArch):
                 self.inputs,
                 self.rpn_head_out,
                 self.anchor_out,
+                self.training,
                 i,
                 rois,
                 bbox_head_out,
@@ -110,7 +111,7 @@ class CascadeRCNN(BaseArch):
                                                          spatial_scale, i)
             self.bbox_head_list.append(bbox_head_out)
 
-        if self.inputs['mode'] == 'infer':
+        if not self.training:
             bbox_pred, bboxes = self.bbox_head.get_cascade_prediction(
                 self.bbox_head_list, rois_list)
             self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
@@ -120,7 +121,7 @@ class CascadeRCNN(BaseArch):
         if self.with_mask:
             rois = rois_list[-1]
             rois_has_mask_int32 = None
-            if self.inputs['mode'] == 'train':
+            if self.training:
                 bbox_targets = self.proposal.get_targets()[-1]
                 self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
                                                              bbox_targets)

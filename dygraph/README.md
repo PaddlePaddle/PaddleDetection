@@ -11,6 +11,7 @@
 - YOLOv3
 - SSD
 - FCOS
+- SOLOv2
 
 扩展特性：
 

@@ -79,7 +79,7 @@ class Proposal(object):
         self.proposal_generator = proposal_generator
         self.proposal_target_generator = proposal_target_generator
 
-    def generate_proposal(self, inputs, rpn_head_out, anchor_out):
+    def generate_proposal(self, inputs, rpn_head_out, anchor_out, is_train):
         # TODO: delete im_info 
         try:
             im_shape = inputs['im_info']
@@ -97,7 +97,7 @@ class Proposal(object):
                 anchors=anchor,
                 variances=var,
                 im_shape=im_shape,
-                mode=inputs['mode'])
+                is_train=is_train)
             if len(rpn_head_out) == 1:
                 return rpn_rois, rpn_rois_num
             rpn_rois_list.append(rpn_rois)
@@ -164,13 +164,14 @@ class Proposal(object):
                  inputs,
                  rpn_head_out,
                  anchor_out,
+                 is_train=False,
                  stage=0,
                  proposal_out=None,
                  bbox_head_out=None,
                  max_overlap=None):
         if stage == 0:
             roi, rois_num = self.generate_proposal(inputs, rpn_head_out,
-                                                   anchor_out)
+                                                   anchor_out, is_train)
             self.targets_list = []
             self.max_overlap = None
 
@@ -178,7 +179,7 @@ class Proposal(object):
             bbox_delta = bbox_head_out[1]
             roi = self.refine_bbox(proposal_out[0], bbox_delta, stage)
             rois_num = proposal_out[1]
-        if inputs['mode'] == 'train':
+        if is_train:
             roi, rois_num, targets, self.max_overlap = self.generate_proposal_target(
                 inputs, roi, rois_num, stage, self.max_overlap)
             self.targets_list.append(targets)

@@ -37,3 +37,22 @@ python3.7 -u tools/train.py --eval -c configs/ppyolo/ppyolo_roadsign_kunlun.yml
 ```shell
 python3.7 -u tools/eval.py -c configs/ppyolo/ppyolo_roadsign_kunlun.yml
 ```
+
+
+## mask_rcnn
+
+### Prepare data
+Download dataset from https://dataset.bj.bcebos.com/PaddleDetection_demo/cocome.tar and put it in the dataset directory.
+
+
+
+### Train
+```shell
+python3.7 -u tools/train.py --eval -c configs/mask_rcnn_r50_1x_cocome_kunlun.yml
+```
+
+
+### Eval
+```shell
+python3.7 -u tools/eval.py -c configs/mask_rcnn_r50_1x_cocome_kunlun.yml
+```

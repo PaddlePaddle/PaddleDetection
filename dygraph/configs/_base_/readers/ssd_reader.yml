@@ -9,8 +9,8 @@ TrainReader:
     - RandomExpandOp: {fill_value: [104., 117., 123.]}
     - RandomCropOp: {allow_no_crop: true}
     - RandomFlipOp: {}
-    - NormalizeBoxOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeBoxOp: {}
     - PadBoxOp: {num_max_boxes: 90}
 
   batch_transforms:
