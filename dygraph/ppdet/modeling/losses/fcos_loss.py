@@ -36,15 +36,18 @@ def flatten_tensor(inputs, channel_first=False):
         input_channel_last (Tensor): The flattened Tensor in channel_last style
     """
     if channel_first:
-        input_channel_last = paddle.transpose(
-            inputs, perm=[0, 2, 3, 1])
+        input_channel_last = paddle.transpose(inputs, perm=[0, 2, 3, 1])
     else:
         input_channel_last = inputs
-    output_channel_last = paddle.flatten(input_channel_last, start_axis=0, stop_axis=2) # [N*H*W, C]
+    output_channel_last = paddle.flatten(
+        input_channel_last, start_axis=0, stop_axis=2)  # [N*H*W, C]
     return output_channel_last
 
 
-def sigmoid_cross_entropy_with_logits_loss(inputs, label, ignore_index=-100, normalize=False):
+def sigmoid_cross_entropy_with_logits_loss(inputs,
+                                           label,
+                                           ignore_index=-100,
+                                           normalize=False):
     output = F.binary_cross_entropy_with_logits(inputs, label, reduction='none')
     mask_tensor = paddle.cast(label != ignore_index, 'float32')
     output = paddle.multiply(output, mask_tensor)
@@ -64,6 +67,7 @@ class FCOSLoss(nn.Layer):
         iou_loss_type(str): location loss type, IoU/GIoU/LINEAR_IoU
         reg_weights(float): weight for location loss
     """
+
     def __init__(self,
                  loss_alpha=0.25,
                  loss_gamma=2.0,
@@ -132,7 +136,8 @@ class FCOSLoss(nn.Layer):
             loss = loss * weights
         return loss
 
-    def forward(self, cls_logits, bboxes_reg, centerness, tag_labels, tag_bboxes, tag_center):
+    def forward(self, cls_logits, bboxes_reg, centerness, tag_labels,
+                tag_bboxes, tag_center):
         """
         Calculate the loss for classification, location and centerness
         Args:
@@ -173,19 +178,13 @@ class FCOSLoss(nn.Layer):
             tag_center_flatten_list.append(
                 flatten_tensor(tag_center[lvl], False))
 
-        cls_logits_flatten = paddle.concat(
-            cls_logits_flatten_list, axis=0)
-        bboxes_reg_flatten = paddle.concat(
-            bboxes_reg_flatten_list, axis=0)
-        centerness_flatten = paddle.concat(
-            centerness_flatten_list, axis=0)
+        cls_logits_flatten = paddle.concat(cls_logits_flatten_list, axis=0)
+        bboxes_reg_flatten = paddle.concat(bboxes_reg_flatten_list, axis=0)
+        centerness_flatten = paddle.concat(centerness_flatten_list, axis=0)
 
-        tag_labels_flatten = paddle.concat(
-            tag_labels_flatten_list, axis=0)
-        tag_bboxes_flatten = paddle.concat(
-            tag_bboxes_flatten_list, axis=0)
-        tag_center_flatten = paddle.concat(
-            tag_center_flatten_list, axis=0)
+        tag_labels_flatten = paddle.concat(tag_labels_flatten_list, axis=0)
+        tag_bboxes_flatten = paddle.concat(tag_bboxes_flatten_list, axis=0)
+        tag_center_flatten = paddle.concat(tag_center_flatten_list, axis=0)
         tag_labels_flatten.stop_gradient = True
         tag_bboxes_flatten.stop_gradient = True
         tag_center_flatten.stop_gradient = True
@@ -208,21 +207,27 @@ class FCOSLoss(nn.Layer):
         # expand onehot labels
         num_classes = cls_logits_flatten.shape[-1]
         tag_labels_flatten = paddle.squeeze(tag_labels_flatten, axis=-1)
-        tag_labels_flatten_bin = F.one_hot(tag_labels_flatten, num_classes=1+num_classes)
+        tag_labels_flatten_bin = F.one_hot(
+            tag_labels_flatten, num_classes=1 + num_classes)
         tag_labels_flatten_bin = tag_labels_flatten_bin[:, 1:]
         # sigmoid_focal_loss
-        cls_loss = F.sigmoid_focal_loss(cls_logits_flatten, tag_labels_flatten_bin) / num_positive_fp32
+        cls_loss = F.sigmoid_focal_loss(
+            cls_logits_flatten, tag_labels_flatten_bin) / num_positive_fp32
 
         # 2. bboxes_reg: giou_loss
         mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
         tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
-        reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten,
-            mask_positive_float, weights=tag_center_flatten)
+        reg_loss = self.__iou_loss(
+            bboxes_reg_flatten,
+            tag_bboxes_flatten,
+            mask_positive_float,
+            weights=tag_center_flatten)
         reg_loss = reg_loss * mask_positive_float / normalize_sum
 
         # 3. centerness: sigmoid_cross_entropy_with_logits_loss
         centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
-        ctn_loss = sigmoid_cross_entropy_with_logits_loss(centerness_flatten, tag_center_flatten)
+        ctn_loss = sigmoid_cross_entropy_with_logits_loss(centerness_flatten,
+                                                          tag_center_flatten)
         ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
 
         loss_all = {

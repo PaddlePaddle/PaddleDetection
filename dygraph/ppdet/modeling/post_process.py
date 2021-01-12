@@ -53,6 +53,7 @@ class FCOSPostProcess(object):
 
     def __call__(self, fcos_head_outs, scale_factor):
         locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
-        bboxes, score = self.decode(locations, cls_logits, bboxes_reg, centerness, scale_factor)
+        bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
+                                    centerness, scale_factor)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num

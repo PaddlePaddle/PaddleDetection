@@ -33,7 +33,7 @@ FCOSHead:
   fcos_feat:
     name: FCOSFeat
     feat_in: 256
-    feat_out: 256 
+    feat_out: 256
     num_convs: 4
     norm_type: "gn"
     use_dcn: false

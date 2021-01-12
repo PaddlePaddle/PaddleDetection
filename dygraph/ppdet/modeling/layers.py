@@ -54,11 +54,11 @@ class ConvNormLayer(nn.Layer):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
-        if bias_on is not:
+        if bias_on:
             bias_attr = ParamAttr(
                 name=name + "_bias",
                 initializer=Constant(value=0.),
-                learning_rate=lr_scale))
+                learning_rate=lr_scale)
         else:
             bias_attr = False
 
@@ -90,7 +90,7 @@ class ConvNormLayer(nn.Layer):
         elif norm_type == 'gn':
             self.norm = nn.GroupNorm(
                 num_groups=norm_groups,
-                num_channels=ch_out,x
+                num_channels=ch_out,
                 weight_attr=param_attr,
                 bias_attr=bias_attr)
 
@@ -726,9 +726,7 @@ class AnchorGrid(object):
 class FCOSBox(object):
     __shared__ = ['num_classes', 'batch_size']
 
-    def __init__(self,
-                 num_classes=80,
-                 batch_size=1):
+    def __init__(self, num_classes=80, batch_size=1):
         super(FCOSBox, self).__init__()
         self.num_classes = num_classes
         self.batch_size = batch_size
@@ -754,7 +752,8 @@ class FCOSBox(object):
         new_shape.stop_gradient = True
         return new_shape
 
-    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn, scale_factor):
+    def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn,
+                                 scale_factor):
         """
         Args:
             locations (Variables): anchor points for current layer, [H*W, 2]
@@ -774,7 +773,7 @@ class FCOSBox(object):
 
         act_shape_reg = self._merge_hw(box_reg)
         box_reg_ch_last = paddle.reshape(x=box_reg, shape=act_shape_reg)
-        box_reg_ch_last = paddle.transpose(box_reg_ch_last, perm=[0, 2, 1]) 
+        box_reg_ch_last = paddle.transpose(box_reg_ch_last, perm=[0, 2, 1])
         box_reg_decoding = paddle.stack(
             [
                 locations[:, 0] - box_reg_ch_last[:, :, 0],
@@ -787,7 +786,7 @@ class FCOSBox(object):
 
         act_shape_ctn = self._merge_hw(box_ctn)
         box_ctn_ch_last = paddle.reshape(x=box_ctn, shape=act_shape_ctn)
-        box_ctn_ch_last = F.sigmoid(box_ctn_ch_last) 
+        box_ctn_ch_last = F.sigmoid(box_ctn_ch_last)
 
         # recover the location to original image
         im_scale = paddle.concat([scale_factor, scale_factor], axis=1)
@@ -795,10 +794,12 @@ class FCOSBox(object):
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
 
-    def __call__(self, locations, cls_logits, bboxes_reg, centerness, scale_factor):
+    def __call__(self, locations, cls_logits, bboxes_reg, centerness,
+                 scale_factor):
         pred_boxes_ = []
         pred_scores_ = []
-        for pts, cls, box, ctn in zip(locations, cls_logits, bboxes_reg, centerness):
+        for pts, cls, box, ctn in zip(locations, cls_logits, bboxes_reg,
+                                      centerness):
             pred_scores_lvl, pred_boxes_lvl = self._postprocessing_by_level(
                 pts, cls, box, ctn, scale_factor)
             pred_boxes_.append(pred_boxes_lvl)
@@ -806,6 +807,8 @@ class FCOSBox(object):
         pred_boxes = paddle.concat(pred_boxes_, axis=1)
         pred_scores = paddle.concat(pred_scores_, axis=2)
         return pred_boxes, pred_scores
+
+
 class MaskMatrixNMS(object):
     """
     Matrix NMS for multi-class masks.

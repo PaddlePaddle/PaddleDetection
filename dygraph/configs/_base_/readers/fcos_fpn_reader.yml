@@ -8,7 +8,11 @@ TrainReader:
   - PermuteOp: {}
   batch_transforms:
   - PadBatchOp: {pad_to_stride: 128}
-  - Gt2FCOSTarget: {object_sizes_boundary: [64, 128, 256, 512], center_sampling_radius: 1.5, downsample_ratios: [8, 16, 32, 64, 128], norm_reg_targets: True}
+  - Gt2FCOSTarget:
+      object_sizes_boundary: [64, 128, 256, 512]
+      center_sampling_radius: 1.5
+      downsample_ratios: [8, 16, 32, 64, 128]
+      norm_reg_targets: True
   batch_size: 2
   shuffle: true
   drop_last: true
@@ -36,4 +40,3 @@ TestReader:
   - PadBatchOp: {pad_to_stride: 128}
   batch_size: 1
   shuffle: false
-

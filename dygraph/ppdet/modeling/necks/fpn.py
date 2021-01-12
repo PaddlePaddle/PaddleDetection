@@ -86,7 +86,8 @@ class FPN(Layer):
 
         # add extra conv levels for RetinaNet(use_c5)/FCOS(use_p5)
         if self.has_extra_convs and self.num_outs > self.num_backbone_stages:
-            for lvl in range(self.highest_backbone_level + 1, self.max_level + 1):  # P6 P7 ...
+            for lvl in range(self.highest_backbone_level + 1,
+                             self.max_level + 1):  # P6 P7 ...
                 if lvl == self.highest_backbone_level + 1 and self.use_c5:
                     in_c = in_channels[self.highest_backbone_level]
                 else:
@@ -138,11 +139,13 @@ class FPN(Layer):
                     extra_source = body_feats[-1]
                 else:
                     extra_source = fpn_output[-1]
-                fpn_output.append(self.fpn_convs[used_backbone_levels](extra_source))
+                fpn_output.append(self.fpn_convs[used_backbone_levels](
+                    extra_source))
                 spatial_scales = spatial_scales + [spatial_scales[-1] * 0.5]
                 for i in range(used_backbone_levels + 1, self.num_outs):
                     if self.relu_before_extra_convs:
-                        fpn_output.append(self.fpn_convs[i](F.relu(fpn_output[-1])))
+                        fpn_output.append(self.fpn_convs[i](F.relu(fpn_output[
+                            -1])))
                     else:
                         fpn_output.append(self.fpn_convs[i](fpn_output[-1]))
                     spatial_scales = spatial_scales + [spatial_scales[-1] * 0.5]

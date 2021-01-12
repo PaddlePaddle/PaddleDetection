@@ -42,7 +42,12 @@ class ScaleReg(nn.Layer):
 
 @register
 class FCOSFeat(nn.Layer):
-    def __init__(self, feat_in=256, feat_out=256, num_convs=4, norm_type='bn', use_dcn=False):
+    def __init__(self,
+                 feat_in=256,
+                 feat_out=256,
+                 num_convs=4,
+                 norm_type='bn',
+                 use_dcn=False):
         super(FCOSFeat, self).__init__()
         self.num_convs = num_convs
         self.norm_type = norm_type
@@ -62,6 +67,8 @@ class FCOSFeat(nn.Layer):
                     norm_type=norm_type,
                     use_dcn=use_dcn,
                     norm_name=cls_conv_name + '_norm',
+                    bias_on=True,
+                    lr_scale=2.,
                     name=cls_conv_name))
             self.cls_subnet_convs.append(cls_conv)
 
@@ -76,6 +83,8 @@ class FCOSFeat(nn.Layer):
                     norm_type=norm_type,
                     use_dcn=use_dcn,
                     norm_name=reg_conv_name + '_norm',
+                    bias_on=True,
+                    lr_scale=2.,
                     name=reg_conv_name))
             self.reg_subnet_convs.append(reg_conv)
 
@@ -132,7 +141,8 @@ class FCOSHead(nn.Layer):
                 padding=1,
                 weight_attr=ParamAttr(
                     name=conv_cls_name + "_weights",
-                    initializer=Normal(mean=0., std=0.01)),
+                    initializer=Normal(
+                        mean=0., std=0.01)),
                 bias_attr=ParamAttr(
                     name=conv_cls_name + "_bias",
                     initializer=Constant(value=bias_init_value))))
@@ -148,7 +158,8 @@ class FCOSHead(nn.Layer):
                 padding=1,
                 weight_attr=ParamAttr(
                     name=conv_reg_name + "_weights",
-                    initializer=Normal(mean=0., std=0.01)),
+                    initializer=Normal(
+                        mean=0., std=0.01)),
                 bias_attr=ParamAttr(
                     name=conv_reg_name + "_bias",
                     initializer=Constant(value=0))))
@@ -164,7 +175,8 @@ class FCOSHead(nn.Layer):
                 padding=1,
                 weight_attr=ParamAttr(
                     name=conv_centerness_name + "_weights",
-                    initializer=Normal(mean=0., std=0.01)),
+                    initializer=Normal(
+                        mean=0., std=0.01)),
                 bias_attr=ParamAttr(
                     name=conv_centerness_name + "_bias",
                     initializer=Constant(value=0))))
@@ -173,9 +185,7 @@ class FCOSHead(nn.Layer):
         for i in range(len(self.fpn_stride)):
             lvl = int(math.log(int(self.fpn_stride[i]), 2))
             feat_name = 'p{}_feat'.format(lvl)
-            scale_reg = self.add_sublayer(
-                feat_name,
-                ScaleReg())
+            scale_reg = self.add_sublayer(feat_name, ScaleReg())
             self.scales_regs.append(scale_reg)
 
     def _compute_locatioins_by_level(self, fpn_stride, feature):
@@ -185,25 +195,25 @@ class FCOSHead(nn.Layer):
         shift_y = paddle.arange(0, h * fpn_stride, fpn_stride)
         shift_x = paddle.unsqueeze(shift_x, axis=0)
         shift_y = paddle.unsqueeze(shift_y, axis=1)
-        shift_x = paddle.expand_as(
-            shift_x, feature[0, 0, :, :])
-        shift_y = paddle.expand_as(
-            shift_y, feature[0, 0, :, :])
+        shift_x = paddle.expand_as(shift_x, feature[0, 0, :, :])
+        shift_y = paddle.expand_as(shift_y, feature[0, 0, :, :])
         shift_x.stop_gradient = True
         shift_y.stop_gradient = True
         shift_x = paddle.reshape(shift_x, shape=[-1])
         shift_y = paddle.reshape(shift_y, shape=[-1])
-        location = paddle.stack(
-            [shift_x, shift_y], axis=-1) + fpn_stride / 2
+        location = paddle.stack([shift_x, shift_y], axis=-1) + fpn_stride / 2
         location.stop_gradient = True
         return location
 
-    def forward(self, fpn_feats, mode):
-        assert len(fpn_feats) == len(self.fpn_stride), "The size of fpn_feats is not equal to size of fpn_stride"
+    def forward(self, fpn_feats, is_training):
+        assert len(fpn_feats) == len(
+            self.fpn_stride
+        ), "The size of fpn_feats is not equal to size of fpn_stride"
         cls_logits_list = []
         bboxes_reg_list = []
         centerness_list = []
-        for scale_reg, fpn_stride, fpn_feat in zip(self.scales_regs, self.fpn_stride, fpn_feats):
+        for scale_reg, fpn_stride, fpn_feat in zip(self.scales_regs,
+                                                   self.fpn_stride, fpn_feats):
             fcos_cls_feat, fcos_reg_feat = self.fcos_feat(fpn_feat)
             cls_logits = self.fcos_head_cls(fcos_cls_feat)
             bbox_reg = scale_reg(self.fcos_head_reg(fcos_reg_feat))
@@ -213,7 +223,7 @@ class FCOSHead(nn.Layer):
                 centerness = self.fcos_head_centerness(fcos_cls_feat)
             if self.norm_reg_targets:
                 bbox_reg = F.relu(bbox_reg)
-                if mode == 'infer':
+                if not is_training:
                     bbox_reg = bbox_reg * fpn_stride
             else:
                 bbox_reg = paddle.exp(bbox_reg)
@@ -221,10 +231,11 @@ class FCOSHead(nn.Layer):
             bboxes_reg_list.append(bbox_reg)
             centerness_list.append(centerness)
 
-        if mode == 'infer':
+        if not is_training:
             locations_list = []
             for fpn_stride, feature in zip(self.fpn_stride, fpn_feats):
-                location = self._compute_locatioins_by_level(fpn_stride, feature)
+                location = self._compute_locatioins_by_level(fpn_stride,
+                                                             feature)
                 locations_list.append(location)
 
             return locations_list, cls_logits_list, bboxes_reg_list, centerness_list
@@ -233,5 +244,5 @@ class FCOSHead(nn.Layer):
 
     def get_loss(self, fcos_head_outs, tag_labels, tag_bboxes, tag_centerness):
         cls_logits, bboxes_reg, centerness = fcos_head_outs
-        return self.fcos_loss(cls_logits, bboxes_reg, centerness, 
-                              tag_labels, tag_bboxes, tag_centerness)
+        return self.fcos_loss(cls_logits, bboxes_reg, centerness, tag_labels,
+                              tag_bboxes, tag_centerness)

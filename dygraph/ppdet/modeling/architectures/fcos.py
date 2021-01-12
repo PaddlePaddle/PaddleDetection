@@ -49,11 +49,11 @@ class FCOS(BaseArch):
 
         fpn_feats, spatial_scale = self.neck(body_feats)
 
-        mode = self.inputs['mode'] 
-        self.fcos_head_outs = self.fcos_head(fpn_feats, mode)
+        self.fcos_head_outs = self.fcos_head(fpn_feats, self.training)
 
-        if mode == 'infer':
-            self.bboxes = self.fcos_post_process(self.fcos_head_outs, self.inputs['scale_factor'])
+        if not self.training:
+            self.bboxes = self.fcos_post_process(self.fcos_head_outs,
+                                                 self.inputs['scale_factor'])
 
     def get_loss(self, ):
         loss = {}
@@ -70,7 +70,7 @@ class FCOS(BaseArch):
             if k_ctn in self.inputs:
                 tag_centerness.append(self.inputs[k_ctn])
 
-        loss_fcos = self.fcos_head.get_loss(self.fcos_head_outs, tag_labels, 
+        loss_fcos = self.fcos_head.get_loss(self.fcos_head_outs, tag_labels,
                                             tag_bboxes, tag_centerness)
         loss.update(loss_fcos)
         total_loss = paddle.add_n(list(loss.values()))

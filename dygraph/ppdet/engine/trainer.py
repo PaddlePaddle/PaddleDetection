@@ -316,14 +316,18 @@ class Trainer(object):
                            os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
                            self.model)
 
-        input_spec = [{
+        input_dic = {
             "image": InputSpec(
                 shape=[None] + image_shape, name='image'),
-            "im_shape": InputSpec(
-                shape=[None, 2], name='im_shape'),
             "scale_factor": InputSpec(
                 shape=[None, 2], name='scale_factor')
-        }]
+        }
+        if 'fcos' not in model_name:
+            input_dic.update({
+                "im_shape": InputSpec(
+                    shape=[None, 2], name='im_shape')
+            })
+        input_spec = [input_dic]
 
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
