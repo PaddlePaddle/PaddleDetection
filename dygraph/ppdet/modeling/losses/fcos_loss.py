@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -15,11 +29,11 @@ def flatten_tensor(inputs, channel_first=False):
     """
     Flatten a Tensor
     Args:
-        inputs  (Variables): Input Tensor
+        inputs  (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
         channel_first(bool): if true the dimension order of
             Tensor is [N, C, H, W], otherwise is [N, H, W, C]
     Return:
-        input_channel_last (Variables): The flattened Tensor in channel_last style
+        input_channel_last (Tensor): The flattened Tensor in channel_last style
     """
     if channel_first:
         input_channel_last = paddle.transpose(
@@ -65,12 +79,12 @@ class FCOSLoss(nn.Layer):
         """
         Calculate the loss for location prediction
         Args:
-            pred          (Variables): bounding boxes prediction
-            targets       (Variables): targets for positive samples
-            positive_mask (Variables): mask of positive samples
-            weights       (Variables): weights for each positive samples
+            pred          (Tensor): bounding boxes prediction
+            targets       (Tensor): targets for positive samples
+            positive_mask (Tensor): mask of positive samples
+            weights       (Tensor): weights for each positive samples
         Return:
-            loss (Varialbes): location loss
+            loss (Tensor): location loss
         """
         plw = pred[:, 0] * positive_mask
         pth = pred[:, 1] * positive_mask
@@ -122,17 +136,17 @@ class FCOSLoss(nn.Layer):
         """
         Calculate the loss for classification, location and centerness
         Args:
-            cls_logits (list): list of Variables, which is predicted
+            cls_logits (list): list of Tensor, which is predicted
                 score for all anchor points with shape [N, M, C]
-            bboxes_reg (list): list of Variables, which is predicted
+            bboxes_reg (list): list of Tensor, which is predicted
                 offsets for all anchor points with shape [N, M, 4]
-            centerness (list): list of Variables, which is predicted
+            centerness (list): list of Tensor, which is predicted
                 centerness for all anchor points with shape [N, M, 1]
-            tag_labels (list): list of Variables, which is category
+            tag_labels (list): list of Tensor, which is category
                 targets for each anchor point
-            tag_bboxes (list): list of Variables, which is bounding
+            tag_bboxes (list): list of Tensor, which is bounding
                 boxes targets for positive samples
-            tag_center (list): list of Variables, which is centerness
+            tag_center (list): list of Tensor, which is centerness
                 targets for positive samples
         Return:
             loss (dict): loss composed by classification loss, bounding box
