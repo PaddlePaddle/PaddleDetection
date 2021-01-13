@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -201,7 +201,7 @@ class Trainer(object):
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
-
+                iter_tic = time.time()
             self._compose_callback.on_epoch_end(self.status)
 
     def evaluate(self):
@@ -244,7 +244,7 @@ class Trainer(object):
         clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file,
                                                  with_background)
 
-        # Run Infer 
+        # Run Infer
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
@@ -316,18 +316,14 @@ class Trainer(object):
                            os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
                            self.model)
 
-        input_dic = {
+        input_spec = [{
             "image": InputSpec(
                 shape=[None] + image_shape, name='image'),
+            "im_shape": InputSpec(
+                shape=[None, 2], name='im_shape'),
             "scale_factor": InputSpec(
                 shape=[None, 2], name='scale_factor')
-        }
-        if 'fcos' not in model_name:
-            input_dic.update({
-                "im_shape": InputSpec(
-                    shape=[None, 2], name='im_shape')
-            })
-        input_spec = [input_dic]
+        }]
 
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
