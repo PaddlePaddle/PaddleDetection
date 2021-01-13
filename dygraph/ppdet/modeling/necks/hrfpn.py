@@ -25,13 +25,11 @@ __all__ = ['HRFPN']
 @register
 class HRFPN(nn.Layer):
     """
-    HRNet, see https://arxiv.org/abs/1908.07919
     Args:
-        num_chan (int): number of feature channels
-        pooling_type (str): pooling type of downsampling
-        share_conv (bool): whethet to share conv for different layers' reduction
+        in_channel (int): number of input feature channels from backbone
+        out_channel (int): number of output feature channels
+        share_conv (bool): whether to share conv for different layers' reduction
         spatial_scale (list): feature map scaling factor
-        input_channel (int): number of input channel from backbone
     """
 
     def __init__(

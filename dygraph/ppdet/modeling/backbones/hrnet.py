@@ -535,6 +535,17 @@ class FuseLayers(nn.Layer):
 
 @register
 class HRNet(nn.Layer):
+    """
+    HRNet, see https://arxiv.org/abs/1908.07919
+
+    Args:
+        width (int): the width of HRNet
+        has_se (bool): whether to add SE block for each stage
+        freeze_at (int): the stage to freeze
+        freeze_norm (bool): whether to freeze norm in HRNet
+        return_idx (List): the stage to return
+    """
+
     def __init__(self,
                  width=18,
                  has_se=False,
