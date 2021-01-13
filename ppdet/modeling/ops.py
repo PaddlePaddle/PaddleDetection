@@ -1642,8 +1642,12 @@ class MaskMatrixNMS(object):
                 sum_masks, expand_times=[n_samples]),
             shape=[n_samples, n_samples])
         # iou.
-        iou_matrix = (inter_matrix / (sum_masks_x + fluid.layers.transpose(
-            sum_masks_x, [1, 0]) - inter_matrix))
+        iou_matrix = paddle.divide(inter_matrix,
+                                   paddle.subtract(
+                                       paddle.add(sum_masks_x,
+                                                  fluid.layers.transpose(
+                                                      sum_masks_x, [1, 0])),
+                                       inter_matrix))
         iou_matrix = paddle.triu(iou_matrix, diagonal=1)
         # label_specific matrix.
         cate_labels_x = fluid.layers.reshape(
@@ -1651,12 +1655,14 @@ class MaskMatrixNMS(object):
                 cate_labels, expand_times=[n_samples]),
             shape=[n_samples, n_samples])
         label_matrix = fluid.layers.cast(
-            (cate_labels_x == fluid.layers.transpose(cate_labels_x, [1, 0])),
+            paddle.equal(cate_labels_x,
+                         fluid.layers.transpose(cate_labels_x, [1, 0])),
             'float32')
         label_matrix = paddle.triu(label_matrix, diagonal=1)
 
         # IoU compensation
-        compensate_iou = paddle.max((iou_matrix * label_matrix), axis=0)
+        compensate_iou = paddle.max(paddle.multiply(iou_matrix, label_matrix),
+                                    axis=0)
         compensate_iou = fluid.layers.reshape(
             fluid.layers.expand(
                 compensate_iou, expand_times=[n_samples]),
@@ -1664,15 +1670,15 @@ class MaskMatrixNMS(object):
         compensate_iou = fluid.layers.transpose(compensate_iou, [1, 0])
 
         # IoU decay
-        decay_iou = iou_matrix * label_matrix
+        decay_iou = paddle.multiply(iou_matrix, label_matrix)
 
         # matrix nms
         if self.kernel == 'gaussian':
             decay_matrix = fluid.layers.exp(-1 * self.sigma * (decay_iou**2))
             compensate_matrix = fluid.layers.exp(-1 * self.sigma *
                                                  (compensate_iou**2))
-            decay_coefficient = paddle.min(decay_matrix / compensate_matrix,
-                                           axis=0)
+            decay_coefficient = paddle.min(
+                paddle.divide(decay_matrix, compensate_matrix), axis=0)
         elif self.kernel == 'linear':
             decay_matrix = (1 - decay_iou) / (1 - compensate_iou)
             decay_coefficient = paddle.min(decay_matrix, axis=0)
@@ -1680,7 +1686,7 @@ class MaskMatrixNMS(object):
             raise NotImplementedError
 
         # update the score.
-        cate_scores = cate_scores * decay_coefficient
+        cate_scores = paddle.multiply(cate_scores, decay_coefficient)
 
         keep = fluid.layers.where(cate_scores >= self.update_threshold)
         keep = fluid.layers.squeeze(keep, axes=[1])
