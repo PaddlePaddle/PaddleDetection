@@ -162,7 +162,7 @@ class COCODataSet(DataSet):
                     gt_class[i][0] = catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
-                    if 'segmentation' in box:
+                    if 'segmentation' in box and box['segmentation']:
                         gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
