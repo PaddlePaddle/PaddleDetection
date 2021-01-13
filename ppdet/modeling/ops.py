@@ -325,7 +325,8 @@ def DropBlock(input, block_size, keep_prob, is_test):
     elem_sum_m = fluid.layers.cast(elem_sum, dtype="float32")
     elem_sum_m.stop_gradient = True
 
-    output = input * mask * elem_numel_m / elem_sum_m
+    output = fluid.layers.elementwise_mul(input,
+                                          mask) * elem_numel_m / elem_sum_m
     return output
 
 
