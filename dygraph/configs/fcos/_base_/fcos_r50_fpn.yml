@@ -1,15 +1,11 @@
 architecture: FCOS
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-weights: output/fcos_r50_fpn_1x/model_final
 load_static_weights: True
 
-# Model Achitecture
 FCOS:
-  # model feat info flow
   backbone: ResNet
   neck: FPN
   fcos_head: FCOSHead
-  # post process
   fcos_post_process: FCOSPostProcess
 
 ResNet:

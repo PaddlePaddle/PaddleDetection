@@ -42,6 +42,17 @@ class ScaleReg(nn.Layer):
 
 @register
 class FCOSFeat(nn.Layer):
+    """
+    FCOSFeat of FCOS
+
+    Args:
+        feat_in (int): The channel number of input Tensor.
+        feat_out (int): The channel number of output Tensor.
+        num_convs (int): The convolution number of the FCOSFeat.
+        norm_type (str): Normalization type, 'bn'/'sync_bn'/'gn'.
+        use_dcn (bool): Whether to use dcn in tower or not.
+    """
+
     def __init__(self,
                  feat_in=256,
                  feat_out=256,

@@ -1,0 +1,9 @@
+_BASE_: [
+  '../_base_/datasets/coco_detection.yml', 
+  '../_base_/runtime.yml',
+  '_base_/fcos_r50_fpn.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/fcos_reader.yml',
+]
+
+weights: output/fcos_r50_fpn_1x_coco/model_final
