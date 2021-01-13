@@ -18,7 +18,6 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import copy
-import paddle
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Xavier
@@ -106,7 +105,7 @@ class FPN(object):
                 out_shape=[body_input.shape[2], body_input.shape[3]],
                 name=topdown_name)
 
-        return paddle.add(lateral, topdown)
+        return fluid.layers.elementwise_add(lateral, topdown)
 
     def get_output(self, body_dict):
         """
