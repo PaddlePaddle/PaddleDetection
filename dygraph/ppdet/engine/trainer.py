@@ -250,10 +250,10 @@ class Trainer(object):
             # forward
             self.model.eval()
             outs = self.model(data)
-            for key, value in outs.items():
-                outs[key] = value.numpy()
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
+            for key, value in outs.items():
+                outs[key] = value.numpy()
 
             # FIXME: for more elegent coding
             if 'mask' in outs and 'bbox' in outs:
@@ -275,7 +275,9 @@ class Trainer(object):
                         if 'bbox' in batch_res else None
                 mask_res = batch_res['mask'][start:end] \
                         if 'mask' in batch_res else None
-                image = visualize_results(image, bbox_res, mask_res,
+                segm_res = batch_res['segm'][start:end] \
+                        if 'segm' in batch_res else None
+                image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
 
