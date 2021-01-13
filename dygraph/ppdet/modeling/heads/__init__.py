@@ -18,6 +18,7 @@ from . import mask_head
 from . import yolo_head
 from . import roi_extractor
 from . import ssd_head
+from . import fcos_head
 from . import solov2_head
 
 from .rpn_head import *
@@ -26,4 +27,5 @@ from .mask_head import *
 from .yolo_head import *
 from .roi_extractor import *
 from .ssd_head import *
+from .fcos_head import *
 from .solov2_head import *
