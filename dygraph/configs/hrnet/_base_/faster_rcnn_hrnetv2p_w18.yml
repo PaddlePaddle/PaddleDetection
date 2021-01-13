@@ -1,6 +1,6 @@
 architecture: FasterRCNN
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/HRNet_W18_C_pretrained.tar
-weights: output/faster_rcnn_hrnetv2p_w18_1x/model_final
+weights: output/faster_rcnn_hrnetv2p_w18_1x_coco/model_final
 load_static_weights: True
 
 # Model Achitecture
