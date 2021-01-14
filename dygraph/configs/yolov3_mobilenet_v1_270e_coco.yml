@@ -1,7 +1,0 @@
-_BASE_: [
-  './_base_/models/yolov3_mobilenet_v1.yml',
-  './_base_/optimizers/yolov3_270e.yml',
-  './_base_/datasets/coco_detection.yml',
-  './_base_/readers/yolov3_reader.yml',
-  './_base_/runtime.yml',
-]
