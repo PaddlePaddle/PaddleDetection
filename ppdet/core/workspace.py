@@ -24,6 +24,11 @@ import yaml
 import copy
 import collections
 
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
 
@@ -115,7 +120,7 @@ def dict_merge(dct, merge_dct):
     """
     for k, v in merge_dct.items():
         if (k in dct and isinstance(dct[k], dict) and
-                isinstance(merge_dct[k], collections.Mapping)):
+                isinstance(merge_dct[k], collectionsAbc.Mapping)):
             dict_merge(dct[k], merge_dct[k])
         else:
             dct[k] = merge_dct[k]

@@ -33,6 +33,7 @@ SUPPORT_MODELS = {
     'YOLO',
     'RCNN',
     'SSD',
+    'FCOS',
     'SOLOv2',
 }
 
