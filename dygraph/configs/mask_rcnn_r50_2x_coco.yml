@@ -1,0 +1,9 @@
+_BASE_: [
+  './_base_/models/mask_rcnn_r50.yml',
+  './_base_/optimizers/rcnn_2x.yml',
+  './_base_/datasets/coco_instance.yml',
+  './_base_/readers/mask_reader.yml',
+  './_base_/runtime.yml',
+]
+
+weights: output/mask_rcnn_r50_2x_coco/model_final.pdparams

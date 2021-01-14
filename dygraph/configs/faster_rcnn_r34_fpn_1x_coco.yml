@@ -1,0 +1,50 @@
+_BASE_: [
+  './_base_/models/faster_rcnn_r50_fpn.yml',
+  './_base_/optimizers/rcnn_1x.yml',
+  './_base_/datasets/coco_detection.yml',
+  './_base_/readers/faster_fpn_reader.yml',
+  './_base_/runtime.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
+weights: output/faster_rcnn_r34_fpn_1x_coco/model_final.pdparams
+
+ResNet:
+  # index 0 stands for res2
+  depth: 34
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+FPN:
+  in_channels: [64, 128, 256, 512]
+  out_channel: 256
+  min_level: 0
+  max_level: 4
+  spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
+
+TrainReader:
+  sample_transforms:
+  - DecodeOp: { }
+  - RandomFlipImage: {prob: 0.5}
+  - NormalizeImage: {is_channel_first: false, is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - ResizeImage: {target_size: 800, max_size: 1333, interp: 1, use_cv2: true}
+  - Permute: {to_bgr: false, channel_first: true}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: true}
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+
+epoch: 12
+
+LearningRate:
+  base_lr: 0.02
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
