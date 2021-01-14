@@ -20,7 +20,6 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn.functional.activation import hard_sigmoid
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
@@ -217,7 +216,7 @@ class SEModule(nn.Layer):
         outputs = self.conv1(outputs)
         outputs = F.relu(outputs)
         outputs = self.conv2(outputs)
-        outputs = hard_sigmoid(outputs)
+        outputs = F.hardsigmoid(outputs, slope=0.2, offset=0.5)
         return paddle.multiply(x=inputs, y=outputs)
 
 
