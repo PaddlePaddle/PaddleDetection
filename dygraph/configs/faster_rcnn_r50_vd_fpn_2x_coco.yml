@@ -18,19 +18,6 @@ ResNet:
   return_idx: [0,1,2,3]
   num_stages: 4
 
-TrainReader:
-  sample_transforms:
-  - DecodeOp: { }
-  - RandomFlipImage: {prob: 0.5}
-  - NormalizeImage: {is_channel_first: false, is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
-  - ResizeImage: {target_size: 800, max_size: 1333, interp: 1, use_cv2: true}
-  - Permute: {to_bgr: false, channel_first: true}
-  batch_transforms:
-  - PadBatch: {pad_to_stride: 32, use_padded_im_info: false, pad_gt: true}
-  batch_size: 2
-  shuffle: true
-  drop_last: true
-
 epoch: 24
 
 LearningRate:
@@ -42,3 +29,6 @@ LearningRate:
   - !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 500
+
+TrainReader:
+  batch_size: 2
