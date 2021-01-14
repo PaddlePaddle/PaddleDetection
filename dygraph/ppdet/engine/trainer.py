@@ -330,12 +330,12 @@ class Trainer(object):
         # NOTE: dy2st do not pruned program, but jit.save will prune program
         # input spec, prune input spec here and save with pruned input spec
         pruned_input_spec = self._prune_input_spec(
-                                    input_spec,
-                                    static_model.forward.main_program,
-                                    static_model.forward.outputs)
-        paddle.jit.save(static_model,
-                        os.path.join(save_dir, 'model'),
-                        input_spec=pruned_input_spec)
+            input_spec, static_model.forward.main_program,
+            static_model.forward.outputs)
+        paddle.jit.save(
+            static_model,
+            os.path.join(save_dir, 'model'),
+            input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
 
     def _prune_input_spec(self, input_spec, program, targets):
