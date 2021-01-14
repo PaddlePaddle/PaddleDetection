@@ -40,3 +40,20 @@ class MaskPostProcess(object):
                                  self.mask_resolution, self.binary_thresh)
         mask = {'mask': mask}
         return mask
+
+
+@register
+class FCOSPostProcess(object):
+    __inject__ = ['decode', 'nms']
+
+    def __init__(self, decode=None, nms=None):
+        super(FCOSPostProcess, self).__init__()
+        self.decode = decode
+        self.nms = nms
+
+    def __call__(self, fcos_head_outs, scale_factor):
+        locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
+        bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
+                                    centerness, scale_factor)
+        bbox_pred, bbox_num, _ = self.nms(bboxes, score)
+        return bbox_pred, bbox_num

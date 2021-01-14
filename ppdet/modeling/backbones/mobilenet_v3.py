@@ -225,7 +225,7 @@ class MobileNetV3(object):
         return out
 
     def _hard_swish(self, x):
-        return x * fluid.layers.relu6(x + 3) / 6.
+        return fluid.layers.elementwise_mul(x, fluid.layers.relu6(x + 3) / 6.)
 
     def _se_block(self, input, num_out_filter, ratio=4, name=None):
         lr_idx = self.curr_stage // 3

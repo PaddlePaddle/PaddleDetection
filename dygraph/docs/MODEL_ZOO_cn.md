@@ -50,6 +50,10 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ssd/)
 
+### FCOS
+
+请参考[fcos](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/)
+
 ### SOLOv2
 
 请参考[solov2](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2/)
