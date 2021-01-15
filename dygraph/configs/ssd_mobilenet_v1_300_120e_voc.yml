@@ -1,7 +1,0 @@
-_BASE_: [
-  './_base_/models/ssd_mobilenet_v1_300.yml',
-  './_base_/optimizers/ssd_mobilenet_120e.yml',
-  './_base_/datasets/voc.yml',
-  './_base_/readers/ssd_mobilenet_reader.yml',
-  './_base_/runtime.yml',
-]
