@@ -28,14 +28,86 @@ from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
+from ppdet.py_op.target import libra_generate_proposal_target
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
-
+from paddle.vision.ops import DeformConv2D
 
 def _to_list(l):
     if isinstance(l, (list, tuple)):
         return list(l)
     return [l]
+
+
+class DeformableConvV2(nn.Layer):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 weight_attr=None,
+                 bias_attr=None,
+                 lr_scale=1,
+                 regularizer=None,
+                 name=None):
+        super(DeformableConvV2, self).__init__()
+        self.offset_channel = 2 * kernel_size**2
+        self.mask_channel = kernel_size**2
+
+        if lr_scale == 1 and regularizer is None:
+            offset_bias_attr = ParamAttr(
+                initializer=Constant(0.),
+                name='{}._conv_offset.bias'.format(name))
+        else:
+            offset_bias_attr = ParamAttr(
+                initializer=Constant(0.),
+                learning_rate=lr_scale,
+                regularizer=regularizer,
+                name='{}._conv_offset.bias'.format(name))
+        self.conv_offset = nn.Conv2D(
+            in_channels,
+            3 * kernel_size**2,
+            kernel_size,
+            stride=stride,
+            padding=(kernel_size - 1) // 2,
+            weight_attr=ParamAttr(
+                initializer=Constant(0.0),
+                name='{}._conv_offset.weight'.format(name)),
+            bias_attr=offset_bias_attr)
+
+        if bias_attr:
+            # in FCOS-DCN head, specifically need learning_rate and regularizer
+            dcn_bias_attr = ParamAttr(
+                name=name + "_bias",
+                initializer=Constant(value=0),
+                regularizer=L2Decay(0.),
+                learning_rate=2.)
+        else:
+            # in ResNet backbone, do not need bias
+            dcn_bias_attr = False
+        self.conv_dcn = DeformConv2D(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=stride,
+            padding=(kernel_size - 1) // 2 * dilation,
+            dilation=dilation,
+            groups=groups,
+            weight_attr=weight_attr,
+            bias_attr=dcn_bias_attr)
+
+    def forward(self, x):
+        offset_mask = self.conv_offset(x)
+        offset, mask = paddle.split(
+            offset_mask,
+            num_or_sections=[self.offset_channel, self.mask_channel],
+            axis=1)
+        mask = F.sigmoid(mask)
+        y = self.conv_dcn(x, offset, mask=mask)
+        return y
 
 
 class ConvNormLayer(nn.Layer):
@@ -358,6 +430,68 @@ class ProposalTargetGenerator(object):
             self.bg_thresh_hi[stage], self.bg_thresh_lo[stage], reg_weights,
             num_classes, self.use_random, self.is_cls_agnostic, is_cascade,
             max_overlap)
+        outs = [to_tensor(v) for v in outs]
+        for v in outs:
+            v.stop_gradient = True
+        return outs
+
+
+@register
+@serializable
+class LibraProposalTargetGenerator(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 batch_size_per_im=512,
+                 fg_fraction=.25,
+                 fg_thresh=[.5, ],
+                 bg_thresh_hi=[.5, ],
+                 bg_thresh_lo=[0., ],
+                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
+                 num_classes=81,
+                 use_random=True,
+                 is_cls_agnostic=False,
+                 num_bins=3):
+        super(LibraProposalTargetGenerator, self).__init__()
+        self.batch_size_per_im = batch_size_per_im
+        self.fg_fraction = fg_fraction
+        self.fg_thresh = fg_thresh
+        self.bg_thresh_hi = bg_thresh_hi
+        self.bg_thresh_lo = bg_thresh_lo
+        self.bbox_reg_weights = bbox_reg_weights
+        self.num_classes = num_classes
+        self.use_random = use_random
+        self.is_cls_agnostic = is_cls_agnostic
+        self.num_bins = num_bins
+
+    def __call__(self,
+                 rpn_rois,
+                 rpn_rois_num,
+                 gt_classes,
+                 is_crowd,
+                 gt_boxes,
+                 im_info,
+                 stage=0,
+                 max_overlap=None):
+        rpn_rois = rpn_rois.numpy()
+        rpn_rois_num = rpn_rois_num.numpy()
+        gt_classes = gt_classes.numpy()
+        gt_boxes = gt_boxes.numpy()
+        is_crowd = is_crowd.numpy()
+        im_info = im_info.numpy()
+
+        max_overlap = max_overlap if max_overlap is None else max_overlap.numpy(
+        )
+        reg_weights = [i / (stage + 1) for i in self.bbox_reg_weights]
+        is_cascade = True if stage > 0 else False
+        num_classes = 2 if is_cascade else self.num_classes
+
+        outs = libra_generate_proposal_target(
+            rpn_rois, rpn_rois_num, gt_classes, is_crowd, gt_boxes, im_info,
+            self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
+            self.bg_thresh_hi[stage], self.bg_thresh_lo[stage], reg_weights,
+            num_classes, self.use_random, self.is_cls_agnostic, is_cascade,
+            max_overlap, self.num_bins)
         outs = [to_tensor(v) for v in outs]
         for v in outs:
             v.stop_gradient = True

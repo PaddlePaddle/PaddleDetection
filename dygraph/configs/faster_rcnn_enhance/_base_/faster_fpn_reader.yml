@@ -1,0 +1,41 @@
+worker_num: 2
+TrainReader:
+  sample_transforms:
+  - DecodeOp: {}
+  - RandomFlipOp: {prob: 0.5}
+  - AutoAugmentOp: {autoaug_type: v1}
+  - NormalizeImageOp: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - ResizeImage: {target_size: [384, 416, 448, 480, 512, 544, 576, 608, 640, 672], max_size: 1000, interp: 1, use_cv2: true}
+  - PermuteOp: {}
+  batch_transforms:
+  - PadBatchOp: {pad_to_stride: 32, pad_gt: true}
+  batch_size: 1
+  shuffle: true
+  drop_last: true
+
+
+EvalReader:
+  sample_transforms:
+  - DecodeOp: {}
+  - NormalizeImageOp: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - ResizeOp: {interp: 1, target_size: [640, 640], keep_ratio: True}
+  - PermuteOp: {}
+  batch_transforms:
+  - PadBatchOp: {pad_to_stride: 32, pad_gt: false}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+  drop_empty: false
+
+
+TestReader:
+  sample_transforms:
+  - DecodeOp: {}
+  - NormalizeImageOp: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - ResizeOp: {interp: 1, target_size: [640, 640]}
+  - PermuteOp: {}
+  batch_transforms:
+  - PadBatchOp: {pad_to_stride: 32, pad_gt: false}
+  batch_size: 1
+  shuffle: false
+  drop_last: false

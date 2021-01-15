@@ -25,3 +25,4 @@ from .iou_loss import *
 from .ssd_loss import *
 from .fcos_loss import *
 from .solov2_loss import *
+from .diou_loss import *
