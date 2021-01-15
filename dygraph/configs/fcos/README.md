@@ -13,6 +13,8 @@ FCOS (Fully Convolutional One-Stage Object Detection) is a fast anchor-free obje
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
 | ResNet50-FPN    | FCOS           |    2    |   1x      |     ----     |  39.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/fcos_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/fcos_r50_fpn_1x_coco.yml) |
+| ResNet50-FPN    | FCOS+DCN       |    2    |   1x      |     ----     |  44.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/fcos_dcn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/fcos_dcn_r50_fpn_1x_coco.yml) |
+| ResNet50-FPN    | FCOS+multiscale_train    |    2    |   2x      |     ----     |  42.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/fcos_r50_fpn_multiscale_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/fcos_r50_fpn_multiscale_2x_coco.yml) |
 
 **Notes:**
 
