@@ -132,8 +132,9 @@ class SOLOv2Head(object):
     def _points_nms(self, heat, kernel=2):
         hmax = fluid.layers.pool2d(
             input=heat, pool_size=kernel, pool_type='max', pool_padding=1)
-        keep = fluid.layers.cast((hmax[:, :, :-1, :-1] == heat), 'float32')
-        return heat * keep
+        keep = fluid.layers.cast(
+            paddle.equal(hmax[:, :, :-1, :-1], heat), 'float32')
+        return paddle.multiply(heat, keep)
 
     def _split_feats(self, feats):
         return (paddle.nn.functional.interpolate(
@@ -376,7 +377,7 @@ class SOLOv2Head(object):
             strides.append(
                 fluid.layers.fill_constant(
                     shape=[int(size_trans[_ind])],
-                    dtype="int32",
+                    dtype="float32",
                     value=self.segm_strides[_ind]))
         strides = fluid.layers.concat(strides)
         strides = fluid.layers.gather(strides, index=inds[:, 0])
@@ -389,7 +390,7 @@ class SOLOv2Head(object):
         seg_masks = fluid.layers.cast(seg_masks, 'float32')
         sum_masks = fluid.layers.reduce_sum(seg_masks, dim=[1, 2])
 
-        keep = fluid.layers.where(sum_masks > strides)
+        keep = fluid.layers.where(paddle.greater_than(sum_masks, strides))
         keep = fluid.layers.squeeze(keep, axes=[1])
         # Prevent empty and increase fake data
         keep_other = fluid.layers.concat([
@@ -409,9 +410,10 @@ class SOLOv2Head(object):
         cate_scores = fluid.layers.gather(cate_scores, index=keep_scores)
 
         # mask scoring.
-        seg_mul = fluid.layers.cast(seg_preds * seg_masks, 'float32')
-        seg_scores = fluid.layers.reduce_sum(seg_mul, dim=[1, 2]) / sum_masks
-        cate_scores *= seg_scores
+        seg_mul = fluid.layers.cast(
+            paddle.multiply(seg_preds, seg_masks), 'float32')
+        seg_scores = paddle.divide(paddle.sum(seg_mul, axis=[1, 2]), sum_masks)
+        cate_scores = paddle.multiply(cate_scores, seg_scores)
 
         # Matrix NMS
         seg_preds, cate_scores, cate_labels = self.mask_nms(

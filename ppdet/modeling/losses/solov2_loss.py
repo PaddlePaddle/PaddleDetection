@@ -48,10 +48,12 @@ class SOLOv2Loss(object):
         target = fluid.layers.reshape(
             target, shape=(fluid.layers.shape(target)[0], -1))
         target = fluid.layers.cast(target, 'float32')
-        a = fluid.layers.reduce_sum(input * target, dim=1)
-        b = fluid.layers.reduce_sum(input * input, dim=1) + 0.001
-        c = fluid.layers.reduce_sum(target * target, dim=1) + 0.001
-        d = (2 * a) / (b + c)
+        a = fluid.layers.reduce_sum(paddle.multiply(input, target), dim=1)
+        b = fluid.layers.reduce_sum(
+            paddle.multiply(input, input), dim=1) + 0.001
+        c = fluid.layers.reduce_sum(
+            paddle.multiply(target, target), dim=1) + 0.001
+        d = paddle.divide((2 * a), paddle.add(b, c))
         return 1 - d
 
     def __call__(self, ins_pred_list, ins_label_list, cate_preds, cate_labels,
