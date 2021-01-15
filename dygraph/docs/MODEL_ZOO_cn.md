@@ -23,85 +23,35 @@
 
 ## ImageNet预训练模型
 
-Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型均通过标准的Imagenet-1k数据集训练得到。[下载链接](https://github.com/PaddlePaddle/models/tree/develop/PaddleCV/image_classification#supported-models-and-performances)
+Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型均通过标准的Imagenet-1k数据集训练得到，ResNet和MobileNet等是采用余弦学习率调整策略或SSLD知识蒸馏训练得到的高精度预训练模型，可在[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)查看模型细节。
 
-- 注：ResNet50模型通过余弦学习率调整策略训练得到。[ResNet50下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_pretrained.tar),
- [ResNet50_vd下载链接](https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar)
 
 ## 基线
 
-### Faster & Mask R-CNN
+### Faster R-CNN
 
-| 骨架网络             | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
-| :------------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50             | Faster         |    1    |   1x    |     ----     |  35.1  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_1x_coco.yml) |
-| ResNet50             | Faster         |    1    |   2x    |     ----     |  37.1  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_2x_coco.yml) |
-| ResNet50             | Mask           |    1    |   1x    |     ----     |  36.4  |  31.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_1x_coco.yml) |
-| ResNet50             | Mask           |    1    |   2x    |     ----     |  38.2  |  33.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_2x_coco.yml) |
-| ResNet50-vd          | Faster         |    1    |   1x    |     ----     |  36.4  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_vd_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_vd_1x_coco.yml) |
-| ResNet34-FPN         | Faster         |    2    |   1x    |     ----     |  36.7  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r34_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r34_fpn_1x_coco.yml) |
-| ResNet34-vd-FPN      | Faster         |    2    |   1x    |     ----     |  37.4  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r34_vd_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r34_vd_fpn_1x_coco.yml) |
-| ResNet50-FPN         | Faster         |    1    |   1x    |     ----     |  37.0  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_fpn_1x_coco.yml) |
-| ResNet50-FPN         | Faster         |    2    |   2x    |     ----     |  37.7  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_fpn_2x_coco.yml) |
-| ResNet50-FPN         | Mask           |    1    |   1x    |     ----     |  38.3  |  34.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_fpn_1x_coco.yml) |
-| ResNet50-FPN         | Mask           |    1    |   2x    |     ----     |  38.7  |  34.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_fpn_2x_coco.yml) |
-| ResNet50-FPN         | Cascade Faster |    1    |   1x    |     ----     |  41.1  |    -   | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_faster_rcnn_r50_fpn_1x_coco.yml) |
-| ResNet50-FPN         | Cascade Mask   |    1    |   1x    |     ----     |  41.6  |  35.3  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/cascade_mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_mask_rcnn_r50_fpn_1x_coco.yml) |
-| ResNet50-vd-FPN      | Faster         |    2    |   2x    |     ----     |  38.9  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r50_vd_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r50_vd_fpn_2x_coco.yml) |
-| ResNet50-vd-FPN      | Mask           |    1    |   2x    |     ----     |  39.8  |  35.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_vd_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r50_vd_fpn_2x_coco.yml) |
-| ResNet101            | Faster         |    1    |   1x    |     ----     |  38.3  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r101_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r101_1x_coco.yml) |
-| ResNet101-FPN        | Faster         |    1    |   1x    |     ----     |  38.7  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r101_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ll.yml) |
-| ResNet101-FPN        | Faster         |    1    |   2x    |     ----     |  39.1  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r101_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r101_fpn_2x_coco.yml) |
-| ResNet101-FPN        | Mask           |    1    |   1x    |     ----     |  39.5  |  35.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r101_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r101_fpn_1x_coco.yml) |
-| ResNet101-vd-FPN     | Faster         |    1    |   1x    |     ----     |  40.5  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_r101_vd_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_r101_vd_fpn_1x_coco.yml) |
-| ResNet101-vd-FPN     | Mask           |    1    |   1x    |     ----     |  41.4  |  36.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r101_vd_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_r101_vd_fpn_1x_coco.yml) |
-| ResNeXt101-vd-FPN    | Faster         |    1    |   1x    |     ----     |  42.2  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_x101_vd_64x4d_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_x101_vd_64x4d_fpn_1x_coco.yml) |
-| ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |     ----     |  41.7  |   -    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.yml) |
-| ResNeXt101-vd-FPN    | Mask           |    1    |   1x    |     ----     |  42.9  |  37.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_x101_vd_64x4d_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_x101_vd_64x4d_fpn_1x_coco.yml) |
-| ResNeXt101-vd-FPN    | Mask           |    1    |   2x    |     ----     |  42.6  |  37.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_x101_vd_64x4d_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn_x101_vd_64x4d_fpn_2x_coco.yml) |
+请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/faster_rcnn/)
 
-### YOLOv3 on COCO
+### Mask R-CNN
 
-| 骨架网络             | 输入尺寸   | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
-| :------------------- | :------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| DarkNet53(paper)  | 608         |    8    |   270e    |     ----     |  33.0  |    -   |    -   |
-| DarkNet53(paper)  | 416         |    8    |   270e    |     ----     |  31.0  |    -   |    -   |
-| DarkNet53(paper)  | 320         |    8    |   270e    |     ----     |  28.2  |    -   |    -   |
-| DarkNet53         | 608         |    8    |   270e    |     ----     |  39.0  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
-| DarkNet53         | 416         |    8    |   270e    |     ----     |  37.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
-| DarkNet53         | 320         |    8    |   270e    |     ----     |  34.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_darknet53_270e_coco.yml) |
-| MobileNet-V1         | 608         |    8    |   270e    |     ----     |  28.8  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
-| MobileNet-V1         | 416         |    8    |   270e    |     ----     |  28.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
-| MobileNet-V1         | 320         |    8    |   270e    |     ----     |  26.5  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_coco.yml) |
-| MobileNet-V3         | 608         |    8    |   270e    |     ----     |  31.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
-| MobileNet-V3         | 416         |    8    |   270e    |     ----     |  29.7  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
-| MobileNet-V3         | 320         |    8    |   270e    |     ----     |  26.9  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_coco.yml) |
+请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/mask_rcnn/)
 
-### YOLOv3 on Pasacl VOC
+### Cascade R-CNN
 
-| 骨架网络     | 输入尺寸 | 每张GPU图片个数 | 学习率策略 |推理时间(fps)| Box AP | 下载 | 配置文件 |
-| :----------- | :--: | :-----: | :-----: |:------------: |:----: | :-------: | :----: |
-| MobileNet-V1 | 608  |    8    |   270e  |      -        |  75.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
-| MobileNet-V1 | 416  |    8    |   270e  |      -        |  76.1  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
-| MobileNet-V1 | 320  |    8    |   270e  |      -        |  73.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v1_270e_voc.yml) |
-| MobileNet-V3 | 608  |    8    |   270e  |      -        |  79.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
-| MobileNet-V3 | 416  |    8    |   270e  |      -        |  78.6  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
-| MobileNet-V3 | 320  |    8    |   270e  |      -        |  76.4  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v3_large_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3_mobilenet_v3_large_270e_voc.yml) |
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/cascade_rcnn/)
 
-**注意：** YOLOv3均使用8GPU训练，训练270个epoch
+### YOLOv3
 
-### SSD on Pascal VOC
+请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/yolov3/)
 
-| 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
-| :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| VGG             | SSD            |    8    |   240e    |     ----     |  78.2  | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/ssd_vgg16_300_240e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ssd_vgg16_300_240e_voc.yml) |
+### SSD
 
-**注意：** SSD使用4GPU训练，训练240个epoch
+请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ssd/)
 
 ### FCOS
 
-请参考[fcos](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/)
+请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/fcos/)
 
 ### SOLOv2
 
-请参考[solov2](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2/)
+请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2/)
