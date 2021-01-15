@@ -95,7 +95,7 @@ def load_weight(model, weight, optimizer=None):
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
         optim_state_dict = paddle.load(path + '.pdopt')
-        # to slove resume bug, will it be fixed in paddle 2.0
+        # to solve resume bug, will it be fixed in paddle 2.0
         for key in optimizer.state_dict().keys():
             if not key in optim_state_dict.keys():
                 optim_state_dict[key] = optimizer.state_dict()[key]
@@ -132,6 +132,9 @@ def load_pretrain_weight(model,
                     weight_name, pre_state_dict[weight_name].shape))
                 param_state_dict[key] = pre_state_dict[weight_name]
             else:
+                if 'backbone' in key:
+                    logger.info('Lack weight: {}, structure name: {}'.format(
+                        weight_name, key))
                 param_state_dict[key] = model_dict[key]
         model.set_dict(param_state_dict)
         return
