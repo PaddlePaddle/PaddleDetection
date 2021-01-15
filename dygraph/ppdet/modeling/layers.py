@@ -83,8 +83,8 @@ class DeformableConvV2(nn.Layer):
             dcn_bias_attr = ParamAttr(
                 name=name + "_bias",
                 initializer=Constant(value=0),
-                regularizer=L2Decay(0.),  #
-                learning_rate=2.)  #
+                regularizer=L2Decay(0.),
+                learning_rate=2.)
         else:
             # in ResNet backbone, do not need bias
             dcn_bias_attr = False
@@ -134,7 +134,7 @@ class ConvNormLayer(nn.Layer):
         else:
             bias_attr = False
 
-        if use_dcn == False:
+        if not use_dcn:
             self.conv = nn.Conv2D(
                 in_channels=ch_in,
                 out_channels=ch_out,
@@ -163,8 +163,8 @@ class ConvNormLayer(nn.Layer):
                         mean=0., std=0.01),
                     learning_rate=1.),
                 bias_attr=True,
-                lr_scale=2.,  #
-                regularizer=L2Decay(0.),  #
+                lr_scale=2.,
+                regularizer=L2Decay(0.),
                 name=name)
 
         param_attr = ParamAttr(

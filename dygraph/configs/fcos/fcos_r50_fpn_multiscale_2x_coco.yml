@@ -1,6 +1,6 @@
 _BASE_: [
-  '../_base_/datasets/coco_detection.yml', 
-  '../_base_/runtime.yml',
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
   '_base_/fcos_r50_fpn.yml',
   '_base_/optimizer_1x.yml',
   '_base_/fcos_reader.yml',
@@ -13,7 +13,7 @@ TrainReader:
   - DecodeOp: {}
   - RandomFlipOp: {prob: 0.5}
   - NormalizeImageOp: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
-  - ResizeImage: 
+  - ResizeImage:
       target_size: [640, 672, 704, 736, 768, 800]
       max_size: 1333
       interp: 1

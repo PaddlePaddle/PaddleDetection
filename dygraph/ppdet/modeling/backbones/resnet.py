@@ -49,7 +49,7 @@ class ConvNormLayer(nn.Layer):
         self.norm_type = norm_type
         self.act = act
 
-        if dcn_v2 is False:
+        if not dcn_v2:
             self.conv = Conv2D(
                 in_channels=ch_in,
                 out_channels=ch_out,
