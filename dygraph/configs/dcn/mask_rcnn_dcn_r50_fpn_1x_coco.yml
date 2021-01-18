@@ -1,9 +1,9 @@
 _BASE_: [
   '../datasets/coco_instance.yml',
   '../runtime.yml',
-  '_base_/optimizer_1x.yml',
-  '_base_/mask_rcnn_r50_fpn.yml',
-  '_base_/mask_fpn_reader.yml',
+  '../mask_rcnn/_base_/optimizer_1x.yml',
+  '../mask_rcnn/_base_/mask_rcnn_r50_fpn.yml',
+  '../mask_rcnn/_base_/mask_fpn_reader.yml',
 ]
 weights: output/mask_rcnn_dcn_r50_fpn_1x_coco/model_final
 
