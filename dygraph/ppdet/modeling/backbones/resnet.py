@@ -530,14 +530,15 @@ class ResNet(nn.Layer):
 
 @register
 class Res5Head(nn.Layer):
-    def __init__(self, feat_in=1024, feat_out=512):
+    def __init__(self, depth=50, feat_in=1024, feat_out=512):
         super(Res5Head, self).__init__()
         na = NameAdapter(self)
         self.res5_conv = []
         self.res5 = self.add_sublayer(
             'res5_roi_feat',
             Blocks(
-                feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
+                depth, feat_in, feat_out, count=3, name_adapter=na,
+                stage_num=5))
         self.feat_out = feat_out * 4
 
     def forward(self, roi_feat, stage=0):
