@@ -45,7 +45,7 @@ __all__ = [
 ]
 
 
-def batch_norm(ch, norm_type='bn', name=None):
+def batch_norm(ch, norm_type='bn', norm_decay=0., initializer=None, name=None):
     bn_name = name + '.bn'
     if norm_type == 'sync_bn':
         batch_norm = nn.SyncBatchNorm
@@ -55,9 +55,11 @@ def batch_norm(ch, norm_type='bn', name=None):
     return batch_norm(
         ch,
         weight_attr=ParamAttr(
-            name=bn_name + '.scale', regularizer=L2Decay(0.)),
+            name=bn_name + '.scale',
+            initializer=initializer,
+            regularizer=L2Decay(norm_decay)),
         bias_attr=ParamAttr(
-            name=bn_name + '.offset', regularizer=L2Decay(0.)))
+            name=bn_name + '.offset', regularizer=L2Decay(norm_decay)))
 
 
 @paddle.jit.not_to_static

@@ -20,8 +20,10 @@ import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ..utils import xywh2xyxy, bbox_iou, decode_yolo
+from .utils import bbox_overlap
 
-__all__ = ['IouLoss']
+#__all__ = ['IouLoss']	
+__all__ = ['IouLoss', 'GIoULoss']
 
 
 @register
@@ -65,3 +67,47 @@ class IouLoss(object):
 
         loss_iou = loss_iou * self.loss_weight
         return loss_iou
+
+
+@register
+@serializable
+class GIoULoss(object):
+    """
+    Generalized Intersection over Union, see https://arxiv.org/abs/1902.09630
+    Args:
+        loss_weight (float): giou loss weight, default as 1
+        eps (float): epsilon to avoid divide by zero, default as 1e-10
+        reduction (string): Options are "none", "mean" and "sum". default as none
+    """
+
+    def __init__(self,
+                 loss_weight=1.,
+                 inside_weight=1.,
+                 eps=1e-10,
+                 reduction='none'):
+        self.loss_weight = loss_weight
+        self.eps = eps
+        assert reduction in ('none', 'mean', 'sum')
+        self.reduction = reduction
+
+    def __call__(self, pbox, gbox, iou_weight=1.):
+        x1, y1, x2, y2 = paddle.split(pbox, num_or_sections=4, axis=-1)
+        x1g, y1g, x2g, y2g = paddle.split(gbox, num_or_sections=4, axis=-1)
+        box1 = [x1, y1, x2, y2]
+        box2 = [x1g, y1g, x2g, y2g]
+        iou, overlap, union = bbox_overlap(box1, box2, self.eps)
+        xc1 = paddle.minimum(x1, x1g)
+        yc1 = paddle.minimum(y1, y1g)
+        xc2 = paddle.maximum(x2, x2g)
+        yc2 = paddle.maximum(y2, y2g)
+
+        area_c = (xc2 - xc1) * (yc2 - yc1) + self.eps
+        miou = iou - ((area_c - union) / area_c)
+        giou = 1 - miou
+        if self.reduction == 'none':
+            loss = giou
+        elif self.reduction == 'sum':
+            loss = paddle.sum(giou * iou_weight)
+        else:
+            loss = paddle.mean(giou * iou_weight)
+        return loss * self.loss_weight

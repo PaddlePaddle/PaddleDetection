@@ -147,6 +147,7 @@ def get_det_res(bboxes, bbox_nums, image_id, num_id_to_cat_id_map):
             dt = bboxes[k]
             k = k + 1
             num_id, score, xmin, ymin, xmax, ymax = dt.tolist()
+            if num_id < 0: continue
             category_id = num_id_to_cat_id_map[num_id]
             w = xmax - xmin + 1
             h = ymax - ymin + 1
