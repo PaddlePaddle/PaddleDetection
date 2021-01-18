@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
@@ -33,27 +34,17 @@ class IouAwareLoss(IouLoss):
         max_width (int): max width of input to support random shape input
     """
 
-    def __init__(
-            self,
-            loss_weight=1.0,
-            giou=False,
-            diou=False,
-            ciou=False, ):
+    def __init__(self, loss_weight=1.0, giou=False, diou=False, ciou=False):
         super(IouAwareLoss, self).__init__(
             loss_weight=loss_weight, giou=giou, diou=diou, ciou=ciou)
 
-    def __call__(self, ioup, pbox, gbox, anchor, downsample, scale=1.):
-        b = pbox.shape[0]
-        ioup = ioup.reshape((b, -1))
-        pbox = decode_yolo(pbox, anchor, downsample)
-        gbox = decode_yolo(gbox, anchor, downsample)
-        pbox = xywh2xyxy(pbox).reshape((b, -1, 4))
-        gbox = xywh2xyxy(gbox).reshape((b, -1, 4))
+    def __call__(self, ioup, pbox, gbox, anchor, downsample):
+        pbox = self.bbox_transform(pbox, anchor, downsample)
+        gbox = self.bbox_transform(gbox, anchor, downsample)
         iou = bbox_iou(
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         iou.stop_gradient = True
-
-        loss_iou_aware = F.binary_cross_entropy_with_logits(
-            ioup, iou, reduction='none')
+        ioup = F.sigmoid(ioup)
+        loss_iou_aware = (-iou * paddle.log(ioup)).sum(-2, keepdim=True)
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

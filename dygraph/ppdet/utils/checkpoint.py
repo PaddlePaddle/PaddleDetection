@@ -169,7 +169,12 @@ def save_model(model, optimizer, save_dir, save_name, last_epoch):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, save_name)
-    paddle.save(model.state_dict(), save_path + ".pdparams")
+    if isinstance(model, nn.Layer):
+        paddle.save(model.state_dict(), save_path + ".pdparams")
+    else:
+        assert isinstance(model,
+                          dict), 'model is not a instance of nn.layer or dict'
+        paddle.save(model, save_path + ".pdparams")
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch
     paddle.save(state_dict, save_path + ".pdopt")

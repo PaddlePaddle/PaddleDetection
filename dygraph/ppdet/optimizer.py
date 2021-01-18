@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import math
+import copy
 import paddle
 import paddle.nn as nn
 
@@ -202,7 +203,7 @@ class OptimizerBuilder():
 
     def __call__(self, learning_rate, params=None):
         if self.clip_grad_by_norm is not None:
-            grad_clip = nn.GradientClipByGlobalNorm(
+            grad_clip = nn.ClipGradByGlobalNorm(
                 clip_norm=self.clip_grad_by_norm)
         else:
             grad_clip = None
@@ -223,3 +224,38 @@ class OptimizerBuilder():
                   weight_decay=regularization,
                   grad_clip=grad_clip,
                   **optim_args)
+
+
+class ModelEMA(object):
+    def __init__(self, decay, model, use_thres_step=False):
+        self.step = 0
+        self.decay = decay
+        for k, v in model.state_dict.items():
+            self.state_dict = paddle.zeros_like(v)
+        self.use_thres_step = use_thres_step
+
+    def update(self, model):
+        if self.use_thres_step:
+            decay = min(self.decay, (1 + self.step) / (10 + self.step))
+        else:
+            decay = self.decay
+        model_dict = model.state_dict()
+        for k, v in self.state_dict.items():
+            if '_mean' not in k and '_variance' not in k:
+                v = decay * v + (1 - decay) * model_dict[k]
+                v.stop_gradient = True
+                self.state_dict[k] = v
+            else:
+                self.state_dict[k] = model_dict[k]
+        self.step += 1
+
+    def apply(self):
+        if self.use_thres_step:
+            decay = min(self.decay, (1 + self.step) / (10 + self.step))
+        else:
+            decay = self.decay
+        for k, v in self.state_dict.items():
+            if '_mean' not in k and '_variance' not in k:
+                v = v / (1 - decay**self.step)
+                v.stop_gradient = True
+                self.state_dict[k] = v
