@@ -138,8 +138,9 @@ class Checkpointer(Callback):
         super(Checkpointer, self).__init__(model)
         cfg = self.model.cfg
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
-        self.ema = ModelEMA(
-            cfg['ema_decay'], self.model.model.state_dict, use_thres_step=True)
+        if self.use_ema:
+            self.ema = ModelEMA(
+                cfg['ema_decay'], self.model.model, use_thres_step=True)
 
     def on_step_end(self, status):
         if self.use_ema:

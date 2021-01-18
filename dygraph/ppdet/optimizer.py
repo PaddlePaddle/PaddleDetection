@@ -230,7 +230,7 @@ class ModelEMA(object):
     def __init__(self, decay, model, use_thres_step=False):
         self.step = 0
         self.decay = decay
-        for k, v in model.state_dict.items():
+        for k, v in model.state_dict().items():
             self.state_dict = paddle.zeros_like(v)
         self.use_thres_step = use_thres_step
 
