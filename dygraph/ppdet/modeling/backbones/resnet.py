@@ -240,7 +240,9 @@ class BottleNeck(nn.Layer):
         if groups == 1:
             width = ch_out
         else:
-            width = int(math.floor(ch_out * (base_width * 1.0 / base_channels)) * groups)
+            width = int(
+                math.floor(ch_out * (base_width * 1.0 / base_channels)) *
+                groups)
 
         conv_name1, conv_name2, conv_name3, \
             shortcut_name = name_adapter.fix_bottleneck_name(name)
