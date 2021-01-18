@@ -58,16 +58,22 @@ class ConvBNLayer(nn.Layer):
                 name=name + "_weights"),
             bias_attr=False)
 
+        param_attr = ParamAttr(
+            name=name + "_bn_scale", regularizer=L2Decay(norm_decay))
+        bias_attr = ParamAttr(
+            name=name + "_bn_offset", regularizer=L2Decay(norm_decay))
         if norm_type == 'sync_bn':
-            batch_norm = nn.SyncBatchNorm
+            self._batch_norm = nn.SyncBatchNorm(
+                out_channels, weight_attr=param_attr, bias_attr=bias_attr)
         else:
-            batch_norm = nn.BatchNorm2D
-        self._batch_norm = batch_norm(
-            out_channels,
-            weight_attr=ParamAttr(
-                name=name + "_bn_scale", regularizer=L2Decay(norm_decay)),
-            bias_attr=ParamAttr(
-                name=name + "_bn_offset", regularizer=L2Decay(norm_decay)))
+            self._batch_norm = nn.BatchNorm(
+                out_channels,
+                act=None,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=False,
+                moving_mean_name=name + '_bn_mean',
+                moving_variance_name=name + '_bn_variance')
 
     def forward(self, x):
         x = self._conv(x)
