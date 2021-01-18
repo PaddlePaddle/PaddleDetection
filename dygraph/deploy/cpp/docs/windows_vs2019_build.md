@@ -24,7 +24,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/windows_cpp_inference.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc1/guides/05_inference_deployment/inference/windows_cpp_inference.html)
 
 解压后`D:\projects\fluid_inference`目录包含内容为：
 ```
@@ -72,6 +72,7 @@ fluid_inference
 | *CUDNN_LIB | CUDNN的库路径 |
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
+| USE_PADDLE_20RC1 | 是否使用2.0rc1预测库。如果使用2.0rc1，在windows环境下预测库名称发生变化，且仅支持动态库方式编译 |
 
 **注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉
 ![step4](https://paddleseg.bj.bcebos.com/inference/vs2019_step5.png)

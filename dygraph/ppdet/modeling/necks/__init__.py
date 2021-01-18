@@ -14,6 +14,8 @@
 
 from . import fpn
 from . import yolo_fpn
+from . import hrfpn
 
 from .fpn import *
 from .yolo_fpn import *
+from .hrfpn import *

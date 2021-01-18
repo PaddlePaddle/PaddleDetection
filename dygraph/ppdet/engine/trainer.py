@@ -156,6 +156,7 @@ class Trainer(object):
 
     def train(self):
         assert self.mode == 'train', "Model not in 'train' mode"
+        self.model.train()
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
@@ -184,7 +185,6 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
 
                 # model forward
-                self.model.train()
                 outputs = self.model(data)
                 loss = outputs['loss']
 

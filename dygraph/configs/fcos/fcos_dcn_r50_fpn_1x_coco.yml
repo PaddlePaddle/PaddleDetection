@@ -1,0 +1,32 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/fcos_r50_fpn.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/fcos_reader.yml',
+]
+
+weights: output/fcos_dcn_r50_fpn_1x_coco/model_final
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+  dcn_v2_stages: [1,2,3]
+
+FCOSHead:
+  fcos_feat:
+    name: FCOSFeat
+    feat_in: 256
+    feat_out: 256
+    num_convs: 4
+    norm_type: "gn"
+    use_dcn: true
+  num_classes: 80
+  fpn_stride: [8, 16, 32, 64, 128]
+  prior_prob: 0.01
+  fcos_loss: FCOSLoss
+  norm_reg_targets: true
+  centerness_on_reg: true

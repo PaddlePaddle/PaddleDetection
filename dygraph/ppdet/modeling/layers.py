@@ -33,6 +33,7 @@ from ppdet.py_op.post_process import bbox_post_process
 from . import ops
 from paddle.vision.ops import DeformConv2D
 
+
 def _to_list(l):
     if isinstance(l, (list, tuple)):
         return list(l)
@@ -134,19 +135,38 @@ class ConvNormLayer(nn.Layer):
         else:
             bias_attr = False
 
-        self.conv = nn.Conv2D(
-            in_channels=ch_in,
-            out_channels=ch_out,
-            kernel_size=filter_size,
-            stride=stride,
-            padding=(filter_size - 1) // 2,
-            groups=1,
-            weight_attr=ParamAttr(
-                name=name + "_weight",
-                initializer=Normal(
-                    mean=0., std=0.01),
-                learning_rate=1.),
-            bias_attr=bias_attr)
+        if not use_dcn:
+            self.conv = nn.Conv2D(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                weight_attr=ParamAttr(
+                    name=name + "_weight",
+                    initializer=Normal(
+                        mean=0., std=0.01),
+                    learning_rate=1.),
+                bias_attr=bias_attr)
+        else:
+            # in FCOS-DCN head, specifically need learning_rate and regularizer
+            self.conv = DeformableConvV2(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                weight_attr=ParamAttr(
+                    name=name + "_weight",
+                    initializer=Normal(
+                        mean=0., std=0.01),
+                    learning_rate=1.),
+                bias_attr=True,
+                lr_scale=2.,
+                regularizer=L2Decay(0.),
+                name=name)
 
         param_attr = ParamAttr(
             name=norm_name + "_scale",

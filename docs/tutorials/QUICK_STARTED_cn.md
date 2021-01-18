@@ -64,7 +64,7 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 # -c 参数表示指定使用哪个配置文件
 # -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），需使用单卡评估
 
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml-o use_gpu=true
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
 
 
