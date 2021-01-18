@@ -78,7 +78,11 @@ class PiecewiseDecay(object):
         milestones (list): steps at which to decay learning rate
     """
 
-    def __init__(self, gamma=[0.1, 0.01], milestones=[8, 11], values=None):
+    def __init__(self,
+                 gamma=[0.1, 0.01],
+                 milestones=[8, 11],
+                 values=None,
+                 use_warmup=True):
         super(PiecewiseDecay, self).__init__()
         if type(gamma) is not list:
             self.gamma = []
@@ -88,13 +92,14 @@ class PiecewiseDecay(object):
             self.gamma = gamma
         self.milestones = milestones
         self.values = values
+        self.use_warmup = use_warmup
 
     def __call__(self,
                  base_lr=None,
                  boundary=None,
                  value=None,
                  step_per_epoch=None):
-        if boundary is not None:
+        if boundary is not None and self.use_warmup:
             boundary.extend([int(step_per_epoch) * i for i in self.milestones])
         else:
             # do not use LinearWarmup
@@ -160,6 +165,11 @@ class LearningRate(object):
         self.schedulers = schedulers
 
     def __call__(self, step_per_epoch):
+        assert len(self.schedulers) >= 1
+        if not self.schedulers[0].use_warmup:
+            return self.schedulers[0](base_lr=self.base_lr,
+                                      step_per_epoch=step_per_epoch)
+
         # TODO: split warmup & decay 
         # warmup
         boundary, value = self.schedulers[1](self.base_lr)

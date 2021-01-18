@@ -6,9 +6,7 @@ LearningRate:
   - !PiecewiseDecay
     milestones: [40, 60, 80, 100]
     values: [0.001, 0.0005, 0.00025, 0.0001, 0.00001]
-  - !LinearWarmup
-    start_factor: 1.
-    steps: -1
+    use_warmup: false
 
 OptimizerBuilder:
   optimizer:
