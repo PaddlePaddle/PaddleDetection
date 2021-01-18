@@ -900,6 +900,8 @@ class FCOSBox(object):
         return pred_boxes, pred_scores
 
 
+@register
+@serializable
 class MaskMatrixNMS(object):
     """
     Matrix NMS for multi-class masks.
