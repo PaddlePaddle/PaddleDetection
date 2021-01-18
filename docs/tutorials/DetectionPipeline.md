@@ -87,7 +87,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 - [`MaskRCNN.md`](../advanced_tutorials/config_doc/RCNN_PARAMS_DOC.md)  
 
 配置文件设计思路请参考文档 [配置模块设计与介绍](../advanced_tutorials/config_doc/CONFIG_cn.md)  
-如何新增模型请参考文档 [新增模型算法](../advanced_tutorials/MODEL_TECHNICAL_cn.md)  
+如何新增模型请参考文档 [新增模型算法](../advanced_tutorials/MODEL_TECHNICAL.md)  
 
 ##### 配置文件中部分参数介绍
 
@@ -149,7 +149,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
     请根据硬件设置batch_size大小。若需要设置内存使用量请参考[如何设置内存使用量](../FAQ.md)
 
 - 12、sample_transforms and batch_transforms  
-    sample_transforms是针对单张图像的操作，batch_transforms是针对一个batch数据的操作。文档请参考[数据处理模块](../advanced_tutorials/READER_cn.md).  
+    sample_transforms是针对单张图像的操作，batch_transforms是针对一个batch数据的操作。文档请参考[数据处理模块](../advanced_tutorials/READER.md).  
     `configs中的sample_transforms`，各个函数说明请参考`ppdet/data/transform/operators.py`  
     `configs中的batch_transforms`，各个函数说明请参考`ppdet/data/transform/batch_operators.py`  
 
