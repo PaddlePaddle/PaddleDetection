@@ -44,8 +44,9 @@ class CosineDecay(object):
             the max_iters is much larger than the warmup iter
     """
 
-    def __init__(self, max_epochs=1000):
+    def __init__(self, max_epochs=1000, use_warmup=True):
         self.max_epochs = max_epochs
+        self.use_warmup = use_warmup
 
     def __call__(self,
                  base_lr=None,
@@ -56,7 +57,7 @@ class CosineDecay(object):
 
         max_iters = self.max_epochs * int(step_per_epoch)
 
-        if boundary is not None and value is not None:
+        if boundary is not None and value is not None and self.use_warmup:
             for i in range(int(boundary[-1]), max_iters):
                 boundary.append(i)
 

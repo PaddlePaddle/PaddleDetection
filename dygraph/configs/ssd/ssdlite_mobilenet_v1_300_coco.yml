@@ -1,7 +1,7 @@
 _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
-  '_base_/optimizer_1000e.yml',
+  '_base_/optimizer_1700e.yml',
   '_base_/ssdlite_mobilenet_v1_300.yml',
   '_base_/ssdlite300_reader.yml',
 ]
