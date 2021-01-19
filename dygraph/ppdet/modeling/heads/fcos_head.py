@@ -214,7 +214,7 @@ class FCOSHead(nn.Layer):
         shift_x = paddle.reshape(shift_x, shape=[-1])
         shift_y = paddle.reshape(shift_y, shape=[-1])
         location = paddle.stack(
-            [shift_x, shift_y], axis=-1) + fpn_stride * 1.0 / 2
+            [shift_x, shift_y], axis=-1) + float(fpn_stride) / 2
         location.stop_gradient = True
         return location
 
