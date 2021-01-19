@@ -239,6 +239,7 @@ class ModelEMA(object):
             decay = min(self.decay, (1 + self.step) / (10 + self.step))
         else:
             decay = self.decay
+        self._decay = decay
         model_dict = model.state_dict()
         for k, v in self.state_dict.items():
             if '_mean' not in k and '_variance' not in k:
@@ -250,12 +251,10 @@ class ModelEMA(object):
         self.step += 1
 
     def apply(self):
-        if self.use_thres_step:
-            decay = min(self.decay, (1 + self.step) / (10 + self.step))
-        else:
-            decay = self.decay
+        state_dict = dict()
         for k, v in self.state_dict.items():
             if '_mean' not in k and '_variance' not in k:
-                v = v / (1 - decay**self.step)
+                v = v / (1 - self._decay**self.step)
                 v.stop_gradient = True
-                self.state_dict[k] = v
+                state_dict[k] = v
+        return state_dict

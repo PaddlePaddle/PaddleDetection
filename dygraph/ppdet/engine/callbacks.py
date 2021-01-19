@@ -158,9 +158,9 @@ class Checkpointer(Callback):
                 save_name = str(
                     epoch_id) if epoch_id != end_epoch - 1 else "model_final"
                 if self.use_ema:
-                    self.ema.apply()
-                    save_model(self.ema.state_dict(), self.model.optimizer,
-                               save_dir, save_name, epoch_id + 1)
+                    state_dict = self.ema.apply()
+                    save_model(state_dict, self.model.optimizer, save_dir,
+                               save_name, epoch_id + 1)
                 else:
                     save_model(self.model.model, self.model.optimizer, save_dir,
                                save_name, epoch_id + 1)

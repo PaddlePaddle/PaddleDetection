@@ -2,8 +2,12 @@ _BASE_: [
   '../datasets/minicoco_detection.yml',
   '../runtime.yml',
   './_base_/ppyolo_r50vd_dcn.yml',
-  './_base_/ppyolo_1x.yml',
+  './_base_/ppyolo_1x_minicoco.yml',
   './_base_/ppyolo_reader.yml',
 ]
 
 snapshot_epoch: 8
+use_ema: false
+
+TrainReader:
+  batch_size: 12

@@ -1,0 +1,15 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/ppyolo_r50vd_dcn.yml',
+  './_base_/ppyolo_1x.yml',
+  './_base_/ppyolo_reader.yml',
+]
+
+snapshot_epoch: 16
+
+EvalDataset:
+  !COCODataSet
+    image_dir: test2017
+    anno_path: annotations/image_info_test-dev2017.json
+    dataset_dir: dataset/coco

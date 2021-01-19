@@ -3,7 +3,7 @@ pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_
 weights: output/ppyolo_r50vd_dcn/model_final
 load_static_weights: true
 norm_type: sync_bn
-use_ema: false
+use_ema: true
 ema_decay: 0.9998
 
 YOLOv3:

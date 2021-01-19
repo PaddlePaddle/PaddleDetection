@@ -4,6 +4,7 @@ num_classes: 80
 TrainDataset:
   !COCODataSet
     image_dir: train2017
+    # refer to https://github.com/giddyyupp/coco-minitrain
     anno_path: annotations/instances_minitrain2017.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_poly', 'is_crowd']
