@@ -536,7 +536,7 @@ class RCNNBox(object):
         # TODO: Updata box_clip
         origin_h = paddle.unsqueeze(origin_shape[:, 0] - 1, axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1] - 1, axis=1)
-        zeros = paddle.zeros(origin_h.shape, 'float32')
+        zeros = paddle.zeros(paddle.shape(origin_h), 'float32')
         x1 = paddle.maximum(paddle.minimum(bbox[:, :, 0], origin_w), zeros)
         y1 = paddle.maximum(paddle.minimum(bbox[:, :, 1], origin_h), zeros)
         x2 = paddle.maximum(paddle.minimum(bbox[:, :, 2], origin_w), zeros)
