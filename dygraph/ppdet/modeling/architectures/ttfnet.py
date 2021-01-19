@@ -19,7 +19,7 @@ from __future__ import print_function
 import paddle
 from ppdet.core.workspace import register
 from .meta_arch import BaseArch
-from IPython import embed
+
 __all__ = ['TTFNet']
 
 
@@ -47,7 +47,6 @@ class TTFNet(BaseArch):
     def model_arch(self, ):
         # Backbone
         body_feats = self.backbone(self.inputs)
-
         # neck
         body_feats = self.neck(body_feats)
         # TTF Head
@@ -61,7 +60,6 @@ class TTFNet(BaseArch):
         head_loss = self.ttf_head.get_loss(self.hm, self.wh, heatmap,
                                            box_target, reg_weight)
         loss.update(head_loss)
-
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss

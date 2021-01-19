@@ -1,7 +1,5 @@
 worker_num: 2
 TrainReader:
-  #inputs_def:
-  #  fields: ['image', 'scale_factor', 'gt_bbox', 'gt_class', 'is_crowd']
   sample_transforms:
   - DecodeOp: {}
   - RandomFlipOp: {prob: 0.5}
@@ -16,9 +14,6 @@ TrainReader:
   drop_last: true
 
 EvalReader:
-  #inputs_def:
-  #  image_shape: [3, 512, 512]
-  #  fields: ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
   - DecodeOp: {}
   - ResizeOp: {target_size: [512, 512], keep_ratio: False}
@@ -28,11 +23,7 @@ EvalReader:
   drop_last: false
   drop_empty: false
 
-
 TestReader:
-  #inputs_def:
-  #  image_shape: [3, 512, 512]
-  #  fields:  ['image', 'im_shape', 'scale_factor', 'im_id']
   sample_transforms:
   - DecodeOp: {}
   - NormalizeImageOp: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}

@@ -132,24 +132,3 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
             return iou - (c_area - union) / c_area
     else:
         return iou
-
-
-def bbox_overlap(box1, box2, eps=1e-9):
-    """calculate the iou of box1 and box2
-    Args:
-        box1 (Tensor): box1 with the shape (..., 4)
-        box2 (Tensor): box1 with the shape (..., 4)
-        eps (float): epsilon to avoid divide by zero
-    Return:
-        iou (Tensor): iou of box1 and box2
-    """
-    px1y1, px2y2 = box1[:, :, 0:2], box1[:, :, 2:4]
-    gx1y1, gx2y2 = box2[:, :, 0:2], box2[:, :, 2:4]
-    x1y1 = paddle.maximum(px1y1, gx1y1)
-    x2y2 = paddle.minimum(px2y2, gx2y2)
-
-    overlap = (x2y2 - x1y1).clip(0).prod(-1)
-    area1 = (px2y2 - px1y1).clip(0).prod(-1)
-    area2 = (gx2y2 - gx1y1).clip(0).prod(-1)
-    union = area1 + area2 - overlap + eps
-    iou = overlap / union

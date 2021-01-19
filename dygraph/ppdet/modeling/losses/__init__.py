@@ -18,7 +18,7 @@ from . import iou_loss
 from . import ssd_loss
 from . import fcos_loss
 from . import solov2_loss
-from . import focal_loss
+from . import ctfocal_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
@@ -26,4 +26,4 @@ from .iou_loss import *
 from .ssd_loss import *
 from .fcos_loss import *
 from .solov2_loss import *
-from .focal_loss import *
+from .ctfocal_loss import *

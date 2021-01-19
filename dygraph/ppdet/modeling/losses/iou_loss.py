@@ -20,9 +20,7 @@ import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ..utils import xywh2xyxy, bbox_iou, decode_yolo
-from .utils import bbox_overlap
 
-#__all__ = ['IouLoss']	
 __all__ = ['IouLoss', 'GIoULoss']
 
 
@@ -90,12 +88,39 @@ class GIoULoss(object):
         assert reduction in ('none', 'mean', 'sum')
         self.reduction = reduction
 
+    def bbox_overlap(self, box1, box2, eps=1e-10):
+        """calculate the iou of box1 and box2
+        Args:
+            box1 (Tensor): box1 with the shape (..., 4)
+            box2 (Tensor): box1 with the shape (..., 4)
+            eps (float): epsilon to avoid divide by zero
+        Return:
+            iou (Tensor): iou of box1 and box2
+        """
+        x1, y1, x2, y2 = box1
+        x1g, y1g, x2g, y2g = box2
+
+        xkis1 = paddle.maximum(x1, x1g)
+        ykis1 = paddle.maximum(y1, y1g)
+        xkis2 = paddle.minimum(x2, x2g)
+        ykis2 = paddle.minimum(y2, y2g)
+        w_inter = (xkis2 - xkis1).clip(0)
+        h_inter = (ykis2 - ykis1).clip(0)
+        overlap = w_inter * h_inter
+
+        area1 = (x2 - x1) * (y2 - y1)
+        area2 = (x2g - x1g) * (y2g - y1g)
+        union = area1 + area2 - overlap + eps
+        iou = overlap / union
+
+        return iou, overlap, union
+
     def __call__(self, pbox, gbox, iou_weight=1.):
         x1, y1, x2, y2 = paddle.split(pbox, num_or_sections=4, axis=-1)
         x1g, y1g, x2g, y2g = paddle.split(gbox, num_or_sections=4, axis=-1)
         box1 = [x1, y1, x2, y2]
         box2 = [x1g, y1g, x2g, y2g]
-        iou, overlap, union = bbox_overlap(box1, box2, self.eps)
+        iou, overlap, union = self.bbox_overlap(box1, box2, self.eps)
         xc1 = paddle.minimum(x1, x1g)
         yc1 = paddle.minimum(y1, y1g)
         xc2 = paddle.maximum(x2, x2g)

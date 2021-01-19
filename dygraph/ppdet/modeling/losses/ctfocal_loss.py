@@ -51,6 +51,6 @@ class CTFocalLoss(object):
         neg_loss = paddle.sum(neg_loss)
 
         fg_num = paddle.sum(fg_map)
-        focal_loss = (pos_loss + neg_loss) / (
+        ct_focal_loss = (pos_loss + neg_loss) / (
             fg_num + paddle.cast(fg_num == 0, 'float32'))
-        return focal_loss * self.loss_weight
+        return ct_focal_loss * self.loss_weight
