@@ -1,15 +1,14 @@
 architecture: SSD
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/ssd_mobilenet_v1_voc.tar
-use_gpu: false #true
-use_xpu: true #true
+use_gpu: false
+use_xpu: true
 max_iters: 3000
 snapshot_iter: 500
 log_iter: 1
 metric: VOC
 map_type: 11point
 save_dir: output
-weights: output/ssd_mobilenet_v1_voc/model_final
-# 20(label_class) + 1(background)
+weights: output/ssd_mobilenet_v1_roadsign_kunlun/model_final
 num_classes: 5
 
 SSD:
@@ -90,8 +89,8 @@ TrainReader:
   shuffle: true
   drop_last: true
   worker_num: 8
-  bufsize: 16  #32
-  use_process: false #true
+  bufsize: 16
+  use_process: false
 
 EvalReader:
   inputs_def:
