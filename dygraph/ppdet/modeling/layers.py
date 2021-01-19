@@ -918,7 +918,9 @@ class TTFBox(object):
 
     def _topk(self, scores):
         k = self.max_per_img
-        cat, height, width = scores.shape[1:]
+        shape_fm = paddle.shape(scores)
+        shape_fm.stop_gradient = True
+        cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
         # batch size is 1
         scores_r = paddle.reshape(scores, [cat, -1])
         topk_scores, topk_inds = paddle.topk(scores_r, k)
@@ -928,7 +930,7 @@ class TTFBox(object):
 
         topk_score_r = paddle.reshape(topk_scores, [-1])
         topk_score, topk_ind = paddle.topk(topk_score_r, k)
-        k_t = paddle.full(topk_ind.shape, k, dtype='int64')
+        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
         topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
 
         topk_inds = paddle.reshape(topk_inds, [-1])
@@ -950,7 +952,7 @@ class TTFBox(object):
         clses = paddle.tensor.unsqueeze(clses, [1])
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
-        wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
+        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
         wh = paddle.gather(wh, inds)
 
         x1 = xs - wh[:, 0:1]
@@ -964,12 +966,15 @@ class TTFBox(object):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        scale_expand = paddle.expand_as(scale_expand, bboxes)
+        boxes_shape = paddle.shape(bboxes)
+        boxes_shape.stop_gradient = True
+        scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
         results = paddle.concat([clses, scores, bboxes], axis=1)
         # hack: append result with cls=-1 and score=1. to avoid all scores
         # are less than score_thresh which may cause error in gather.
-        fill_r = paddle.to_tensor([[-1, 1, 0, 0, 0, 0]], dtype='float32')
+        fill_r = paddle.to_tensor(np.array([[-1, 1, 0, 0, 0, 0]]))
+        fill_r = paddle.cast(fill_r, results.dtype)
         results = paddle.concat([results, fill_r])
         scores = results[:, 1]
         valid_ind = paddle.nonzero(scores > self.score_thresh)
