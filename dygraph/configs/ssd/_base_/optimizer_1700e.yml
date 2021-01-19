@@ -1,13 +1,10 @@
-epoch: 1746
+epoch: 1700
 
 LearningRate:
   base_lr: 0.4
   schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones:
-    - 160
-    - 200
+  - !CosineDecay
+    max_epochs: 1700
   - !LinearWarmup
     start_factor: 0.3333333333333333
     steps: 2000
