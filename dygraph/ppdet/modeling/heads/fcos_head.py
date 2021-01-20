@@ -200,19 +200,21 @@ class FCOSHead(nn.Layer):
             self.scales_regs.append(scale_reg)
 
     def _compute_locatioins_by_level(self, fpn_stride, feature):
-        shape_fm = feature.shape
+        shape_fm = paddle.shape(feature)
+        shape_fm.stop_gradient = True
         h, w = shape_fm[2], shape_fm[3]
         shift_x = paddle.arange(0, w * fpn_stride, fpn_stride)
         shift_y = paddle.arange(0, h * fpn_stride, fpn_stride)
         shift_x = paddle.unsqueeze(shift_x, axis=0)
         shift_y = paddle.unsqueeze(shift_y, axis=1)
-        shift_x = paddle.expand_as(shift_x, feature[0, 0, :, :])
-        shift_y = paddle.expand_as(shift_y, feature[0, 0, :, :])
+        shift_x = paddle.expand(shift_x, shape=[h, w])
+        shift_y = paddle.expand(shift_y, shape=[h, w])
         shift_x.stop_gradient = True
         shift_y.stop_gradient = True
         shift_x = paddle.reshape(shift_x, shape=[-1])
         shift_y = paddle.reshape(shift_y, shape=[-1])
-        location = paddle.stack([shift_x, shift_y], axis=-1) + fpn_stride / 2
+        location = paddle.stack(
+            [shift_x, shift_y], axis=-1) + float(fpn_stride) / 2
         location.stop_gradient = True
         return location
 

@@ -67,20 +67,33 @@ class ConvBNLayer(nn.Layer):
             bias_attr=False)
 
         norm_lr = 0. if freeze_norm else lr_mult
+        param_attr = ParamAttr(
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay),
+            name=name + "_bn_scale",
+            trainable=False if freeze_norm else True)
+        bias_attr = ParamAttr(
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay),
+            name=name + "_bn_offset",
+            trainable=False if freeze_norm else True)
+        global_stats = True if freeze_norm else False
         if norm_type == 'sync_bn':
-            batch_norm = nn.SyncBatchNorm
+            self.bn = nn.SyncBatchNorm(
+                out_c, weight_attr=param_attr, bias_attr=bias_attr)
         else:
-            batch_norm = nn.BatchNorm2D
-        self.bn = batch_norm(
-            out_c,
-            weight_attr=ParamAttr(
-                learning_rate=norm_lr,
-                name=name + "_bn_scale",
-                regularizer=L2Decay(norm_decay)),
-            bias_attr=ParamAttr(
-                learning_rate=norm_lr,
-                name=name + "_bn_offset",
-                regularizer=L2Decay(norm_decay)))
+            self.bn = nn.BatchNorm(
+                out_c,
+                act=None,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=global_stats,
+                moving_mean_name=name + '_bn_mean',
+                moving_variance_name=name + '_bn_variance')
+        norm_params = self.bn.parameters()
+        if freeze_norm:
+            for param in norm_params:
+                param.stop_gradient = True
 
     def forward(self, x):
         x = self.conv(x)
