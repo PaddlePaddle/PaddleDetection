@@ -1209,13 +1209,11 @@ def matrix_nms(bboxes,
                  use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
                  normalized)
         out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
-        if return_index:
-            if return_rois_num:
-                return out, index, rois_num
-            return out, index
-        if return_rois_num:
-            return out, rois_num
-        return out
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return out, rois_num, index
     else:
         helper = LayerHelper('matrix_nms', **locals())
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
@@ -1242,13 +1240,11 @@ def matrix_nms(bboxes,
             outputs=outputs)
         output.stop_gradient = True
 
-        if return_index:
-            if return_rois_num:
-                return output, index, rois_num
-            return output, index
-        if return_rois_num:
-            return output, rois_num
-        return output
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return output, rois_num, index
 
 
 def bipartite_match(dist_matrix,
