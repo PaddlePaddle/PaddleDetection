@@ -514,6 +514,7 @@ class Gt2FCOSTargetOp(BaseOperator):
 
 @register_op
 class Gt2TTFTargetOp(BaseOperator):
+    __shared__ = ['num_classes']
     """
     Gt2TTFTarget
     Generate TTFNet targets by ground truth data
@@ -525,7 +526,7 @@ class Gt2TTFTargetOp(BaseOperator):
             0.54 by default.
     """
 
-    def __init__(self, num_classes, down_ratio=4, alpha=0.54):
+    def __init__(self, num_classes=80, down_ratio=4, alpha=0.54):
         super(Gt2TTFTargetOp, self).__init__()
         self.down_ratio = down_ratio
         self.num_classes = num_classes
