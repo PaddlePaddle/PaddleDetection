@@ -25,14 +25,14 @@ class YOLOv3Head(nn.Layer):
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
                  num_classes=80,
                  loss='YOLOv3Loss',
-                 **kwargs):
+                 iou_aware=False,
+                 iou_aware_factor=0.4):
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.loss = loss
 
-        self.iou_aware = kwargs.get('iou_aware', False)
-        if self.iou_aware:
-            self.iou_aware_factor = kwargs.get('iou_aware_factor', 0.4)
+        self.iou_aware = iou_aware
+        self.iou_aware_factor = iou_aware_factor
 
         self.parse_anchor(anchors, anchor_masks)
         self.num_outputs = len(self.anchors)

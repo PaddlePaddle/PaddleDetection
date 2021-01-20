@@ -2,7 +2,7 @@ _BASE_: [
   '../datasets/minicoco_detection.yml',
   '../runtime.yml',
   './_base_/ppyolo_r50vd_dcn.yml',
-  './_base_/ppyolo_1x_minicoco.yml',
+  './_base_/optimizer_1x_minicoco.yml',
   './_base_/ppyolo_reader.yml',
 ]
 

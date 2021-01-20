@@ -26,6 +26,12 @@ from ..utils import decode_yolo, xywh2xyxy, iou_similarity
 __all__ = ['YOLOv3Loss']
 
 
+def bbox_transform(pbox, anchor, downsample):
+    pbox = decode_yolo(pbox, anchor, downsample)
+    pbox = xywh2xyxy(pbox)
+    return pbox
+
+
 @register
 class YOLOv3Loss(nn.Layer):
 
@@ -137,15 +143,18 @@ class YOLOv3Loss(nn.Layer):
         if self.iou_loss is not None:
             # warn: do not modify x, y, w, h in place
             box, tbox = [x, y, w, h], [tx, ty, tw, th]
-            loss_iou = self.iou_loss(box, tbox, anchor, downsample)
+            pbox = bbox_transform(box, anchor, downsample)
+            gbox = bbox_transform(tbox, anchor, downsample)
+            loss_iou = self.iou_loss(pbox, gbox)
             loss_iou = loss_iou * tscale_obj
             loss_iou = loss_iou.sum([1, 2, 3, 4]).mean()
             loss['loss_iou'] = loss_iou
 
         if self.iou_aware_loss is not None:
             box, tbox = [x, y, w, h], [tx, ty, tw, th]
-            loss_iou_aware = self.iou_aware_loss(ioup, box, tbox, anchor,
-                                                 downsample)
+            pbox = bbox_transform(box, anchor, downsample)
+            gbox = bbox_transform(tbox, anchor, downsample)
+            loss_iou_aware = self.iou_aware_loss(ioup, pbox, gbox)
             loss_iou_aware = loss_iou_aware * tobj
             loss_iou_aware = loss_iou_aware.sum([1, 2, 3, 4]).mean()
             loss['loss_iou_aware'] = loss_iou_aware

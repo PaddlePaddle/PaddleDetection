@@ -38,9 +38,7 @@ class IouAwareLoss(IouLoss):
         super(IouAwareLoss, self).__init__(
             loss_weight=loss_weight, giou=giou, diou=diou, ciou=ciou)
 
-    def __call__(self, ioup, pbox, gbox, anchor, downsample):
-        pbox = self.bbox_transform(pbox, anchor, downsample)
-        gbox = self.bbox_transform(gbox, anchor, downsample)
+    def __call__(self, ioup, pbox, gbox):
         iou = bbox_iou(
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         iou.stop_gradient = True

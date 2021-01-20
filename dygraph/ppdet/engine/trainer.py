@@ -158,10 +158,6 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         self.model.train()
 
-        # sync_bn = ('norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and cfg.use_gpu and ParallelEnv().nranks > 1)
-        # if sync_bn:
-        #     model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
-
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
