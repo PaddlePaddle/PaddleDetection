@@ -101,6 +101,18 @@ class WHHead(nn.Layer):
 
 @register
 class TTFHead(nn.Layer):
+    """
+    TTFHead
+    Args:
+        hm_head(object): Instance of 'HMHead', heatmap branch.
+        wh_head(object): Instance of 'WHHead', wh branch.
+        hm_loss(object): Instance of 'CTFocalLoss'.
+        wh_loss(object): Instance of 'GIoULoss'.
+        wh_offset_base(flaot): the base offset of width and height, 16. by default.
+        down_ratio(int): the actual down_ratio is calculated by base_down_ratio(default 16) a
+            nd the number of upsample layers.
+    """
+
     __shared__ = ['down_ratio']
     __inject__ = ['hm_head', 'wh_head', 'hm_loss', 'wh_loss']
 

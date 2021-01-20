@@ -78,11 +78,7 @@ class GIoULoss(object):
         reduction (string): Options are "none", "mean" and "sum". default as none
     """
 
-    def __init__(self,
-                 loss_weight=1.,
-                 inside_weight=1.,
-                 eps=1e-10,
-                 reduction='none'):
+    def __init__(self, loss_weight=1., eps=1e-10, reduction='none'):
         self.loss_weight = loss_weight
         self.eps = eps
         assert reduction in ('none', 'mean', 'sum')
@@ -96,6 +92,8 @@ class GIoULoss(object):
             eps (float): epsilon to avoid divide by zero
         Return:
             iou (Tensor): iou of box1 and box2
+            overlap (Tensor): overlap of box1 and box2
+            union (Tensor): union of box1 and box2
         """
         x1, y1, x2, y2 = box1
         x1g, y1g, x2g, y2g = box2

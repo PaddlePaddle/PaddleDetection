@@ -25,6 +25,16 @@ __all__ = ['TTFNet']
 
 @register
 class TTFNet(BaseArch):
+    """
+    TTFNet network, see https://arxiv.org/abs/1909.00700
+
+    Args:
+        backbone (object): backbone instance
+        neck (object): 'TTFFPN' instance
+        ttf_head (object): 'TTFHead' instance
+        post_process (object): 'BBoxPostProcess' instance
+    """
+
     __category__ = 'architecture'
     __inject__ = [
         'backbone',

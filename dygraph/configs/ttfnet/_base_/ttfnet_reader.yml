@@ -3,8 +3,8 @@ TrainReader:
   sample_transforms:
   - DecodeOp: {}
   - RandomFlipOp: {prob: 0.5}
-  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
   - NormalizeImageOp: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
   - PermuteOp: {}
   batch_transforms:
   - Gt2TTFTargetOp: {down_ratio: 4}
@@ -16,8 +16,8 @@ TrainReader:
 EvalReader:
   sample_transforms:
   - DecodeOp: {}
-  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
   - NormalizeImageOp: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}
+  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
   - PermuteOp: {}
   batch_size: 1
   drop_last: false
