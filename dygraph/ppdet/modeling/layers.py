@@ -612,7 +612,6 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MatrixNMS(object):
-    __op__ = ops.matrix_nms
     __append_doc__ = True
 
     def __init__(self,
@@ -633,6 +632,19 @@ class MatrixNMS(object):
         self.use_gaussian = use_gaussian
         self.gaussian_sigma = gaussian_sigma
         self.background_label = background_label
+
+    def __call__(self, bbox, score):
+        return ops.matrix_nms(
+            bboxes=bbox,
+            scores=score,
+            score_threshold=self.score_threshold,
+            post_threshold=self.post_threshold,
+            nms_top_k=self.nms_top_k,
+            keep_top_k=self.keep_top_k,
+            use_gaussian=self.use_gaussian,
+            gaussian_sigma=self.gaussian_sigma,
+            background_label=self.background_label,
+            normalized=self.normalized)
 
 
 @register

@@ -50,12 +50,7 @@ class IouLoss(object):
         self.ciou = ciou
         self.loss_square = loss_square
 
-    def __call__(self, pbox, gbox, anchor, downsample, scale=1.):
-        b = pbox.shape[0]
-        pbox = decode_yolo(pbox, anchor, downsample)
-        gbox = decode_yolo(gbox, anchor, downsample)
-        pbox = xywh2xyxy(pbox).reshape((b, -1, 4))
-        gbox = xywh2xyxy(gbox).reshape((b, -1, 4))
+    def __call__(self, pbox, gbox):
         iou = bbox_iou(
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         if self.loss_square:
