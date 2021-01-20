@@ -29,7 +29,8 @@ class CTFocalLoss(object):
     """
     CTFocalLoss
     Args:
-        loss_weight (float):  loss weight, default as 1. 
+        loss_weight (float):  loss weight
+        gamma (float):  gamma parameter for Focal Loss
     """
 
     def __init__(self, loss_weight=1., gamma=2.0):
@@ -37,6 +38,16 @@ class CTFocalLoss(object):
         self.gamma = gamma
 
     def __call__(self, pred, target):
+        """
+        Calculate the loss
+        Args:
+            pred(Tensor): heatmap prediction
+            target(Tensor): target for positive samples
+        Return:
+            ct_focal_loss (Tensor): Focal Loss used in CornerNet & CenterNet.
+                Note that the values in target are in [0, 1] since gaussian is
+                used to reduce the punishment and we treat [0, 1) as neg example.
+        """
         fg_map = paddle.cast(target == 1, 'float32')
         fg_map.stop_gradient = True
         bg_map = paddle.cast(target < 1, 'float32')
