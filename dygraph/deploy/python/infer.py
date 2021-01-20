@@ -35,6 +35,7 @@ SUPPORT_MODELS = {
     'SSD',
     'FCOS',
     'SOLOv2',
+    'TTFNet',
 }
 
 
