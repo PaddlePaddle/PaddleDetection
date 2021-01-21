@@ -20,6 +20,7 @@ from . import roi_extractor
 from . import ssd_head
 from . import fcos_head
 from . import solov2_head
+from . import ttf_head
 
 from .rpn_head import *
 from .bbox_head import *
@@ -29,3 +30,4 @@ from .roi_extractor import *
 from .ssd_head import *
 from .fcos_head import *
 from .solov2_head import *
+from .ttf_head import *
