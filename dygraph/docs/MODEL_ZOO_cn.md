@@ -55,3 +55,11 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### SOLOv2
 
 请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/solov2/)
+
+### PP-YOLO
+
+请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ppyolo/)
+
+### TTFNet
+
+请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/configs/ttfnet/)
