@@ -77,7 +77,7 @@ class BatchCompose(Compose):
                 raise e
 
         # accessing ListProxy in main process (no worker subprocess)
-        # may incur errors in same enviroments, ListProxy back to
+        # may incur errors in some enviroments, ListProxy back to
         # list if no worker process start, while this `__call__`
         # will be called in main process
         global MAIN_PID
