@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import copy
 import traceback
 import six
@@ -31,6 +32,8 @@ from . import transform
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
+
+MAIN_PID = os.getpid()
 
 
 class Compose(object):
@@ -72,6 +75,15 @@ class BatchCompose(Compose):
                 logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
                             format(f, e, str(stack_info)))
                 raise e
+
+        # accessing ListProxy in main process (no worker subprocess)
+        # may incur errors in same enviroments, ListProxy back to
+        # list if # no worker process start, while this `__call__`
+        # will be called in main process
+        global MAIN_PID
+        if os.getpid() == MAIN_PID and \
+            isinstance(self.output_fields, mp.managers.ListProxy):
+            self.output_fields = []
 
         # parse output fields by first sample
         # **this shoule be fixed if paddle.io.DataLoader support**
