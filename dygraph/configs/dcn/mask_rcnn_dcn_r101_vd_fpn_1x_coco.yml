@@ -2,7 +2,7 @@ _BASE_: [
   'mask_rcnn_dcn_r50_fpn_1x_coco.yml',
 ]
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_pretrained.tar
-weights: output/mask_rcnn_dcn_r101_fpn_1x_coco/model_final.pdparams
+weights: output/mask_rcnn_dcn_r101_fpn_1x_coco/model_final
 
 ResNet:
   # index 0 stands for res2

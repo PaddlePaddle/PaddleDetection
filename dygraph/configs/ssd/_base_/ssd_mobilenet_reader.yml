@@ -13,7 +13,7 @@ TrainReader:
     - PadBoxOp: {num_max_boxes: 90}
   batch_transforms:
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
-    - Permute: {}
+    - PermuteOp: {}
   batch_size: 32
   shuffle: true
   drop_last: true
@@ -24,7 +24,7 @@ EvalReader:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
-    - Permute: {}
+    - PermuteOp: {}
   batch_size: 1
   drop_empty: false
 
@@ -36,5 +36,5 @@ TestReader:
     - DecodeOp: {}
     - ResizeOp: {target_size: [300, 300], keep_ratio: False, interp: 1}
     - NormalizeImageOp: {mean: [127.5, 127.5, 127.5], std: [127.502231, 127.502231, 127.502231], is_scale: false}
-    - Permute: {}
+    - PermuteOp: {}
   batch_size: 1
