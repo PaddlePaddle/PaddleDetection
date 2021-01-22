@@ -453,12 +453,6 @@ class ResNet(nn.Layer):
         assert max(dcn_v2_stages) < num_stages
         self.dcn_v2_stages = dcn_v2_stages
 
-        if isinstance(lr_mult, Integral):
-            # make lr_mult as a list
-            lr_mult = [lr_mult] * num_stages
-        assert len(lr_mult) == num_stages
-        self.lr_mult = lr_mult
-
         block_nums = ResNet_cfg[depth]
         na = NameAdapter(self)
 
