@@ -994,6 +994,7 @@ class TTFBox(object):
         return results, paddle.shape(results)[0:1]
 
 
+@register
 @serializable
 class MaskMatrixNMS(object):
     """
