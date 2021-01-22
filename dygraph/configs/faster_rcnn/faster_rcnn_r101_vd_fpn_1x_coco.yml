@@ -2,7 +2,7 @@ _BASE_: [
   'faster_rcnn_r50_fpn_1x_coco.yml',
 ]
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
-weights: output/faster_rcnn_r101_vd_fpn_1x_coco/model_final.pdparams
+weights: output/faster_rcnn_r101_vd_fpn_1x_coco/model_final
 
 ResNet:
   # index 0 stands for res2
