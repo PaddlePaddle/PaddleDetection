@@ -51,6 +51,7 @@ packages = [
     'ppdet.core',
     'ppdet.data',
     'ppdet.engine',
+    'ppdet.metrics',
     'ppdet.modeling',
     'ppdet.model_zoo',
     'ppdet.py_op',

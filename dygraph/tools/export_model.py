@@ -30,7 +30,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.engine import Detector
+from ppdet.engine import Trainer
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
@@ -49,13 +49,13 @@ def parse_args():
 
 def run(FLAGS, cfg):
     # build detector
-    detector = Detector(cfg, mode='test')
+    trainer = Trainer(cfg, mode='test')
 
     # load weights
-    detector.load_weights(cfg.weights, 'resume')
+    trainer.load_weights(cfg.weights, 'resume')
 
     # export model
-    detector.export(FLAGS.output_dir)
+    trainer.export(FLAGS.output_dir)
 
 
 def main():

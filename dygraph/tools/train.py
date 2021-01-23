@@ -95,7 +95,7 @@ def run(FLAGS, cfg):
     trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
 
     # training
-    trainer.train()
+    trainer.train(FLAGS.eval)
 
 
 def main():

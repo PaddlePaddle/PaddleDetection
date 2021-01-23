@@ -51,8 +51,6 @@ class Trainer(object):
 
         # build model
         self.model = create(cfg.architecture)
-        if ParallelEnv().nranks > 1:
-            self.model = paddle.DataParallel(self.model)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -95,29 +93,26 @@ class Trainer(object):
             self._compose_callback = None
 
     def _init_metrics(self):
-        if self.mode == 'eval':
-            if self.cfg.metric == 'COCO':
-                mask_resolution = self.model.mask_post_process.mask_resolution if hasattr(
-                    self.model, 'mask_post_process') else None
-                self._metrics = [
-                    COCOMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        mask_resolution=mask_resolution)
-                ]
-            elif self.cfg.metric == 'VOC':
-                self._metrics = [
-                    VOCMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        class_num=self.cfg.num_classes,
-                        map_type=self.cfg.map_type)
-                ]
-            else:
-                logger.warn("Metric not support for metric type {}".format(
-                    self.cfg.metric))
-                self._metrics = []
+        if self.cfg.metric == 'COCO':
+            mask_resolution = self.model.mask_post_process.mask_resolution if hasattr(
+                self.model, 'mask_post_process') else None
+            self._metrics = [
+                COCOMetric(
+                    anno_file=self.dataset.get_anno(),
+                    with_background=self.cfg.with_background,
+                    mask_resolution=mask_resolution)
+            ]
+        elif self.cfg.metric == 'VOC':
+            self._metrics = [
+                VOCMetric(
+                    anno_file=self.dataset.get_anno(),
+                    with_background=self.cfg.with_background,
+                    class_num=self.cfg.num_classes,
+                    map_type=self.cfg.map_type)
+            ]
         else:
+            logger.warn("Metric not support for metric type {}".format(
+                self.cfg.metric))
             self._metrics = []
 
     def _reset_metrics(self):
@@ -154,12 +149,15 @@ class Trainer(object):
                 weight_type, weights))
         self._weights_loaded = True
 
-    def train(self):
+    def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
+
+        if ParallelEnv().nranks > 1:
+            self.model = paddle.DataParallel(self.model)
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -174,9 +172,11 @@ class Trainer(object):
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
+            self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
+            self.model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
@@ -184,7 +184,6 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
 
                 # model forward
-                self.model.train()
                 outputs = self.model(data)
                 loss = outputs['loss']
 
@@ -201,18 +200,30 @@ class Trainer(object):
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
+                iter_tic = time.time()
 
             self._compose_callback.on_epoch_end(self.status)
 
-    def evaluate(self):
+            if validate and (epoch_id % self.cfg.snapshot_epoch == 0 \
+                             or epoch_id == self.end_epoch - 1):
+                if not hasattr(self, '_eval_loader'):
+                    # build evaluation dataset and loader
+                    self._eval_dataset = self.cfg.EvalDataset
+                    self._eval_loader = create('EvalReader')(
+                        self._eval_dataset, self.cfg.worker_num)
+                with paddle.no_grad():
+                    self._eval_with_loader(self._eval_loader)
+
+    def _eval_with_loader(self, loader):
         sample_num = 0
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
-        for step_id, data in enumerate(self.loader):
+        self.status['mode'] = 'eval'
+        self.model.eval()
+        for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
-            self.model.eval()
             outs = self.model(data)
 
             # update metrics
@@ -233,6 +244,38 @@ class Trainer(object):
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
+    def evaluate(self):
+        self._eval_with_loader(self.loader)
+
+    # def evaluate(self):
+    #     sample_num = 0
+    #     tic = time.time()
+    #     self._compose_callback.on_epoch_begin(self.status)
+    #     for step_id, data in enumerate(self.loader):
+    #         self.status['step_id'] = step_id
+    #         self._compose_callback.on_step_begin(self.status)
+    #         # forward
+    #         self.model.eval()
+    #         outs = self.model(data)
+    #
+    #         # update metrics
+    #         for metric in self._metrics:
+    #             metric.update(data, outs)
+    #
+    #         sample_num += data['im_id'].numpy().shape[0]
+    #         self._compose_callback.on_step_end(self.status)
+    #
+    #     self.status['sample_num'] = sample_num
+    #     self.status['cost_time'] = time.time() - tic
+    #     self._compose_callback.on_epoch_end(self.status)
+    #
+    #     # accumulate metric to log out
+    #     for metric in self._metrics:
+    #         metric.accumulate()
+    #         metric.log()
+    #     # reset metric states for metric may performed multiple times
+    #     self._reset_metrics()
+
     def predict(self, images, draw_threshold=0.5, output_dir='output'):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
@@ -245,10 +288,11 @@ class Trainer(object):
                                                  with_background)
 
         # Run Infer 
+        self.status['mode'] = 'test'
+        self.model.eval()
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
-            self.model.eval()
             outs = self.model(data)
             for key, value in outs.items():
                 outs[key] = value.numpy()
@@ -308,6 +352,8 @@ class Trainer(object):
         if image_shape is None:
             image_shape = [3, None, None]
 
+        self.model.eval()
+
         # Save infer cfg
         _dump_infer_config(self.cfg,
                            os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
@@ -324,5 +370,30 @@ class Trainer(object):
 
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
-        paddle.jit.save(static_model, os.path.join(save_dir, 'model'))
+        # NOTE: dy2st do not pruned program, but jit.save will prune program
+        # input spec, prune input spec here and save with pruned input spec
+        pruned_input_spec = self._prune_input_spec(
+            input_spec, static_model.forward.main_program,
+            static_model.forward.outputs)
+        paddle.jit.save(
+            static_model,
+            os.path.join(save_dir, 'model'),
+            input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
+
+    def _prune_input_spec(self, input_spec, program, targets):
+        # try to prune static program to figure out pruned input spec
+        # so we perform following operations in static mode
+        paddle.enable_static()
+        pruned_input_spec = [{}]
+        program = program.clone()
+        program = program._prune(targets=targets)
+        global_block = program.global_block()
+        for name, spec in input_spec[0].items():
+            try:
+                v = global_block.var(name)
+                pruned_input_spec[0][name] = spec
+            except Exception:
+                pass
+        paddle.disable_static()
+        return pruned_input_spec
