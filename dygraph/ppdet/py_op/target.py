@@ -425,13 +425,11 @@ def libra_sample_pos(max_overlaps, max_classes, pos_inds, num_expected):
             inds = list(set(inds) & set(pos_inds))
             after_len = len(inds)
             if len(inds) > num_per_gt:
-                inds = np.random.choice(
-                    inds, size=num_per_gt, replace=False)
+                inds = np.random.choice(inds, size=num_per_gt, replace=False)
             sampled_inds.extend(list(inds))  # combine as a new sampler
         if len(sampled_inds) < num_expected:
             num_extra = num_expected - len(sampled_inds)
-            extra_inds = np.array(
-                list(set(pos_inds) - set(sampled_inds)))
+            extra_inds = np.array(list(set(pos_inds) - set(sampled_inds)))
             assert len(sampled_inds) + len(extra_inds) == len(pos_inds), \
                 "sum of sampled_inds({}) and extra_inds({}) length must be equal with pos_inds({})!".format(
                     len(sampled_inds), len(extra_inds), len(pos_inds))
@@ -478,8 +476,7 @@ def libra_sample_via_interval(max_overlaps, full_set, num_expected, floor_thr,
                 len(sampled_inds), len(extra_inds), len(full_set))
 
         if len(extra_inds) > num_extra:
-            extra_inds = np.random.choice(
-                extra_inds, num_extra, replace=False)
+            extra_inds = np.random.choice(extra_inds, num_extra, replace=False)
         sampled_inds = np.concatenate([sampled_inds, extra_inds])
 
     return sampled_inds
@@ -501,48 +498,41 @@ def libra_sample_neg(max_overlaps,
         if floor_thr > 0:
             floor_set = set(
                 np.where(
-                    np.logical_and(max_overlaps >= 0, max_overlaps <
-                                   floor_thr))[0])
-            iou_sampling_set = set(
-                np.where(max_overlaps >= floor_thr)[0])
+                    np.logical_and(max_overlaps >= 0, max_overlaps < floor_thr))
+                [0])
+            iou_sampling_set = set(np.where(max_overlaps >= floor_thr)[0])
         elif floor_thr == 0:
             floor_set = set(np.where(max_overlaps == 0)[0])
-            iou_sampling_set = set(
-                np.where(max_overlaps > floor_thr)[0])
+            iou_sampling_set = set(np.where(max_overlaps > floor_thr)[0])
         else:
             floor_set = set()
-            iou_sampling_set = set(
-                np.where(max_overlaps > floor_thr)[0])
+            iou_sampling_set = set(np.where(max_overlaps > floor_thr)[0])
             floor_thr = 0
 
         floor_neg_inds = list(floor_set & neg_set)
         iou_sampling_neg_inds = list(iou_sampling_set & neg_set)
 
-        num_expected_iou_sampling = int(num_expected *
-                                        (1 - floor_fraction))
+        num_expected_iou_sampling = int(num_expected * (1 - floor_fraction))
         if len(iou_sampling_neg_inds) > num_expected_iou_sampling:
             if num_bins >= 2:
                 iou_sampled_inds = libra_sample_via_interval(
                     max_overlaps,
-                    set(iou_sampling_neg_inds),
-                    num_expected_iou_sampling, floor_thr, num_bins,
-                    bg_thresh_hi)
+                    set(iou_sampling_neg_inds), num_expected_iou_sampling,
+                    floor_thr, num_bins, bg_thresh_hi)
             else:
                 iou_sampled_inds = np.random.choice(
                     iou_sampling_neg_inds,
                     size=num_expected_iou_sampling,
                     replace=False)
         else:
-            iou_sampled_inds = np.array(
-                iou_sampling_neg_inds, dtype=np.int)
+            iou_sampled_inds = np.array(iou_sampling_neg_inds, dtype=np.int)
         num_expected_floor = num_expected - len(iou_sampled_inds)
         if len(floor_neg_inds) > num_expected_floor:
             sampled_floor_inds = np.random.choice(
                 floor_neg_inds, size=num_expected_floor, replace=False)
         else:
             sampled_floor_inds = np.array(floor_neg_inds, dtype=np.int)
-        sampled_inds = np.concatenate(
-            (sampled_floor_inds, iou_sampled_inds))
+        sampled_inds = np.concatenate((sampled_floor_inds, iou_sampled_inds))
         if len(sampled_inds) < num_expected:
             num_extra = num_expected - len(sampled_inds)
             extra_inds = np.array(list(neg_set - set(sampled_inds)))
@@ -607,11 +597,11 @@ def libra_generate_proposal_target(rpn_rois,
                 overlapped_boxes_ind]]
 
             for idx in range(len(overlapped_boxes_ind)):
-                gt_overlaps[overlapped_boxes_ind[
-                                idx], overlapped_boxes_gt_classes[idx]] = overlaps_max[
+                gt_overlaps[overlapped_boxes_ind[idx],
+                            overlapped_boxes_gt_classes[idx]] = overlaps_max[
+                                overlapped_boxes_ind[idx]]
+                box_to_gt_ind_map[overlapped_boxes_ind[idx]] = overlaps_argmax[
                     overlapped_boxes_ind[idx]]
-                box_to_gt_ind_map[overlapped_boxes_ind[
-                    idx]] = overlaps_argmax[overlapped_boxes_ind[idx]]
 
         crowd_ind = np.where(is_crowd)[0]
         gt_overlaps[crowd_ind] = -1
@@ -626,8 +616,8 @@ def libra_generate_proposal_target(rpn_rois,
 
         if is_cascade_rcnn:
             fg_inds = np.where(max_overlaps >= fg_thresh)[0]
-            bg_inds = np.where((max_overlaps < bg_thresh_hi) & (max_overlaps >=
-                                                                bg_thresh_lo))[0]
+            bg_inds = np.where((max_overlaps < bg_thresh_hi) & (
+                max_overlaps >= bg_thresh_lo))[0]
             fg_nums = fg_inds.shape[0]
             bg_nums = bg_inds.shape[0]
         else:
@@ -636,13 +626,13 @@ def libra_generate_proposal_target(rpn_rois,
             fg_nums = np.minimum(fg_rois_per_im, fg_inds.shape[0])
             if (fg_inds.shape[0] > fg_nums) and use_random:
                 # fg_inds = np.random.choice(fg_inds, size=fg_nums, replace=False)
-                fg_inds = libra_sample_pos(max_overlaps, max_classes,
-                                           fg_inds, fg_rois_per_im)
+                fg_inds = libra_sample_pos(max_overlaps, max_classes, fg_inds,
+                                           fg_rois_per_im)
             fg_inds = fg_inds[:fg_nums]
 
             # sample bg
-            bg_inds = np.where((max_overlaps < bg_thresh_hi) & (max_overlaps >=
-                                                                bg_thresh_lo))[0]
+            bg_inds = np.where((max_overlaps < bg_thresh_hi) & (
+                max_overlaps >= bg_thresh_lo))[0]
             bg_nums = rois_per_image - fg_nums
             bg_nums = np.minimum(bg_nums, bg_inds.shape[0])
             if (bg_inds.shape[0] > bg_nums) and use_random:

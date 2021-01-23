@@ -189,8 +189,7 @@ class BBoxHead(nn.Layer):
                 x=delta,
                 y=target['bbox_targets'],
                 inside_weight=target['bbox_inside_weights'],
-                outside_weight=target['bbox_outside_weights'],
-            )
+                outside_weight=target['bbox_outside_weights'], )
         else:
             loss_bbox_reg = ops.smooth_l1(
                 input=delta,
