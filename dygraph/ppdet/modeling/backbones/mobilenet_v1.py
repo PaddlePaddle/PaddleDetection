@@ -383,7 +383,9 @@ class MobileNet(nn.Layer):
                         norm_type=norm_type,
                         name="conv7_" + str(i + 1)))
                 self.extra_blocks.append(conv_extra)
-                self._update_out_channels(block_filter[1], len(self.dwsl) + len(self.extra_blocks), feature_maps)
+                self._update_out_channels(
+                    block_filter[1],
+                    len(self.dwsl) + len(self.extra_blocks), feature_maps)
 
     def _update_out_channels(self, channel, feature_idx, feature_maps):
         if feature_idx in feature_maps:
@@ -410,6 +412,4 @@ class MobileNet(nn.Layer):
 
     @property
     def out_shape(self):
-        return [
-            ShapeSpec(channels=c) for c in self._out_channels
-        ]
+        return [ShapeSpec(channels=c) for c in self._out_channels]

@@ -170,7 +170,7 @@ class YOLOv3FPN(nn.Layer):
     def __init__(self, in_channels=[256, 512, 1024], norm_type='bn'):
         super(YOLOv3FPN, self).__init__()
         assert len(in_channels) > 0, "feat_channels length should > 0"
-        self.in_channels = in_channels 
+        self.in_channels = in_channels
         self.num_blocks = len(in_channels)
 
         self._out_channels = []
@@ -178,9 +178,9 @@ class YOLOv3FPN(nn.Layer):
         self.routes = []
         for i in range(self.num_blocks):
             name = 'yolo_block.{}'.format(i)
-            in_channel = in_channels[-i-1]
+            in_channel = in_channels[-i - 1]
             if i > 0:
-                in_channel += 512 // (2 ** i)
+                in_channel += 512 // (2**i)
             yolo_block = self.add_sublayer(
                 name,
                 YoloDetBlock(
@@ -224,25 +224,19 @@ class YOLOv3FPN(nn.Layer):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
-        return {
-            'in_channels': [i.channels for i in input_shape],
-        }
+        return {'in_channels': [i.channels for i in input_shape], }
 
     @property
     def out_shape(self):
-        return [
-            ShapeSpec(channels=c) for c in self._out_channels
-        ]
+        return [ShapeSpec(channels=c) for c in self._out_channels]
+
 
 @register
 @serializable
 class PPYOLOFPN(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self,
-                 in_channels=[512, 1024, 2048],
-                 norm_type='bn',
-                 **kwargs):
+    def __init__(self, in_channels=[512, 1024, 2048], norm_type='bn', **kwargs):
         super(PPYOLOFPN, self).__init__()
         assert len(feat_channels) > 0, "feat_channels length should > 0"
         self.feat_channels = feat_channels
@@ -335,12 +329,8 @@ class PPYOLOFPN(nn.Layer):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
-        return {
-            'in_channels': [i.channels for i in input_shape],
-        }
+        return {'in_channels': [i.channels for i in input_shape], }
 
     @property
     def out_shape(self):
-        return [
-            ShapeSpec(channels=c) for c in self._out_channels
-        ]
+        return [ShapeSpec(channels=c) for c in self._out_channels]

@@ -123,9 +123,7 @@ class SSDHead(nn.Layer):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
-        return {
-            'in_channels': [i.channels for i in input_shape],
-        }
+        return {'in_channels': [i.channels for i in input_shape], }
 
     def forward(self, feats, image, gt_bbox=None, gt_class=None):
         box_preds = []
@@ -146,7 +144,8 @@ class SSDHead(nn.Layer):
         prior_boxes = self.anchor_generator(feats, image)
 
         if self.training:
-            return self.get_loss(box_preds, cls_scores, gt_bbox, gt_class, prior_boxes)
+            return self.get_loss(box_preds, cls_scores, gt_bbox, gt_class,
+                                 prior_boxes)
         else:
             return box_preds, cls_scores, prior_boxes
 

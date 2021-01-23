@@ -415,7 +415,9 @@ class MobileNetV3(nn.Layer):
             self.block_list.append(block)
             inplanes = make_divisible(scale * c)
             i += 1
-            self._update_out_channels(make_divisible(scale * exp) if return_list else inplanes, i + 1, feature_maps)
+            self._update_out_channels(
+                make_divisible(scale * exp)
+                if return_list else inplanes, i + 1, feature_maps)
 
         if self.with_extra_blocks:
             self.extra_block_list = []
@@ -491,6 +493,4 @@ class MobileNetV3(nn.Layer):
 
     @property
     def out_shape(self):
-        return [
-            ShapeSpec(channels=c) for c in self._out_channels
-        ]
+        return [ShapeSpec(channels=c) for c in self._out_channels]

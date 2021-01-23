@@ -39,9 +39,12 @@ class SSD(BaseArch):
 
         # SSD Head
         if self.training:
-            return self.ssd_head(body_feats, self.inputs['image'], self.inputs['gt_bbox'], self.inputs['gt_class'])
+            return self.ssd_head(body_feats, self.inputs['image'],
+                                 self.inputs['gt_bbox'],
+                                 self.inputs['gt_class'])
         else:
-            boxes, scores, anchors = self.ssd_head(body_feats, self.inputs['image'])
+            boxes, scores, anchors = self.ssd_head(body_feats,
+                                                   self.inputs['image'])
             bbox, bbox_num = self.post_process((boxes, scores), anchors,
                                                self.inputs['im_shape'],
                                                self.inputs['scale_factor'])
