@@ -68,24 +68,24 @@ class DiouLoss(GiouLoss):
         wg = x2g - x1g
         hg = y2g - y1g
 
-        x2 = fluid.layers.elementwise_max(x1, x2)
-        y2 = fluid.layers.elementwise_max(y1, y2)
+        x2 = paddle.maximum(x1, x2)
+        y2 = paddle.maximum(y1, y2)
 
         # A and B
-        xkis1 = fluid.layers.elementwise_max(x1, x1g)
-        ykis1 = fluid.layers.elementwise_max(y1, y1g)
-        xkis2 = fluid.layers.elementwise_min(x2, x2g)
-        ykis2 = fluid.layers.elementwise_min(y2, y2g)
+        xkis1 = paddle.maximum(x1, x1g)
+        ykis1 = paddle.maximum(y1, y1g)
+        xkis2 = paddle.minimum(x2, x2g)
+        ykis2 = paddle.minimum(y2, y2g)
 
         # A or B
-        xc1 = fluid.layers.elementwise_min(x1, x1g)
-        yc1 = fluid.layers.elementwise_min(y1, y1g)
-        xc2 = fluid.layers.elementwise_max(x2, x2g)
-        yc2 = fluid.layers.elementwise_max(y2, y2g)
+        xc1 = paddle.minimum(x1, x1g)
+        yc1 = paddle.minimum(y1, y1g)
+        xc2 = paddle.maximum(x2, x2g)
+        yc2 = paddle.maximum(y2, y2g)
 
         intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
-        intsctk = intsctk * fluid.layers.greater_than(
-            xkis2, xkis1) * fluid.layers.greater_than(ykis2, ykis1)
+        intsctk = intsctk * paddle.greater_than(
+            xkis2, xkis1) * paddle.greater_than(ykis2, ykis1)
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + eps
         iouk = intsctk / unionk
@@ -100,7 +100,7 @@ class DiouLoss(GiouLoss):
         if self.use_complete_iou_loss:
             ar_gt = wg / hg
             ar_pred = w / h
-            arctan = fluid.layers.atan(ar_gt) - fluid.layers.atan(ar_pred)
+            arctan = paddle.atan(ar_gt) - paddle.atan(ar_pred)
             ar_loss = 4. / np.pi / np.pi * arctan * arctan
             alpha = ar_loss / (1 - iouk + ar_loss + eps)
             alpha.stop_gradient = True
@@ -108,16 +108,16 @@ class DiouLoss(GiouLoss):
 
         iou_weights = 1
         if inside_weight is not None and outside_weight is not None:
-            inside_weight = fluid.layers.reshape(inside_weight, shape=(-1, 4))
-            outside_weight = fluid.layers.reshape(outside_weight, shape=(-1, 4))
+            inside_weight = paddle.reshape(inside_weight, shape=(-1, 4))
+            outside_weight = paddle.reshape(outside_weight, shape=(-1, 4))
 
-            inside_weight = fluid.layers.reduce_mean(inside_weight, dim=1)
-            outside_weight = fluid.layers.reduce_mean(outside_weight, dim=1)
+            inside_weight = paddle.mean(inside_weight, axis=1)
+            outside_weight = paddle.mean(outside_weight, axis=1)
 
             iou_weights = inside_weight * outside_weight
 
         class_weight = 2 if self.is_cls_agnostic else self.num_classes
-        diou = fluid.layers.reduce_mean(
+        diou = paddle.mean(
             (1 - iouk + ciou_term + diou_term) * iou_weights) * class_weight
 
         return diou * self.loss_weight

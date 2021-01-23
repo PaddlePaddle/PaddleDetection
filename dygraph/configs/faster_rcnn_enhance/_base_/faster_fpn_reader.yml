@@ -5,7 +5,7 @@ TrainReader:
   - RandomFlipOp: {prob: 0.5}
   - AutoAugmentOp: {autoaug_type: v1}
   - NormalizeImageOp: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
-  - ResizeImage: {target_size: [384, 416, 448, 480, 512, 544, 576, 608, 640, 672], max_size: 1000, interp: 1, use_cv2: true}
+  - RandomResizeOp: {target_size: [384, 416, 448, 480, 512, 544, 576, 608, 640, 672], max_size: 1000, interp: 1, use_cv2: true}
   - PermuteOp: {}
   batch_transforms:
   - PadBatchOp: {pad_to_stride: 32, pad_gt: true}
