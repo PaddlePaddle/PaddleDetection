@@ -22,6 +22,8 @@ from paddle.nn.initializer import XavierUniform
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 
+__all__ = ['FPN']
+
 
 @register
 @serializable
@@ -117,10 +119,10 @@ class FPN(Layer):
         for i in range(used_backbone_levels - 1):
             idx = used_backbone_levels - 1 - i
             upsample = F.interpolate(
-                laterals[idx],
+                laterals[lvl],
                 scale_factor=2.,
                 mode='nearest', )
-            laterals[idx - 1] += upsample
+            laterals[lvl - 1] += upsample
 
         fpn_output = []
         for lvl in range(self.min_level, self.highest_backbone_level + 1):

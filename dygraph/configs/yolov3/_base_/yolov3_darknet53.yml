@@ -14,8 +14,8 @@ DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
 
-YOLOv3FPN:
-  feat_channels: [1024, 768, 384]
+# use default config
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],

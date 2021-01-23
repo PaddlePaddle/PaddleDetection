@@ -109,12 +109,11 @@ class SSDLoss(nn.Layer):
         neg_mask = (idx_rank < num_neg).astype(conf_loss.dtype)
         return neg_mask
 
-    def forward(self, inputs, targets, anchors):
-        boxes = paddle.concat(inputs['boxes'], axis=1)
-        scores = paddle.concat(inputs['scores'], axis=1)
+    def forward(self, boxes, scores, gt_box, gt_class, anchors):
+        boxes = paddle.concat(boxes, axis=1)
+        scores = paddle.concat(scores, axis=1)
         prior_boxes = paddle.concat(anchors, axis=0)
-        gt_box = targets['gt_bbox']
-        gt_label = targets['gt_class'].unsqueeze(-1)
+        gt_label = gt_class.unsqueeze(-1)
         batch_size, num_priors, num_classes = scores.shape
 
         def _reshape_to_2d(x):

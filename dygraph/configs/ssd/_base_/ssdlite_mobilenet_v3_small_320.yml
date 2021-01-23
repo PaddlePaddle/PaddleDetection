@@ -18,23 +18,20 @@ MobileNetV3:
   multiplier: 0.5
 
 SSDHead:
-  in_channels: [288, 288, 512, 256, 256, 128]
-  anchor_generator: AnchorGeneratorSSD
   use_sepconv: True
   conv_decay: 0.00004
-
-AnchorGeneratorSSD:
-  steps: [16, 32, 64, 107, 160, 320]
-  aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.], [2., 3.]]
-  min_ratio: 20
-  max_ratio: 95
-  base_size: 320
-  min_sizes: []
-  max_sizes: []
-  offset: 0.5
-  flip: true
-  clip: true
-  min_max_aspect_ratios_order: false
+  anchor_generator:
+    steps: [16, 32, 64, 107, 160, 320]
+    aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.], [2., 3.]]
+    min_ratio: 20
+    max_ratio: 95
+    base_size: 320
+    min_sizes: []
+    max_sizes: []
+    offset: 0.5
+    flip: true
+    clip: true
+    min_max_aspect_ratios_order: false
 
 BBoxPostProcess:
   decode:

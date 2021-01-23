@@ -67,38 +67,36 @@ class YOLOv3Head(nn.Layer):
                 assert mask < anchor_num, "anchor mask index overflow"
                 self.mask_anchors[-1].extend(anchors[mask])
 
-    def forward(self, feats):
+    def forward(self, feats, targets=None):
         assert len(feats) == len(self.anchors)
         yolo_outputs = []
         for i, feat in enumerate(feats):
             yolo_output = self.yolo_outputs[i](feat)
             yolo_outputs.append(yolo_output)
-        return yolo_outputs
 
-    def get_loss(self, inputs, targets):
-        return self.loss(inputs, targets, self.anchors)
-
-    def get_outputs(self, outputs):
-        if self.iou_aware:
-            y = []
-            for i, out in enumerate(outputs):
-                na = len(self.anchors[i])
-                ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
-                b, c, h, w = x.shape
-                no = c // na
-                x = x.reshape((b, na, no, h * w))
-                ioup = ioup.reshape((b, na, 1, h * w))
-                obj = x[:, :, 4:5, :]
-                ioup = F.sigmoid(ioup)
-                obj = F.sigmoid(obj)
-                obj_t = (obj**(1 - self.iou_aware_factor)) * (
-                    ioup**self.iou_aware_factor)
-                obj_t = _de_sigmoid(obj_t)
-                loc_t = x[:, :, :4, :]
-                cls_t = x[:, :, 5:, :]
-                y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
-                y_t = y_t.reshape((b, c, h, w))
-                y.append(y_t)
-            return y
+        if self.training:
+            return self.loss(yolo_outputs, targets, self.anchors)
         else:
-            return outputs
+            if self.iou_aware:
+                y = []
+                for i, out in enumerate(yolo_outputs):
+                    na = len(self.anchors[i])
+                    ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
+                    b, c, h, w = x.shape
+                    no = c // na
+                    x = x.reshape((b, na, no, h * w))
+                    ioup = ioup.reshape((b, na, 1, h * w))
+                    obj = x[:, :, 4:5, :]
+                    ioup = F.sigmoid(ioup)
+                    obj = F.sigmoid(obj)
+                    obj_t = (obj**(1 - self.iou_aware_factor)) * (
+                        ioup**self.iou_aware_factor)
+                    obj_t = _de_sigmoid(obj_t)
+                    loc_t = x[:, :, :4, :]
+                    cls_t = x[:, :, 5:, :]
+                    y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
+                    y_t = y_t.reshape((b, c, h, w))
+                    y.append(y_t)
+                return y
+            else:
+                return yolo_outputs
