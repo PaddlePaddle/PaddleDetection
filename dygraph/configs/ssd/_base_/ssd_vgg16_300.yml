@@ -14,7 +14,6 @@ VGG:
   normalizations: [20., -1, -1, -1, -1, -1]
 
 SSDHead:
-  # in_channels: [512, 1024, 512, 256, 256, 256]
   anchor_generator:
     steps: [8, 16, 32, 64, 100, 300]
     aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]]
