@@ -7,6 +7,9 @@ WITH_MKL=ON
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
+# 是否使用2.0rc1预测库
+USE_PADDLE_20RC1=ON
+
 # TensorRT 的include路径
 TENSORRT_INC_DIR=/path/to/tensorrt/lib
 

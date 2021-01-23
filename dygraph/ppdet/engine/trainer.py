@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -93,27 +93,28 @@ class Trainer(object):
             self._compose_callback = None
 
     def _init_metrics(self):
-        if self.cfg.metric == 'COCO':
-            mask_resolution = self.model.mask_post_process.mask_resolution if hasattr(
-                self.model, 'mask_post_process') else None
-            self._metrics = [
-                COCOMetric(
-                    anno_file=self.dataset.get_anno(),
-                    with_background=self.cfg.with_background,
-                    mask_resolution=mask_resolution)
-            ]
-        elif self.cfg.metric == 'VOC':
-            self._metrics = [
-                VOCMetric(
-                    anno_file=self.dataset.get_anno(),
-                    with_background=self.cfg.with_background,
-                    class_num=self.cfg.num_classes,
-                    map_type=self.cfg.map_type)
-            ]
-        else:
-            logger.warn("Metric not support for metric type {}".format(
-                self.cfg.metric))
-            self._metrics = []
+        if self.mode == 'eval':
+            if self.cfg.metric == 'COCO':
+                mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
+                    self.model, 'mask_post_process', None) else None
+                self._metrics = [
+                    COCOMetric(
+                        anno_file=self.dataset.get_anno(),
+                        with_background=self.cfg.with_background,
+                        mask_resolution=mask_resolution)
+                ]
+            elif self.cfg.metric == 'VOC':
+                self._metrics = [
+                    VOCMetric(
+                        anno_file=self.dataset.get_anno(),
+                        with_background=self.cfg.with_background,
+                        class_num=self.cfg.num_classes,
+                        map_type=self.cfg.map_type)
+                ]
+            else:
+                logger.warn("Metric not support for metric type {}".format(
+                    self.cfg.metric))
+                self._metrics = []
 
     def _reset_metrics(self):
         for metric in self._metrics:
@@ -151,6 +152,7 @@ class Trainer(object):
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
+        self.model.train()
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
@@ -294,10 +296,10 @@ class Trainer(object):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
-            for key, value in outs.items():
-                outs[key] = value.numpy()
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
+            for key, value in outs.items():
+                outs[key] = value.numpy()
 
             # FIXME: for more elegent coding
             if 'mask' in outs and 'bbox' in outs:
@@ -319,7 +321,9 @@ class Trainer(object):
                         if 'bbox' in batch_res else None
                 mask_res = batch_res['mask'][start:end] \
                         if 'mask' in batch_res else None
-                image = visualize_results(image, bbox_res, mask_res,
+                segm_res = batch_res['segm'][start:end] \
+                        if 'segm' in batch_res else None
+                image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
 
@@ -341,6 +345,7 @@ class Trainer(object):
         return os.path.join(output_dir, "{}".format(name)) + ext
 
     def export(self, output_dir='output_inference'):
+        self.model.eval()
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
         save_dir = os.path.join(output_dir, model_name)
         if not os.path.exists(save_dir):

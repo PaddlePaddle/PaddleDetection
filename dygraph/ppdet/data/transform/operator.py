@@ -568,7 +568,7 @@ class RandomFlipOp(BaseOperator):
             if 'semantic' in sample and sample['semantic']:
                 sample['semantic'] = sample['semantic'][:, ::-1]
 
-            if 'gt_segm' in sample and sample['gt_segm']:
+            if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
 
             sample['flipped'] = True
@@ -1582,6 +1582,12 @@ class MixupOp(BaseOperator):
             is_crowd2 = sample[1]['is_crowd']
             is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
             result['is_crowd'] = is_crowd
+        if 'difficult' in sample[0]:
+            is_difficult1 = sample[0]['difficult']
+            is_difficult2 = sample[1]['difficult']
+            is_difficult = np.concatenate(
+                (is_difficult1, is_difficult2), axis=0)
+            result['difficult'] = is_difficult
 
         return result
 

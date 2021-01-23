@@ -10,12 +10,16 @@
 - Cascade RCNN
 - YOLOv3
 - SSD
+- FCOS
+- SOLOv2
+- PP-YOLO
+- TTFNet
 
 扩展特性：
 
-- [x] **Synchronized Batch Norm**
+- [√] **Synchronized Batch Norm**
+- [√] **Modulated Deformable Convolution**
 - [x] **Group Norm**
-- [x] **Modulated Deformable Convolution**
 - [x] **Deformable PSRoI Pooling**
 
 ## 文档教程

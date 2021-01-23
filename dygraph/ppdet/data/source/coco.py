@@ -128,7 +128,7 @@ class COCODataSet(DetDataset):
                     # check RLE format 
                     if 'segmentation' in box and box['iscrowd'] == 1:
                         gt_poly[i] = [[0.0, 0.0], ]
-                    elif 'segmentation' in box:
+                    elif 'segmentation' in box and box['segmentation']:
                         gt_poly[i] = box['segmentation']
                         has_segmentation = True
 

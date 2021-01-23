@@ -23,6 +23,7 @@ import paddle
 from paddle.distributed import ParallelEnv
 
 from ppdet.utils.checkpoint import save_model
+from ppdet.optimizer import ModelEMA
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -137,6 +138,15 @@ class LogPrinter(Callback):
 class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
+        cfg = self.model.cfg
+        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        if self.use_ema:
+            self.ema = ModelEMA(
+                cfg['ema_decay'], self.model.model, use_thres_step=True)
+
+    def on_step_end(self, status):
+        if self.use_ema:
+            self.ema.update(self.model.model)
 
     def on_epoch_end(self, status):
         # Checkpointer only performed during training
@@ -152,5 +162,10 @@ class Checkpointer(Callback):
                                         self.model.cfg.filename)
                 save_name = str(
                     epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                save_model(self.model.model, self.model.optimizer, save_dir,
-                           save_name, epoch_id + 1)
+                if self.use_ema:
+                    state_dict = self.ema.apply()
+                    save_model(state_dict, self.model.optimizer, save_dir,
+                               save_name, epoch_id + 1)
+                else:
+                    save_model(self.model.model, self.model.optimizer, save_dir,
+                               save_name, epoch_id + 1)

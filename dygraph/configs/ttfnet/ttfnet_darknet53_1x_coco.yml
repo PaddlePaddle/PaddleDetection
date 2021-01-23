@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/ttfnet_darknet53.yml',
+  '_base_/ttfnet_reader.yml',
+]
+weights: output/ttfnet_darknet53_1x_coco/model_final
