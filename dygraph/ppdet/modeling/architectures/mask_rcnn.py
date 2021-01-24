@@ -43,7 +43,7 @@ class MaskRCNN(BaseArch):
         backbone (nn.Layer): backbone instance.
         rpn_head (nn.Layer): generates proposals using backbone features.
         bbox_head (nn.Layer): a head that performs per-region computation.
-        mask_head (nn.Layer): generates mask from bbox and backbone features..
+        mask_head (nn.Layer): generates mask from bbox and backbone features.
         """
         super(MaskRCNN, self).__init__()
         self.backbone = backbone
