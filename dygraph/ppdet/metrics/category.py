@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 
+from ppdet.data.source.voc import pascalvoc_label
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 

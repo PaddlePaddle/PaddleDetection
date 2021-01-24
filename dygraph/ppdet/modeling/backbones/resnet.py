@@ -549,7 +549,8 @@ class Res5Head(nn.Layer):
         self.res5 = self.add_sublayer(
             'res5_roi_feat',
             Blocks(
-                feat_in, feat_out, count=3, name_adapter=na, stage_num=5))
+                depth, feat_in, feat_out, count=3, name_adapter=na,
+                stage_num=5))
         self.feat_out = feat_out * 4
 
     def out_shape(self):

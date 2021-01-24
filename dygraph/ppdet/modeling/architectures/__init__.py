@@ -13,6 +13,7 @@ from . import cascade_rcnn
 from . import ssd
 from . import fcos
 from . import solov2
+from . import ttfnet
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -22,3 +23,4 @@ from .cascade_rcnn import *
 from .ssd import *
 from .fcos import *
 from .solov2 import *
+from .ttfnet import *
