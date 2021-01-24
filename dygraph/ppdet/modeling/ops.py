@@ -167,6 +167,7 @@ def roi_align(input,
               spatial_scale=1.0,
               sampling_ratio=-1,
               rois_num=None,
+              aligned=True,
               name=None):
     """
 
@@ -237,7 +238,7 @@ def roi_align(input,
         align_out = core.ops.roi_align(
             input, rois, rois_num, "pooled_height", pooled_height,
             "pooled_width", pooled_width, "spatial_scale", spatial_scale,
-            "sampling_ratio", sampling_ratio)
+            "sampling_ratio", sampling_ratio, "aligned", aligned)
         return align_out
 
     else:
@@ -262,7 +263,8 @@ def roi_align(input,
                 "pooled_height": pooled_height,
                 "pooled_width": pooled_width,
                 "spatial_scale": spatial_scale,
-                "sampling_ratio": sampling_ratio
+                "sampling_ratio": sampling_ratio,
+                "aligned": aligned,
             })
         return align_out
 
@@ -964,7 +966,7 @@ def multiclass_nms(bboxes,
                    nms_threshold=0.3,
                    normalized=True,
                    nms_eta=1.,
-                   background_label=0,
+                   background_label=-1,
                    return_index=False,
                    return_rois_num=True,
                    rois_num=None,

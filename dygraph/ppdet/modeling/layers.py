@@ -28,8 +28,9 @@ from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
-from ppdet.py_op.post_process import bbox_post_process
+from ppdet.modeling.bbox_utils import delta2bbox
 from . import ops
+
 from paddle.vision.ops import DeformConv2D
 
 
@@ -225,53 +226,6 @@ class AnchorGeneratorRPN(object):
 
 @register
 @serializable
-class AnchorTargetGeneratorRPN(object):
-    def __init__(self,
-                 batch_size_per_im=256,
-                 straddle_thresh=0.,
-                 fg_fraction=0.5,
-                 positive_overlap=0.7,
-                 negative_overlap=0.3,
-                 use_random=True):
-        super(AnchorTargetGeneratorRPN, self).__init__()
-        self.batch_size_per_im = batch_size_per_im
-        self.straddle_thresh = straddle_thresh
-        self.fg_fraction = fg_fraction
-        self.positive_overlap = positive_overlap
-        self.negative_overlap = negative_overlap
-        self.use_random = use_random
-
-    def __call__(self, cls_logits, bbox_pred, anchor_box, gt_boxes, is_crowd,
-                 im_info):
-        anchor_box = anchor_box.numpy()
-        gt_boxes = gt_boxes.numpy()
-        is_crowd = is_crowd.numpy()
-        im_info = im_info.numpy()
-        loc_indexes, score_indexes, tgt_labels, tgt_bboxes, bbox_inside_weights = generate_rpn_anchor_target(
-            anchor_box, gt_boxes, is_crowd, im_info, self.straddle_thresh,
-            self.batch_size_per_im, self.positive_overlap,
-            self.negative_overlap, self.fg_fraction, self.use_random)
-
-        loc_indexes = to_tensor(loc_indexes)
-        score_indexes = to_tensor(score_indexes)
-        tgt_labels = to_tensor(tgt_labels)
-        tgt_bboxes = to_tensor(tgt_bboxes)
-        bbox_inside_weights = to_tensor(bbox_inside_weights)
-
-        loc_indexes.stop_gradient = True
-        score_indexes.stop_gradient = True
-        tgt_labels.stop_gradient = True
-
-        cls_logits = paddle.reshape(x=cls_logits, shape=(-1, ))
-        bbox_pred = paddle.reshape(x=bbox_pred, shape=(-1, 4))
-        pred_cls_logits = paddle.gather(cls_logits, score_indexes)
-        pred_bbox_pred = paddle.gather(bbox_pred, loc_indexes)
-
-        return pred_cls_logits, pred_bbox_pred, tgt_labels, tgt_bboxes, bbox_inside_weights
-
-
-@register
-@serializable
 class AnchorGeneratorSSD(object):
     def __init__(self,
                  steps=[8, 16, 32, 64, 100, 300],
@@ -337,246 +291,52 @@ class AnchorGeneratorSSD(object):
 
 @register
 @serializable
-class ProposalGenerator(object):
-    __append_doc__ = True
-
-    def __init__(self,
-                 train_pre_nms_top_n=12000,
-                 train_post_nms_top_n=2000,
-                 infer_pre_nms_top_n=6000,
-                 infer_post_nms_top_n=1000,
-                 nms_thresh=.5,
-                 min_size=.1,
-                 eta=1.):
-        super(ProposalGenerator, self).__init__()
-        self.train_pre_nms_top_n = train_pre_nms_top_n
-        self.train_post_nms_top_n = train_post_nms_top_n
-        self.infer_pre_nms_top_n = infer_pre_nms_top_n
-        self.infer_post_nms_top_n = infer_post_nms_top_n
-        self.nms_thresh = nms_thresh
-        self.min_size = min_size
-        self.eta = eta
-
-    def __call__(self,
-                 scores,
-                 bbox_deltas,
-                 anchors,
-                 variances,
-                 im_shape,
-                 is_train=False):
-        pre_nms_top_n = self.train_pre_nms_top_n if is_train else self.infer_pre_nms_top_n
-        post_nms_top_n = self.train_post_nms_top_n if is_train else self.infer_post_nms_top_n
-        # TODO delete im_info
-        if im_shape.shape[1] > 2:
-            import paddle.fluid as fluid
-            rpn_rois, rpn_rois_prob, rpn_rois_num = fluid.layers.generate_proposals(
-                scores,
-                bbox_deltas,
-                im_shape,
-                anchors,
-                variances,
-                pre_nms_top_n=pre_nms_top_n,
-                post_nms_top_n=post_nms_top_n,
-                nms_thresh=self.nms_thresh,
-                min_size=self.min_size,
-                eta=self.eta,
-                return_rois_num=True)
-        else:
-            rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
-                scores,
-                bbox_deltas,
-                im_shape,
-                anchors,
-                variances,
-                pre_nms_top_n=pre_nms_top_n,
-                post_nms_top_n=post_nms_top_n,
-                nms_thresh=self.nms_thresh,
-                min_size=self.min_size,
-                eta=self.eta,
-                return_rois_num=True)
-        return rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n
-
-
-@register
-@serializable
-class ProposalTargetGenerator(object):
-    __shared__ = ['num_classes']
-
-    def __init__(self,
-                 batch_size_per_im=512,
-                 fg_fraction=.25,
-                 fg_thresh=[.5, ],
-                 bg_thresh_hi=[.5, ],
-                 bg_thresh_lo=[0., ],
-                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
-                 num_classes=81,
-                 use_random=True,
-                 is_cls_agnostic=False):
-        super(ProposalTargetGenerator, self).__init__()
-        self.batch_size_per_im = batch_size_per_im
-        self.fg_fraction = fg_fraction
-        self.fg_thresh = fg_thresh
-        self.bg_thresh_hi = bg_thresh_hi
-        self.bg_thresh_lo = bg_thresh_lo
-        self.bbox_reg_weights = bbox_reg_weights
-        self.num_classes = num_classes
-        self.use_random = use_random
-        self.is_cls_agnostic = is_cls_agnostic
-
-    def __call__(self,
-                 rpn_rois,
-                 rpn_rois_num,
-                 gt_classes,
-                 is_crowd,
-                 gt_boxes,
-                 im_info,
-                 stage=0,
-                 max_overlap=None):
-        rpn_rois = rpn_rois.numpy()
-        rpn_rois_num = rpn_rois_num.numpy()
-        gt_classes = gt_classes.numpy()
-        gt_boxes = gt_boxes.numpy()
-        is_crowd = is_crowd.numpy()
-        im_info = im_info.numpy()
-        max_overlap = max_overlap if max_overlap is None else max_overlap.numpy(
-        )
-        reg_weights = [i / (stage + 1) for i in self.bbox_reg_weights]
-        is_cascade = True if stage > 0 else False
-        num_classes = 2 if is_cascade else self.num_classes
-        outs = generate_proposal_target(
-            rpn_rois, rpn_rois_num, gt_classes, is_crowd, gt_boxes, im_info,
-            self.batch_size_per_im, self.fg_fraction, self.fg_thresh[stage],
-            self.bg_thresh_hi[stage], self.bg_thresh_lo[stage], reg_weights,
-            num_classes, self.use_random, self.is_cls_agnostic, is_cascade,
-            max_overlap)
-        outs = [to_tensor(v) for v in outs]
-        for v in outs:
-            v.stop_gradient = True
-        return outs
-
-
-@register
-@serializable
-class MaskTargetGenerator(object):
-    __shared__ = ['num_classes', 'mask_resolution']
-
-    def __init__(self, num_classes=81, mask_resolution=14):
-        super(MaskTargetGenerator, self).__init__()
-        self.num_classes = num_classes
-        self.mask_resolution = mask_resolution
-
-    def __call__(self, im_info, gt_classes, is_crowd, gt_segms, rois, rois_num,
-                 labels_int32):
-        im_info = im_info.numpy()
-        gt_classes = gt_classes.numpy()
-        is_crowd = is_crowd.numpy()
-        gt_segms = gt_segms.numpy()
-        rois = rois.numpy()
-        rois_num = rois_num.numpy()
-        labels_int32 = labels_int32.numpy()
-        outs = generate_mask_target(im_info, gt_classes, is_crowd, gt_segms,
-                                    rois, rois_num, labels_int32,
-                                    self.num_classes, self.mask_resolution)
-
-        outs = [to_tensor(v) for v in outs]
-        for v in outs:
-            v.stop_gradient = True
-        return outs
-
-
-@register
-@serializable
 class RCNNBox(object):
-    __shared__ = ['num_classes', 'batch_size']
-
     def __init__(self,
-                 num_classes=81,
-                 batch_size=1,
-                 prior_box_var=[0.1, 0.1, 0.2, 0.2],
+                 prior_box_var=[10., 10., 5., 5.],
                  code_type="decode_center_size",
-                 box_normalized=False,
-                 axis=1,
-                 var_weight=1.):
+                 box_normalized=False):
         super(RCNNBox, self).__init__()
-        self.num_classes = num_classes
-        self.batch_size = batch_size
         self.prior_box_var = prior_box_var
         self.code_type = code_type
         self.box_normalized = box_normalized
-        self.axis = axis
-        self.var_weight = var_weight
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred, cls_prob = bbox_head_out
         roi, rois_num = rois
-        origin_shape = im_shape / scale_factor
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         scale_list = []
         origin_shape_list = []
-        for idx in range(self.batch_size):
-            scale = scale_factor[idx, :][0]
+        for idx, roi_per_im in enumerate(roi):
             rois_num_per_im = rois_num[idx]
-            expand_scale = paddle.expand(scale, [rois_num_per_im, 1])
-            scale_list.append(expand_scale)
-            expand_im_shape = paddle.expand(origin_shape[idx, :],
+            expand_im_shape = paddle.expand(im_shape[idx, :],
                                             [rois_num_per_im, 2])
             origin_shape_list.append(expand_im_shape)
 
-        scale = paddle.concat(scale_list)
         origin_shape = paddle.concat(origin_shape_list)
 
-        bbox = roi / scale
-        prior_box_var = [i / self.var_weight for i in self.prior_box_var]
-        bbox = ops.box_coder(
-            prior_box=bbox,
-            prior_box_var=prior_box_var,
-            target_box=bbox_pred,
-            code_type=self.code_type,
-            box_normalized=self.box_normalized,
-            axis=self.axis)
-        # TODO: Updata box_clip
-        origin_h = paddle.unsqueeze(origin_shape[:, 0] - 1, axis=1)
-        origin_w = paddle.unsqueeze(origin_shape[:, 1] - 1, axis=1)
-        zeros = paddle.zeros(origin_h.shape, 'float32')
+        # [N, C*4]
+        bbox = paddle.concat(roi)
+        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        scores = cls_prob[:, :-1]
+
+        # [N*C, 4]
+        #bbox = paddle.reshape(bbox, [-1, 4])
+        #bbox = clip_bbox(bbox, origin_shape)
+
+        bbox_num_class = bbox.shape[1] // 4
+        bbox = paddle.reshape(bbox, [-1, bbox_num_class, 4])
+
+        origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
+        origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)
+        zeros = paddle.zeros_like(origin_h)
         x1 = paddle.maximum(paddle.minimum(bbox[:, :, 0], origin_w), zeros)
         y1 = paddle.maximum(paddle.minimum(bbox[:, :, 1], origin_h), zeros)
         x2 = paddle.maximum(paddle.minimum(bbox[:, :, 2], origin_w), zeros)
         y2 = paddle.maximum(paddle.minimum(bbox[:, :, 3], origin_h), zeros)
         bbox = paddle.stack([x1, y1, x2, y2], axis=-1)
-
         bboxes = (bbox, rois_num)
-        return bboxes, cls_prob
-
-
-@register
-@serializable
-class DecodeClipNms(object):
-    __shared__ = ['num_classes']
-
-    def __init__(
-            self,
-            num_classes=81,
-            keep_top_k=100,
-            score_threshold=0.05,
-            nms_threshold=0.5, ):
-        super(DecodeClipNms, self).__init__()
-        self.num_classes = num_classes
-        self.keep_top_k = keep_top_k
-        self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
-
-    def __call__(self, bboxes, bbox_prob, bbox_delta, im_info):
-        bboxes_np = (i.numpy() for i in bboxes)
-        # bbox, bbox_num
-        outs = bbox_post_process(bboxes_np,
-                                 bbox_prob.numpy(),
-                                 bbox_delta.numpy(),
-                                 im_info.numpy(), self.keep_top_k,
-                                 self.score_threshold, self.nms_threshold,
-                                 self.num_classes)
-        outs = [to_tensor(v) for v in outs]
-        for v in outs:
-            v.stop_gradient = True
-        return outs
+        return bboxes, scores
 
 
 @register
@@ -589,7 +349,6 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=False,
                  nms_eta=1.0,
-                 background_label=0,
                  return_rois_num=True):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
@@ -598,14 +357,15 @@ class MultiClassNMS(object):
         self.nms_threshold = nms_threshold
         self.normalized = normalized
         self.nms_eta = nms_eta
-        self.background_label = background_label
         self.return_rois_num = return_rois_num
 
-    def __call__(self, bboxes, score):
+    def __call__(self, bboxes, score, background_label=-1):
         kwargs = self.__dict__.copy()
         if isinstance(bboxes, tuple):
             bboxes, bbox_num = bboxes
             kwargs.update({'rois_num': bbox_num})
+        if background_label > -1:
+            kwargs.update({'background_label': background_label})
         return ops.multiclass_nms(bboxes, score, **kwargs)
 
 

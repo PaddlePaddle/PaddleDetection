@@ -13,234 +13,216 @@
 # limitations under the License.
 
 import paddle
-from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import ReLU
 from paddle.nn.initializer import Normal, XavierUniform
 from paddle.regularizer import L2Decay
-from ppdet.core.workspace import register
+
+from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
+
+from .roi_extractor import RoIAlign
+from ..shape_spec import ShapeSpec
+from ..bbox_utils import bbox2delta
 
 
 @register
 class TwoFCHead(nn.Layer):
-
-    __shared__ = ['roi_stages']
-
-    def __init__(self, in_dim=256, mlp_dim=1024, resolution=7, roi_stages=1):
+    def __init__(self, in_dim=256, mlp_dim=1024, resolution=7):
         super(TwoFCHead, self).__init__()
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
-        self.roi_stages = roi_stages
         fan = in_dim * resolution * resolution
-        self.fc6_list = []
-        self.fc6_relu_list = []
-        self.fc7_list = []
-        self.fc7_relu_list = []
-        for stage in range(roi_stages):
-            fc6_name = 'fc6_{}'.format(stage)
-            fc7_name = 'fc7_{}'.format(stage)
-            lr_factor = 2**stage
-            fc6 = self.add_sublayer(
-                fc6_name,
-                nn.Linear(
-                    in_dim * resolution * resolution,
-                    mlp_dim,
-                    weight_attr=ParamAttr(
-                        learning_rate=lr_factor,
-                        initializer=XavierUniform(fan_out=fan)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
-            fc6_relu = self.add_sublayer(fc6_name + 'act', ReLU())
-            fc7 = self.add_sublayer(
-                fc7_name,
-                nn.Linear(
-                    mlp_dim,
-                    mlp_dim,
-                    weight_attr=ParamAttr(
-                        learning_rate=lr_factor, initializer=XavierUniform()),
-                    bias_attr=ParamAttr(
-                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
-            fc7_relu = self.add_sublayer(fc7_name + 'act', ReLU())
-            self.fc6_list.append(fc6)
-            self.fc6_relu_list.append(fc6_relu)
-            self.fc7_list.append(fc7)
-            self.fc7_relu_list.append(fc7_relu)
+        lr_factor = 1.
+        self.fc6 = nn.Linear(
+            in_dim * resolution * resolution,
+            mlp_dim,
+            weight_attr=paddle.ParamAttr(
+                learning_rate=lr_factor,
+                initializer=XavierUniform(fan_out=fan)))
 
-    def forward(self, rois_feat, stage=0):
+        self.fc7 = nn.Linear(
+            mlp_dim,
+            mlp_dim,
+            weight_attr=paddle.ParamAttr(
+                learning_rate=lr_factor, initializer=XavierUniform()))
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_dim': s.channels}
+
+    def out_shape(self):
+        return [ShapeSpec(channels=self.mlp_dim, )]
+
+    def forward(self, rois_feat):
         rois_feat = paddle.flatten(rois_feat, start_axis=1, stop_axis=-1)
-        fc6 = self.fc6_list[stage](rois_feat)
-        fc6_relu = self.fc6_relu_list[stage](fc6)
-        fc7 = self.fc7_list[stage](fc6_relu)
-        fc7_relu = self.fc7_relu_list[stage](fc7)
-        return fc7_relu
-
-
-@register
-class BBoxFeat(nn.Layer):
-    __inject__ = ['roi_extractor', 'head_feat']
-
-    def __init__(self, roi_extractor, head_feat):
-        super(BBoxFeat, self).__init__()
-        self.roi_extractor = roi_extractor
-        self.head_feat = head_feat
-        self.rois_feat_list = []
-
-    def forward(self, body_feats, rois, spatial_scale, stage=0):
-        rois_feat = self.roi_extractor(body_feats, rois, spatial_scale)
-        bbox_feat = self.head_feat(rois_feat, stage)
-        return rois_feat, bbox_feat
+        fc6 = self.fc6(rois_feat)
+        fc6 = F.relu(fc6)
+        fc7 = self.fc7(fc6)
+        fc7 = F.relu(fc7)
+        return fc7
 
 
 @register
 class BBoxHead(nn.Layer):
-    __shared__ = ['num_classes', 'roi_stages']
-    __inject__ = ['bbox_feat']
+    __shared__ = ['num_classes']
+    __inject__ = ['bbox_assigner']
+    """
+    head (nn.Layer): Extract feature in bbox head
+    in_channel (int): Input channel after RoI extractor
+    """
 
     def __init__(self,
-                 bbox_feat,
-                 in_feat=1024,
-                 num_classes=81,
-                 cls_agnostic=False,
-                 roi_stages=1,
+                 head,
+                 in_channel,
+                 roi_extractor=RoIAlign().__dict__,
+                 bbox_assigner='BboxAssigner',
                  with_pool=False,
-                 score_stage=[0, 1, 2],
-                 delta_stage=[2]):
+                 num_classes=80,
+                 bbox_weight=[10., 10., 5., 5.]):
         super(BBoxHead, self).__init__()
-        self.num_classes = num_classes
-        self.cls_agnostic = cls_agnostic
-        self.delta_dim = 2 if cls_agnostic else num_classes
-        self.bbox_feat = bbox_feat
-        self.roi_stages = roi_stages
-        self.bbox_score_list = []
-        self.bbox_delta_list = []
-        self.roi_feat_list = [[] for i in range(roi_stages)]
+        self.head = head
+        self.roi_extractor = roi_extractor
+        if isinstance(roi_extractor, dict):
+            self.roi_extractor = RoIAlign(**roi_extractor)
+        self.bbox_assigner = bbox_assigner
+        self.bbox_feat = None
+
         self.with_pool = with_pool
-        self.score_stage = score_stage
-        self.delta_stage = delta_stage
-        for stage in range(roi_stages):
-            score_name = 'bbox_score_{}'.format(stage)
-            delta_name = 'bbox_delta_{}'.format(stage)
-            lr_factor = 2**stage
-            bbox_score = self.add_sublayer(
-                score_name,
-                nn.Linear(
-                    in_feat,
-                    1 * self.num_classes,
-                    weight_attr=ParamAttr(
-                        learning_rate=lr_factor,
-                        initializer=Normal(
-                            mean=0.0, std=0.01)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
+        self.num_classes = num_classes
+        self.bbox_weight = bbox_weight
 
-            bbox_delta = self.add_sublayer(
-                delta_name,
-                nn.Linear(
-                    in_feat,
-                    4 * self.delta_dim,
-                    weight_attr=ParamAttr(
-                        learning_rate=lr_factor,
-                        initializer=Normal(
-                            mean=0.0, std=0.001)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2. * lr_factor, regularizer=L2Decay(0.))))
-            self.bbox_score_list.append(bbox_score)
-            self.bbox_delta_list.append(bbox_delta)
+        score_name = 'bbox_score_0'
+        delta_name = 'bbox_delta_0'
+        lr_factor = 1.
+        self.bbox_score = nn.Linear(
+            in_channel,
+            self.num_classes + 1,
+            weight_attr=paddle.ParamAttr(
+                learning_rate=lr_factor, initializer=Normal(
+                    mean=0.0, std=0.01)))
 
-    def forward(self,
-                body_feats=None,
-                rois=None,
-                spatial_scale=None,
-                stage=0,
-                roi_stage=-1):
-        if rois is not None:
-            rois_feat, bbox_feat = self.bbox_feat(body_feats, rois,
-                                                  spatial_scale, stage)
-            self.roi_feat_list[stage] = rois_feat
+        self.bbox_delta = nn.Linear(
+            in_channel,
+            4 * self.num_classes,
+            weight_attr=paddle.ParamAttr(
+                learning_rate=lr_factor,
+                initializer=Normal(
+                    mean=0.0, std=0.001)))
+        self.assigned_label = None
+        self.assigned_rois = None
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        roi_pooler = cfg['roi_extractor']
+        assert isinstance(roi_pooler, dict)
+        kwargs = RoIAlign.from_config(cfg, input_shape)
+        roi_pooler.update(kwargs)
+        kwargs = {'input_shape': input_shape}
+        head = create(cfg['head'], **kwargs)
+        return {
+            'roi_extractor': roi_pooler,
+            'head': head,
+            'in_channel': head.out_shape()[0].channels
+        }
+
+    def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
+        """
+        body_feats (list[Tensor]):
+        rois (Tensor):
+        rois_num (Tensor):
+        inputs (dict{Tensor}):
+        """
+        if self.training:
+            rois, rois_num, _, targets = self.bbox_assigner(rois, rois_num,
+                                                            inputs)
+            self.assigned_rois = (rois, rois_num)
+            self.assigned_targets = targets
+
+        rois_feat = self.roi_extractor(body_feats, rois, rois_num)
+        self.bbox_feat = self.head(rois_feat)
+
+        #if self.with_pool:
+        if len(self.bbox_feat.shape) > 2 and self.bbox_feat.shape[-1] > 1:
+            feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
+            feat = paddle.squeeze(feat, axis=[2, 3])
         else:
-            rois_feat = self.roi_feat_list[roi_stage]
-            bbox_feat = self.bbox_feat.head_feat(rois_feat, stage)
-        if self.with_pool:
-            bbox_feat_ = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
-            bbox_feat_ = paddle.squeeze(bbox_feat_, axis=[2, 3])
-            scores = self.bbox_score_list[stage](bbox_feat_)
-            deltas = self.bbox_delta_list[stage](bbox_feat_)
-        else:
-            scores = self.bbox_score_list[stage](bbox_feat)
-            deltas = self.bbox_delta_list[stage](bbox_feat)
-        bbox_head_out = (scores, deltas)
-        return bbox_feat, bbox_head_out, self.bbox_feat.head_feat
+            feat = self.bbox_feat
+        scores = self.bbox_score(feat)
+        deltas = self.bbox_delta(feat)
 
-    def _get_head_loss(self, score, delta, target):
-        # bbox cls  
-        labels_int64 = paddle.cast(x=target['labels_int32'], dtype='int64')
-        labels_int64.stop_gradient = True
-        loss_bbox_cls = F.softmax_with_cross_entropy(
-            logits=score, label=labels_int64)
-        loss_bbox_cls = paddle.mean(loss_bbox_cls)
+        if self.training:
+            loss = self.get_loss(scores, deltas, targets, rois)
+            return loss, self.bbox_feat
+        else:
+            pred = self.get_prediction(scores, deltas)
+            return pred, self.head
+
+    def get_loss(self, scores, deltas, targets, rois):
+        """
+        scores (Tensor): scores from bbox head outputs
+        deltas (Tensor): deltas from bbox head outputs
+        targets (list[List[Tensor]]): bbox targets containing tgt_labels, tgt_bboxes and tgt_gt_inds
+        rois (List[Tensor]): RoIs generated in each batch
+        """
+        # TODO: better pass args
+        tgt_labels, tgt_bboxes, tgt_gt_inds = targets
+        tgt_labels = paddle.concat(tgt_labels) if len(
+            tgt_labels) > 1 else tgt_labels[0]
+        tgt_labels = tgt_labels.cast('int64')
+        tgt_labels.stop_gradient = True
+        loss_bbox_cls = F.cross_entropy(
+            input=scores, label=tgt_labels, reduction='mean')
         # bbox reg
-        loss_bbox_reg = ops.smooth_l1(
-            input=delta,
-            label=target['bbox_targets'],
-            inside_weight=target['bbox_inside_weights'],
-            outside_weight=target['bbox_outside_weights'],
-            sigma=1.0)
-        loss_bbox_reg = paddle.mean(loss_bbox_reg)
-        return loss_bbox_cls, loss_bbox_reg
 
-    def get_loss(self, bbox_head_out, targets):
-        loss_bbox = {}
+        cls_agnostic_bbox_reg = deltas.shape[1] == 4
+
+        fg_inds = paddle.nonzero(
+            paddle.logical_and(tgt_labels >= 0, tgt_labels <
+                               self.num_classes)).flatten()
+
+        if cls_agnostic_bbox_reg:
+            reg_delta = paddle.gather(deltas, fg_inds)
+        else:
+            fg_gt_classes = paddle.gather(tgt_labels, fg_inds)
+
+            reg_row_inds = paddle.arange(fg_gt_classes.shape[0]).unsqueeze(1)
+            reg_row_inds = paddle.tile(reg_row_inds, [1, 4]).reshape([-1, 1])
+
+            reg_col_inds = 4 * fg_gt_classes.unsqueeze(1) + paddle.arange(4)
+
+            reg_col_inds = reg_col_inds.reshape([-1, 1])
+            reg_inds = paddle.concat([reg_row_inds, reg_col_inds], axis=1)
+
+            reg_delta = paddle.gather(deltas, fg_inds)
+            reg_delta = paddle.gather_nd(reg_delta, reg_inds).reshape([-1, 4])
+        rois = paddle.concat(rois) if len(rois) > 1 else rois[0]
+        tgt_bboxes = paddle.concat(tgt_bboxes) if len(
+            tgt_bboxes) > 1 else tgt_bboxes[0]
+
+        reg_target = bbox2delta(rois, tgt_bboxes, self.bbox_weight)
+        reg_target = paddle.gather(reg_target, fg_inds)
+        reg_target.stop_gradient = True
+
+        loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
+        ) / tgt_labels.shape[0]
+
         cls_name = 'loss_bbox_cls'
         reg_name = 'loss_bbox_reg'
-        for lvl, (bboxhead, target) in enumerate(zip(bbox_head_out, targets)):
-            score, delta = bboxhead
-            if len(targets) > 1:
-                cls_name = 'loss_bbox_cls_{}'.format(lvl)
-                reg_name = 'loss_bbox_reg_{}'.format(lvl)
-            loss_bbox_cls, loss_bbox_reg = self._get_head_loss(score, delta,
-                                                               target)
-            loss_weight = 1. / 2**lvl
-            loss_bbox[cls_name] = loss_bbox_cls * loss_weight
-            loss_bbox[reg_name] = loss_bbox_reg * loss_weight
+        loss_bbox = {}
+        loss_bbox[cls_name] = loss_bbox_cls
+        loss_bbox[reg_name] = loss_bbox_reg
+
         return loss_bbox
 
-    def get_prediction(self, bbox_head_out, rois):
-        proposal, proposal_num = rois
-        score, delta = bbox_head_out
+    def get_prediction(self, score, delta):
         bbox_prob = F.softmax(score)
-        delta = paddle.reshape(delta, (-1, self.delta_dim, 4))
-        bbox_pred = (delta, bbox_prob)
-        return bbox_pred, rois
+        return delta, bbox_prob
 
-    def get_cascade_prediction(self, bbox_head_out, rois):
-        proposal_list = []
-        prob_list = []
-        delta_list = []
-        for stage in range(len(rois)):
-            proposals = rois[stage]
-            bboxhead = bbox_head_out[stage]
-            score, delta = bboxhead
-            proposal, proposal_num = proposals
-            if stage in self.score_stage:
-                if stage < 2:
-                    _, head_out, _ = self(stage=stage, roi_stage=-1)
-                    score = head_out[0]
+    def get_assigned_targets(self, ):
+        return self.assigned_targets
 
-                bbox_prob = F.softmax(score)
-                prob_list.append(bbox_prob)
-            if stage in self.delta_stage:
-                proposal_list.append(proposal)
-                delta_list.append(delta)
-        bbox_prob = paddle.mean(paddle.stack(prob_list), axis=0)
-        delta = paddle.mean(paddle.stack(delta_list), axis=0)
-        proposal = paddle.mean(paddle.stack(proposal_list), axis=0)
-        delta = paddle.reshape(delta, (-1, self.delta_dim, 4))
-        if self.cls_agnostic:
-            N, C, M = delta.shape
-            delta = delta[:, 1:2, :]
-            delta = paddle.expand(delta, [N, self.num_classes, M])
-        bboxes = (proposal, proposal_num)
-        bbox_pred = (delta, bbox_prob)
-        return bbox_pred, bboxes
+    def get_assigned_rois(self, ):
+        return self.assigned_rois

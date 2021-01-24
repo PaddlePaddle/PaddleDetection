@@ -13,195 +13,202 @@
 # limitations under the License.
 
 import paddle
+import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle import ParamAttr
-from paddle.nn import Layer, Sequential
-from paddle.nn import Conv2D, Conv2DTranspose, ReLU
 from paddle.nn.initializer import KaimingNormal
 from paddle.regularizer import L2Decay
-from ppdet.core.workspace import register
+
+from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
 
+from .roi_extractor import RoIAlign
+
 
 @register
-class MaskFeat(Layer):
-    __inject__ = ['mask_roi_extractor']
-
-    def __init__(self,
-                 mask_roi_extractor=None,
-                 num_convs=0,
-                 feat_in=2048,
-                 feat_out=256,
-                 mask_num_stages=1,
-                 share_bbox_feat=False):
+class MaskFeat(nn.Layer):
+    def __init__(self, num_convs=0, in_channels=2048, out_channels=256):
         super(MaskFeat, self).__init__()
         self.num_convs = num_convs
-        self.feat_in = feat_in
-        self.feat_out = feat_out
-        self.mask_roi_extractor = mask_roi_extractor
-        self.mask_num_stages = mask_num_stages
-        self.share_bbox_feat = share_bbox_feat
-        self.upsample_module = []
-        fan_conv = feat_out * 3 * 3
-        fan_deconv = feat_out * 2 * 2
-        for i in range(self.mask_num_stages):
-            name = 'stage_{}'.format(i)
-            mask_conv = Sequential()
-            for j in range(self.num_convs):
-                conv_name = 'mask_inter_feat_{}'.format(j + 1)
-                mask_conv.add_sublayer(
-                    conv_name,
-                    Conv2D(
-                        in_channels=feat_in if j == 0 else feat_out,
-                        out_channels=feat_out,
-                        kernel_size=3,
-                        padding=1,
-                        weight_attr=ParamAttr(
-                            initializer=KaimingNormal(fan_in=fan_conv)),
-                        bias_attr=ParamAttr(
-                            learning_rate=2., regularizer=L2Decay(0.))))
-                mask_conv.add_sublayer(conv_name + 'act', ReLU())
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        fan_conv = out_channels * 3 * 3
+        fan_deconv = out_channels * 2 * 2
+
+        mask_conv = nn.Sequential()
+        for i in range(self.num_convs):
+            conv_name = 'mask_inter_feat_{}'.format(i + 1)
             mask_conv.add_sublayer(
-                'conv5_mask',
-                Conv2DTranspose(
-                    in_channels=self.feat_in,
-                    out_channels=self.feat_out,
-                    kernel_size=2,
-                    stride=2,
-                    weight_attr=ParamAttr(
-                        initializer=KaimingNormal(fan_in=fan_deconv)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
-            mask_conv.add_sublayer('conv5_mask' + 'act', ReLU())
-            upsample = self.add_sublayer(name, mask_conv)
-            self.upsample_module.append(upsample)
+                conv_name,
+                nn.Conv2D(
+                    in_channels=in_channels if i == 0 else out_channels,
+                    out_channels=out_channels,
+                    kernel_size=3,
+                    padding=1,
+                    weight_attr=paddle.ParamAttr(
+                        initializer=KaimingNormal(fan_in=fan_conv))))
+            mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
+        mask_conv.add_sublayer(
+            'conv5_mask',
+            nn.Conv2DTranspose(
+                in_channels=self.in_channels,
+                out_channels=self.out_channels,
+                kernel_size=2,
+                stride=2,
+                weight_attr=paddle.ParamAttr(
+                    initializer=KaimingNormal(fan_in=fan_deconv))))
+        mask_conv.add_sublayer('conv5_mask' + 'act', nn.ReLU())
+        self.upsample = mask_conv
 
-    def forward(self,
-                body_feats,
-                bboxes,
-                bbox_feat,
-                mask_index,
-                spatial_scale,
-                stage=0,
-                bbox_head_feat_func=None):
-        if self.share_bbox_feat and mask_index is not None:
-            rois_feat = paddle.gather(bbox_feat, mask_index)
-        else:
-            rois_feat = self.mask_roi_extractor(body_feats, bboxes,
-                                                spatial_scale)
-        if self.share_bbox_feat and bbox_head_feat_func is not None and not self.training:
-            rois_feat = bbox_head_feat_func(rois_feat)
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        if isinstance(input_shape, (list, tuple)):
+            input_shape = input_shape[0]
+        return {'in_channels': input_shape.channels, }
 
-        # upsample 
-        mask_feat = self.upsample_module[stage](rois_feat)
-        return mask_feat
+    def out_channel(self):
+        return self.out_channels
+
+    def forward(self, feats):
+        return self.upsample(feats)
 
 
 @register
-class MaskHead(Layer):
-    __shared__ = ['num_classes', 'mask_num_stages']
-    __inject__ = ['mask_feat']
+class MaskHead(nn.Layer):
+    __shared__ = ['num_classes']
+    __inject__ = ['mask_assigner']
 
     def __init__(self,
-                 mask_feat,
-                 feat_in=256,
-                 num_classes=81,
-                 mask_num_stages=1):
+                 head,
+                 roi_extractor=RoIAlign().__dict__,
+                 mask_assigner='MaskAssigner',
+                 num_classes=80,
+                 share_bbox_feat=False):
         super(MaskHead, self).__init__()
-        self.mask_feat = mask_feat
-        self.feat_in = feat_in
         self.num_classes = num_classes
-        self.mask_num_stages = mask_num_stages
-        self.mask_fcn_logits = []
-        for i in range(self.mask_num_stages):
-            name = 'mask_fcn_logits_{}'.format(i)
-            self.mask_fcn_logits.append(
-                self.add_sublayer(
-                    name,
-                    Conv2D(
-                        in_channels=self.feat_in,
-                        out_channels=self.num_classes,
-                        kernel_size=1,
-                        weight_attr=ParamAttr(initializer=KaimingNormal(
-                            fan_in=self.num_classes)),
-                        bias_attr=ParamAttr(
-                            learning_rate=2., regularizer=L2Decay(0.0)))))
 
-    def forward_train(self,
-                      body_feats,
-                      bboxes,
-                      bbox_feat,
-                      mask_index,
-                      spatial_scale,
-                      stage=0):
-        # feat
-        mask_feat = self.mask_feat(body_feats, bboxes, bbox_feat, mask_index,
-                                   spatial_scale, stage)
-        # logits
-        mask_head_out = self.mask_fcn_logits[stage](mask_feat)
-        return mask_head_out
+        self.roi_extractor = roi_extractor
+        if isinstance(roi_extractor, dict):
+            self.roi_extractor = RoIAlign(**roi_extractor)
+        self.head = head
+        self.in_channels = head.out_channel()
+        self.mask_assigner = mask_assigner
+        self.share_bbox_feat = share_bbox_feat
+        self.bbox_head = None
+
+        self.mask_fcn_logits = nn.Conv2D(
+            in_channels=self.in_channels,
+            out_channels=self.num_classes,
+            kernel_size=1,
+            weight_attr=paddle.ParamAttr(initializer=KaimingNormal(
+                fan_in=self.num_classes)))
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        roi_pooler = cfg['roi_extractor']
+        assert isinstance(roi_pooler, dict)
+        kwargs = RoIAlign.from_config(cfg, input_shape)
+        roi_pooler.update(kwargs)
+        kwargs = {'input_shape': input_shape}
+        head = create(cfg['head'], **kwargs)
+        return {
+            'roi_extractor': roi_pooler,
+            'head': head,
+        }
+
+    def set_bbox_head(self, bbox_head):
+        """
+        Model without FPN share feature extraction with bbox_head
+        """
+        self.bbox_head = bbox_head
+
+    def get_loss(self, mask_logits, mask_label, mask_target, mask_weight):
+        mask_label = F.one_hot(mask_label, self.num_classes).unsqueeze([2, 3])
+        mask_label = paddle.expand_as(mask_label, mask_logits)
+        mask_label.stop_gradient = True
+        mask_pred = paddle.gather_nd(mask_logits, paddle.nonzero(mask_label))
+        shape = mask_logits.shape
+        mask_pred = paddle.reshape(mask_pred, [shape[0], shape[2], shape[3]])
+
+        mask_target = mask_target.cast('float32')
+        mask_weight = mask_weight.unsqueeze([1, 2])
+        loss_mask = F.binary_cross_entropy_with_logits(
+            mask_pred, mask_target, weight=mask_weight, reduction="mean")
+        return loss_mask
+
+    def forward_train(self, body_feats, rois, rois_num, inputs, targets,
+                      bbox_feat):
+        """
+        body_feats (list[Tensor]): Multi-level backbone features
+        rois (list[Tensor]): Proposals for each batch with shape [N, 4]
+        rois_num (Tensor): The number of proposals for each batch
+        inputs (dict): ground truth info
+        """
+        #assert self.bbox_head
+        tgt_labels, _, tgt_gt_inds = targets
+        rois, rois_num, tgt_classes, tgt_masks, mask_index, tgt_weights = self.mask_assigner(
+            rois, tgt_labels, tgt_gt_inds, inputs)
+
+        if self.share_bbox_feat:
+            rois_feat = paddle.gather(bbox_feat, mask_index)
+        else:
+            rois_feat = self.roi_extractor(body_feats, rois, rois_num)
+        mask_feat = self.head(rois_feat)
+        mask_logits = self.mask_fcn_logits(mask_feat)
+
+        loss_mask = self.get_loss(mask_logits, tgt_classes, tgt_masks,
+                                  tgt_weights)
+        return {'loss_mask': loss_mask}
 
     def forward_test(self,
-                     scale_factor,
                      body_feats,
-                     bboxes,
-                     bbox_feat,
-                     mask_index,
-                     spatial_scale,
-                     stage=0,
-                     bbox_head_feat_func=None):
-        bbox, bbox_num = bboxes
-
-        if bbox.shape[0] == 0:
-            mask_head_out = paddle.full([1, 6], -1)
+                     rois,
+                     rois_num,
+                     scale_factor,
+                     feat_func=None):
+        """
+        body_feats (list[Tensor]): Multi-level backbone features
+        rois (Tensor): Prediction from bbox head with shape [N, 6]
+        rois_num (Tensor): The number of prediction for each batch
+        scale_factor (Tensor): The scale factor from origin size to input size
+        """
+        if rois.shape[0] == 0:
+            mask_out = paddle.full([1, 1, 1, 1], -1)
         else:
-            scale_factor_list = []
-            for idx in range(bbox_num.shape[0]):
-                num = bbox_num[idx]
-                scale = scale_factor[idx, 0]
-                ones = paddle.ones(num)
-                scale_expand = ones * scale
-                scale_factor_list.append(scale_expand)
-            scale_factor_list = paddle.cast(
-                paddle.concat(scale_factor_list), 'float32')
-            scale_factor_list = paddle.reshape(scale_factor_list, shape=[-1, 1])
-            scaled_bbox = paddle.multiply(bbox[:, 2:], scale_factor_list)
-            scaled_bboxes = (scaled_bbox, bbox_num)
-            mask_feat = self.mask_feat(body_feats, scaled_bboxes, bbox_feat,
-                                       mask_index, spatial_scale, stage,
-                                       bbox_head_feat_func)
-            mask_logit = self.mask_fcn_logits[stage](mask_feat)
-            mask_head_out = F.sigmoid(mask_logit)
-        return mask_head_out
+            bbox = [rois[:, 2:]]
+            labels = rois[:, 0].cast('int32')
+            rois_feat = self.roi_extractor(body_feats, bbox, rois_num)
+            if self.share_bbox_feat:
+                assert feat_func is not None
+                rois_feat = feat_func(body_feat)
+
+            mask_feat = self.head(rois_feat)
+            mask_logit = self.mask_fcn_logits(mask_feat)
+            mask_num_class = mask_logit.shape[1]
+            if mask_num_class == 1:
+                mask_out = F.sigmoid(mask_logit)
+            else:
+                num_masks = mask_logit.shape[0]
+                pred_masks = paddle.split(mask_logit, num_masks)
+                mask_out = []
+                # TODO: need to optimize gather
+                for i, pred_mask in enumerate(pred_masks):
+                    mask = paddle.gather(pred_mask, labels[i], axis=1)
+                    mask_out.append(mask)
+                mask_out = F.sigmoid(paddle.concat(mask_out))
+        return mask_out
 
     def forward(self,
-                inputs,
                 body_feats,
-                bboxes,
-                bbox_feat,
-                mask_index,
-                spatial_scale,
-                bbox_head_feat_func=None,
-                stage=0):
+                rois,
+                rois_num,
+                inputs,
+                targets=None,
+                bbox_feat=None,
+                feat_func=None):
         if self.training:
-            mask_head_out = self.forward_train(body_feats, bboxes, bbox_feat,
-                                               mask_index, spatial_scale, stage)
+            return self.forward_train(body_feats, rois, rois_num, inputs,
+                                      targets, bbox_feat)
         else:
-            scale_factor = inputs['scale_factor']
-            mask_head_out = self.forward_test(
-                scale_factor, body_feats, bboxes, bbox_feat, mask_index,
-                spatial_scale, stage, bbox_head_feat_func)
-        return mask_head_out
-
-    def get_loss(self, mask_head_out, mask_target):
-        mask_logits = paddle.flatten(mask_head_out, start_axis=1, stop_axis=-1)
-        mask_label = paddle.cast(x=mask_target, dtype='float32')
-        mask_label.stop_gradient = True
-        loss_mask = ops.sigmoid_cross_entropy_with_logits(
-            input=mask_logits,
-            label=mask_label,
-            ignore_index=-1,
-            normalize=True)
-        loss_mask = paddle.sum(loss_mask)
-
-        return {'loss_mask': loss_mask}
+            im_scale = inputs['scale_factor']
+            return self.forward_test(body_feats, rois, rois_num, im_scale,
+                                     feat_func)
