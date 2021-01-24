@@ -53,6 +53,7 @@ class TwoFCHead(nn.Layer):
         s = s[0] if isinstance(s, (list, tuple)) else s
         return {'in_dim': s.channels}
 
+    @property
     def out_shape(self):
         return [ShapeSpec(channels=self.mlp_dim, )]
 
@@ -88,7 +89,6 @@ class BBoxHead(nn.Layer):
         if isinstance(roi_extractor, dict):
             self.roi_extractor = RoIAlign(**roi_extractor)
         self.bbox_assigner = bbox_assigner
-        self.bbox_feat = None
 
         self.with_pool = with_pool
         self.num_classes = num_classes
@@ -125,7 +125,7 @@ class BBoxHead(nn.Layer):
         return {
             'roi_extractor': roi_pooler,
             'head': head,
-            'in_channel': head.out_shape()[0].channels
+            'in_channel': head.out_shape[0].channels
         }
 
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
@@ -142,20 +142,19 @@ class BBoxHead(nn.Layer):
             self.assigned_targets = targets
 
         rois_feat = self.roi_extractor(body_feats, rois, rois_num)
-        self.bbox_feat = self.head(rois_feat)
-
+        bbox_feat = self.head(rois_feat)
         #if self.with_pool:
-        if len(self.bbox_feat.shape) > 2 and self.bbox_feat.shape[-1] > 1:
+        if len(bbox_feat.shape) > 2 and bbox_feat.shape[-1] > 1:
             feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             feat = paddle.squeeze(feat, axis=[2, 3])
         else:
-            feat = self.bbox_feat
+            feat = bbox_feat
         scores = self.bbox_score(feat)
         deltas = self.bbox_delta(feat)
 
         if self.training:
             loss = self.get_loss(scores, deltas, targets, rois)
-            return loss, self.bbox_feat
+            return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
@@ -220,6 +219,9 @@ class BBoxHead(nn.Layer):
     def get_prediction(self, score, delta):
         bbox_prob = F.softmax(score)
         return delta, bbox_prob
+
+    def get_head(self, ):
+        return self.head
 
     def get_assigned_targets(self, ):
         return self.assigned_targets

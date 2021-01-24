@@ -553,6 +553,7 @@ class Res5Head(nn.Layer):
                 stage_num=5))
         self.feat_out = feat_out * 4
 
+    @property
     def out_shape(self):
         return [ShapeSpec(
             channels=self.feat_out,

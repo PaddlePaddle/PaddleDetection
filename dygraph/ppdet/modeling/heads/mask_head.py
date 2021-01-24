@@ -179,7 +179,7 @@ class MaskHead(nn.Layer):
             rois_feat = self.roi_extractor(body_feats, bbox, rois_num)
             if self.share_bbox_feat:
                 assert feat_func is not None
-                rois_feat = feat_func(body_feat)
+                rois_feat = feat_func(rois_feat)
 
             mask_feat = self.head(rois_feat)
             mask_logit = self.mask_fcn_logits(mask_feat)

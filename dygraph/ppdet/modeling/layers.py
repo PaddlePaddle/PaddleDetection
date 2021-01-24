@@ -27,7 +27,6 @@ from paddle.nn.initializer import Normal, Constant
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
-from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.modeling.bbox_utils import delta2bbox
 from . import ops
 

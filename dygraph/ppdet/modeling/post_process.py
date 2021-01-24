@@ -29,8 +29,7 @@ class BBoxPostProcess(object):
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         # bboxes: [N, 6]
-        if bboxes.shape[0] == 0:
-            return bboxes
+        assert bboxes.shape[0] > 0, 'There is no detection output'
         # scale_factor: scale_y, scale_x
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 

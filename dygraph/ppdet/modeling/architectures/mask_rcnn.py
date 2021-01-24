@@ -66,7 +66,7 @@ class MaskRCNN(BaseArch):
         rpn_head = create(cfg['rpn_head'], **kwargs)
         bbox_head = create(cfg['bbox_head'], **kwargs)
 
-        out_shape = neck and out_shape or head.get_head().out_dim()
+        out_shape = neck and out_shape or bbox_head.get_head().out_shape
         kwargs = {'input_shape': out_shape}
         mask_head = create(cfg['mask_head'], **kwargs)
         return {

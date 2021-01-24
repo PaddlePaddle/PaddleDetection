@@ -1,7 +1,6 @@
 import six
 import os
 import numpy as np
-from .bbox import delta2bbox, clip_bbox, expand_bbox, nms
 import cv2
 
 

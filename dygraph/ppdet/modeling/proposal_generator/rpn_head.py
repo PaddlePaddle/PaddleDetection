@@ -154,8 +154,8 @@ class RPNHead(nn.Layer):
                     topk_rois = rpn_rois
                     topk_prob = rpn_prob
             else:
-                topk_rois = rpn_rois_list[0]
-                topk_prob = rpn_prob_list[0].flatten()
+                topk_rois = rpn_rois_list[i][0]
+                topk_prob = rpn_prob_list[i][0].flatten()
             rois_collect.append(topk_rois)
             rois_num_collect.append(paddle.shape(topk_rois)[0])
         rois_num_collect = paddle.concat(rois_num_collect)
