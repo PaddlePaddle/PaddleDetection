@@ -106,17 +106,11 @@ class Trainer(object):
         if self.cfg.metric == 'COCO':
             mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
                 self.model, 'mask_post_process', None) else None
-            self._metrics = [
-                COCOMetric(
-                    anno_file=self.dataset.get_anno(),
-                    with_background=self.cfg.with_background,
-                    mask_resolution=mask_resolution)
-            ]
+            self._metrics = [COCOMetric(anno_file=self.dataset.get_anno())]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
                 VOCMetric(
                     anno_file=self.dataset.get_anno(),
-                    with_background=self.cfg.with_background,
                     class_num=self.cfg.num_classes,
                     map_type=self.cfg.map_type)
             ]
