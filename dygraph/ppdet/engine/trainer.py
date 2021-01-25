@@ -97,19 +97,11 @@ class Trainer(object):
     def _init_metrics(self):
         if self.mode == 'eval':
             if self.cfg.metric == 'COCO':
-                mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
-                    self.model, 'mask_post_process', None) else None
-                self._metrics = [
-                    COCOMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        mask_resolution=mask_resolution)
-                ]
+                self._metrics = [COCOMetric(anno_file=self.dataset.get_anno())]
             elif self.cfg.metric == 'VOC':
                 self._metrics = [
                     VOCMetric(
                         anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
                         class_num=self.cfg.num_classes,
                         map_type=self.cfg.map_type)
                 ]
@@ -240,9 +232,7 @@ class Trainer(object):
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
-        with_background = self.cfg.with_background
-        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file,
-                                                 with_background)
+        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file)
 
         # Run Infer
         for step_id, data in enumerate(loader):
@@ -254,14 +244,6 @@ class Trainer(object):
                 outs[key] = data[key]
             for key, value in outs.items():
                 outs[key] = value.numpy()
-
-            # FIXME: for more elegent coding
-            if 'mask' in outs and 'bbox' in outs:
-                mask_resolution = self.model.mask_post_process.mask_resolution
-                from ppdet.py_op.post_process import mask_post_process
-                outs['mask'] = mask_post_process(outs, outs['im_shape'],
-                                                 outs['scale_factor'],
-                                                 mask_resolution)
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
