@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import math
+from numbers import Integral
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
-from .name_adapter import NameAdapter
-from numbers import Integral
 from ppdet.modeling.layers import DeformableConvV2
+from .name_adapter import NameAdapter
+from ..shape_spec import ShapeSpec
 
 __all__ = ['ResNet', 'Res5Head']
 
@@ -62,7 +63,7 @@ class ConvNormLayer(nn.Layer):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 groups=groups,
-                weight_attr=ParamAttr(
+                weight_attr=paddle.ParamAttr(
                     learning_rate=lr, name=name + "_weights"),
                 bias_attr=False)
         else:
@@ -73,19 +74,19 @@ class ConvNormLayer(nn.Layer):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 groups=groups,
-                weight_attr=ParamAttr(
-                    learning_rate=lr, name=name + "_weights"),
+                weight_attr=paddle.ParamAttr(
+                    learning_rate=lr, name=name + '_weights'),
                 bias_attr=False,
                 name=name)
 
         bn_name = name_adapter.fix_conv_norm_name(name)
         norm_lr = 0. if freeze_norm else lr
-        param_attr = ParamAttr(
+        param_attr = paddle.ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
             name=bn_name + "_scale",
             trainable=False if freeze_norm else True)
-        bias_attr = ParamAttr(
+        bias_attr = paddle.ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
             name=bn_name + "_offset",
@@ -483,10 +484,12 @@ class ResNet(nn.Layer):
                     lr=1.0,
                     name=_name))
 
-        self.pool = nn.MaxPool2D(kernel_size=3, stride=2, padding=1)
-
         ch_in_list = [64, 256, 512, 1024]
         ch_out_list = [64, 128, 256, 512]
+        self.expansion = 4 if depth >= 50 else 1
+
+        self._out_channels = [self.expansion * v for v in ch_out_list]
+        self._out_strides = [4, 8, 16, 32]
 
         self.res_layers = []
         for i in range(num_stages):
@@ -514,10 +517,18 @@ class ResNet(nn.Layer):
                     dcn_v2=(i in self.dcn_v2_stages)))
             self.res_layers.append(res_layer)
 
+    @property
+    def out_shape(self):
+        return [
+            ShapeSpec(
+                channels=self._out_channels[i], stride=self._out_strides[i])
+            for i in self.return_idx
+        ]
+
     def forward(self, inputs):
         x = inputs['image']
         conv1 = self.conv1(x)
-        x = self.pool(conv1)
+        x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
@@ -530,16 +541,24 @@ class ResNet(nn.Layer):
 
 @register
 class Res5Head(nn.Layer):
-    def __init__(self, depth=50, feat_in=1024, feat_out=512):
+    def __init__(self, depth=50):
         super(Res5Head, self).__init__()
+        feat_in, feat_out = [1024, 512]
+        if depth < 50:
+            feat_in = 256
         na = NameAdapter(self)
-        self.res5_conv = []
         self.res5 = self.add_sublayer(
             'res5_roi_feat',
             Blocks(
                 depth, feat_in, feat_out, count=3, name_adapter=na,
                 stage_num=5))
-        self.feat_out = feat_out * 4
+        self.feat_out = feat_out if depth < 50 else feat_out * 4
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(
+            channels=self.feat_out,
+            stride=32, )]
 
     def forward(self, roi_feat, stage=0):
         y = self.res5(roi_feat)
