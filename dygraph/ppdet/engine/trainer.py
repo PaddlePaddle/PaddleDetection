@@ -60,8 +60,10 @@ class Trainer(object):
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
-            self._eval_batch_sampler = paddle.io.BatchSampler(self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(self.dataset, cfg.worker_num, self._eval_batch_sampler)
+            self._eval_batch_sampler = paddle.io.BatchSampler(
+                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num, self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
@@ -223,7 +225,8 @@ class Trainer(object):
                             self._eval_dataset,
                             batch_size=self.cfg.EvalReader['batch_size'])
                     self._eval_loader = create('EvalReader')(
-                        self._eval_dataset, self.cfg.worker_num,
+                        self._eval_dataset,
+                        self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
                 with paddle.no_grad():
                     self._eval_with_loader(self._eval_loader)
