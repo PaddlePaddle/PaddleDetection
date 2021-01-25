@@ -26,7 +26,6 @@ from PIL import Image
 import paddle
 from paddle.distributed import ParallelEnv
 from paddle.static import InputSpec
-from paddle.fluid.layers import collective
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -43,12 +42,6 @@ logger = setup_logger(__name__)
 __all__ = ['Trainer']
 
 
-def _all_gather(tensor):
-    tensor_list = []
-    paddle.distributed.all_gather(tensor_list, tensor)
-    return paddle.stack(tensor_list, axis=0)
-
-
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
@@ -61,10 +54,15 @@ class Trainer(object):
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        # TestDataset build after user set images, skip loader creation here
-        if self.mode != 'test':
+        if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
+        # EvalDataset build with BatchSampler to evaluate in single device
+        # TODO: multi-device evaluate
+        if self.mode == 'eval':
+            self._eval_batch_sampler = paddle.io.BatchSampler(self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(self.dataset, cfg.worker_num, self._eval_batch_sampler)
+        # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
         self.optimizer = None
@@ -76,8 +74,6 @@ class Trainer(object):
 
         self._nranks = ParallelEnv().nranks
         self._local_rank = ParallelEnv().local_rank
-        if self._nranks > 1:
-            self.model = paddle.DataParallel(self.model)
 
         self.status = {}
 
@@ -163,11 +159,13 @@ class Trainer(object):
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
-        self.model.train()
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
+
+        if self._nranks > 1:
+            model = paddle.DataParallel(self.model)
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -186,7 +184,7 @@ class Trainer(object):
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
-            self.model.train()
+            model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
@@ -194,7 +192,7 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
 
                 # model forward
-                outputs = self.model(data)
+                outputs = model(data)
                 loss = outputs['loss']
 
                 # model backward
@@ -214,13 +212,19 @@ class Trainer(object):
 
             self._compose_callback.on_epoch_end(self.status)
 
-            if validate and (epoch_id % self.cfg.snapshot_epoch == 0 \
+            if validate and (self._nranks < 2 or self._local_rank == 0) \
+                    and (epoch_id % self.cfg.snapshot_epoch == 0 \
                              or epoch_id == self.end_epoch - 1):
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
+                    self._eval_batch_sampler = \
+                        paddle.io.BatchSampler(
+                            self._eval_dataset,
+                            batch_size=self.cfg.EvalReader['batch_size'])
                     self._eval_loader = create('EvalReader')(
-                        self._eval_dataset, self.cfg.worker_num)
+                        self._eval_dataset, self.cfg.worker_num,
+                        batch_sampler=self._eval_batch_sampler)
                 with paddle.no_grad():
                     self._eval_with_loader(self._eval_loader)
 
@@ -236,14 +240,9 @@ class Trainer(object):
             # forward
             outs = self.model(data)
 
-            # collect
-            if self._nranks > 1 and self._local_rank == 0:
-                outs = {k: _all_gather(v) for k, v in outs.items()}
-                data = {k: _all_gather(v) for k, v in data.items()}
-
-                # update metrics
-                for metric in self._metrics:
-                    metric.update(data, outs)
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data, outs)
 
             sample_num += data['im_id'].numpy().shape[0]
             self._compose_callback.on_step_end(self.status)
@@ -261,35 +260,6 @@ class Trainer(object):
 
     def evaluate(self):
         self._eval_with_loader(self.loader)
-
-    # def evaluate(self):
-    #     sample_num = 0
-    #     tic = time.time()
-    #     self._compose_callback.on_epoch_begin(self.status)
-    #     for step_id, data in enumerate(self.loader):
-    #         self.status['step_id'] = step_id
-    #         self._compose_callback.on_step_begin(self.status)
-    #         # forward
-    #         self.model.eval()
-    #         outs = self.model(data)
-    #
-    #         # update metrics
-    #         for metric in self._metrics:
-    #             metric.update(data, outs)
-    #
-    #         sample_num += data['im_id'].numpy().shape[0]
-    #         self._compose_callback.on_step_end(self.status)
-    #
-    #     self.status['sample_num'] = sample_num
-    #     self.status['cost_time'] = time.time() - tic
-    #     self._compose_callback.on_epoch_end(self.status)
-    #
-    #     # accumulate metric to log out
-    #     for metric in self._metrics:
-    #         metric.accumulate()
-    #         metric.log()
-    #     # reset metric states for metric may performed multiple times
-    #     self._reset_metrics()
 
     def predict(self, images, draw_threshold=0.5, output_dir='output'):
         self.dataset.set_images(images)
