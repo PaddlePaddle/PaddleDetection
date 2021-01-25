@@ -37,7 +37,7 @@ MAIN_PID = os.getpid()
 
 
 class Compose(object):
-    def __init__(self, transforms, num_classes=81):
+    def __init__(self, transforms, num_classes=80):
         self.transforms = transforms
         self.transforms_cls = []
         for t in self.transforms:
@@ -61,7 +61,7 @@ class Compose(object):
 
 
 class BatchCompose(Compose):
-    def __init__(self, transforms, num_classes=81):
+    def __init__(self, transforms, num_classes=80):
         super(BatchCompose, self).__init__(transforms, num_classes)
         self.output_fields = mp.Manager().list([])
         self.lock = mp.Lock()
@@ -119,8 +119,7 @@ class BaseDataLoader(object):
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81,
-                 with_background=True,
+                 num_classes=80,
                  **kwargs):
         # sample transform
         self._sample_transforms = Compose(
@@ -132,7 +131,6 @@ class BaseDataLoader(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
-        self.with_background = with_background
         self.kwargs = kwargs
 
     def __call__(self,
@@ -142,7 +140,7 @@ class BaseDataLoader(object):
                  return_list=False,
                  use_prefetch=True):
         self.dataset = dataset
-        self.dataset.parse_dataset(self.with_background)
+        self.dataset.parse_dataset()
         # get data
         self.dataset.set_transform(self._sample_transforms)
         # set kwargs
@@ -204,13 +202,11 @@ class TrainReader(BaseDataLoader):
                  shuffle=True,
                  drop_last=True,
                  drop_empty=True,
-                 num_classes=81,
-                 with_background=True,
+                 num_classes=80,
                  **kwargs):
-        super(TrainReader, self).__init__(inputs_def, sample_transforms,
-                                          batch_transforms, batch_size, shuffle,
-                                          drop_last, drop_empty, num_classes,
-                                          with_background, **kwargs)
+        super(TrainReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -223,13 +219,11 @@ class EvalReader(BaseDataLoader):
                  shuffle=False,
                  drop_last=True,
                  drop_empty=True,
-                 num_classes=81,
-                 with_background=True,
+                 num_classes=80,
                  **kwargs):
-        super(EvalReader, self).__init__(inputs_def, sample_transforms,
-                                         batch_transforms, batch_size, shuffle,
-                                         drop_last, drop_empty, num_classes,
-                                         with_background, **kwargs)
+        super(EvalReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -242,10 +236,8 @@ class TestReader(BaseDataLoader):
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
-                 num_classes=81,
-                 with_background=True,
+                 num_classes=80,
                  **kwargs):
-        super(TestReader, self).__init__(inputs_def, sample_transforms,
-                                         batch_transforms, batch_size, shuffle,
-                                         drop_last, drop_empty, num_classes,
-                                         with_background, **kwargs)
+        super(TestReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, **kwargs)

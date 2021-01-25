@@ -268,9 +268,7 @@ class Trainer(object):
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
-        with_background = self.cfg.with_background
-        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file,
-                                                 with_background)
+        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file)
 
         # Run Infer 
         self.status['mode'] = 'test'
@@ -283,14 +281,6 @@ class Trainer(object):
                 outs[key] = data[key]
             for key, value in outs.items():
                 outs[key] = value.numpy()
-
-            # FIXME: for more elegent coding
-            if 'mask' in outs and 'bbox' in outs:
-                mask_resolution = self.model.mask_post_process.mask_resolution
-                from ppdet.py_op.post_process import mask_post_process
-                outs['mask'] = mask_post_process(outs, outs['im_shape'],
-                                                 outs['scale_factor'],
-                                                 mask_resolution)
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']

@@ -49,14 +49,11 @@ class Metric(paddle.metric.Metric):
 
 
 class COCOMetric(Metric):
-    def __init__(self, anno_file, with_background=True, mask_resolution=None):
+    def __init__(self, anno_file):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
-        self.with_background = with_background
-        self.mask_resolution = mask_resolution
-        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file,
-                                                           with_background)
+        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
 
         self.reset()
 
@@ -71,16 +68,9 @@ class COCOMetric(Metric):
         for k, v in outputs.items():
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
-        # some input fields also needed
-        for k in ['im_id', 'scale_factor', 'im_shape']:
-            v = inputs[k]
-            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
-
-        if 'mask' in outs and 'bbox' in outs:
-            from ppdet.py_op.post_process import mask_post_process
-            outs['mask'] = mask_post_process(outs, outs['im_shape'],
-                                             outs['scale_factor'],
-                                             self.mask_resolution)
+        im_id = inputs['im_id']
+        outs['im_id'] = im_id.numpy() if isinstance(im_id,
+                                                    paddle.Tensor) else im_id
 
         infer_results = get_infer_results(outs, self.clsid2catid)
         self.results['bbox'] += infer_results[
@@ -131,7 +121,6 @@ class COCOMetric(Metric):
 class VOCMetric(Metric):
     def __init__(self,
                  anno_file,
-                 with_background=True,
                  class_num=20,
                  overlap_thresh=0.5,
                  map_type='11point',
@@ -140,9 +129,7 @@ class VOCMetric(Metric):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
-        self.with_background = with_background
-        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file,
-                                                           with_background)
+        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file)
 
         self.overlap_thresh = overlap_thresh
         self.map_type = map_type
