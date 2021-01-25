@@ -26,6 +26,7 @@ from PIL import Image
 import paddle
 from paddle.distributed import ParallelEnv
 from paddle.static import InputSpec
+from paddle.fluid.layers import collective
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -40,6 +41,12 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = ['Trainer']
+
+
+def _all_gather(tensor):
+    tensor_list = []
+    paddle.distributed.all_gather(tensor_list, tensor)
+    return paddle.stack(tensor_list, axis=0)
 
 
 class Trainer(object):
@@ -67,6 +74,11 @@ class Trainer(object):
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
 
+        self._nranks = ParallelEnv().nranks
+        self._local_rank = ParallelEnv().local_rank
+        if self._nranks > 1:
+            self.model = paddle.DataParallel(self.model)
+
         self.status = {}
 
         self.start_epoch = 0
@@ -93,28 +105,27 @@ class Trainer(object):
             self._compose_callback = None
 
     def _init_metrics(self):
-        if self.mode == 'eval':
-            if self.cfg.metric == 'COCO':
-                mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
-                    self.model, 'mask_post_process', None) else None
-                self._metrics = [
-                    COCOMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        mask_resolution=mask_resolution)
-                ]
-            elif self.cfg.metric == 'VOC':
-                self._metrics = [
-                    VOCMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        class_num=self.cfg.num_classes,
-                        map_type=self.cfg.map_type)
-                ]
-            else:
-                logger.warn("Metric not support for metric type {}".format(
-                    self.cfg.metric))
-                self._metrics = []
+        if self.cfg.metric == 'COCO':
+            mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
+                self.model, 'mask_post_process', None) else None
+            self._metrics = [
+                COCOMetric(
+                    anno_file=self.dataset.get_anno(),
+                    with_background=self.cfg.with_background,
+                    mask_resolution=mask_resolution)
+            ]
+        elif self.cfg.metric == 'VOC':
+            self._metrics = [
+                VOCMetric(
+                    anno_file=self.dataset.get_anno(),
+                    with_background=self.cfg.with_background,
+                    class_num=self.cfg.num_classes,
+                    map_type=self.cfg.map_type)
+            ]
+        else:
+            logger.warn("Metric not support for metric type {}".format(
+                self.cfg.metric))
+            self._metrics = []
 
     def _reset_metrics(self):
         for metric in self._metrics:
@@ -158,9 +169,6 @@ class Trainer(object):
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
 
-        if ParallelEnv().nranks > 1:
-            self.model = paddle.DataParallel(self.model)
-
         self.status.update({
             'epoch_id': self.start_epoch,
             'step_id': 0,
@@ -197,7 +205,7 @@ class Trainer(object):
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
-                if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+                if self._nranks < 2 or self._local_rank == 0:
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
@@ -228,9 +236,14 @@ class Trainer(object):
             # forward
             outs = self.model(data)
 
-            # update metrics
-            for metric in self._metrics:
-                metric.update(data, outs)
+            # collect
+            if self._nranks > 1 and self._local_rank == 0:
+                outs = {k: _all_gather(v) for k, v in outs.items()}
+                data = {k: _all_gather(v) for k, v in data.items()}
+
+                # update metrics
+                for metric in self._metrics:
+                    metric.update(data, outs)
 
             sample_num += data['im_id'].numpy().shape[0]
             self._compose_callback.on_step_end(self.status)
