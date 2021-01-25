@@ -129,6 +129,8 @@ class RPNHead(nn.Layer):
         rpn_rois_list = [[] for i in range(batch_size)]
         rpn_prob_list = [[] for i in range(batch_size)]
         rpn_rois_num_list = [[] for i in range(batch_size)]
+        # Generate proposals for each level and each batch.
+        # Discard batch-computing to avoid sorting bbox cross different batches.
         for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas, anchors):
             for i in range(batch_size):
                 rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = prop_gen(
@@ -141,6 +143,8 @@ class RPNHead(nn.Layer):
                     rpn_prob_list[i].append(rpn_rois_prob)
                     rpn_rois_num_list[i].append(rpn_rois_num)
 
+        # Collect multi-level proposals for each batch 
+        # Get 'topk' of them as final output 
         rois_collect = []
         rois_num_collect = []
         for i in range(batch_size):

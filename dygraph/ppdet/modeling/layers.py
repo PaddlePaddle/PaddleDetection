@@ -357,6 +357,19 @@ class MultiClassNMS(object):
         self.return_rois_num = return_rois_num
 
     def __call__(self, bboxes, score, background_label=-1):
+        """
+        bboxes (Tensor|List[Tensor]): 1. (Tensor) Predicted bboxes with shape 
+                                         [N, M, 4], N is the batch size and M
+                                         is the number of bboxes
+                                      2. (List[Tensor]) bboxes and bbox_num,
+                                         bboxes have shape of [M, C, 4], C
+                                         is the class number and bbox_num means
+                                         the number of bboxes of each batch with
+                                         shape [N,] 
+        score (Tensor): Predicted scores with shape [N, C, M] or [M, C]
+        background_label (int): Ignore the background label; For example, RCNN
+                                is num_classes and YOLO is -1. 
+        """
         kwargs = self.__dict__.copy()
         if isinstance(bboxes, tuple):
             bboxes, bbox_num = bboxes

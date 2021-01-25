@@ -486,9 +486,9 @@ class ResNet(nn.Layer):
 
         ch_in_list = [64, 256, 512, 1024]
         ch_out_list = [64, 128, 256, 512]
-
         self.expansion = 4 if depth >= 50 else 1
-        self._out_channels = [4 * v for v in ch_out_list]
+
+        self._out_channels = [self.expansion * v for v in ch_out_list]
         self._out_strides = [4, 8, 16, 32]
 
         self.res_layers = []
@@ -543,15 +543,16 @@ class ResNet(nn.Layer):
 class Res5Head(nn.Layer):
     def __init__(self, depth=50):
         super(Res5Head, self).__init__()
-        chs = {50: [1024, 512], }
+        feat_in, feat_out = [1024, 512]
+        if depth < 50:
+            feat_in = 256
         na = NameAdapter(self)
-        feat_in, feat_out = chs[depth]
         self.res5 = self.add_sublayer(
             'res5_roi_feat',
             Blocks(
                 depth, feat_in, feat_out, count=3, name_adapter=na,
                 stage_num=5))
-        self.feat_out = feat_out * 4
+        self.feat_out = feat_out if depth < 50 else feat_out * 4
 
     @property
     def out_shape(self):

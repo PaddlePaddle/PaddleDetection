@@ -239,7 +239,7 @@ def roi_align(input,
         align_out = core.ops.roi_align(
             input, rois, rois_num, "pooled_height", pooled_height,
             "pooled_width", pooled_width, "spatial_scale", spatial_scale,
-            "sampling_ratio", sampling_ratio, "aligned", aligned)
+            "sampling_ratio", sampling_ratio)  #, "aligned", aligned)
         return align_out
 
     else:
@@ -265,7 +265,7 @@ def roi_align(input,
                 "pooled_width": pooled_width,
                 "spatial_scale": spatial_scale,
                 "sampling_ratio": sampling_ratio,
-                "aligned": aligned,
+                #"aligned": aligned,
             })
         return align_out
 

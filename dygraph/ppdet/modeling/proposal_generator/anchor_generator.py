@@ -25,8 +25,6 @@ from .. import ops
 
 @register
 class AnchorGenerator(object):
-    __inject__ = ['anchor_generator', 'anchor_target_generator']
-
     def __init__(self,
                  anchor_sizes=[32, 64, 128, 256, 512],
                  aspect_ratios=[0.5, 1.0, 2.0],

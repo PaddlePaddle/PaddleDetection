@@ -115,12 +115,6 @@ class MaskHead(nn.Layer):
             'head': head,
         }
 
-    def set_bbox_head(self, bbox_head):
-        """
-        Model without FPN share feature extraction with bbox_head
-        """
-        self.bbox_head = bbox_head
-
     def get_loss(self, mask_logits, mask_label, mask_target, mask_weight):
         mask_label = F.one_hot(mask_label, self.num_classes).unsqueeze([2, 3])
         mask_label = paddle.expand_as(mask_label, mask_logits)

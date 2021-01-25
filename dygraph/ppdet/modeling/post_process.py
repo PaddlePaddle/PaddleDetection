@@ -19,6 +19,17 @@ class BBoxPostProcess(object):
         self.nms = nms
 
     def __call__(self, head_out, rois, im_shape, scale_factor):
+        """
+        Decode the bbox and do NMS if needed. 
+
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
+                               including labels, scores and bboxes. The size of 
+                               bboxes are corresponding to the input image and 
+                               the bboxes may be used in other brunch.
+            bbox_num(Tensor): The number of prediction of each batch with shape
+                              [N, 6].
+        """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
             bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
@@ -28,13 +39,23 @@ class BBoxPostProcess(object):
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
-        # bboxes: [N, 6]
+        """
+        Rescale, clip and filter the bbox from the output of NMS to 
+        get final prediction.
+
+        Args:
+            bboxes(Tensor): The output of __call__ with shape [N, 6]
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
+                               including labels, scores and bboxes. The size of
+                               bboxes are corresponding to the original image.
+        """
         assert bboxes.shape[0] > 0, 'There is no detection output'
-        # scale_factor: scale_y, scale_x
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
         scale_factor_list = []
+        # scale_factor: scale_y, scale_x
         for i in range(bbox_num.shape[0]):
             expand_shape = paddle.expand(origin_shape[i:i + 1, :],
                                          [bbox_num[i], 2])
@@ -47,19 +68,22 @@ class BBoxPostProcess(object):
         self.origin_shape_list = paddle.concat(origin_shape_list)
         scale_factor_list = paddle.concat(scale_factor_list)
 
+        # bboxes: [N, 6], label, score, bbox
         pred_label = bboxes[:, 0:1]
         pred_score = bboxes[:, 1:2]
         pred_bbox = bboxes[:, 2:]
+        # rescale bbox to original image
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = self.origin_shape_list[:, 0]
         origin_w = self.origin_shape_list[:, 1]
         zeros = paddle.zeros_like(origin_h)
+        # clip bbox to [0, original_size]
         x1 = paddle.maximum(paddle.minimum(scaled_bbox[:, 0], origin_w), zeros)
         y1 = paddle.maximum(paddle.minimum(scaled_bbox[:, 1], origin_h), zeros)
         x2 = paddle.maximum(paddle.minimum(scaled_bbox[:, 2], origin_w), zeros)
         y2 = paddle.maximum(paddle.minimum(scaled_bbox[:, 3], origin_h), zeros)
         pred_bbox = paddle.stack([x1, y1, x2, y2], axis=-1)
-
+        # filter empty bbox
         keep_mask = nonempty_bbox(pred_bbox, return_mask=True)
         keep_mask = paddle.unsqueeze(keep_mask, [1])
         pred_label = paddle.where(keep_mask, pred_label,
@@ -96,8 +120,10 @@ class MaskPostProcess(object):
         return img_masks[:, 0]
 
     def __call__(self, mask_out, bboxes, bbox_num, origin_shape):
-        if bboxes.shape == 0:
-            return mask_out
+        """
+        Paste the mask prediction to the original image.
+        """
+        assert bboxes.shape[0] > 0, 'There is no detection output'
 
         num_mask = mask_out.shape[0]
         # TODO: support bs > 1

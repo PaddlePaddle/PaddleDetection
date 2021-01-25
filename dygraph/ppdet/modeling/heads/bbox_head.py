@@ -94,8 +94,6 @@ class BBoxHead(nn.Layer):
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
 
-        score_name = 'bbox_score_0'
-        delta_name = 'bbox_delta_0'
         lr_factor = 1.
         self.bbox_score = nn.Linear(
             in_channel,
