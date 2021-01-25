@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/voc.yml',
+  '../runtime.yml',
+  '_base_/optimizer_240e.yml',
+  '_base_/ssd_vgg16_300.yml',
+  '_base_/ssd_reader.yml',
+]
+weights: output/ssd_vgg16_300_240e_voc/model_final

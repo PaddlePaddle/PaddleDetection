@@ -133,6 +133,7 @@ PaddleDetection中提供了丰富的模型库，具体可在[模型库](../MODEL
 python tools/anchor_cluster.py -c configs/ppyolo/ppyolo.yml -n 9 -s 608 -m v2 -i 1000
 ```
 目前`tools/anchor_cluster.py`支持的主要参数配置如下表所示：
+
 |    参数    |    用途    |    默认值    |    备注    |
 |:------:|:------:|:------:|:------:|
 | -c/--config | 模型的配置文件 | 无默认值 | 必须指定 |

@@ -41,6 +41,17 @@ class NameAdapter(object):
             shortcut_name = name + "_branch1"
         return conv_name1, conv_name2, conv_name3, shortcut_name
 
+    def fix_basicblock_name(self, name):
+        if self.model_type == 'SEResNeXt':
+            conv_name1 = 'conv' + name + '_x1'
+            conv_name2 = 'conv' + name + '_x2'
+            shortcut_name = name
+        else:
+            conv_name1 = name + "_branch2a"
+            conv_name2 = name + "_branch2b"
+            shortcut_name = name + "_branch1"
+        return conv_name1, conv_name2, shortcut_name
+
     def fix_layer_warp_name(self, stage_num, count, i):
         name = 'res' + str(stage_num)
         if count > 10 and stage_num == 4:

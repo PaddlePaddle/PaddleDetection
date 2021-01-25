@@ -97,8 +97,8 @@ class Trainer(object):
     def _init_metrics(self):
         if self.mode == 'eval':
             if self.cfg.metric == 'COCO':
-                mask_resolution = self.model.mask_post_process.mask_resolution if hasattr(
-                    self.model, 'mask_post_process') else None
+                mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
+                    self.model, 'mask_post_process', None) else None
                 self._metrics = [
                     COCOMetric(
                         anno_file=self.dataset.get_anno(),
@@ -156,6 +156,7 @@ class Trainer(object):
 
     def train(self):
         assert self.mode == 'train', "Model not in 'train' mode"
+        self.model.train()
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
@@ -184,7 +185,6 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
 
                 # model forward
-                self.model.train()
                 outputs = self.model(data)
                 loss = outputs['loss']
 
@@ -327,5 +327,30 @@ class Trainer(object):
 
         # dy2st and save model
         static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
-        paddle.jit.save(static_model, os.path.join(save_dir, 'model'))
+        # NOTE: dy2st do not pruned program, but jit.save will prune program
+        # input spec, prune input spec here and save with pruned input spec
+        pruned_input_spec = self._prune_input_spec(
+            input_spec, static_model.forward.main_program,
+            static_model.forward.outputs)
+        paddle.jit.save(
+            static_model,
+            os.path.join(save_dir, 'model'),
+            input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
+
+    def _prune_input_spec(self, input_spec, program, targets):
+        # try to prune static program to figure out pruned input spec
+        # so we perform following operations in static mode
+        paddle.enable_static()
+        pruned_input_spec = [{}]
+        program = program.clone()
+        program = program._prune(targets=targets)
+        global_block = program.global_block()
+        for name, spec in input_spec[0].items():
+            try:
+                v = global_block.var(name)
+                pruned_input_spec[0][name] = spec
+            except Exception:
+                pass
+        paddle.disable_static()
+        return pruned_input_spec

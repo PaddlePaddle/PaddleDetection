@@ -30,12 +30,84 @@ from ppdet.core.workspace import register, serializable
 from ppdet.py_op.target import generate_rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.py_op.post_process import bbox_post_process
 from . import ops
+from paddle.vision.ops import DeformConv2D
 
 
 def _to_list(l):
     if isinstance(l, (list, tuple)):
         return list(l)
     return [l]
+
+
+class DeformableConvV2(nn.Layer):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 weight_attr=None,
+                 bias_attr=None,
+                 lr_scale=1,
+                 regularizer=None,
+                 name=None):
+        super(DeformableConvV2, self).__init__()
+        self.offset_channel = 2 * kernel_size**2
+        self.mask_channel = kernel_size**2
+
+        if lr_scale == 1 and regularizer is None:
+            offset_bias_attr = ParamAttr(
+                initializer=Constant(0.),
+                name='{}._conv_offset.bias'.format(name))
+        else:
+            offset_bias_attr = ParamAttr(
+                initializer=Constant(0.),
+                learning_rate=lr_scale,
+                regularizer=regularizer,
+                name='{}._conv_offset.bias'.format(name))
+        self.conv_offset = nn.Conv2D(
+            in_channels,
+            3 * kernel_size**2,
+            kernel_size,
+            stride=stride,
+            padding=(kernel_size - 1) // 2,
+            weight_attr=ParamAttr(
+                initializer=Constant(0.0),
+                name='{}._conv_offset.weight'.format(name)),
+            bias_attr=offset_bias_attr)
+
+        if bias_attr:
+            # in FCOS-DCN head, specifically need learning_rate and regularizer
+            dcn_bias_attr = ParamAttr(
+                name=name + "_bias",
+                initializer=Constant(value=0),
+                regularizer=L2Decay(0.),
+                learning_rate=2.)
+        else:
+            # in ResNet backbone, do not need bias
+            dcn_bias_attr = False
+        self.conv_dcn = DeformConv2D(
+            in_channels,
+            out_channels,
+            kernel_size,
+            stride=stride,
+            padding=(kernel_size - 1) // 2 * dilation,
+            dilation=dilation,
+            groups=groups,
+            weight_attr=weight_attr,
+            bias_attr=dcn_bias_attr)
+
+    def forward(self, x):
+        offset_mask = self.conv_offset(x)
+        offset, mask = paddle.split(
+            offset_mask,
+            num_or_sections=[self.offset_channel, self.mask_channel],
+            axis=1)
+        mask = F.sigmoid(mask)
+        y = self.conv_dcn(x, offset, mask=mask)
+        return y
 
 
 class ConvNormLayer(nn.Layer):
@@ -62,19 +134,38 @@ class ConvNormLayer(nn.Layer):
         else:
             bias_attr = False
 
-        self.conv = nn.Conv2D(
-            in_channels=ch_in,
-            out_channels=ch_out,
-            kernel_size=filter_size,
-            stride=stride,
-            padding=(filter_size - 1) // 2,
-            groups=1,
-            weight_attr=ParamAttr(
-                name=name + "_weight",
-                initializer=Normal(
-                    mean=0., std=0.01),
-                learning_rate=1.),
-            bias_attr=bias_attr)
+        if not use_dcn:
+            self.conv = nn.Conv2D(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                weight_attr=ParamAttr(
+                    name=name + "_weight",
+                    initializer=Normal(
+                        mean=0., std=0.01),
+                    learning_rate=1.),
+                bias_attr=bias_attr)
+        else:
+            # in FCOS-DCN head, specifically need learning_rate and regularizer
+            self.conv = DeformableConvV2(
+                in_channels=ch_in,
+                out_channels=ch_out,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                groups=1,
+                weight_attr=ParamAttr(
+                    name=name + "_weight",
+                    initializer=Normal(
+                        mean=0., std=0.01),
+                    learning_rate=1.),
+                bias_attr=True,
+                lr_scale=2.,
+                regularizer=L2Decay(0.),
+                name=name)
 
         param_attr = ParamAttr(
             name=norm_name + "_scale",
@@ -445,7 +536,7 @@ class RCNNBox(object):
         # TODO: Updata box_clip
         origin_h = paddle.unsqueeze(origin_shape[:, 0] - 1, axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1] - 1, axis=1)
-        zeros = paddle.zeros(origin_h.shape, 'float32')
+        zeros = paddle.zeros(paddle.shape(origin_h), 'float32')
         x1 = paddle.maximum(paddle.minimum(bbox[:, :, 0], origin_w), zeros)
         y1 = paddle.maximum(paddle.minimum(bbox[:, :, 1], origin_h), zeros)
         x2 = paddle.maximum(paddle.minimum(bbox[:, :, 2], origin_w), zeros)
@@ -521,7 +612,6 @@ class MultiClassNMS(object):
 @register
 @serializable
 class MatrixNMS(object):
-    __op__ = ops.matrix_nms
     __append_doc__ = True
 
     def __init__(self,
@@ -542,6 +632,19 @@ class MatrixNMS(object):
         self.use_gaussian = use_gaussian
         self.gaussian_sigma = gaussian_sigma
         self.background_label = background_label
+
+    def __call__(self, bbox, score):
+        return ops.matrix_nms(
+            bboxes=bbox,
+            scores=score,
+            score_threshold=self.score_threshold,
+            post_threshold=self.post_threshold,
+            nms_top_k=self.nms_top_k,
+            keep_top_k=self.keep_top_k,
+            use_gaussian=self.use_gaussian,
+            gaussian_sigma=self.gaussian_sigma,
+            background_label=self.background_label,
+            normalized=self.normalized)
 
 
 @register
@@ -809,6 +912,90 @@ class FCOSBox(object):
         return pred_boxes, pred_scores
 
 
+@register
+class TTFBox(object):
+    __shared__ = ['down_ratio']
+
+    def __init__(self, max_per_img=100, score_thresh=0.01, down_ratio=4):
+        super(TTFBox, self).__init__()
+        self.max_per_img = max_per_img
+        self.score_thresh = score_thresh
+        self.down_ratio = down_ratio
+
+    def _simple_nms(self, heat, kernel=3):
+        pad = (kernel - 1) // 2
+        hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
+        keep = paddle.cast(hmax == heat, 'float32')
+        return heat * keep
+
+    def _topk(self, scores):
+        k = self.max_per_img
+        shape_fm = paddle.shape(scores)
+        shape_fm.stop_gradient = True
+        cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
+        # batch size is 1
+        scores_r = paddle.reshape(scores, [cat, -1])
+        topk_scores, topk_inds = paddle.topk(scores_r, k)
+        topk_scores, topk_inds = paddle.topk(scores_r, k)
+        topk_ys = topk_inds // width
+        topk_xs = topk_inds % width
+
+        topk_score_r = paddle.reshape(topk_scores, [-1])
+        topk_score, topk_ind = paddle.topk(topk_score_r, k)
+        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
+        topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
+
+        topk_inds = paddle.reshape(topk_inds, [-1])
+        topk_ys = paddle.reshape(topk_ys, [-1, 1])
+        topk_xs = paddle.reshape(topk_xs, [-1, 1])
+        topk_inds = paddle.gather(topk_inds, topk_ind)
+        topk_ys = paddle.gather(topk_ys, topk_ind)
+        topk_xs = paddle.gather(topk_xs, topk_ind)
+
+        return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
+
+    def __call__(self, hm, wh, im_shape, scale_factor):
+        heatmap = F.sigmoid(hm)
+        heat = self._simple_nms(heatmap)
+        scores, inds, clses, ys, xs = self._topk(heat)
+        ys = paddle.cast(ys, 'float32') * self.down_ratio
+        xs = paddle.cast(xs, 'float32') * self.down_ratio
+        scores = paddle.tensor.unsqueeze(scores, [1])
+        clses = paddle.tensor.unsqueeze(clses, [1])
+
+        wh_t = paddle.transpose(wh, [0, 2, 3, 1])
+        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.gather(wh, inds)
+
+        x1 = xs - wh[:, 0:1]
+        y1 = ys - wh[:, 1:2]
+        x2 = xs + wh[:, 2:3]
+        y2 = ys + wh[:, 3:4]
+
+        bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
+
+        scale_y = scale_factor[:, 0:1]
+        scale_x = scale_factor[:, 1:2]
+        scale_expand = paddle.concat(
+            [scale_x, scale_y, scale_x, scale_y], axis=1)
+        boxes_shape = paddle.shape(bboxes)
+        boxes_shape.stop_gradient = True
+        scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
+        bboxes = paddle.divide(bboxes, scale_expand)
+        results = paddle.concat([clses, scores, bboxes], axis=1)
+        # hack: append result with cls=-1 and score=1. to avoid all scores
+        # are less than score_thresh which may cause error in gather.
+        fill_r = paddle.to_tensor(np.array([[-1, 1, 0, 0, 0, 0]]))
+        fill_r = paddle.cast(fill_r, results.dtype)
+        results = paddle.concat([results, fill_r])
+        scores = results[:, 1]
+        valid_ind = paddle.nonzero(scores > self.score_thresh)
+        results = paddle.gather(results, valid_ind)
+        return results, paddle.shape(results)[0:1]
+
+
+@register
+@serializable
 class MaskMatrixNMS(object):
     """
     Matrix NMS for multi-class masks.
