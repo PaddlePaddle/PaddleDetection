@@ -104,8 +104,6 @@ class Trainer(object):
 
     def _init_metrics(self):
         if self.cfg.metric == 'COCO':
-            mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
-                self.model, 'mask_post_process', None) else None
             self._metrics = [COCOMetric(anno_file=self.dataset.get_anno())]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
