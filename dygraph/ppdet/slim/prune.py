@@ -42,7 +42,7 @@ class Pruner(object):
                  pruned_ratios,
                  print_params=False):
         super(Pruner, self).__init__()
-        assert criterion in ['l1_norm', 'geometry_median'], \
+        assert criterion in ['l1_norm', 'fpgm'], \
             "unsupported prune criterion: {}".format(criterion)
         self.criterion = criterion
         self.pruned_params = pruned_params
@@ -69,11 +69,10 @@ class Pruner(object):
         elif self.criterion == 'l1_norm':
             pruner = paddleslim.dygraph.L1NormFilterPruner(model, input_spec)
 
-        pruned_params = self.pruned_params.strip().split(",")
-        logger.info("pruned params: {}".format(pruned_params))
+        logger.info("pruned params: {}".format(self.pruned_params))
         pruned_ratios = [float(n) for n in self.pruned_ratios]
         ratios = {}
-        for i, param in enumerate(pruned_params):
+        for i, param in enumerate(self.pruned_params):
             ratios[param] = pruned_ratios[i]
         pruner.prune_vars(ratios, [0])
         pruned_flops = flops(model, input_spec) / 1000
