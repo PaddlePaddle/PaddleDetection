@@ -54,7 +54,7 @@ class Trainer(object):
         self.model = create(cfg.architecture)
 
         # model slim build
-        if cfg.slim:
+        if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':
                 self.load_weights(cfg.pretrain_weights, cfg.weight_type)
             slim = create(cfg.slim)
