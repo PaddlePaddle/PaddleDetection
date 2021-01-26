@@ -43,6 +43,11 @@ def parse_args():
         type=str,
         default="output_inference",
         help="Directory for storing the output model files.")
+    parser.add_argument(
+        "--slim_config",
+        default=None,
+        type=str,
+        help="Configuration file of slim method.")
     args = parser.parse_args()
     return args
 
@@ -67,6 +72,9 @@ def main():
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
         FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
