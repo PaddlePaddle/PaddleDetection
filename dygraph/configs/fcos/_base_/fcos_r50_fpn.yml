@@ -57,4 +57,3 @@ FCOSPostProcess:
     keep_top_k: 100
     score_threshold: 0.025
     nms_threshold: 0.6
-    background_label: -1
