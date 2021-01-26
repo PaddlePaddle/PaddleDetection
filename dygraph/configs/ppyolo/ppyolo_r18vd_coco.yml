@@ -49,6 +49,16 @@ EvalReader:
   batch_size: 8
   drop_empty: false
 
+TestReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+  sample_transforms:
+    - DecodeOp: {}
+    - ResizeOp: {target_size: [512, 512], keep_ratio: False, interp: 2}
+    - NormalizeImageOp: {mean: [0.485, 0.456, 0.406], std: [0.229, 0.224, 0.225], is_scale: True}
+    - PermuteOp: {}
+  batch_size: 1
+
 epoch: 270
 
 LearningRate:
