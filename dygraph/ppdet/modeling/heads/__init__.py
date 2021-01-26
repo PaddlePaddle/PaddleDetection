@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import rpn_head
 from . import bbox_head
 from . import mask_head
 from . import yolo_head
@@ -22,7 +21,6 @@ from . import fcos_head
 from . import solov2_head
 from . import ttf_head
 
-from .rpn_head import *
 from .bbox_head import *
 from .mask_head import *
 from .yolo_head import *
