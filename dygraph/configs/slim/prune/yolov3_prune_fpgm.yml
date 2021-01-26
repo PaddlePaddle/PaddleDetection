@@ -1,0 +1,16 @@
+# Weights of yolov3_mobilenet_v1_voc
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams
+load_static_weights: False
+weight_type: resume
+slim: Pruner
+
+Pruner:
+  criterion: fpgm
+  pruned_params: ['yolo_block.0.0.0.conv.weights', 'yolo_block.0.0.1.conv.weights', 'yolo_block.0.1.0.conv.weights',
+                  'yolo_block.0.1.1.conv.weights', 'yolo_block.0.2.conv.weights', 'yolo_block.0.tip.conv.weights',
+                  'yolo_block.1.0.0.conv.weights', 'yolo_block.1.0.1.conv.weights', 'yolo_block.1.1.0.conv.weights',
+                  'yolo_block.1.1.1.conv.weights', 'yolo_block.1.2.conv.weights', 'yolo_block.1.tip.conv.weights',
+                  'yolo_block.2.0.0.conv.weights', 'yolo_block.2.0.1.conv.weights', 'yolo_block.2.1.0.conv.weights',
+                  'yolo_block.2.1.1.conv.weights', 'yolo_block.2.2.conv.weights', 'yolo_block.2.tip.conv.weights']
+  pruned_ratios: [0.1,0.2,0.2,0.2,0.2,0.1,0.2,0.3,0.3,0.3,0.2,0.1,0.3,0.4,0.4,0.4,0.4,0.3]
+  print_params: False
