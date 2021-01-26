@@ -258,4 +258,6 @@ class ModelEMA(object):
                 v = v / (1 - self._decay**self.step)
                 v.stop_gradient = True
                 state_dict[k] = v
+            else:
+                state_dict[k] = v
         return state_dict

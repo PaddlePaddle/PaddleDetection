@@ -1,20 +1,24 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
 load_static_weights: True
 norm_type: sync_bn
 
 YOLOv3:
-  backbone: DarkNet
+  backbone: ResNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: BBoxPostProcess
 
-DarkNet:
-  depth: 53
-  return_idx: [2, 3, 4]
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [1, 2, 3]
+  freeze_at: -1
+  freeze_norm: false
+  norm_decay: 0.
 
-# use default config
-# YOLOv3FPN:
+YOLOv3FPN:
+  feat_channels: [2048, 1280, 640]
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
@@ -41,3 +45,4 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 1000
     normalized: false
+    background_label: -1
