@@ -17,8 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-import paddleslim
-from paddleslim.analysis import dygraph_flops as flops
+from paddle.utils import try_import
 
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
@@ -50,7 +49,8 @@ class Pruner(object):
         self.print_params = print_params
 
     def __call__(self, model):
-        model.eval()
+        paddleslim = try_import('paddleslim')
+        from paddleslim.analysis import dygraph_flops as flops
         input_spec = [{
             "image": paddle.ones(
                 shape=[1, 3, 640, 640], dtype='float32'),
