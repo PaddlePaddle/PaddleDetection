@@ -79,7 +79,8 @@ class LogPrinter(Callback):
 
     def on_step_end(self, status):
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
-            if self.model.mode == 'train':
+            mode = status['mode']
+            if mode == 'train':
                 epoch_id = status['epoch_id']
                 step_id = status['step_id']
                 steps_per_epoch = status['steps_per_epoch']
@@ -88,8 +89,8 @@ class LogPrinter(Callback):
                 data_time = status['data_time']
 
                 epoches = self.model.cfg.epoch
-                batch_size = self.model.cfg['{}Reader'.format(
-                    self.model.mode.capitalize())]['batch_size']
+                batch_size = self.model.cfg['{}Reader'.format(mode.capitalize(
+                ))]['batch_size']
 
                 logs = training_staus.log()
                 space_fmt = ':' + str(len(str(steps_per_epoch))) + 'd'
@@ -119,14 +120,15 @@ class LogPrinter(Callback):
                         dtime=str(data_time),
                         ips=ips)
                     logger.info(fmt)
-            if self.model.mode == 'eval':
+            if mode == 'eval':
                 step_id = status['step_id']
                 if step_id % 100 == 0:
                     logger.info("Eval iter: {}".format(step_id))
 
     def on_epoch_end(self, status):
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
-            if self.model.mode == 'eval':
+            mode = status['mode']
+            if mode == 'eval':
                 sample_num = status['sample_num']
                 cost_time = status['cost_time']
                 logger.info('Total sample number: {}, averge FPS: {}'.format(
@@ -147,8 +149,11 @@ class Checkpointer(Callback):
             self.ema.update(self.model.model)
 
     def on_epoch_end(self, status):
-        assert self.model.mode == 'train', \
-            "Checkpointer can only be set during training"
+        # Checkpointer only performed during training
+        mode = status['mode']
+        if mode != 'train':
+            return
+
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
             epoch_id = status['epoch_id']
             end_epoch = self.model.cfg.epoch
