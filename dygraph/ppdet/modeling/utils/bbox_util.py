@@ -24,13 +24,9 @@ import math
 def xywh2xyxy(box):
     x, y, w, h = box
     x1 = x - w * 0.5
-    x1 = x1.clip(0.)
     y1 = y - h * 0.5
-    y1 = y1.clip(0.)
     x2 = x + w * 0.5
-    x2 = x2.clip(0.)
     y2 = y + h * 0.5
-    y2 = y2.clip(0.)
     return [x1, y1, x2, y2]
 
 
@@ -110,8 +106,7 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
     x2 = paddle.minimum(px2, gx2)
     y2 = paddle.minimum(py2, gy2)
 
-    overlap = (x2 - x1) * (y2 - y1)
-    overlap = overlap.clip(0)
+    overlap = ((x2 - x1).clip(0)) * ((y2 - y1).clip(0))
 
     area1 = (px2 - px1) * (py2 - py1)
     area1 = area1.clip(0)
