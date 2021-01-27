@@ -31,8 +31,8 @@ class BaseArch(nn.Layer):
             inputs[k] = data[i]
         return inputs
 
-    def model_arch(self):
-        raise NotImplementedError("Should implement model_arch method!")
+    def model_arch(self, ):
+        pass
 
     def get_loss(self, ):
         raise NotImplementedError("Should implement get_loss method!")

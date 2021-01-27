@@ -12,20 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import bbox_head
-from . import mask_head
-from . import yolo_head
-from . import roi_extractor
-from . import ssd_head
-from . import fcos_head
-from . import solov2_head
-from . import ttf_head
+from . import prune
 
-from .bbox_head import *
-from .mask_head import *
-from .yolo_head import *
-from .roi_extractor import *
-from .ssd_head import *
-from .fcos_head import *
-from .solov2_head import *
-from .ttf_head import *
+from .prune import *

@@ -43,9 +43,8 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     preprocess_list = []
 
     anno_file = dataset_cfg.get_anno()
-    with_background = reader_cfg['with_background']
 
-    clsid2catid, catid2name = get_categories(metric, anno_file, with_background)
+    clsid2catid, catid2name = get_categories(metric, anno_file)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
@@ -73,7 +72,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
                     })
                     break
 
-    return with_background, preprocess_list, label_list, image_shape
+    return preprocess_list, label_list, image_shape
 
 
 def _dump_infer_config(config, path, image_shape, model):
@@ -102,7 +101,7 @@ def _dump_infer_config(config, path, image_shape, model):
     if 'mask_post_process' in model.__dict__ and model.__dict__[
             'mask_post_process']:
         infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
-    infer_cfg['with_background'], infer_cfg['Preprocess'], infer_cfg[
+    infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],
             infer_cfg['arch'], image_shape)

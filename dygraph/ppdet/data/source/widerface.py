@@ -52,7 +52,7 @@ class WIDERFaceDataSet(DataSet):
         self.cname2cid = None
         self.with_lmk = with_lmk
 
-    def load_roidb_and_cname2cid(self, with_background=True):
+    def load_roidb_and_cname2cid(self, ):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -61,7 +61,7 @@ class WIDERFaceDataSet(DataSet):
         records = []
         ct = 0
         file_lists = self._load_file_list(txt_file)
-        cname2cid = widerface_label(with_background)
+        cname2cid = widerface_label()
 
         for item in file_lists:
             im_fname = item[0]
@@ -159,8 +159,6 @@ class WIDERFaceDataSet(DataSet):
         return list(file_dict.values())
 
 
-def widerface_label(with_background=True):
-    labels_map = {'face': 1}
-    if not with_background:
-        labels_map = {k: v - 1 for k, v in labels_map.items()}
+def widerface_label():
+    labels_map = {'face': 0}
     return labels_map
