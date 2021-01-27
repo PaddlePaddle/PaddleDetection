@@ -169,7 +169,7 @@ class YOLOv3FPN(nn.Layer):
 
     def __init__(self, in_channels=[256, 512, 1024], norm_type='bn'):
         super(YOLOv3FPN, self).__init__()
-        assert len(in_channels) > 0, "feat_channels length should > 0"
+        assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels
         self.num_blocks = len(in_channels)
 
@@ -238,9 +238,9 @@ class PPYOLOFPN(nn.Layer):
 
     def __init__(self, in_channels=[512, 1024, 2048], norm_type='bn', **kwargs):
         super(PPYOLOFPN, self).__init__()
-        assert len(feat_channels) > 0, "feat_channels length should > 0"
-        self.feat_channels = feat_channels
-        self.num_blocks = len(feat_channels)
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels
+        self.num_blocks = len(in_channels)
         # parse kwargs
         self.coord_conv = kwargs.get('coord_conv', False)
         self.drop_block = kwargs.get('drop_block', False)
@@ -265,7 +265,9 @@ class PPYOLOFPN(nn.Layer):
         self._out_channels = []
         self.yolo_blocks = []
         self.routes = []
-        for i, ch_in in enumerate(self.feat_channels):
+        for i, ch_in in enumerate(self.in_channels[::-1]):
+            if i > 0:
+                ch_in += 512 // (2**i)
             channel = 64 * (2**self.num_blocks) // (2**i)
             base_cfg = [
                 # name of layer, Layer, args

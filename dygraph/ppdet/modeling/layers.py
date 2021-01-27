@@ -403,7 +403,7 @@ class MatrixNMS(object):
         self.gaussian_sigma = gaussian_sigma
         self.background_label = background_label
 
-    def __call__(self, bbox, score):
+    def __call__(self, bbox, score, *args):
         return ops.matrix_nms(
             bboxes=bbox,
             scores=score,
