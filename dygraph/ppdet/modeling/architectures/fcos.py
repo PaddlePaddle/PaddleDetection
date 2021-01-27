@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
 __all__ = ['FCOS']
@@ -26,12 +26,7 @@ __all__ = ['FCOS']
 @register
 class FCOS(BaseArch):
     __category__ = 'architecture'
-    __inject__ = [
-        'backbone',
-        'neck',
-        'fcos_head',
-        'fcos_post_process',
-    ]
+    __inject__ = ['fcos_post_process']
 
     def __init__(self,
                  backbone,
@@ -44,16 +39,32 @@ class FCOS(BaseArch):
         self.fcos_head = fcos_head
         self.fcos_post_process = fcos_post_process
 
-    def model_arch(self, ):
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        backbone = create(cfg['backbone'])
+
+        kwargs = {'input_shape': backbone.out_shape}
+        neck = create(cfg['neck'], **kwargs)
+
+        kwargs = {'input_shape': neck.out_shape}
+        fcos_head = create(cfg['fcos_head'], **kwargs)
+
+        return {
+            'backbone': backbone,
+            'neck': neck,
+            "fcos_head": fcos_head,
+        }
+
+    def _forward(self):
         body_feats = self.backbone(self.inputs)
-
-        fpn_feats, spatial_scale = self.neck(body_feats)
-
-        self.fcos_head_outs = self.fcos_head(fpn_feats, self.training)
-
+        fpn_feats = self.neck(body_feats)
+        fcos_head_outs = self.fcos_head(fpn_feats, self.training)
         if not self.training:
-            self.bboxes = self.fcos_post_process(self.fcos_head_outs,
-                                                 self.inputs['scale_factor'])
+            scale_factor = self.inputs['scale_factor']
+            bboxes = self.fcos_post_process(fcos_head_outs, scale_factor)
+            return bboxes
+        else:
+            return fcos_head_outs
 
     def get_loss(self, ):
         loss = {}
@@ -70,7 +81,8 @@ class FCOS(BaseArch):
             if k_ctn in self.inputs:
                 tag_centerness.append(self.inputs[k_ctn])
 
-        loss_fcos = self.fcos_head.get_loss(self.fcos_head_outs, tag_labels,
+        fcos_head_outs = self._forward()
+        loss_fcos = self.fcos_head.get_loss(fcos_head_outs, tag_labels,
                                             tag_bboxes, tag_centerness)
         loss.update(loss_fcos)
         total_loss = paddle.add_n(list(loss.values()))
@@ -78,9 +90,14 @@ class FCOS(BaseArch):
         return loss
 
     def get_pred(self):
-        bbox, bbox_num = self.bboxes
+        bboxes, bbox_num = self._forward()
+        label = bboxes[:, 0]
+        score = bboxes[:, 1]
+        bbox = bboxes[:, 2:]
         output = {
             'bbox': bbox,
-            'bbox_num': bbox_num,
+            'score': score,
+            'label': label,
+            'bbox_num': bbox_num
         }
         return output
