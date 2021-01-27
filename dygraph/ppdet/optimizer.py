@@ -243,21 +243,15 @@ class ModelEMA(object):
         self._decay = decay
         model_dict = model.state_dict()
         for k, v in self.state_dict.items():
-            if '_mean' not in k and '_variance' not in k:
-                v = decay * v + (1 - decay) * model_dict[k]
-                v.stop_gradient = True
-                self.state_dict[k] = v
-            else:
-                self.state_dict[k] = model_dict[k]
+            v = decay * v + (1 - decay) * model_dict[k]
+            v.stop_gradient = True
+            self.state_dict[k] = v
         self.step += 1
 
     def apply(self):
         state_dict = dict()
         for k, v in self.state_dict.items():
-            if '_mean' not in k and '_variance' not in k:
-                v = v / (1 - self._decay**self.step)
-                v.stop_gradient = True
-                state_dict[k] = v
-            else:
-                state_dict[k] = v
+            v = v / (1 - self._decay**self.step)
+            v.stop_gradient = True
+            state_dict[k] = v
         return state_dict

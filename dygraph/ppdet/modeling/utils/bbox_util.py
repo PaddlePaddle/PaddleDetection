@@ -24,9 +24,13 @@ import math
 def xywh2xyxy(box):
     x, y, w, h = box
     x1 = x - w * 0.5
+    x1 = x1.clip(0.)
     y1 = y - h * 0.5
+    y1 = y1.clip(0.)
     x2 = x + w * 0.5
+    x2 = x2.clip(0.)
     y2 = y + h * 0.5
+    y2 = y2.clip(0.)
     return [x1, y1, x2, y2]
 
 
