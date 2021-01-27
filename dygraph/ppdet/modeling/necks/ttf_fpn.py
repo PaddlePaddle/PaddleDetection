@@ -24,6 +24,9 @@ from paddle.regularizer import L2Decay
 from ppdet.modeling.layers import DeformableConvV2
 import math
 from ppdet.modeling.ops import batch_norm
+from ..shape_spec import ShapeSpec
+
+__all__ = ['TTFFPN']
 
 
 class Upsample(nn.Layer):
@@ -88,21 +91,22 @@ class ShortCut(nn.Layer):
 @serializable
 class TTFFPN(nn.Layer):
     def __init__(self,
-                 planes=[256, 128, 64],
-                 shortcut_num=[1, 2, 3],
-                 ch_in=[1024, 256, 128]):
+                 in_channels=[128, 256, 512, 1024],
+                 shortcut_num=[3, 2, 1]):
         super(TTFFPN, self).__init__()
-        self.planes = planes
-        self.shortcut_num = shortcut_num
+        self.planes = [c // 2 for c in in_channels[:-1]][::-1]
+        self.shortcut_num = shortcut_num[::-1]
         self.shortcut_len = len(shortcut_num)
-        self.ch_in = ch_in
+        self.ch_in = in_channels[::-1]
+
         self.upsample_list = []
         self.shortcut_list = []
         for i, out_c in enumerate(self.planes):
+            in_c = self.ch_in[i] if i == 0 else self.ch_in[i] // 2
             upsample = self.add_sublayer(
                 'upsample.' + str(i),
                 Upsample(
-                    self.ch_in[i], out_c, name='upsample.' + str(i)))
+                    in_c, out_c, name='upsample.' + str(i)))
             self.upsample_list.append(upsample)
             if i < self.shortcut_len:
                 shortcut = self.add_sublayer(
@@ -119,3 +123,11 @@ class TTFFPN(nn.Layer):
                 shortcut = self.shortcut_list[i](inputs[-i - 2])
                 feat = feat + shortcut
         return feat
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.planes[-1], )]

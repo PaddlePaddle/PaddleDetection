@@ -27,7 +27,7 @@ class HMHead(nn.Layer):
 
     __shared__ = ['num_classes']
 
-    def __init__(self, ch_in, ch_out=128, num_classes=80, conv_num=2):
+    def __init__(self, ch_in=64, ch_out=128, num_classes=80, conv_num=2):
         super(HMHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
@@ -65,7 +65,7 @@ class HMHead(nn.Layer):
 
 @register
 class WHHead(nn.Layer):
-    def __init__(self, ch_in, ch_out=64, conv_num=2):
+    def __init__(self, ch_in=64, ch_out=64, conv_num=2):
         super(WHHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):

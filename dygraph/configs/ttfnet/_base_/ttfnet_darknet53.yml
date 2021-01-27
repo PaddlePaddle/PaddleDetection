@@ -11,14 +11,13 @@ TTFNet:
 DarkNet:
   depth: 53
   freeze_at: 0
-  return_idx: [0, 1, 2, 3, 4]
+  return_idx: [1, 2, 3, 4]
   norm_type: bn
   norm_decay: 0.0004
 
 TTFFPN:
-  planes: [256, 128, 64]
-  shortcut_num: [1, 2, 3]
-  ch_in: [1024, 256, 128]
+  in_channels: [128, 256, 512, 1024]
+  shortcut_num: [3, 2, 1]
 
 TTFHead:
   hm_head:
@@ -38,7 +37,6 @@ TTFHead:
     name: GIoULoss
     loss_weight: 5.
     reduction: sum
-
 
 BBoxPostProcess:
   decode:
