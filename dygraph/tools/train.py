@@ -65,10 +65,10 @@ def parse_args():
         default=False,
         help="Whether to perform evaluation in train")
     parser.add_argument(
-        "--output_eval",
+        "--slim_config",
         default=None,
         type=str,
-        help="Evaluation directory, default is current directory.")
+        help="Configuration file of slim method.")
     parser.add_argument(
         "--enable_ce",
         type=bool,
@@ -92,7 +92,8 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='train')
 
     # load weights
-    trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
+    if not FLAGS.slim_config:
+        trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
 
     # training
     trainer.train(FLAGS.eval)
@@ -103,6 +104,11 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
+        if 'weight_type' not in cfg:
+            cfg.weight_type = FLAGS.weight_type
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()

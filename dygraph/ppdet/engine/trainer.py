@@ -48,9 +48,17 @@ class Trainer(object):
         assert mode.lower() in ['train', 'eval', 'test'], \
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
+        self.optimizer = None
 
         # build model
         self.model = create(cfg.architecture)
+
+        # model slim build
+        if 'slim' in cfg and cfg.slim:
+            if self.mode == 'train':
+                self.load_weights(cfg.pretrain_weights, cfg.weight_type)
+            slim = create(cfg.slim)
+            slim(self.model)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -67,7 +75,6 @@ class Trainer(object):
         # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
-        self.optimizer = None
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
