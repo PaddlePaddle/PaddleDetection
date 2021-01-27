@@ -13,5 +13,7 @@
 # limitations under the License.
 
 from . import prune
+from . import quant
 
 from .prune import *
+from .quant import *
