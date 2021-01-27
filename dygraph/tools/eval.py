@@ -22,7 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore numba warning
+# ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -54,9 +54,6 @@ def parse_args():
         default=None,
         type=str,
         help="Configuration file of slim method.")
-
-    parser.add_argument(
-        '--use_gpu', action='store_true', default=False, help='')
 
     args = parser.parse_args()
     return args
