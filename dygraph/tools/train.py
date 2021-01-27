@@ -22,7 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore numba warning
+# ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 import random
@@ -50,16 +50,6 @@ def parse_args():
         help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
     )
     parser.add_argument(
-        "--fp16",
-        action='store_true',
-        default=False,
-        help="Enable mixed precision training.")
-    parser.add_argument(
-        "--loss_scale",
-        default=8.,
-        type=float,
-        help="Mixed precision training loss scale.")
-    parser.add_argument(
         "--eval",
         action='store_true',
         default=False,
@@ -75,8 +65,6 @@ def parse_args():
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
-    parser.add_argument(
-        "--use_gpu", action='store_true', default=False, help="data parallel")
     args = parser.parse_args()
     return args
 
