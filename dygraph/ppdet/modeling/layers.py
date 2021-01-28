@@ -403,7 +403,7 @@ class MatrixNMS(object):
         self.gaussian_sigma = gaussian_sigma
         self.background_label = background_label
 
-    def __call__(self, bbox, score):
+    def __call__(self, bbox, score, *args):
         return ops.matrix_nms(
             bboxes=bbox,
             scores=score,
@@ -469,7 +469,7 @@ class SSDBox(object):
                  im_shape,
                  scale_factor,
                  var_weight=None):
-        boxes, scores = preds['boxes'], preds['scores']
+        boxes, scores = preds
         outputs = []
         for box, score, prior_box in zip(boxes, scores, prior_boxes):
             pb_w = prior_box[:, 2] - prior_box[:, 0] + self.norm_delta

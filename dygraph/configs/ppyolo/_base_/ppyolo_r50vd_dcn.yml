@@ -22,7 +22,6 @@ ResNet:
   norm_decay: 0.
 
 PPYOLOFPN:
-  feat_channels: [2048, 1280, 640]
   coord_conv: true
   drop_block: true
   block_size: 3

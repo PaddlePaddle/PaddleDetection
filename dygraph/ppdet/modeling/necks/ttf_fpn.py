@@ -25,6 +25,8 @@ from ppdet.modeling.layers import DeformableConvV2
 import math
 from ppdet.modeling.ops import batch_norm
 
+__all__ = ['TTFFPN']
+
 
 class Upsample(nn.Layer):
     def __init__(self, ch_in, ch_out, name=None):

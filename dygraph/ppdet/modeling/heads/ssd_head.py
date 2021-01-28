@@ -5,6 +5,8 @@ from ppdet.core.workspace import register
 from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 
+from ..layers import AnchorGeneratorSSD
+
 
 class SepConvLayer(nn.Layer):
     def __init__(self,
@@ -58,7 +60,7 @@ class SSDHead(nn.Layer):
     def __init__(self,
                  num_classes=81,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator='AnchorGeneratorSSD',
+                 anchor_generator=AnchorGeneratorSSD().__dict__,
                  kernel_size=3,
                  padding=1,
                  use_sepconv=False,
@@ -69,8 +71,11 @@ class SSDHead(nn.Layer):
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
         self.loss = loss
-        self.num_priors = self.anchor_generator.num_priors
 
+        if isinstance(anchor_generator, dict):
+            self.anchor_generator = AnchorGeneratorSSD(**anchor_generator)
+
+        self.num_priors = self.anchor_generator.num_priors
         self.box_convs = []
         self.score_convs = []
         for i, num_prior in enumerate(self.num_priors):
@@ -116,7 +121,11 @@ class SSDHead(nn.Layer):
                         name=score_conv_name))
             self.score_convs.append(score_conv)
 
-    def forward(self, feats, image):
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    def forward(self, feats, image, gt_bbox=None, gt_class=None):
         box_preds = []
         cls_scores = []
         prior_boxes = []
@@ -134,10 +143,11 @@ class SSDHead(nn.Layer):
 
         prior_boxes = self.anchor_generator(feats, image)
 
-        outputs = {}
-        outputs['boxes'] = box_preds
-        outputs['scores'] = cls_scores
-        return outputs, prior_boxes
+        if self.training:
+            return self.get_loss(box_preds, cls_scores, gt_bbox, gt_class,
+                                 prior_boxes)
+        else:
+            return box_preds, cls_scores, prior_boxes
 
-    def get_loss(self, inputs, targets, prior_boxes):
-        return self.loss(inputs, targets, prior_boxes)
+    def get_loss(self, boxes, scores, gt_bbox, gt_class, prior_boxes):
+        return self.loss(boxes, scores, gt_bbox, gt_class, prior_boxes)
