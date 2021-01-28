@@ -175,24 +175,20 @@ if (WIN32)
 endif()
 
 
-
 if (WIN32)
     if (USE_PADDLE_20RC1)
         # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-        set(DEPS ${PADDLE_LIB}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        set(DEPS ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
     else()
         # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-        set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
     endif()
 else()
     # linux shared lib name is libpaddle_fluid.so
-    set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif()
 
-
-set(DEPS ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB}${CMAKE_SHARED_LIBRARY_SUFFIX})
-
-
+message("DEPS:" $DEPS)
 
 if (NOT WIN32)
     set(DEPS ${DEPS}
@@ -241,6 +237,7 @@ endif()
 set(DEPS ${DEPS} ${OpenCV_LIBS})
 add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
 ADD_DEPENDENCIES(main ext-yaml-cpp)
+message("DEPS:" $DEPS)
 target_link_libraries(main ${DEPS})
 
 if (WIN32 AND WITH_MKL)
