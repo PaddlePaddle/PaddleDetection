@@ -90,6 +90,16 @@ class ShortCut(nn.Layer):
 @register
 @serializable
 class TTFFPN(nn.Layer):
+    """
+    Args:
+        in_channels (list): number of input feature channels from backbone.
+            [128,256,512,1024] by default, means the channels of DarkNet53
+            backbone return_idx [1,2,3,4].
+        shortcut_num (list): the number of convolution layers in each shortcut.
+            [3,2,1] by default, means DarkNet53 backbone return_idx_1 has 3 convs
+            in its shortcut, return_idx_2 has 2 convs and return_idx_3 has 1 conv.
+    """
+
     def __init__(self,
                  in_channels=[128, 256, 512, 1024],
                  shortcut_num=[3, 2, 1]):

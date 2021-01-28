@@ -15,21 +15,10 @@ DarkNet:
   norm_type: bn
   norm_decay: 0.0004
 
-TTFFPN:
-  in_channels: [128, 256, 512, 1024]
-  shortcut_num: [3, 2, 1]
+# use default config
+# TTFFPN:
 
 TTFHead:
-  hm_head:
-    name: HMHead
-    ch_in: 64
-    ch_out: 128
-    conv_num: 2
-  wh_head:
-    name: WHHead
-    ch_in: 64
-    ch_out: 64
-    conv_num: 2
   hm_loss:
     name: CTFocalLoss
     loss_weight: 1.

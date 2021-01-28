@@ -27,7 +27,7 @@ class HMHead(nn.Layer):
 
     __shared__ = ['num_classes']
 
-    def __init__(self, ch_in=64, ch_out=128, num_classes=80, conv_num=2):
+    def __init__(self, ch_in, ch_out=128, num_classes=80, conv_num=2):
         super(HMHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
@@ -65,7 +65,7 @@ class HMHead(nn.Layer):
 
 @register
 class WHHead(nn.Layer):
-    def __init__(self, ch_in=64, ch_out=64, conv_num=2):
+    def __init__(self, ch_in, ch_out=64, conv_num=2):
         super(WHHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
@@ -104,33 +104,49 @@ class TTFHead(nn.Layer):
     """
     TTFHead
     Args:
-        hm_head(object): Instance of 'HMHead', heatmap branch.
-        wh_head(object): Instance of 'WHHead', wh branch.
+        in_channels(int): the channel number of input to TTFHead. 
+        num_classes(int): the number of classes, 80 by default.
+        hm_head_planes(int): the channel number in wh head, 128 by default.
+        wh_head_planes(int): the channel number in wh head, 64 by default.
+        hm_head_conv_num(int): the number of convolution in wh head, 2 by default.
+        wh_head_conv_num(int): the number of convolution in wh head, 2 by default.
         hm_loss(object): Instance of 'CTFocalLoss'.
         wh_loss(object): Instance of 'GIoULoss'.
         wh_offset_base(flaot): the base offset of width and height, 16. by default.
-        down_ratio(int): the actual down_ratio is calculated by base_down_ratio(default 16) a
-            nd the number of upsample layers.
+        down_ratio(int): the actual down_ratio is calculated by base_down_ratio(default 16) 
+            and the number of upsample layers.
     """
 
-    __shared__ = ['down_ratio']
-    __inject__ = ['hm_head', 'wh_head', 'hm_loss', 'wh_loss']
+    __shared__ = ['num_classes', 'down_ratio']
+    __inject__ = ['hm_loss', 'wh_loss']
 
     def __init__(self,
-                 hm_head='HMHead',
-                 wh_head='WHHead',
+                 in_channels,
+                 num_classes=80,
+                 hm_head_planes=128,
+                 wh_head_planes=64,
+                 hm_head_conv_num=2,
+                 wh_head_conv_num=2,
                  hm_loss='CTFocalLoss',
                  wh_loss='GIoULoss',
                  wh_offset_base=16.,
                  down_ratio=4):
         super(TTFHead, self).__init__()
-        self.hm_head = hm_head
-        self.wh_head = wh_head
+        self.in_channels = in_channels
+        self.hm_head = HMHead(in_channels, hm_head_planes, num_classes,
+                              hm_head_conv_num)
+        self.wh_head = WHHead(in_channels, wh_head_planes, wh_head_conv_num)
         self.hm_loss = hm_loss
         self.wh_loss = wh_loss
 
         self.wh_offset_base = wh_offset_base
         self.down_ratio = down_ratio
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        if isinstance(input_shape, (list, tuple)):
+            input_shape = input_shape[0]
+        return {'in_channels': input_shape.channels, }
 
     def forward(self, feats):
         hm = self.hm_head(feats)
