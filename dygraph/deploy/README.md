@@ -6,7 +6,7 @@
 - 在本机`python`语言部署，支持在有`python paddle`(支持`CPU`、`GPU`)环境下部署，有两种方式：
     - 使用`tools/infer.py`，此种方式依赖`PaddleDetection`代码库。
     - 将模型导出，使用`deploy/python/infer.py`，此种方式不依赖`PaddleDetection`代码库，可以单个`python`文件部署。
-- 在本机`C++`语言使用`paddle inference`预测库部署，支持在`Linux`和`Windows`系统下部署。
+- 在本机`C++`语言使用`paddle inference`预测库部署，支持在`Linux`和`Windows`系统下部署。请参考文档[C++部署](cpp/README.md)。
 - 在服务器端以服务形式部署，使用[PaddleServing](./serving/README.md)部署。
 - 在手机移动端部署，使用[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在手机移动端部署。
   常见模型部署Demo请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo) 。
