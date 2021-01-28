@@ -20,6 +20,10 @@ from ppdet.core.workspace import register, serializable
 from ..backbones.darknet import ConvBNLayer
 import numpy as np
 
+from ..shape_spec import ShapeSpec
+
+__all__ = ['YOLOv3FPN', 'PPYOLOFPN']
+
 
 class YoloDetBlock(nn.Layer):
     def __init__(self, ch_in, channel, norm_type, name):
@@ -163,23 +167,30 @@ class PPYOLODetBlock(nn.Layer):
 class YOLOv3FPN(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self, feat_channels=[1024, 768, 384], norm_type='bn'):
+    def __init__(self, in_channels=[256, 512, 1024], norm_type='bn'):
         super(YOLOv3FPN, self).__init__()
-        assert len(feat_channels) > 0, "feat_channels length should > 0"
-        self.feat_channels = feat_channels
-        self.num_blocks = len(feat_channels)
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels
+        self.num_blocks = len(in_channels)
+
+        self._out_channels = []
         self.yolo_blocks = []
         self.routes = []
         for i in range(self.num_blocks):
             name = 'yolo_block.{}'.format(i)
+            in_channel = in_channels[-i - 1]
+            if i > 0:
+                in_channel += 512 // (2**i)
             yolo_block = self.add_sublayer(
                 name,
                 YoloDetBlock(
-                    feat_channels[i],
+                    in_channel,
                     channel=512 // (2**i),
                     norm_type=norm_type,
                     name=name))
             self.yolo_blocks.append(yolo_block)
+            # tip layer output channel doubled
+            self._out_channels.append(1024 // (2**i))
 
             if i < self.num_blocks - 1:
                 name = 'yolo_transition.{}'.format(i)
@@ -211,20 +222,25 @@ class YOLOv3FPN(nn.Layer):
 
         return yolo_feats
 
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]
+
 
 @register
 @serializable
 class PPYOLOFPN(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self,
-                 feat_channels=[2048, 1280, 640],
-                 norm_type='bn',
-                 **kwargs):
+    def __init__(self, in_channels=[512, 1024, 2048], norm_type='bn', **kwargs):
         super(PPYOLOFPN, self).__init__()
-        assert len(feat_channels) > 0, "feat_channels length should > 0"
-        self.feat_channels = feat_channels
-        self.num_blocks = len(feat_channels)
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels
+        self.num_blocks = len(in_channels)
         # parse kwargs
         self.coord_conv = kwargs.get('coord_conv', False)
         self.drop_block = kwargs.get('drop_block', False)
@@ -246,9 +262,12 @@ class PPYOLOFPN(nn.Layer):
         else:
             dropblock_cfg = []
 
+        self._out_channels = []
         self.yolo_blocks = []
         self.routes = []
-        for i, ch_in in enumerate(self.feat_channels):
+        for i, ch_in in enumerate(self.in_channels[::-1]):
+            if i > 0:
+                ch_in += 512 // (2**i)
             channel = 64 * (2**self.num_blocks) // (2**i)
             base_cfg = [
                 # name of layer, Layer, args
@@ -279,6 +298,7 @@ class PPYOLOFPN(nn.Layer):
             name = 'yolo_block.{}'.format(i)
             yolo_block = self.add_sublayer(name, PPYOLODetBlock(cfg, name))
             self.yolo_blocks.append(yolo_block)
+            self._out_channels.append(channel * 2)
             if i < self.num_blocks - 1:
                 name = 'yolo_transition.{}'.format(i)
                 route = self.add_sublayer(
@@ -308,3 +328,11 @@ class PPYOLOFPN(nn.Layer):
                 route = F.interpolate(route, scale_factor=2.)
 
         return yolo_feats
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]

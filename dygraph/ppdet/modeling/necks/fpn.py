@@ -23,6 +23,8 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec
 
+__all__ = ['FPN']
+
 
 @register
 @serializable

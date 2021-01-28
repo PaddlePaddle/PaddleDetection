@@ -7,6 +7,7 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from paddle.nn import Conv2D, MaxPool2D
 from ppdet.core.workspace import register, serializable
+from ..shape_spec import ShapeSpec
 
 __all__ = ['VGG']
 
@@ -129,6 +130,8 @@ class VGG(nn.Layer):
         self.normalizations = normalizations
         self.extra_block_filters = extra_block_filters
 
+        self._out_channels = []
+
         self.conv_block_0 = ConvBlock(
             3, 64, self.groups[0], 2, 2, 0, name="conv1_")
         self.conv_block_1 = ConvBlock(
@@ -139,6 +142,7 @@ class VGG(nn.Layer):
             256, 512, self.groups[3], 2, 2, 0, name="conv4_")
         self.conv_block_4 = ConvBlock(
             512, 512, self.groups[4], 3, 1, 1, name="conv5_")
+        self._out_channels.append(512)
 
         self.fc6 = Conv2D(
             in_channels=512,
@@ -153,6 +157,7 @@ class VGG(nn.Layer):
             kernel_size=1,
             stride=1,
             padding=0)
+        self._out_channels.append(1024)
 
         # extra block
         self.extra_convs = []
@@ -164,6 +169,7 @@ class VGG(nn.Layer):
                                                       v[2], v[3], v[4]))
             last_channels = v[1]
             self.extra_convs.append(extra_conv)
+            self._out_channels.append(last_channels)
 
         self.norms = []
         for i, n in enumerate(self.normalizations):
@@ -192,7 +198,7 @@ class VGG(nn.Layer):
         outputs.append(out)
 
         if not self.extra_block_filters:
-            return out
+            return outputs
 
         # extra block
         for extra_conv in self.extra_convs:
@@ -204,3 +210,7 @@ class VGG(nn.Layer):
                 outputs[i] = self.norms[i](outputs[i])
 
         return outputs
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]

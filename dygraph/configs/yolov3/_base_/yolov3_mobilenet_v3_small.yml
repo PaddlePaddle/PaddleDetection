@@ -16,8 +16,8 @@ MobileNetV3:
   extra_block_filters: []
   feature_maps: [4, 9, 12]
 
-YOLOv3FPN:
-  feat_channels: [96, 304, 152]
+# use default config
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
