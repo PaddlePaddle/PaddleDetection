@@ -91,7 +91,26 @@ def load_weight(model, weight, optimizer=None):
                          "exists.".format(pdparam_path))
 
     param_state_dict = paddle.load(pdparam_path)
-    model.set_dict(param_state_dict)
+    model_dict = model.state_dict()
+
+    model_weight = {}
+    incorrect_keys = 0
+    logger.info('Begin loading model weight parameter: {}'.format(pdparam_path))
+
+    for key in model_dict.keys():
+        if key in param_state_dict.keys():
+            model_weight[key] = param_state_dict[key]
+        else:
+            logger.info('Unmatched key: {}'.format(key))
+            incorrect_keys += 1
+
+    assert incorrect_keys == 0, "Load weight {} incorrectly, \
+            {} keys unmatched, please check again.".format(weight,
+                                                           incorrect_keys)
+    logger.info('Finish loading model weight parameter: {}'.format(
+        pdparam_path))
+
+    model.set_dict(model_weight)
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
