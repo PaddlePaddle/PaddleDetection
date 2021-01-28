@@ -95,7 +95,6 @@ def load_weight(model, weight, optimizer=None):
 
     model_weight = {}
     incorrect_keys = 0
-    logger.info('Begin loading model weight parameter: {}'.format(pdparam_path))
 
     for key in model_dict.keys():
         if key in param_state_dict.keys():
