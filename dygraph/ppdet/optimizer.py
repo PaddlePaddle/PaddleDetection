@@ -106,6 +106,10 @@ class PiecewiseDecay(object):
         else:
             # do not use LinearWarmup
             boundary = [int(step_per_epoch) * i for i in self.milestones]
+            #value = [base_lr *  (10**i) for i in range(len(self.milestones))]
+            value = []
+            for i in self.gamma:
+                value.append(base_lr * i)
 
         # self.values is setted directly in config 
         if self.values is not None:
