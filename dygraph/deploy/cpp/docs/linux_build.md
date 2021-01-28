@@ -58,10 +58,6 @@ TENSORRT_LIB_DIR=/path/to/TensorRT/lib
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference
 
-# Paddle 的预测库是否使用静态库来编译
-# 使用TensorRT时，Paddle的预测库通常为动态库
-WITH_STATIC_LIB=OFF
-
 # CUDA 的 lib 路径
 CUDA_LIB=/path/to/cuda/lib
 
@@ -78,7 +74,6 @@ cmake .. \
     -DTENSORRT_LIB_DIR=${TENSORRT_LIB_DIR} \
     -DTENSORRT_INC_DIR=${TENSORRT_INC_DIR} \
     -DPADDLE_DIR=${PADDLE_DIR} \
-    -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
     -DOPENCV_DIR=${OPENCV_DIR}
