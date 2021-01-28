@@ -3,7 +3,6 @@ project(PaddleObjectDetector CXX C)
 
 option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."          ON)
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
-option(WITH_STATIC_LIB "Compile demo with static/shared library, default use shared."   OFF)
 option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
 option(USE_PADDLE_20RC1 "Compile demo with paddle_inference_lib 2.0rc1"                 ON)
 
@@ -94,10 +93,6 @@ if (WIN32)
     set(CMAKE_C_FLAGS_RELEASE  "${CMAKE_C_FLAGS_RELEASE} /bigobj /MT")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} /bigobj /MTd")
     set(CMAKE_CXX_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} /bigobj /MT")
-    if (WITH_STATIC_LIB)
-        safe_set_static_flag()
-        add_definitions(-DSTATIC_LIB)
-    endif()
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o2 -fopenmp -std=c++11")
     set(CMAKE_STATIC_LIBRARY_PREFIX "")
@@ -180,36 +175,23 @@ if (WIN32)
 endif()
 
 
-if (WITH_STATIC_LIB)
-    if (WIN32 AND USE_PADDLE_20RC1)
-        message("This situation is actually in dynamic build mode")
-        set(DEPS ${PADDLE_LIB}/paddle/lib/addle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+if (WIN32)
+    if (USE_PADDLE_20RC1)
+        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
+        set(DEPS ${PADDLE_LIB}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
     else()
+        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
         set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
     endif()
 else()
-    if (WIN32)
-        if (USE_PADDLE_20RC1)
-            # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-            set(DEPS ${PADDLE_LIB}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        else()
-            # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-            set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        endif()
-    else()
-        # linux shared lib name is libpaddle_fluid.so
-        set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
-    endif()
+    # linux shared lib name is libpaddle_fluid.so
+    set(DEPS ${PADDLE_LIB}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif()
 
 
-if(WITH_STATIC_LIB)
-    set(DEPS
-        ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-else()
-    set(DEPS
-        ${PADDLE_DIR}/paddle/lib/${WIN32_PADDLE_LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
-endif()
+set(DEPS ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB}${CMAKE_SHARED_LIBRARY_SUFFIX})
+
 
 
 if (NOT WIN32)
