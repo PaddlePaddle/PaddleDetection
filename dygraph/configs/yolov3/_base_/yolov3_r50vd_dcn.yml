@@ -13,6 +13,7 @@ ResNet:
   depth: 50
   variant: d
   return_idx: [1, 2, 3]
+  dcn_v2_stages: [3]
   freeze_at: -1
   freeze_norm: false
   norm_decay: 0.
