@@ -25,8 +25,8 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --
 
 ## 如何选择部署时依赖库的版本
 
-### 部署时CUDA、CUDNN、TENSORRT版本选择
-由于CUDA、CUDNN、TENSORRT不一定都是向前兼容的，需要使用与编译Paddle预测库使用的环境完全一致的环境进行部署。
+### CUDA、cuDNN、TensorRT版本选择
+由于CUDA、cuDNN、TENSORRT不一定都是向前兼容的，需要使用与编译Paddle预测库使用的环境完全一致的环境进行部署。
 
 ### 部署时预测库版本、预测引擎版本选择
 
@@ -68,5 +68,5 @@ sh scripts/build.sh
 - 2、Windows编译时，预测库是VS2015编译的，选择VS2017或VS2019会有问题吗？
   关于VS兼容性问题请参考：[C++Visual Studio 2015、2017和2019之间的二进制兼容性](https://docs.microsoft.com/zh-cn/cpp/porting/binary-compat-2015-2017?view=msvc-160)
 
-- 3、CUDNN 8.0.4连续预测会发生内存泄漏吗？
-  经QA测试，发现CUDNN 8系列连续预测时都有内存泄漏问题，且CUDNN 8性能差于CUDNN 7，推荐使用CUDA + CUDNN7.6.4的方式进行部署。
+- 3、cuDNN 8.0.4连续预测会发生内存泄漏吗？
+  经QA测试，发现cuDNN 8系列连续预测时都有内存泄漏问题，且cuDNN 8性能差于cuDNN 7，推荐使用CUDA + cuDNN7.6.4的方式进行部署。
