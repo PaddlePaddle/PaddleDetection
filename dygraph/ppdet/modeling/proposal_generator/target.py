@@ -69,16 +69,15 @@ def label_box(anchors, gt_boxes, positive_overlap, negative_overlap,
         return default_matches, default_match_labels
     matched_vals, matches = paddle.topk(iou, k=1, axis=0)
     match_labels = paddle.full(matches.shape, -1, dtype='int32')
-
     match_labels = paddle.where(matched_vals < negative_overlap,
                                 paddle.zeros_like(match_labels), match_labels)
     match_labels = paddle.where(matched_vals >= positive_overlap,
                                 paddle.ones_like(match_labels), match_labels)
     if allow_low_quality:
         highest_quality_foreach_gt = iou.max(axis=1, keepdim=True)
-        pred_inds_with_highest_quality = (
-            iou == highest_quality_foreach_gt).cast('int32').sum(0,
-                                                                 keepdim=True)
+        pred_inds_with_highest_quality = paddle.logical_and(
+            iou > 0, iou == highest_quality_foreach_gt).cast('int32').sum(
+                0, keepdim=True)
         match_labels = paddle.where(pred_inds_with_highest_quality > 0,
                                     paddle.ones_like(match_labels),
                                     match_labels)
@@ -151,7 +150,7 @@ def generate_proposal_target(rpn_rois,
     for i, rpn_roi in enumerate(rpn_rois):
         max_overlap = max_overlaps[i] if is_cascade_rcnn else None
         gt_bbox = gt_boxes[i]
-        gt_classes = gt_classes[i]
+        gt_class = gt_classes[i]
         if is_cascade_rcnn:
             rpn_roi = filter_roi(rpn_roi, max_overlap)
         bbox = paddle.concat([rpn_roi, gt_bbox])
@@ -161,7 +160,7 @@ def generate_proposal_target(rpn_rois,
             bbox, gt_bbox, fg_thresh, bg_thresh, False)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
-            matches, match_labels, gt_classes, batch_size_per_im, fg_fraction,
+            matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
             num_classes, use_random)
 
         # Step3: make output 
