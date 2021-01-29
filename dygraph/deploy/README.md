@@ -26,8 +26,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --
 ## 如何选择部署时依赖库的版本
 
 ### 部署时CUDA、CUDNN、TENSORRT版本选择
-一般的CUDA、CUDNN、TENSORRT都是向前兼容的，新版本的CUDA、CUDNN、TENSORRT是兼容之前版本的。
-但是为了保证部署稳定性，建议使用与编译Paddle预测库使用的环境一致的环境进行部署。
+由于CUDA、CUDNN、TENSORRT不一定都是向前兼容的，需要使用与编译Paddle预测库使用的环境完全一致的环境进行部署。
 
 ### 部署时预测库版本、预测引擎版本选择
 
