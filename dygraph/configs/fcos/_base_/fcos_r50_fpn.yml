@@ -17,11 +17,9 @@ ResNet:
   num_stages: 4
 
 FPN:
-  in_channels: [256, 512, 1024, 2048]
   out_channel: 256
-  min_level: 1
-  max_level: 5
-  spatial_scale: [0.125, 0.0625, 0.03125]
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  extra_stage: 2
   has_extra_convs: true
   use_c5: false
 

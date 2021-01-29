@@ -52,12 +52,16 @@ class FPN(Layer):
         self.fpn_convs = []
         fan = out_channel * 3 * 3
 
-        for i in range(len(in_channels)):
+        # stage index 0,1,2,3 stands for res2,res3,res4,res5 on ResNet Backbone
+        # 0 <= st_stage < ed_stage <= 3
+        st_stage = 4 - len(in_channels)
+        ed_stage = st_stage + len(in_channels) - 1
+        for i in range(st_stage, ed_stage + 1):
             if i == 3:
                 lateral_name = 'fpn_inner_res5_sum'
             else:
                 lateral_name = 'fpn_inner_res{}_sum_lateral'.format(i + 2)
-            in_c = in_channels[i]
+            in_c = in_channels[i - st_stage]
             lateral = self.add_sublayer(
                 lateral_name,
                 Conv2D(
@@ -82,8 +86,9 @@ class FPN(Layer):
 
         # add extra conv levels for RetinaNet(use_c5)/FCOS(use_p5)
         if self.has_extra_convs:
-            for lvl in range(self.extra_stage):  # P6 P7 ...
-                if lvl == 0 and self.use_c5:
+            for i in range(self.extra_stage):
+                lvl = ed_stage + 1 + i
+                if i == 0 and self.use_c5:
                     in_c = in_channels[-1]
                 else:
                     in_c = out_channel
