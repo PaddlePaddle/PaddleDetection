@@ -13,53 +13,61 @@
 - `NV Jetson`嵌入式设备上部署
 
 ## 模型导出
-本章节介绍如何使用`tools/export_model.py`脚本导出模型。
-### 导出模输入输出说明
-- `PaddleDetection`中输入变量以及输入形状如下：
-| 输入名称 | 输入形状 | 表示含义 |
-| :---------: | ----------- | ---------- |
-| image |  [None, 3, H, W] | 输入网络的图像，None表示batch维度，如果输入图像大小为变长，则H,W为None |
-| im_shape | [None, 2] | 图像经过resize后的大小，表示为H,W, None表示batch维度 |
-| scale_factor | [None, 2] | 输入图像大小比真实图像大小，表示为scale_y, scale_x |
-
-**注意**具体预处理方式可参考配置文件中TestReader部分。
-
-
-- PaddleDetection`中动转静导出模型输出统一为：
-
-  - bbox, NMS的输出，形状为[N, 6], 其中N为预测框的个数，6为[class_id, score, x1, y1, x2, y2]。
-  - bbox\_num, 每张图片对应预测框的个数，例如batch_size为2，输出为[N1, N2], 表示第一张图包含N1个预测框，第二张图包含N2个预测框，并且预测框的总个数和NMS输出的第一维N相同
-  - mask，如果网络中包含mask，则会输出mask分支
-
-**注意**模型动转静导出不支持模型结构中包含numpy相关操作的情况。
-
-
-### 启动参数说明
-
-|      FLAG      |      用途      |    默认值    |                 备注                      |
-|:--------------:|:--------------:|:------------:|:-----------------------------------------:|
-|       -c       |  指定配置文件  |     None     |                                           |
-|  --output_dir  |  模型保存路径  |  `./output_inference`  |  模型默认保存在`output/配置文件名/`路径下 |
-
-### 使用示例
-
-使用训练得到的模型进行试用，脚本如下
-
+使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
 python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --output_dir=./inference_model \
  -o weights=weights/yolov3_darknet53_270e_coco.pdparams
 ```
-
 预测模型会导出到`inference_model/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
 
+模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
-### 设置导出模型的输入大小
+## 如何选择部署时依赖库的版本
 
-使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。设置TestReader中的`image_shape`可以修改保存模型中的输入图片大小。示例如下:
+### 部署时CUDA、CUDNN、TENSORRT版本选择
+一般的CUDA、CUDNN、TENSORRT都是向前兼容的，新版本的CUDA、CUDNN、TENSORRT是兼容之前版本的。
+但是为了保证部署稳定性，建议使用与编译Paddle预测库使用的环境一致的环境进行部署。
 
-```bash
-# 导出YOLOv3模型，输入是3x640x640
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --output_dir=./inference_model \
- -o weights=weights/yolov3_darknet53_270e_coco.pdparams TestReader.inputs_def.image_shape=[3,640,640]
+### 部署时预测库版本、预测引擎版本选择
+
+- Linux、Windows平台下C++部署，需要使用Paddle预测库进行部署。
+  （1）Paddle官网提供在不同平台、不同环境下编译好的预测库，您可以直接使用，请在这里[Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 选择。
+  （2）如果您将要部署的平台环境，Paddle官网上没有提供已编译好的预测库，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
+
+- Python语言部署，需要在对应平台上安装Paddle Python包。如果Paddle官网上没有提供该平台下的Paddle Python包，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
+
+- PaddleServing部署
+  PaddleServing 0.4.0是基于Paddle 1.8.4开发，PaddleServing 0.4.1是基于Paddle2.0开发。
+
+- Paddle-Lite部署
+  Paddle-Lite支持OP列表请参考：[Paddle-Lite支持的OP列表](https://paddle-lite.readthedocs.io/zh/latest/source_compile/library.html) ，请跟进所部署模型中使用到的op选择Paddle-Lite版本。
+
+- NV Jetson部署
+  Paddle官网提供在NV Jetson平台上已经编译好的预测库，[Paddle NV Jetson预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 。
+  若列表中没有您需要的预测库，您可以在您的平台上自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
+
+
+## 部署
+- C++部署，先使用跨平台编译工具`CMake`根据`CMakeLists.txt`生成`Makefile`，支持`Windows、Linux、NV Jetson`平台，然后进行编译产出可执行文件。可以直接使用`cpp/scripts/build.sh`脚本编译：
+```buildoutcfg
+cd cpp
+sh scripts/build.sh
 ```
+
+- Python部署，可以使用使用`tools/infer.py`（以来PaddleDetection源码）部署，或者使用`deploy/python/infer.py`单文件部署
+
+- PaddleServing部署请参考，[PaddleServing部署](./serving/README.md)部署。
+
+- 手机移动端部署，请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。
+
+
+## 常见问题QA
+- 1、`Paddle 1.8.4`训练的模型，可以用`Paddle2.0`部署吗？
+  Paddle 2.0是兼容Paddle 1.8.4的，因此是可以的。但是部分模型(如SOLOv2)使用到了Paddle 2.0中新增OP，这类模型不可以。
+
+- 2、Windows编译时，预测库是VS2015编译的，选择VS2017或VS2019会有问题吗？
+  关于VS兼容性问题请参考：[C++Visual Studio 2015、2017和2019之间的二进制兼容性](https://docs.microsoft.com/zh-cn/cpp/porting/binary-compat-2015-2017?view=msvc-160)
+
+- 3、CUDNN 8.0.4连续预测会发生内存泄漏吗？
+  经QA测试，发现CUDNN 8系列连续预测时都有内存泄漏问题，且CUDNN 8性能差于CUDNN 7，推荐使用CUDA + CUDNN7.6.4的方式进行部署。
