@@ -50,7 +50,9 @@ class BBoxPostProcess(object):
                                including labels, scores and bboxes. The size of
                                bboxes are corresponding to the original image.
         """
-        assert bboxes.shape[0] > 0, 'There is no detection output'
+        if bboxes.shape[0] == 0:
+            return paddle.to_tensor([[0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
