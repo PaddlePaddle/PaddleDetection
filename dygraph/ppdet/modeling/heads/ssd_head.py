@@ -58,7 +58,7 @@ class SSDHead(nn.Layer):
     __inject__ = ['anchor_generator', 'loss']
 
     def __init__(self,
-                 num_classes=81,
+                 num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
                  anchor_generator=AnchorGeneratorSSD().__dict__,
                  kernel_size=3,
@@ -67,7 +67,8 @@ class SSDHead(nn.Layer):
                  conv_decay=0.,
                  loss='SSDLoss'):
         super(SSDHead, self).__init__()
-        self.num_classes = num_classes
+        # add background class
+        self.num_classes = num_classes + 1
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
         self.loss = loss
@@ -106,7 +107,7 @@ class SSDHead(nn.Layer):
                     score_conv_name,
                     nn.Conv2D(
                         in_channels=in_channels[i],
-                        out_channels=num_prior * num_classes,
+                        out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding))
             else:
@@ -114,7 +115,7 @@ class SSDHead(nn.Layer):
                     score_conv_name,
                     SepConvLayer(
                         in_channels=in_channels[i],
-                        out_channels=num_prior * num_classes,
+                        out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding,
                         conv_decay=conv_decay,
@@ -129,8 +130,8 @@ class SSDHead(nn.Layer):
         box_preds = []
         cls_scores = []
         prior_boxes = []
-        for feat, box_conv, score_conv in zip(feats, self.box_convs,
-                                              self.score_convs):
+        for i, (feat, box_conv, score_conv
+                ) in enumerate(zip(feats, self.box_convs, self.score_convs)):
             box_pred = box_conv(feat)
             box_pred = paddle.transpose(box_pred, [0, 2, 3, 1])
             box_pred = paddle.reshape(box_pred, [0, -1, 4])

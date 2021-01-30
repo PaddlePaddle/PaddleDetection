@@ -148,6 +148,8 @@ class VOCMetric(Metric):
 
     def update(self, inputs, outputs):
         bboxes = outputs['bbox'].numpy()
+        scores = outputs['score'].numpy()
+        labels = outputs['label'].numpy()
         bbox_lengths = outputs['bbox_num'].numpy()
 
         if bboxes.shape == (1, 1) or bboxes is None:
@@ -171,9 +173,12 @@ class VOCMetric(Metric):
                             else difficults[i]
             bbox_num = bbox_lengths[i]
             bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+            score = scores[bbox_idx:bbox_idx + bbox_num]
+            label = labels[bbox_idx:bbox_idx + bbox_num]
             gt_box, gt_label, difficult = prune_zero_padding(gt_box, gt_label,
                                                              difficult)
-            self.detection_map.update(bbox, gt_box, gt_label, difficult)
+            self.detection_map.update(bbox, score, label, gt_box, gt_label,
+                                      difficult)
             bbox_idx += bbox_num
 
     def accumulate(self):
