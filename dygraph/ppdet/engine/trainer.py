@@ -167,6 +167,8 @@ class Trainer(object):
 
         if self._nranks > 1:
             model = paddle.DataParallel(self.model)
+        else:
+            model = self.model
 
         self.status.update({
             'epoch_id': self.start_epoch,
