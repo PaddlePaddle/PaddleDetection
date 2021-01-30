@@ -10,5 +10,5 @@ ResNet:
   depth: 101
   norm_type: bn
   freeze_at: 0
-  return_idx: [0,1,2,3]
-  num_stages: 4
+  return_idx: [2]
+  num_stages: 3
