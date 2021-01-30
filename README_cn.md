@@ -15,6 +15,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
+- 2021.02.07: 发布release/2.0-beta1版本，PaddleDetection动态图试用版本，详情参考[PaddleDetection动态图](dygraph)。
 - 2020.11.20: 发布release/0.5版本,详情请参考[版本更新文档](docs/CHANGELOG.md)。
 - 2020.11.10: 添加实例分割模型[SOLOv2](configs/solov2)，在Tesla V100上达到38.6 FPS, COCO-val数据集上mask ap达到38.8，预测速度提高24%，mAP提高2.4个百分点。
 - 2020.10.30: PP-YOLO支持矩形图像输入，并新增PACT模型量化策略。
