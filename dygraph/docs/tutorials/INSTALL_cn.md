@@ -12,10 +12,10 @@
 
 **环境需求:**
 
-- paddlepaddle >= 2.0rc1
+- PaddlePaddle 每日版本
 - OS 64位操作系统
 - Python 3(3.5.1+/3.6/3.7)，64位版本
-- pip/pip3(9.0.1+)，64位版本操作系统是
+- pip/pip3(9.0.1+)，64位版本
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
@@ -59,6 +59,21 @@ git clone https://gitee.com/paddlepaddle/PaddleDetection
 **安装PaddleDetection库:**
 
 ```
-cd PaddleDetection
+cd PaddleDetection/dygraph
 python setup.py install
 ```
+
+**预训练模型预测**
+
+使用预训练模型预测图像，快速体验模型预测效果：
+
+```
+# use_gpu参数设置是否使用GPU
+python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/dygraph/ppyolo_r50vd_dcn_1x_coco.pdparams --infer_img=demo/000000014439.jpg
+```
+
+会在`output`文件夹下生成一个画有预测结果的同名图像。
+
+结果如下图：
+
+![](../images/000000014439.jpg)
