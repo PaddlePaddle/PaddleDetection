@@ -23,10 +23,10 @@
 |         表达方式    |                 说明               |
 | :----------------: | :--------------------------------: |
 |     x1,y1,x2,y2    | (x1,y1)为左上角坐标，(x2,y2)为右下角坐标  |  
-|       x,y,w,h      | (x,y)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
+|     x1,y1,w,h      | (x1,y1)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
 |     xc,yc,w,h    | (xc,yc)为目标区域中心坐标，w为目标区域宽度，h为目标区域高度  |  
 
-常见的目标检测数据集如Pascal VOC和COCO，采用的是第一种 `x1,y1,x2,y2` 表示物体的bounding box.  
+常见的目标检测数据集如Pascal VOC采用的`[x1,y1,x2,y2]` 表示物体的bounding box, COCO采用的`[x1,y1,w,h]` 表示物体的bounding box, Cformat](https://cocodataset.org/#format-data).
 
 ### 准备训练数据  
 
@@ -208,7 +208,7 @@ json文件中包含以下key：
         'area': 2765.1486500000005, # 物体的区域面积
         'iscrowd': 0,               # iscrowd
         'image_id': 558840,         # image id
-        'bbox': [199.84, 200.46, 77.71, 70.88], # bbox
+        'bbox': [199.84, 200.46, 77.71, 70.88], # bbox [x1,y1,w,h]
         'category_id': 58,          # category_id
         'id': 156                   # image id
     }
