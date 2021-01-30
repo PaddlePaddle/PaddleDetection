@@ -165,6 +165,7 @@ class Trainer(object):
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
 
+        model = self.model
         if self._nranks > 1:
             model = paddle.DataParallel(self.model)
         else:
