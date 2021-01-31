@@ -53,11 +53,6 @@ def parse_args():
         help='Whether to re eval with already exists bbox.json or mask.json')
 
     parser.add_argument(
-        '--bias',
-        action='store_true',
-        help='whether add bias or not while getting w and h')
-
-    parser.add_argument(
         "--slim_config",
         default=None,
         type=str,
@@ -85,7 +80,6 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
-    cfg['bias'] = 1 if FLAGS.bias else 0
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)
