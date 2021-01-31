@@ -22,9 +22,7 @@ logger = setup_logger(__name__)
 
 
 def person_label(with_background=True):
-    labels_map = {
-        'person': 1,
-    }
+    labels_map = {'person': 1, }
     if not with_background:
         labels_map = {k: v - 1 for k, v in labels_map.items()}
     return labels_map
@@ -49,7 +47,7 @@ class MOTDataSet(DetDataset):
                  data_fields=['image'],
                  sample_num=-1):
         super(MOTDataSet, self).__init__(dataset_dir, image_dir, anno_path,
-                                          data_fields, sample_num)
+                                         data_fields, sample_num)
 
     def parse_dataset(self, with_background=True):
         #image_dir = os.path.join(self.dataset_dir, self.image_dir)
@@ -69,8 +67,10 @@ class MOTDataSet(DetDataset):
             self.img_files = [x.replace('\n', '') for x in self.img_files]
             self.img_files = list(filter(lambda x: len(x) > 0, self.img_files))
 
-        self.label_files = [x.replace('images', 'labels_with_ids').replace('.png', '.txt').replace('.jpg', '.txt')
-                            for x in self.img_files]
+        self.label_files = [
+            x.replace('images', 'labels_with_ids').replace(
+                '.png', '.txt').replace('.jpg', '.txt') for x in self.img_files
+        ]
         self.nF = len(self.img_files)  # number of image files
 
         for i in range(self.nF):
@@ -78,9 +78,8 @@ class MOTDataSet(DetDataset):
             lbl_file = os.path.join(self.dataset_dir, self.label_files[i])
 
             if not os.path.exists(img_file):
-                logger.warn(
-                    'Illegal image file: {}, and it will be ignored'.format(
-                        img_file))
+                logger.warn('Illegal image file: {}, and it will be ignored'.
+                            format(img_file))
                 continue
             if not os.path.isfile(lbl_file):
                 logger.warn('Illegal label file: {}, and it will be ignored'.
@@ -121,4 +120,3 @@ class MOTDataSet(DetDataset):
             self.anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
-
