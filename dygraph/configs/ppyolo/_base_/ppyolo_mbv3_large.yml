@@ -56,4 +56,3 @@ BBoxPostProcess:
     nms_top_k: 1000
     score_threshold: 0.005
     normalized: false
-    background_label: -1

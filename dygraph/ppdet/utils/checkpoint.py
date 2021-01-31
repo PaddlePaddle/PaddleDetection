@@ -163,7 +163,7 @@ def load_pretrain_weight(model,
         model.backbone.set_dict(param_state_dict)
     else:
         ignore_set = set()
-        for name, weight in model_dict:
+        for name, weight in model_dict.items():
             if name in param_state_dict:
                 if weight.shape != param_state_dict[name].shape:
                     param_state_dict.pop(name, None)

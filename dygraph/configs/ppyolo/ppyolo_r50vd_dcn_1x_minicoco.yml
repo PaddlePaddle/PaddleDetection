@@ -7,7 +7,7 @@ _BASE_: [
 ]
 
 snapshot_epoch: 8
-use_ema: false
+use_ema: true
 weights: output/ppyolo_r50vd_dcn_1x_minicoco/model_final
 
 TrainReader:
@@ -36,7 +36,6 @@ LearningRate:
     steps: 4000
 
 OptimizerBuilder:
-  clip_grad_by_norm: 35.
   optimizer:
     momentum: 0.9
     type: Momentum

@@ -18,8 +18,7 @@ ResNet:
   freeze_norm: false
   norm_decay: 0.
 
-YOLOv3FPN:
-  feat_channels: [2048, 1280, 640]
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
@@ -46,4 +45,3 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 1000
     normalized: false
-    background_label: -1

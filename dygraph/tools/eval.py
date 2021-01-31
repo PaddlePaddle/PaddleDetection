@@ -47,7 +47,15 @@ def parse_args():
         help="Evaluation directory, default is current directory.")
 
     parser.add_argument(
-        '--json_eval', action='store_true', default=False, help='')
+        '--json_eval',
+        action='store_true',
+        default=False,
+        help='Whether to re eval with already exists bbox.json or mask.json')
+
+    parser.add_argument(
+        '--bias',
+        action='store_true',
+        help='whether add bias or not while getting w and h')
 
     parser.add_argument(
         "--slim_config",
@@ -77,6 +85,7 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    cfg['bias'] = 1 if FLAGS.bias else 0
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)
