@@ -7,7 +7,8 @@ _BASE_: [
 ]
 
 snapshot_epoch: 8
-use_ema: false
+use_ema: true
+weights: output/ppyolo_r50vd_dcn_1x_minicoco/model_final
 
 TrainReader:
   batch_size: 12
@@ -33,3 +34,11 @@ LearningRate:
   - !LinearWarmup
     start_factor: 0.
     steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
