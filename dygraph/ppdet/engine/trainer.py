@@ -110,6 +110,9 @@ class Trainer(object):
             self._compose_callback = None
 
     def _init_metrics(self):
+        if self.mode == 'test':
+            self._metrics = []
+            return
         if self.cfg.metric == 'COCO':
             self._metrics = [COCOMetric(anno_file=self.dataset.get_anno())]
         elif self.cfg.metric == 'VOC':

@@ -49,6 +49,9 @@ class Pruner(object):
         self.print_params = print_params
 
     def __call__(self, model):
+        # FIXME: adapt to network graph when Training and inference are
+        # inconsistent, now only supports prune inference network graph.
+        model.eval()
         paddleslim = try_import('paddleslim')
         from paddleslim.analysis import dygraph_flops as flops
         input_spec = [{
