@@ -39,15 +39,16 @@ class YOLOv3Head(nn.Layer):
 
         self.yolo_outputs = []
         for i in range(len(self.anchors)):
+
             if self.iou_aware:
-                num_filters = self.num_outputs * (self.num_classes + 6)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 6)
             else:
-                num_filters = self.num_outputs * (self.num_classes + 5)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
             yolo_output = self.add_sublayer(
                 name,
                 nn.Conv2D(
-                    in_channels=1024 // (2**i),
+                    in_channels=128 * (2**self.num_outputs) // (2**i),
                     out_channels=num_filters,
                     kernel_size=1,
                     stride=1,

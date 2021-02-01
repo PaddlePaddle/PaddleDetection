@@ -249,6 +249,7 @@ class PPYOLOFPN(nn.Layer):
             self.keep_prob = kwargs.get('keep_prob', 0.9)
 
         self.spp = kwargs.get('spp', False)
+        self.conv_block_num = kwargs.get('conv_block_num', 2)
         if self.coord_conv:
             ConvLayer = CoordConv
         else:
@@ -269,32 +270,53 @@ class PPYOLOFPN(nn.Layer):
             if i > 0:
                 ch_in += 512 // (2**i)
             channel = 64 * (2**self.num_blocks) // (2**i)
-            base_cfg = [
-                # name of layer, Layer, args
-                ['conv0', ConvLayer, [ch_in, channel, 1]],
-                ['conv1', ConvBNLayer, [channel, channel * 2, 3]],
-                ['conv2', ConvLayer, [channel * 2, channel, 1]],
-                ['conv3', ConvBNLayer, [channel, channel * 2, 3]],
-                ['route', ConvLayer, [channel * 2, channel, 1]],
-                ['tip', ConvLayer, [channel, channel * 2, 3]]
-            ]
-            for conf in base_cfg:
-                filter_size = conf[-1][-1]
-                conf.append(dict(padding=filter_size // 2, norm_type=norm_type))
-            if i == 0:
-                if self.spp:
-                    pool_size = [5, 9, 13]
+            base_cfg = []
+            c_in, c_out = ch_in, channel
+            for j in range(self.conv_block_num):
+                base_cfg += [
+                    [
+                        'conv{}'.format(2 * j), ConvLayer, [c_in, c_out, 1],
+                        dict(
+                            padding=0, norm_type=norm_type)
+                    ],
+                    [
+                        'conv{}'.format(2 * j + 1), ConvBNLayer,
+                        [c_out, c_out * 2, 3], dict(
+                            padding=1, norm_type=norm_type)
+                    ],
+                ]
+                c_in, c_out = c_out * 2, c_out
+
+            base_cfg += [[
+                'route', ConvLayer, [c_in, c_out, 1], dict(
+                    padding=0, norm_type=norm_type)
+            ], [
+                'tip', ConvLayer, [c_out, c_out * 2, 3], dict(
+                    padding=1, norm_type=norm_type)
+            ]]
+
+            if self.conv_block_num == 2:
+                if i == 0:
+                    if self.spp:
+                        spp_cfg = [[
+                            'spp', SPP, [channel * 4, channel, 1], dict(
+                                pool_size=[5, 9, 13], norm_type=norm_type)
+                        ]]
+                    else:
+                        spp_cfg = []
+                    cfg = base_cfg[0:3] + spp_cfg + base_cfg[
+                        3:4] + dropblock_cfg + base_cfg[4:6]
+                else:
+                    cfg = base_cfg[0:2] + dropblock_cfg + base_cfg[2:6]
+            elif self.conv_block_num == 0:
+                if self.spp and i == 0:
                     spp_cfg = [[
-                        'spp', SPP,
-                        [channel * (len(pool_size) + 1), channel, 1], dict(
-                            pool_size=pool_size, norm_type=norm_type)
+                        'spp', SPP, [c_in * 4, c_in, 1], dict(
+                            pool_size=[5, 9, 13], norm_type=norm_type)
                     ]]
                 else:
                     spp_cfg = []
-                cfg = base_cfg[0:3] + spp_cfg + base_cfg[
-                    3:4] + dropblock_cfg + base_cfg[4:6]
-            else:
-                cfg = base_cfg[0:2] + dropblock_cfg + base_cfg[2:6]
+                cfg = spp_cfg + dropblock_cfg + base_cfg
             name = 'yolo_block.{}'.format(i)
             yolo_block = self.add_sublayer(name, PPYOLODetBlock(cfg, name))
             self.yolo_blocks.append(yolo_block)
@@ -305,7 +327,7 @@ class PPYOLOFPN(nn.Layer):
                     name,
                     ConvBNLayer(
                         ch_in=channel,
-                        ch_out=channel // 2,
+                        ch_out=256 // (2**i),
                         filter_size=1,
                         stride=1,
                         padding=0,
