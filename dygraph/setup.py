@@ -70,7 +70,7 @@ if __name__ == "__main__":
         packages=find_packages(exclude=("configs", "tools", "deploy")),
         package_data={'ppdet.model_zoo': package_model_zoo()},
         author='PaddlePaddle',
-        version='2.0-beta1',
+        version='2.0-rc',
         install_requires=parse_requirements('./requirements.txt'),
         description='Object detection and instance segmentation toolkit based on PaddlePaddle',
         long_description=readme(),
