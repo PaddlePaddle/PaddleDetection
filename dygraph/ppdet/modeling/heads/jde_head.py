@@ -50,7 +50,7 @@ class LossParam(nn.Layer):
 
 @register
 class JDEHead(nn.Layer):
-    # __shared__ = ['num_classes'] # todo fix num_classes=1
+    __shared__ = ['num_classes']
     __inject__ = ['jde_loss']
     """
     JDEHead
@@ -100,23 +100,23 @@ class JDEHead(nn.Layer):
             self.num_identifiers - 1) if self.num_identifiers > 1 else 1
 
         self.parse_anchor(anchors, anchor_masks)
-        levels, scales, _ = np.array(self.anchors).shape
+        self.num_outputs = len(self.anchors)
 
         self.yolo_outputs = []
         self.identify_outputs = []
         self.loss_params_cls = []
         self.loss_params_reg = []
         self.loss_params_ide = []
-        for i in range(levels):
+        for i in range(len(self.anchors)):
             if self.iou_aware:
-                num_filters = scales * (self.num_classes + 6)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 6)
             else:
-                num_filters = scales * (self.num_classes + 5)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
             yolo_output = self.add_sublayer(
                 name,
                 nn.Conv2D(
-                    in_channels=1024 // (2**i),
+                    in_channels=128 * (2**self.num_outputs) // (2**i),
                     out_channels=num_filters,
                     kernel_size=1,
                     stride=1,
@@ -130,7 +130,7 @@ class JDEHead(nn.Layer):
             identify_output = self.add_sublayer(
                 name,
                 nn.Conv2D(
-                    in_channels=512 // (2**(i)),
+                    in_channels=64 * (2**self.num_outputs) // (2**i),
                     out_channels=embedding_dim,
                     kernel_size=3,
                     stride=1,

@@ -96,7 +96,7 @@ class MOTDataSet(DetDataset):
             gt_norm_bbox = np.concatenate((x1, y1, x2, y2)).T
             gt_norm_bbox = np.array(gt_norm_bbox).astype('float32')
             gt_class = (labels0[:, 0] + 1).reshape(-1, 1).astype('int32')
-            gt_id = np.array(labels0[:, 1]).astype('int32')
+            gt_ide = np.array(labels0[:, 1]).astype('int32')
             gt_score = np.ones((len(labels0), 1)).astype('float32')
 
             mot_rec = {
@@ -107,6 +107,7 @@ class MOTDataSet(DetDataset):
                 'gt_class': gt_class,
                 'gt_score': gt_score,
                 'gt_bbox': gt_norm_bbox,
+                'gt_ide': gt_ide,
             }
             for k, v in gt_rec.items():
                 if k in self.data_fields:

@@ -234,7 +234,7 @@ class YOLOv3FPN(nn.Layer):
 @register
 @serializable
 class JDEFPN(YOLOv3FPN):
-    def __init__(self, feat_channels=[1024, 768, 384], norm_type='bn'):
+    def __init__(self, in_channels=[1024, 768, 384], norm_type='bn'):
         super(JDEFPN, self).__init__()
 
     def forward(self, blocks):
