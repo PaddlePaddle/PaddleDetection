@@ -1,0 +1,20 @@
+metric: COCO
+num_classes: 1
+
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/MOT
+    image_dir: MOT17
+    anno_path: mot17.train
+    data_fields: ['image', 'gt_bbox', 'gt_class']
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: dataset/MOT
+    image_dir: MOT17
+    anno_path: mot17.train
+    data_fields: ['image', 'gt_bbox', 'gt_class']
+
+TestDataset:
+  !ImageFolder
+    anno_path: mot16.test

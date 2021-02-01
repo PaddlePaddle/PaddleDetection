@@ -233,6 +233,33 @@ class YOLOv3FPN(nn.Layer):
 
 @register
 @serializable
+class JDEFPN(YOLOv3FPN):
+    def __init__(self, feat_channels=[1024, 768, 384], norm_type='bn'):
+        super(JDEFPN, self).__init__()
+
+    def forward(self, blocks):
+        assert len(blocks) == self.num_blocks
+        blocks = blocks[::-1]
+        yolo_feats = []
+        identify_feats = []
+        for i, block in enumerate(blocks):
+            if i > 0:
+                block = paddle.concat([route, block], axis=1)
+            route, tip = self.yolo_blocks[i](block)
+            yolo_feats.append(tip)
+
+            # add identify_feats output
+            identify_feats.append(route)
+
+            if i < self.num_blocks - 1:
+                route = self.routes[i](route)
+                route = F.interpolate(route, scale_factor=2.)
+
+        return yolo_feats, identify_feats
+
+
+@register
+@serializable
 class PPYOLOFPN(nn.Layer):
     __shared__ = ['norm_type']
 
