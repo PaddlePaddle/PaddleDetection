@@ -58,6 +58,12 @@ def parse_args():
         type=str,
         help="Configuration file of slim method.")
 
+    # TODO: bias should be unified
+    parser.add_argument(
+        "--bias",
+        action="store_true",
+        help="whether add bias or not while getting w and h")
+
     args = parser.parse_args()
     return args
 
@@ -80,6 +86,8 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    # TODO: bias should be unified
+    cfg['bias'] = 1 if FLAGS.bias else 0
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)

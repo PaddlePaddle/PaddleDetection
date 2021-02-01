@@ -135,6 +135,13 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
+            score_tensor = self.predictor.get_output_handle(output_names[3])
+            np_score = score_tensor.copy_to_cpu()
+            label_tensor = self.predictor.get_output_handle(output_names[2])
+            np_label = label_tensor.copy_to_cpu()
+            np_boxes = np.concatenate(
+                [np_label[:, np.newaxis], np_score[:, np.newaxis], np_boxes],
+                axis=-1)
             if self.pred_config.mask_resolution is not None:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()

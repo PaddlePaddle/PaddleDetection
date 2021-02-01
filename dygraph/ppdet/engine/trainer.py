@@ -111,10 +111,10 @@ class Trainer(object):
 
     def _init_metrics(self):
         if self.cfg.metric == 'COCO':
-            bias = 0 if 'RCNN' in self.cfg.architecture else 1
+            # TODO: bias should be unified
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(), bias=bias)
+                    anno_file=self.dataset.get_anno(), bias=self.cfg.bias)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [

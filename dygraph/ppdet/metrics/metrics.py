@@ -54,6 +54,7 @@ class COCOMetric(Metric):
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
         self.reset()
 
