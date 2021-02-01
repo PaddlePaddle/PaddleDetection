@@ -31,10 +31,10 @@ class QAT(object):
         super(QAT, self).__init__()
         self.quant_config = quant_config
         self.print_model = print_model
-        paddleslim = try_import('paddleslim')
-        self.quanter = paddleslim.dygraph.quant.QAT(config=self.quant_config)
 
     def __call__(self, model):
+        paddleslim = try_import('paddleslim')
+        self.quanter = paddleslim.dygraph.quant.QAT(config=self.quant_config)
         if self.print_model:
             logger.info("Model before quant:")
             logger.info(model)
