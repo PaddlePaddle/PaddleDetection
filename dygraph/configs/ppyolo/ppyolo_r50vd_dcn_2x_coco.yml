@@ -7,3 +7,4 @@ _BASE_: [
 ]
 
 snapshot_epoch: 16
+weights: output/ppyolo_r50vd_dcn_2x_coco/model_final

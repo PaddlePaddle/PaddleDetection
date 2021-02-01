@@ -49,12 +49,13 @@ class Metric(paddle.metric.Metric):
 
 
 class COCOMetric(Metric):
-    def __init__(self, anno_file):
+    def __init__(self, anno_file, **kwargs):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
-
+        # TODO: bias should be unified
+        self.bias = kwargs.get('bias', 0)
         self.reset()
 
     def reset(self):
@@ -72,7 +73,8 @@ class COCOMetric(Metric):
         outs['im_id'] = im_id.numpy() if isinstance(im_id,
                                                     paddle.Tensor) else im_id
 
-        infer_results = get_infer_results(outs, self.clsid2catid)
+        infer_results = get_infer_results(
+            outs, self.clsid2catid, bias=self.bias)
         self.results['bbox'] += infer_results[
             'bbox'] if 'bbox' in infer_results else []
         self.results['mask'] += infer_results[

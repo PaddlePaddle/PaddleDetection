@@ -1,5 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_vd_pretrained.tar
 load_static_weights: true
 norm_type: sync_bn
 use_ema: true
@@ -12,44 +12,36 @@ YOLOv3:
   post_process: BBoxPostProcess
 
 ResNet:
-  depth: 50
+  depth: 18
   variant: d
-  return_idx: [1, 2, 3]
-  dcn_v2_stages: [3]
+  return_idx: [2, 3]
   freeze_at: -1
   freeze_norm: false
   norm_decay: 0.
 
 PPYOLOFPN:
-  coord_conv: true
+  feat_channels: [512, 512]
   drop_block: true
   block_size: 3
   keep_prob: 0.9
-  spp: true
+  conv_block_num: 0
 
 YOLOv3Head:
-  anchors: [[10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45], [59, 119],
-            [116, 90], [156, 198], [373, 326]]
-  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  anchor_masks: [[3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 14], [23, 27], [37, 58],
+            [81, 82], [135, 169], [344, 319]]
   loss: YOLOv3Loss
-  iou_aware: true
-  iou_aware_factor: 0.4
 
 YOLOv3Loss:
   ignore_thresh: 0.7
-  downsample: [32, 16, 8]
+  downsample: [32, 16]
   label_smooth: false
   scale_x_y: 1.05
   iou_loss: IouLoss
-  iou_aware_loss: IouAwareLoss
 
 IouLoss:
   loss_weight: 2.5
   loss_square: true
-
-IouAwareLoss:
-  loss_weight: 1.0
 
 BBoxPostProcess:
   decode:

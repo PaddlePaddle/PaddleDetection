@@ -4,8 +4,13 @@ import numpy as np
 import cv2
 
 
-def get_det_res(bboxes, scores, labels, bbox_nums, image_id,
-                label_to_cat_id_map):
+def get_det_res(bboxes,
+                scores,
+                labels,
+                bbox_nums,
+                image_id,
+                label_to_cat_id_map,
+                bias=0):
     det_res = []
     k = 0
     for i in range(len(bbox_nums)):
@@ -19,8 +24,8 @@ def get_det_res(bboxes, scores, labels, bbox_nums, image_id,
             k = k + 1
             xmin, ymin, xmax, ymax = box.tolist()
             category_id = label_to_cat_id_map[label]
-            w = xmax - xmin
-            h = ymax - ymin
+            w = xmax - xmin + bias
+            h = ymax - ymin + bias
             bbox = [xmin, ymin, w, h]
             dt_res = {
                 'image_id': cur_image_id,
