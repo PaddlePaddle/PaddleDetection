@@ -650,10 +650,10 @@ class MatrixNMS(object):
 @register
 @serializable
 class YOLOBox(object):
-    __shared__ = ['num_classes']
+    # __shared__ = ['num_classes']
 
     def __init__(self,
-                 num_classes=80,
+                 num_classes=1,
                  conf_thresh=0.005,
                  downsample_ratio=32,
                  clip_bbox=True,
