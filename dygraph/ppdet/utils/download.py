@@ -226,7 +226,7 @@ def _dataset_exists(path, annotation, image_dir):
     Check if user define dataset exists
     """
     if not osp.exists(path):
-        logger.debug("Config dataset_dir {} is not exits, "
+        logger.debug("Config dataset_dir {} does not exist, "
                      "dataset config is not valid".format(path))
         return False
 
