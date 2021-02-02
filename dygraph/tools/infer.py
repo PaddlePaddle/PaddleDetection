@@ -21,7 +21,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore numba warning
+# ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 import glob
@@ -59,6 +59,11 @@ def parse_args():
         type=float,
         default=0.5,
         help="Threshold to reserve the result for visualization.")
+    parser.add_argument(
+        "--slim_config",
+        default=None,
+        type=str,
+        help="Configuration file of slim method.")
     parser.add_argument(
         "--use_vdl",
         type=bool,
@@ -126,6 +131,9 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()

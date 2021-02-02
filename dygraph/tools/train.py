@@ -22,7 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore numba warning
+# ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 import random
@@ -50,33 +50,21 @@ def parse_args():
         help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
     )
     parser.add_argument(
-        "--fp16",
-        action='store_true',
-        default=False,
-        help="Enable mixed precision training.")
-    parser.add_argument(
-        "--loss_scale",
-        default=8.,
-        type=float,
-        help="Mixed precision training loss scale.")
-    parser.add_argument(
         "--eval",
         action='store_true',
         default=False,
         help="Whether to perform evaluation in train")
     parser.add_argument(
-        "--output_eval",
+        "--slim_config",
         default=None,
         type=str,
-        help="Evaluation directory, default is current directory.")
+        help="Configuration file of slim method.")
     parser.add_argument(
         "--enable_ce",
         type=bool,
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
-    parser.add_argument(
-        "--use_gpu", action='store_true', default=False, help="data parallel")
     args = parser.parse_args()
     return args
 
@@ -92,10 +80,11 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='train')
 
     # load weights
-    trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
+    if not FLAGS.slim_config:
+        trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
 
     # training
-    trainer.train()
+    trainer.train(FLAGS.eval)
 
 
 def main():
@@ -103,6 +92,11 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
+        if 'weight_type' not in cfg:
+            cfg.weight_type = FLAGS.weight_type
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()

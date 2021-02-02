@@ -91,7 +91,25 @@ def load_weight(model, weight, optimizer=None):
                          "exists.".format(pdparam_path))
 
     param_state_dict = paddle.load(pdparam_path)
-    model.set_dict(param_state_dict)
+    model_dict = model.state_dict()
+
+    model_weight = {}
+    incorrect_keys = 0
+
+    for key in model_dict.keys():
+        if key in param_state_dict.keys():
+            model_weight[key] = param_state_dict[key]
+        else:
+            logger.info('Unmatched key: {}'.format(key))
+            incorrect_keys += 1
+
+    assert incorrect_keys == 0, "Load weight {} incorrectly, \
+            {} keys unmatched, please check again.".format(weight,
+                                                           incorrect_keys)
+    logger.info('Finish loading model weight parameter: {}'.format(
+        pdparam_path))
+
+    model.set_dict(model_weight)
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
@@ -145,10 +163,17 @@ def load_pretrain_weight(model,
         model.backbone.set_dict(param_state_dict)
     else:
         ignore_set = set()
-        for name, weight in model_dict:
-            if name in param_state_dict:
-                if weight.shape != param_state_dict[name].shape:
+        for name, weight in model_dict.items():
+            if name in param_state_dict.keys():
+                if weight.shape != list(param_state_dict[name].shape):
+                    logger.info(
+                        '{} not used, shape {} unmatched with {} in model.'.
+                        format(name,
+                               list(param_state_dict[name].shape),
+                               weight.shape))
                     param_state_dict.pop(name, None)
+            else:
+                logger.info('Lack weight: {}'.format(name))
         model.set_dict(param_state_dict)
     return
 

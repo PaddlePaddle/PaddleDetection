@@ -15,8 +15,8 @@ MobileNet:
   with_extra_blocks: false
   extra_block_filters: []
 
-YOLOv3FPN:
-  feat_channels: [1024, 768, 384]
+# use default config
+# YOLOv3FPN:
 
 YOLOv3Head:
   anchors: [[10, 13], [16, 30], [33, 23],
@@ -43,4 +43,3 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 1000
     normalized: false
-    background_label: -1

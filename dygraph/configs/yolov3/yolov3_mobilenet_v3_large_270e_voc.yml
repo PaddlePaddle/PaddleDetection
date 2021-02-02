@@ -5,7 +5,9 @@ _BASE_: [
   '_base_/yolov3_mobilenet_v3_large.yml',
   '_base_/yolov3_reader.yml',
 ]
-weights: output/yolov3_mobilenet_v3_large_voc/model_final
+
+snapshot_epoch: 5
+weights: output/yolov3_mobilenet_v3_large_270e_voc/model_final
 
 TrainReader:
   inputs_def:

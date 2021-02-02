@@ -23,6 +23,7 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from numbers import Integral
+from ..shape_spec import ShapeSpec
 
 __all__ = ['MobileNetV3']
 
@@ -383,6 +384,7 @@ class MobileNetV3(nn.Layer):
             freeze_norm=freeze_norm,
             name="conv1")
 
+        self._out_channels = []
         self.block_list = []
         i = 0
         inplanes = make_divisible(inplanes * scale)
@@ -413,6 +415,9 @@ class MobileNetV3(nn.Layer):
             self.block_list.append(block)
             inplanes = make_divisible(scale * c)
             i += 1
+            self._update_out_channels(
+                make_divisible(scale * exp)
+                if return_list else inplanes, i + 1, feature_maps)
 
         if self.with_extra_blocks:
             self.extra_block_list = []
@@ -438,6 +443,7 @@ class MobileNetV3(nn.Layer):
                     name="conv" + str(i + 2)))
             self.extra_block_list.append(conv_extra)
             i += 1
+            self._update_out_channels(extra_out_c, i + 1, feature_maps)
 
             for j, block_filter in enumerate(self.extra_block_filters):
                 in_c = extra_out_c if j == 0 else self.extra_block_filters[j -
@@ -457,6 +463,11 @@ class MobileNetV3(nn.Layer):
                         name='conv' + str(i + 2)))
                 self.extra_block_list.append(conv_extra)
                 i += 1
+                self._update_out_channels(block_filter[1], i + 1, feature_maps)
+
+    def _update_out_channels(self, channel, feature_idx, feature_maps):
+        if feature_idx in feature_maps:
+            self._out_channels.append(channel)
 
     def forward(self, inputs):
         x = self.conv1(inputs['image'])
@@ -479,3 +490,7 @@ class MobileNetV3(nn.Layer):
             if idx + 2 in self.feature_maps:
                 outs.append(x)
         return outs
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]

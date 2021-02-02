@@ -39,15 +39,16 @@ class YOLOv3Head(nn.Layer):
 
         self.yolo_outputs = []
         for i in range(len(self.anchors)):
+
             if self.iou_aware:
-                num_filters = self.num_outputs * (self.num_classes + 6)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 6)
             else:
-                num_filters = self.num_outputs * (self.num_classes + 5)
+                num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
             yolo_output = self.add_sublayer(
                 name,
                 nn.Conv2D(
-                    in_channels=1024 // (2**i),
+                    in_channels=128 * (2**self.num_outputs) // (2**i),
                     out_channels=num_filters,
                     kernel_size=1,
                     stride=1,
@@ -67,38 +68,36 @@ class YOLOv3Head(nn.Layer):
                 assert mask < anchor_num, "anchor mask index overflow"
                 self.mask_anchors[-1].extend(anchors[mask])
 
-    def forward(self, feats):
+    def forward(self, feats, targets=None):
         assert len(feats) == len(self.anchors)
         yolo_outputs = []
         for i, feat in enumerate(feats):
             yolo_output = self.yolo_outputs[i](feat)
             yolo_outputs.append(yolo_output)
-        return yolo_outputs
 
-    def get_loss(self, inputs, targets):
-        return self.loss(inputs, targets, self.anchors)
-
-    def get_outputs(self, outputs):
-        if self.iou_aware:
-            y = []
-            for i, out in enumerate(outputs):
-                na = len(self.anchors[i])
-                ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
-                b, c, h, w = x.shape
-                no = c // na
-                x = x.reshape((b, na, no, h, w))
-                ioup = ioup.reshape((b, na, 1, h, w))
-                obj = x[:, :, 4:5, :, :]
-                ioup = F.sigmoid(ioup)
-                obj = F.sigmoid(obj)
-                obj_t = (obj**(1 - self.iou_aware_factor)) * (
-                    ioup**self.iou_aware_factor)
-                obj_t = _de_sigmoid(obj_t)
-                loc_t = x[:, :, :4, :, :]
-                cls_t = x[:, :, 5:, :, :]
-                y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
-                y_t = y_t.reshape((b, -1, h, w))
-                y.append(y_t)
-            return y
+        if self.training:
+            return self.loss(yolo_outputs, targets, self.anchors)
         else:
-            return outputs
+            if self.iou_aware:
+                y = []
+                for i, out in enumerate(yolo_outputs):
+                    na = len(self.anchors[i])
+                    ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
+                    b, c, h, w = x.shape
+                    no = c // na
+                    x = x.reshape((b, na, no, h * w))
+                    ioup = ioup.reshape((b, na, 1, h * w))
+                    obj = x[:, :, 4:5, :]
+                    ioup = F.sigmoid(ioup)
+                    obj = F.sigmoid(obj)
+                    obj_t = (obj**(1 - self.iou_aware_factor)) * (
+                        ioup**self.iou_aware_factor)
+                    obj_t = _de_sigmoid(obj_t)
+                    loc_t = x[:, :, :4, :]
+                    cls_t = x[:, :, 5:, :]
+                    y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
+                    y_t = y_t.reshape((b, c, h, w))
+                    y.append(y_t)
+                return y
+            else:
+                return yolo_outputs

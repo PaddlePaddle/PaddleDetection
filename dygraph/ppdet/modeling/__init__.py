@@ -1,8 +1,7 @@
 from . import ops
-from . import bbox
-from . import mask
 from . import backbones
 from . import necks
+from . import proposal_generator
 from . import heads
 from . import losses
 from . import architectures
@@ -11,10 +10,9 @@ from . import layers
 from . import utils
 
 from .ops import *
-from .bbox import *
-from .mask import *
 from .backbones import *
 from .necks import *
+from .proposal_generator import *
 from .heads import *
 from .losses import *
 from .architectures import *

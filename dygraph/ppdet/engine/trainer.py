@@ -48,26 +48,41 @@ class Trainer(object):
         assert mode.lower() in ['train', 'eval', 'test'], \
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
+        self.optimizer = None
 
         # build model
         self.model = create(cfg.architecture)
-        if ParallelEnv().nranks > 1:
-            self.model = paddle.DataParallel(self.model)
+
+        # model slim build
+        if 'slim' in cfg and cfg.slim:
+            if self.mode == 'train':
+                self.load_weights(cfg.pretrain_weights, cfg.weight_type)
+            slim = create(cfg.slim)
+            slim(self.model)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        # TestDataset build after user set images, skip loader creation here
-        if self.mode != 'test':
+        if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
+        # EvalDataset build with BatchSampler to evaluate in single device
+        # TODO: multi-device evaluate
+        if self.mode == 'eval':
+            self._eval_batch_sampler = paddle.io.BatchSampler(
+                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num, self._eval_batch_sampler)
+        # TestDataset build after user set images, skip loader creation here
 
         # build optimizer in train mode
-        self.optimizer = None
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
+
+        self._nranks = ParallelEnv().nranks
+        self._local_rank = ParallelEnv().local_rank
 
         self.status = {}
 
@@ -95,29 +110,26 @@ class Trainer(object):
             self._compose_callback = None
 
     def _init_metrics(self):
-        if self.mode == 'eval':
-            if self.cfg.metric == 'COCO':
-                mask_resolution = self.model.mask_post_process.mask_resolution if getattr(
-                    self.model, 'mask_post_process', None) else None
-                self._metrics = [
-                    COCOMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        mask_resolution=mask_resolution)
-                ]
-            elif self.cfg.metric == 'VOC':
-                self._metrics = [
-                    VOCMetric(
-                        anno_file=self.dataset.get_anno(),
-                        with_background=self.cfg.with_background,
-                        class_num=self.cfg.num_classes,
-                        map_type=self.cfg.map_type)
-                ]
-            else:
-                logger.warn("Metric not support for metric type {}".format(
-                    self.cfg.metric))
-                self._metrics = []
+        if self.mode == 'test':
+            self._metrics = []
+            return
+        if self.cfg.metric == 'COCO':
+            # TODO: bias should be unified
+            bias = 1 if 'bias' in self.cfg else 0
+            self._metrics = [
+                COCOMetric(
+                    anno_file=self.dataset.get_anno(), bias=bias)
+            ]
+        elif self.cfg.metric == 'VOC':
+            self._metrics = [
+                VOCMetric(
+                    anno_file=self.dataset.get_anno(),
+                    class_num=self.cfg.num_classes,
+                    map_type=self.cfg.map_type)
+            ]
         else:
+            logger.warn("Metric not support for metric type {}".format(
+                self.cfg.metric))
             self._metrics = []
 
     def _reset_metrics(self):
@@ -154,13 +166,18 @@ class Trainer(object):
                 weight_type, weights))
         self._weights_loaded = True
 
-    def train(self):
+    def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
-        self.model.train()
 
         # if no given weights loaded, load backbone pretrain weights as default
         if not self._weights_loaded:
             self.load_weights(self.cfg.pretrain_weights)
+
+        model = self.model
+        if self._nranks > 1:
+            model = paddle.DataParallel(self.model)
+        else:
+            model = self.model
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -175,9 +192,11 @@ class Trainer(object):
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
+            self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
+            model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
                 self.status['data_time'].update(time.time() - iter_tic)
@@ -185,7 +204,7 @@ class Trainer(object):
                 self._compose_callback.on_step_begin(self.status)
 
                 # model forward
-                outputs = self.model(data)
+                outputs = model(data)
                 loss = outputs['loss']
 
                 # model backward
@@ -196,23 +215,42 @@ class Trainer(object):
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
-                if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+                if self._nranks < 2 or self._local_rank == 0:
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
                 iter_tic = time.time()
+
             self._compose_callback.on_epoch_end(self.status)
 
-    def evaluate(self):
+            if validate and (self._nranks < 2 or self._local_rank == 0) \
+                    and (epoch_id % self.cfg.snapshot_epoch == 0 \
+                             or epoch_id == self.end_epoch - 1):
+                if not hasattr(self, '_eval_loader'):
+                    # build evaluation dataset and loader
+                    self._eval_dataset = self.cfg.EvalDataset
+                    self._eval_batch_sampler = \
+                        paddle.io.BatchSampler(
+                            self._eval_dataset,
+                            batch_size=self.cfg.EvalReader['batch_size'])
+                    self._eval_loader = create('EvalReader')(
+                        self._eval_dataset,
+                        self.cfg.worker_num,
+                        batch_sampler=self._eval_batch_sampler)
+                with paddle.no_grad():
+                    self._eval_with_loader(self._eval_loader)
+
+    def _eval_with_loader(self, loader):
         sample_num = 0
         tic = time.time()
         self._compose_callback.on_epoch_begin(self.status)
-        for step_id, data in enumerate(self.loader):
+        self.status['mode'] = 'eval'
+        self.model.eval()
+        for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
             # forward
-            self.model.eval()
             outs = self.model(data)
 
             # update metrics
@@ -233,6 +271,9 @@ class Trainer(object):
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
+    def evaluate(self):
+        self._eval_with_loader(self.loader)
+
     def predict(self, images, draw_threshold=0.5, output_dir='output'):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
@@ -240,28 +281,19 @@ class Trainer(object):
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
-        with_background = self.cfg.with_background
-        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file,
-                                                 with_background)
+        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file)
 
-        # Run Infer
+        # Run Infer 
+        self.status['mode'] = 'test'
+        self.model.eval()
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
-            self.model.eval()
             outs = self.model(data)
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
             for key, value in outs.items():
                 outs[key] = value.numpy()
-
-            # FIXME: for more elegent coding
-            if 'mask' in outs and 'bbox' in outs:
-                mask_resolution = self.model.mask_post_process.mask_resolution
-                from ppdet.py_op.post_process import mask_post_process
-                outs['mask'] = mask_post_process(outs, outs['im_shape'],
-                                                 outs['scale_factor'],
-                                                 mask_resolution)
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
@@ -310,6 +342,8 @@ class Trainer(object):
             image_shape = inputs_def.get('image_shape', None)
         if image_shape is None:
             image_shape = [3, None, None]
+
+        self.model.eval()
 
         # Save infer cfg
         _dump_infer_config(self.cfg,

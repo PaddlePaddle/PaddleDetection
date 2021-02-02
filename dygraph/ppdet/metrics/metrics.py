@@ -49,15 +49,13 @@ class Metric(paddle.metric.Metric):
 
 
 class COCOMetric(Metric):
-    def __init__(self, anno_file, with_background=True, mask_resolution=None):
+    def __init__(self, anno_file, **kwargs):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
-        self.with_background = with_background
-        self.mask_resolution = mask_resolution
-        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file,
-                                                           with_background)
-
+        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        # TODO: bias should be unified
+        self.bias = kwargs.get('bias', 0)
         self.reset()
 
     def reset(self):
@@ -71,18 +69,12 @@ class COCOMetric(Metric):
         for k, v in outputs.items():
             outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
 
-        # some input fields also needed
-        for k in ['im_id', 'scale_factor', 'im_shape']:
-            v = inputs[k]
-            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
+        im_id = inputs['im_id']
+        outs['im_id'] = im_id.numpy() if isinstance(im_id,
+                                                    paddle.Tensor) else im_id
 
-        if 'mask' in outs and 'bbox' in outs:
-            from ppdet.py_op.post_process import mask_post_process
-            outs['mask'] = mask_post_process(outs, outs['im_shape'],
-                                             outs['scale_factor'],
-                                             self.mask_resolution)
-
-        infer_results = get_infer_results(outs, self.clsid2catid)
+        infer_results = get_infer_results(
+            outs, self.clsid2catid, bias=self.bias)
         self.results['bbox'] += infer_results[
             'bbox'] if 'bbox' in infer_results else []
         self.results['mask'] += infer_results[
@@ -131,7 +123,6 @@ class COCOMetric(Metric):
 class VOCMetric(Metric):
     def __init__(self,
                  anno_file,
-                 with_background=True,
                  class_num=20,
                  overlap_thresh=0.5,
                  map_type='11point',
@@ -140,9 +131,7 @@ class VOCMetric(Metric):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
-        self.with_background = with_background
-        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file,
-                                                           with_background)
+        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file)
 
         self.overlap_thresh = overlap_thresh
         self.map_type = map_type
@@ -161,6 +150,8 @@ class VOCMetric(Metric):
 
     def update(self, inputs, outputs):
         bboxes = outputs['bbox'].numpy()
+        scores = outputs['score'].numpy()
+        labels = outputs['label'].numpy()
         bbox_lengths = outputs['bbox_num'].numpy()
 
         if bboxes.shape == (1, 1) or bboxes is None:
@@ -184,9 +175,12 @@ class VOCMetric(Metric):
                             else difficults[i]
             bbox_num = bbox_lengths[i]
             bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
+            score = scores[bbox_idx:bbox_idx + bbox_num]
+            label = labels[bbox_idx:bbox_idx + bbox_num]
             gt_box, gt_label, difficult = prune_zero_padding(gt_box, gt_label,
                                                              difficult)
-            self.detection_map.update(bbox, gt_box, gt_label, difficult)
+            self.detection_map.update(bbox, score, label, gt_box, gt_label,
+                                      difficult)
             bbox_idx += bbox_num
 
     def accumulate(self):

@@ -35,8 +35,7 @@ def init_parallel_env():
         random.seed(local_seed)
         np.random.seed(local_seed)
 
-    if ParallelEnv().nranks > 1:
-        paddle.distributed.init_parallel_env()
+    paddle.distributed.init_parallel_env()
 
 
 def set_random_seed(seed):

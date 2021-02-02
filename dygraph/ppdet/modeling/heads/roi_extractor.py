@@ -17,32 +17,47 @@ from ppdet.core.workspace import register
 from ppdet.modeling import ops
 
 
+def _to_list(v):
+    if not isinstance(v, (list, tuple)):
+        return [v]
+    return v
+
+
 @register
 class RoIAlign(object):
     def __init__(self,
                  resolution=14,
+                 spatial_scale=0.0625,
                  sampling_ratio=0,
                  canconical_level=4,
                  canonical_size=224,
                  start_level=0,
-                 end_level=3):
+                 end_level=3,
+                 aligned=False):
         super(RoIAlign, self).__init__()
         self.resolution = resolution
+        self.spatial_scale = _to_list(spatial_scale)
         self.sampling_ratio = sampling_ratio
         self.canconical_level = canconical_level
         self.canonical_size = canonical_size
         self.start_level = start_level
         self.end_level = end_level
+        self.aligned = aligned
 
-    def __call__(self, feats, rois, spatial_scale):
-        roi, rois_num = rois
-        if self.start_level == self.end_level:
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'spatial_scale': [1. / i.stride for i in input_shape]}
+
+    def __call__(self, feats, roi, rois_num):
+        roi = paddle.concat(roi) if len(roi) > 1 else roi[0]
+        if len(feats) == 1:
             rois_feat = ops.roi_align(
                 feats[self.start_level],
                 roi,
                 self.resolution,
-                spatial_scale,
-                rois_num=rois_num)
+                self.spatial_scale[0],
+                rois_num=rois_num,
+                aligned=self.aligned)
         else:
             offset = 2
             k_min = self.start_level + offset
@@ -60,10 +75,12 @@ class RoIAlign(object):
                     feats[lvl],
                     rois_dist[lvl],
                     self.resolution,
-                    spatial_scale[lvl],
+                    self.spatial_scale[lvl],
                     sampling_ratio=self.sampling_ratio,
-                    rois_num=rois_num_dist[lvl])
-                rois_feat_list.append(roi_feat)
+                    rois_num=rois_num_dist[lvl],
+                    aligned=self.aligned)
+                if roi_feat.shape[0] > 0:
+                    rois_feat_list.append(roi_feat)
             rois_feat_shuffle = paddle.concat(rois_feat_list)
             rois_feat = paddle.gather(rois_feat_shuffle, restore_index)
 

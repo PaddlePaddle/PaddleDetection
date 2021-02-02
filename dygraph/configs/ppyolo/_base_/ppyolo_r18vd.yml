@@ -1,0 +1,60 @@
+architecture: YOLOv3
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet18_vd_pretrained.tar
+load_static_weights: true
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: ResNet
+  neck: PPYOLOFPN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+ResNet:
+  depth: 18
+  variant: d
+  return_idx: [2, 3]
+  freeze_at: -1
+  freeze_norm: false
+  norm_decay: 0.
+
+PPYOLOFPN:
+  feat_channels: [512, 512]
+  drop_block: true
+  block_size: 3
+  keep_prob: 0.9
+  conv_block_num: 0
+
+YOLOv3Head:
+  anchor_masks: [[3, 4, 5], [0, 1, 2]]
+  anchors: [[10, 14], [23, 27], [37, 58],
+            [81, 82], [135, 169], [344, 319]]
+  loss: YOLOv3Loss
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  downsample: [32, 16]
+  label_smooth: false
+  scale_x_y: 1.05
+  iou_loss: IouLoss
+
+IouLoss:
+  loss_weight: 2.5
+  loss_square: true
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.01
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MatrixNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    post_threshold: 0.01
+    nms_top_k: -1
+    normalized: false
+    background_label: -1

@@ -19,6 +19,7 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.ops import batch_norm
+from ..shape_spec import ShapeSpec
 
 __all__ = ['DarkNet', 'ConvBNLayer']
 
@@ -193,6 +194,7 @@ class DarkNet(nn.Layer):
             norm_decay=norm_decay,
             name='yolo_input.downsample')
 
+        self._out_channels = []
         self.darknet_conv_block_list = []
         self.downsample_list = []
         ch_in = [64, 128, 256, 512, 1024]
@@ -208,6 +210,8 @@ class DarkNet(nn.Layer):
                     norm_decay=norm_decay,
                     name=name))
             self.darknet_conv_block_list.append(conv_block)
+            if i in return_idx:
+                self._out_channels.append(64 * (2**i))
         for i in range(num_stages - 1):
             down_name = 'stage.{}.downsample'.format(i)
             downsample = self.add_sublayer(
@@ -235,3 +239,7 @@ class DarkNet(nn.Layer):
             if i < self.num_stages - 1:
                 out = self.downsample_list[i](out)
         return blocks
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]

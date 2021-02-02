@@ -78,7 +78,7 @@ class DetDataset(Dataset):
     def set_epoch(self, epoch_id):
         self._epoch = epoch_id
 
-    def parse_dataset(self, with_background=True):
+    def parse_dataset(self, ):
         raise NotImplemented(
             "Need to implement parse_dataset method of Dataset")
 
@@ -115,13 +115,17 @@ class ImageFolder(DetDataset):
                  sample_num=-1,
                  use_default_label=None,
                  **kwargs):
-        super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num, use_default_label)
+        super(ImageFolder, self).__init__(
+            dataset_dir,
+            image_dir,
+            anno_path,
+            sample_num=sample_num,
+            use_default_label=use_default_label)
         self._imid2path = {}
         self.roidbs = None
         self.sample_num = sample_num
 
-    def parse_dataset(self, with_background=True):
+    def parse_dataset(self, ):
         if not self.roidbs:
             self.roidbs = self._load_images()
 

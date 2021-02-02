@@ -25,15 +25,13 @@ logger = setup_logger(__name__)
 __all__ = ['get_categories']
 
 
-def get_categories(metric_type, anno_file=None, with_background=True):
+def get_categories(metric_type, anno_file=None):
     """
     Get class id to category id map and category id
     to category name map from annotation file.
 
     Args:
         anno_file (str): annotation file path
-        with_background (bool, default True):
-            whether load background as class 0.
     """
     if metric_type.lower() == 'coco':
         if anno_file and os.path.isfile(anno_file):
@@ -43,21 +41,14 @@ def get_categories(metric_type, anno_file=None, with_background=True):
             coco = COCO(anno_file)
             cats = coco.loadCats(coco.getCatIds())
 
-            clsid2catid = {
-                i + int(with_background): cat['id']
-                for i, cat in enumerate(cats)
-            }
+            clsid2catid = {i: cat['id'] for i, cat in enumerate(cats)}
             catid2name = {cat['id']: cat['name'] for cat in cats}
-
-            if with_background:
-                clsid2catid.update({0: 0})
-                catid2name.update({0: 'background'})
 
             return clsid2catid, catid2name
 
         # anno file not exist, load default categories of COCO17
         else:
-            return _coco17_category(with_background)
+            return _coco17_category()
 
     elif metric_type.lower() == 'voc':
         if anno_file and os.path.isfile(anno_file):
@@ -66,9 +57,7 @@ def get_categories(metric_type, anno_file=None, with_background=True):
                 for line in f.readlines():
                     cats.append(line.strip())
 
-            if cats[0] != 'background' and with_background:
-                cats.insert(0, 'background')
-            if cats[0] == 'background' and not with_background:
+            if cats[0] == 'background':
                 cats = cats[1:]
 
             clsid2catid = {i: i for i in range(len(cats))}
@@ -79,25 +68,22 @@ def get_categories(metric_type, anno_file=None, with_background=True):
         # anno file not exist, load default categories of
         # VOC all 20 categories
         else:
-            return _vocall_category(with_background)
+            return _vocall_category()
 
     elif metric_type.lower() == 'oid':
         if anno_file and os.path.isfile(anno_file):
             logger.warn("only default categories support for OID19")
-        return _oid19_category(with_background)
+        return _oid19_category()
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
 
 
-def _coco17_category(with_background=True):
+def _coco17_category():
     """
     Get class id to category id map and category id
     to category name map of COCO2017 dataset
 
-    Args:
-        with_background (bool, default True):
-            whether load background as class 0.
     """
     clsid2catid = {
         1: 1,
@@ -266,30 +252,21 @@ def _coco17_category(with_background=True):
         90: 'toothbrush'
     }
 
-    if not with_background:
-        clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
-        catid2name.pop(0)
-    else:
-        clsid2catid.update({0: 0})
+    clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
+    catid2name.pop(0)
 
     return clsid2catid, catid2name
 
 
-def _vocall_category(with_background=True):
+def _vocall_category():
     """
     Get class id to category id map and category id
     to category name map of mixup voc dataset
 
-    Args:
-        with_background (bool, default True):
-            whether load background as class 0.
     """
-    label_map = pascalvoc_label(with_background)
+    label_map = pascalvoc_label()
     label_map = sorted(label_map.items(), key=lambda x: x[1])
     cats = [l[0] for l in label_map]
-
-    if with_background:
-        cats.insert(0, 'background')
 
     clsid2catid = {i: i for i in range(len(cats))}
     catid2name = {i: name for i, name in enumerate(cats)}
@@ -297,8 +274,8 @@ def _vocall_category(with_background=True):
     return clsid2catid, catid2name
 
 
-def _oid19_category(with_background=True):
-    clsid2catid = {k: k for k in range(1, 501)}
+def _oid19_category():
+    clsid2catid = {k: k + 1 for k in range(500)}
 
     catid2name = {
         0: "background",
@@ -804,6 +781,4 @@ def _oid19_category(with_background=True):
         500: "Toilet",
     }
 
-    if not with_background:
-        clsid2catid = {k - 1: v for k, v in clsid2catid.items()}
     return clsid2catid, catid2name

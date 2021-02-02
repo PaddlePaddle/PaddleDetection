@@ -102,7 +102,7 @@ class DetectionMAP(object):
         self.evaluate_difficult = evaluate_difficult
         self.reset()
 
-    def update(self, bbox, gt_box, gt_label, difficult=None):
+    def update(self, bbox, score, label, gt_box, gt_label, difficult=None):
         """
         Update metric statics from given prediction and ground
         truth infomations.
@@ -117,13 +117,13 @@ class DetectionMAP(object):
 
         # record class score positive
         visited = [False] * len(gt_label)
-        for b in bbox:
-            label, score, xmin, ymin, xmax, ymax = b.tolist()
+        for b, s, l in zip(bbox, score, label):
+            xmin, ymin, xmax, ymax = b.tolist()
             pred = [xmin, ymin, xmax, ymax]
             max_idx = -1
             max_overlap = -1.0
             for i, gl in enumerate(gt_label):
-                if int(gl) == int(label):
+                if int(gl) == int(l):
                     overlap = jaccard_overlap(pred, gt_box[i],
                                               self.is_bbox_normalized)
                     if overlap > max_overlap:
@@ -134,12 +134,12 @@ class DetectionMAP(object):
                 if self.evaluate_difficult or \
                         int(np.array(difficult[max_idx])) == 0:
                     if not visited[max_idx]:
-                        self.class_score_poss[int(label)].append([score, 1.0])
+                        self.class_score_poss[int(l)].append([s, 1.0])
                         visited[max_idx] = True
                     else:
-                        self.class_score_poss[int(label)].append([score, 0.0])
+                        self.class_score_poss[int(l)].append([s, 0.0])
             else:
-                self.class_score_poss[int(label)].append([score, 0.0])
+                self.class_score_poss[int(l)].append([s, 0.0])
 
     def reset(self):
         """

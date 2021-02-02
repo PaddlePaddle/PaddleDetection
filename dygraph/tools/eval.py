@@ -22,7 +22,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore numba warning
+# ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -32,7 +32,7 @@ from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.engine import Trainer
+from ppdet.engine import Trainer, init_parallel_env
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('eval')
@@ -47,16 +47,31 @@ def parse_args():
         help="Evaluation directory, default is current directory.")
 
     parser.add_argument(
-        '--json_eval', action='store_true', default=False, help='')
+        '--json_eval',
+        action='store_true',
+        default=False,
+        help='Whether to re eval with already exists bbox.json or mask.json')
 
     parser.add_argument(
-        '--use_gpu', action='store_true', default=False, help='')
+        "--slim_config",
+        default=None,
+        type=str,
+        help="Configuration file of slim method.")
+
+    # TODO: bias should be unified
+    parser.add_argument(
+        "--bias",
+        action="store_true",
+        help="whether add bias or not while getting w and h")
 
     args = parser.parse_args()
     return args
 
 
 def run(FLAGS, cfg):
+    # init parallel environment if nranks > 1
+    init_parallel_env()
+
     # build trainer 
     trainer = Trainer(cfg, mode='eval')
 
@@ -71,7 +86,12 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    # TODO: bias should be unified
+    cfg['bias'] = 1 if FLAGS.bias else 0
     merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()

@@ -500,7 +500,7 @@ class RandomFlipOp(BaseOperator):
     def apply_segm(self, segms, height, width):
         def _flip_poly(poly, width):
             flipped_poly = np.array(poly)
-            flipped_poly[0::2] = width - np.array(poly[0::2]) - 1
+            flipped_poly[0::2] = width - np.array(poly[0::2])
             return flipped_poly.tolist()
 
         def _flip_rle(rle, height, width):
@@ -526,7 +526,7 @@ class RandomFlipOp(BaseOperator):
         for i in range(gt_keypoint.shape[1]):
             if i % 2 == 0:
                 old_x = gt_keypoint[:, i].copy()
-                gt_keypoint[:, i] = width - old_x - 1
+                gt_keypoint[:, i] = width - old_x
         return gt_keypoint
 
     def apply_image(self, image):
@@ -535,8 +535,8 @@ class RandomFlipOp(BaseOperator):
     def apply_bbox(self, bbox, width):
         oldx1 = bbox[:, 0].copy()
         oldx2 = bbox[:, 2].copy()
-        bbox[:, 0] = width - oldx2 - 1
-        bbox[:, 2] = width - oldx1 - 1
+        bbox[:, 0] = width - oldx2
+        bbox[:, 2] = width - oldx1
         return bbox
 
     def apply(self, sample, context=None):
@@ -601,6 +601,7 @@ class ResizeOp(BaseOperator):
 
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
+
         return cv2.resize(
             image,
             None,
@@ -614,8 +615,8 @@ class ResizeOp(BaseOperator):
         resize_w, resize_h = size
         bbox[:, 0::2] *= im_scale_x
         bbox[:, 1::2] *= im_scale_y
-        bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w - 1)
-        bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h - 1)
+        bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
+        bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
         return bbox
 
     def apply_segm(self, segms, im_size, scale):
