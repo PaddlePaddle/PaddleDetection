@@ -3,7 +3,7 @@ TrainReader:
   sample_transforms:
   - DecodeOp: {}
   - RandomFlipOp: {prob: 0.5}
-  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
+  - ResizeOp: {interp: 1, target_size: [512, 512], keep_ratio: False}
   - NormalizeImageOp: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
   - PermuteOp: {}
   batch_transforms:
@@ -16,7 +16,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
   - DecodeOp: {}
-  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
+  - ResizeOp: {interp: 1, target_size: [512, 512], keep_ratio: False}
   - NormalizeImageOp: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}
   - PermuteOp: {}
   batch_size: 1
@@ -26,7 +26,7 @@ EvalReader:
 TestReader:
   sample_transforms:
   - DecodeOp: {}
-  - ResizeOp: {target_size: [512, 512], keep_ratio: False}
+  - ResizeOp: {interp: 1, target_size: [512, 512], keep_ratio: False}
   - NormalizeImageOp: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}
   - PermuteOp: {}
   batch_size: 1
