@@ -168,26 +168,26 @@ class JDEHead(nn.Layer):
                 assert mask < anchor_num, "anchor mask index overflow"
                 self.mask_anchors[-1].extend(anchors[mask])
 
-    def forward(self, yolo_feats, identify_feats):
+    def forward(self, yolo_feats, identify_feats, targets=None):
         assert len(yolo_feats) == len(identify_feats) == len(self.anchors)
         det_outs = []
         ide_outs = []
-        for yolo_head, ide_head, yolo_feat, ide_feat in zip(
-                self.yolo_outputs, self.identify_outputs, yolo_feats,
-                identify_feats):
+        for yolo_feat, ide_feat, yolo_head, ide_head in zip(
+                yolo_feats, identify_feats, self.yolo_outputs, 
+                self.identify_outputs):
             det_out = yolo_head(yolo_feat)
             ide_out = ide_head(ide_feat)
             det_outs.append(det_out)
             ide_outs.append(ide_out)
-        return det_outs, ide_outs
 
-    def get_loss(self, det_outs, ide_outs, targets):
-        #jde_loss = self.jde_loss(det_outs, ide_outs, targets, self.anchors, self.emb_scale, self.test_emb) # todo jde_loss
-        jde_loss = {}
-        yolo_loss = self.jde_loss(det_outs, targets, self.anchors)
-        return yolo_loss
+        if self.training:
+            return self.jde_loss(det_outs, ide_outs, targets, self.anchors)
+        else:
+            yolo_outs = self.get_det_outs(det_outs)
+            emb_outs = self.get_ide_outs(ide_outs)
+            return yolo_outs, emb_outs
 
-    def get_outputs(self, det_outs, ide_outs):
+    def get_det_outs(self, det_outs):
         if self.iou_aware:
             y = []
             for i, out in enumerate(det_outs):
@@ -210,5 +210,8 @@ class JDEHead(nn.Layer):
                 y.append(y_t)
             return y
         else:
-            # ide_outpus =  # todo
             return det_outs
+
+    def get_ide_outs(self, ide_outs):
+        # p_emb = F.normalize(.repeat(1,self.nA,1,1,1).contiguous(), dim=-1)
+        return ide_outs

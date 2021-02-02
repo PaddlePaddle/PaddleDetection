@@ -46,15 +46,13 @@ class JDE(BaseArch):
     def _forward(self):
         body_feats = self.backbone(self.inputs)
         yolo_feats, identify_feats = self.neck(body_feats)
-        # self.det_outs, self.ide_outs = self.jde_head(yolo_feats, identify_feats)
         det_outs, ide_outs = self.jde_head(yolo_feats, identify_feats)
 
         if self.training:
             return det_outs, ide_outs
         else:
-            jde_head_outs = self.jde_head.get_outputs(det_outs, ide_outs)
             bbox, bbox_num = self.post_process(
-                jde_head_outs, self.jde_head.mask_anchors,
+                det_outs, self.jde_head.mask_anchors,
                 self.inputs['im_shape'], self.inputs['scale_factor'])
             return bbox, bbox_num
 
@@ -65,6 +63,7 @@ class JDE(BaseArch):
 
     def get_pred(self):
         bbox_pred, bbox_num = self._forward()
+        print(bbox_pred)
         label = bbox_pred[:, 0]
         score = bbox_pred[:, 1]
         bbox = bbox_pred[:, 2:]

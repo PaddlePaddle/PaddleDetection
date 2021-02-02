@@ -37,7 +37,7 @@ class JDELoss(nn.Layer):
 
     __inject__ = ['iou_loss', 'iou_aware_loss']
 
-    # __shared__ = ['num_classes']
+    __shared__ = ['num_classes']
 
     def __init__(self,
                  num_classes=1,

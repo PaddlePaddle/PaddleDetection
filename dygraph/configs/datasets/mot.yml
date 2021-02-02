@@ -4,17 +4,17 @@ num_classes: 1
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
-    image_dir: MOT17
-    anno_path: mot17.train
+    # image_dir: MOT17
+    anno_path: ['mot17.train']
     data_fields: ['image', 'gt_bbox', 'gt_class']
 
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
-    image_dir: MOT17
-    anno_path: mot17.train
+    # image_dir: MOT17
+    anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val']
     data_fields: ['image', 'gt_bbox', 'gt_class']
 
 TestDataset:
   !ImageFolder
-    anno_path: mot16.test
+    anno_path: mot16.train # ['caltech.val', 'citypersons.val']
