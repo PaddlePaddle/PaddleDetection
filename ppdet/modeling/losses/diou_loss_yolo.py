@@ -54,7 +54,8 @@ class DiouLossYolo(IouLoss):
                  anchors,
                  downsample_ratio,
                  batch_size,
-                 eps=1.e-10):
+                 eps=1.e-10,
+                 **kwargs):
         '''
         Args:
             x  | y | w | h  ([Variables]): the output of yolov3 for encoded x|y|w|h
