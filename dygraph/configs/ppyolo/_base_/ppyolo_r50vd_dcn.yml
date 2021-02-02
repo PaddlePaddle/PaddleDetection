@@ -1,6 +1,5 @@
 architecture: YOLOv3
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
-weights: output/ppyolo_r50vd_dcn/model_final
 load_static_weights: true
 norm_type: sync_bn
 use_ema: true
@@ -22,7 +21,6 @@ ResNet:
   norm_decay: 0.
 
 PPYOLOFPN:
-  feat_channels: [2048, 1280, 640]
   coord_conv: true
   drop_block: true
   block_size: 3
@@ -56,7 +54,7 @@ IouAwareLoss:
 BBoxPostProcess:
   decode:
     name: YOLOBox
-    conf_thresh: 0.005
+    conf_thresh: 0.01
     downsample_ratio: 32
     clip_bbox: true
     scale_x_y: 1.05

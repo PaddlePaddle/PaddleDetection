@@ -58,15 +58,12 @@ class VOCDataSet(DetDataset):
             sample_num=sample_num)
         self.label_list = label_list
 
-    def parse_dataset(self, with_background=True):
+    def parse_dataset(self, ):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
         # mapping category name to class id
-        # if with_background is True:
-        #   background:0, first_class:1, second_class:2, ...
-        # if with_background is False:
-        #   first_class:0, second_class:1, ...
+        # first_class:0, second_class:1, ...
         records = []
         ct = 0
         cname2cid = {}
@@ -76,12 +73,12 @@ class VOCDataSet(DetDataset):
                 raise ValueError("label_list {} does not exists".format(
                     label_path))
             with open(label_path, 'r') as fr:
-                label_id = int(with_background)
+                label_id = 0
                 for line in fr.readlines():
                     cname2cid[line.strip()] = label_id
                     label_id += 1
         else:
-            cname2cid = pascalvoc_label(with_background)
+            cname2cid = pascalvoc_label()
 
         with open(anno_path, 'r') as fr:
             while True:
@@ -175,29 +172,27 @@ class VOCDataSet(DetDataset):
         return os.path.join(self.dataset_dir, self.label_list)
 
 
-def pascalvoc_label(with_background=True):
+def pascalvoc_label():
     labels_map = {
-        'aeroplane': 1,
-        'bicycle': 2,
-        'bird': 3,
-        'boat': 4,
-        'bottle': 5,
-        'bus': 6,
-        'car': 7,
-        'cat': 8,
-        'chair': 9,
-        'cow': 10,
-        'diningtable': 11,
-        'dog': 12,
-        'horse': 13,
-        'motorbike': 14,
-        'person': 15,
-        'pottedplant': 16,
-        'sheep': 17,
-        'sofa': 18,
-        'train': 19,
-        'tvmonitor': 20
+        'aeroplane': 0,
+        'bicycle': 1,
+        'bird': 2,
+        'boat': 3,
+        'bottle': 4,
+        'bus': 5,
+        'car': 6,
+        'cat': 7,
+        'chair': 8,
+        'cow': 9,
+        'diningtable': 10,
+        'dog': 11,
+        'horse': 12,
+        'motorbike': 13,
+        'person': 14,
+        'pottedplant': 15,
+        'sheep': 16,
+        'sofa': 17,
+        'train': 18,
+        'tvmonitor': 19
     }
-    if not with_background:
-        labels_map = {k: v - 1 for k, v in labels_map.items()}
     return labels_map

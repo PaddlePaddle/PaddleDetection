@@ -35,7 +35,7 @@ class COCODataSet(DetDataset):
         self.load_image_only = False
         self.load_semantic = False
 
-    def parse_dataset(self, with_background=True):
+    def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -44,16 +44,12 @@ class COCODataSet(DetDataset):
         from pycocotools.coco import COCO
         coco = COCO(anno_path)
         img_ids = coco.getImgIds()
+        img_ids.sort()
         cat_ids = coco.getCatIds()
         records = []
         ct = 0
 
-        # when with_background = True, mapping category to classid, like:
-        #   background:0, first_class:1, second_class:2, ...
-        catid2clsid = dict({
-            catid: i + int(with_background)
-            for i, catid in enumerate(cat_ids)
-        })
+        catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
         cname2cid = dict({
             coco.loadCats(catid)[0]['name']: clsid
             for catid, clsid in catid2clsid.items()
@@ -95,13 +91,14 @@ class COCODataSet(DetDataset):
                     else:
                         if not any(np.array(inst['bbox'])):
                             continue
-                    x, y, box_w, box_h = inst['bbox']
-                    x1 = max(0, x)
-                    y1 = max(0, y)
-                    x2 = min(im_w - 1, x1 + max(0, box_w - 1))
-                    y2 = min(im_h - 1, y1 + max(0, box_h - 1))
-                    if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
-                        inst['clean_bbox'] = [x1, y1, x2, y2]
+                    x1, y1, box_w, box_h = inst['bbox']
+                    x2 = x1 + box_w
+                    y2 = y1 + box_h
+                    eps = 1e-5
+                    if inst['area'] > 0 and x2 - x1 > eps and y2 - y1 > eps:
+                        inst['clean_bbox'] = [
+                            round(float(x), 3) for x in [x1, y1, x2, y2]
+                        ]
                         bboxes.append(inst)
                     else:
                         logger.warning(

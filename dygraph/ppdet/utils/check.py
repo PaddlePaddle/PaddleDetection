@@ -90,11 +90,4 @@ def check_config(cfg):
     if 'log_iter' not in cfg:
         cfg.log_iter = 20
 
-    logger.debug("The 'num_classes'(number of classes) you set is {}, " \
-                "and 'with_background' in 'dataset' sets {}.\n" \
-                "So please note the actual number of categories is {}."
-                .format(cfg.num_classes, cfg.with_background,
-                        cfg.num_classes + 1))
-    cfg.num_classes = cfg.num_classes + int(cfg.with_background)
-
     return cfg

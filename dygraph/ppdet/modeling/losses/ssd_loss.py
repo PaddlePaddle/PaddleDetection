@@ -109,13 +109,13 @@ class SSDLoss(nn.Layer):
         neg_mask = (idx_rank < num_neg).astype(conf_loss.dtype)
         return neg_mask
 
-    def forward(self, inputs, targets, anchors):
-        boxes = paddle.concat(inputs['boxes'], axis=1)
-        scores = paddle.concat(inputs['scores'], axis=1)
+    def forward(self, boxes, scores, gt_box, gt_class, anchors):
+        boxes = paddle.concat(boxes, axis=1)
+        scores = paddle.concat(scores, axis=1)
         prior_boxes = paddle.concat(anchors, axis=0)
-        gt_box = targets['gt_bbox']
-        gt_label = targets['gt_class'].unsqueeze(-1)
-        batch_size, num_priors, num_classes = scores.shape
+        gt_label = gt_class.unsqueeze(-1)
+        batch_size, num_priors = scores.shape[:2]
+        num_classes = scores.shape[-1] - 1
 
         def _reshape_to_2d(x):
             return paddle.flatten(x, start_axis=2)
@@ -138,7 +138,8 @@ class SSDLoss(nn.Layer):
 
         # 2. Compute confidence for mining hard examples
         # 2.1. Get the target label based on matched indices
-        target_label, _ = self._label_target_assign(gt_label, matched_indices)
+        target_label, _ = self._label_target_assign(
+            gt_label, matched_indices, mismatch_value=num_classes)
         confidence = _reshape_to_2d(scores)
         # 2.2. Compute confidence loss.
         # Reshape confidence to 2D tensor.
@@ -174,7 +175,10 @@ class SSDLoss(nn.Layer):
             encoded_bbox, matched_indices)
         # 4.3. Assign classification targets
         target_label, target_conf_weight = self._label_target_assign(
-            gt_label, matched_indices, neg_mask=neg_mask)
+            gt_label,
+            matched_indices,
+            neg_mask=neg_mask,
+            mismatch_value=num_classes)
 
         # 5. Compute loss.
         # 5.1 Compute confidence loss.

@@ -5,6 +5,8 @@ from ppdet.core.workspace import register
 from paddle.regularizer import L2Decay
 from paddle import ParamAttr
 
+from ..layers import AnchorGeneratorSSD
+
 
 class SepConvLayer(nn.Layer):
     def __init__(self,
@@ -56,21 +58,25 @@ class SSDHead(nn.Layer):
     __inject__ = ['anchor_generator', 'loss']
 
     def __init__(self,
-                 num_classes=81,
+                 num_classes=80,
                  in_channels=(512, 1024, 512, 256, 256, 256),
-                 anchor_generator='AnchorGeneratorSSD',
+                 anchor_generator=AnchorGeneratorSSD().__dict__,
                  kernel_size=3,
                  padding=1,
                  use_sepconv=False,
                  conv_decay=0.,
                  loss='SSDLoss'):
         super(SSDHead, self).__init__()
-        self.num_classes = num_classes
+        # add background class
+        self.num_classes = num_classes + 1
         self.in_channels = in_channels
         self.anchor_generator = anchor_generator
         self.loss = loss
-        self.num_priors = self.anchor_generator.num_priors
 
+        if isinstance(anchor_generator, dict):
+            self.anchor_generator = AnchorGeneratorSSD(**anchor_generator)
+
+        self.num_priors = self.anchor_generator.num_priors
         self.box_convs = []
         self.score_convs = []
         for i, num_prior in enumerate(self.num_priors):
@@ -101,7 +107,7 @@ class SSDHead(nn.Layer):
                     score_conv_name,
                     nn.Conv2D(
                         in_channels=in_channels[i],
-                        out_channels=num_prior * num_classes,
+                        out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding))
             else:
@@ -109,19 +115,23 @@ class SSDHead(nn.Layer):
                     score_conv_name,
                     SepConvLayer(
                         in_channels=in_channels[i],
-                        out_channels=num_prior * num_classes,
+                        out_channels=num_prior * self.num_classes,
                         kernel_size=kernel_size,
                         padding=padding,
                         conv_decay=conv_decay,
                         name=score_conv_name))
             self.score_convs.append(score_conv)
 
-    def forward(self, feats, image):
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    def forward(self, feats, image, gt_bbox=None, gt_class=None):
         box_preds = []
         cls_scores = []
         prior_boxes = []
-        for feat, box_conv, score_conv in zip(feats, self.box_convs,
-                                              self.score_convs):
+        for i, (feat, box_conv, score_conv
+                ) in enumerate(zip(feats, self.box_convs, self.score_convs)):
             box_pred = box_conv(feat)
             box_pred = paddle.transpose(box_pred, [0, 2, 3, 1])
             box_pred = paddle.reshape(box_pred, [0, -1, 4])
@@ -134,10 +144,11 @@ class SSDHead(nn.Layer):
 
         prior_boxes = self.anchor_generator(feats, image)
 
-        outputs = {}
-        outputs['boxes'] = box_preds
-        outputs['scores'] = cls_scores
-        return outputs, prior_boxes
+        if self.training:
+            return self.get_loss(box_preds, cls_scores, gt_bbox, gt_class,
+                                 prior_boxes)
+        else:
+            return box_preds, cls_scores, prior_boxes
 
-    def get_loss(self, inputs, targets, prior_boxes):
-        return self.loss(inputs, targets, prior_boxes)
+    def get_loss(self, boxes, scores, gt_bbox, gt_class, prior_boxes):
+        return self.loss(boxes, scores, gt_bbox, gt_class, prior_boxes)

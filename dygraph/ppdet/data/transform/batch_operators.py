@@ -319,7 +319,8 @@ class Gt2YoloTarget(BaseOperator):
                             iou = jaccard_overlap(
                                 [0., 0., gw, gh],
                                 [0., 0., an_hw[mask_i, 0], an_hw[mask_i, 1]])
-                            if iou > self.iou_thresh:
+                            if iou > self.iou_thresh and target[idx, 5, gj,
+                                                                gi] == 0.:
                                 # x, y, w, h, scale
                                 target[idx, 0, gj, gi] = gx * grid_w - gi
                                 target[idx, 1, gj, gi] = gy * grid_h - gj
