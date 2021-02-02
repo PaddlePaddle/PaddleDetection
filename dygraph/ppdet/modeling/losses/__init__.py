@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from . import basic_loss
 from . import yolo_loss
 from . import iou_aware_loss
 from . import iou_loss
@@ -20,6 +21,7 @@ from . import fcos_loss
 from . import solov2_loss
 from . import ctfocal_loss
 
+from .basic_loss import *
 from .yolo_loss import *
 from .iou_aware_loss import *
 from .iou_loss import *

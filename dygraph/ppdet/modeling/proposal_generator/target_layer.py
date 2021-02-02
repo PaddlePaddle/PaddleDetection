@@ -16,7 +16,7 @@ import paddle
 
 from ppdet.core.workspace import register, serializable
 
-from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
+from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target
 
 
 @register
@@ -84,6 +84,50 @@ class BBoxAssigner(object):
         # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
         # new_rois_num, sampled_max_overlaps
         outs = generate_proposal_target(
+            rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
+            self.fg_fraction, self.fg_thresh[stage], self.bg_thresh[stage],
+            self.num_classes, self.use_random, is_cascade, max_overlap)
+        rois = outs[0]
+        rois_num = outs[-2]
+        max_overlaps = outs[-1]
+        # tgt_labels, tgt_bboxes, tgt_gt_inds
+        targets = outs[1:4]
+        return rois, rois_num, max_overlaps, targets
+
+
+@register
+class LibraBBoxAssigner(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 batch_size_per_im=512,
+                 fg_fraction=.25,
+                 fg_thresh=[.5, ],
+                 bg_thresh=[.5, ],
+                 use_random=True,
+                 is_cls_agnostic=False,
+                 num_classes=80):
+        super(LibraBBoxAssigner, self).__init__()
+        self.batch_size_per_im = batch_size_per_im
+        self.fg_fraction = fg_fraction
+        self.fg_thresh = fg_thresh
+        self.bg_thresh = bg_thresh
+        self.use_random = use_random
+        self.is_cls_agnostic = is_cls_agnostic
+        self.num_classes = num_classes
+
+    def __call__(self,
+                 rpn_rois,
+                 rpn_rois_num,
+                 inputs,
+                 stage=0,
+                 max_overlap=None):
+        is_cascade = True if stage > 0 else False
+        gt_classes = inputs['gt_class']
+        gt_boxes = inputs['gt_bbox']
+        # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
+        # new_rois_num, sampled_max_overlaps
+        outs = libra_generate_proposal_target(
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh[stage], self.bg_thresh[stage],
             self.num_classes, self.use_random, is_cascade, max_overlap)

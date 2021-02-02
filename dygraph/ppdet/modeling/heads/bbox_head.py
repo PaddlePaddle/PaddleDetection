@@ -69,7 +69,7 @@ class TwoFCHead(nn.Layer):
 @register
 class BBoxHead(nn.Layer):
     __shared__ = ['num_classes']
-    __inject__ = ['bbox_assigner']
+    __inject__ = ['bbox_assigner', 'bbox_loss']
     """
     head (nn.Layer): Extract feature in bbox head
     in_channel (int): Input channel after RoI extractor
@@ -80,6 +80,7 @@ class BBoxHead(nn.Layer):
                  in_channel,
                  roi_extractor=RoIAlign().__dict__,
                  bbox_assigner='BboxAssigner',
+                 bbox_loss='L1Loss',
                  with_pool=False,
                  num_classes=80,
                  bbox_weight=[10., 10., 5., 5.]):
@@ -89,6 +90,7 @@ class BBoxHead(nn.Layer):
         if isinstance(roi_extractor, dict):
             self.roi_extractor = RoIAlign(**roi_extractor)
         self.bbox_assigner = bbox_assigner
+        self.bbox_loss = bbox_loss
 
         self.with_pool = with_pool
         self.num_classes = num_classes
@@ -202,8 +204,8 @@ class BBoxHead(nn.Layer):
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
-        loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
-        ) / tgt_labels.shape[0]
+        loss_bbox_reg = self.bbox_loss(reg_delta, reg_target)
+        loss_bbox_reg = loss_bbox_reg.sum() / tgt_labels.shape[0]
 
         cls_name = 'loss_bbox_cls'
         reg_name = 'loss_bbox_reg'
