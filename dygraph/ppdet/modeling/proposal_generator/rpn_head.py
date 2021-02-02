@@ -107,9 +107,7 @@ class RPNHead(nn.Layer):
             deltas.append(rrd)
 
         anchors = self.anchor_generator(rpn_feats)
-
         rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs)
-
         if self.training:
             loss = self.get_loss(scores, deltas, anchors, inputs)
             return rois, rois_num, loss
@@ -139,6 +137,8 @@ class RPNHead(nn.Layer):
                     anchors=anchor,
                     im_shape=im_shape[i:i + 1])
                 if rpn_rois.shape[0] > 0:
+                    #print('rpn_rois: ', rpn_rois)
+                    #print('rpn_rois_prob: ', rpn_rois_prob)
                     rpn_rois_list[i].append(rpn_rois)
                     rpn_prob_list[i].append(rpn_rois_prob)
                     rpn_rois_num_list[i].append(rpn_rois_num)
@@ -163,6 +163,8 @@ class RPNHead(nn.Layer):
             rois_collect.append(topk_rois)
             rois_num_collect.append(paddle.shape(topk_rois)[0])
         rois_num_collect = paddle.concat(rois_num_collect)
+
+        print('rois generate proposals: ', rois_collect[0].abs().mean())
         return rois_collect, rois_num_collect
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):

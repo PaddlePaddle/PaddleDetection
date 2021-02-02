@@ -1,3 +1,17 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -5,6 +19,10 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox
 from . import ops
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 
 @register
@@ -51,6 +69,7 @@ class BBoxPostProcess(object):
                                bboxes are corresponding to the original image.
         """
         if bboxes.shape[0] == 0:
+            self.origin_shape_list = paddle.to_tensor([[0.0, 0.0]])
             return paddle.to_tensor([[0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
@@ -131,6 +150,9 @@ class MaskPostProcess(object):
         # TODO: support bs > 1
         pred_result = paddle.zeros(
             [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='bool')
+        if bboxes.sum() == 0:
+            return pred_result
+
         # TODO: optimize chunk paste
         for i in range(bboxes.shape[0]):
             im_h, im_w = origin_shape[i]

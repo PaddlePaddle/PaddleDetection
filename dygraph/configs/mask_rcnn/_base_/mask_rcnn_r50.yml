@@ -29,7 +29,7 @@ RPNHead:
     fg_fraction: 0.5
     negative_overlap: 0.3
     positive_overlap: 0.7
-    use_random: True
+    use_random: False #True
   train_proposal:
     min_size: 0.0
     nms_thresh: 0.7
@@ -57,7 +57,7 @@ BBoxAssigner:
   bg_thresh: [0.5,]
   fg_thresh: [0.5,]
   fg_fraction: 0.25
-  use_random: True
+  use_random: False #True
 
 
 BBoxPostProcess:

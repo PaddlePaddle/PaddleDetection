@@ -30,7 +30,7 @@ from ppdet.core.workspace import register, serializable
 from ppdet.modeling.bbox_utils import delta2bbox
 from . import ops
 
-from paddle.vision.ops import DeformConv2D
+#from paddle.vision.ops import DeformConv2D
 
 
 def _to_list(l):
@@ -291,14 +291,18 @@ class AnchorGeneratorSSD(object):
 @register
 @serializable
 class RCNNBox(object):
+    __shared__ = ['num_classes']
+
     def __init__(self,
                  prior_box_var=[10., 10., 5., 5.],
                  code_type="decode_center_size",
-                 box_normalized=False):
+                 box_normalized=False,
+                 num_classes=80):
         super(RCNNBox, self).__init__()
         self.prior_box_var = prior_box_var
         self.code_type = code_type
         self.box_normalized = box_normalized
+        self.num_classes = num_classes
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred, cls_prob = bbox_head_out
@@ -323,6 +327,8 @@ class RCNNBox(object):
 
         bbox_num_class = bbox.shape[1] // 4
         bbox = paddle.reshape(bbox, [-1, bbox_num_class, 4])
+        if bbox_num_class == 1:
+            bbox = paddle.tile(bbox, [1, self.num_classes, 1])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)

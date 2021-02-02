@@ -78,6 +78,14 @@ class MaskRCNN(BaseArch):
         }
 
     def _forward(self):
+        #import pickle
+        #im = pickle.load(open('image.npy', 'rb'))
+        #gt_bbox = pickle.load(open('gt_boxes.npy', 'rb'))
+        #gt_segms = pickle.load(open('gt_segms.npy', 'rb'))
+        #self.inputs['image'] = paddle.to_tensor(im)
+        #self.inputs['gt_poly'] = paddle.to_tensor(gt_segms)
+        #self.inputs['gt_bbox'] = paddle.to_tensor(gt_bbox).unsqueeze(0)
+        print('gt_poly: ', self.inputs['gt_poly'])
         body_feats = self.backbone(self.inputs)
         if self.neck is not None:
             body_feats = self.neck(body_feats)
@@ -120,6 +128,7 @@ class MaskRCNN(BaseArch):
         loss.update(mask_loss)
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
+        asdfasdf
         return loss
 
     def get_pred(self):

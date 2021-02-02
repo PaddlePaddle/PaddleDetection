@@ -33,19 +33,16 @@ class TwoFCHead(nn.Layer):
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
         fan = in_dim * resolution * resolution
-        lr_factor = 1.
         self.fc6 = nn.Linear(
             in_dim * resolution * resolution,
             mlp_dim,
             weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
                 initializer=XavierUniform(fan_out=fan)))
 
         self.fc7 = nn.Linear(
             mlp_dim,
             mlp_dim,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=XavierUniform()))
+            weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -94,21 +91,17 @@ class BBoxHead(nn.Layer):
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
 
-        lr_factor = 1.
         self.bbox_score = nn.Linear(
             in_channel,
             self.num_classes + 1,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=Normal(
-                    mean=0.0, std=0.01)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.01)))
 
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
-                initializer=Normal(
-                    mean=0.0, std=0.001)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.001)))
         self.assigned_label = None
         self.assigned_rois = None
 
@@ -128,20 +121,18 @@ class BBoxHead(nn.Layer):
 
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
         """
-        body_feats (list[Tensor]):
-        rois (Tensor):
-        rois_num (Tensor):
-        inputs (dict{Tensor}):
+        body_feats (list[Tensor]): Feature maps from backbone
+        rois (Tensor): RoIs generated from RPN module
+        rois_num (Tensor): The number of RoIs in each image
+        inputs (dict{Tensor}): The ground-truth of image
         """
         if self.training:
-            rois, rois_num, _, targets = self.bbox_assigner(rois, rois_num,
-                                                            inputs)
+            rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             self.assigned_rois = (rois, rois_num)
             self.assigned_targets = targets
 
         rois_feat = self.roi_extractor(body_feats, rois, rois_num)
         bbox_feat = self.head(rois_feat)
-        #if self.with_pool:
         if len(bbox_feat.shape) > 2 and bbox_feat.shape[-1] > 1:
             feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             feat = paddle.squeeze(feat, axis=[2, 3])

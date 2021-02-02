@@ -43,7 +43,8 @@ class ProposalGenerator(object):
     def __call__(self, scores, bbox_deltas, anchors, im_shape):
 
         top_n = self.pre_nms_top_n if self.topk_after_collect else self.post_nms_top_n
-        variances = paddle.ones_like(anchors)
+        #variances = paddle.ones_like(anchors)
+        variances = paddle.zeros([1], dtype='float32')
         rpn_rois, rpn_rois_prob, rpn_rois_num = ops.generate_proposals(
             scores,
             bbox_deltas,
