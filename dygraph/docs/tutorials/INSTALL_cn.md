@@ -76,4 +76,4 @@ python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=
 
 结果如下图：
 
-![](../images/000000014439.jpg)
+![demo image](../images/000000014439.jpg)
