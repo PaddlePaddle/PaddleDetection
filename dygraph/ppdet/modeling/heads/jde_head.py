@@ -173,7 +173,7 @@ class JDEHead(nn.Layer):
         det_outs = []
         ide_outs = []
         for yolo_feat, ide_feat, yolo_head, ide_head in zip(
-                yolo_feats, identify_feats, self.yolo_outputs, 
+                yolo_feats, identify_feats, self.yolo_outputs,
                 self.identify_outputs):
             det_out = yolo_head(yolo_feat)
             ide_out = ide_head(ide_feat)
@@ -181,7 +181,10 @@ class JDEHead(nn.Layer):
             ide_outs.append(ide_out)
 
         if self.training:
-            return self.jde_loss(det_outs, ide_outs, targets, self.anchors)
+            return self.jde_loss(det_outs, ide_outs, targets, self.anchors,
+                                 self.emb_scale, self.classifier, self.test_emb,
+                                 self.loss_params_cls, self.loss_params_reg,
+                                 self.loss_params_ide)
         else:
             yolo_outs = self.get_det_outs(det_outs)
             emb_outs = self.get_ide_outs(ide_outs)

@@ -36,7 +36,6 @@ def bbox_transform(pbox, anchor, downsample):
 class JDELoss(nn.Layer):
 
     __inject__ = ['iou_loss', 'iou_aware_loss']
-
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -107,8 +106,8 @@ class JDELoss(nn.Layer):
                     gt_box,
                     anchor,
                     downsample,
-                    loss_p_cls,
-                    loss_p_reg,
+                    loss_param_cls,
+                    loss_param_reg,
                     scale=1.,
                     eps=1e-10):
         na = len(anchor)
@@ -149,7 +148,7 @@ class JDELoss(nn.Layer):
         loss_wh = tscale_obj * (loss_w + loss_h)
         loss_wh = loss_wh.sum([1, 2, 3, 4]).mean()
 
-        loss['loss_loc'] = loss_p_reg(loss_xy + loss_wh)
+        loss['loss_bbox'] = loss_param_reg(loss_xy + loss_wh)
 
         if self.iou_loss is not None:
             # warn: do not modify x, y, w, h in place
@@ -177,11 +176,11 @@ class JDELoss(nn.Layer):
         '''
         loss_cls = self.cls_loss(pcls, tcls) * tobj
         loss_cls = loss_cls.sum([1, 2, 3, 4]).mean()
-        loss['loss_cls'] = loss_p_cls(loss_cls)
+        loss['loss_cls'] = loss_param_cls(loss_cls)
         return loss
 
     '''
-    def ide_loss(self, pred_ide, gt_target, gt_ide, mask):
+    def ide_loss(self, pred_ide, gt_target, gt_ide, emb_scale, classifier):
         mask = tconf > 0
         emb_mask,_ = mask.max(1)
             
@@ -197,7 +196,8 @@ class JDELoss(nn.Layer):
     '''
 
     def forward(self, det_outs, ide_outs, targets, anchors, emb_scale,
-                test_emb):
+                classifier, test_emb, loss_param_cls, loss_param_reg,
+                loss_param_ide):
         assert len(det_outs) == len(ide_outs) == len(anchors)
         np = len(det_outs)
         gt_targets = [targets['target{}'.format(i)] for i in range(np)]
@@ -205,18 +205,19 @@ class JDELoss(nn.Layer):
         jde_losses = dict()
 
         gt_ide = targets['gt_ide']
-        for p_box, p_ide, gt_target, anchor, downsample in zip(
-                det_outs, ide_outs, gt_targets, anchors, self.downsample):
-            yolo_loss = self.yolov3_loss(p_box, gt_target, gt_box, anchor,
-                                         downsample, self.scale_x_y)
+        for p_box, p_ide, gt_target, anchor, ds, lpc, lpr, lpi in zip(
+                det_outs, ide_outs, gt_targets, anchors, self.downsample,
+                loss_param_cls, loss_param_reg, loss_param_ide):
+            yolo_loss = self.yolov3_loss(p_box, gt_target, gt_box, anchor, ds,
+                                         lpc, lpr, self.scale_x_y)
             for k, v in yolo_loss.items():
                 if k in jde_losses:
                     jde_losses[k] += v
                 else:
                     jde_losses[k] = v
             '''
-            mask = targets['gt_ide'] > 0
-            ide_loss = self.ide_loss(p_ide, gt_target, gt_ide, classifier)
+            mask = gt_ide > 0
+            ide_loss = self.ide_loss(p_ide, gt_target, gt_ide, emb_scale, classifier, test_emb)
             for k, v in ide_loss.items():
                 if k in jde_losses:
                     jde_losses[k] += v

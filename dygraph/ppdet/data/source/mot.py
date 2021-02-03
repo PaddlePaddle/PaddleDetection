@@ -20,6 +20,7 @@ from .dataset import DetDataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
+import cv2
 
 
 @register
@@ -49,21 +50,28 @@ class MOTDataSet(DetDataset):
             anno_path=anno_path,
             data_fields=data_fields,
             sample_num=sample_num)
+        self.anno_path = anno_path
         self.label_list = label_list
 
-        self.num_data = len(anno_path)
         self.img_files = OrderedDict()
         self.label_files = OrderedDict()
         self.tid_num = OrderedDict()
         self.tid_start_index = OrderedDict()
-        for ds in range(self.num_data):
-            with open(os.path.join(dataset_dir, anno_path[ds]), 'r') as file:
+        for ds in self.anno_path:
+            with open(os.path.join(dataset_dir, ds), 'r') as file:
                 self.img_files[ds] = file.readlines()
-                self.img_files[ds] = [os.path.join(dataset_dir, x.strip()) for x in self.img_files[ds]]
-                self.img_files[ds] = list(filter(lambda x: len(x) > 0, self.img_files[ds]))
+                self.img_files[ds] = [
+                    os.path.join(dataset_dir, x.strip())
+                    for x in self.img_files[ds]
+                ]
+                self.img_files[ds] = list(
+                    filter(lambda x: len(x) > 0, self.img_files[ds]))
 
-            self.label_files[ds] = [x.replace('images', 'labels_with_ids').replace('.png', '.txt').replace('.jpg', '.txt')
-                                for x in self.img_files[ds]]
+            self.label_files[ds] = [
+                x.replace('images', 'labels_with_ids').replace(
+                    '.png', '.txt').replace('.jpg', '.txt')
+                for x in self.img_files[ds]
+            ]
 
         for ds, label_paths in self.label_files.items():
             max_index = -1
@@ -74,29 +82,33 @@ class MOTDataSet(DetDataset):
                 if len(lb.shape) < 2:
                     img_max = lb[1]
                 else:
-                    img_max = np.max(lb[:,1])
-                if img_max >max_index:
-                    max_index = img_max 
+                    img_max = np.max(lb[:, 1])
+                if img_max > max_index:
+                    max_index = img_max
             self.tid_num[ds] = int(max_index + 1)
 
         last_index = 0
         for i, (k, v) in enumerate(self.tid_num.items()):
             self.tid_start_index[k] = last_index
             last_index += v
-        
-        self.nID = int(last_index+1) # 13262
-        self.nds = [len(x) for x in self.img_files.values()] # [10000, 2000, 2000]
-        self.cds = [sum(self.nds[:i]) for i in range(len(self.nds))] # [0, 10000, 12000]
-        self.nF = sum(self.nds) # 14000
 
-        logger.info('='*80)
+        self.nID = int(last_index + 1)
+        self.nds = [len(x) for x in self.img_files.values()]
+        self.cds = [sum(self.nds[:i]) for i in range(len(self.nds))]
+        self.nF = sum(self.nds)
+
+        logger.info('=' * 80)
         logger.info('MOT dataset summary: ')
         logger.info(self.tid_num)
-        # OrderedDict([('caltech', 393.0), ('cuhksysu', 11934.0), ('prw', 934.0)])
-        logger.info('total identities: {}',.format(self.nID))
-        logger.info('start index: {}'.format(self.tid_start_index)) 
-        # OrderedDict([('caltech', 0), ('cuhksysu', 393.0), ('prw', 12327.0)])
-        logger.info('='*80)
+        logger.info('total identities: {}'.format(self.nID))
+        logger.info('start index: {}'.format(self.tid_start_index))
+        logger.info('=' * 80)
+
+    def get_anno(self):
+        if self.anno_path == []:
+            return
+        # only used to get categories and metric
+        return os.path.join(self.dataset_dir, self.anno_path[0])
 
     def parse_dataset(self):
         # mapping category name to class id
@@ -117,7 +129,7 @@ class MOTDataSet(DetDataset):
 
         for files_index in range(self.nF):
             for i, c in enumerate(self.cds):
-                if files_index >= c: 
+                if files_index >= c:
                     ds = list(self.label_files.keys())[i]
                     start_index = c
             img_file = self.img_files[ds][files_index - start_index]
@@ -132,45 +144,49 @@ class MOTDataSet(DetDataset):
                             format(lbl_file))
                 continue
 
+            im = cv2.imread(img_file)
+            im_h, im_w = im.shape[0], im.shape[1]
+
             # Load labels, xywh to x1y1x2y2 format. Coordinates are normalized.
             labels0 = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)
-            x1 = labels0[:, 2] - labels0[:, 4] / 2
-            y1 = labels0[:, 3] - labels0[:, 5] / 2
-            x2 = labels0[:, 2] + labels0[:, 4] / 2
-            y2 = labels0[:, 3] + labels0[:, 5] / 2
+            x1 = (labels0[:, 2] - labels0[:, 4] / 2) * im_w
+            y1 = (labels0[:, 3] - labels0[:, 5] / 2) * im_h
+            x2 = (labels0[:, 2] + labels0[:, 4] / 2) * im_w
+            y2 = (labels0[:, 3] + labels0[:, 5] / 2) * im_h
+            gt_bbox = np.stack((x1, y1, x2, y2)).T.astype('float32')
 
-            gt_norm_bbox = np.concatenate((x1, y1, x2, y2)).T
-            gt_norm_bbox = np.array(gt_norm_bbox).astype('float32')
-
-            gt_class = (labels0[:, 0]).reshape(-1, 1).astype('int32')
+            gt_class = labels0[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels0), 1)).astype('float32')
             difficult = np.zeros((len(labels0), 1)).astype('int32')
-            gt_ide = np.array(labels0[:, 1]).astype('int32')
+            gt_ide = labels0[:, 1:2].astype('int32')
 
             mot_rec = {
                 'im_file': img_file,
                 'im_id': files_index,
+                'h': im_h,
+                'w': im_w,
             } if 'image' in self.data_fields else {}
 
             gt_rec = {
                 'gt_class': gt_class,
                 'gt_score': gt_score,
-                'gt_bbox': gt_norm_bbox,
+                'gt_bbox': gt_bbox,
                 'difficult': difficult,
+                'gt_ide': gt_ide,
             }
-            #     'gt_ide': gt_ide,
-            #}
+
             for k, v in gt_rec.items():
                 if k in self.data_fields:
                     mot_rec[k] = v
 
             records.append(mot_rec)
-            if self.sample_num > 0 and ct >= self.sample_num:
+            if self.sample_num > 0 and files_index >= self.sample_num:
                 break
         assert len(records) > 0, 'not found any mot record in %s' % (
             self.anno_path)
-        logger.debug('{} samples in file {}'.format(self.nF, self.anno_path))
+        logger.info('{} samples in file {}'.format(self.nF, self.anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
+
 
 def mot_label():
     labels_map = {'person': 0}

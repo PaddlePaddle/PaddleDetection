@@ -4,14 +4,13 @@ TrainReader:
     num_max_boxes: 50
   sample_transforms:
     - DecodeOp: {}
-    - ResizeOp: {target_size: [864, 480], keep_ratio: False, interp: 2}
-    #- MixupOp: {alpha: 1.5, beta: 1.5}
-    #- RandomDistortOp: {}
-    #- RandomExpandOp: {fill_value: [123.675, 116.28, 103.53]}
-    #- RandomCropOp: {}
-    #- RandomFlipOp: {}
+    - MixupOp: {alpha: 1.5, beta: 1.5}
+    - RandomDistortOp: {}
+    - RandomExpandOp: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCropOp: {}
+    - RandomFlipOp: {}
   batch_transforms:
-    #- BatchRandomResizeOp: {target_size: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608], random_size: True, random_interp: True, keep_ratio: False}
+    - BatchRandomResizeOp: {target_size: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608], random_size: True, random_interp: True, keep_ratio: False}
     - NormalizeBoxOp: {}
     - PadBoxOp: {num_max_boxes: 50}
     - BboxXYXY2XYWHOp: {}

@@ -1,19 +1,20 @@
-metric: COCO
+metric: VOC
+map_type: integral
 num_classes: 1
 
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
-    # image_dir: MOT17
+    #anno_path: ['mot17.train', 'caltech.train', 'citypersons.train', 'cuhksysu.train', 'prw.train', 'eth.train']
     anno_path: ['mot17.train']
-    data_fields: ['image', 'gt_bbox', 'gt_class']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
 
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
-    # image_dir: MOT17
-    anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val']
-    data_fields: ['image', 'gt_bbox', 'gt_class']
+    #anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val']
+    anno_path: ['cuhksysu.val']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
 
 TestDataset:
   !ImageFolder
