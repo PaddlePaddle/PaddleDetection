@@ -38,9 +38,6 @@ def bbox2delta(src_boxes, tgt_boxes, weights):
 
 
 def delta2bbox(deltas, boxes, weights):
-    print('deltas: ', deltas.shape)
-    print('boxes: ', boxes.shape)
-    print('weights: ', weights)
     clip_scale = math.log(1000.0 / 16)
     if boxes.shape[0] == 0:
         return paddle.zeros((0, deltas.shape[1]), dtype='float32')
@@ -92,7 +89,6 @@ def expand_bbox(bboxes, scale):
 
 
 def clip_bbox(boxes, im_shape):
-    im_shape = im_shape.cast('int32')
     h, w = im_shape
     x1 = boxes[:, 0].clip(0, w)
     y1 = boxes[:, 1].clip(0, h)

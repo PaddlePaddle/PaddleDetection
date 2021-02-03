@@ -72,29 +72,6 @@ class CascadeRCNN(BaseArch):
         }
 
     def _forward(self):
-        import pickle
-        import numpy as np
-        im = pickle.load(open('image.npy', 'rb'))
-        _, im_c, im_h, im_w = im.shape[:]
-        im_c = int(im_c)
-        im_h = int(im_h)
-        im_w = int(im_w)
-
-        print('im_h: ', im_h, 'im_w: ', im_w)
-        padding_im = np.zeros(
-            (1, im_c, int(np.ceil(im_h / 32) * 32), int(
-                np.ceil(im_w / 32) * 32)),
-            dtype=np.float32)
-        padding_im[:, :, :im_h, :im_w] = im
-        im = padding_im
-        gt_bbox = pickle.load(open('gt_boxes.npy', 'rb'))
-        gt_segms = pickle.load(open('gt_segms.npy', 'rb'))
-        self.inputs['image'] = paddle.to_tensor(im)
-        self.inputs['gt_poly'] = paddle.to_tensor(gt_segms)
-        self.inputs['gt_bbox'] = paddle.to_tensor(gt_bbox).unsqueeze(0)
-        self.inputs['im_shape'] = paddle.to_tensor(
-            [[800, 1202]], dtype='float32')
-
         body_feats = self.backbone(self.inputs)
         if self.neck is not None:
             body_feats = self.neck(body_feats)
@@ -122,23 +99,25 @@ class CascadeRCNN(BaseArch):
 
             bbox, bbox_num = self.bbox_post_process(
                 preds, (refined_rois, rois_num), im_shape, scale_factor)
-            mask_out = self.mask_head(
-                body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
-
             # rescale the prediction back to origin image
             bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
                                                         im_shape, scale_factor)
+            if not self.with_mask:
+                return bbox_pred, bbox_num, None
+            mask_out = self.mask_head(
+                body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
             origin_shape = self.bbox_post_process.get_origin_shape()
             mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
                                                bbox_num, origin_shape)
             return bbox_pred, bbox_num, mask_pred
 
     def get_loss(self, ):
-        bbox_loss, mask_loss, rpn_loss = self._forward()
+        rpn_loss, bbox_loss, mask_loss = self._forward()
         loss = {}
         loss.update(rpn_loss)
         loss.update(bbox_loss)
-        loss.update(mask_loss)
+        if self.with_mask:
+            loss.update(mask_loss)
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
@@ -153,6 +132,7 @@ class CascadeRCNN(BaseArch):
             'score': score,
             'bbox': bbox,
             'bbox_num': bbox_num,
-            'mask': mask_pred,
         }
+        if self.with_mask:
+            output.update({'mask': mask_pred})
         return output

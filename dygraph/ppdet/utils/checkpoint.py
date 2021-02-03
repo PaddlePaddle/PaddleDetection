@@ -130,10 +130,6 @@ def load_pretrain_weight(model,
                          load_static_weights=False,
                          weight_type='pretrain'):
 
-    w = paddle.load('detectron2paddle_cascade_mask_init.pdparams')
-    model.set_dict(w)
-    return
-
     assert weight_type in ['pretrain', 'finetune']
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path_dist(pretrain_weight)

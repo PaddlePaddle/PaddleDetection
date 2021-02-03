@@ -21,6 +21,7 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
 
+from .bbox_head import BBoxHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta, delta2bbox, clip_bbox, nonempty_bbox
@@ -82,7 +83,7 @@ class CascadeTwoFCHead(nn.Layer):
 
 
 @register
-class CascadeHead(nn.Layer):
+class CascadeHead(BBoxHead):
     __shared__ = ['num_classes', 'num_cascade_stages']
     __inject__ = ['bbox_assigner']
     """
@@ -99,7 +100,7 @@ class CascadeHead(nn.Layer):
                  bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
                               [30.0, 30.0, 15.0, 15.0]],
                  num_cascade_stages=3):
-        super(CascadeHead, self).__init__()
+        nn.Layer.__init__(self, )
         self.head = head
         self.roi_extractor = roi_extractor
         if isinstance(roi_extractor, dict):
@@ -134,20 +135,6 @@ class CascadeHead(nn.Layer):
             self.bbox_delta_list.append(bbox_delta)
         self.assigned_label = None
         self.assigned_rois = None
-
-    @classmethod
-    def from_config(cls, cfg, input_shape):
-        roi_pooler = cfg['roi_extractor']
-        assert isinstance(roi_pooler, dict)
-        kwargs = RoIAlign.from_config(cfg, input_shape)
-        roi_pooler.update(kwargs)
-        kwargs = {'input_shape': input_shape}
-        head = create(cfg['head'], **kwargs)
-        return {
-            'roi_extractor': roi_pooler,
-            'head': head,
-            'in_channel': head.out_shape[0].channels
-        }
 
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
         """
@@ -188,7 +175,7 @@ class CascadeHead(nn.Layer):
                 loss_stage = self.get_loss(scores, deltas, targets, rois,
                                            self.bbox_weight[stage])
                 loss.update({
-                    k + "_stage{}".format(stage): v
+                    k + "_stage{}".format(stage): v / self.num_cascade_stages
                     for k, v in loss_stage.items()
                 })
             return loss, bbox_feat
@@ -215,46 +202,6 @@ class CascadeHead(nn.Layer):
         num_prop = [p.shape[0] for p in proposals]
         return pred_bbox.split(num_prop)
 
-    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
-        """
-        scores (Tensor): scores from bbox head outputs
-        deltas (Tensor): deltas from bbox head outputs
-        targets (list[List[Tensor]]): bbox targets containing tgt_labels, tgt_bboxes and tgt_gt_inds
-        rois (List[Tensor]): RoIs generated in each batch
-        """
-        # TODO: better pass args
-        tgt_labels, tgt_bboxes, tgt_gt_inds = targets
-        tgt_labels = paddle.concat(tgt_labels) if len(
-            tgt_labels) > 1 else tgt_labels[0]
-        tgt_labels = tgt_labels.cast('int64')
-        tgt_labels.stop_gradient = True
-        loss_bbox_cls = F.cross_entropy(
-            input=scores, label=tgt_labels, reduction='mean')
-
-        fg_inds = paddle.nonzero(
-            paddle.logical_and(tgt_labels >= 0, tgt_labels <
-                               self.num_classes)).flatten()
-
-        reg_delta = paddle.gather(deltas, fg_inds)
-        rois = paddle.concat(rois) if len(rois) > 1 else rois[0]
-        tgt_bboxes = paddle.concat(tgt_bboxes) if len(
-            tgt_bboxes) > 1 else tgt_bboxes[0]
-
-        reg_target = bbox2delta(rois, tgt_bboxes, bbox_weight)
-        reg_target = paddle.gather(reg_target, fg_inds)
-        reg_target.stop_gradient = True
-
-        loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
-        ) / tgt_labels.shape[0]
-
-        cls_name = 'loss_bbox_cls'
-        reg_name = 'loss_bbox_reg'
-        loss_bbox = {}
-        loss_bbox[cls_name] = loss_bbox_cls / self.num_cascade_stages
-        loss_bbox[reg_name] = loss_bbox_reg / self.num_cascade_stages
-
-        return loss_bbox
-
     def get_prediction(self, head_out_list):
         """
         head_out_list(List[Tensor]): scores, deltas, rois
@@ -265,15 +212,6 @@ class CascadeHead(nn.Layer):
         # Get deltas and rois from the last stage
         _, deltas, rois = head_out_list[-1]
         return scores, deltas, rois
-
-    def get_head(self, ):
-        return self.head
-
-    def get_assigned_targets(self, ):
-        return self.assigned_targets
-
-    def get_assigned_rois(self, ):
-        return self.assigned_rois
 
     def get_refined_rois(self, ):
         return self.refined_rois

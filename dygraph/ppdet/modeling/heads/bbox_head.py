@@ -142,13 +142,14 @@ class BBoxHead(nn.Layer):
         deltas = self.bbox_delta(feat)
 
         if self.training:
-            loss = self.get_loss(scores, deltas, targets, rois)
+            loss = self.get_loss(scores, deltas, targets, rois,
+                                 self.bbox_weight)
             return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
-    def get_loss(self, scores, deltas, targets, rois):
+    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
         """
         scores (Tensor): scores from bbox head outputs
         deltas (Tensor): deltas from bbox head outputs
@@ -171,6 +172,14 @@ class BBoxHead(nn.Layer):
             paddle.logical_and(tgt_labels >= 0, tgt_labels <
                                self.num_classes)).flatten()
 
+        cls_name = 'loss_bbox_cls'
+        reg_name = 'loss_bbox_reg'
+        loss_bbox = {}
+
+        if fg_inds.numel() == 0:
+            loss_bbox[cls_name] = paddle.to_tensor(0., dtype='float32')
+            loss_bbox[reg_name] = paddle.to_tensor(0., dtype='float32')
+            return loss_bbox
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
         else:
@@ -190,16 +199,13 @@ class BBoxHead(nn.Layer):
         tgt_bboxes = paddle.concat(tgt_bboxes) if len(
             tgt_bboxes) > 1 else tgt_bboxes[0]
 
-        reg_target = bbox2delta(rois, tgt_bboxes, self.bbox_weight)
+        reg_target = bbox2delta(rois, tgt_bboxes, bbox_weight)
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
         loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
         ) / tgt_labels.shape[0]
 
-        cls_name = 'loss_bbox_cls'
-        reg_name = 'loss_bbox_reg'
-        loss_bbox = {}
         loss_bbox[cls_name] = loss_bbox_cls
         loss_bbox[reg_name] = loss_bbox_reg
 

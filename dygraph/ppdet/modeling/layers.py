@@ -30,7 +30,7 @@ from ppdet.core.workspace import register, serializable
 from ppdet.modeling.bbox_utils import delta2bbox
 from . import ops
 
-#from paddle.vision.ops import DeformConv2D
+from paddle.vision.ops import DeformConv2D
 
 
 def _to_list(l):
