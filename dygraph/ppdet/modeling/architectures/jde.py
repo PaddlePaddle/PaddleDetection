@@ -17,12 +17,14 @@ class JDE(BaseArch):
                  backbone='DarkNet',
                  neck='JDEFPN',
                  jde_head='JDEHead',
-                 post_process='BBoxPostProcess'):
+                 post_process='BBoxPostProcess',
+                 test_emb=False):
         super(JDE, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.jde_head = jde_head
         self.post_process = post_process
+        self.test_emb = test_emb
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -51,11 +53,16 @@ class JDE(BaseArch):
             jde_losses = self.jde_head(yolo_feats, identify_feats, self.inputs)
             return jde_losses
         else:
-            yolo_outs, emb_outs = self.jde_head(yolo_feats, identify_feats)
-            bbox, bbox_num = self.post_process(
-                yolo_outs, self.jde_head.mask_anchors, self.inputs['im_shape'],
-                self.inputs['scale_factor'])
-            return bbox, bbox_num
+            if self.test_emb:
+                embs_and_gts = self.jde_head(yolo_feats, identify_feats,
+                                             self.inputs, self.test_emb)
+                return embs_and_gts
+            else:
+                yolo_outs = self.jde_head(yolo_feats, identify_feats)
+                bbox, bbox_num = self.post_process(
+                    yolo_outs, self.jde_head.mask_anchors,
+                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                return bbox, bbox_num
 
     def get_loss(self):
         return self._forward()

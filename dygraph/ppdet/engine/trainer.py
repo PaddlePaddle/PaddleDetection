@@ -50,9 +50,6 @@ class Trainer(object):
         self.mode = mode.lower()
         self.optimizer = None
 
-        # build model
-        self.model = create(cfg.architecture)
-
         # model slim build
         if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':
@@ -65,6 +62,13 @@ class Trainer(object):
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
+
+        if cfg.architecture == 'JDE':
+            cfg['JDEHead']['num_identifiers'] = self.dataset.nID
+
+        # build model
+        self.model = create(cfg.architecture)
+
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':

@@ -196,8 +196,7 @@ class JDELoss(nn.Layer):
     '''
 
     def forward(self, det_outs, ide_outs, targets, anchors, emb_scale,
-                classifier, test_emb, loss_param_cls, loss_param_reg,
-                loss_param_ide):
+                classifier, loss_param_cls, loss_param_reg, loss_param_ide):
         assert len(det_outs) == len(ide_outs) == len(anchors)
         np = len(det_outs)
         gt_targets = [targets['target{}'.format(i)] for i in range(np)]
@@ -217,7 +216,7 @@ class JDELoss(nn.Layer):
                     jde_losses[k] = v
             '''
             mask = gt_ide > 0
-            ide_loss = self.ide_loss(p_ide, gt_target, gt_ide, emb_scale, classifier, test_emb)
+            ide_loss = self.ide_loss(p_ide, gt_target, gt_ide, emb_scale, classifier)
             for k, v in ide_loss.items():
                 if k in jde_losses:
                     jde_losses[k] += v
