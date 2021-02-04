@@ -84,16 +84,8 @@ class Detector(object):
             np_boxes[:, 3] *= w
             np_boxes[:, 4] *= h
             np_boxes[:, 5] *= w
-        expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
-        np_boxes = np_boxes[expect_boxes, :]
-        for box in np_boxes:
-            print('class_id:{:d}, confidence:{:.4f},'
-                  'left_top:[{:.2f},{:.2f}],'
-                  ' right_bottom:[{:.2f},{:.2f}]'.format(
-                      int(box[0]), box[1], box[2], box[3], box[4], box[5]))
         results['boxes'] = np_boxes
         if np_masks is not None:
-            np_masks = np_masks[expect_boxes, :, :, :]
             results['masks'] = np_masks
         return results
 
@@ -111,7 +103,7 @@ class Detector(object):
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
                             MaskRCNN's results include 'masks': np.ndarray:
-                            shape:[N, class_num, mask_resolution, mask_resolution]
+                            shape: [N, im_h, im_w]
         '''
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
@@ -125,7 +117,7 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
-            if self.pred_config.mask_resolution is not None:
+            if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
 
@@ -135,14 +127,7 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
-            score_tensor = self.predictor.get_output_handle(output_names[3])
-            np_score = score_tensor.copy_to_cpu()
-            label_tensor = self.predictor.get_output_handle(output_names[2])
-            np_label = label_tensor.copy_to_cpu()
-            np_boxes = np.concatenate(
-                [np_label[:, np.newaxis], np_score[:, np.newaxis], np_boxes],
-                axis=-1)
-            if self.pred_config.mask_resolution is not None:
+            if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
         t2 = time.time()
@@ -196,10 +181,9 @@ class DetectorSOLOv2(Detector):
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
             threshold (float): threshold of predicted box' score
         Returns:
-            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's results include 'masks': np.ndarray:
-                            shape:[N, class_num, mask_resolution, mask_resolution]
+            results (dict): 'segm': np.ndarray,shape:[N, im_h, im_w]
+                            'cate_label': label of segm, shape:[N]
+                            'cate_score': confidence score of segm, shape:[N]
         '''
         inputs = self.preprocess(image)
         np_label, np_score, np_segms = None, None, None
@@ -273,9 +257,9 @@ class PredictConfig():
         self.preprocess_infos = yml_conf['Preprocess']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        self.mask_resolution = None
-        if 'mask_resolution' in yml_conf:
-            self.mask_resolution = yml_conf['mask_resolution']
+        self.mask = False
+        if 'mask' in yml_conf:
+            self.mask = yml_conf['mask']
         self.input_shape = yml_conf['image_shape']
         self.print_config()
 
@@ -355,19 +339,9 @@ def load_predictor(model_dir,
     return predictor
 
 
-def visualize(image_file,
-              results,
-              labels,
-              mask_resolution=14,
-              output_dir='output/',
-              threshold=0.5):
+def visualize(image_file, results, labels, output_dir='output/', threshold=0.5):
     # visualize the predict result
-    im = visualize_box_mask(
-        image_file,
-        results,
-        labels,
-        mask_resolution=mask_resolution,
-        threshold=threshold)
+    im = visualize_box_mask(image_file, results, labels, threshold=threshold)
     img_name = os.path.split(image_file)[-1]
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -397,7 +371,6 @@ def predict_image(detector):
             FLAGS.image_file,
             results,
             detector.pred_config.labels,
-            mask_resolution=detector.pred_config.mask_resolution,
             output_dir=FLAGS.output_dir,
             threshold=FLAGS.threshold)
 
@@ -431,7 +404,6 @@ def predict_video(detector, camera_id):
             frame,
             results,
             detector.pred_config.labels,
-            mask_resolution=detector.pred_config.mask_resolution,
             threshold=FLAGS.threshold)
         im = np.array(im)
         writer.write(im)

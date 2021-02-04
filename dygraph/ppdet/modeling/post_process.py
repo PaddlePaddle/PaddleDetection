@@ -50,8 +50,6 @@ class BBoxPostProcess(object):
                                including labels, scores and bboxes. The size of
                                bboxes are corresponding to the original image.
         """
-        if bboxes.shape[0] == 0:
-            return paddle.to_tensor([[0, 0.0, 0.0, 0.0, 0.0, 0.0]])
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
@@ -61,9 +59,12 @@ class BBoxPostProcess(object):
         for i in range(bbox_num.shape[0]):
             expand_shape = paddle.expand(origin_shape[i:i + 1, :],
                                          [bbox_num[i], 2])
-            scale_y, scale_x = scale_factor[i]
+            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
             scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
             expand_scale = paddle.expand(scale, [bbox_num[i], 4])
+            # TODO: Because paddle.expand transform error when dygraph
+            # to static, use reshape to avoid mistakes.
+            expand_scale = paddle.reshape(expand_scale, [bbox_num[i], 4])
             origin_shape_list.append(expand_shape)
             scale_factor_list.append(expand_scale)
 
@@ -117,6 +118,10 @@ class MaskPostProcess(object):
 
         gx = paddle.expand(img_x, [N, img_y.shape[1], img_x.shape[2]])
         gy = paddle.expand(img_y, [N, img_y.shape[1], img_x.shape[2]])
+        # TODO: Because paddle.expand transform error when dygraph
+        # to static, use reshape to avoid mistakes.
+        gx = paddle.reshape(gx, [N, img_y.shape[1], img_x.shape[2]])
+        gy = paddle.reshape(gy, [N, img_y.shape[1], img_x.shape[2]])
         grid = paddle.stack([gx, gy], axis=3)
         img_masks = F.grid_sample(masks, grid, align_corners=False)
         return img_masks[:, 0]
@@ -125,19 +130,24 @@ class MaskPostProcess(object):
         """
         Paste the mask prediction to the original image.
         """
-        assert bboxes.shape[0] > 0, 'There is no detection output'
-
         num_mask = mask_out.shape[0]
-        # TODO: support bs > 1
+        origin_shape = paddle.cast(origin_shape, 'int32')
+        # TODO: support bs > 1 and mask output dtype is bool
         pred_result = paddle.zeros(
-            [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='bool')
+            [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='int32')
+        if bboxes.shape[0] == 0:
+            return pred_result
+
         # TODO: optimize chunk paste
+        pred_result = []
         for i in range(bboxes.shape[0]):
-            im_h, im_w = origin_shape[i]
+            im_h, im_w = origin_shape[i][0], origin_shape[i][1]
             pred_mask = self.paste_mask(mask_out[i], bboxes[i:i + 1, 2:], im_h,
                                         im_w)
             pred_mask = pred_mask >= self.binary_thresh
-            pred_result[i] = pred_mask
+            pred_mask = paddle.cast(pred_mask, 'int32')
+            pred_result.append(pred_mask)
+        pred_result = paddle.concat(pred_result)
         return pred_result
 
 
