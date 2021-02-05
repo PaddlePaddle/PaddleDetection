@@ -39,8 +39,6 @@ def bbox2delta(src_boxes, tgt_boxes, weights):
 
 def delta2bbox(deltas, boxes, weights):
     clip_scale = math.log(1000.0 / 16)
-    if boxes.shape[0] == 0:
-        return paddle.zeros((0, deltas.shape[1]), dtype='float32')
 
     widths = boxes[:, 2] - boxes[:, 0]
     heights = boxes[:, 3] - boxes[:, 1]
@@ -61,12 +59,13 @@ def delta2bbox(deltas, boxes, weights):
     pred_w = paddle.exp(dw) * widths.unsqueeze(1)
     pred_h = paddle.exp(dh) * heights.unsqueeze(1)
 
-    pred_boxes = paddle.zeros_like(deltas)
+    pred_boxes = []
+    pred_boxes.append(pred_ctr_x - 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y - 0.5 * pred_h)
+    pred_boxes.append(pred_ctr_x + 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
+    pred_boxes = paddle.stack(pred_boxes, axis=-1)
 
-    pred_boxes[:, 0::4] = pred_ctr_x - 0.5 * pred_w
-    pred_boxes[:, 1::4] = pred_ctr_y - 0.5 * pred_h
-    pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * pred_w
-    pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * pred_h
     return pred_boxes
 
 

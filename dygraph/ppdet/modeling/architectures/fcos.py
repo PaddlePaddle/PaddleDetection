@@ -91,13 +91,5 @@ class FCOS(BaseArch):
 
     def get_pred(self):
         bboxes, bbox_num = self._forward()
-        label = bboxes[:, 0]
-        score = bboxes[:, 1]
-        bbox = bboxes[:, 2:]
-        output = {
-            'bbox': bbox,
-            'score': score,
-            'label': label,
-            'bbox_num': bbox_num
-        }
+        output = {'bbox': bboxes, 'bbox_num': bbox_num}
         return output
