@@ -36,6 +36,10 @@ class BBoxPostProcess(object):
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
+        if bbox_pred.shape[0] == 0:
+            bbox_pred = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -51,7 +55,7 @@ class BBoxPostProcess(object):
                                bboxes are corresponding to the original image.
         """
         if bboxes.shape[0] == 0:
-            return paddle.to_tensor([[0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+            return paddle.zeros(shape=[1, 6])
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
