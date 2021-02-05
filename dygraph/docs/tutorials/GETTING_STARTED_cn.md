@@ -54,9 +54,9 @@ python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --f
 ```
 
 - fleet API训练
-fleet API用于多机训练，启动方式与单机多卡训练方式基本一致，只不过需要使用--ips指定ip列表以及--fleet开启多机训练
 
 ```bash
+# fleet API用于多机训练，启动方式与单机多卡训练方式基本一致，只不过需要使用--ips指定ip列表以及--fleet开启多机训练
 python -m paddle.distributed.launch --ips="xx.xx.xx.xx,yy.yy.yy.yy" --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --fleet
 ```
 
