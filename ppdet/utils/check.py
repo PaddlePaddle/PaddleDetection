@@ -94,6 +94,8 @@ def check_version(version='1.7.0'):
     for i in six.moves.range(length):
         if version_installed[i] > version_split[i]:
             return
+        if len(version_installed[i]) == 1 and len(version_split[i]) > 1:
+            return
         if version_installed[i] < version_split[i]:
             raise Exception(err)
 
