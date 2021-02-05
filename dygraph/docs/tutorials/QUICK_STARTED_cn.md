@@ -13,6 +13,7 @@ python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=
 ```
 
 结果如下图：
+
 ![demo image](../images/000000014439.jpg)
 
 
@@ -60,4 +61,5 @@ python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_
 ```
 
 结果如下图：
+
 ![road554 image](../images/road554.png)
