@@ -11,8 +11,8 @@ export CUDA_VISIBLE_DEVICES=0
 # 用PP-YOLO算法在COCO数据集上预训练模型预测一张图片
 python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/dygraph/ppyolo_r50vd_dcn_1x_coco.pdparams --infer_img=demo/000000014439.jpg
 ```
-结果如下图：
 
+结果如下图：
 ![demo image](../images/000000014439.jpg)
 
 
@@ -25,13 +25,14 @@ python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=
 python dataset/roadsign_voc/download_roadsign_voc.py
 ```
 
+
 ## 三、训练、评估、预测
 ### 1、训练
 ```
-# 边训练边测试 CPU需要约1小时(use_gpu=false)，1080Ti GPU需要约10分钟。
+# 边训练边测试 CPU需要约1小时(use_gpu=false)，1080Ti GPU需要约10分钟
 # -c 参数表示指定使用哪个配置文件
-# -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），这里设置使用gpu，
-# --eval 参数表示边训练边评估，会自动保存一个评估结果最的名为model_final.pdmodel的模型
+# -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），这里设置使用gpu
+# --eval 参数表示边训练边评估，最后会自动保存一个名为model_final.pdparams的模型
 
 python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true --weight_type finetune
 ```
@@ -39,9 +40,10 @@ python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval 
 
 ### 2、评估
 ```
-# 评估 默认使用训练过程中保存的model_final
+# 评估 默认使用训练过程中保存的model_final.pdparams
 # -c 参数表示指定使用哪个配置文件
-# -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），需使用单卡评估
+# -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置）
+# 目前只支持单卡评估
 
 python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
@@ -58,5 +60,4 @@ python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_
 ```
 
 结果如下图：
-
 ![road554 image](../images/road554.png)
