@@ -316,13 +316,11 @@ class RCNNBox(object):
 
         # [N, C*4]
         bbox = paddle.concat(roi)
-        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        if bbox.shape[0] == 0:
+            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
+        else:
+            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
-
-        # [N*C, 4]
-
-        bbox_num_class = bbox.shape[1] // 4
-        bbox = paddle.reshape(bbox, [-1, bbox_num_class, 4])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)
