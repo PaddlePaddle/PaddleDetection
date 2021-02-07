@@ -13,7 +13,7 @@ EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
     #anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val']
-    anno_path: ['cuhksysu.val']
+    anno_path: ['mot17.debug']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
 
 TestDataset:

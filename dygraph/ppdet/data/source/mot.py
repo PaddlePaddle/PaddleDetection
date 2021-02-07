@@ -43,6 +43,7 @@ class MOTDataSet(DetDataset):
                  anno_path=[],
                  data_fields=['image'],
                  sample_num=-1,
+                 img_size=(1088, 608),
                  label_list=None):
         super(MOTDataSet, self).__init__(
             dataset_dir=dataset_dir,
@@ -51,6 +52,8 @@ class MOTDataSet(DetDataset):
             data_fields=data_fields,
             sample_num=sample_num)
         self.anno_path = anno_path
+        self.width = img_size[0]
+        self.height = img_size[1]
         self.label_list = label_list
 
         self.img_files = OrderedDict()
@@ -147,12 +150,16 @@ class MOTDataSet(DetDataset):
             im = cv2.imread(img_file)
             im_h, im_w = im.shape[0], im.shape[1]
 
-            # Load labels, xywh to x1y1x2y2 format. Coordinates are normalized.
+            ratio = min(float(self.height) / im_h, float(self.width) / im_w)
+            padw = (self.width - round(im_w * ratio)) / 2  # width padding
+            padh = (self.height - round(im_h * ratio)) / 2  # height padding
+
+            # Normalized xywh to pixel xyxy format
             labels0 = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)
-            x1 = (labels0[:, 2] - labels0[:, 4] / 2) * im_w
-            y1 = (labels0[:, 3] - labels0[:, 5] / 2) * im_h
-            x2 = (labels0[:, 2] + labels0[:, 4] / 2) * im_w
-            y2 = (labels0[:, 3] + labels0[:, 5] / 2) * im_h
+            x1 = ratio * im_w * (labels0[:, 2] - labels0[:, 4] / 2) + padw
+            y1 = ratio * im_h * (labels0[:, 3] - labels0[:, 5] / 2) + padh
+            x2 = ratio * im_w * (labels0[:, 2] + labels0[:, 4] / 2) + padw
+            y2 = ratio * im_h * (labels0[:, 3] + labels0[:, 5] / 2) + padh
             gt_bbox = np.stack((x1, y1, x2, y2)).T.astype('float32')
 
             gt_class = labels0[:, 0:1].astype('int32')

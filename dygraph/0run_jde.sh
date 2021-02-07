@@ -11,11 +11,11 @@ config=configs/jde/${job_name}.yml
 #CUDA_VISIBLE_DEVICES=5 python3.7 tools/train.py -c ${config} -o pretrain_weights=jde_paddle_1088x608.pdparams use_gpu=true --weight_type resume
 
 # 2. eval
-#CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams --json_eval ${log_dir}
+CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams #--json_eval ${log_dir}
 
 # 3. infer
-#CUDA_VISIBLE_DEVICES=3 python3.7 tools/infer.py -c ${config} -o use_gpu=true weights=${job_name}.pdparams --infer_img=../demo/000000014439.jpg --draw_threshold 0.5
-CUDA_VISIBLE_DEVICES=5 python3.7 tools/infer.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams --infer_img=../demo/000000570688.jpg --draw_threshold 0.5 #2>&1 | tee jde_infer_dy_print.txt
+#CUDA_VISIBLE_DEVICES=3 python3.7 tools/infer.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams --infer_img=../demo/000000014439.jpg --draw_threshold 0.5
+#CUDA_VISIBLE_DEVICES=5 python3.7 tools/infer.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams --infer_img=../demo/000000570688.jpg --draw_threshold 0.5 #2>&1 | tee jde_infer_dy_print.txt
 
 # 4 export
 #CUDA_VISIBLE_DEVICES=5 python3.7 tools/export_model.py -c ${config} --output_dir=./inference_model -o weights=jde_paddle_1088x608.pdparams #TestReader.inputs_def.image_shape=[3,800,800]

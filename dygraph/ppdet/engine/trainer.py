@@ -63,7 +63,7 @@ class Trainer(object):
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
 
-        if cfg.architecture == 'JDE':
+        if cfg.architecture == 'JDE' and self.mode != 'test':
             cfg['JDEHead']['num_identifiers'] = self.dataset.nID
 
         # build model

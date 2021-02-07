@@ -30,14 +30,14 @@ JDELoss:
 
 BBoxPostProcess:
   decode:
-    name: YOLOBox
-    conf_thresh: 0.005
+    name: JDEBox
+    conf_thresh: 0.3
     downsample_ratio: 32
     clip_bbox: true
   nms:
     name: MultiClassNMS
     keep_top_k: 100
     score_threshold: 0.01
-    nms_threshold: 0.45
+    nms_threshold: 0.5
     nms_top_k: 1000
-    normalized: false
+    # normalized: false
