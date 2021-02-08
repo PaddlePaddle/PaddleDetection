@@ -40,6 +40,7 @@ class BBoxPostProcess(object):
             bbox_pred = paddle.to_tensor(
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
