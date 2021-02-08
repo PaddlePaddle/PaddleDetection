@@ -182,11 +182,12 @@ class MaskHead(nn.Layer):
                 mask_out = F.sigmoid(mask_logit)
             else:
                 num_masks = mask_logit.shape[0]
-                pred_masks = paddle.split(mask_logit, num_masks)
                 mask_out = []
                 # TODO: need to optimize gather
-                for i, pred_mask in enumerate(pred_masks):
-                    mask = paddle.gather(pred_mask, labels[i], axis=1)
+                for i in range(mask_logit.shape[0]):
+                    pred_masks = paddle.unsqueeze(
+                        mask_logit[i, :, :, :], axis=0)
+                    mask = paddle.gather(pred_masks, labels[i], axis=1)
                     mask_out.append(mask)
                 mask_out = F.sigmoid(paddle.concat(mask_out))
         return mask_out

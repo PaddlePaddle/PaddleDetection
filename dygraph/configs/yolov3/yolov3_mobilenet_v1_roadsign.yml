@@ -5,10 +5,11 @@ _BASE_: [
   '_base_/yolov3_reader.yml',
 ]
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams
-use_fine_grained_loss: false
 load_static_weights: false
 norm_type: sync_bn
 weights: output/yolov3_mobilenet_v1_roadsign/model_final
+metric: VOC
+map_type: integral
 
 YOLOv3Loss:
   ignore_thresh: 0.7
@@ -44,7 +45,7 @@ TrainReader:
   shuffle: true
   drop_last: true
 
-snapshot_epoch: 5
+snapshot_epoch: 2
 epoch: 40
 
 LearningRate:

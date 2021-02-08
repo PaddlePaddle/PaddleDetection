@@ -30,7 +30,7 @@ def get_infer_results(outs, catid, bias=0):
     The output format is dictionary containing bbox or mask result.
 
     For example, bbox result is a list and each element contains
-    image_id, category_id, bbox and score. 
+    image_id, category_id, bbox and score.
     """
     if outs is None or len(outs) == 0:
         raise ValueError(
@@ -42,19 +42,12 @@ def get_infer_results(outs, catid, bias=0):
     infer_res = {}
     if 'bbox' in outs:
         infer_res['bbox'] = get_det_res(
-            outs['bbox'],
-            outs['score'],
-            outs['label'],
-            outs['bbox_num'],
-            im_id,
-            catid,
-            bias=bias)
+            outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
 
     if 'mask' in outs:
         # mask post process
-        infer_res['mask'] = get_seg_res(outs['mask'], outs['score'],
-                                        outs['label'], outs['bbox_num'], im_id,
-                                        catid)
+        infer_res['mask'] = get_seg_res(outs['mask'], outs['bbox'],
+                                        outs['bbox_num'], im_id, catid)
 
     if 'segm' in outs:
         infer_res['segm'] = get_solov2_segm_res(outs, im_id, catid)

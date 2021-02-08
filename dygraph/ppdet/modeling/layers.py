@@ -320,7 +320,10 @@ class RCNNBox(object):
 
         # [N, C*4]
         bbox = paddle.concat(roi)
-        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        if bbox.shape[0] == 0:
+            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
+        else:
+            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
 
         # [N*C, 4]

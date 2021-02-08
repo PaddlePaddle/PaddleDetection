@@ -133,7 +133,7 @@ class BBoxHead(nn.Layer):
 
         rois_feat = self.roi_extractor(body_feats, rois, rois_num)
         bbox_feat = self.head(rois_feat)
-        if len(bbox_feat.shape) > 2 and bbox_feat.shape[-1] > 1:
+        if self.with_pool:
             feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             feat = paddle.squeeze(feat, axis=[2, 3])
         else:
