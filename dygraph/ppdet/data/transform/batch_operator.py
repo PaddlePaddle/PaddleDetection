@@ -644,7 +644,7 @@ class Gt2Solov2TargetOp(BaseOperator):
         max_ins_num = [0] * len(self.num_grids)
         for sample in samples:
             gt_bboxes_raw = sample['gt_bbox']
-            gt_labels_raw = sample['gt_class']
+            gt_labels_raw = sample['gt_class'] + 1
             im_c, im_h, im_w = sample['image'].shape[:]
             gt_masks_raw = sample['gt_segm'].astype(np.uint8)
             mask_feat_size = [
