@@ -37,7 +37,7 @@ def rpn_anchor_target(anchors,
         gt_bbox = gt_boxes[i]
 
         # Step1: match anchor and gt_bbox
-        matches, match_labels, matched_vals = label_box(
+        matches, match_labels = label_box(
             anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
@@ -84,8 +84,7 @@ def label_box(anchors, gt_boxes, positive_overlap, negative_overlap,
 
     matches = matches.flatten()
     match_labels = match_labels.flatten()
-    matched_vals = matched_vals.flatten()
-    return matches, match_labels, matched_vals
+    return matches, match_labels
 
 
 def subsample_labels(labels,
@@ -118,16 +117,6 @@ def subsample_labels(labels,
     return fg_inds, bg_inds
 
 
-def filter_roi(rois, max_overlap):
-    ws = rois[:, 2] - rois[:, 0]
-    hs = rois[:, 3] - rois[:, 1]
-    valid_mask = paddle.logical_and(ws > 0, hs > 0, max_overlap < 1)
-    keep = paddle.nonzero(valid_mask)
-    if keep.numel() > 0:
-        return rois[keep[:, 1]]
-    return paddle.zeros((1, 4), dtype='float32')
-
-
 def generate_proposal_target(rpn_rois,
                              gt_classes,
                              gt_boxes,
@@ -137,67 +126,68 @@ def generate_proposal_target(rpn_rois,
                              bg_thresh,
                              num_classes,
                              use_random=True,
-                             is_cascade_rcnn=False,
-                             max_overlaps=None):
+                             is_cascade=False,
+                             cascade_iou=0.5):
 
     rois_with_gt = []
     tgt_labels = []
     tgt_bboxes = []
-    sampled_max_overlaps = []
     tgt_gt_inds = []
     new_rois_num = []
 
+    fg_thresh = cascade_iou if is_cascade else fg_thresh
+    bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
-        max_overlap = max_overlaps[i] if is_cascade_rcnn else None
         gt_bbox = gt_boxes[i]
         gt_class = gt_classes[i]
-        if is_cascade_rcnn:
-            rpn_roi = filter_roi(rpn_roi, max_overlap)
-        bbox = paddle.concat([rpn_roi, gt_bbox])
+        if not is_cascade:
+            bbox = paddle.concat([rpn_roi, gt_bbox])
+        else:
+            bbox = rpn_roi
 
-        # Step1: label bbox 
-        matches, match_labels, matched_vals = label_box(
-            bbox, gt_bbox, fg_thresh, bg_thresh, False)
+        # Step1: label bbox
+        matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
+                                          False)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
-            num_classes, use_random)
+            num_classes, use_random, is_cascade)
 
         # Step3: make output 
-        rois_per_image = paddle.gather(bbox, sampled_inds)
-        sampled_gt_ind = paddle.gather(matches, sampled_inds)
+        rois_per_image = bbox if is_cascade else paddle.gather(bbox,
+                                                               sampled_inds)
+        sampled_gt_ind = matches if is_cascade else paddle.gather(matches,
+                                                                  sampled_inds)
         sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
-        sampled_overlap = paddle.gather(matched_vals, sampled_inds)
 
         rois_per_image.stop_gradient = True
         sampled_gt_ind.stop_gradient = True
         sampled_bbox.stop_gradient = True
-        sampled_overlap.stop_gradient = True
-
         tgt_labels.append(sampled_gt_classes)
         tgt_bboxes.append(sampled_bbox)
         rois_with_gt.append(rois_per_image)
-        sampled_max_overlaps.append(sampled_overlap)
         tgt_gt_inds.append(sampled_gt_ind)
         new_rois_num.append(paddle.shape(sampled_inds)[0])
     new_rois_num = paddle.concat(new_rois_num)
-    return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num, sampled_max_overlaps
+    return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
 
 
-def sample_bbox(
-        matches,
-        match_labels,
-        gt_classes,
-        batch_size_per_im,
-        fg_fraction,
-        num_classes,
-        use_random=True, ):
+def sample_bbox(matches,
+                match_labels,
+                gt_classes,
+                batch_size_per_im,
+                fg_fraction,
+                num_classes,
+                use_random=True,
+                is_cascade=False):
     gt_classes = paddle.gather(gt_classes, matches)
     gt_classes = paddle.where(match_labels == 0,
                               paddle.ones_like(gt_classes) * num_classes,
                               gt_classes)
     gt_classes = paddle.where(match_labels == -1,
                               paddle.ones_like(gt_classes) * -1, gt_classes)
+    if is_cascade:
+        return matches, gt_classes
     rois_per_image = int(batch_size_per_im)
 
     fg_inds, bg_inds = subsample_labels(gt_classes, rois_per_image, fg_fraction,

@@ -56,8 +56,8 @@ BBoxHead:
 
 BBoxAssigner:
   batch_size_per_im: 512
-  bg_thresh: [0.5,]
-  fg_thresh: [0.5,]
+  bg_thresh: 0.5
+  fg_thresh: 0.5
   fg_fraction: 0.25
   use_random: True
 

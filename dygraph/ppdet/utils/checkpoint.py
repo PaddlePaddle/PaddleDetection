@@ -92,7 +92,6 @@ def load_weight(model, weight, optimizer=None):
 
     param_state_dict = paddle.load(pdparam_path)
     model_dict = model.state_dict()
-
     model_weight = {}
     incorrect_keys = 0
 
@@ -129,6 +128,7 @@ def load_pretrain_weight(model,
                          pretrain_weight,
                          load_static_weights=False,
                          weight_type='pretrain'):
+
     assert weight_type in ['pretrain', 'finetune']
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path_dist(pretrain_weight)
