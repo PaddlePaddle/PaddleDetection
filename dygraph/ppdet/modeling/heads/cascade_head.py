@@ -21,7 +21,7 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
 
-from .bbox_head import BBoxHead
+from .bbox_head import BBoxHead, TwoFCHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta, delta2bbox, clip_bbox, nonempty_bbox
@@ -37,31 +37,15 @@ class CascadeTwoFCHead(nn.Layer):
                  resolution=7,
                  num_cascade_stage=3):
         super(CascadeTwoFCHead, self).__init__()
+
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
-        fan = in_dim * resolution * resolution
 
-        self.fc6_list = []
-        self.fc7_list = []
-        for i in range(num_cascade_stage):
-            fc6_name = 'fc6_{}'.format(i)
-            fc7_name = 'fc7_{}'.format(i)
-            fc6 = self.add_sublayer(
-                fc6_name,
-                nn.Linear(
-                    in_dim * resolution * resolution,
-                    mlp_dim,
-                    weight_attr=paddle.ParamAttr(
-                        initializer=XavierUniform(fan_out=fan))))
-
-            fc7 = self.add_sublayer(
-                fc7_name,
-                nn.Linear(
-                    mlp_dim,
-                    mlp_dim,
-                    weight_attr=paddle.ParamAttr(initializer=XavierUniform())))
-            self.fc6_list.append(fc6)
-            self.fc7_list.append(fc7)
+        self.head_list = []
+        for stage in range(num_cascade_stage):
+            head_per_stage = self.add_sublayer(
+                str(stage), TwoFCHead(in_dim, mlp_dim, resolution))
+            self.head_list.append(head_per_stage)
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -74,12 +58,8 @@ class CascadeTwoFCHead(nn.Layer):
         return [ShapeSpec(channels=self.mlp_dim, )]
 
     def forward(self, rois_feat, stage=0):
-        rois_feat = paddle.flatten(rois_feat, start_axis=1, stop_axis=-1)
-        fc6 = self.fc6_list[stage](rois_feat)
-        fc6 = F.relu(fc6)
-        fc7 = self.fc7_list[stage](fc6)
-        fc7 = F.relu(fc7)
-        return fc7
+        out = self.head_list[stage](rois_feat)
+        return out
 
 
 @register
@@ -89,6 +69,14 @@ class CascadeHead(BBoxHead):
     """
     head (nn.Layer): Extract feature in bbox head
     in_channel (int): Input channel after RoI extractor
+    roi_extractor (object): The module of RoI Extractor
+    bbox_assigner (object): The module of Box Assigner, label and sample the 
+                            box.
+    num_classes (int): The number of classes
+    bbox_weight (List[List[float]]): The weight to get the decode box and the 
+                                     length of weight is the number of cascade 
+                                     stage
+    num_cascade_stages (int): THe number of stage to refine the box
     """
 
     def __init__(self,

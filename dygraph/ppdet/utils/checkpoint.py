@@ -92,7 +92,6 @@ def load_weight(model, weight, optimizer=None):
 
     param_state_dict = paddle.load(pdparam_path)
     model_dict = model.state_dict()
-
     model_weight = {}
     incorrect_keys = 0
 

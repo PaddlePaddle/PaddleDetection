@@ -70,6 +70,12 @@ class BBoxHead(nn.Layer):
     """
     head (nn.Layer): Extract feature in bbox head
     in_channel (int): Input channel after RoI extractor
+    roi_extractor (object): The module of RoI Extractor
+    bbox_assigner (object): The module of Box Assigner, label and sample the 
+                            box.
+    with_pool (bool): Whether to use pooling for the RoI feature.
+    num_classes (int): The number of classes
+    bbox_weight (List[float]): The weight to get the decode box 
     """
 
     def __init__(self,
