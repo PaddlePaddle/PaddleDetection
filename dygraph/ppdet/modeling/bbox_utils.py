@@ -88,7 +88,7 @@ def expand_bbox(bboxes, scale):
 
 
 def clip_bbox(boxes, im_shape):
-    h, w = im_shape
+    h, w = im_shape[0], im_shape[1]
     x1 = boxes[:, 0].clip(0, w)
     y1 = boxes[:, 1].clip(0, h)
     x2 = boxes[:, 2].clip(0, w)

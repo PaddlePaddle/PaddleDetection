@@ -131,6 +131,7 @@ class CascadeHead(BBoxHead):
         rois_num (Tensor): The number of RoIs in each image
         inputs (dict{Tensor}): The ground-truth of image
         """
+        targets = []
         if self.training:
             rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             targets_list = [targets]
@@ -157,15 +158,14 @@ class CascadeHead(BBoxHead):
 
         if self.training:
             loss = {}
-            for stage, (
-                (scores, deltas, rois),
-                    targets) in enumerate(zip(head_out_list, targets_list)):
+            for stage, value in enumerate(zip(head_out_list, targets_list)):
+                (scores, deltas, rois), targets = value
                 loss_stage = self.get_loss(scores, deltas, targets, rois,
                                            self.bbox_weight[stage])
-                loss.update({
-                    k + "_stage{}".format(stage): v / self.num_cascade_stages
-                    for k, v in loss_stage.items()
-                })
+                for k, v in loss_stage.items():
+                    loss[k + "_stage{}".format(
+                        stage)] = v / self.num_cascade_stages
+
             return loss, bbox_feat
         else:
             scores, deltas, self.refined_rois = self.get_prediction(

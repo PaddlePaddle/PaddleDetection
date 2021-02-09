@@ -90,8 +90,7 @@ class CascadeRCNN(BaseArch):
                 return rpn_loss, bbox_loss, {}
         else:
             rois, rois_num, _ = self.rpn_head(body_feats, self.inputs)
-            preds, feat_func = self.bbox_head(body_feats, rois, rois_num,
-                                              self.inputs)
+            preds, _ = self.bbox_head(body_feats, rois, rois_num, self.inputs)
             refined_rois = self.bbox_head.get_refined_rois()
 
             im_shape = self.inputs['im_shape']
@@ -104,8 +103,7 @@ class CascadeRCNN(BaseArch):
                                                         im_shape, scale_factor)
             if not self.with_mask:
                 return bbox_pred, bbox_num, None
-            mask_out = self.mask_head(
-                body_feats, bbox, bbox_num, self.inputs, feat_func=feat_func)
+            mask_out = self.mask_head(body_feats, bbox, bbox_num, self.inputs)
             origin_shape = self.bbox_post_process.get_origin_shape()
             mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
                                                bbox_num, origin_shape)
