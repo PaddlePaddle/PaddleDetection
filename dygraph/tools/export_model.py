@@ -80,6 +80,7 @@ def run(FLAGS, cfg):
             model_filename="model.pdmodel",
             params_filename="model.pdiparams")
 
+
 def main():
     paddle.set_device("cpu")
     FLAGS = parse_args()
