@@ -169,6 +169,7 @@ class RPNHead(nn.Layer):
             rois_collect.append(topk_rois)
             rois_num_collect.append(paddle.shape(topk_rois)[0])
         rois_num_collect = paddle.concat(rois_num_collect)
+
         return rois_collect, rois_num_collect
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):

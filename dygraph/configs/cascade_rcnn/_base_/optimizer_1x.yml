@@ -7,8 +7,8 @@ LearningRate:
     gamma: 0.1
     milestones: [8, 11]
   - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 500
+    start_factor: 0.001
+    steps: 1000
 
 OptimizerBuilder:
   optimizer:

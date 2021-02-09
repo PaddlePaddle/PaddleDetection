@@ -19,6 +19,10 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox
 from . import ops
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
 
 @register
