@@ -44,7 +44,10 @@ def parse_args():
         default="output_inference",
         help="Directory for storing the output model files.")
     parser.add_argument(
-        "--export_serving_model", type=bool, default=False, help="Whether to export serving model or not.")
+        "--export_serving_model",
+        type=bool,
+        default=False,
+        help="Whether to export serving model or not.")
     parser.add_argument(
         "--slim_config",
         default=None,
@@ -70,8 +73,10 @@ def run(FLAGS, cfg):
 
         inference_model_to_serving(
             dirname="{}/{}".format(FLAGS.output_dir, model_name),
-            serving_server="{}/{}/serving_server".format(FLAGS.output_dir, model_name),
-            serving_client="{}/{}/serving_client".format(FLAGS.output_dir, model_name),
+            serving_server="{}/{}/serving_server".format(FLAGS.output_dir,
+                                                         model_name),
+            serving_client="{}/{}/serving_client".format(FLAGS.output_dir,
+                                                         model_name),
             model_filename="model.pdmodel",
             params_filename="model.pdiparams")
 
