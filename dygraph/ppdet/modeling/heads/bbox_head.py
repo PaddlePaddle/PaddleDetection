@@ -33,19 +33,16 @@ class TwoFCHead(nn.Layer):
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
         fan = in_dim * resolution * resolution
-        lr_factor = 1.
         self.fc6 = nn.Linear(
             in_dim * resolution * resolution,
             mlp_dim,
             weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
                 initializer=XavierUniform(fan_out=fan)))
 
         self.fc7 = nn.Linear(
             mlp_dim,
             mlp_dim,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=XavierUniform()))
+            weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -73,6 +70,12 @@ class BBoxHead(nn.Layer):
     """
     head (nn.Layer): Extract feature in bbox head
     in_channel (int): Input channel after RoI extractor
+    roi_extractor (object): The module of RoI Extractor
+    bbox_assigner (object): The module of Box Assigner, label and sample the 
+                            box.
+    with_pool (bool): Whether to use pooling for the RoI feature.
+    num_classes (int): The number of classes
+    bbox_weight (List[float]): The weight to get the decode box 
     """
 
     def __init__(self,
@@ -98,17 +101,14 @@ class BBoxHead(nn.Layer):
         self.bbox_score = nn.Linear(
             in_channel,
             self.num_classes + 1,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=Normal(
-                    mean=0.0, std=0.01)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.01)))
 
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
-                initializer=Normal(
-                    mean=0.0, std=0.001)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.001)))
         self.assigned_label = None
         self.assigned_rois = None
 
@@ -128,14 +128,13 @@ class BBoxHead(nn.Layer):
 
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
         """
-        body_feats (list[Tensor]):
-        rois (Tensor):
-        rois_num (Tensor):
-        inputs (dict{Tensor}):
+        body_feats (list[Tensor]): Feature maps from backbone
+        rois (Tensor): RoIs generated from RPN module
+        rois_num (Tensor): The number of RoIs in each image
+        inputs (dict{Tensor}): The ground-truth of image
         """
         if self.training:
-            rois, rois_num, _, targets = self.bbox_assigner(rois, rois_num,
-                                                            inputs)
+            rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             self.assigned_rois = (rois, rois_num)
             self.assigned_targets = targets
 
@@ -150,13 +149,14 @@ class BBoxHead(nn.Layer):
         deltas = self.bbox_delta(feat)
 
         if self.training:
-            loss = self.get_loss(scores, deltas, targets, rois)
+            loss = self.get_loss(scores, deltas, targets, rois,
+                                 self.bbox_weight)
             return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
-    def get_loss(self, scores, deltas, targets, rois):
+    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
         """
         scores (Tensor): scores from bbox head outputs
         deltas (Tensor): deltas from bbox head outputs
@@ -179,6 +179,14 @@ class BBoxHead(nn.Layer):
             paddle.logical_and(tgt_labels >= 0, tgt_labels <
                                self.num_classes)).flatten()
 
+        cls_name = 'loss_bbox_cls'
+        reg_name = 'loss_bbox_reg'
+        loss_bbox = {}
+
+        if fg_inds.numel() == 0:
+            loss_bbox[cls_name] = paddle.to_tensor(0., dtype='float32')
+            loss_bbox[reg_name] = paddle.to_tensor(0., dtype='float32')
+            return loss_bbox
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
         else:
@@ -198,16 +206,13 @@ class BBoxHead(nn.Layer):
         tgt_bboxes = paddle.concat(tgt_bboxes) if len(
             tgt_bboxes) > 1 else tgt_bboxes[0]
 
-        reg_target = bbox2delta(rois, tgt_bboxes, self.bbox_weight)
+        reg_target = bbox2delta(rois, tgt_bboxes, bbox_weight)
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
         loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
         ) / tgt_labels.shape[0]
 
-        cls_name = 'loss_bbox_cls'
-        reg_name = 'loss_bbox_reg'
-        loss_bbox = {}
         loss_bbox[cls_name] = loss_bbox_cls
         loss_bbox[reg_name] = loss_bbox_reg
 

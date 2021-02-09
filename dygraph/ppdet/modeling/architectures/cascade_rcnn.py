@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
 __all__ = ['CascadeRCNN']
@@ -26,142 +26,106 @@ __all__ = ['CascadeRCNN']
 @register
 class CascadeRCNN(BaseArch):
     __category__ = 'architecture'
-    __shared__ = ['roi_stages']
     __inject__ = [
-        'anchor',
-        'proposal',
-        'mask',
-        'backbone',
-        'neck',
-        'rpn_head',
-        'bbox_head',
-        'mask_head',
         'bbox_post_process',
         'mask_post_process',
     ]
 
     def __init__(self,
-                 anchor,
-                 proposal,
                  backbone,
                  rpn_head,
                  bbox_head,
                  bbox_post_process,
                  neck=None,
-                 mask=None,
                  mask_head=None,
-                 mask_post_process=None,
-                 roi_stages=3):
+                 mask_post_process=None):
         super(CascadeRCNN, self).__init__()
-        self.anchor = anchor
-        self.proposal = proposal
         self.backbone = backbone
         self.rpn_head = rpn_head
         self.bbox_head = bbox_head
         self.bbox_post_process = bbox_post_process
         self.neck = neck
-        self.mask = mask
         self.mask_head = mask_head
         self.mask_post_process = mask_post_process
-        self.roi_stages = roi_stages
-        self.with_mask = mask is not None
+        self.with_mask = mask_head is not None
 
-    def model_arch(self, ):
-        # Backbone
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        backbone = create(cfg['backbone'])
+        kwargs = {'input_shape': backbone.out_shape}
+        neck = cfg['neck'] and create(cfg['neck'], **kwargs)
+
+        out_shape = neck and neck.out_shape or backbone.out_shape
+        kwargs = {'input_shape': out_shape}
+        rpn_head = create(cfg['rpn_head'], **kwargs)
+        bbox_head = create(cfg['bbox_head'], **kwargs)
+
+        out_shape = neck and out_shape or bbox_head.get_head().out_shape
+        kwargs = {'input_shape': out_shape}
+        mask_head = cfg['mask_head'] and create(cfg['mask_head'], **kwargs)
+        return {
+            'backbone': backbone,
+            'neck': neck,
+            "rpn_head": rpn_head,
+            "bbox_head": bbox_head,
+            "mask_head": mask_head,
+        }
+
+    def _forward(self):
         body_feats = self.backbone(self.inputs)
-
-        # Neck
         if self.neck is not None:
-            body_feats, spatial_scale = self.neck(body_feats)
+            body_feats = self.neck(body_feats)
 
-        # RPN
-        # rpn_head returns two list: rpn_feat, rpn_head_out 
-        # each element in rpn_feats contains rpn feature on each level,
-        # and the length is 1 when the neck is not applied.
-        # each element in rpn_head_out contains (rpn_rois_score, rpn_rois_delta)
-        rpn_feat, self.rpn_head_out = self.rpn_head(self.inputs, body_feats)
+        if self.training:
+            rois, rois_num, rpn_loss = self.rpn_head(body_feats, self.inputs)
+            bbox_loss, bbox_feat = self.bbox_head(body_feats, rois, rois_num,
+                                                  self.inputs)
+            rois, rois_num = self.bbox_head.get_assigned_rois()
+            bbox_targets = self.bbox_head.get_assigned_targets()
+            if self.with_mask:
+                mask_loss = self.mask_head(body_feats, rois, rois_num,
+                                           self.inputs, bbox_targets, bbox_feat)
+                return rpn_loss, bbox_loss, mask_loss
+            else:
+                return rpn_loss, bbox_loss, {}
+        else:
+            rois, rois_num, _ = self.rpn_head(body_feats, self.inputs)
+            preds, _ = self.bbox_head(body_feats, rois, rois_num, self.inputs)
+            refined_rois = self.bbox_head.get_refined_rois()
 
-        # Anchor
-        # anchor_out returns a list,
-        # each element contains (anchor, anchor_var)
-        self.anchor_out = self.anchor(rpn_feat)
+            im_shape = self.inputs['im_shape']
+            scale_factor = self.inputs['scale_factor']
 
-        # Proposal RoI
-        # compute targets here when training
-        rois = None
-        bbox_head_out = None
-        max_overlap = None
-        self.bbox_head_list = []
-        rois_list = []
-        for i in range(self.roi_stages):
-            # Proposal BBox
-            rois = self.proposal(
-                self.inputs,
-                self.rpn_head_out,
-                self.anchor_out,
-                self.training,
-                i,
-                rois,
-                bbox_head_out,
-                max_overlap=max_overlap)
-            rois_list.append(rois)
-            max_overlap = self.proposal.get_max_overlap()
-            # BBox Head
-            bbox_feat, bbox_head_out, _ = self.bbox_head(body_feats, rois,
-                                                         spatial_scale, i)
-            self.bbox_head_list.append(bbox_head_out)
-
-        if not self.training:
-            bbox_pred, bboxes = self.bbox_head.get_cascade_prediction(
-                self.bbox_head_list, rois_list)
-            self.bboxes = self.bbox_post_process(bbox_pred, bboxes,
-                                                 self.inputs['im_shape'],
-                                                 self.inputs['scale_factor'])
-
-        if self.with_mask:
-            rois = rois_list[-1]
-            rois_has_mask_int32 = None
-            if self.training:
-                bbox_targets = self.proposal.get_targets()[-1]
-                self.bboxes, rois_has_mask_int32 = self.mask(self.inputs, rois,
-                                                             bbox_targets)
-            # Mask Head 
-            self.mask_head_out = self.mask_head(
-                self.inputs, body_feats, self.bboxes, bbox_feat,
-                rois_has_mask_int32, spatial_scale)
+            bbox, bbox_num = self.bbox_post_process(
+                preds, (refined_rois, rois_num), im_shape, scale_factor)
+            # rescale the prediction back to origin image
+            bbox_pred = self.bbox_post_process.get_pred(bbox, bbox_num,
+                                                        im_shape, scale_factor)
+            if not self.with_mask:
+                return bbox_pred, bbox_num, None
+            mask_out = self.mask_head(body_feats, bbox, bbox_num, self.inputs)
+            origin_shape = self.bbox_post_process.get_origin_shape()
+            mask_pred = self.mask_post_process(mask_out[:, 0, :, :], bbox_pred,
+                                               bbox_num, origin_shape)
+            return bbox_pred, bbox_num, mask_pred
 
     def get_loss(self, ):
+        rpn_loss, bbox_loss, mask_loss = self._forward()
         loss = {}
-
-        # RPN loss
-        rpn_loss_inputs = self.anchor.generate_loss_inputs(
-            self.inputs, self.rpn_head_out, self.anchor_out)
-        loss_rpn = self.rpn_head.get_loss(rpn_loss_inputs)
-        loss.update(loss_rpn)
-
-        # BBox loss
-        bbox_targets_list = self.proposal.get_targets()
-        loss_bbox = self.bbox_head.get_loss(self.bbox_head_list,
-                                            bbox_targets_list)
-        loss.update(loss_bbox)
-
+        loss.update(rpn_loss)
+        loss.update(bbox_loss)
         if self.with_mask:
-            # Mask loss
-            mask_targets = self.mask.get_targets()
-            loss_mask = self.mask_head.get_loss(self.mask_head_out,
-                                                mask_targets)
-            loss.update(loss_mask)
-
+            loss.update(mask_loss)
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
 
     def get_pred(self):
-        bbox, bbox_num = self.bboxes
+        bbox_pred, bbox_num, mask_pred = self._forward()
         output = {
-            'bbox': bbox,
+            'bbox': bbox_pred,
             'bbox_num': bbox_num,
         }
         if self.with_mask:
-            output.update({'mask': self.mask_head_out})
+            output.update({'mask': mask_pred})
         return output

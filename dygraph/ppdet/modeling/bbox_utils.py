@@ -64,7 +64,7 @@ def delta2bbox(deltas, boxes, weights):
     pred_boxes.append(pred_ctr_y - 0.5 * pred_h)
     pred_boxes.append(pred_ctr_x + 0.5 * pred_w)
     pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
-    pred_boxes = paddle.stack(pred_boxes, axis=-1)
+    pred_boxes = paddle.concat(pred_boxes, axis=-1)
 
     return pred_boxes
 
@@ -88,7 +88,7 @@ def expand_bbox(bboxes, scale):
 
 
 def clip_bbox(boxes, im_shape):
-    h, w = im_shape
+    h, w = im_shape[0], im_shape[1]
     x1 = boxes[:, 0].clip(0, w)
     y1 = boxes[:, 1].clip(0, h)
     x2 = boxes[:, 2].clip(0, w)
