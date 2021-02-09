@@ -85,7 +85,7 @@ def get_solov2_segm_res(results, image_id, num_id_to_cat_id_map):
         return None
     # for each sample
     for i in range(lengths - 1):
-        clsid = int(clsid_labels[i]) + 1
+        clsid = int(clsid_labels[i])
         catid = num_id_to_cat_id_map[clsid]
         score = float(clsid_scores[i])
         mask = segms[i]
