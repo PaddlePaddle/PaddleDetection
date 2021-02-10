@@ -187,6 +187,7 @@ class CascadeHead(BBoxHead):
         pred_proposals = paddle.concat(proposals) if len(
             proposals) > 1 else proposals[0]
         pred_bbox = delta2bbox(deltas, pred_proposals, weights)
+        pred_bbox = paddle.reshape(pred_bbox, [-1, deltas.shape[-1]])
         num_prop = [p.shape[0] for p in proposals]
         return pred_bbox.split(num_prop)
 

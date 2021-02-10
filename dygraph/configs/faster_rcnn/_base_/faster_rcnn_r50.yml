@@ -34,7 +34,7 @@ RPNHead:
     nms_thresh: 0.7
     pre_nms_top_n: 12000
     post_nms_top_n: 2000
-    topk_after_collect: True
+    topk_after_collect: False
   test_proposal:
     min_size: 0.0
     nms_thresh: 0.7

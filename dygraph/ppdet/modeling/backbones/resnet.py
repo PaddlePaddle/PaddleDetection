@@ -555,7 +555,7 @@ class Res5Head(nn.Layer):
     def out_shape(self):
         return [ShapeSpec(
             channels=self.feat_out,
-            stride=32, )]
+            stride=16, )]
 
     def forward(self, roi_feat, stage=0):
         y = self.res5(roi_feat)
