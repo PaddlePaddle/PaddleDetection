@@ -116,7 +116,6 @@ class RPNHead(nn.Layer):
 
         rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs,
                                             batch_size)
-
         if self.training:
             loss = self.get_loss(scores, deltas, anchors, inputs)
             return rois, rois_num, loss

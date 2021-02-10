@@ -55,6 +55,8 @@ def get_seg_res(masks, bboxes, mask_nums, image_id, label_to_cat_id_map):
             score = float(bboxes[k][1])
             label = int(bboxes[k][0])
             k = k + 1
+            if label == -1:
+                continue
             cat_id = label_to_cat_id_map[label]
             rle = mask_util.encode(
                 np.array(
