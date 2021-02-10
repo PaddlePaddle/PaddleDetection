@@ -50,7 +50,7 @@ def delta2bbox(deltas, boxes, weights):
     dy = deltas[:, 1::4] / wy
     dw = deltas[:, 2::4] / ww
     dh = deltas[:, 3::4] / wh
-    # Prevent sending too large values into np.exp()
+    # Prevent sending too large values into paddle.exp()
     dw = paddle.clip(dw, max=clip_scale)
     dh = paddle.clip(dh, max=clip_scale)
 
@@ -64,7 +64,7 @@ def delta2bbox(deltas, boxes, weights):
     pred_boxes.append(pred_ctr_y - 0.5 * pred_h)
     pred_boxes.append(pred_ctr_x + 0.5 * pred_w)
     pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
-    pred_boxes = paddle.concat(pred_boxes, axis=-1)
+    pred_boxes = paddle.stack(pred_boxes, axis=-1)
 
     return pred_boxes
 

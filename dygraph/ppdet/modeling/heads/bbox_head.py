@@ -129,7 +129,7 @@ class BBoxHead(nn.Layer):
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
         """
         body_feats (list[Tensor]): Feature maps from backbone
-        rois (Tensor): RoIs generated from RPN module
+        rois (list[Tensor]): RoIs generated from RPN module
         rois_num (Tensor): The number of RoIs in each image
         inputs (dict{Tensor}): The ground-truth of image
         """
