@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import paddle
 
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
 __all__ = ['SOLOv2']
@@ -37,7 +37,6 @@ class SOLOv2(BaseArch):
     """
 
     __category__ = 'architecture'
-    __inject__ = ['backbone', 'neck', 'solov2_head', 'mask_head']
 
     def __init__(self, backbone, solov2_head, mask_head, neck=None):
         super(SOLOv2, self).__init__()
@@ -46,11 +45,28 @@ class SOLOv2(BaseArch):
         self.solov2_head = solov2_head
         self.mask_head = mask_head
 
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        backbone = create(cfg['backbone'])
+
+        kwargs = {'input_shape': backbone.out_shape}
+        neck = create(cfg['neck'], **kwargs)
+
+        kwargs = {'input_shape': neck.out_shape}
+        solov2_head = create(cfg['solov2_head'], **kwargs)
+        mask_head = create(cfg['mask_head'], **kwargs)
+
+        return {
+            'backbone': backbone,
+            'neck': neck,
+            'solov2_head': solov2_head,
+            'mask_head': mask_head,
+        }
+
     def model_arch(self):
         body_feats = self.backbone(self.inputs)
 
-        if self.neck is not None:
-            body_feats, spatial_scale = self.neck(body_feats)
+        body_feats = self.neck(body_feats)
 
         self.seg_pred = self.mask_head(body_feats)
 
