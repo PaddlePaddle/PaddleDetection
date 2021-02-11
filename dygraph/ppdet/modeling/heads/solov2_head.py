@@ -190,7 +190,7 @@ class SOLOv2Head(nn.Layer):
         self.num_classes = num_classes
         self.in_channels = in_channels
         self.seg_num_grids = num_grids
-        self.cate_out_channels = self.num_classes - 1
+        self.cate_out_channels = self.num_classes
         self.seg_feat_channels = seg_feat_channels
         self.stacked_convs = stacked_convs
         self.kernel_out_channels = kernel_out_channels

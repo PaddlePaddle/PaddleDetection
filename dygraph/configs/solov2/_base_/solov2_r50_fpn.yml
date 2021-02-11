@@ -9,7 +9,6 @@ SOLOv2:
   mask_head: SOLOv2MaskHead
 
 ResNet:
-  # index 0 stands for res2
   depth: 50
   norm_type: bn
   freeze_at: 0
@@ -17,11 +16,7 @@ ResNet:
   num_stages: 4
 
 FPN:
-  in_channels: [256, 512, 1024, 2048]
   out_channel: 256
-  min_level: 0
-  max_level: 4
-  spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
 
 SOLOv2Head:
   seg_feat_channels: 512
@@ -32,7 +27,6 @@ SOLOv2Head:
   mask_nms: MaskMatrixNMS
 
 SOLOv2MaskHead:
-  in_channels: 256
   mid_channels: 128
   out_channels: 256
   start_level: 0
