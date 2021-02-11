@@ -22,11 +22,12 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import paddle
 import paddle.fluid as fluid
 
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
 import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
 
 from ppdet.data.reader import create_reader
 
@@ -48,15 +49,27 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    use_xpu = False
+    if hasattr(cfg, 'use_xpu'):
+        check_xpu(cfg.use_xpu)
+        use_xpu = cfg.use_xpu
     # check if paddlepaddle version is satisfied
     check_version()
+
+    assert not (use_xpu and cfg.use_gpu), \
+            'Can not run on both XPU and GPU'
 
     main_arch = cfg.architecture
 
     multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
 
     # define executor
-    place = fluid.CUDAPlace(0) if cfg.use_gpu else fluid.CPUPlace()
+    if cfg.use_gpu:
+        place = fluid.CUDAPlace(0)
+    elif use_xpu:
+        place = fluid.XPUPlace(0)
+    else:
+        place = fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     # build program
@@ -74,7 +87,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     reader = create_reader(cfg.EvalReader, devices_num=1)
-    loader.set_sample_list_generator(reader, place)
+    # When iterable mode, set set_sample_list_generator(reader, place)
+    loader.set_sample_list_generator(reader)
 
     dataset = cfg['EvalReader']['dataset']
 
@@ -89,6 +103,8 @@ def main():
         return
 
     compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
+    if use_xpu:
+        compile_program = eval_prog
 
     assert cfg.metric != 'OID', "eval process of OID dataset \
                           is not supported."
@@ -132,9 +148,6 @@ def main():
                                                 extra_keys)
         sub_eval_prog = sub_eval_prog.clone(True)
 
-    #if 'weights' in cfg:
-    #    checkpoint.load_params(exe, sub_eval_prog, cfg.weights)
-
     # load model
     exe.run(startup_prog)
     if 'weights' in cfg:
@@ -146,7 +159,6 @@ def main():
     results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
                        sub_eval_prog, sub_keys, sub_values, resolution)
 
-    #print(cfg['EvalReader']['dataset'].__dict__)
     # evaluation
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
@@ -164,6 +176,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--json_eval",

@@ -183,13 +183,14 @@ class Reader(object):
         inputs_def (dict): network input definition use to get input fields,
             which is used to determine the order of returned data.
         devices_num (int): number of devices.
+        num_trainers (int): number of trainers. Default 1.
     """
 
     def __init__(self,
                  dataset=None,
                  sample_transforms=None,
                  batch_transforms=None,
-                 batch_size=None,
+                 batch_size=1,
                  shuffle=False,
                  drop_last=False,
                  drop_empty=True,
@@ -203,7 +204,8 @@ class Reader(object):
                  bufsize=-1,
                  memsize='3G',
                  inputs_def=None,
-                 devices_num=1):
+                 devices_num=1,
+                 num_trainers=1):
         self._dataset = dataset
         self._roidbs = self._dataset.get_roidb()
         self._fields = copy.deepcopy(inputs_def[
@@ -244,8 +246,8 @@ class Reader(object):
         self._drop_empty = drop_empty
 
         # sampling
-        self._mixup_epoch = mixup_epoch
-        self._cutmix_epoch = cutmix_epoch
+        self._mixup_epoch = mixup_epoch // num_trainers
+        self._cutmix_epoch = cutmix_epoch // num_trainers
         self._class_aware_sampling = class_aware_sampling
 
         self._load_img = False
@@ -338,16 +340,17 @@ class Reader(object):
             sample["curr_iter"] = self._curr_iter
             self._pos += 1
 
-            if self._drop_empty and self._fields and 'gt_mask' in self._fields:
-                if _has_empty(_segm(sample)):
-                    #logger.warn('gt_mask is empty or not valid in {}'.format(
-                    #    sample['im_file']))
-                    continue
-            if self._drop_empty and self._fields and 'gt_bbox' in self._fields:
+            if self._drop_empty and self._fields and 'gt_bbox' in sample:
                 if _has_empty(sample['gt_bbox']):
                     #logger.warn('gt_bbox {} is empty or not valid in {}, '
                     #   'drop this sample'.format(
                     #    sample['im_file'], sample['gt_bbox']))
+                    continue
+            has_mask = 'gt_mask' in self._fields or 'gt_segm' in self._fields
+            if self._drop_empty and self._fields and has_mask:
+                if _has_empty(_segm(sample)):
+                    #logger.warn('gt_mask is empty or not valid in {}'.format(
+                    #    sample['im_file']))
                     continue
 
             if self._load_img:
@@ -415,7 +418,11 @@ class Reader(object):
             self._parallel.stop()
 
 
-def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
+def create_reader(cfg,
+                  max_iter=0,
+                  global_cfg=None,
+                  devices_num=1,
+                  num_trainers=1):
     """
     Return iterable data reader.
 
@@ -431,6 +438,7 @@ def create_reader(cfg, max_iter=0, global_cfg=None, devices_num=1):
                                                'use_fine_grained_loss', False)
         cfg['num_classes'] = getattr(global_cfg, 'num_classes', 80)
     cfg['devices_num'] = devices_num
+    cfg['num_trainers'] = num_trainers
     reader = Reader(**cfg)()
 
     def _reader():

@@ -53,7 +53,7 @@ class CascadeBBoxAssigner(object):
         self.use_random = shuffle_before_sample
         self.class_aware = class_aware
 
-    def __call__(self, input_rois, feed_vars, curr_stage):
+    def __call__(self, input_rois, feed_vars, curr_stage, max_overlap=None):
 
         curr_bbox_reg_w = [
             1. / self.bbox_reg_weights[curr_stage],
@@ -76,5 +76,7 @@ class CascadeBBoxAssigner(object):
             class_nums=self.class_nums if self.class_aware else 2,
             is_cls_agnostic=not self.class_aware,
             is_cascade_rcnn=True
-            if curr_stage > 0 and not self.class_aware else False)
+            if curr_stage > 0 and not self.class_aware else False,
+            max_overlap=max_overlap,
+            return_max_overlap=True)
         return outs

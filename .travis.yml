@@ -20,7 +20,7 @@ addons:
 before_install:
   - sudo pip install -U virtualenv pre-commit pip
   - docker pull paddlepaddle/paddle:latest
-  - git pull https://github.com/PaddlePaddle/PaddleDetection master -r
+  - git pull https://github.com/PaddlePaddle/PaddleDetection master
 
 script:
   - exit_code=0

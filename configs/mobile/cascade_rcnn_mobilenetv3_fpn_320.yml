@@ -2,7 +2,7 @@ architecture: CascadeRCNN
 max_iters: 500000
 snapshot_iter: 50000
 use_gpu: true
-log_smooth_window: 20
+log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x1_0_ssld_pretrained.tar
 weights: output/cascade_rcnn_mobilenetv3_fpn_320/model_final

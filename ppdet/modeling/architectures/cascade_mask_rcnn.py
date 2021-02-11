@@ -23,6 +23,7 @@ import paddle.fluid as fluid
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 
 from .input_helper import multiscale_def
 
@@ -62,6 +63,7 @@ class CascadeMaskRCNN(object):
                  rpn_only=False,
                  fpn='FPN'):
         super(CascadeMaskRCNN, self).__init__()
+        check_version('2.0.0-rc0')
         assert fpn is not None, "cascade RCNN requires FPN"
         self.backbone = backbone
         self.fpn = fpn
@@ -135,6 +137,7 @@ class CascadeMaskRCNN(object):
 
         proposals = None
         bbox_pred = None
+        max_overlap = None
         for i in range(3):
             if i > 0:
                 refined_bbox = self._decode_box(
@@ -146,10 +149,14 @@ class CascadeMaskRCNN(object):
 
             if mode == 'train':
                 outs = self.bbox_assigner(
-                    input_rois=refined_bbox, feed_vars=feed_vars, curr_stage=i)
+                    input_rois=refined_bbox,
+                    feed_vars=feed_vars,
+                    curr_stage=i,
+                    max_overlap=max_overlap)
 
                 proposals = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
             else:
                 proposals = refined_bbox
             proposal_list.append(proposals)
@@ -437,4 +444,4 @@ class CascadeMaskRCNN(object):
     def test(self, feed_vars, exclude_nms=False):
         assert not exclude_nms, "exclude_nms for {} is not support currently".format(
             self.__class__.__name__)
-        return self.build(feed_vars, 'test', exclude_nms=exclude_nms)
+        return self.build(feed_vars, 'test')

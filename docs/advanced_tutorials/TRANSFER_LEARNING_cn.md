@@ -7,7 +7,7 @@
 
 ### 选择数据
 
-迁移学习需要使用自己的数据集，目前已支持COCO和VOC的数据标注格式，在```ppdet/data/tools/x2coco.py```中给出了labelme和cityscape标注格式转换为COCO格式的脚本，具体使用方式可以参考[自定义数据源](READER.md)。数据准备完成后，在配置文件中配置数据路径，对应修改reader中的路径参数即可。
+迁移学习需要使用自己的数据集，目前已支持COCO和VOC的数据标注格式，在```tools/x2coco.py```中给出了voc、labelme和cityscape标注格式转换为COCO格式的脚本，具体使用方式可以参考[自定义数据源](READER.md)。数据准备完成后，在配置文件中配置数据路径，对应修改reader中的路径参数即可。
 
 1. COCO数据集需要修改COCODataSet中的参数，以[yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66)为例，修改yolov3\_reader中的配置：
 

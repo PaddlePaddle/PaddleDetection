@@ -101,7 +101,7 @@ class COCODataSet(DataSet):
                         'and load image information only.'.format(anno_path))
 
         for img_id in img_ids:
-            img_anno = coco.loadImgs(img_id)[0]
+            img_anno = coco.loadImgs([img_id])[0]
             im_fname = img_anno['file_name']
             im_w = float(img_anno['width'])
             im_h = float(img_anno['height'])
@@ -127,7 +127,7 @@ class COCODataSet(DataSet):
             }
 
             if not self.load_image_only:
-                ins_anno_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
+                ins_anno_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=False)
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
@@ -137,15 +137,17 @@ class COCODataSet(DataSet):
                     y1 = max(0, y)
                     x2 = min(im_w - 1, x1 + max(0, box_w - 1))
                     y2 = min(im_h - 1, y1 + max(0, box_h - 1))
-                    if inst['area'] > 0 and x2 >= x1 and y2 >= y1:
+                    if x2 >= x1 and y2 >= y1:
                         inst['clean_bbox'] = [x1, y1, x2, y2]
                         bboxes.append(inst)
                     else:
                         logger.warn(
                             'Found an invalid bbox in annotations: im_id: {}, '
-                            'area: {} x1: {}, y1: {}, x2: {}, y2: {}.'.format(
-                                img_id, float(inst['area']), x1, y1, x2, y2))
+                            'x1: {}, y1: {}, x2: {}, y2: {}.'.format(
+                                img_id, x1, y1, x2, y2))
                 num_bbox = len(bboxes)
+                if num_bbox <= 0:
+                    continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
@@ -154,13 +156,18 @@ class COCODataSet(DataSet):
                 difficult = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
 
+                has_segmentation = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
                     gt_class[i][0] = catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
-                    if 'segmentation' in box:
+                    if 'segmentation' in box and box['segmentation']:
                         gt_poly[i] = box['segmentation']
+                        has_segmentation = True
+
+                if has_segmentation and not any(gt_poly):
+                    continue
 
                 coco_rec.update({
                     'is_crowd': is_crowd,

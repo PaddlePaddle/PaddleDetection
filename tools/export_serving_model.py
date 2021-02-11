@@ -16,17 +16,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os
+import os, sys
+# add python path of PadleDetection to sys.path
+parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
+if parent_path not in sys.path:
+    sys.path.append(parent_path)
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_config, check_version
+from ppdet.utils.check import check_config, check_version, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 import yaml
 import logging
-from export_model import parse_reader, dump_infer_config, prune_feed_vars
+from ppdet.utils.export_utils import dump_infer_config, prune_feed_vars
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
@@ -90,6 +95,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",

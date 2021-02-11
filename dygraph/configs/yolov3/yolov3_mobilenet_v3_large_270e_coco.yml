@@ -1,0 +1,10 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_270e.yml',
+  '_base_/yolov3_mobilenet_v3_large.yml',
+  '_base_/yolov3_reader.yml',
+]
+
+snapshot_epoch: 5
+weights: output/yolov3_mobilenet_v3_large_270e_coco/model_final

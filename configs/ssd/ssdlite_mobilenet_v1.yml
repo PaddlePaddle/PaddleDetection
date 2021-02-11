@@ -2,7 +2,6 @@ architecture: SSD
 use_gpu: true
 max_iters: 400000
 snapshot_iter: 20000
-log_smooth_window: 20
 log_iter: 20
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV1_ssld_pretrained.tar
@@ -147,7 +146,7 @@ TestReader:
     interp: 1
     max_size: 0
     target_size: 300
-    use_cv2: false
+    use_cv2: true
   - !NormalizeImage
     mean: [0.485, 0.456, 0.406]
     std: [0.229, 0.224, 0.225]

@@ -26,13 +26,14 @@ import numpy as np
 from collections import OrderedDict
 
 from paddleslim.dist.single_distiller import merge, l2_loss
+import paddle
 from paddle import fluid
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.data.reader import create_reader
 from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -160,7 +161,8 @@ def main():
     start_iter = 0
     train_reader = create_reader(cfg.TrainReader, (cfg.max_iters - start_iter) *
                                  devices_num, cfg)
-    train_loader.set_sample_list_generator(train_reader, place)
+    # When iterable mode, set set_sample_list_generator(train_reader, place)
+    train_loader.set_sample_list_generator(train_reader)
 
     # get all student variables
     student_vars = []
@@ -183,7 +185,8 @@ def main():
     eval_prog = eval_prog.clone(True)
 
     eval_reader = create_reader(cfg.EvalReader)
-    eval_loader.set_sample_list_generator(eval_reader, place)
+    # When iterable mode, set set_sample_list_generator(eval_reader, place)
+    eval_loader.set_sample_list_generator(eval_reader)
 
     # parse eval fetches
     extra_keys = []
@@ -369,6 +372,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

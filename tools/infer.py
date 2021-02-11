@@ -25,15 +25,16 @@ if parent_path not in sys.path:
 import glob
 import numpy as np
 import six
-from PIL import Image
+from PIL import Image, ImageOps
 
+import paddle
 from paddle import fluid
 
 from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.utils.eval_utils import parse_fetches
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 from ppdet.utils.visualizer import visualize_results
 import ppdet.utils.checkpoint as checkpoint
 
@@ -138,7 +139,7 @@ def main():
 
     # parse dataset category
     if cfg.metric == 'COCO':
-        from ppdet.utils.coco_eval import bbox2out, mask2out, get_category_info
+        from ppdet.utils.coco_eval import bbox2out, mask2out, segm2out, get_category_info
     if cfg.metric == 'OID':
         from ppdet.utils.oid_eval import bbox2out, get_category_info
     if cfg.metric == "VOC":
@@ -180,15 +181,22 @@ def main():
         logger.info('Infer iter {}'.format(iter_id))
         if 'TTFNet' in cfg.architecture:
             res['bbox'][1].append([len(res['bbox'][0])])
+        if 'CornerNet' in cfg.architecture:
+            from ppdet.utils.post_process import corner_post_process
+            post_config = getattr(cfg, 'PostProcess', None)
+            corner_post_process(res, post_config, cfg.num_classes)
 
         bbox_results = None
         mask_results = None
+        segm_results = None
         lmk_results = None
         if 'bbox' in res:
             bbox_results = bbox2out([res], clsid2catid, is_bbox_normalized)
         if 'mask' in res:
             mask_results = mask2out([res], clsid2catid,
                                     model.mask_head.resolution)
+        if 'segm' in res:
+            segm_results = segm2out([res], clsid2catid)
         if 'landmark' in res:
             lmk_results = lmk2out([res], is_bbox_normalized)
 
@@ -197,6 +205,7 @@ def main():
         for im_id in im_ids:
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
+            image = ImageOps.exif_transpose(image)
 
             # use VisualDL to log original image
             if FLAGS.use_vdl:
@@ -208,7 +217,7 @@ def main():
             image = visualize_results(image,
                                       int(im_id), catid2name,
                                       FLAGS.draw_threshold, bbox_results,
-                                      mask_results, lmk_results)
+                                      mask_results, segm_results, lmk_results)
 
             # use VisualDL to log image with bbox
             if FLAGS.use_vdl:
@@ -226,6 +235,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "--infer_dir",

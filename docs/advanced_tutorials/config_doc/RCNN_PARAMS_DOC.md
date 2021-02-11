@@ -16,9 +16,7 @@ use_gpu: true
 max_iters: 180000
 # 模型保存间隔，如果训练时eval设置为True，会在保存后进行验证
 snapshot_iter: 10000
-# 输出指定区间的平均结果，默认20，即输出20次的平均结果
-log_smooth_window: 20
-# 默认打印log的间隔，默认20
+# 输出指定区间的平均结果，默认20，即输出20次的平均结果。也是默认打印log的间隔。
 log_iter: 20
 # 训练权重的保存路径
 save_dir: output

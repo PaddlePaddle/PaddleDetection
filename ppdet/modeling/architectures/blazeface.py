@@ -51,7 +51,7 @@ class BlazeFace(object):
 
     __category__ = 'architecture'
     __inject__ = ['backbone', 'output_decoder']
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'with_lmk']
 
     def __init__(self,
                  backbone="BlazeNet",

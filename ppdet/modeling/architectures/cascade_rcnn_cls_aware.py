@@ -24,6 +24,7 @@ import copy
 
 import paddle.fluid as fluid
 from ppdet.core.workspace import register
+from ppdet.utils.check import check_version
 from .input_helper import multiscale_def
 
 __all__ = ['CascadeRCNNClsAware']
@@ -60,6 +61,7 @@ class CascadeRCNNClsAware(object):
             bbox_assigner='CascadeBBoxAssigner',
             fpn='FPN', ):
         super(CascadeRCNNClsAware, self).__init__()
+        check_version('2.0.0-rc0')
         assert fpn is not None, "cascade RCNN requires FPN"
         self.backbone = backbone
         self.fpn = fpn
@@ -117,6 +119,7 @@ class CascadeRCNNClsAware(object):
 
         self.cascade_decoded_box = []
         self.cascade_cls_prob = []
+        max_overlap = None
 
         for stage in range(3):
             if stage > 0:
@@ -126,9 +129,13 @@ class CascadeRCNNClsAware(object):
             if mode == "train":
                 self.cascade_var_v[stage].stop_gradient = True
                 outs = self.bbox_assigner(
-                    input_rois=pool_rois, feed_vars=feed_vars, curr_stage=stage)
+                    input_rois=pool_rois,
+                    feed_vars=feed_vars,
+                    curr_stage=stage,
+                    max_overlap=max_overlap)
                 pool_rois = outs[0]
-                rcnn_target_list.append(outs)
+                max_overlap = outs[-1]
+                rcnn_target_list.append(outs[:-1])
 
             # extract roi features
             roi_feat = self.roi_extractor(body_feats, pool_rois, spatial_scale)
@@ -319,7 +326,7 @@ class CascadeRCNNClsAware(object):
             return self.build_multi_scale(feed_vars)
         return self.build(feed_vars, 'test')
 
-    def test(self, feed_vars):
+    def test(self, feed_vars, exclude_nms=False):
         assert not exclude_nms, "exclude_nms for {} is not support currently".format(
             self.__class__.__name__)
         return self.build(feed_vars, 'test')

@@ -30,6 +30,7 @@ import six
 from collections import deque
 from paddle.fluid import profiler
 
+import paddle
 from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
@@ -42,7 +43,7 @@ from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 
 import logging
@@ -53,7 +54,10 @@ logger = logging.getLogger(__name__)
 
 def main():
     env = os.environ
-    FLAGS.dist = 'PADDLE_TRAINER_ID' in env and 'PADDLE_TRAINERS_NUM' in env
+    FLAGS.dist = 'PADDLE_TRAINER_ID' in env \
+                    and 'PADDLE_TRAINERS_NUM' in env \
+                    and int(env['PADDLE_TRAINERS_NUM']) > 1
+    num_trainers = int(env.get('PADDLE_TRAINERS_NUM', 1))
     if FLAGS.dist:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
         local_seed = (99 + trainer_id)
@@ -69,8 +73,15 @@ def main():
     check_config(cfg)
     # check if set use_gpu=True in paddlepaddle cpu version
     check_gpu(cfg.use_gpu)
+    use_xpu = False
+    if hasattr(cfg, 'use_xpu'):
+        check_xpu(cfg.use_xpu)
+        use_xpu = cfg.use_xpu
     # check if paddlepaddle version is satisfied
     check_version()
+
+    assert not (use_xpu and cfg.use_gpu), \
+            'Can not run on both XPU and GPU'
 
     save_only = getattr(cfg, 'save_prediction_only', False)
     if save_only:
@@ -80,14 +91,25 @@ def main():
 
     if cfg.use_gpu:
         devices_num = fluid.core.get_cuda_device_count()
+    elif use_xpu:
+        # ToDo(qingshu): XPU only support single card now
+        devices_num = 1
     else:
         devices_num = int(os.environ.get('CPU_NUM', 1))
 
-    if 'FLAGS_selected_gpus' in env:
+    if cfg.use_gpu and 'FLAGS_selected_gpus' in env:
         device_id = int(env['FLAGS_selected_gpus'])
+    elif use_xpu and 'FLAGS_selected_xpus' in env:
+        device_id = int(env['FLAGS_selected_xpus'])
     else:
         device_id = 0
-    place = fluid.CUDAPlace(device_id) if cfg.use_gpu else fluid.CPUPlace()
+
+    if cfg.use_gpu:
+        place = fluid.CUDAPlace(device_id)
+    elif use_xpu:
+        place = fluid.XPUPlace(device_id)
+    else:
+        place = fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     lr_builder = create('LearningRate')
@@ -143,7 +165,8 @@ def main():
         eval_prog = eval_prog.clone(True)
 
         eval_reader = create_reader(cfg.EvalReader, devices_num=1)
-        eval_loader.set_sample_list_generator(eval_reader, place)
+        # When iterable mode, set set_sample_list_generator(eval_reader, place)
+        eval_loader.set_sample_list_generator(eval_reader)
 
         # parse eval fetches
         extra_keys = []
@@ -179,9 +202,13 @@ def main():
         loss_name=loss.name,
         build_strategy=build_strategy,
         exec_strategy=exec_strategy)
+    if use_xpu:
+        compiled_train_prog = train_prog
 
     if FLAGS.eval:
         compiled_eval_prog = fluid.CompiledProgram(eval_prog)
+        if use_xpu:
+            compiled_eval_prog = eval_prog
 
     fuse_bn = getattr(model.backbone, 'norm_type', None) == 'affine_channel'
 
@@ -201,8 +228,10 @@ def main():
     train_reader = create_reader(
         cfg.TrainReader, (cfg.max_iters - start_iter) * devices_num,
         cfg,
-        devices_num=devices_num)
-    train_loader.set_sample_list_generator(train_reader, place)
+        devices_num=devices_num,
+        num_trainers=num_trainers)
+    # When iterable mode, set set_sample_list_generator(train_reader, place)
+    train_loader.set_sample_list_generator(train_reader)
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False
@@ -213,14 +242,14 @@ def main():
     # if map_type not set, use default 11point, only use in VOC eval
     map_type = cfg.map_type if 'map_type' in cfg else '11point'
 
-    train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+    train_stats = TrainingStats(cfg.log_iter, train_keys)
     train_loader.start()
     start_time = time.time()
     end_time = time.time()
 
     cfg_name = os.path.basename(FLAGS.config).split('.')[0]
     save_dir = os.path.join(cfg.save_dir, cfg_name)
-    time_stat = deque(maxlen=cfg.log_smooth_window)
+    time_stat = deque(maxlen=cfg.log_iter)
     best_box_ap_list = [0.0, 0]  #[map, iter]
 
     # use VisualDL to log data
@@ -251,8 +280,9 @@ def main():
         train_stats.update(stats)
         logs = train_stats.log()
         if it % cfg.log_iter == 0 and (not FLAGS.dist or trainer_id == 0):
-            strs = 'iter: {}, lr: {:.6f}, {}, time: {:.3f}, eta: {}'.format(
-                it, np.mean(outs[-1]), logs, time_cost, eta)
+            ips = float(cfg['TrainReader']['batch_size']) / time_cost
+            strs = 'iter: {}, lr: {:.6f}, {}, eta: {}, batch_cost: {:.5f} sec, ips: {:.5f} images/sec'.format(
+                it, np.mean(outs[-1]), logs, eta, time_cost, ips)
             logger.info(strs)
 
         # NOTE : profiler tools, used for benchmark
@@ -309,6 +339,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

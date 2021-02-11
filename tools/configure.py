@@ -55,7 +55,6 @@ MISC_CONFIG = {
     "weights": "<value>",
     "metric": "<value>",
     "map_type": "11point",
-    "log_smooth_window": 20,
     "snapshot_iter": 10000,
     "log_iter": 20,
     "use_gpu": True,

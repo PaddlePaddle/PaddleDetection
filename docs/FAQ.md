@@ -18,6 +18,10 @@
 batch size可以达到每GPU 4 (Tesla V100 16GB)。
 
 
+**Q:**  哪些参数会影响内存使用量? </br>
+**A:**  会影响内存使用量的参数有：`是否使用多进程use_process、 batch_size、reader中的bufsize、reader中的memsize、数据预处理中的RandomExpand ratio参数、以及图像本身大小`等。
+
+
 **Q:**  如何修改数据预处理? </br>
 **A:**  可在配置文件中设置 `sample_transform`。注意需要在配置文件中加入**完整预处理**
 例如RCNN模型中`DecodeImage`, `NormalizeImage` and `Permute`。

@@ -3,3 +3,6 @@
 # from source files in unittest.sh
 tqdm
 cython
+shapely
+llvmlite==0.33
+numba==0.50

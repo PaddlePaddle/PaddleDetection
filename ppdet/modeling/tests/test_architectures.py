@@ -19,6 +19,7 @@ from __future__ import print_function
 import unittest
 import numpy as np
 
+import paddle
 import paddle.fluid as fluid
 import os
 import sys
@@ -29,6 +30,7 @@ if parent_path not in sys.path:
 
 from ppdet.modeling.tests.decorator_helper import prog_scope
 from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.utils.check import enable_static_mode
 
 
 class TestFasterRCNN(unittest.TestCase):
@@ -70,6 +72,10 @@ class TestCascadeRCNN(TestFasterRCNN):
         self.cfg_file = 'configs/cascade_rcnn_r50_fpn_1x.yml'
 
 
+@unittest.skipIf(
+    paddle.version.full_version < "1.8.4",
+    "Paddle 2.0 should be used for YOLOv3 takes scale_x_y as inputs, "
+    "disable this unittest for Paddle major version < 2")
 class TestYolov3(TestFasterRCNN):
     def set_config(self):
         self.cfg_file = 'configs/yolov3_darknet.yml'
@@ -86,4 +92,5 @@ class TestSSD(TestFasterRCNN):
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     unittest.main()

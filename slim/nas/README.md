@@ -5,9 +5,9 @@
 ## 概述
 
 我们选取人脸检测的BlazeFace模型作为神经网络搜索示例，该示例使用[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim)
-辅助完成神经网络搜索实验，具体技术细节，请您参考[神经网络搜索策略](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/docs/tutorials/nas_demo.md)。<br>
+辅助完成神经网络搜索实验，具体技术细节，请您参考[神经网络搜索策略](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/zh_cn/quick_start/nas_tutorial.md)。<br>
 基于PaddleSlim进行搜索实验过程中，搜索限制条件可以选择是浮点运算数(FLOPs)限制还是硬件延时(latency)限制，硬件延时限制需要提供延时表。本示例提供一份基于blazeface搜索空间的硬件延时表，名称是latency_855.txt(基于PaddleLite在骁龙855上测试的延时)，可以直接用该表进行blazeface的硬件延时搜索实验。<br>
-硬件延时表每个字段的含义可以参考：[硬件延时表说明](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/docs/table_latency.md)
+硬件延时表每个字段的含义可以参考：[硬件延时表说明](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/zh_cn/api_cn/table_latency.md)
 
 
 ## 定义搜索空间
@@ -48,7 +48,7 @@ blaze_filters与double_blaze_filters字段请参考[blazenet.py](https://github.
 ## 开始搜索
 首先需要安装PaddleSlim，请参考[安装教程](https://paddlepaddle.github.io/PaddleSlim/#_2)。
 
-然后进入 `slim/nas`目录中，修改blazeface.yml配置，配置文件中搜索配置字段含义请参考[NAS-API文档](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/docs/api/nas_api.md)<br>
+然后进入 `slim/nas`目录中，修改blazeface.yml配置，配置文件中搜索配置字段含义请参考[NAS-API文档](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/zh_cn/api_cn/nas_api.rst)<br>
 
 配置文件blazeface.yml中的`Constraint`字段表示当前搜索实验的搜索限制条件实例: <br>
 - `ctype`：具体的限制条件，可以设置为flops或者latency，分别表示浮点运算数限制和硬件延时限制。
@@ -84,10 +84,10 @@ BlazeNet:
 
 - （2）训练、评估与预测：
 
-启动完整的训练评估实验，可参考PaddleDetection的[训练、评估与预测流程](../../docs/tutorials/GETTING_STARTED_cn.md)
+启动完整的训练评估实验，可参考PaddleDetection的[训练、评估与预测流程](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/tutorials/GETTING_STARTED_cn.md)
 
 ## 实验结果
-请参考[人脸检测模型库](../../configs/face_detection/README.md)中BlazeFace-NAS的实验结果。
+请参考[人脸检测模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/featured_model/FACE_DETECTION.md)中BlazeFace-NAS的实验结果。
 
 ## FAQ
 - 运行报错：`socket.error: [Errno 98] Address already in use`。

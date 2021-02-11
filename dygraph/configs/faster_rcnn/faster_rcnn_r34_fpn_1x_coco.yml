@@ -1,0 +1,34 @@
+_BASE_: [
+  'faster_rcnn_r50_fpn_1x_coco.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet34_pretrained.tar
+weights: output/faster_rcnn_r34_fpn_1x_coco/model_final
+
+ResNet:
+  # index 0 stands for res2
+  depth: 34
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+FPN:
+  in_channels: [64, 128, 256, 512]
+  out_channel: 256
+  min_level: 0
+  max_level: 4
+  spatial_scale: [0.25, 0.125, 0.0625, 0.03125]
+
+LearningRate:
+  base_lr: 0.02
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
+
+TrainReader:
+  batch_size: 2

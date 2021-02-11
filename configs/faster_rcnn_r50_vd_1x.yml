@@ -1,7 +1,7 @@
 architecture: FasterRCNN
 use_gpu: true
 max_iters: 180000
-log_smooth_window: 20
+log_iter: 20
 save_dir: output/faster-r50-vd-c4-1x
 snapshot_iter: 10000
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar

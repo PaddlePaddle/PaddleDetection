@@ -27,6 +27,7 @@ import numpy as np
 import datetime
 from collections import deque
 
+import paddle
 from paddle import fluid
 
 from ppdet.experimental import mixed_precision_context
@@ -37,7 +38,7 @@ from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run
 from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.analysis import flops, TableLatencyEvaluator
 from paddleslim.nas import SANAS
@@ -296,7 +297,8 @@ def main():
                     fetches = archs(feed_vars, 'eval', cfg)
             eval_prog = eval_prog.clone(True)
 
-            eval_loader.set_sample_list_generator(eval_reader, place)
+            # When iterable mode, set set_sample_list_generator(eval_reader, place)
+            eval_loader.set_sample_list_generator(eval_reader)
             extra_keys = ['im_id', 'im_shape', 'gt_bbox']
             eval_keys, eval_values, eval_cls = parse_fetches(fetches, eval_prog,
                                                              extra_keys)
@@ -324,16 +326,16 @@ def main():
                 exec_strategy=exec_strategy)
         if FLAGS.eval:
             compiled_eval_prog = fluid.CompiledProgram(eval_prog)
+        # When iterable mode, set set_sample_list_generator(train_reader, place)
+        train_loader.set_sample_list_generator(train_reader)
 
-        train_loader.set_sample_list_generator(train_reader, place)
-
-        train_stats = TrainingStats(cfg.log_smooth_window, train_keys)
+        train_stats = TrainingStats(cfg.log_iter, train_keys)
         train_loader.start()
         end_time = time.time()
 
         cfg_name = os.path.basename(FLAGS.config).split('.')[0]
         save_dir = os.path.join(cfg.save_dir, cfg_name)
-        time_stat = deque(maxlen=cfg.log_smooth_window)
+        time_stat = deque(maxlen=cfg.log_iter)
         ap = 0
         for it in range(start_iter, cfg.max_iters):
             start_time = end_time
@@ -377,6 +379,7 @@ def main():
 
 
 if __name__ == '__main__':
+    enable_static_mode()
     parser = ArgsParser()
     parser.add_argument(
         "-r",

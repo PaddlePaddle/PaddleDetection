@@ -105,7 +105,7 @@ class FPN(object):
                 out_shape=[body_input.shape[2], body_input.shape[3]],
                 name=topdown_name)
 
-        return lateral + topdown
+        return fluid.layers.elementwise_add(lateral, topdown)
 
     def get_output(self, body_dict):
         """

@@ -1,0 +1,132 @@
+import java.security.MessageDigest
+
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion "30.0.2"
+
+    defaultConfig {
+        applicationId "com.baidu.paddledetection.detection"
+        minSdkVersion 23
+        targetSdkVersion 30
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_PLATFORM=android-23', '-DANDROID_STL=c++_shared', "-DANDROID_TOOLCHAIN="
+                abiFilters 'arm64-v8a'
+                cppFlags "-std=c++11"
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.10.2"
+        }
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'androidx.appcompat:appcompat:1.1.0'
+    implementation 'com.google.android.material:material:1.0.0'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
+    implementation 'androidx.navigation:navigation-fragment:2.1.0'
+    implementation 'androidx.navigation:navigation-ui:2.1.0'
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+}
+
+def archives = [
+        [
+                'src' : 'https://paddlelite-demo.bj.bcebos.com/libs/android/paddle_lite_libs_v2_6_1.tar.gz',
+                'dest': 'PaddleLite'
+        ],
+        [
+                'src' : 'https://paddlelite-demo.bj.bcebos.com/libs/android/opencv-4.2.0-android-sdk.tar.gz',
+                'dest': 'OpenCV'
+        ],
+        // yolov3_mobilenet_v3
+        [
+                'src' : 'https://paddlelite-demo.bj.bcebos.com/models/yolov3_mobilenet_v3_prune86_FPGM_320_fp32_for_cpu_v2_6_1.tar.gz',
+                'dest' : 'src/main/assets/models/yolov3_mobilenet_v3_for_cpu'
+        ],
+        [
+                'src' : 'https://paddlelite-demo.bj.bcebos.com/models/yolov3_mobilenet_v3_prune86_FPGM_320_fp32_for_hybrid_cpu_npu_v2_6_1.tar.gz',
+                'dest' : 'src/main/assets/models/yolov3_mobilenet_v3_for_hybrid_cpu_npu'
+        ],
+        // pp-yolo tiny comming soon
+        // ssd_mobilenet_v1 voc
+        [
+                'src' : 'https://paddlelite-demo.bj.bcebos.com/models/ssdlite_mobilenet_v3_large_for_cpu_nb.tar.gz',
+                'dest' : 'src/main/assets/models/ssdlite_mobilenet_v3_large_for_cpu_nb'
+        ],
+]
+
+
+task downloadAndExtractArchives(type: DefaultTask) {
+    doFirst {
+        println "Downloading and extracting archives including libs and models"
+    }
+    doLast {
+        // Prepare cache folder for archives
+        String cachePath = "cache"
+        if (!file("${cachePath}").exists()) {
+            mkdir "${cachePath}"
+        }
+        archives.eachWithIndex { archive, index ->
+            MessageDigest messageDigest = MessageDigest.getInstance('MD5')
+            messageDigest.update(archive.src.bytes)
+            String cacheName = new BigInteger(1, messageDigest.digest()).toString(32)
+            // Download the target archive if not exists
+            boolean copyFiles = !file("${archive.dest}").exists()
+            if (!file("${cachePath}/${cacheName}.tar.gz").exists()) {
+                ant.get(src: archive.src, dest: file("${cachePath}/${cacheName}.tar.gz"))
+                copyFiles = true; // force to copy files from the latest archive files
+            }
+            // Extract the target archive if its dest path does not exists
+            if (copyFiles) {
+                copy {
+                    from tarTree("${cachePath}/${cacheName}.tar.gz")
+                    into "${archive.dest}"
+                }
+            }
+            // Unpack libs
+            copy {
+                from tarTree("cache/${cacheName}.tar.gz")
+                into "cache/${cacheName}"
+            }
+            // Copy PaddlePredictor.jar
+            if (!file("libs/PaddlePredictor.jar").exists()) {
+                copy {
+                    from "cache/${cacheName}/java/PaddlePredictor.jar"
+                    into "libs"
+                }
+            }
+            // Copy libpaddle_lite_jni.so for armeabi-v7a and arm64-v8a
+            if (!file("src/main/jniLibs/armeabi-v7a/libpaddle_lite_jni.so").exists()) {
+                copy {
+                    from "cache/${cacheName}/java/libs/armeabi-v7a/libpaddle_lite_jni.so"
+                    into "src/main/jniLibs/armeabi-v7a"
+                }
+            }
+            if (!file("src/main/jniLibs/arm64-v8a/libpaddle_lite_jni.so").exists()) {
+                copy {
+                    from "cache/${cacheName}/java/libs/arm64-v8a/libpaddle_lite_jni.so"
+                    into "src/main/jniLibs/arm64-v8a"
+                }
+            }
+        }
+    }
+}
+preBuild.dependsOn downloadAndExtractArchives

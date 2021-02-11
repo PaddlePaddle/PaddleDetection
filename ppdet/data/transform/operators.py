@@ -33,9 +33,10 @@ import random
 import math
 import numpy as np
 import os
+import six
 
 import cv2
-from PIL import Image, ImageEnhance, ImageDraw
+from PIL import Image, ImageEnhance, ImageDraw, ImageOps
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling.ops import AnchorGrid
@@ -272,7 +273,8 @@ class ResizeImage(BaseOperator):
                  target_size=0,
                  max_size=0,
                  interp=cv2.INTER_LINEAR,
-                 use_cv2=True):
+                 use_cv2=True,
+                 resize_box=False):
         """
         Rescale image to the specified target size, and capped at max_size
         if max_size != 0.
@@ -285,11 +287,13 @@ class ResizeImage(BaseOperator):
             interp (int): the interpolation method
             use_cv2 (bool): use the cv2 interpolation method or use PIL
                 interpolation method
+            resize_box (bool): whether resize ground truth bbox annotations.
         """
         super(ResizeImage, self).__init__()
         self.max_size = int(max_size)
         self.interp = int(interp)
         self.use_cv2 = use_cv2
+        self.resize_box = resize_box
         if not (isinstance(target_size, int) or isinstance(target_size, list)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List, now is {}".
@@ -348,18 +352,6 @@ class ResizeImage(BaseOperator):
                 fx=im_scale_x,
                 fy=im_scale_y,
                 interpolation=self.interp)
-            if 'semantic' in sample.keys() and sample['semantic'] is not None:
-                semantic = sample['semantic']
-                semantic = cv2.resize(
-                    semantic.astype('float32'),
-                    None,
-                    None,
-                    fx=im_scale_x,
-                    fy=im_scale_y,
-                    interpolation=self.interp)
-                semantic = np.asarray(semantic).astype('int32')
-                semantic = np.expand_dims(semantic, 0)
-                sample['semantic'] = semantic
         else:
             if self.max_size != 0:
                 raise TypeError(
@@ -370,6 +362,38 @@ class ResizeImage(BaseOperator):
             im = im.resize((int(resize_w), int(resize_h)), self.interp)
             im = np.array(im)
         sample['image'] = im
+        sample['scale_factor'] = [im_scale_x, im_scale_y] * 2
+        if 'gt_bbox' in sample and self.resize_box and len(sample[
+                'gt_bbox']) > 0:
+            bboxes = sample['gt_bbox'] * sample['scale_factor']
+            bboxes[:, 0::2] = np.clip(bboxes[:, 0::2], 0, resize_w - 1)
+            bboxes[:, 1::2] = np.clip(bboxes[:, 1::2], 0, resize_h - 1)
+            sample['gt_bbox'] = bboxes
+        if 'semantic' in sample.keys() and sample['semantic'] is not None:
+            semantic = sample['semantic']
+            semantic = cv2.resize(
+                semantic.astype('float32'),
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            semantic = np.asarray(semantic).astype('int32')
+            semantic = np.expand_dims(semantic, 0)
+            sample['semantic'] = semantic
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.resize(
+                    gt_segm,
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=cv2.INTER_NEAREST)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
         return sample
 
 
@@ -473,7 +497,6 @@ class RandomFlipImage(BaseOperator):
                 if self.is_mask_flip and len(sample['gt_poly']) != 0:
                     sample['gt_poly'] = self.flip_segms(sample['gt_poly'],
                                                         height, width)
-
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = self.flip_keypoint(
                         sample['gt_keypoint'], width)
@@ -481,6 +504,9 @@ class RandomFlipImage(BaseOperator):
                 if 'semantic' in sample.keys() and sample[
                         'semantic'] is not None:
                     sample['semantic'] = sample['semantic'][:, ::-1]
+
+                if 'gt_segm' in sample.keys() and sample['gt_segm'] is not None:
+                    sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
 
                 sample['flipped'] = True
                 sample['image'] = im
@@ -1266,8 +1292,8 @@ class MixupImage(BaseOperator):
         if factor <= 0.0:
             return sample['mixup']
         im = self._mixup_img(sample['image'], sample['mixup']['image'], factor)
-        gt_bbox1 = sample['gt_bbox']
-        gt_bbox2 = sample['mixup']['gt_bbox']
+        gt_bbox1 = sample['gt_bbox'].reshape((-1, 4))
+        gt_bbox2 = sample['mixup']['gt_bbox'].reshape((-1, 4))
         gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
         gt_class1 = sample['gt_class']
         gt_class2 = sample['mixup']['gt_class']
@@ -1953,6 +1979,12 @@ class RandomCrop(BaseOperator):
                         sample['gt_poly'] = valid_polys
                     else:
                         sample['gt_poly'] = crop_polys
+
+                if 'gt_segm' in sample:
+                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
+                                                        crop_box)
+                    sample['gt_segm'] = np.take(
+                        sample['gt_segm'], valid_ids, axis=0)
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
@@ -1999,6 +2031,10 @@ class RandomCrop(BaseOperator):
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
+
+    def _crop_segm(self, segm, crop):
+        x1, y1, x2, y2 = crop
+        return segm[:, y1:y2, x1:x2]
 
 
 @register_op
@@ -2061,6 +2097,7 @@ class BboxXYXY2XYWH(BaseOperator):
         return sample
 
 
+@register_op
 class Lighting(BaseOperator):
     """
     Lighting the imagen by eigenvalues and eigenvectors
@@ -2499,22 +2536,65 @@ class DebugVisibleImage(BaseOperator):
     (Currently only supported when not cropping and flipping image.)
     """
 
-    def __init__(self, output_dir='output/debug', is_normalized=False):
+    def __init__(self,
+                 output_dir='output/debug',
+                 use_vdl=False,
+                 is_normalized=False):
         super(DebugVisibleImage, self).__init__()
         self.is_normalized = is_normalized
         self.output_dir = output_dir
+        self.use_vdl = use_vdl
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if not isinstance(self.is_normalized, bool):
             raise TypeError("{}: input type is invalid.".format(self))
+        if self.use_vdl:
+            assert six.PY3, "VisualDL requires Python >= 3.5"
+            from visualdl import LogWriter
+            self.vdl_writer = LogWriter(self.output_dir)
 
     def __call__(self, sample, context=None):
-        image = Image.open(sample['im_file']).convert('RGB')
         out_file_name = sample['im_file'].split('/')[-1]
+        if self.use_vdl:
+            origin_image = Image.open(sample['im_file']).convert('RGB')
+            origin_image = ImageOps.exif_transpose(origin_image)
+            image_np = np.array(origin_image)
+            self.vdl_writer.add_image("original/{}".format(out_file_name),
+                                      image_np, 0)
+
+        if not isinstance(sample['image'], np.ndarray):
+            raise TypeError("{}: sample[image] type is not numpy.".format(self))
+        image = Image.fromarray(np.uint8(sample['image']))
+
         width = sample['w']
         height = sample['h']
         gt_bbox = sample['gt_bbox']
         gt_class = sample['gt_class']
+
+        if 'gt_poly' in sample.keys():
+            poly_to_mask = Poly2Mask()
+            sample = poly_to_mask(sample)
+
+        if 'gt_segm' in sample.keys():
+            import pycocotools.mask as mask_util
+            from ppdet.utils.colormap import colormap
+            image_np = np.array(image).astype('float32')
+            mask_color_id = 0
+            w_ratio = .4
+            alpha = 0.7
+            color_list = colormap(rgb=True)
+            gt_segm = sample['gt_segm']
+            for mask in gt_segm:
+                color_mask = color_list[mask_color_id % len(color_list), 0:3]
+                mask_color_id += 1
+                for c in range(3):
+                    color_mask[c] = color_mask[c] * (1 - w_ratio
+                                                     ) + w_ratio * 255
+                idx = np.nonzero(mask)
+                image_np[idx[0], idx[1], :] *= 1.0 - alpha
+                image_np[idx[0], idx[1], :] += alpha * color_mask
+            image = Image.fromarray(np.uint8(image_np))
+
         draw = ImageDraw.Draw(image)
         for i in range(gt_bbox.shape[0]):
             if self.is_normalized:
@@ -2530,7 +2610,7 @@ class DebugVisibleImage(BaseOperator):
                 width=2,
                 fill='green')
             # draw label
-            text = str(gt_class[i][0])
+            text = 'id' + str(gt_class[i][0])
             tw, th = draw.textsize(text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
@@ -2547,12 +2627,53 @@ class DebugVisibleImage(BaseOperator):
             for i in range(gt_keypoint.shape[0]):
                 keypoint = gt_keypoint[i]
                 for j in range(int(keypoint.shape[0] / 2)):
-                    x1 = round(keypoint[2 * j]).astype(np.int32)
-                    y1 = round(keypoint[2 * j + 1]).astype(np.int32)
+                    x1 = round(keypoint[2 * j])
+                    y1 = round(keypoint[2 * j + 1])
                     draw.ellipse(
-                        (x1, y1, x1 + 5, y1i + 5),
-                        fill='green',
-                        outline='green')
+                        (x1, y1, x1 + 5, y1 + 5), fill='green', outline='green')
         save_path = os.path.join(self.output_dir, out_file_name)
-        image.save(save_path, quality=95)
+        if self.use_vdl:
+            preprocess_image_np = np.array(image)
+            self.vdl_writer.add_image("preprocess/{}".format(out_file_name),
+                                      preprocess_image_np, 0)
+        else:
+            image.save(save_path, quality=95)
+        return sample
+
+
+@register_op
+class Poly2Mask(BaseOperator):
+    """
+    gt poly to mask annotations
+    """
+
+    def __init__(self):
+        super(Poly2Mask, self).__init__()
+        import pycocotools.mask as maskUtils
+        self.maskutils = maskUtils
+
+    def _poly2mask(self, mask_ann, img_h, img_w):
+        if isinstance(mask_ann, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+            rle = self.maskutils.merge(rles)
+        elif isinstance(mask_ann['counts'], list):
+            # uncompressed RLE
+            rle = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+        else:
+            # rle
+            rle = mask_ann
+        mask = self.maskutils.decode(rle)
+        return mask
+
+    def __call__(self, sample, context=None):
+        assert 'gt_poly' in sample
+        im_h = sample['h']
+        im_w = sample['w']
+        masks = [
+            self._poly2mask(gt_poly, im_h, im_w)
+            for gt_poly in sample['gt_poly']
+        ]
+        sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
         return sample

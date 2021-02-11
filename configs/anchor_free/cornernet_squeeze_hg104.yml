@@ -1,7 +1,6 @@
 architecture: CornerNetSqueeze
 use_gpu: true
 max_iters: 500000
-log_smooth_window: 20
 log_iter: 20
 save_dir: output
 snapshot_iter: 10000
@@ -20,7 +19,6 @@ Hourglass:
   modules: [2, 2, 2, 2, 4]
 
 CornerHead:
-  train_batch_size: 14
   test_batch_size: 1
   ae_threshold: 0.5
   num_dets: 100

@@ -1,0 +1,79 @@
+architecture: SOLOv2
+use_gpu: true
+max_iters: 135000
+snapshot_iter: 20000
+log_smooth_window: 20
+save_dir: output
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x1_0_ssld_pretrained.tar
+metric: COCO
+weights: output/solov2/solov2_mobilenetv3_fpn_448_3x/model_final
+num_classes: 81
+use_ema: true
+ema_decay: 0.9998
+
+SOLOv2:
+  backbone: MobileNetV3RCNN
+  fpn: FPN
+  bbox_head: SOLOv2Head
+  mask_head: SOLOv2MaskHead
+
+MobileNetV3RCNN:
+  norm_type: bn
+  freeze_norm: true
+  norm_decay: 0.0
+  feature_maps: [2, 3, 4, 6]
+  conv_decay: 0.00001
+  lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
+  scale: 1.0
+  model_name: large
+
+FPN:
+  max_level: 6
+  min_level: 2
+  num_chan: 256
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+  reverse_out: True
+
+SOLOv2Head:
+  seg_feat_channels: 256
+  stacked_convs: 2
+  num_grids: [40, 36, 24, 16, 12]
+  kernel_out_channels: 128
+  solov2_loss: SOLOv2Loss
+  mask_nms: MaskMatrixNMS
+  drop_block: True
+
+SOLOv2MaskHead:
+  in_channels: 128
+  out_channels: 128
+  start_level: 0
+  end_level: 3
+
+SOLOv2Loss:
+  ins_loss_weight: 3.0
+  focal_loss_gamma: 2.0
+  focal_loss_alpha: 0.25
+
+MaskMatrixNMS:
+  pre_nms_top_n: 500
+  post_nms_top_n: 100
+
+LearningRate:
+  base_lr: 0.02
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [90000, 120000]
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+_READER_: 'solov2_light_448_reader.yml'

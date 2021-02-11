@@ -17,6 +17,7 @@ TrainReader:
       beta: 1.5
     - !ColorDistort {}
     - !RandomExpand
+      ratio: 2.0
       fill_value: [123.675, 116.28, 103.53]
     - !RandomCrop {}
     - !RandomFlipImage

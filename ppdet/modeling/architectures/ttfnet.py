@@ -47,7 +47,7 @@ class TTFNet(object):
         self.ttf_head = ttf_head
         self.num_classes = num_classes
 
-    def build(self, feed_vars, mode='train'):
+    def build(self, feed_vars, mode='train', exclude_nms=False):
         im = feed_vars['image']
 
         mixed_precision_enabled = mixed_precision_global_state() is not None
@@ -128,5 +128,5 @@ class TTFNet(object):
     def eval(self, feed_vars):
         return self.build(feed_vars, mode='test')
 
-    def test(self, feed_vars):
-        return self.build(feed_vars, mode='test')
+    def test(self, feed_vars, exclude_nms=False):
+        return self.build(feed_vars, mode='test', exclude_nms=exclude_nms)

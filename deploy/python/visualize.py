@@ -18,20 +18,22 @@ from __future__ import division
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy import ndimage
 
 
-def visualize_box_mask(im, results, labels, mask_resolution=14):
-    """ 
+def visualize_box_mask(im, results, labels, mask_resolution=14, threshold=0.5):
+    """
     Args:
         im (str/np.ndarray): path of image/np.ndarray read by cv2
-        results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box，
+        results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                         matix element:[class, score, x_min, y_min, x_max, y_max]
-                        MaskRCNN's results include 'masks': np.ndarray: 
-                        shape:[N, class_num, mask_resolution, mask_resolution]  
+                        MaskRCNN's results include 'masks': np.ndarray:
+                        shape:[N, class_num, mask_resolution, mask_resolution]
         labels (list): labels:['class1', ..., 'classn']
         mask_resolution (int): shape of a mask is:[mask_resolution, mask_resolution]
+        threshold (float): Threshold of score.
     Returns:
-        im (PIL.Image.Image): visualized image  
+        im (PIL.Image.Image): visualized image
     """
     if isinstance(im, str):
         im = Image.open(im).convert('RGB')
@@ -46,15 +48,25 @@ def visualize_box_mask(im, results, labels, mask_resolution=14):
             resolution=mask_resolution)
     if 'boxes' in results:
         im = draw_box(im, results['boxes'], labels)
+    if 'segm' in results:
+        im = draw_segm(
+            im,
+            results['segm'],
+            results['label'],
+            results['score'],
+            labels,
+            threshold=threshold)
+    if 'landmark' in results:
+        im = draw_lmk(im, results['landmark'])
     return im
 
 
 def get_color_map_list(num_classes):
-    """ 
+    """
     Args:
         num_classes (int): number of class
     Returns:
-        color_map (list): RGB color list 
+        color_map (list): RGB color list
     """
     color_map = num_classes * [0, 0, 0]
     for i in range(0, num_classes):
@@ -71,9 +83,9 @@ def get_color_map_list(num_classes):
 
 
 def expand_boxes(boxes, scale=0.0):
-    """ 
+    """
     Args:
-        boxes (np.ndarray): shape:[N,4], N:number of box，
+        boxes (np.ndarray): shape:[N,4], N:number of box,
                             matix element:[x_min, y_min, x_max, y_max]
         scale (float): scale of boxes
     Returns:
@@ -94,17 +106,17 @@ def expand_boxes(boxes, scale=0.0):
 
 
 def draw_mask(im, np_boxes, np_masks, labels, resolution=14, threshold=0.5):
-    """ 
+    """
     Args:
         im (PIL.Image.Image): PIL image
-        np_boxes (np.ndarray): shape:[N,6], N: number of box，
+        np_boxes (np.ndarray): shape:[N,6], N: number of box,
                                matix element:[class, score, x_min, y_min, x_max, y_max]
         np_masks (np.ndarray): shape:[N, class_num, resolution, resolution]
         labels (list): labels:['class1', ..., 'classn']
         resolution (int): shape of a mask is:[resolution, resolution]
         threshold (float): threshold of mask
     Returns:
-        im (PIL.Image.Image): visualized image  
+        im (PIL.Image.Image): visualized image
     """
     color_list = get_color_map_list(len(labels))
     scale = (resolution + 2.0) / resolution
@@ -149,14 +161,14 @@ def draw_mask(im, np_boxes, np_masks, labels, resolution=14, threshold=0.5):
 
 
 def draw_box(im, np_boxes, labels):
-    """ 
+    """
     Args:
         im (PIL.Image.Image): PIL image
-        np_boxes (np.ndarray): shape:[N,6], N: number of box，
+        np_boxes (np.ndarray): shape:[N,6], N: number of box,
                                matix element:[class, score, x_min, y_min, x_max, y_max]
         labels (list): labels:['class1', ..., 'classn']
     Returns:
-        im (PIL.Image.Image): visualized image  
+        im (PIL.Image.Image): visualized image
     """
     draw_thickness = min(im.size) // 320
     draw = ImageDraw.Draw(im)
@@ -180,9 +192,107 @@ def draw_box(im, np_boxes, labels):
             fill=color)
 
         # draw label
-        text = "{} {:.2f}".format(labels[clsid], score)
+        text = "{} {:.4f}".format(labels[clsid], score)
         tw, th = draw.textsize(text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
     return im
+
+
+def draw_segm(im,
+              np_segms,
+              np_label,
+              np_score,
+              labels,
+              threshold=0.5,
+              alpha=0.7):
+    """
+    Draw segmentation on image
+    """
+    mask_color_id = 0
+    w_ratio = .4
+    color_list = get_color_map_list(len(labels))
+    im = np.array(im).astype('float32')
+    clsid2color = {}
+    np_segms = np_segms.astype(np.uint8)
+    for i in range(np_segms.shape[0]):
+        mask, score, clsid = np_segms[i], np_score[i], np_label[i] + 1
+        if score < threshold:
+            continue
+
+        if clsid not in clsid2color:
+            clsid2color[clsid] = color_list[clsid]
+        color_mask = clsid2color[clsid]
+        for c in range(3):
+            color_mask[c] = color_mask[c] * (1 - w_ratio) + w_ratio * 255
+        idx = np.nonzero(mask)
+        color_mask = np.array(color_mask)
+        im[idx[0], idx[1], :] *= 1.0 - alpha
+        im[idx[0], idx[1], :] += alpha * color_mask
+        sum_x = np.sum(mask, axis=0)
+        x = np.where(sum_x > 0.5)[0]
+        sum_y = np.sum(mask, axis=1)
+        y = np.where(sum_y > 0.5)[0]
+        x0, x1, y0, y1 = x[0], x[-1], y[0], y[-1]
+        cv2.rectangle(im, (x0, y0), (x1, y1),
+                      tuple(color_mask.astype('int32').tolist()), 1)
+        bbox_text = '%s %.2f' % (labels[clsid], score)
+        t_size = cv2.getTextSize(bbox_text, 0, 0.3, thickness=1)[0]
+        cv2.rectangle(im, (x0, y0), (x0 + t_size[0], y0 - t_size[1] - 3),
+                      tuple(color_mask.astype('int32').tolist()), -1)
+        cv2.putText(
+            im,
+            bbox_text, (x0, y0 - 2),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.3, (0, 0, 0),
+            1,
+            lineType=cv2.LINE_AA)
+    return Image.fromarray(im.astype('uint8'))
+
+
+def lmk2out(bboxes, np_lmk, im_info, threshold=0.5, is_bbox_normalized=True):
+    image_w, image_h = im_info['origin_shape']
+    scale = im_info['scale']
+    face_index, landmark, prior_box = np_lmk[:]
+    xywh_res = []
+    if bboxes.shape == (1, 1) or bboxes is None:
+        return np.array([])
+    prior = np.reshape(prior_box, (-1, 4))
+    predict_lmk = np.reshape(landmark, (-1, 10))
+    k = 0
+    for i in range(bboxes.shape[0]):
+        score = bboxes[i][1]
+        if score < threshold:
+            continue
+        theindex = face_index[i][0]
+        me_prior = prior[theindex, :]
+        lmk_pred = predict_lmk[theindex, :]
+        prior_h = me_prior[2] - me_prior[0]
+        prior_w = me_prior[3] - me_prior[1]
+        prior_h_center = (me_prior[2] + me_prior[0]) / 2
+        prior_w_center = (me_prior[3] + me_prior[1]) / 2
+        lmk_decode = np.zeros((10))
+        for j in [0, 2, 4, 6, 8]:
+            lmk_decode[j] = lmk_pred[j] * 0.1 * prior_w + prior_h_center
+        for j in [1, 3, 5, 7, 9]:
+            lmk_decode[j] = lmk_pred[j] * 0.1 * prior_h + prior_w_center
+
+        if is_bbox_normalized:
+            lmk_decode = lmk_decode * np.array([
+                image_h, image_w, image_h, image_w, image_h, image_w, image_h,
+                image_w, image_h, image_w
+            ])
+        xywh_res.append(lmk_decode)
+    return np.asarray(xywh_res)
+
+
+def draw_lmk(image, lmk_results):
+    draw = ImageDraw.Draw(image)
+    for lmk_decode in lmk_results:
+        for j in range(5):
+            x1 = int(round(lmk_decode[2 * j]))
+            y1 = int(round(lmk_decode[2 * j + 1]))
+            draw.ellipse(
+                (x1 - 2, y1 - 2, x1 + 3, y1 + 3), fill='green', outline='green')
+    return image

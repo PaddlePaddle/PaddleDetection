@@ -2,7 +2,6 @@ architecture: MaskRCNN
 max_iters: 180000
 snapshot_iter: 10000
 use_gpu: true
-log_smooth_window: 20
 log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNeXt101_vd_64x4d_pretrained.tar

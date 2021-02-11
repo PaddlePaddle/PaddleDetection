@@ -1,7 +1,6 @@
 architecture: BlazeFace
 max_iters: 5000
 use_gpu: true
-log_smooth_window: 20
 log_iter: 20
 metric: WIDERFACE
 save_dir: nas_checkpoint

@@ -1,0 +1,44 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/ppyolo_r50vd_dcn.yml',
+  './_base_/optimizer_1x.yml',
+  './_base_/ppyolo_reader.yml',
+]
+
+snapshot_epoch: 8
+use_ema: true
+weights: output/ppyolo_r50vd_dcn_1x_minicoco/model_final
+
+TrainReader:
+  batch_size: 12
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017
+    # refer to https://github.com/giddyyupp/coco-minitrain
+    anno_path: annotations/instances_minitrain2017.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+epoch: 192
+
+LearningRate:
+  base_lr: 0.005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 153
+    - 173
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2

@@ -1,0 +1,27 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '../mask_rcnn/_base_/optimizer_1x.yml',
+  '../mask_rcnn/_base_/mask_rcnn_r50_fpn.yml',
+  '../mask_rcnn/_base_/mask_fpn_reader.yml',
+]
+weights: output/mask_rcnn_dcn_r50_fpn_1x_coco/model_final
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  dcn_v2_stages: [1,2,3]
+
+epoch: 12
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000

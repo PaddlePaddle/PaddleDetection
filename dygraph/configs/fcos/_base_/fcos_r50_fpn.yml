@@ -1,0 +1,57 @@
+architecture: FCOS
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+load_static_weights: True
+
+FCOS:
+  backbone: ResNet
+  neck: FPN
+  fcos_head: FCOSHead
+  fcos_post_process: FCOSPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+  spatial_scales: [0.125, 0.0625, 0.03125]
+  extra_stage: 2
+  has_extra_convs: true
+  use_c5: false
+
+FCOSHead:
+  fcos_feat:
+    name: FCOSFeat
+    feat_in: 256
+    feat_out: 256
+    num_convs: 4
+    norm_type: "gn"
+    use_dcn: false
+  num_classes: 80
+  fpn_stride: [8, 16, 32, 64, 128]
+  prior_prob: 0.01
+  fcos_loss: FCOSLoss
+  norm_reg_targets: true
+  centerness_on_reg: true
+
+FCOSLoss:
+  loss_alpha: 0.25
+  loss_gamma: 2.0
+  iou_loss_type: "giou"
+  reg_weights: 1.0
+
+FCOSPostProcess:
+  decode:
+    name: FCOSBox
+    num_classes: 80
+    batch_size: 1
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 100
+    score_threshold: 0.025
+    nms_threshold: 0.6

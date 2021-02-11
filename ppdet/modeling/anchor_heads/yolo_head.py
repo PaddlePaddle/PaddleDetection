@@ -77,6 +77,7 @@ class YOLOv3Head(object):
                  downsample=[32, 16, 8],
                  scale_x_y=1.0,
                  clip_bbox=True):
+        check_version("1.8.4")
         self.conv_block_num = conv_block_num
         self.norm_decay = norm_decay
         self.num_classes = num_classes
@@ -124,8 +125,14 @@ class YOLOv3Head(object):
 
             x_range = self._create_tensor_from_numpy(gi_np.astype(np.float32))
             x_range.stop_gradient = True
-            y_range = self._create_tensor_from_numpy(
-                gi_np.transpose([0, 1, 3, 2]).astype(np.float32))
+
+            idx_j = np.array(
+                [[j / (grid_y - 1) * 2.0 - 1 for j in range(grid_y)]],
+                dtype='float32')
+            gj_np = np.repeat(idx_j, grid_x, axis=1)
+            gj_np = np.reshape(gj_np, newshape=[1, 1, grid_y, grid_x])
+            gj_np = np.tile(gi_np, reps=[batch_size, 1, 1, 1])
+            y_range = self._create_tensor_from_numpy(gj_np.astype(np.float32))
             y_range.stop_gradient = True
 
         # NOTE: in training mode, H and W is variable for random shape,
@@ -141,7 +148,11 @@ class YOLOv3Head(object):
             x_range = fluid.layers.unsqueeze(x_range, [0, 1, 2])
             x_range = fluid.layers.expand(x_range, [b, 1, h, 1])
             x_range.stop_gradient = True
-            y_range = fluid.layers.transpose(x_range, [0, 1, 3, 2])
+
+            y_range = fluid.layers.range(0, h, 1, 'float32') / ((h - 1.) / 2.)
+            y_range = y_range - 1.
+            y_range = fluid.layers.unsqueeze(y_range, [0, 1, 3])
+            y_range = fluid.layers.expand(y_range, [b, 1, 1, w])
             y_range.stop_gradient = True
 
         return fluid.layers.concat([input, x_range, y_range], axis=1)
@@ -153,7 +164,6 @@ class YOLOv3Head(object):
                  stride,
                  padding,
                  act='leaky',
-                 is_test=True,
                  name=None):
         conv = fluid.layers.conv2d(
             input=input,
@@ -173,7 +183,6 @@ class YOLOv3Head(object):
         out = fluid.layers.batch_norm(
             input=conv,
             act=None,
-            is_test=is_test,
             param_attr=bn_param_attr,
             bias_attr=bn_bias_attr,
             moving_mean_name=bn_name + '.mean',
@@ -183,7 +192,7 @@ class YOLOv3Head(object):
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
         return out
 
-    def _spp_module(self, input, is_test=True, name=""):
+    def _spp_module(self, input, name=""):
         output1 = input
         output2 = fluid.layers.pool2d(
             input=output1,
@@ -230,17 +239,16 @@ class YOLOv3Head(object):
                 filter_size=1,
                 stride=1,
                 padding=0,
-                is_test=is_test,
                 name='{}.{}.0'.format(name, j))
             if self.use_spp and is_first and j == 1:
-                conv = self._spp_module(conv, is_test=is_test, name="spp")
+                c = conv.shape[1]
+                conv = self._spp_module(conv, name="spp")
                 conv = self._conv_bn(
                     conv,
-                    512,
+                    c,
                     filter_size=1,
                     stride=1,
                     padding=0,
-                    is_test=is_test,
                     name='{}.{}.spp.conv'.format(name, j))
             conv = self._conv_bn(
                 conv,
@@ -248,7 +256,6 @@ class YOLOv3Head(object):
                 filter_size=3,
                 stride=1,
                 padding=1,
-                is_test=is_test,
                 name='{}.{}.1'.format(name, j))
             if self.drop_block and j == 0 and not is_first:
                 conv = DropBlock(
@@ -257,7 +264,18 @@ class YOLOv3Head(object):
                     keep_prob=self.keep_prob,
                     is_test=is_test)
 
-        if self.drop_block and is_first:
+        if self.use_spp and conv_block_num == 0 and is_first:
+            c = conv.shape[1]
+            conv = self._spp_module(conv, name="spp")
+            conv = self._conv_bn(
+                conv,
+                c,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                name='{}.spp.conv'.format(name))
+
+        if self.drop_block and (is_first or conv_block_num == 0):
             conv = DropBlock(
                 conv,
                 block_size=self.block_size,
@@ -270,7 +288,6 @@ class YOLOv3Head(object):
             filter_size=1,
             stride=1,
             padding=0,
-            is_test=is_test,
             name='{}.2'.format(name))
         new_route = self._add_coord(route, is_test=is_test)
         tip = self._conv_bn(
@@ -279,7 +296,6 @@ class YOLOv3Head(object):
             filter_size=3,
             stride=1,
             padding=1,
-            is_test=is_test,
             name='{}.tip'.format(name))
         return route, tip
 
@@ -370,7 +386,6 @@ class YOLOv3Head(object):
                     filter_size=1,
                     stride=1,
                     padding=0,
-                    is_test=(not is_train),
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 # upsample
                 route = self._upsample(route)

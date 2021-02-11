@@ -2,7 +2,6 @@ architecture: CascadeRCNN
 max_iters: 750000
 snapshot_iter: 50000
 use_gpu: true
-log_smooth_window: 20
 log_iter: 20
 save_dir: output
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_v2_pretrained.tar
@@ -109,7 +108,7 @@ OptimizerBuilder:
     type: Momentum
   regularizer:
     factor: 0.0001
-    type: L
+    type: L2
 
 TrainReader:
   inputs_def:

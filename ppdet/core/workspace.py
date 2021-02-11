@@ -24,6 +24,11 @@ import yaml
 import copy
 import collections
 
+try:
+    collectionsAbc = collections.abc
+except AttributeError:
+    collectionsAbc = collections
+
 from .config.schema import SchemaDict, SharedConfig, extract_schema
 from .config.yaml_helpers import serializable
 
@@ -97,6 +102,7 @@ def load_config(file_path):
         del cfg[READER_KEY]
 
     merge_config(cfg)
+
     return global_config
 
 
@@ -114,7 +120,7 @@ def dict_merge(dct, merge_dct):
     """
     for k, v in merge_dct.items():
         if (k in dct and isinstance(dct[k], dict) and
-                isinstance(merge_dct[k], collections.Mapping)):
+                isinstance(merge_dct[k], collectionsAbc.Mapping)):
             dict_merge(dct[k], merge_dct[k])
         else:
             dct[k] = merge_dct[k]
@@ -132,7 +138,16 @@ def merge_config(config, another_cfg=None):
     """
     global global_config
     dct = another_cfg if another_cfg is not None else global_config
-    return dict_merge(dct, config)
+    dct = dict_merge(dct, config)
+
+    # NOTE: training batch size defined only in TrainReader, sychornized
+    #       batch size config to global, models can get batch size config
+    #       from global config when building model.
+    #       batch size in evaluation or inference can also be added here
+    if 'TrainReader' in dct and 'batch_size' in dct['TrainReader']:
+        dct['train_batch_size'] = dct['TrainReader']['batch_size']
+
+    return dct
 
 
 def get_registered_modules():

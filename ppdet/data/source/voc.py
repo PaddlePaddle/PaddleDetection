@@ -51,7 +51,7 @@ class VOCDataSet(DataSet):
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 use_default_label=True,
+                 use_default_label=False,
                  with_background=True,
                  label_list='label_list.txt'):
         super(VOCDataSet, self).__init__(

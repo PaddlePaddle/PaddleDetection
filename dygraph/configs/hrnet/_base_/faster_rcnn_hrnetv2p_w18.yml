@@ -1,0 +1,90 @@
+architecture: FasterRCNN
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/HRNet_W18_C_pretrained.tar
+weights: output/faster_rcnn_hrnetv2p_w18_1x_coco/model_final
+load_static_weights: True
+
+# Model Achitecture
+FasterRCNN:
+  # model anchor info flow
+  anchor: Anchor
+  proposal: Proposal
+  # model feat info flow
+  backbone: HRNet
+  neck: HRFPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+
+HRNet:
+  width: 18
+  freeze_at: 0
+  return_idx: [0, 1, 2, 3]
+
+HRFPN:
+  out_channel: 256
+  share_conv: false
+
+RPNHead:
+  rpn_feat:
+    name: RPNFeat
+    feat_in: 256
+    feat_out: 256
+  anchor_per_position: 3
+  rpn_channel: 256
+
+Anchor:
+  anchor_generator:
+    name: AnchorGeneratorRPN
+    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_start_size: 32
+    stride: [4., 4.]
+  anchor_target_generator:
+    name: AnchorTargetGeneratorRPN
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    straddle_thresh: 0.0
+
+Proposal:
+  proposal_generator:
+    name: ProposalGenerator
+    min_size: 0.0
+    nms_thresh: 0.7
+    train_pre_nms_top_n: 2000
+    train_post_nms_top_n: 2000
+    infer_pre_nms_top_n: 1000
+    infer_post_nms_top_n: 1000
+  proposal_target_generator:
+    name: ProposalTargetGenerator
+    batch_size_per_im: 512
+    bbox_reg_weights: [0.1, 0.1, 0.2, 0.2]
+    bg_thresh_hi: [0.5,]
+    bg_thresh_lo: [0.0,]
+    fg_thresh: [0.5,]
+    fg_fraction: 0.25
+
+BBoxHead:
+  bbox_feat:
+    name: BBoxFeat
+    roi_extractor:
+      name: RoIAlign
+      resolution: 7
+      sampling_ratio: 2
+    head_feat:
+      name: TwoFCHead
+      in_dim: 256
+      mlp_dim: 1024
+  in_feat: 1024
+
+BBoxPostProcess:
+  decode:
+    name: RCNNBox
+    num_classes: 81
+    batch_size: 1
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5

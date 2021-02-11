@@ -1,0 +1,42 @@
+architecture: SOLOv2
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+load_static_weights: True
+
+SOLOv2:
+  backbone: ResNet
+  neck: FPN
+  solov2_head: SOLOv2Head
+  mask_head: SOLOv2MaskHead
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+
+SOLOv2Head:
+  seg_feat_channels: 512
+  stacked_convs: 4
+  num_grids: [40, 36, 24, 16, 12]
+  kernel_out_channels: 256
+  solov2_loss: SOLOv2Loss
+  mask_nms: MaskMatrixNMS
+
+SOLOv2MaskHead:
+  mid_channels: 128
+  out_channels: 256
+  start_level: 0
+  end_level: 3
+
+SOLOv2Loss:
+  ins_loss_weight: 3.0
+  focal_loss_gamma: 2.0
+  focal_loss_alpha: 0.25
+
+MaskMatrixNMS:
+  pre_nms_top_n: 500
+  post_nms_top_n: 100

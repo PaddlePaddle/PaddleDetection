@@ -110,9 +110,10 @@ def nms(heat):
 def _topk(scores, batch_size, height, width, K):
     scores_r = fluid.layers.reshape(scores, [batch_size, -1])
     topk_scores, topk_inds = fluid.layers.topk(scores_r, K)
-    topk_clses = topk_inds / (height * width)
+    topk_inds = fluid.layers.cast(topk_inds, 'int32')
+    topk_clses = topk_inds // (height * width)
     topk_inds = topk_inds % (height * width)
-    topk_ys = fluid.layers.cast(topk_inds / width, 'float32')
+    topk_ys = fluid.layers.cast(topk_inds // width, 'float32')
     topk_xs = fluid.layers.cast(topk_inds % width, 'float32')
     return topk_scores, topk_inds, topk_clses, topk_ys, topk_xs
 
@@ -231,10 +232,10 @@ class CornerHead(object):
         num_dets(int): num of detections, 1000 by default
         top_k(int): choose top_k pair of corners in prediction, 100 by default 
     """
-    __shared__ = ['num_classes', 'stack']
+    __shared__ = ['num_classes', 'stack', 'train_batch_size']
 
     def __init__(self,
-                 train_batch_size,
+                 train_batch_size=14,
                  test_batch_size=1,
                  num_classes=80,
                  stack=2,
@@ -480,12 +481,10 @@ class CornerHead(object):
             cornerpool_lib.right_pool,
             is_test=True,
             name='br_modules_' + str(ind))
-
         tl_heat = self.pred_mod(
             tl_modules, self.num_classes, name='tl_heats_' + str(ind))
         br_heat = self.pred_mod(
             br_modules, self.num_classes, name='br_heats_' + str(ind))
-
         tl_tag = self.pred_mod(tl_modules, 1, name='tl_tags_' + str(ind))
         br_tag = self.pred_mod(br_modules, 1, name='br_tags_' + str(ind))
 

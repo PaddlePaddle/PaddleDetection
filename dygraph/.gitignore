@@ -1,0 +1,76 @@
+# Virtualenv
+/.venv/
+/venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+.ipynb_checkpoints/
+*.py[cod]
+
+# C extensions
+*.so
+
+# json file
+*.json
+
+# Distribution / packaging
+/bin/
+/build/
+/develop-eggs/
+/dist/
+/eggs/
+/lib/
+/lib64/
+/output/
+/inference_model/
+/parts/
+/sdist/
+/var/
+/*.egg-info/
+/.installed.cfg
+/*.egg
+/.eggs
+
+# AUTHORS and ChangeLog will be generated while packaging
+/AUTHORS
+/ChangeLog
+
+# BCloud / BuildSubmitter
+/build_submitter.*
+/logger_client_log
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.tox/
+.coverage
+.cache
+.pytest_cache
+nosetests.xml
+coverage.xml
+
+# Translations
+*.mo
+
+# Sphinx documentation
+/docs/_build/
+
+*.json
+*.tar
+*.pyc
+
+.idea/
+
+dataset/coco/annotations
+dataset/coco/train2017
+dataset/coco/val2017
+dataset/voc/VOCdevkit
+dataset/fruit/fruit-detection/
+dataset/voc/test.txt
+dataset/voc/trainval.txt
+dataset/wider_face/WIDER_test
+dataset/wider_face/WIDER_train
+dataset/wider_face/WIDER_val
+dataset/wider_face/wider_face_split

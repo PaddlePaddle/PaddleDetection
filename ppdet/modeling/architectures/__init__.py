@@ -29,6 +29,7 @@ from . import fcos
 from . import cornernet_squeeze
 from . import ttfnet
 from . import htc
+from . import solov2
 
 from .faster_rcnn import *
 from .mask_rcnn import *
@@ -45,3 +46,4 @@ from .fcos import *
 from .cornernet_squeeze import *
 from .ttfnet import *
 from .htc import *
+from .solov2 import *

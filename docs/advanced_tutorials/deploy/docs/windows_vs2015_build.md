@@ -1,6 +1,6 @@
 # Windows平台使用 Visual Studio 2015 编译指南
 
-本文档步骤，我们同时在`Visual Studio 2015` 和 `Visual Studio 2019 Community` 两个版本进行了测试，我们推荐使用[`Visual Studio 2019`直接编译`CMake`项目](./windows_vs2019_build.md)。
+本文档步骤，我们同时在`Visual Studio 2015` 和 `Visual Studio 2019 Community` 两个版本进行了测试，我们推荐使用[`Visual Studio 2019`直接编译`CMake`项目](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/cpp/docs/windows_vs2019_build.md)。
 
 
 ## 前置条件
@@ -111,4 +111,4 @@ cd /d D:\projects\PaddleDetection\inference\build\release
 detection_demo.exe --conf=/path/to/your/conf --input_dir=/path/to/your/input/data/directory
 ```
 
-更详细说明请参考ReadMe文档： [预测和可视化部分](../README.md)
+更详细说明请参考ReadMe文档： [预测和可视化部分](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/README.md)

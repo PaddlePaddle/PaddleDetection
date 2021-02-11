@@ -2,7 +2,6 @@ architecture: SSD
 use_gpu: true
 max_iters: 400000
 snapshot_iter: 10000
-log_smooth_window: 20
 log_iter: 20
 metric: COCO
 pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/VGG16_caffe_pretrained.tar
@@ -140,7 +139,7 @@ TestReader:
     interp: 1
     max_size: 0
     target_size: 300
-    use_cv2: false
+    use_cv2: true
   - !Permute
     to_bgr: false
   - !NormalizeImage

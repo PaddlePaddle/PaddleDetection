@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import sys
 
+import paddle
 import paddle.fluid as fluid
 
 import logging
@@ -27,10 +28,30 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     'check_gpu',
+    'check_xpu',
     'check_version',
     'check_config',
     'check_py_func',
 ]
+
+
+def check_xpu(use_xpu):
+    """
+    Log error and exit when set use_xpu=true in paddlepaddle
+    cpu/gpu version.
+    """
+    err = "Config use_xpu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-xpu to run model on XPU \n" \
+          "\t2. Set use_xpu as false in config file to run " \
+          "model on CPU/GPU"
+
+    try:
+        if use_xpu and not fluid.is_compiled_with_xpu():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
 
 
 def check_gpu(use_gpu):
@@ -72,6 +93,8 @@ def check_version(version='1.7.0'):
     length = min(len(version_installed), len(version_split))
     for i in six.moves.range(length):
         if version_installed[i] > version_split[i]:
+            return
+        if len(version_installed[i]) == 1 and len(version_split[i]) > 1:
             return
         if version_installed[i] < version_split[i]:
             raise Exception(err)
@@ -126,3 +149,10 @@ def check_py_func(program):
                       "if you use MultiClassSoftNMS, better to replace it by "\
                       "MultiClassNMS.".format(input_arg, output_arg)
                 raise Exception(err)
+
+
+def enable_static_mode():
+    try:
+        paddle.enable_static()
+    except:
+        pass

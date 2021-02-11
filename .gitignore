@@ -13,6 +13,9 @@ __pycache__/
 # json file
 *.json
 
+# log file
+*.log
+
 # Distribution / packaging
 /bin/
 /build/
@@ -23,6 +26,7 @@ __pycache__/
 /lib64/
 /output/
 /inference_model/
+/dygraph/output_inference/
 /parts/
 /sdist/
 /var/
