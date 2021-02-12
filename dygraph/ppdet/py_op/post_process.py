@@ -55,6 +55,8 @@ def get_seg_res(masks, bboxes, mask_nums, image_id, label_to_cat_id_map):
             score = float(bboxes[k][1])
             label = int(bboxes[k][0])
             k = k + 1
+            if label == -1:
+                continue
             cat_id = label_to_cat_id_map[label]
             rle = mask_util.encode(
                 np.array(
@@ -85,7 +87,7 @@ def get_solov2_segm_res(results, image_id, num_id_to_cat_id_map):
         return None
     # for each sample
     for i in range(lengths - 1):
-        clsid = int(clsid_labels[i]) + 1
+        clsid = int(clsid_labels[i])
         catid = num_id_to_cat_id_map[clsid]
         score = float(clsid_scores[i])
         mask = segms[i]

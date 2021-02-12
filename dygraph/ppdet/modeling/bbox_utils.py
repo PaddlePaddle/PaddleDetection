@@ -50,7 +50,7 @@ def delta2bbox(deltas, boxes, weights):
     dy = deltas[:, 1::4] / wy
     dw = deltas[:, 2::4] / ww
     dh = deltas[:, 3::4] / wh
-    # Prevent sending too large values into np.exp()
+    # Prevent sending too large values into paddle.exp()
     dw = paddle.clip(dw, max=clip_scale)
     dh = paddle.clip(dh, max=clip_scale)
 
@@ -88,7 +88,7 @@ def expand_bbox(bboxes, scale):
 
 
 def clip_bbox(boxes, im_shape):
-    h, w = im_shape
+    h, w = im_shape[0], im_shape[1]
     x1 = boxes[:, 0].clip(0, w)
     y1 = boxes[:, 1].clip(0, h)
     x2 = boxes[:, 2].clip(0, w)
