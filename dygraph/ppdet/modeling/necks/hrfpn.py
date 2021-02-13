@@ -18,6 +18,7 @@ from paddle import ParamAttr
 import paddle.nn as nn
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
+from ..shape_spec import ShapeSpec
 
 __all__ = ['HRFPN']
 
@@ -26,23 +27,28 @@ __all__ = ['HRFPN']
 class HRFPN(nn.Layer):
     """
     Args:
-        in_channel (int): number of input feature channels from backbone
+        in_channels (list): number of input feature channels from backbone
         out_channel (int): number of output feature channels
         share_conv (bool): whether to share conv for different layers' reduction
-        spatial_scale (list): feature map scaling factor
+        spatial_scales (list): feature map scaling factor
+        extra_stage (int): add extra stage for returning HRFPN fpn_feats
     """
 
-    def __init__(
-            self,
-            in_channel=270,
-            out_channel=256,
-            share_conv=False,
-            spatial_scale=[1. / 4, 1. / 8, 1. / 16, 1. / 32, 1. / 64], ):
+    def __init__(self,
+                 in_channels=[18, 36, 72, 144],
+                 out_channel=256,
+                 share_conv=False,
+                 extra_stage=1,
+                 spatial_scales=[1. / 4, 1. / 8, 1. / 16, 1. / 32]):
         super(HRFPN, self).__init__()
+        in_channel = sum(in_channels)
         self.in_channel = in_channel
         self.out_channel = out_channel
         self.share_conv = share_conv
-        self.spatial_scale = spatial_scale
+        for i in range(extra_stage):
+            spatial_scales = spatial_scales + [spatial_scales[-1] / 2.]
+        self.spatial_scales = spatial_scales
+        self.num_out = len(self.spatial_scales)
 
         self.reduction = nn.Conv2D(
             in_channels=in_channel,
@@ -50,7 +56,7 @@ class HRFPN(nn.Layer):
             kernel_size=1,
             weight_attr=ParamAttr(name='hrfpn_reduction_weights'),
             bias_attr=False)
-        self.num_out = len(self.spatial_scale)
+
         if share_conv:
             self.fpn_conv = nn.Conv2D(
                 in_channels=out_channel,
@@ -106,5 +112,20 @@ class HRFPN(nn.Layer):
             conv = conv_func(outs[i])
             outputs.append(conv)
 
-        fpn_feat = [outputs[k] for k in range(self.num_out)]
-        return fpn_feat, self.spatial_scale
+        fpn_feats = [outputs[k] for k in range(self.num_out)]
+        return fpn_feats
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {
+            'in_channels': [i.channels for i in input_shape],
+            'spatial_scales': [1.0 / i.stride for i in input_shape],
+        }
+
+    @property
+    def out_shape(self):
+        return [
+            ShapeSpec(
+                channels=self.out_channel, stride=1. / s)
+            for s in self.spatial_scales
+        ]
