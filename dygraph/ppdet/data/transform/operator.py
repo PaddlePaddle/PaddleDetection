@@ -52,26 +52,6 @@ logger = setup_logger(__name__)
 registered_ops = []
 
 
-def letterbox(img, height=608, width=1088, color=(
-        127.5, 127.5,
-        127.5)):  # resize a rectangular image to a padded rectangular 
-    shape = img.shape[:2]  # shape = [height, width]
-    ratio = min(float(height) / shape[0], float(width) / shape[1])
-    new_shape = (round(shape[1] * ratio),
-                 round(shape[0] * ratio))  # new_shape = [width, height]
-    dw = (width - new_shape[0]) / 2  # width padding
-    dh = (height - new_shape[1]) / 2  # height padding
-    top, bottom = round(dh - 0.1), round(dh + 0.1)
-    left, right = round(dw - 0.1), round(dw + 0.1)
-
-    img = cv2.resize(
-        img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
-    img = cv2.copyMakeBorder(
-        img, top, bottom, left, right, cv2.BORDER_CONSTANT,
-        value=color)  # padded rectangular
-    return img, ratio, dw, dh
-
-
 def register_op(cls):
     registered_ops.append(cls.__name__)
     if not hasattr(BaseOperator, cls.__name__):
@@ -142,9 +122,8 @@ class DecodeOp(BaseOperator):
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
 
-        im, ratio, padw, padh = letterbox(
-            im, height=608, width=1088)  # [1, 3, 608, 1088]
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        # img = np.ascontiguousarray(img[ :, :, ::-1]) # BGR to RGB, same
 
         sample['image'] = im
         if 'h' not in sample:
@@ -591,6 +570,78 @@ class RandomFlipOp(BaseOperator):
 
             sample['flipped'] = True
             sample['image'] = im
+        return sample
+
+
+@register_op
+class LetterBoxResize_NormXYWH2XYXYOP(BaseOperator):
+    def __init__(self, target_size):
+        """
+        Resize image to target size, convert Normalized xywh to pixel xyxy
+        format. Used in train/eval reader.
+        Args:
+            target_size (int|list): image target size.
+        """
+        super(LetterBoxResize_NormXYWH2XYXYOP, self).__init__()
+        if not isinstance(target_size, (Integral, Sequence)):
+            raise TypeError(
+                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
+                format(type(target_size)))
+        if isinstance(target_size, Integral):
+            target_size = [target_size, target_size]
+        self.target_size = target_size
+
+    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
+        # letterbox: resize a rectangular image to a padded rectangular
+        shape = img.shape[:2]  # [height, width]
+        ratio = min(float(height) / shape[0], float(width) / shape[1])
+        new_shape = (round(shape[1] * ratio),
+                     round(shape[0] * ratio))  # [width, height]
+        dw = (width - new_shape[0]) / 2  # width padding
+        dh = (height - new_shape[1]) / 2  # height padding
+        top, bottom = round(dh - 0.1), round(dh + 0.1)
+        left, right = round(dw - 0.1), round(dw + 0.1)
+
+        img = cv2.resize(
+            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+        img = cv2.copyMakeBorder(
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
+            value=color)  # padded rectangular
+        return img, ratio, dw, dh
+
+    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
+        bboxes = bbox0.copy()
+        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
+        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
+        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
+        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
+        return bboxes
+
+    def apply(self, sample, context=None):
+        """ Resize the image numpy.
+        """
+        im = sample['image']
+        h, w = sample['im_shape']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        height, width = self.target_size
+        img, ratio, padw, padh = self.apply_image(
+            im, height=height, width=width)
+        # img = np.ascontiguousarray(img[ :, :, ::-1]) # BGR to RGB
+        # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) # todo, for trainreader aug
+
+        sample['image'] = img
+        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
+        # sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32) # todo
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
+                                                padw, padh)
         return sample
 
 
@@ -1656,6 +1707,47 @@ class BboxXYXY2XYWHOp(BaseOperator):
         bbox = sample['gt_bbox']
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class BboxXYWH2XYXYOp(BaseOperator):
+    """
+    Convert bbox XYWH format to XYXY format.
+    """
+
+    def __init__(self):
+        super(BboxXYWH2XYXYOp, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox0 = sample['gt_bbox']
+        bbox = bbox0.copy()
+
+        bbox[:, :2] = bbox0[:, :2] - bbox0[:, 2:4] / 2.
+        bbox[:, 2:4] = bbox0[:, :2] + bbox0[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class BboxNorm2PixelOp(BaseOperator):
+    """
+    Convert norm bbox format to pixel format.
+    """
+
+    def __init__(self):
+        super(BboxNorm2PixelOp, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        h, w = sample['im_shape']
+        bbox = sample['gt_bbox']
+        bbox[:, 0] *= w
+        bbox[:, 2] *= w
+        bbox[:, 1] *= h
+        bbox[:, 3] *= h
         sample['gt_bbox'] = bbox
         return sample
 

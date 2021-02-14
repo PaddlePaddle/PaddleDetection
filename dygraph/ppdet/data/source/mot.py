@@ -147,20 +147,10 @@ class MOTDataSet(DetDataset):
                             format(lbl_file))
                 continue
 
-            im = cv2.imread(img_file)
-            im_h, im_w = im.shape[0], im.shape[1]
-
-            ratio = min(float(self.height) / im_h, float(self.width) / im_w)
-            padw = (self.width - round(im_w * ratio)) / 2  # width padding
-            padh = (self.height - round(im_h * ratio)) / 2  # height padding
-
-            # Normalized xywh to pixel xyxy format
             labels0 = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)
-            x1 = ratio * im_w * (labels0[:, 2] - labels0[:, 4] / 2) + padw
-            y1 = ratio * im_h * (labels0[:, 3] - labels0[:, 5] / 2) + padh
-            x2 = ratio * im_w * (labels0[:, 2] + labels0[:, 4] / 2) + padw
-            y2 = ratio * im_h * (labels0[:, 3] + labels0[:, 5] / 2) + padh
-            gt_bbox = np.stack((x1, y1, x2, y2)).T.astype('float32')
+            cx, cy = labels0[:, 2], labels0[:, 3]
+            w, h = labels0[:, 4], labels0[:, 5]
+            gt_bbox = np.stack((cx, cy, w, h)).T.astype('float32')
 
             gt_class = labels0[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels0), 1)).astype('float32')
@@ -170,8 +160,6 @@ class MOTDataSet(DetDataset):
             mot_rec = {
                 'im_file': img_file,
                 'im_id': files_index,
-                'h': im_h,
-                'w': im_w,
             } if 'image' in self.data_fields else {}
 
             gt_rec = {

@@ -29,13 +29,15 @@ TrainReader:
 
 
 EvalReader:
-  inputs_def:
-    num_max_boxes: 50
   sample_transforms:
     - DecodeOp: {}
-    #- ResizeOp: {target_size: [608, 1088], keep_ratio: False, interp: 2}
+    - LetterBoxResize_NormXYWH2XYXYOP: {target_size: [608, 1088]}
+    - BboxXYXY2XYWHOp: {}
+    - NormalizeBoxOp: {}
     - NormalizeImageOp: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - PermuteOp: {}
+    - BboxXYWH2XYXYOp: {}
+    - BboxNorm2PixelOp: {}
   batch_size: 1
   drop_empty: false
 
