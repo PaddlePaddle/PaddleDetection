@@ -574,7 +574,7 @@ class RandomFlipOp(BaseOperator):
 
 
 @register_op
-class LetterBoxResize_NormXYWH2XYXYOP(BaseOperator):
+class Resize_LetterBoxOP(BaseOperator):
     def __init__(self, target_size):
         """
         Resize image to target size, convert Normalized xywh to pixel xyxy
@@ -582,7 +582,7 @@ class LetterBoxResize_NormXYWH2XYXYOP(BaseOperator):
         Args:
             target_size (int|list): image target size.
         """
-        super(LetterBoxResize_NormXYWH2XYXYOP, self).__init__()
+        super(Resize_LetterBoxOP, self).__init__()
         if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
@@ -1716,7 +1716,6 @@ class BboxXYWH2XYXYOp(BaseOperator):
     """
     Convert bbox XYWH format to XYXY format.
     """
-
     def __init__(self):
         super(BboxXYWH2XYXYOp, self).__init__()
 
@@ -1732,13 +1731,12 @@ class BboxXYWH2XYXYOp(BaseOperator):
 
 
 @register_op
-class BboxNorm2PixelOp(BaseOperator):
+class Norm2PixelBboxOp(BaseOperator):
     """
     Convert norm bbox format to pixel format.
     """
-
     def __init__(self):
-        super(BboxNorm2PixelOp, self).__init__()
+        super(Norm2PixelBboxOp, self).__init__()
 
     def apply(self, sample, context=None):
         assert 'gt_bbox' in sample
