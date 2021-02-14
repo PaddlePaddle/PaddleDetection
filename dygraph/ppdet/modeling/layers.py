@@ -106,8 +106,7 @@ class JDEBox(object):
                  im_shape,
                  scale_factor,
                  var_weight=None):
-        boxes_list = []
-        scores_list = []
+        bbox_pred_list = []
         # origin_shape = im_shape / scale_factor
         # origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
@@ -130,28 +129,25 @@ class JDEBox(object):
             p_conf = F.softmax(
                 p_conf,
                 axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
-            scores = paddle.reshape(p_conf, shape=[nB, 1, -1])
+            scores = paddle.reshape(p_conf, shape=[nB, -1, 1])
 
-            boxes_list.append(boxes)
-            scores_list.append(scores)
+            bbox_pred_list.append(paddle.concat([boxes, scores], axis=-1))
 
-        yolo_boxes = paddle.concat(boxes_list, axis=1)
-        yolo_scores = paddle.concat(scores_list, axis=2)
+        yolo_boxes_pred = paddle.concat(bbox_pred_list, axis=1)
+        idx = paddle.nonzero(yolo_boxes_pred[:, :, -1] > self.conf_thresh)
+        idx.stop_gradient = True
+        if idx.shape[0] == 0:
+            yolo_boxes_out = paddle.to_tensor(
+                np.array(
+                    [[[0.0, 0.0, 0.0, 0.0]]], dtype='float32'))
+            yolo_scores_out = paddle.to_tensor(
+                np.array(
+                    [[[0.0]]], dtype='float32'))
+            return yolo_boxes_out, yolo_scores_out
 
-        ups = yolo_scores > self.conf_thresh
-        ups = ups.nonzero().squeeze()
-        if len(ups.shape) == 0:
-            ups = ups.unsqueeze(0)
-
-        yolo_boxes_out = []
-        yolo_scores_out = []
-        for v in ups:
-            idx = int(v[2])
-            yolo_boxes_out.append(yolo_boxes[:, idx, :])
-            yolo_scores_out.append(yolo_scores[:, :, idx])
-
-        yolo_boxes_out = paddle.concat(yolo_boxes_out, axis=0).unsqueeze(0)
-        yolo_scores_out = paddle.concat(yolo_scores_out, axis=1).unsqueeze(0)
+        yolo_boxes = paddle.gather_nd(yolo_boxes_pred, idx)
+        yolo_boxes_out = paddle.reshape(yolo_boxes[:, :4], shape=[nB, -1, 4])
+        yolo_scores_out = paddle.reshape(yolo_boxes[:, 4:5], shape=[nB, 1, -1])
         return yolo_boxes_out, yolo_scores_out  # [1, 163, 4], [1, 1, 163]
 
 

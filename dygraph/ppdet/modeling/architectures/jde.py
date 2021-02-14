@@ -68,15 +68,10 @@ class JDE(BaseArch):
         return self._forward()
 
     def get_pred(self):
-        bbox_pred, bbox_num = self._forward()
-        # print(bbox_pred)
-        label = bbox_pred[:, 0]
-        score = bbox_pred[:, 1]
-        bbox = bbox_pred[:, 2:]
-        output = {
-            'bbox': bbox,
-            'score': score,
-            'label': label,
-            'bbox_num': bbox_num
-        }
-        return output
+        if self.test_emb:
+            emb_and_gt = self._forward()
+            return emb_and_gt
+        else:
+            bbox_pred, bbox_num = self._forward()
+            output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+            return output
