@@ -21,9 +21,13 @@ import random
 import numpy as np
 
 import paddle
-from paddle.distributed import ParallelEnv
+from paddle.distributed import ParallelEnv, fleet
 
-__all__ = ['init_parallel_env', 'set_random_seed']
+__all__ = ['init_parallel_env', 'set_random_seed', 'init_fleet_env']
+
+
+def init_fleet_env():
+    fleet.init(is_collective=True)
 
 
 def init_parallel_env():

@@ -22,13 +22,14 @@ PaddleDetection在[tools](https://github.com/PaddlePaddle/PaddleDetection/tree/m
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
 |          -c              |      ALL       |  指定配置文件  |  None  |  **必选**，例如-c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml |
 |        --eval            |     train      |  是否边训练边测试  |  False  |  可选，如需指定，直接`--eval`即可 |
+|      --fleet         |       train     |  是否使用fleet API训练  |  False  |  可以使用--fleet来指定使用fleet API进行多机训练  |
+|      --fp16        |       train     |  是否开启混合精度训练  |  False  |  可以使用--fp16来指定使用混合精度训练  |
 |          -o              |      ALL       |  设置或更改配置文件里的参数内容  |  None  |  可选，例如：`-o use_gpu=False`  |
 |       --slim_config             |     ALL      |  模型压缩策略配置文件  |  None  |  可选，例如`--slim_config configs/slim/prune/yolov3_prune_l1_norm.yml`  |
 |       --output_dir       |      infer/export_model     |  预测后结果或导出模型保存路径  |  `./output`  |  可选，例如`--output_dir=output`  |
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  可选，`--draw_threshold=0.7`  |
 |      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |  可选  |
 |      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  可选，`--infer_img`和`--infer_dir`必须至少设置一个  |
-
 
 ### 训练
 
@@ -43,6 +44,20 @@ python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
+```
+
+- 混合精度训练
+
+```bash
+export CUDA_VISIBLE_DEVICES=0
+python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --fp16
+```
+
+- fleet API训练
+
+```bash
+# fleet API用于多机训练，启动方式与单机多卡训练方式基本一致，只不过需要使用--ips指定ip列表以及--fleet开启多机训练
+python -m paddle.distributed.launch --ips="xx.xx.xx.xx,yy.yy.yy.yy" --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --fleet
 ```
 
 - 边训练边评估

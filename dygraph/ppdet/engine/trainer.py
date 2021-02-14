@@ -24,7 +24,8 @@ import numpy as np
 from PIL import Image
 
 import paddle
-from paddle.distributed import ParallelEnv
+from paddle.distributed import ParallelEnv, fleet
+from paddle import amp
 from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
@@ -119,7 +120,7 @@ class Trainer(object):
             return
         if self.cfg.metric == 'COCO':
             # TODO: bias should be unified
-            bias = 1 if 'bias' in self.cfg else 0
+            bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             self._metrics = [
                 COCOMetric(
                     anno_file=self.dataset.get_anno(), bias=bias)
@@ -178,10 +179,17 @@ class Trainer(object):
             self.load_weights(self.cfg.pretrain_weights)
 
         model = self.model
-        if self._nranks > 1:
+        if self.cfg.fleet:
+            model = fleet.distributed_model(model)
+            self.optimizer = fleet.distributed_optimizer(
+                self.optimizer).user_defined_optimizer
+        elif self._nranks > 1:
             model = paddle.DataParallel(self.model)
-        else:
-            model = self.model
+
+        # initial fp16
+        if self.cfg.fp16:
+            scaler = amp.GradScaler(
+                enable=self.cfg.use_gpu, init_loss_scaling=1024)
 
         self.status.update({
             'epoch_id': self.start_epoch,
@@ -207,13 +215,25 @@ class Trainer(object):
                 self.status['step_id'] = step_id
                 self._compose_callback.on_step_begin(self.status)
 
-                # model forward
-                outputs = model(data)
-                loss = outputs['loss']
+                if self.cfg.fp16:
+                    with amp.auto_cast(enable=self.cfg.use_gpu):
+                        # model forward
+                        outputs = model(data)
+                        loss = outputs['loss']
 
-                # model backward
-                loss.backward()
-                self.optimizer.step()
+                    # model backward
+                    scaled_loss = scaler.scale(loss)
+                    scaled_loss.backward()
+                    # in dygraph mode, optimizer.minimize is equal to optimizer.step
+                    scaler.minimize(self.optimizer, scaled_loss)
+                else:
+                    # model forward
+                    outputs = model(data)
+                    loss = outputs['loss']
+                    # model backward
+                    loss.backward()
+                    self.optimizer.step()
+
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
                 self.optimizer.clear_grad()

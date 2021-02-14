@@ -108,24 +108,29 @@ class RPNHead(nn.Layer):
 
         anchors = self.anchor_generator(rpn_feats)
 
-        rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs)
+        # TODO: Fix batch_size > 1 when testing.
+        if self.training:
+            batch_size = inputs['im_shape'].shape[0]
+        else:
+            batch_size = 1
 
+        rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs,
+                                            batch_size)
         if self.training:
             loss = self.get_loss(scores, deltas, anchors, inputs)
             return rois, rois_num, loss
         else:
             return rois, rois_num, None
 
-    def _gen_proposal(self, scores, bbox_deltas, anchors, inputs):
+    def _gen_proposal(self, scores, bbox_deltas, anchors, inputs, batch_size):
         """
-        scores (list[Tensor]): Multi-level scores prediction 
+        scores (list[Tensor]): Multi-level scores prediction
         bbox_deltas (list[Tensor]): Multi-level deltas prediction
-        anchors (list[Tensor]): Multi-level anchors 
+        anchors (list[Tensor]): Multi-level anchors
         inputs (dict): ground truth info
         """
         prop_gen = self.train_proposal if self.training else self.test_proposal
         im_shape = inputs['im_shape']
-        batch_size = im_shape.shape[0]
         rpn_rois_list = [[] for i in range(batch_size)]
         rpn_prob_list = [[] for i in range(batch_size)]
         rpn_rois_num_list = [[] for i in range(batch_size)]
@@ -163,6 +168,7 @@ class RPNHead(nn.Layer):
             rois_collect.append(topk_rois)
             rois_num_collect.append(paddle.shape(topk_rois)[0])
         rois_num_collect = paddle.concat(rois_num_collect)
+
         return rois_collect, rois_num_collect
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):

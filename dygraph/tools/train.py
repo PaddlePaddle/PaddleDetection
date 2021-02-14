@@ -33,7 +33,7 @@ from paddle.distributed import ParallelEnv
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.engine import Trainer, init_parallel_env, set_random_seed
+from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 
 import ppdet.utils.cli as cli
 import ppdet.utils.check as check
@@ -65,13 +65,24 @@ def parse_args():
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
+    parser.add_argument(
+        "--fp16",
+        action='store_true',
+        default=False,
+        help="Enable mixed precision training.")
+    parser.add_argument(
+        "--fleet", action='store_true', default=False, help="Use fleet or not")
     args = parser.parse_args()
     return args
 
 
 def run(FLAGS, cfg):
-    # init parallel environment if nranks > 1
-    init_parallel_env()
+    # init fleet environment
+    if cfg.fleet:
+        init_fleet_env()
+    else:
+        # init parallel environment if nranks > 1
+        init_parallel_env()
 
     if FLAGS.enable_ce:
         set_random_seed(0)
@@ -91,6 +102,8 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    cfg['fp16'] = FLAGS.fp16
+    cfg['fleet'] = FLAGS.fleet
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)

@@ -24,7 +24,7 @@ from .. import ops
 
 
 @register
-class AnchorGenerator(object):
+class AnchorGenerator(nn.Layer):
     def __init__(self,
                  anchor_sizes=[32, 64, 128, 256, 512],
                  aspect_ratios=[0.5, 1.0, 2.0],
@@ -64,17 +64,21 @@ class AnchorGenerator(object):
             self.generate_cell_anchors(s, a)
             for s, a in zip(sizes, aspect_ratios)
         ]
+        [
+            self.register_buffer(
+                t.name, t, persistable=False) for t in cell_anchors
+        ]
         return cell_anchors
 
     def _create_grid_offsets(self, size, stride, offset):
-        grid_height, grid_width = size
+        grid_height, grid_width = size[0], size[1]
         shifts_x = paddle.arange(
             offset * stride, grid_width * stride, step=stride, dtype='float32')
         shifts_y = paddle.arange(
             offset * stride, grid_height * stride, step=stride, dtype='float32')
         shift_y, shift_x = paddle.meshgrid(shifts_y, shifts_x)
-        shift_x = shift_x.reshape([-1])
-        shift_y = shift_y.reshape([-1])
+        shift_x = paddle.reshape(shift_x, [-1])
+        shift_y = paddle.reshape(shift_y, [-1])
         return shift_x, shift_y
 
     def _grid_anchors(self, grid_sizes):
@@ -84,14 +88,15 @@ class AnchorGenerator(object):
             shift_x, shift_y = self._create_grid_offsets(size, stride,
                                                          self.offset)
             shifts = paddle.stack((shift_x, shift_y, shift_x, shift_y), axis=1)
+            shifts = paddle.reshape(shifts, [-1, 1, 4])
+            base_anchors = paddle.reshape(base_anchors, [1, -1, 4])
 
-            anchors.append((shifts.reshape([-1, 1, 4]) + base_anchors.reshape(
-                [1, -1, 4])).reshape([-1, 4]))
+            anchors.append(paddle.reshape(shifts + base_anchors, [-1, 4]))
 
         return anchors
 
-    def __call__(self, input):
-        grid_sizes = [feature_map.shape[-2:] for feature_map in input]
+    def forward(self, input):
+        grid_sizes = [paddle.shape(feature_map)[-2:] for feature_map in input]
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return anchors_over_all_feature_maps
 
@@ -105,4 +110,4 @@ class AnchorGenerator(object):
                 ratios and 5 sizes, the number of anchors is 15.
                 For FPN models, `num_anchors` on every feature map is the same.
         """
-        return self.cell_anchors[0].shape[0]
+        return len(self.cell_anchors[0])

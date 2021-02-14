@@ -506,17 +506,14 @@ class AutoAugmentOp(BaseOperator):
 
 @register_op
 class RandomFlipOp(BaseOperator):
-    def __init__(self, prob=0.5, is_mask_flip=False):
+    def __init__(self, prob=0.5):
         """
         Args:
             prob (float): the probability of flipping image
-            is_mask_flip (bool): whether flip the segmentation
         """
         super(RandomFlipOp, self).__init__()
         self.prob = prob
-        self.is_mask_flip = is_mask_flip
-        if not (isinstance(self.prob, float) and
-                isinstance(self.is_mask_flip, bool)):
+        if not (isinstance(self.prob, float)):
             raise TypeError("{}: input type is invalid.".format(self))
 
     def apply_segm(self, segms, height, width):
@@ -579,8 +576,7 @@ class RandomFlipOp(BaseOperator):
             im = self.apply_image(im)
             if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
                 sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], width)
-            if self.is_mask_flip and 'gt_poly' in sample and len(sample[
-                    'gt_poly']) > 0:
+            if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
                 sample['gt_poly'] = self.apply_segm(sample['gt_poly'], height,
                                                     width)
             if 'gt_keypoint' in sample and len(sample['gt_keypoint']) > 0:
