@@ -1,0 +1,45 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../faster_rcnn/_base_/optimizer_1x.yml',
+  '../faster_rcnn/_base_/faster_rcnn_r50_fpn.yml',
+  '../faster_rcnn/_base_/faster_fpn_reader.yml',
+]
+weights: output/faster_rcnn_r50_fpn_gn_2x_coco/model_final
+
+FasterRCNN:
+  backbone: ResNet
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+
+FPN:
+  out_channel: 256
+  norm_type: gn
+
+BBoxHead:
+  head: XConvNormHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+
+XConvNormHead:
+  num_convs: 4
+  mlp_dim: 1024
+  norm_type: gn
+
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
