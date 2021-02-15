@@ -16,10 +16,15 @@
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --output_dir=./inference_model \
- -o weights=weights/yolov3_darknet53_270e_coco.pdparams
+python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams
 ```
-预测模型会导出到`inference_model/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
+预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
+
+如果需要导出`PaddleServing`格式的模型，需要设置`export_serving_model=True`:
+```buildoutcfg
+python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams --export_serving_model=True
+```
+预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/`文件夹, `serving_server/`文件夹。
 
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
@@ -34,10 +39,12 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --
   （1）Paddle官网提供在不同平台、不同环境下编译好的预测库，您可以直接使用，请在这里[Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 选择。
   （2）如果您将要部署的平台环境，Paddle官网上没有提供已编译好的预测库，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 
+**注意:**  Paddle预测库版本需要>=2.0
+
 - Python语言部署，需要在对应平台上安装Paddle Python包。如果Paddle官网上没有提供该平台下的Paddle Python包，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 
 - PaddleServing部署
-  PaddleServing 0.4.0是基于Paddle 1.8.4开发，PaddleServing 0.4.1是基于Paddle2.0开发。
+  PaddleServing 0.4.0是基于Paddle 1.8.4开发，PaddleServing 0.5.0是基于Paddle2.0开发。
 
 - Paddle-Lite部署
   Paddle-Lite支持OP列表请参考：[Paddle-Lite支持的OP列表](https://paddle-lite.readthedocs.io/zh/latest/source_compile/library.html) ，请跟进所部署模型中使用到的op选择Paddle-Lite版本。
