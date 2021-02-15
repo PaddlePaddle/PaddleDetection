@@ -6,6 +6,9 @@ _BASE_: [
   '../runtime.yml',
 ]
 
+weights: output/faster_rcnn_hrnetv2p_w18_1x_coco/model_final
+epoch: 12
+
 LearningRate:
   base_lr: 0.02
   schedulers:
