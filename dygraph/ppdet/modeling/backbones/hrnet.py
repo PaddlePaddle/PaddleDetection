@@ -22,6 +22,7 @@ from numbers import Integral
 import math
 
 from ppdet.core.workspace import register, serializable
+from ..shape_spec import ShapeSpec
 
 __all__ = ['HRNet']
 
@@ -577,6 +578,8 @@ class HRNet(nn.Layer):
 
         channels_2, channels_3, channels_4 = self.channels[width]
         num_modules_2, num_modules_3, num_modules_4 = 1, 4, 3
+        self._out_channels = channels_4
+        self._out_strides = [4, 8, 16, 32]
 
         self.conv_layer1_1 = ConvNormLayer(
             ch_in=3,
@@ -666,3 +669,11 @@ class HRNet(nn.Layer):
                 res.append(layer)
 
         return res
+
+    @property
+    def out_shape(self):
+        return [
+            ShapeSpec(
+                channels=self._out_channels[i], stride=self._out_strides[i])
+            for i in self.return_idx
+        ]
