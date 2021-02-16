@@ -78,6 +78,7 @@ class XConvNormHead(nn.Layer):
         resolution(int): resolution of the rois_feat
         norm_type(str): norm type, 'gn' by defalut
         freeze_norm(bool): whether to freeze the norm
+        stage_name(str): used in CascadeXConvNormHead, '' by default
     """
     __shared__ = ['norm_type', 'freeze_norm']
 
@@ -88,7 +89,8 @@ class XConvNormHead(nn.Layer):
                  mlp_dim=1024,
                  resolution=7,
                  norm_type='gn',
-                 freeze_norm=False):
+                 freeze_norm=False,
+                 stage_name=''):
         super(XConvNormHead, self).__init__()
         self.in_dim = in_dim
         self.num_convs = num_convs
@@ -102,7 +104,7 @@ class XConvNormHead(nn.Layer):
         initializer = KaimingNormal(fan_in=fan)
         for i in range(self.num_convs):
             in_c = in_dim if i == 0 else conv_dim
-            head_conv_name = 'bbox_head_conv{}'.format(i)
+            head_conv_name = stage_name + 'bbox_head_conv{}'.format(i)
             head_conv = self.add_sublayer(
                 head_conv_name,
                 ConvNormLayer(
@@ -110,12 +112,9 @@ class XConvNormHead(nn.Layer):
                     ch_out=conv_dim,
                     filter_size=3,
                     stride=1,
-                    norm_type=norm_type,
-                    use_dcn=False,
+                    norm_type=self.norm_type,
                     norm_name=head_conv_name + '_norm',
-                    bias_on=False,
-                    lr_scale=1.,
-                    freeze_norm=freeze_norm,
+                    freeze_norm=self.freeze_norm,
                     initializer=initializer,
                     name=head_conv_name))
             self.bbox_head_convs.append(head_conv)
