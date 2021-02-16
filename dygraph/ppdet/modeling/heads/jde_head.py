@@ -45,7 +45,7 @@ class LossParam(nn.Layer):
 
     def forward(self, inputs):
         out = paddle.exp(-self.loss_param) * inputs + self.loss_param
-        return out
+        return out * 0.5
 
 
 @register
@@ -185,9 +185,8 @@ class JDEHead(nn.Layer):
         else:
             if test_emb:
                 assert targets != None
-                #embs_and_gts = self.get_emb_and_gt_outs(ide_outs, targets)
-                #return embs_and_gts
-                return targets
+                embs_and_gts = self.get_emb_and_gt_outs(ide_outs, targets)
+                return embs_and_gts
             else:
                 yolo_outs = self.get_det_outs(det_outs)
                 return yolo_outs
@@ -217,98 +216,31 @@ class JDEHead(nn.Layer):
         else:
             return det_outs
 
-    '''
     def get_emb_and_gt_outs(self, ide_outs, targets):
-        embeddings, id_labels = [], []
-        for emb_out, anchor in zip(ide_outs, self.anchors):
-            nA = len(anchor)
-            nGh, nGw = emb_out.shape[-2], emb_out.shape[-1]
-            id_lbl = self.build_ide_targets_thres(targets, anchor, nA, nGh, nGw)
+        emb_and_gts = []
+        for i, (emb_out, anchor) in enumerate(zip(ide_outs, self.anchors)):
+            #nA = len(anchor)
+            #emb_out_shape = paddle.shape(emb_out)
+            #emb_out_shape.stop_gradient = True
+            #nGh, nGw = int(emb_out_shape[-2]), int(emb_out_shape[-1])
 
-            id_mask = id_lbl != -1:
-            embeddings.append(emb_out[id_mask])
-            id_labels.append(id_lbl[id_mask])
-        print('Computing pairwise similairity...')
-        if len(embedding) <1 :
-            return None
+            #tconf, tbox, tids = self.build_ide_targets_max(targets, anchor, nA, self.num_classes, nGh, nGw)
+            tconf = targets['tconf{}'.format(i)]
+            tbox = targets['tbox{}'.format(i)]
+            tids = targets['tids{}'.format(i)]
 
-        embedding = paddle.stack(embedding, dim=0)
-        n = len(id_labels)
-        print(n, len(embedding))
-        assert len(embedding) == n
+            mask = tconf > 0
+            emb_mask, _ = mask.max(1)
+            # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
+            tids, _ = tids.max(1)
+            tids = tids[emb_mask]
+            embedding = p_emb[emb_mask].contiguous()
+            embedding = self.emb_scale * F.normalize(embedding)
 
-        # return (embeddings, id_labels)
-        embedding = F.normalize(embedding, dim=1) # 
-        pdist = paddle.mm(embedding, embedding.T).cpu().numpy()
-        gt = id_labels.expand(n,n).eq(id_labels.expand(n,n).T).numpy()
-        
-        up_triangle = np.where(np.triu(pdist)- np.eye(n)*pdist !=0)
-        pdist = pdist[up_triangle]
-        gt = gt[up_triangle]
+            if np.prod(embedding.shape) == 0 or np.prod(tids.shape) == 0:
+                emb_and_gt = paddle.zeros((0, self.embedding_dim + 1))
+            else:
+                emb_and_gt = paddle.concat([embedding, tids], axis=1)
+            emb_and_gts.append(emb_and_gt)
 
-        far_levels = [ 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-        far,tar,threshold = metrics.roc_curve(gt, pdist)
-        interp = interpolate.interp1d(far, tar)
-        tar_at_far = [interp(x) for x in far_levels]
-        for f,fa in enumerate(far_levels):
-            print('TPR@FAR={:.7f}: {:.4f}'.format(fa, tar_at_far[f]))
-        return tar_at_far
-    
-    def build_targets_thres(self, target, anchor_wh, nA, nGh, nGw):
-        ID_THRESH = 0.5
-        FG_THRESH = 0.5
-        BG_THRESH = 0.4
-        nB = len(target)  # number of images in batch
-        assert(len(anchor_wh)==nA)
-
-        tbox = paddle.zeros(nB, nA, nGh, nGw, 4).cuda()  # batch size, anchors, grid size
-        tconf = torch.LongTensor(nB, nA, nGh, nGw).fill_(0).cuda()
-        tid = torch.LongTensor(nB, nA, nGh, nGw, 1).fill_(-1).cuda() 
-        for b in range(nB):
-            t = target[b]
-            t_id = t[:, 1].clone().long().cuda()
-            t = t[:,[0,2,3,4,5]]
-            nTb = len(t)  # number of targets
-            if nTb == 0:
-                continue
-
-            gxy, gwh = t[: , 1:3].clone() , t[:, 3:5].clone()
-            gxy[:, 0] = gxy[:, 0] * nGw
-            gxy[:, 1] = gxy[:, 1] * nGh
-            gwh[:, 0] = gwh[:, 0] * nGw
-            gwh[:, 1] = gwh[:, 1] * nGh
-            gxy[:, 0] = torch.clamp(gxy[:, 0], min=0, max=nGw -1)
-            gxy[:, 1] = torch.clamp(gxy[:, 1], min=0, max=nGh -1)
-
-            gt_boxes = torch.cat([gxy, gwh], dim=1)                                            # Shape Ngx4 (xc, yc, w, h)
-            
-            anchor_mesh = generate_anchor(nGh, nGw, anchor_wh)
-            anchor_list = anchor_mesh.permute(0,2,3,1).contiguous().view(-1, 4)              # Shpae (nA x nGh x nGw) x 4
-            #print(anchor_list.shape, gt_boxes.shape)
-            iou_pdist = bbox_iou(anchor_list, gt_boxes)                                      # Shape (nA x nGh x nGw) x Ng
-            iou_max, max_gt_index = torch.max(iou_pdist, dim=1)                              # Shape (nA x nGh x nGw), both
-
-            iou_map = iou_max.view(nA, nGh, nGw)       
-            gt_index_map = max_gt_index.view(nA, nGh, nGw)
-
-            #nms_map = pooling_nms(iou_map, 3)
-            
-            id_index = iou_map > ID_THRESH
-            fg_index = iou_map > FG_THRESH                                                    
-            bg_index = iou_map < BG_THRESH 
-            ign_index = (iou_map < FG_THRESH) * (iou_map > BG_THRESH)
-            tconf[b][fg_index] = 1
-            tconf[b][bg_index] = 0
-            tconf[b][ign_index] = -1
-
-            gt_index = gt_index_map[fg_index]
-            gt_box_list = gt_boxes[gt_index]
-            gt_id_list = t_id[gt_index_map[id_index]]
-            #print(gt_index.shape, gt_index_map[id_index].shape, gt_boxes.shape)
-            if torch.sum(fg_index) > 0:
-                tid[b][id_index] =  gt_id_list.unsqueeze(1)
-                fg_anchor_list = anchor_list.view(nA, nGh, nGw, 4)[fg_index] 
-                delta_target = encode_delta(gt_box_list, fg_anchor_list)
-                tbox[b][fg_index] = delta_target
-        return tconf, tbox, tid
-        '''
+        return emb_and_gts

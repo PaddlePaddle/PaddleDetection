@@ -23,10 +23,8 @@ JDEHead:
   anchor_masks: [[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]]
   jde_loss: JDELoss
 
-JDELoss:
-  ignore_thresh: 0.7
-  downsample: [32, 16, 8]
-  label_smooth: false
+# use default config
+# JDELoss:
 
 BBoxPostProcess:
   decode:

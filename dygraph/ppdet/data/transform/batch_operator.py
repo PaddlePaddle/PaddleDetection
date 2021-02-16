@@ -37,6 +37,7 @@ __all__ = [
     'Gt2FCOSTargetOp',
     'Gt2TTFTargetOp',
     'Gt2Solov2TargetOp',
+    'Gt2JDETargetOp',
 ]
 
 
@@ -312,6 +313,169 @@ class Gt2YoloTargetOp(BaseOperator):
             sample.pop('gt_class')
             sample.pop('gt_score')
 
+        return samples
+
+
+@register_op
+class Gt2JDETargetOp(BaseOperator):
+    """
+    Generate JDE targets by groud truth data when training
+    """
+
+    def __init__(self,
+                 anchors,
+                 anchor_masks,
+                 downsample_ratios,
+                 num_classes=1,
+                 ide_thresh=0.5,
+                 fg_thresh=0.5,
+                 bg_thresh=0.4):
+        super(Gt2JDETargetOp, self).__init__()
+        self.anchors = anchors
+        self.anchor_masks = anchor_masks
+        self.downsample_ratios = downsample_ratios
+        self.num_classes = num_classes
+        self.ide_thresh = ide_thresh
+        self.fg_thresh = fg_thresh
+        self.bg_thresh = bg_thresh
+
+    def generate_anchor(self, nGh, nGw, anchor_hw):
+        nA = len(anchor_hw)
+        yy, xx = np.meshgrid(np.arange(nGh), np.arange(nGw))
+
+        mesh = np.stack([xx.T, yy.T], axis=0)  # Shape 2, nGh, nGw
+        mesh = np.repeat(mesh[None, :], nA, axis=0)  # Shape nA x 2 x nGh x nGw
+
+        anchor_offset_mesh = anchor_hw[:, :, None][:, :, :, None]
+        anchor_offset_mesh = np.repeat(anchor_offset_mesh, nGh, axis=-2)
+        anchor_offset_mesh = np.repeat(anchor_offset_mesh, nGw, axis=-1)
+
+        anchor_mesh = np.concatenate(
+            [mesh, anchor_offset_mesh], axis=1)  # Shape nA x 4 x nGh x nGw
+        return anchor_mesh
+
+    def bbox_iou(self, box1, box2, x1y1x2y2=False, eps=1e-16):
+        N, M = len(box1), len(box2)  # box1: anchor, box2: gt_bbox. N>>M
+        if x1y1x2y2:
+            b1_x1, b1_y1, b1_x2, b1_y2 = box1[:, 0], box1[:,
+                                                          1], box1[:,
+                                                                   2], box1[:,
+                                                                            3]
+            b2_x1, b2_y1, b2_x2, b2_y2 = box2[:, 0], box2[:,
+                                                          1], box2[:,
+                                                                   2], box2[:,
+                                                                            3]
+        else:
+            # Transform from center and width to exact coordinates
+            b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:,
+                                                                          2] / 2
+            b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:,
+                                                                          3] / 2
+            b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:,
+                                                                          2] / 2
+            b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:,
+                                                                          3] / 2
+
+        # get the coordinates of the intersection rectangle
+        inter_rect_x1 = np.zeros((N, M), dtype=np.float32)
+        inter_rect_y1 = np.zeros((N, M), dtype=np.float32)
+        inter_rect_x2 = np.zeros((N, M), dtype=np.float32)
+        inter_rect_y2 = np.zeros((N, M), dtype=np.float32)
+        for i in range(len(box2)):
+            inter_rect_x1[:, i] = np.maximum(b1_x1, b2_x1[i])
+            inter_rect_y1[:, i] = np.maximum(b1_y1, b2_y1[i])
+            inter_rect_x2[:, i] = np.minimum(b1_x2, b2_x2[i])
+            inter_rect_y2[:, i] = np.minimum(b1_y2, b2_y2[i])
+        # Intersection area
+        inter_area = np.maximum(inter_rect_x2 - inter_rect_x1, 0) * np.maximum(
+            inter_rect_y2 - inter_rect_y1, 0)
+        # Union Area
+        b1_area = np.repeat(
+            ((b1_x2 - b1_x1) * (b1_y2 - b1_y1)).reshape(-1, 1), M, axis=-1)
+        b2_area = np.repeat(
+            ((b2_x2 - b2_x1) * (b2_y2 - b2_y1)).reshape(1, -1), N, axis=0)
+
+        return inter_area / (b1_area + b2_area - inter_area + eps)
+
+    def encode_delta(self, gt_box_list, fg_anchor_list):
+        px, py, pw, ph = fg_anchor_list[:, 0], fg_anchor_list[:,1], \
+                        fg_anchor_list[:, 2], fg_anchor_list[:,3]
+        gx, gy, gw, gh = gt_box_list[:, 0], gt_box_list[:, 1], \
+                        gt_box_list[:, 2], gt_box_list[:, 3]
+        dx = (gx - px) / pw
+        dy = (gy - py) / ph
+        dw = np.log(gw / pw)
+        dh = np.log(gh / ph)
+        return np.stack([dx, dy, dw, dh], axis=1)
+
+    def __call__(self, samples, context=None):
+        assert len(self.anchor_masks) == len(self.downsample_ratios), \
+            "anchor_masks', and 'downsample_ratios' should have same length."
+        h, w = samples[0]['image'].shape[1:3]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            gt_ide = sample['gt_ide']
+            for i, (anchor_hw, downsample_ratio
+                    ) in enumerate(zip(self.anchors, self.downsample_ratios)):
+                anchor_hw = np.array(
+                    anchor_hw, dtype=np.float32) / downsample_ratio
+                nA = len(anchor_hw)
+                nGh, nGw = int(h / downsample_ratio), int(w / downsample_ratio)
+                tbox = np.zeros((nA, nGh, nGw, 4), dtype=np.float32)
+                tconf = np.zeros((nA, nGh, nGw), dtype=np.float32)
+                tid = -np.ones((nA, nGh, nGw, 1), dtype=np.float32)
+
+                gxy, gwh = gt_bbox[:, 0:2].copy(), gt_bbox[:, 2:4].copy()
+                gxy[:, 0] = gxy[:, 0] * nGw
+                gxy[:, 1] = gxy[:, 1] * nGh
+                gwh[:, 0] = gwh[:, 0] * nGw
+                gwh[:, 1] = gwh[:, 1] * nGh
+                gxy[:, 0] = np.clip(gxy[:, 0], 0, nGw - 1)
+                gxy[:, 1] = np.clip(gxy[:, 1], 0, nGh - 1)
+                tboxes = np.concatenate(
+                    [gxy, gwh], axis=1)  # Shape Ngx4 (xc, yc, w, h)
+
+                anchor_mesh = self.generate_anchor(nGh, nGw, anchor_hw)
+
+                anchor_list = np.transpose(anchor_mesh, (0, 2, 3, 1)).reshape(
+                    -1, 4)  # Shpae (nA x nGh x nGw) x 4
+                iou_pdist = self.bbox_iou(anchor_list,
+                                          tboxes)  # Shape (nA x nGh x nGw) x Ng
+
+                iou_max = np.max(iou_pdist,
+                                 axis=1)  # Shape (nA x nGh x nGw), both
+                max_gt_index = np.argmax(iou_pdist, axis=1)
+
+                iou_map = iou_max.reshape(nA, nGh, nGw)
+                gt_index_map = max_gt_index.reshape(nA, nGh, nGw)
+
+                id_index = iou_map > self.ide_thresh  # (nA x nGh x nGw)
+                fg_index = iou_map > self.fg_thresh
+                bg_index = iou_map < self.bg_thresh
+                ign_index = (iou_map < self.fg_thresh) * (
+                    iou_map > self.bg_thresh)
+                tconf[fg_index] = 1
+                tconf[bg_index] = 0
+                tconf[ign_index] = -1
+
+                gt_index = gt_index_map[fg_index]
+                gt_box_list = tboxes[gt_index]
+                gt_id_list = gt_ide[gt_index_map[id_index]]
+
+                if np.sum(fg_index) > 0:
+                    tid[id_index] = gt_id_list
+
+                    fg_anchor_list = anchor_list.reshape(nA, nGh, nGw,
+                                                         4)[fg_index]
+                    delta_target = self.encode_delta(gt_box_list,
+                                                     fg_anchor_list)
+                    tbox[fg_index] = delta_target
+
+                sample['tbox{}'.format(i)] = tbox
+                sample['tconf{}'.format(i)] = tconf
+                sample['tide{}'.format(i)] = tid
+
+            sample.pop('gt_class')
         return samples
 
 
