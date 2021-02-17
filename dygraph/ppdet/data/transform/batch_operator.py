@@ -23,7 +23,7 @@ except Exception:
 
 import cv2
 import numpy as np
-from .operator import register_op, BaseOperator, ResizeOp
+from .operator import register_op, BaseOperator, ResizeOp, Resize_LetterBoxOP, RandomAffineOP
 from .op_helper import jaccard_overlap, gaussian2D
 from scipy import ndimage
 
@@ -38,6 +38,7 @@ __all__ = [
     'Gt2TTFTargetOp',
     'Gt2Solov2TargetOp',
     'Gt2JDETargetOp',
+    'BatchRandomAffineOP',
 ]
 
 
@@ -162,7 +163,8 @@ class BatchRandomResizeOp(BaseOperator):
                  keep_ratio,
                  interp=cv2.INTER_NEAREST,
                  random_size=True,
-                 random_interp=False):
+                 random_interp=False,
+                 letterbox=False):
         super(BatchRandomResizeOp, self).__init__()
         self.keep_ratio = keep_ratio
         self.interps = [
@@ -182,6 +184,7 @@ class BatchRandomResizeOp(BaseOperator):
         self.target_size = target_size
         self.random_size = random_size
         self.random_interp = random_interp
+        self.letterbox = letterbox
 
     def __call__(self, samples, context=None):
         if self.random_size:
@@ -194,9 +197,22 @@ class BatchRandomResizeOp(BaseOperator):
         else:
             interp = self.interp
 
-        resizer = ResizeOp(
-            target_size, keep_ratio=self.keep_ratio, interp=interp)
+        if self.letterbox:
+            resizer = Resize_LetterBoxOP(target_size)
+        else:
+            resizer = ResizeOp(
+                target_size, keep_ratio=self.keep_ratio, interp=interp)
         return resizer(samples, context=context)
+
+
+@register_op
+class BatchRandomAffineOP(BaseOperator):
+    def __init__(self):
+        super(BatchRandomAffineOP, self).__init__()
+
+    def __call__(self, samples, context=None):
+        random_affine = RandomAffineOP()
+        return random_affine(samples, context=context)
 
 
 @register_op
@@ -357,14 +373,10 @@ class Gt2JDETargetOp(BaseOperator):
     def bbox_iou(self, box1, box2, x1y1x2y2=False, eps=1e-16):
         N, M = len(box1), len(box2)  # box1: anchor, box2: gt_bbox. N>>M
         if x1y1x2y2:
-            b1_x1, b1_y1, b1_x2, b1_y2 = box1[:, 0], box1[:,
-                                                          1], box1[:,
-                                                                   2], box1[:,
-                                                                            3]
-            b2_x1, b2_y1, b2_x2, b2_y2 = box2[:, 0], box2[:,
-                                                          1], box2[:,
-                                                                   2], box2[:,
-                                                                            3]
+            b1_x1, b1_y1 = box1[:, 0], box1[:, 1]
+            b1_x2, b1_y2 = box1[:, 2], box1[:, 3]
+            b2_x1, b2_y1 = box2[:, 0], box2[:, 1]
+            b2_x2, b2_y2 = box2[:, 2], box2[:, 3]
         else:
             # Transform from center and width to exact coordinates
             b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:,
@@ -432,18 +444,19 @@ class Gt2JDETargetOp(BaseOperator):
                 gwh[:, 1] = gwh[:, 1] * nGh
                 gxy[:, 0] = np.clip(gxy[:, 0], 0, nGw - 1)
                 gxy[:, 1] = np.clip(gxy[:, 1], 0, nGh - 1)
-                tboxes = np.concatenate(
-                    [gxy, gwh], axis=1)  # Shape Ngx4 (xc, yc, w, h)
+                tboxes = np.concatenate([gxy, gwh], axis=1)
+                # Shape Ngx4 (xc, yc, w, h)
 
                 anchor_mesh = self.generate_anchor(nGh, nGw, anchor_hw)
 
-                anchor_list = np.transpose(anchor_mesh, (0, 2, 3, 1)).reshape(
-                    -1, 4)  # Shpae (nA x nGh x nGw) x 4
-                iou_pdist = self.bbox_iou(anchor_list,
-                                          tboxes)  # Shape (nA x nGh x nGw) x Ng
+                anchor_list = np.transpose(anchor_mesh,
+                                           (0, 2, 3, 1)).reshape(-1, 4)
+                # Shpae (nA x nGh x nGw) x 4
+                iou_pdist = self.bbox_iou(anchor_list, tboxes)
+                # Shape (nA x nGh x nGw) x Ng
 
-                iou_max = np.max(iou_pdist,
-                                 axis=1)  # Shape (nA x nGh x nGw), both
+                iou_max = np.max(iou_pdist, axis=1)
+                # Shape (nA x nGh x nGw), both
                 max_gt_index = np.argmax(iou_pdist, axis=1)
 
                 iou_map = iou_max.reshape(nA, nGh, nGw)

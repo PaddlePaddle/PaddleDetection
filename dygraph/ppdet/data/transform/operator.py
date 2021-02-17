@@ -151,6 +151,9 @@ class DecodeOp(BaseOperator):
 @register_op
 class AugmentHSVOP(BaseOperator):
     def __init__(self):
+        """ 
+        Transform the image data with augment_hsv
+        """
         super(AugmentHSVOP, self).__init__()
 
     def apply(self, sample, context=None):
@@ -182,19 +185,21 @@ class AugmentHSVOP(BaseOperator):
 @register_op
 class RandomAffineOP(BaseOperator):
     def __init__(self):
+        """ 
+        Transform the image data with random_affine
+        """
         super(RandomAffineOP, self).__init__()
 
     def apply(self, sample, context=None):
         # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
         # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
-        degrees = (-10, 10)
-        translate = (.1, .1)
-        scale = (.9, 1.1)
+        degrees = (-5, 5)
+        translate = (0.10, 0.10)
+        scale = (0.50, 1.20)
         shear = (-2, 2)
         borderValue = (127.5, 127.5, 127.5)
         border = 0  # width of added border (optional)
 
-        targets = sample['gt_bbox']
         img = sample['image']
         height, width = img.shape[0], img.shape[1]
 
@@ -227,7 +232,8 @@ class RandomAffineOP(BaseOperator):
             flags=cv2.INTER_LINEAR,
             borderValue=borderValue)  # BGR order borderValue
 
-        if len(targets) > 0:
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            targets = sample['gt_bbox']
             n = targets.shape[0]
             points = targets.copy()
             area0 = (points[:, 2] - points[:, 0]) * (
@@ -266,10 +272,11 @@ class RandomAffineOP(BaseOperator):
             ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
             i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
 
-            sample['gt_bbox'] = sample['gt_bbox'][i]
-            sample['gt_class'] = sample['gt_class'][i]
-            sample['difficult'] = sample['difficult'][i]
-            sample['gt_ide'] = sample['gt_ide'][i]
+            if sum(i) > 0:  # todo
+                sample['gt_bbox'] = xy[i]
+                sample['gt_class'] = sample['gt_class'][i]
+                sample['difficult'] = sample['difficult'][i]
+                sample['gt_ide'] = sample['gt_ide'][i]
 
         sample['image'] = img
         return sample
@@ -1928,6 +1935,11 @@ class PadBoxOp(BaseOperator):
             if gt_num > 0:
                 pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
             sample['is_crowd'] = pad_crowd
+        if 'gt_ide' in sample:
+            pad_ide = -np.ones((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_ide[:gt_num] = sample['gt_ide'][:gt_num, 0]
+            sample['gt_ide'] = pad_ide
         return sample
 
 

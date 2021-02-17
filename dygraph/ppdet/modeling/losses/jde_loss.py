@@ -84,7 +84,8 @@ class JDELoss(nn.Layer):
             embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
             embedding = emb_scale * F.normalize(embedding)
             logits = classifier(embedding)
-            loss_ide = F.cross_entropy(logits, ide_target, ignore_index=-1)
+            loss_ide = F.cross_entropy(
+                logits, ide_target, ignore_index=-1, reduction='mean')
         loss['loss_ide'] = loss_ide
 
         loss['loss'] = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
