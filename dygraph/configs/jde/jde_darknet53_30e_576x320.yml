@@ -7,9 +7,15 @@ _BASE_: [
 ]
 weights: output/jde_darknet53_30e_576x320/model_final
 
+JDE:
+  backbone: DarkNet
+  neck: JDEFPN
+  jde_head: JDEHead
+  post_process: BBoxPostProcess
+  test_emb: False
+
 JDEHead:
   anchors: [[85,255], [120,320], [170,320], [340,320],
             [21,64], [30,90], [43,128], [60,180],
             [6,16], [8,23], [11,32], [16,45]]
   anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-  num_identifiers: 1

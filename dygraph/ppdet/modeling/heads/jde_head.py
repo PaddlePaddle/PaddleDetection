@@ -60,14 +60,7 @@ class JDEHead(nn.Layer):
         num_classes(int): Number of classes. Only support one class tracking.
         num_identifiers(int): Number of identifiers.
         embedding_dim(int): Embedding dimension. Default: 512.
-        jde_loss    : 
-        img_size(list): Input size of JDE network.
-        ide_thresh  : Identification positive threshold. Default: 0.5.
-        obj_thresh  : Objectness positive threshold. Default: 0.5.
-        bkg_thresh  : Background positive threshold. Default: 0.4.
-        s_box       : Weight for the box regression task.
-        s_cls       : Weight for the classification task.
-        s_ide       : Weight for the identifier classification task.
+        jde_loss: 
     """
 
     def __init__(
@@ -80,7 +73,6 @@ class JDEHead(nn.Layer):
             num_identifiers=1,  # defined by dataset.nID
             embedding_dim=512,
             jde_loss='JDELoss',
-            # img_size=[1888, 608],
             iou_aware=False,
             iou_aware_factor=0.4):
         super(JDEHead, self).__init__()
@@ -88,11 +80,9 @@ class JDEHead(nn.Layer):
         self.num_identifiers = num_identifiers
         self.embedding_dim = embedding_dim
         self.jde_loss = jde_loss
-        # self.img_size = img_size
         self.iou_aware = iou_aware
         self.iou_aware_factor = iou_aware_factor
 
-        self.shift = [1, 3, 5]
         self.emb_scale = math.sqrt(2) * math.log(
             self.num_identifiers - 1) if self.num_identifiers > 1 else 1
 
@@ -218,29 +208,28 @@ class JDEHead(nn.Layer):
 
     def get_emb_and_gt_outs(self, ide_outs, targets):
         emb_and_gts = []
-        for i, (emb_out, anchor) in enumerate(zip(ide_outs, self.anchors)):
-            #nA = len(anchor)
-            #emb_out_shape = paddle.shape(emb_out)
-            #emb_out_shape.stop_gradient = True
-            #nGh, nGw = int(emb_out_shape[-2]), int(emb_out_shape[-1])
+        for i, p_ide in enumerate(ide_outs):
+            t_conf = targets['tconf{}'.format(i)]
+            # t_box = targets['tbox{}'.format(i)]
+            t_ide = targets['tide{}'.format(i)]
 
-            #tconf, tbox, tids = self.build_ide_targets_max(targets, anchor, nA, self.num_classes, nGh, nGw)
-            tconf = targets['tconf{}'.format(i)]
-            tbox = targets['tbox{}'.format(i)]
-            tids = targets['tids{}'.format(i)]
+            p_ide = p_ide.transpose((0, 2, 3, 1))
+            p_ide_flatten = paddle.reshape(p_ide, [-1, 512])
 
-            mask = tconf > 0
-            emb_mask, _ = mask.max(1)
-            # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
-            tids, _ = tids.max(1)
-            tids = tids[emb_mask]
-            embedding = p_emb[emb_mask].contiguous()
-            embedding = self.emb_scale * F.normalize(embedding)
+            mask = t_conf > 0
+            mask = paddle.cast(mask, dtype="int64")
+            emb_mask = mask.max(1).flatten()
+            emb_mask_inds = paddle.nonzero(emb_mask > 0).flatten()
+            if len(emb_mask_inds) > 0:
+                t_ide_flatten = paddle.reshape(t_ide.max(1), [-1, 1])  #
+                tids = paddle.gather(t_ide_flatten, emb_mask_inds)
 
-            if np.prod(embedding.shape) == 0 or np.prod(tids.shape) == 0:
-                emb_and_gt = paddle.zeros((0, self.embedding_dim + 1))
-            else:
+                embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
+                embedding = self.emb_scale * F.normalize(embedding)
                 emb_and_gt = paddle.concat([embedding, tids], axis=1)
-            emb_and_gts.append(emb_and_gt)
+                emb_and_gts.append(emb_and_gt)
 
-        return emb_and_gts
+        if len(emb_and_gts) > 0:
+            return paddle.concat(emb_and_gts, axis=0)
+        else:
+            return paddle.zeros((1, self.embedding_dim + 1))

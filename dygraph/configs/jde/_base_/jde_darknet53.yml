@@ -8,6 +8,7 @@ JDE:
   neck: JDEFPN
   jde_head: JDEHead
   post_process: BBoxPostProcess
+  test_emb: False
 
 DarkNet:
   depth: 53

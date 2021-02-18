@@ -38,6 +38,7 @@ __all__ = [
     'Gt2TTFTargetOp',
     'Gt2Solov2TargetOp',
     'Gt2JDETargetOp',
+    'Gt2JDETargetMaxOp',
     'BatchRandomAffineOP',
 ]
 
@@ -334,6 +335,7 @@ class Gt2YoloTargetOp(BaseOperator):
 
 @register_op
 class Gt2JDETargetOp(BaseOperator):
+    __shared__ = ['num_classes']
     """
     Generate JDE targets by groud truth data when training
     """
@@ -342,18 +344,18 @@ class Gt2JDETargetOp(BaseOperator):
                  anchors,
                  anchor_masks,
                  downsample_ratios,
-                 num_classes=1,
                  ide_thresh=0.5,
                  fg_thresh=0.5,
-                 bg_thresh=0.4):
+                 bg_thresh=0.4,
+                 num_classes=1):
         super(Gt2JDETargetOp, self).__init__()
         self.anchors = anchors
         self.anchor_masks = anchor_masks
         self.downsample_ratios = downsample_ratios
-        self.num_classes = num_classes
         self.ide_thresh = ide_thresh
         self.fg_thresh = fg_thresh
         self.bg_thresh = bg_thresh
+        self.num_classes = num_classes
 
     def generate_anchor(self, nGh, nGw, anchor_hw):
         nA = len(anchor_hw)
@@ -489,6 +491,101 @@ class Gt2JDETargetOp(BaseOperator):
                 sample['tide{}'.format(i)] = tid
 
             sample.pop('gt_class')
+        return samples
+
+
+@register_op
+class Gt2JDETargetMaxOp(BaseOperator):
+    __shared__ = ['num_classes']
+    """
+    Generate JDE targets by groud truth data when evaling
+    """
+
+    def __init__(self,
+                 anchors,
+                 anchor_masks,
+                 downsample_ratios,
+                 max_iou_thresh=0.60,
+                 num_classes=1):
+        super(Gt2JDETargetMaxOp, self).__init__()
+        self.anchors = anchors
+        self.anchor_masks = anchor_masks
+        self.downsample_ratios = downsample_ratios
+        self.max_iou_thresh = max_iou_thresh
+        self.num_classes = num_classes
+
+    def __call__(self, samples, context=None):
+        assert len(self.anchor_masks) == len(self.downsample_ratios), \
+            "anchor_masks', and 'downsample_ratios' should have same length."
+        h, w = samples[0]['image'].shape[1:3]
+        for sample in samples:
+            gt_bbox = sample['gt_bbox']
+            gt_ide = sample['gt_ide']
+            for i, (anchor_hw, downsample_ratio
+                    ) in enumerate(zip(self.anchors, self.downsample_ratios)):
+                anchor_hw = np.array(
+                    anchor_hw, dtype=np.float32) / downsample_ratio
+                nA = len(anchor_hw)
+                nGh, nGw = int(h / downsample_ratio), int(w / downsample_ratio)
+                tbox = np.zeros((nA, nGh, nGw, 4), dtype=np.float32)
+                tconf = np.zeros((nA, nGh, nGw), dtype=np.float32)
+                tid = -np.ones((nA, nGh, nGw, 1), dtype=np.float32)
+
+                gxy, gwh = gt_bbox[:, 0:2].copy(), gt_bbox[:, 2:4].copy()
+                gxy[:, 0] = gxy[:, 0] * nGw
+                gxy[:, 1] = gxy[:, 1] * nGh
+                gwh[:, 0] = gwh[:, 0] * nGw
+                gwh[:, 1] = gwh[:, 1] * nGh
+                gi = np.clip(gxy[:, 0], 0, nGw - 1).astype(int)
+                gj = np.clip(gxy[:, 1], 0, nGh - 1).astype(int)
+
+                # iou of targets-anchors (using wh only)
+                box1 = gwh
+                box2 = anchor_hw[:, None, :]
+                inter_area = np.minimum(box1, box2).prod(2)
+                iou = inter_area / (
+                    box1.prod(1) + box2.prod(2) - inter_area + 1e-16)
+
+                # Select best iou_pred and anchor
+                iou_best = iou.max(0)  # best anchor [0-2] for each target
+                a = np.argmax(iou, axis=0)
+
+                # Select best unique target-anchor combinations
+                iou_order = np.argsort(-iou_best)  # best to worst
+
+                # Unique anchor selection
+                u = np.stack((gi, gj, a), 0)[:, iou_order]
+                _, first_unique = np.unique(u, axis=1, return_index=True)
+                mask = iou_order[first_unique]
+                # best anchor must share significant commonality (iou) with target
+                # TODO: examine arbitrary threshold
+                idx = mask[iou_best[mask] > self.max_iou_thresh]
+
+                if len(idx) > 0:
+                    a_i, gj_i, gi_i = a[idx], gj[idx], gi[idx]
+                    t_box = gt_bbox[idx]
+                    t_id = gt_ide[idx]
+                    if len(t_box.shape) == 1:
+                        t_box = t_box.reshape(1, 4)
+
+                    gxy, gwh = t_box[:, 0:2].copy(), t_box[:, 2:4].copy()
+                    gxy[:, 0] = gxy[:, 0] * nGw
+                    gxy[:, 1] = gxy[:, 1] * nGh
+                    gwh[:, 0] = gwh[:, 0] * nGw
+                    gwh[:, 1] = gwh[:, 1] * nGh
+
+                    # XY coordinates
+                    tbox[:, :, :, 0:2][a_i, gj_i, gi_i] = gxy - gxy.astype(int)
+                    # Width and height, # yolo method
+                    tbox[:, :, :, 2:4][a_i, gj_i, gi_i] = np.log(gwh /
+                                                                 anchor_hw[a_i])
+                    tconf[a_i, gj_i, gi_i] = 1
+                    tid[a_i, gj_i, gi_i] = t_id
+
+                sample['tbox{}'.format(i)] = tbox
+                sample['tconf{}'.format(i)] = tconf
+                sample['tide{}'.format(i)] = tid
+
         return samples
 
 
