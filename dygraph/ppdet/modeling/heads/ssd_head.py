@@ -130,8 +130,8 @@ class SSDHead(nn.Layer):
         box_preds = []
         cls_scores = []
         prior_boxes = []
-        for i, (feat, box_conv, score_conv
-                ) in enumerate(zip(feats, self.box_convs, self.score_convs)):
+        for feat, box_conv, score_conv in zip(feats, self.box_convs,
+                                              self.score_convs):
             box_pred = box_conv(feat)
             box_pred = paddle.transpose(box_pred, [0, 2, 3, 1])
             box_pred = paddle.reshape(box_pred, [0, -1, 4])
@@ -148,7 +148,7 @@ class SSDHead(nn.Layer):
             return self.get_loss(box_preds, cls_scores, gt_bbox, gt_class,
                                  prior_boxes)
         else:
-            return box_preds, cls_scores, prior_boxes
+            return (box_preds, cls_scores), prior_boxes
 
     def get_loss(self, boxes, scores, gt_bbox, gt_class, prior_boxes):
         return self.loss(boxes, scores, gt_bbox, gt_class, prior_boxes)
