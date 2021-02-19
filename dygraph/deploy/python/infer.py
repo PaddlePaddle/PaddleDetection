@@ -316,7 +316,11 @@ def load_predictor(model_dir,
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
-        config.switch_ir_optim(True)
+        # FIXME(dkp): ir optimize may prune variable inside graph
+        #             and incur error in Paddle 2.0, e.g. in SSDLite
+        #             FCOS model, set as False currently and should
+        #             be set as True after switch_ir_optim fixed
+        config.switch_ir_optim(False)
     else:
         config.disable_gpu()
 
