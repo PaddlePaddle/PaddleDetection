@@ -134,9 +134,7 @@ class Trainer(object):
                     map_type=self.cfg.map_type)
             ]
         elif self.cfg.metric == 'ReID':
-            self._metrics = [
-                ReIDMetric(),
-            ]
+            self._metrics = [ReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))

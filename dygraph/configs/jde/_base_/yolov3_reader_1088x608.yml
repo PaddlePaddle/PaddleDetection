@@ -3,9 +3,6 @@ TrainReader:
   sample_transforms:
     - DecodeOp: {}
     #- AugmentHSVOP: {}
-    # - Resize_LetterBoxOP: {target_size: [608, 1088]} # single img debug
-    # - RandomAffineOP: {} # todo, must after Resize_LetterBoxOP
-    #- MixupOp: {alpha: 1.5, beta: 1.5}
     #- RandomFlipOp: {}
   batch_transforms:
     - BatchRandomResizeOp:
@@ -32,7 +29,6 @@ TrainReader:
   batch_size: 4
   shuffle: true
   drop_last: true
-  #mixup_epoch: 250
 
 
 EvalReader:

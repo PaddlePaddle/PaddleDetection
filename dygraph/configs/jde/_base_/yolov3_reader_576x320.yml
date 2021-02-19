@@ -3,7 +3,6 @@ TrainReader:
   sample_transforms:
     - DecodeOp: {}
     - AugmentHSVOP: {}
-    #- MixupOp: {alpha: 1.5, beta: 1.5}
     - RandomFlipOp: {}
   batch_transforms:
     - BatchRandomResizeOp:
@@ -17,18 +16,19 @@ TrainReader:
     - NormalizeBoxOp: {}
     - NormalizeImageOp: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - PermuteOp: {}
-    - Gt2YoloTargetOp:
+    - Gt2JDETargetOp:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
         anchors: [[[85,255], [120,320], [170,320], [340,320]],
                   [[21,64], [30,90], [43,128], [60,180]],
                   [[6,16], [8,23], [11,32], [16,45]]]
         downsample_ratios: [32, 16, 8]
-        num_classes: 1
+        ide_thresh: 0.5
+        fg_thresh: 0.5
+        bg_thresh: 0.4
     - PadBoxOp: {num_max_boxes: 50} # for bs>1
   batch_size: 4
   shuffle: true
   drop_last: true
-  # mixup_epoch: 250
 
 
 EvalReader:

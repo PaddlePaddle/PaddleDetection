@@ -1,0 +1,1 @@
+python3.7 match_generate_weightsmap.py jde_paddle_print.txt jde_pytorch_print.txt

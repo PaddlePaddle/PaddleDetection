@@ -1,5 +1,5 @@
 import torch
-f = open('model_dict_jde.txt', 'a+')
+f = open('jde_pytorch_print.txt', 'a+')
 model_dict = torch.load('jde_576x320_uncertainty.pt')['model']
 not_keys = ['num_batches_tracked']  #, 'running_mean', 'running_var']
 
@@ -19,6 +19,5 @@ for key in model_dict.keys():
             line = '{} [{},{}]\n'.format(key, shape[0], shape[1])
         else:
             line = '{} [{}]\n'.format(key, shape[0])
-        # print(line)
         f.write(line)
 f.close()

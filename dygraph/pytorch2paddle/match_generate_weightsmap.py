@@ -1,6 +1,18 @@
 from IPython import embed
 
 
+# pytorch model params info
+def parse_pytorch_infos(filename):
+    infos = []
+    with open(filename) as f:
+        for line in f.readlines():
+            fields = line.split()
+            info = (fields[0], eval(fields[1]))
+            if info not in infos:
+                infos.append(info)
+    return infos
+
+
 # in ppdet, only conv/bn/fc has weights
 def is_conv_bn_or_fc(conv_info, bn_infos):
     if len(conv_info[1]) != 4: return 0
@@ -76,25 +88,13 @@ def parse_static_infos0(filename):
     return infos
 
 
-# new add, pytorch model params info
-def parse_static_infos(filename):
-    infos = []
-    with open(filename) as f:
-        for line in f.readlines():
-            fields = line.split()
-            info = (fields[0], eval(fields[1]))
-            if info not in infos:
-                infos.append(info)
-    return infos
-
-
 def match_static_to_dygraph(static_infos, dygraph_infos):
     match_map = {}
     st_is_conv_bn_or_fcs = check_is_conv_bn_or_fc(static_infos)
     dy_is_conv_bn_or_fcs = check_is_conv_bn_or_fc(dygraph_infos)
     st_idx = dy_idx = 0
     # for st_idx, info in enumerate(static_infos):
-    with open("./weight_name_map.txt", 'w') as wf:
+    with open("./weightsmap_jde.txt", 'w') as wf:
         while st_idx < len(static_infos):
             info = static_infos[st_idx]
             if dy_idx >= len(dygraph_infos):
@@ -174,9 +174,9 @@ if __name__ == "__main__":
     dygraph_infos = parse_dygraph_infos(params, states)
     # for info, c in dygraph_infos:
     #     print(info)
-    static_infos = parse_static_infos(st_filename)
+    static_infos = parse_pytorch_infos(st_filename)
     # for info in static_infos:
     #     print(info)
-    print("dygraph weights number: ", len(dygraph_infos))
-    print("static weights number: ", len(static_infos))
+    print("paddle dygraph weights number: ", len(dygraph_infos))
+    print("pytorch weights number: ", len(static_infos))
     match_static_to_dygraph(static_infos, dygraph_infos)

@@ -43,7 +43,6 @@ class MOTDataSet(DetDataset):
                  anno_path=[],
                  data_fields=['image'],
                  sample_num=-1,
-                 img_size=(1088, 608),
                  label_list=None):
         super(MOTDataSet, self).__init__(
             dataset_dir=dataset_dir,
@@ -52,8 +51,6 @@ class MOTDataSet(DetDataset):
             data_fields=data_fields,
             sample_num=sample_num)
         self.anno_path = anno_path
-        self.width = img_size[0]
-        self.height = img_size[1]
         self.label_list = label_list
 
         self.img_files = OrderedDict()
