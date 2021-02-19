@@ -4,6 +4,7 @@ import pickle
 import torch
 import numpy as np
 
+
 def convert(weights, weight_name_file, target_name):
     weight_name_map = {}
     with open(weight_name_file) as f:
@@ -15,9 +16,9 @@ def convert(weights, weight_name_file, target_name):
     src = torch.load(weights)['model']
     for k, v in weight_name_map.items():
         if k == 'classifier.weight':
-          dst[v] = np.array(src[k].T.cpu()) ###
+            dst[v] = np.array(src[k].T.cpu())  ###
         else:
-          dst[v] = np.array(src[k].cpu())
+            dst[v] = np.array(src[k].cpu())
     pickle.dump(dst, open(target_name, 'wb'), protocol=2)
 
 

@@ -1,22 +1,22 @@
 worker_num: 2
 TrainReader:
   sample_transforms:
-    - DecodeOp: {}
-    - AugmentHSVOP: {}
-    - RandomFlipOp: {}
+    - Decode: {}
+    - AugmentHSV: {}
+    - RandomFlip: {}
   batch_transforms:
-    - BatchRandomResizeOp:
+    - BatchRandomResize:
         target_size: [320, 576]
         random_size: False
         random_interp: True
         keep_ratio: False
         letterbox: True  # todo
-    - BatchRandomAffineOP: {} # todo
-    - BboxXYXY2XYWHOp: {}
-    - NormalizeBoxOp: {}
-    - NormalizeImageOp: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
-    - PermuteOp: {}
-    - Gt2JDETargetOp:
+    - BatchRandomAffine: {} # todo
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+    - Gt2JDETargetThres:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
         anchors: [[[85,255], [120,320], [170,320], [340,320]],
                   [[21,64], [30,90], [43,128], [60,180]],
@@ -25,7 +25,7 @@ TrainReader:
         ide_thresh: 0.5
         fg_thresh: 0.5
         bg_thresh: 0.4
-    - PadBoxOp: {num_max_boxes: 50} # for bs>1
+    - PadBox: {num_max_boxes: 50} # for bs>1
   batch_size: 4
   shuffle: true
   drop_last: true
@@ -33,22 +33,22 @@ TrainReader:
 
 EvalReader:
   sample_transforms:
-    - DecodeOp: {}
-    - Resize_LetterBoxOP: {target_size: [320, 576]}
-    - BboxXYXY2XYWHOp: {}
-    - NormalizeBoxOp: {}
-    - NormalizeImageOp: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
-    - PermuteOp: {}
+    - Decode: {}
+    - Resize_LetterBox: {target_size: [320, 576]}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
   batch_transforms:
-    - Gt2JDETargetMaxOp:
+    - Gt2JDETargetMax:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
         anchors: [[[85,255], [120,320], [170,320], [340,320]],
                   [[21,64], [30,90], [43,128], [60,180]],
                   [[6,16], [8,23], [11,32], [16,45]]]
         downsample_ratios: [32, 16, 8]
         max_iou_thresh: 0.60
-    - BboxXYWH2XYXYOp: {}
-    - Norm2PixelBboxOp: {}
+    - BboxXYWH2XYXY: {}
+    - Norm2PixelBbox: {}
   batch_size: 1
   drop_empty: false
 
@@ -57,8 +57,8 @@ TestReader:
   inputs_def:
     image_shape: [3, 320, 576]
   sample_transforms:
-    - DecodeOp: {}
-    - ResizeOp: {target_size: [320, 576], keep_ratio: False, interp: 2}
-    - NormalizeImageOp: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
-    - PermuteOp: {}
+    - Decode: {}
+    - Resize: {target_size: [320, 576], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
   batch_size: 1

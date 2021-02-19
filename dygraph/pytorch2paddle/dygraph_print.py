@@ -32,7 +32,7 @@ from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-from ppdet.metrics.coco_utils import get_infer_results #, eval_results
+from ppdet.metrics.coco_utils import get_infer_results  #, eval_results
 from ppdet.utils.checkpoint import load_weight
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
@@ -75,7 +75,7 @@ def run(FLAGS, cfg, place):
     #         np.zeros((1, 1)).astype('int32'),
     #         ]
     model.eval()
-    model(data) #, 'infer')
+    model(data)  #, 'infer')
 
     # Init Model
     # model = load_dygraph_ckpt(model, ckpt=cfg.weights)
