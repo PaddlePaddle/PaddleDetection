@@ -23,7 +23,7 @@ from PIL import Image
 import cv2
 import numpy as np
 import paddle
-from preprocess import preprocess, ResizeOp, NormalizeImageOp, PermuteOp, PadStride
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from visualize import visualize_box_mask
 from paddle.inference import Config
 from paddle.inference import create_predictor

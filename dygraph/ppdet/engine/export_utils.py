@@ -65,11 +65,9 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
         methods = [list(bt.keys())[0] for bt in batch_transforms]
         for bt in batch_transforms:
             for key, value in bt.items():
-                if key == 'PadBatchOp':
-                    preprocess_list.append({'type': 'PadStride'})
-                    preprocess_list[-1].update({
-                        'stride': value['pad_to_stride']
-                    })
+                # for deploy/infer, use PadStride(stride) instead PadBatch(pad_to_stride, pad_gt)
+                if key == 'PadBatch':
+                    preprocess_list.append({'type': 'PadStride', 'stride': value['pad_to_stride']})
                     break
 
     return preprocess_list, label_list, image_shape

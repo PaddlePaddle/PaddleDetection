@@ -35,10 +35,11 @@ def decode_image(im_file, im_info):
     else:
         im = im_file
     im_info['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+    im_info['scale_factor'] = np.array([1., 1.], dtype=np.float32)
     return im, im_info
 
 
-class ResizeOp(object):
+class Resize(object):
     """resize image by target_size and max_size
     Args:
         target_size (int): the target size of image
@@ -115,7 +116,7 @@ class ResizeOp(object):
         return im_scale_y, im_scale_x
 
 
-class NormalizeImageOp(object):
+class NormalizeImage(object):
     """normalize image
     Args:
         mean (list): im - mean
@@ -150,7 +151,7 @@ class NormalizeImageOp(object):
         return im, im_info
 
 
-class PermuteOp(object):
+class Permute(object):
     """permute image
     Args:
         to_bgr (bool): whether convert RGB to BGR 
@@ -158,7 +159,7 @@ class PermuteOp(object):
     """
 
     def __init__(self, ):
-        super(PermuteOp, self).__init__()
+        super(Permute, self).__init__()
 
     def __call__(self, im, im_info):
         """
@@ -174,7 +175,7 @@ class PermuteOp(object):
 
 
 class PadStride(object):
-    """ padding image for model with FPN 
+    """ padding image for model with FPN , instead PadBatch(pad_to_stride, pad_gt) in original config
     Args:
         stride (bool): model with FPN need image shape % stride == 0 
     """
