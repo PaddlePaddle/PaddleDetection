@@ -22,7 +22,7 @@ import numpy as np
 
 from ..shape_spec import ShapeSpec
 
-__all__ = ['YOLOv3FPN', 'PPYOLOFPN']
+__all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'JDEFPN']
 
 
 class YoloDetBlock(nn.Layer):
