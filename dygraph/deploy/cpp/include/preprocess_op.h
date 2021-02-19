@@ -133,13 +133,13 @@ class Preprocessor {
   }
 
   std::shared_ptr<PreprocessOp> CreateOp(const std::string& name) {
-    if (name == "ResizeOp") {
+    if (name == "Resize") {
       return std::make_shared<Resize>();
-    } else if (name == "PermuteOp") {
+    } else if (name == "Permute") {
       return std::make_shared<Permute>();
-    } else if (name == "NormalizeImageOp") {
+    } else if (name == "NormalizeImage") {
       return std::make_shared<Normalize>();
-    } else if (name == "PadBatchOp" || name == "PadStride") {
+    } else if (name == "PadBatch") {
       return std::make_shared<PadStride>();
     }
     std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
