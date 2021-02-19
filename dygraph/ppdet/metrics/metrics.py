@@ -21,6 +21,9 @@ import sys
 import json
 import paddle
 import numpy as np
+from sklearn import metrics
+from scipy import interpolate
+import paddle.nn.functional as F
 
 from .category import get_categories
 from .map_utils import prune_zero_padding, DetectionMAP
@@ -29,7 +32,7 @@ from .coco_utils import get_infer_results, cocoapi_eval
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results']
+__all__ = ['Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results', 'ReIDMetric']
 
 
 class Metric(paddle.metric.Metric):
@@ -194,3 +197,54 @@ class VOCMetric(Metric):
 
     def get_results(self):
         self.detection_map.get_map()
+
+
+class ReIDMetric(Metric):
+    def __init__(self, far_levels=[1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]):
+        self.far_levels = far_levels
+        self.metrics = metrics
+        self.reset()
+
+    def reset(self):
+        self.embedding = []
+        self.id_labels = []
+        self.eval_results = {}
+
+    def update(self, inputs, outputs):
+        for out in outputs:
+            feat, label = out[:-1], int(out[-1]) # [512], [1]
+            if label != -1:
+                self.embedding.append(feat)
+                self.id_labels.append(label)
+
+    def accumulate(self):
+        logger.info("Computing pairwise similairity...")
+        assert len(self.embedding) == len(self.id_labels)
+        if len(self.embedding) < 1 :
+            return None
+        embedding = paddle.stack(self.embedding, axis=0)
+        emb = F.normalize(embedding, axis=1).numpy()
+        pdist = np.matmul(emb, emb.T)     
+
+        id_labels = np.array(self.id_labels, dtype='int32').reshape(-1,1)
+        n = len(id_labels)
+        id_lbl = np.tile(id_labels, n).T
+        gt = id_lbl == id_lbl.T
+        
+        up_triangle = np.where(np.triu(pdist) - np.eye(n) * pdist != 0)
+        pdist = pdist[up_triangle]
+        gt = gt[up_triangle]
+
+        far, tar, threshold = self.metrics.roc_curve(gt, pdist)
+        interp = interpolate.interp1d(far, tar)
+        tar_at_far = [interp(x) for x in self.far_levels]
+        
+        for f, fa in enumerate(self.far_levels):
+            self.eval_results['TPR@FAR={:.7f}'.format(fa)] = ' {:.4f}'.format(tar_at_far[f])
+
+    def log(self):
+        for k, v in self.eval_results.items():
+            logger.info('{}: {}'.format(k, v))
+
+    def get_results(self):
+        return self.eval_results

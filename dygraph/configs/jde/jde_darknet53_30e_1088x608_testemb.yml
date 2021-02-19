@@ -1,0 +1,12 @@
+_BASE_: [
+  'jde_darknet53_30e_1088x608.yml'
+]
+
+metric: ReID
+
+JDE:
+  backbone: DarkNet
+  neck: JDEFPN
+  jde_head: JDEHead
+  post_process: BBoxPostProcess
+  test_emb: True

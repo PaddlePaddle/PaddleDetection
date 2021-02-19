@@ -12,7 +12,7 @@ JDE:
   neck: JDEFPN
   jde_head: JDEHead
   post_process: BBoxPostProcess
-  test_emb: True
+  test_emb: False
 
 JDEHead:
   anchors: [[128,384], [180,540], [256,640], [512,640],
