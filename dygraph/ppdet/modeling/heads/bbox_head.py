@@ -15,7 +15,7 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal, XavierUniform
+from paddle.nn.initializer import Normal, XavierUniform, KaimingNormal
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, create
@@ -24,6 +24,9 @@ from ppdet.modeling import ops
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta
+from ppdet.modeling.layers import ConvNormLayer
+
+__all__ = ['TwoFCHead', 'XConvNormHead', 'BBoxHead']
 
 
 @register
@@ -61,6 +64,86 @@ class TwoFCHead(nn.Layer):
         fc7 = self.fc7(fc6)
         fc7 = F.relu(fc7)
         return fc7
+
+
+@register
+class XConvNormHead(nn.Layer):
+    """
+    RCNN bbox head with serveral convolution layers
+    Args:
+        in_dim(int): num of channels for the input rois_feat
+        num_convs(int): num of convolution layers for the rcnn bbox head
+        conv_dim(int): num of channels for the conv layers
+        mlp_dim(int): num of channels for the fc layers
+        resolution(int): resolution of the rois_feat
+        norm_type(str): norm type, 'gn' by defalut
+        freeze_norm(bool): whether to freeze the norm
+        stage_name(str): used in CascadeXConvNormHead, '' by default
+    """
+    __shared__ = ['norm_type', 'freeze_norm']
+
+    def __init__(self,
+                 in_dim=256,
+                 num_convs=4,
+                 conv_dim=256,
+                 mlp_dim=1024,
+                 resolution=7,
+                 norm_type='gn',
+                 freeze_norm=False,
+                 stage_name=''):
+        super(XConvNormHead, self).__init__()
+        self.in_dim = in_dim
+        self.num_convs = num_convs
+        self.conv_dim = conv_dim
+        self.mlp_dim = mlp_dim
+        self.norm_type = norm_type
+        self.freeze_norm = freeze_norm
+
+        self.bbox_head_convs = []
+        fan = conv_dim * 3 * 3
+        initializer = KaimingNormal(fan_in=fan)
+        for i in range(self.num_convs):
+            in_c = in_dim if i == 0 else conv_dim
+            head_conv_name = stage_name + 'bbox_head_conv{}'.format(i)
+            head_conv = self.add_sublayer(
+                head_conv_name,
+                ConvNormLayer(
+                    ch_in=in_c,
+                    ch_out=conv_dim,
+                    filter_size=3,
+                    stride=1,
+                    norm_type=self.norm_type,
+                    norm_name=head_conv_name + '_norm',
+                    freeze_norm=self.freeze_norm,
+                    initializer=initializer,
+                    name=head_conv_name))
+            self.bbox_head_convs.append(head_conv)
+
+        fan = conv_dim * resolution * resolution
+        self.fc6 = nn.Linear(
+            conv_dim * resolution * resolution,
+            mlp_dim,
+            weight_attr=paddle.ParamAttr(
+                initializer=XavierUniform(fan_out=fan)),
+            bias_attr=paddle.ParamAttr(
+                learning_rate=2., regularizer=L2Decay(0.)))
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_dim': s.channels}
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.mlp_dim, )]
+
+    def forward(self, rois_feat):
+        for i in range(self.num_convs):
+            rois_feat = F.relu(self.bbox_head_convs[i](rois_feat))
+        rois_feat = paddle.flatten(rois_feat, start_axis=1, stop_axis=-1)
+        fc6 = F.relu(self.fc6(rois_feat))
+        return fc6
 
 
 @register

@@ -235,11 +235,15 @@ class ConvNormLayer(nn.Layer):
                  filter_size,
                  stride,
                  norm_type='bn',
+                 norm_decay=0.,
                  norm_groups=32,
                  use_dcn=False,
                  norm_name=None,
                  bias_on=False,
                  lr_scale=1.,
+                 freeze_norm=False,
+                 initializer=Normal(
+                     mean=0., std=0.01),
                  name=None):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
@@ -262,8 +266,7 @@ class ConvNormLayer(nn.Layer):
                 groups=1,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
-                    initializer=Normal(
-                        mean=0., std=0.01),
+                    initializer=initializer,
                     learning_rate=1.),
                 bias_attr=bias_attr)
         else:
@@ -277,24 +280,27 @@ class ConvNormLayer(nn.Layer):
                 groups=1,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
-                    initializer=Normal(
-                        mean=0., std=0.01),
+                    initializer=initializer,
                     learning_rate=1.),
                 bias_attr=True,
                 lr_scale=2.,
-                regularizer=L2Decay(0.),
+                regularizer=L2Decay(norm_decay),
                 name=name)
 
+        norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
             name=norm_name + "_scale",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(
             name=norm_name + "_offset",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
-        if norm_type in ['bn', 'sync_bn']:
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay))
+        if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
+                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        elif norm_type == 'sync_bn':
+            self.norm = nn.SyncBatchNorm(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
         elif norm_type == 'gn':
             self.norm = nn.GroupNorm(

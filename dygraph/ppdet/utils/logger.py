@@ -65,7 +65,7 @@ def setup_logger(name="ppdet", output=None):
         os.makedirs(os.path.dirname(filename))
         fh = logging.FileHandler(filename, mode='a')
         fh.setLevel(logging.DEBUG)
-        fh.setFormatter(plain_formatter)
+        fh.setFormatter(logging.Formatter())
         logger.addHandler(fh)
     logger_initialized.append(name)
     return logger
