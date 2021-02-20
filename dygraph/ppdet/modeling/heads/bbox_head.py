@@ -265,10 +265,6 @@ class BBoxHead(nn.Layer):
         reg_name = 'loss_bbox_reg'
         loss_bbox = {}
 
-        if fg_inds.numel() == 0:
-            loss_bbox[cls_name] = paddle.to_tensor(0., dtype='float32')
-            loss_bbox[reg_name] = paddle.to_tensor(0., dtype='float32')
-            return loss_bbox
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
         else:
