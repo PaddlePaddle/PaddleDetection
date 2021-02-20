@@ -67,6 +67,8 @@ class Resize(object):
             im (np.ndarray):  processed image (np.ndarray)
             im_info (dict): info of processed image
         """
+        assert len(self.target_size) == 2
+        assert self.target_size[0] > 0 and self.target_size[1] > 0
         im_channel = im.shape[2]
         im_scale_y, im_scale_x = self.generate_scale(im)
         # set image_shape
