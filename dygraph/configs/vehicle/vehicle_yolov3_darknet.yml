@@ -7,7 +7,7 @@ _BASE_: [
 ]
 
 snapshot_epoch: 5
-weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/vehicle_yolov3_darknet.pdparams
+weights: https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams
 
 YOLOv3Head:
   anchors: [[8, 9], [10, 23], [19, 15],

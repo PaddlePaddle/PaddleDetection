@@ -5,7 +5,7 @@ We provide some models implemented by PaddlePaddle to detect objects in specific
 
 | Task                 | Algorithm | Box AP | Download                                                                                | Configs |
 |:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
-| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/vehicle_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/vehicle/vehicle_yolov3_darknet.yml) |
+| Vehicle Detection    |  YOLOv3  |  54.5  | [model](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/vehicle/vehicle_yolov3_darknet.yml) |
 
 ## Vehicle Detection
 
@@ -40,7 +40,7 @@ Users can employ the model to conduct the inference:
 ```
 export CUDA_VISIBLE_DEVICES=0
 python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
-                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/dygraph/vehicle_yolov3_darknet.pdparams \
+                         -o weights=https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams \
                          --infer_dir configs/vehicle/demo \
                          --draw_threshold 0.2 \
                          --output_dir configs/vehicle/demo/output
@@ -48,6 +48,6 @@ python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
 
 Some inference results are visualized below:
 
-![](../../../docs/images/VehicleDetection_001.jpeg)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/VehicleDetection_001.jpeg)
 
-![](../../../docs/images/VehicleDetection_005.png)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/VehicleDetection_005.png)
