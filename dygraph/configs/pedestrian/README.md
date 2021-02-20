@@ -1,11 +1,11 @@
-English | [简体中文](CONTRIB_cn.md)
+English | [简体中文](README_cn.md)
 # PaddleDetection applied for specific scenarios
 
 We provide some models implemented by PaddlePaddle to detect objects in specific scenarios, users can download the models and use them in these scenarios.
 
 | Task                 | Algorithm | Box AP | Download                                                                                | Configs |
 |:---------------------|:---------:|:------:| :-------------------------------------------------------------------------------------: |:------:|
-| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/pedestrian_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
+| Pedestrian Detection |  YOLOv3  |  51.8  | [model](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/pedestrian/pedestrian_yolov3_darknet.yml) |
 
 ## Pedestrian Detection
 
@@ -37,7 +37,7 @@ Users can employ the model to conduct the inference:
 ```
 export CUDA_VISIBLE_DEVICES=0
 python -u tools/infer.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml \
-                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/dygraph/pedestrian_yolov3_darknet.pdparams \
+                         -o weights=https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams \
                          --infer_dir configs/pedestrian/demo \
                          --draw_threshold 0.3 \
                          --output_dir configs/pedestrian/demo/output
@@ -45,6 +45,6 @@ python -u tools/infer.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml \
 
 Some inference results are visualized below:
 
-![](../../../docs/images/PedestrianDetection_001.png)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/PedestrianDetection_001.png)
 
-![](../../../docs/images/PedestrianDetection_004.png)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/PedestrianDetection_004.png)
