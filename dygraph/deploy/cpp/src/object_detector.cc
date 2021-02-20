@@ -131,7 +131,7 @@ void ObjectDetector::Postprocess(
   result->clear();
   int rh = 1;
   int rw = 1;
-  if (config_.arch_ == "SSD" || config_.arch_ == "Face") {
+  if (config_.arch_ == "Face") {
     rh = raw_mat.rows;
     rw = raw_mat.cols;
   }
