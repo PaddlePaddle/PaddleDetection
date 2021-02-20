@@ -52,7 +52,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
-            if key == 'ResizeOp':
+            if key == 'Resize':
                 if value.get('keep_ratio',
                              False) and image_shape[1] is not None:
                     max_size = max(image_shape[1:])
