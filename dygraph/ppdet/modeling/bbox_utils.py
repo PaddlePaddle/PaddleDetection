@@ -39,8 +39,6 @@ def bbox2delta(src_boxes, tgt_boxes, weights):
 
 def delta2bbox(deltas, boxes, weights):
     clip_scale = math.log(1000.0 / 16)
-    if boxes.shape[0] == 0:
-        return paddle.zeros((0, deltas.shape[1]), dtype='float32')
 
     widths = boxes[:, 2] - boxes[:, 0]
     heights = boxes[:, 3] - boxes[:, 1]
@@ -52,7 +50,7 @@ def delta2bbox(deltas, boxes, weights):
     dy = deltas[:, 1::4] / wy
     dw = deltas[:, 2::4] / ww
     dh = deltas[:, 3::4] / wh
-    # Prevent sending too large values into np.exp()
+    # Prevent sending too large values into paddle.exp()
     dw = paddle.clip(dw, max=clip_scale)
     dh = paddle.clip(dh, max=clip_scale)
 
@@ -61,12 +59,13 @@ def delta2bbox(deltas, boxes, weights):
     pred_w = paddle.exp(dw) * widths.unsqueeze(1)
     pred_h = paddle.exp(dh) * heights.unsqueeze(1)
 
-    pred_boxes = paddle.zeros_like(deltas)
+    pred_boxes = []
+    pred_boxes.append(pred_ctr_x - 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y - 0.5 * pred_h)
+    pred_boxes.append(pred_ctr_x + 0.5 * pred_w)
+    pred_boxes.append(pred_ctr_y + 0.5 * pred_h)
+    pred_boxes = paddle.stack(pred_boxes, axis=-1)
 
-    pred_boxes[:, 0::4] = pred_ctr_x - 0.5 * pred_w
-    pred_boxes[:, 1::4] = pred_ctr_y - 0.5 * pred_h
-    pred_boxes[:, 2::4] = pred_ctr_x + 0.5 * pred_w
-    pred_boxes[:, 3::4] = pred_ctr_y + 0.5 * pred_h
     return pred_boxes
 
 
@@ -89,7 +88,7 @@ def expand_bbox(bboxes, scale):
 
 
 def clip_bbox(boxes, im_shape):
-    h, w = im_shape
+    h, w = im_shape[0], im_shape[1]
     x1 = boxes[:, 0].clip(0, w)
     y1 = boxes[:, 1].clip(0, h)
     x2 = boxes[:, 2].clip(0, w)

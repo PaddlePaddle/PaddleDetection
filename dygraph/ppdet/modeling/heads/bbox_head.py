@@ -15,7 +15,7 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal, XavierUniform
+from paddle.nn.initializer import Normal, XavierUniform, KaimingNormal
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, create
@@ -24,6 +24,9 @@ from ppdet.modeling import ops
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta
+from ppdet.modeling.layers import ConvNormLayer
+
+__all__ = ['TwoFCHead', 'XConvNormHead', 'BBoxHead']
 
 
 @register
@@ -33,19 +36,16 @@ class TwoFCHead(nn.Layer):
         self.in_dim = in_dim
         self.mlp_dim = mlp_dim
         fan = in_dim * resolution * resolution
-        lr_factor = 1.
         self.fc6 = nn.Linear(
             in_dim * resolution * resolution,
             mlp_dim,
             weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
                 initializer=XavierUniform(fan_out=fan)))
 
         self.fc7 = nn.Linear(
             mlp_dim,
             mlp_dim,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=XavierUniform()))
+            weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -67,12 +67,98 @@ class TwoFCHead(nn.Layer):
 
 
 @register
+class XConvNormHead(nn.Layer):
+    """
+    RCNN bbox head with serveral convolution layers
+    Args:
+        in_dim(int): num of channels for the input rois_feat
+        num_convs(int): num of convolution layers for the rcnn bbox head
+        conv_dim(int): num of channels for the conv layers
+        mlp_dim(int): num of channels for the fc layers
+        resolution(int): resolution of the rois_feat
+        norm_type(str): norm type, 'gn' by defalut
+        freeze_norm(bool): whether to freeze the norm
+        stage_name(str): used in CascadeXConvNormHead, '' by default
+    """
+    __shared__ = ['norm_type', 'freeze_norm']
+
+    def __init__(self,
+                 in_dim=256,
+                 num_convs=4,
+                 conv_dim=256,
+                 mlp_dim=1024,
+                 resolution=7,
+                 norm_type='gn',
+                 freeze_norm=False,
+                 stage_name=''):
+        super(XConvNormHead, self).__init__()
+        self.in_dim = in_dim
+        self.num_convs = num_convs
+        self.conv_dim = conv_dim
+        self.mlp_dim = mlp_dim
+        self.norm_type = norm_type
+        self.freeze_norm = freeze_norm
+
+        self.bbox_head_convs = []
+        fan = conv_dim * 3 * 3
+        initializer = KaimingNormal(fan_in=fan)
+        for i in range(self.num_convs):
+            in_c = in_dim if i == 0 else conv_dim
+            head_conv_name = stage_name + 'bbox_head_conv{}'.format(i)
+            head_conv = self.add_sublayer(
+                head_conv_name,
+                ConvNormLayer(
+                    ch_in=in_c,
+                    ch_out=conv_dim,
+                    filter_size=3,
+                    stride=1,
+                    norm_type=self.norm_type,
+                    norm_name=head_conv_name + '_norm',
+                    freeze_norm=self.freeze_norm,
+                    initializer=initializer,
+                    name=head_conv_name))
+            self.bbox_head_convs.append(head_conv)
+
+        fan = conv_dim * resolution * resolution
+        self.fc6 = nn.Linear(
+            conv_dim * resolution * resolution,
+            mlp_dim,
+            weight_attr=paddle.ParamAttr(
+                initializer=XavierUniform(fan_out=fan)),
+            bias_attr=paddle.ParamAttr(
+                learning_rate=2., regularizer=L2Decay(0.)))
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_dim': s.channels}
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.mlp_dim, )]
+
+    def forward(self, rois_feat):
+        for i in range(self.num_convs):
+            rois_feat = F.relu(self.bbox_head_convs[i](rois_feat))
+        rois_feat = paddle.flatten(rois_feat, start_axis=1, stop_axis=-1)
+        fc6 = F.relu(self.fc6(rois_feat))
+        return fc6
+
+
+@register
 class BBoxHead(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['bbox_assigner']
     """
     head (nn.Layer): Extract feature in bbox head
     in_channel (int): Input channel after RoI extractor
+    roi_extractor (object): The module of RoI Extractor
+    bbox_assigner (object): The module of Box Assigner, label and sample the 
+                            box.
+    with_pool (bool): Whether to use pooling for the RoI feature.
+    num_classes (int): The number of classes
+    bbox_weight (List[float]): The weight to get the decode box 
     """
 
     def __init__(self,
@@ -98,17 +184,14 @@ class BBoxHead(nn.Layer):
         self.bbox_score = nn.Linear(
             in_channel,
             self.num_classes + 1,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor, initializer=Normal(
-                    mean=0.0, std=0.01)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.01)))
 
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
-            weight_attr=paddle.ParamAttr(
-                learning_rate=lr_factor,
-                initializer=Normal(
-                    mean=0.0, std=0.001)))
+            weight_attr=paddle.ParamAttr(initializer=Normal(
+                mean=0.0, std=0.001)))
         self.assigned_label = None
         self.assigned_rois = None
 
@@ -128,21 +211,19 @@ class BBoxHead(nn.Layer):
 
     def forward(self, body_feats=None, rois=None, rois_num=None, inputs=None):
         """
-        body_feats (list[Tensor]):
-        rois (Tensor):
-        rois_num (Tensor):
-        inputs (dict{Tensor}):
+        body_feats (list[Tensor]): Feature maps from backbone
+        rois (list[Tensor]): RoIs generated from RPN module
+        rois_num (Tensor): The number of RoIs in each image
+        inputs (dict{Tensor}): The ground-truth of image
         """
         if self.training:
-            rois, rois_num, _, targets = self.bbox_assigner(rois, rois_num,
-                                                            inputs)
+            rois, rois_num, targets = self.bbox_assigner(rois, rois_num, inputs)
             self.assigned_rois = (rois, rois_num)
             self.assigned_targets = targets
 
         rois_feat = self.roi_extractor(body_feats, rois, rois_num)
         bbox_feat = self.head(rois_feat)
-        #if self.with_pool:
-        if len(bbox_feat.shape) > 2 and bbox_feat.shape[-1] > 1:
+        if self.with_pool:
             feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
             feat = paddle.squeeze(feat, axis=[2, 3])
         else:
@@ -151,13 +232,14 @@ class BBoxHead(nn.Layer):
         deltas = self.bbox_delta(feat)
 
         if self.training:
-            loss = self.get_loss(scores, deltas, targets, rois)
+            loss = self.get_loss(scores, deltas, targets, rois,
+                                 self.bbox_weight)
             return loss, bbox_feat
         else:
             pred = self.get_prediction(scores, deltas)
             return pred, self.head
 
-    def get_loss(self, scores, deltas, targets, rois):
+    def get_loss(self, scores, deltas, targets, rois, bbox_weight):
         """
         scores (Tensor): scores from bbox head outputs
         deltas (Tensor): deltas from bbox head outputs
@@ -180,6 +262,14 @@ class BBoxHead(nn.Layer):
             paddle.logical_and(tgt_labels >= 0, tgt_labels <
                                self.num_classes)).flatten()
 
+        cls_name = 'loss_bbox_cls'
+        reg_name = 'loss_bbox_reg'
+        loss_bbox = {}
+
+        if fg_inds.numel() == 0:
+            loss_bbox[cls_name] = paddle.to_tensor(0., dtype='float32')
+            loss_bbox[reg_name] = paddle.to_tensor(0., dtype='float32')
+            return loss_bbox
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
         else:
@@ -199,16 +289,13 @@ class BBoxHead(nn.Layer):
         tgt_bboxes = paddle.concat(tgt_bboxes) if len(
             tgt_bboxes) > 1 else tgt_bboxes[0]
 
-        reg_target = bbox2delta(rois, tgt_bboxes, self.bbox_weight)
+        reg_target = bbox2delta(rois, tgt_bboxes, bbox_weight)
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
         loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
         ) / tgt_labels.shape[0]
 
-        cls_name = 'loss_bbox_cls'
-        reg_name = 'loss_bbox_reg'
-        loss_bbox = {}
         loss_bbox[cls_name] = loss_bbox_cls
         loss_bbox[reg_name] = loss_bbox_reg
 

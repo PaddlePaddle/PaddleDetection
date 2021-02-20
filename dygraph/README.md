@@ -130,7 +130,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 ### 入门教程
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
-- [快速开始](docs/tutorials/QUICK_START_cn.md)
+- [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
 - [如何准备数据](docs/tutorials/PrepareDataSet.md)
 - [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
 
@@ -146,7 +146,11 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 ## 模型库
 
-- [模型库](docs/MODEL_ZOO_cn.md)
+- 通用目标检测:
+    - [模型库](docs/MODEL_ZOO_cn.md)
+- 垂类领域:
+    - [行人检测](configs/pedestrian/README.md)
+    - [车辆检测](configs/vehicle/README.md)
 
 
 ## 许可证书

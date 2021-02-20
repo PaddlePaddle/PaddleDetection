@@ -20,33 +20,55 @@ from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
+from ppdet.modeling.layers import ConvNormLayer
 
 from .roi_extractor import RoIAlign
 
 
 @register
 class MaskFeat(nn.Layer):
-    def __init__(self, num_convs=0, in_channels=2048, out_channels=256):
+    def __init__(self,
+                 num_convs=4,
+                 in_channels=256,
+                 out_channels=256,
+                 norm_type=None):
         super(MaskFeat, self).__init__()
         self.num_convs = num_convs
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.norm_type = norm_type
         fan_conv = out_channels * 3 * 3
         fan_deconv = out_channels * 2 * 2
 
         mask_conv = nn.Sequential()
-        for i in range(self.num_convs):
-            conv_name = 'mask_inter_feat_{}'.format(i + 1)
-            mask_conv.add_sublayer(
-                conv_name,
-                nn.Conv2D(
-                    in_channels=in_channels if i == 0 else out_channels,
-                    out_channels=out_channels,
-                    kernel_size=3,
-                    padding=1,
-                    weight_attr=paddle.ParamAttr(
-                        initializer=KaimingNormal(fan_in=fan_conv))))
-            mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
+        if norm_type == 'gn':
+            for i in range(self.num_convs):
+                conv_name = 'mask_inter_feat_{}'.format(i + 1)
+                mask_conv.add_sublayer(
+                    conv_name,
+                    ConvNormLayer(
+                        ch_in=in_channels if i == 0 else out_channels,
+                        ch_out=out_channels,
+                        filter_size=3,
+                        stride=1,
+                        norm_type=self.norm_type,
+                        norm_name=conv_name + '_norm',
+                        initializer=KaimingNormal(fan_in=fan_conv),
+                        name=conv_name))
+                mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
+        else:
+            for i in range(self.num_convs):
+                conv_name = 'mask_inter_feat_{}'.format(i + 1)
+                mask_conv.add_sublayer(
+                    conv_name,
+                    nn.Conv2D(
+                        in_channels=in_channels if i == 0 else out_channels,
+                        out_channels=out_channels,
+                        kernel_size=3,
+                        padding=1,
+                        weight_attr=paddle.ParamAttr(
+                            initializer=KaimingNormal(fan_in=fan_conv))))
+                mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
         mask_conv.add_sublayer(
             'conv5_mask',
             nn.Conv2DTranspose(
@@ -182,11 +204,12 @@ class MaskHead(nn.Layer):
                 mask_out = F.sigmoid(mask_logit)
             else:
                 num_masks = mask_logit.shape[0]
-                pred_masks = paddle.split(mask_logit, num_masks)
                 mask_out = []
                 # TODO: need to optimize gather
-                for i, pred_mask in enumerate(pred_masks):
-                    mask = paddle.gather(pred_mask, labels[i], axis=1)
+                for i in range(mask_logit.shape[0]):
+                    pred_masks = paddle.unsqueeze(
+                        mask_logit[i, :, :, :], axis=0)
+                    mask = paddle.gather(pred_masks, labels[i], axis=1)
                     mask_out.append(mask)
                 mask_out = F.sigmoid(paddle.concat(mask_out))
         return mask_out

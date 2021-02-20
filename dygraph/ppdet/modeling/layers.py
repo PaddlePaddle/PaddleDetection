@@ -117,11 +117,15 @@ class ConvNormLayer(nn.Layer):
                  filter_size,
                  stride,
                  norm_type='bn',
+                 norm_decay=0.,
                  norm_groups=32,
                  use_dcn=False,
                  norm_name=None,
                  bias_on=False,
                  lr_scale=1.,
+                 freeze_norm=False,
+                 initializer=Normal(
+                     mean=0., std=0.01),
                  name=None):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
@@ -144,8 +148,7 @@ class ConvNormLayer(nn.Layer):
                 groups=1,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
-                    initializer=Normal(
-                        mean=0., std=0.01),
+                    initializer=initializer,
                     learning_rate=1.),
                 bias_attr=bias_attr)
         else:
@@ -159,24 +162,27 @@ class ConvNormLayer(nn.Layer):
                 groups=1,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
-                    initializer=Normal(
-                        mean=0., std=0.01),
+                    initializer=initializer,
                     learning_rate=1.),
                 bias_attr=True,
                 lr_scale=2.,
-                regularizer=L2Decay(0.),
+                regularizer=L2Decay(norm_decay),
                 name=name)
 
+        norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
             name=norm_name + "_scale",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(
             name=norm_name + "_offset",
-            learning_rate=1.,
-            regularizer=L2Decay(0.))
-        if norm_type in ['bn', 'sync_bn']:
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay))
+        if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
+                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
+        elif norm_type == 'sync_bn':
+            self.norm = nn.SyncBatchNorm(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
         elif norm_type == 'gn':
             self.norm = nn.GroupNorm(
@@ -291,14 +297,18 @@ class AnchorGeneratorSSD(object):
 @register
 @serializable
 class RCNNBox(object):
+    __shared__ = ['num_classes']
+
     def __init__(self,
                  prior_box_var=[10., 10., 5., 5.],
                  code_type="decode_center_size",
-                 box_normalized=False):
+                 box_normalized=False,
+                 num_classes=80):
         super(RCNNBox, self).__init__()
         self.prior_box_var = prior_box_var
         self.code_type = code_type
         self.box_normalized = box_normalized
+        self.num_classes = num_classes
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
         bbox_pred, cls_prob = bbox_head_out
@@ -314,15 +324,20 @@ class RCNNBox(object):
 
         origin_shape = paddle.concat(origin_shape_list)
 
-        # [N, C*4]
+        # bbox_pred.shape: [N, C*4]
+        # C=num_classes in faster/mask rcnn(bbox_head), C=1 in cascade rcnn(cascade_head)
         bbox = paddle.concat(roi)
-        bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
+        if bbox.shape[0] == 0:
+            bbox = paddle.zeros([0, bbox_pred.shape[1]], dtype='float32')
+        else:
+            bbox = delta2bbox(bbox_pred, bbox, self.prior_box_var)
         scores = cls_prob[:, :-1]
 
-        # [N*C, 4]
-
-        bbox_num_class = bbox.shape[1] // 4
-        bbox = paddle.reshape(bbox, [-1, bbox_num_class, 4])
+        # bbox.shape: [N, C, 4]
+        # bbox.shape[1] must be equal to scores.shape[1]
+        bbox_num_class = bbox.shape[1]
+        if bbox_num_class == 1:
+            bbox = paddle.tile(bbox, [1, self.num_classes, 1])
 
         origin_h = paddle.unsqueeze(origin_shape[:, 0], axis=1)
         origin_w = paddle.unsqueeze(origin_shape[:, 1], axis=1)

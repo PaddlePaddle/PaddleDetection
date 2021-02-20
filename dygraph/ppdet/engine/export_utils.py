@@ -52,7 +52,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
-            if key == 'ResizeOp':
+            if key == 'Resize':
                 if value.get('keep_ratio',
                              False) and image_shape[1] is not None:
                     max_size = max(image_shape[1:])
@@ -65,7 +65,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
         methods = [list(bt.keys())[0] for bt in batch_transforms]
         for bt in batch_transforms:
             for key, value in bt.items():
-                if key == 'PadBatchOp':
+                if key == 'PadBatch':
                     preprocess_list.append({'type': 'PadStride'})
                     preprocess_list[-1].update({
                         'stride': value['pad_to_stride']
@@ -98,9 +98,8 @@ def _dump_infer_config(config, path, image_shape, model):
             'Architecture: {} is not supported for exporting model now'.format(
                 infer_arch))
         os._exit(0)
-    if 'mask_post_process' in model.__dict__ and model.__dict__[
-            'mask_post_process']:
-        infer_cfg['mask_resolution'] = model.mask_post_process.mask_resolution
+    if 'Mask' in infer_arch:
+        infer_cfg['mask'] = True
     infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],

@@ -22,6 +22,7 @@
 #include <utility>
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -138,9 +139,10 @@ class Preprocessor {
       return std::make_shared<Permute>();
     } else if (name == "NormalizeImageOp") {
       return std::make_shared<Normalize>();
-    } else if (name == "PadBatchOp") {
+    } else if (name == "PadBatchOp" || name == "PadStride") {
       return std::make_shared<PadStride>();
     }
+    std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
     return nullptr;
   }
 
