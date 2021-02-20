@@ -52,7 +52,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
-            if key == 'ResizeOp':
+            if key == 'Resize':
                 if value.get('keep_ratio',
                              False) and image_shape[1] is not None:
                     max_size = max(image_shape[1:])
@@ -65,7 +65,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
         methods = [list(bt.keys())[0] for bt in batch_transforms]
         for bt in batch_transforms:
             for key, value in bt.items():
-                if key == 'PadBatchOp':
+                if key == 'PadBatch':
                     preprocess_list.append({'type': 'PadStride'})
                     preprocess_list[-1].update({
                         'stride': value['pad_to_stride']

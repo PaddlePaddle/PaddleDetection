@@ -23,7 +23,7 @@ from PIL import Image
 import cv2
 import numpy as np
 import paddle
-from preprocess import preprocess, ResizeOp, NormalizeImageOp, PermuteOp, PadStride
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from visualize import visualize_box_mask
 from paddle.inference import Config
 from paddle.inference import create_predictor
@@ -196,22 +196,22 @@ class DetectorSOLOv2(Detector):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             np_label = self.predictor.get_output_handle(output_names[
-                0]).copy_to_cpu()
-            np_score = self.predictor.get_output_handle(output_names[
                 1]).copy_to_cpu()
-            np_segms = self.predictor.get_output_handle(output_names[
+            np_score = self.predictor.get_output_handle(output_names[
                 2]).copy_to_cpu()
+            np_segms = self.predictor.get_output_handle(output_names[
+                3]).copy_to_cpu()
 
         t1 = time.time()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
             np_label = self.predictor.get_output_handle(output_names[
-                0]).copy_to_cpu()
-            np_score = self.predictor.get_output_handle(output_names[
                 1]).copy_to_cpu()
-            np_segms = self.predictor.get_output_handle(output_names[
+            np_score = self.predictor.get_output_handle(output_names[
                 2]).copy_to_cpu()
+            np_segms = self.predictor.get_output_handle(output_names[
+                3]).copy_to_cpu()
         t2 = time.time()
         ms = (t2 - t1) * 1000.0 / repeats
         print("Inference: {} ms per batch image".format(ms))
