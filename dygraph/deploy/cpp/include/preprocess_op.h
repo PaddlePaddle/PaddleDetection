@@ -58,7 +58,7 @@ class InitInfo : public PreprocessOp{
   virtual void Run(cv::Mat* im, ImageBlob* data);
 };
 
-class Normalize : public PreprocessOp {
+class NormalizeImage : public PreprocessOp {
  public:
   virtual void Init(const YAML::Node& item, const std::vector<int> image_shape) {
     mean_ = item["mean"].as<std::vector<float>>();
@@ -138,8 +138,9 @@ class Preprocessor {
     } else if (name == "Permute") {
       return std::make_shared<Permute>();
     } else if (name == "NormalizeImage") {
-      return std::make_shared<Normalize>();
-    } else if (name == "PadBatch") {
+      return std::make_shared<NormalizeImage>();
+    } else if (name == "PadStride") {
+      // use PadStride instead of PadBatch
       return std::make_shared<PadStride>();
     }
     std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
