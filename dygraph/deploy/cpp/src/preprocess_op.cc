@@ -63,8 +63,8 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
   data->input_shape_ = {
-      static_cast<int>(im->rows * resize_scale.first),
-      static_cast<int>(im->cols * resize_scale.second)
+      static_cast<int>(im->cols * resize_scale.first),
+      static_cast<int>(im->rows * resize_scale.second)
   };
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
