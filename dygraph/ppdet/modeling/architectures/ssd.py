@@ -54,13 +54,8 @@ class SSD(BaseArch):
 
     def get_pred(self):
         bbox_pred, bbox_num = self._forward()
-        label = bbox_pred[:, 0]
-        score = bbox_pred[:, 1]
-        bbox = bbox_pred[:, 2:]
         output = {
-            'bbox': bbox,
-            'score': score,
-            'label': label,
-            'bbox_num': bbox_num
+            "bbox": bbox_pred,
+            "bbox_num": bbox_num,
         }
         return output
