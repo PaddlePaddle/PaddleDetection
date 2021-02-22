@@ -451,6 +451,7 @@ def distribute_fpn_proposals(fpn_rois,
                              max_level,
                              refer_level,
                              refer_scale,
+                             pixel_offset=False,
                              rois_num=None,
                              name=None):
     """
@@ -525,7 +526,8 @@ def distribute_fpn_proposals(fpn_rois,
     if in_dygraph_mode():
         assert rois_num is not None, "rois_num should not be None in dygraph mode."
         attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
-                 refer_level, 'refer_scale', refer_scale)
+                 refer_level, 'refer_scale', refer_scale, 'pixel_offset',
+                 pixel_offset)
         multi_rois, restore_ind, rois_num_per_level = core.ops.distribute_fpn_proposals(
             fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
         return multi_rois, restore_ind, rois_num_per_level
@@ -564,7 +566,8 @@ def distribute_fpn_proposals(fpn_rois,
                 'min_level': min_level,
                 'max_level': max_level,
                 'refer_level': refer_level,
-                'refer_scale': refer_scale
+                'refer_scale': refer_scale,
+                'pixel_offset': pixel_offset
             })
         return multi_rois, restore_ind, rois_num_per_level
 
@@ -1409,6 +1412,7 @@ def generate_proposals(scores,
                        nms_thresh=0.5,
                        min_size=0.1,
                        eta=1.0,
+                       pixel_offset=False,
                        return_rois_num=False,
                        name=None):
     """
@@ -1483,7 +1487,8 @@ def generate_proposals(scores,
     if in_dygraph_mode():
         assert return_rois_num, "return_rois_num should be True in dygraph mode."
         attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
-                 'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta)
+                 'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
+                 'pixel_offset', pixel_offset)
         rpn_rois, rpn_roi_probs, rpn_rois_num = core.ops.generate_proposals_v2(
             scores, bbox_deltas, im_shape, anchors, variances, *attrs)
         return rpn_rois, rpn_roi_probs, rpn_rois_num
@@ -1530,7 +1535,8 @@ def generate_proposals(scores,
                 'post_nms_topN': post_nms_top_n,
                 'nms_thresh': nms_thresh,
                 'min_size': min_size,
-                'eta': eta
+                'eta': eta,
+                'pixel_offset': pixel_offset
             },
             outputs=outputs)
         rpn_rois.stop_gradient = True
