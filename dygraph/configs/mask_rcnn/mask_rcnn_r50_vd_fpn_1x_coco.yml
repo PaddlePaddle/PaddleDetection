@@ -1,0 +1,15 @@
+_BASE_: [
+  'mask_rcnn_r50_fpn_1x_coco.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_pretrained.tar
+weights: output/mask_rcnn_r50_vd_fpn_1x_coco/model_final
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4

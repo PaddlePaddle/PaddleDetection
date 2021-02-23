@@ -237,8 +237,6 @@ class CascadeHead(BBoxHead):
             clip_box = clip_bbox(boxes_per_image, im_shape[i])
             if self.training:
                 keep = nonempty_bbox(clip_box)
-                if keep.shape[0] == 0:
-                    continue
                 clip_box = paddle.gather(clip_box, keep)
             rois.append(clip_box)
         rois_num = paddle.concat([paddle.shape(r)[0] for r in rois])
