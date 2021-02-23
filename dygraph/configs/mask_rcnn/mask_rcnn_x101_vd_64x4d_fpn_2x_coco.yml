@@ -1,0 +1,29 @@
+_BASE_: [
+  'mask_rcnn_r50_fpn_1x_coco.yml',
+]
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNeXt101_vd_64x4d_pretrained.tar
+weights: output/mask_rcnn_x101_vd_64x4d_fpn_2x_coco/model_final
+
+ResNet:
+  # for ResNeXt: groups, base_width, base_channels
+  depth: 101
+  variant: d
+  groups: 64
+  base_width: 4
+  base_channels: 64
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
