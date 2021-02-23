@@ -7,6 +7,8 @@
 | ResNet50             | Mask         |    1    |   1x    |     ----     |  36.4  |    31.9    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/mask_rcnn/mask_rcnn_r50_1x_coco.yml) |
 | ResNet50-FPN         | Mask         |    1    |   1x    |     ----     |  38.3  |    34.5    | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml) |
 
+**注意：** Mask R-CNN模型精度依赖Paddle develop分支修改，精度复现须使用[每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)或2.0.1版本(将于2021.03发布)，使用Paddle 2.0.0版本会有少量精度损失。
+
 ## Citations
 ```
 @article{He_2017,
