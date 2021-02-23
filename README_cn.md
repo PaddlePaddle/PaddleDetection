@@ -250,7 +250,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 
 ## 版本更新
-v0.5.0版本已经在`11/2020`发布，增加SOLOv2等多个模型，新增Android移动端Demo，新增PACT量化策略，新增目标检测全流程和Jetson平台部署等教程，提升易用性，修复已知诸多bug等，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v2.0-rc版本已经在`02/2021`发布，新增动态图版本，支持RCNN, YOLOv3, PP-YOLO, SSD/SSDLite, FCOS, TTFNet, SOLOv2等系列模型，支持模型剪裁和量化，支持预测部署及TensorRT推理加速，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 ## 许可证书
 本项目的发布受[Apache 2.0 license](LICENSE)许可认证。

@@ -260,7 +260,7 @@ All these models can be get in [Model Zoo](#ModelZoo)
 
 ## Updates
 
-v0.5.0 was released at `11/2020`, add SOLOv2, etc. And add Android mobile demo, add PACT quantization strategy, add object detection full-process documentation and Jetson platform deployment tutorials, and improved ease of use, fix many known bugs, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
+v2.0-rc was released at `02/2021`, add dygraph version, which supports RCNN, YOLOv3, PP-YOLO, SSD/SSDLite, FCOS, TTFNet, SOLOv2, etc. supports model pruning and quantization, supports deploying and accelerating by TensorRT, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 
 ## License
