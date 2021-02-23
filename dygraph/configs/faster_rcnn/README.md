@@ -19,6 +19,8 @@
 | ResNeXt101-vd-FPN    | Faster         |    1    |   1x    |     ----     |  43.4  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_x101_vd_64x4d_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/faster_rcnn/faster_rcnn_x101_vd_64x4d_fpn_1x_coco.yml) |
 | ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |     ----     |  44.0  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/faster_rcnn/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.yml) |
 
+**注意：** Faster R-CNN模型精度依赖Paddle develop分支修改，精度复现须使用[每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)或2.0.1版本(将于2021.03发布)，使用Paddle 2.0.0版本会有少量精度损失。
+
 ## Citations
 ```
 @article{Ren_2017,
