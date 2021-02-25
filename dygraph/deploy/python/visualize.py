@@ -173,7 +173,7 @@ def draw_segm(im,
     clsid2color = {}
     np_segms = np_segms.astype(np.uint8)
     for i in range(np_segms.shape[0]):
-        mask, score, clsid = np_segms[i], np_score[i], np_label[i] + 1
+        mask, score, clsid = np_segms[i], np_score[i], np_label[i]
         if score < threshold:
             continue
 

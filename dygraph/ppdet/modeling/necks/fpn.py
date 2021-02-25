@@ -14,13 +14,13 @@
 
 import numpy as np
 import paddle
+import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.nn import Layer
-from paddle.nn import Conv2D
 from paddle.nn.initializer import XavierUniform
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
+from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 __all__ = ['FPN']
@@ -28,7 +28,7 @@ __all__ = ['FPN']
 
 @register
 @serializable
-class FPN(Layer):
+class FPN(nn.Layer):
     def __init__(self,
                  in_channels,
                  out_channel,
@@ -36,8 +36,10 @@ class FPN(Layer):
                  has_extra_convs=False,
                  extra_stage=1,
                  use_c5=True,
+                 norm_type=None,
+                 norm_decay=0.,
+                 freeze_norm=False,
                  relu_before_extra_convs=True):
-
         super(FPN, self).__init__()
         self.out_channel = out_channel
         for s in range(extra_stage):
@@ -47,6 +49,9 @@ class FPN(Layer):
         self.extra_stage = extra_stage
         self.use_c5 = use_c5
         self.relu_before_extra_convs = relu_before_extra_convs
+        self.norm_type = norm_type
+        self.norm_decay = norm_decay
+        self.freeze_norm = freeze_norm
 
         self.lateral_convs = []
         self.fpn_convs = []
@@ -62,26 +67,56 @@ class FPN(Layer):
             else:
                 lateral_name = 'fpn_inner_res{}_sum_lateral'.format(i + 2)
             in_c = in_channels[i - st_stage]
-            lateral = self.add_sublayer(
-                lateral_name,
-                Conv2D(
-                    in_channels=in_c,
-                    out_channels=out_channel,
-                    kernel_size=1,
-                    weight_attr=ParamAttr(
-                        initializer=XavierUniform(fan_out=in_c))))
+            if self.norm_type == 'gn':
+                lateral = self.add_sublayer(
+                    lateral_name,
+                    ConvNormLayer(
+                        ch_in=in_c,
+                        ch_out=out_channel,
+                        filter_size=1,
+                        stride=1,
+                        norm_type=self.norm_type,
+                        norm_decay=self.norm_decay,
+                        norm_name=lateral_name + '_norm',
+                        freeze_norm=self.freeze_norm,
+                        initializer=XavierUniform(fan_out=in_c),
+                        name=lateral_name))
+            else:
+                lateral = self.add_sublayer(
+                    lateral_name,
+                    nn.Conv2D(
+                        in_channels=in_c,
+                        out_channels=out_channel,
+                        kernel_size=1,
+                        weight_attr=ParamAttr(
+                            initializer=XavierUniform(fan_out=in_c))))
             self.lateral_convs.append(lateral)
 
             fpn_name = 'fpn_res{}_sum'.format(i + 2)
-            fpn_conv = self.add_sublayer(
-                fpn_name,
-                Conv2D(
-                    in_channels=out_channel,
-                    out_channels=out_channel,
-                    kernel_size=3,
-                    padding=1,
-                    weight_attr=ParamAttr(
-                        initializer=XavierUniform(fan_out=fan))))
+            if self.norm_type == 'gn':
+                fpn_conv = self.add_sublayer(
+                    fpn_name,
+                    ConvNormLayer(
+                        ch_in=out_channel,
+                        ch_out=out_channel,
+                        filter_size=3,
+                        stride=1,
+                        norm_type=self.norm_type,
+                        norm_decay=self.norm_decay,
+                        norm_name=fpn_name + '_norm',
+                        freeze_norm=self.freeze_norm,
+                        initializer=XavierUniform(fan_out=fan),
+                        name=fpn_name))
+            else:
+                fpn_conv = self.add_sublayer(
+                    fpn_name,
+                    nn.Conv2D(
+                        in_channels=out_channel,
+                        out_channels=out_channel,
+                        kernel_size=3,
+                        padding=1,
+                        weight_attr=ParamAttr(
+                            initializer=XavierUniform(fan_out=fan))))
             self.fpn_convs.append(fpn_conv)
 
         # add extra conv levels for RetinaNet(use_c5)/FCOS(use_p5)
@@ -93,16 +128,31 @@ class FPN(Layer):
                 else:
                     in_c = out_channel
                 extra_fpn_name = 'fpn_{}'.format(lvl + 2)
-                extra_fpn_conv = self.add_sublayer(
-                    extra_fpn_name,
-                    Conv2D(
-                        in_channels=in_c,
-                        out_channels=out_channel,
-                        kernel_size=3,
-                        stride=2,
-                        padding=1,
-                        weight_attr=ParamAttr(
-                            initializer=XavierUniform(fan_out=fan))))
+                if self.norm_type == 'gn':
+                    extra_fpn_conv = self.add_sublayer(
+                        extra_fpn_name,
+                        ConvNormLayer(
+                            ch_in=in_c,
+                            ch_out=out_channel,
+                            filter_size=3,
+                            stride=2,
+                            norm_type=self.norm_type,
+                            norm_decay=self.norm_decay,
+                            norm_name=extra_fpn_name + '_norm',
+                            freeze_norm=self.freeze_norm,
+                            initializer=XavierUniform(fan_out=fan),
+                            name=extra_fpn_name))
+                else:
+                    extra_fpn_conv = self.add_sublayer(
+                        extra_fpn_name,
+                        nn.Conv2D(
+                            in_channels=in_c,
+                            out_channels=out_channel,
+                            kernel_size=3,
+                            stride=2,
+                            padding=1,
+                            weight_attr=ParamAttr(
+                                initializer=XavierUniform(fan_out=fan))))
                 self.fpn_convs.append(extra_fpn_conv)
 
     @classmethod

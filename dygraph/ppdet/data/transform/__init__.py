@@ -14,14 +14,9 @@
 
 from . import operators
 from . import batch_operators
-from . import operator
-from . import batch_operator
 
-# TODO: operators and batch_operators will be replaced by operator and batch_operator
 from .operators import *
-from .operator import *
 from .batch_operators import *
-from .batch_operator import *
 
 __all__ = []
 __all__ += registered_ops

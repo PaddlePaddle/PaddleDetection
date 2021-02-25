@@ -35,10 +35,11 @@ def decode_image(im_file, im_info):
     else:
         im = im_file
     im_info['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+    im_info['scale_factor'] = np.array([1., 1.], dtype=np.float32)
     return im, im_info
 
 
-class ResizeOp(object):
+class Resize(object):
     """resize image by target_size and max_size
     Args:
         target_size (int): the target size of image
@@ -66,8 +67,13 @@ class ResizeOp(object):
             im (np.ndarray):  processed image (np.ndarray)
             im_info (dict): info of processed image
         """
+        assert len(self.target_size) == 2
+        assert self.target_size[0] > 0 and self.target_size[1] > 0
         im_channel = im.shape[2]
         im_scale_y, im_scale_x = self.generate_scale(im)
+        # set image_shape
+        im_info['input_shape'][1] = int(im_scale_y * im.shape[0])
+        im_info['input_shape'][2] = int(im_scale_x * im.shape[1])
         im = cv2.resize(
             im,
             None,
@@ -78,14 +84,6 @@ class ResizeOp(object):
         im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
         im_info['scale_factor'] = np.array(
             [im_scale_y, im_scale_x]).astype('float32')
-        # padding im when image_shape fixed by infer_cfg.yml
-        if self.keep_ratio and im_info['input_shape'][1] is not None:
-            max_size = im_info['input_shape'][1]
-            padding_im = np.zeros(
-                (max_size, max_size, im_channel), dtype=np.float32)
-            im_h, im_w = im.shape[:2]
-            padding_im[:im_h, :im_w, :] = im
-            im = padding_im
         return im, im_info
 
     def generate_scale(self, im):
@@ -115,7 +113,7 @@ class ResizeOp(object):
         return im_scale_y, im_scale_x
 
 
-class NormalizeImageOp(object):
+class NormalizeImage(object):
     """normalize image
     Args:
         mean (list): im - mean
@@ -150,7 +148,7 @@ class NormalizeImageOp(object):
         return im, im_info
 
 
-class PermuteOp(object):
+class Permute(object):
     """permute image
     Args:
         to_bgr (bool): whether convert RGB to BGR 
@@ -158,7 +156,7 @@ class PermuteOp(object):
     """
 
     def __init__(self, ):
-        super(PermuteOp, self).__init__()
+        super(Permute, self).__init__()
 
     def __call__(self, im, im_info):
         """
@@ -174,7 +172,7 @@ class PermuteOp(object):
 
 
 class PadStride(object):
-    """ padding image for model with FPN 
+    """ padding image for model with FPN , instead PadBatch(pad_to_stride, pad_gt) in original config
     Args:
         stride (bool): model with FPN need image shape % stride == 0 
     """
