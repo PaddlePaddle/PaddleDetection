@@ -458,7 +458,7 @@ class YOLOv3Head(object):
 
         # Only for benchmark, postprocess(NMS) is not needed
         if exclude_nms:
-            return {'bbox': yolo_scores}
+            return {'bbox': yolo_boxes, 'score': yolo_scores}
 
         if type(self.nms) is MultiClassSoftNMS:
             yolo_scores = fluid.layers.transpose(yolo_scores, perm=[0, 2, 1])
