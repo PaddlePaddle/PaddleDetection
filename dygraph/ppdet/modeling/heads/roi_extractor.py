@@ -79,8 +79,7 @@ class RoIAlign(object):
                     sampling_ratio=self.sampling_ratio,
                     rois_num=rois_num_dist[lvl],
                     aligned=self.aligned)
-                if roi_feat.shape[0] > 0:
-                    rois_feat_list.append(roi_feat)
+                rois_feat_list.append(roi_feat)
             rois_feat_shuffle = paddle.concat(rois_feat_list)
             rois_feat = paddle.gather(rois_feat_shuffle, restore_index)
 
