@@ -196,7 +196,17 @@ class CascadeHead(BBoxHead):
                 if self.training:
                     rois, rois_num, targets = self.bbox_assigner(
                         rois, rois_num, inputs, i, is_cascade=True)
-                    targets_list.append(targets)
+                    tgt_labels = targets[0]
+                    tgt_labels = paddle.concat(tgt_labels) if len(
+                        tgt_labels) > 1 else tgt_labels[0]
+                    tgt_labels.stop_gradient = True
+                    fg_inds = paddle.nonzero(
+                        paddle.logical_and(tgt_labels >= 0, tgt_labels <
+                                           self.num_classes)).flatten()
+                    if fg_inds.numel() == 0:
+                        targets_list.append(targets_list[-1])
+                    else:
+                        targets_list.append(targets)
 
             rois_feat = self.roi_extractor(body_feats, rois, rois_num)
             bbox_feat = self.head(rois_feat, i)

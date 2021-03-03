@@ -367,8 +367,9 @@ class Trainer(object):
         if 'inputs_def' in self.cfg['TestReader']:
             inputs_def = self.cfg['TestReader']['inputs_def']
             image_shape = inputs_def.get('image_shape', None)
+        # set image_shape=[3, -1, -1] as default
         if image_shape is None:
-            image_shape = [3, None, None]
+            image_shape = [3, -1, -1]
 
         self.model.eval()
 

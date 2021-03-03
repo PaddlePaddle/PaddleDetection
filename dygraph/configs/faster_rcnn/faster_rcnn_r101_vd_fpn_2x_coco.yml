@@ -21,5 +21,5 @@ LearningRate:
     gamma: 0.1
     milestones: [16, 22]
   - !LinearWarmup
-    start_factor: 0.3333333333333333
+    start_factor: 0.1
     steps: 1000

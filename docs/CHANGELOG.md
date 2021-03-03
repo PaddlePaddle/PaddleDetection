@@ -2,6 +2,31 @@
 
 ## 最新版本信息
 
+### 2.0-rc(02.23/2021)
+  - 动态图模型丰富度提升：
+    - 优化RCNN模型组网及训练方式，RCNN系列模型精度提升(依赖Paddle develop或2.0.1版本)
+    - 新增支持SSDLite，FCOS，TTFNet，SOLOv2系列模型
+    - 新增行人和车辆垂类目标检测模型
+
+  - 新增动态图基础模块：
+    - 新增MobileNetV3，HRNet骨干网络
+    - 优化RoIAlign计算逻辑，RCNN系列模型精度提升(依赖Paddle develop或2.0.1版本)
+    - 新增支持Synchronized Batch Norm
+    - 新增支持Modulated Deformable Convolution
+
+  - 预测部署：
+    - 发布动态图python、C++、Serving部署解决方案及文档，支持Faster RCNN，Mask RCNN，YOLOv3，PP-YOLO，SSD，TTFNet，FCOS，SOLOv2等系列模型预测部署
+    - 动态图预测部署支持TensorRT模式FP32，FP16推理加速
+
+  - 检测模型压缩：
+    - 裁剪：新增动态图裁剪支持，并发布YOLOv3-MobileNetV1裁剪模型
+    - 量化：新增动态图量化支持，并发布YOLOv3-MobileNetV1和YOLOv3-MobileNetV3量化模型
+
+  - 文档：
+    - 新增动态图入门教程文档：包含安装说明，快速开始，准备数据，训练/评估/预测流程文档
+    - 新增动态图进阶教程文档：包含模型压缩、推理部署文档
+    - 新增动态图模型库文档
+
 ### v2.0-beta(12.20/2020)
   - 动态图支持:
     - 支持Faster-RCNN, Mask-RCNN, FPN, Cascade Faster/Mask RCNN, YOLOv3和SSD模型，试用版本。
