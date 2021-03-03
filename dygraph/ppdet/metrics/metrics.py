@@ -214,7 +214,7 @@ class ReIDMetric(Metric):
 
     def update(self, inputs, outputs):
         for out in outputs:
-            feat, label = out[:-1], int(out[-1])  # [512], [1]
+            feat, label = out[:-1].clone().detach(), int(out[-1])  # [512], [1]
             if label != -1:
                 self.embedding.append(feat)
                 self.id_labels.append(label)
