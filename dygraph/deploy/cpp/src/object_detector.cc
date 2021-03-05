@@ -27,7 +27,10 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
                                const int min_subgraph_size,
                                const int batch_size,
                                const std::string& run_mode,
-                               const int gpu_id) {
+                               const int gpu_id,
+                               const std::vector<int> trt_min_shape,
+                               const std::vector<int> trt_max_shape,
+                               const std::vector<int> trt_opt_shape) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
@@ -54,8 +57,20 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           precision,
           false,
           false);
-   }
-  } else {
+    }
+
+    // set DynamicShsape for image tensor
+    const std::map<std::string, std::vector<int>> min_input_shape = {{"image", trt_min_shape}};
+    const std::map<std::string, std::vector<int>> max_input_shape = {{"image", trt_max_shape}};
+    const std::map<std::string, std::vector<int>> opt_input_shape = {{"image", trt_opt_shape}};
+
+    config.SetTRTDynamicShapeInfo(min_input_shape,
+                                 max_input_shape,
+                                 opt_input_shape);
+    std::cout << "TensorRT dynamic shape enabled" << std::endl;
+  } 
+  else 
+  {
     config.DisableGpu();
   }
   config.SwitchUseFeedFetchOps(false);
@@ -171,8 +186,8 @@ void ObjectDetector::Predict(const cv::Mat& im,
   for (const auto& tensor_name : input_names) {
     auto in_tensor = predictor_->GetInputHandle(tensor_name);
     if (tensor_name == "image") {
-      int rh = inputs_.input_shape_[0];
-      int rw = inputs_.input_shape_[1];
+      int rh = inputs_.in_net_shape_[0];
+      int rw = inputs_.in_net_shape_[1];
       in_tensor->Reshape({1, 3, rh, rw});
       in_tensor->CopyFromCpu(inputs_.im_data_.data());
     } else if (tensor_name == "im_shape") {
