@@ -31,7 +31,7 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, ReIDMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, JDEDetMetric, JDEReIDMetric
 from ppdet.metrics import get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
@@ -133,8 +133,10 @@ class Trainer(object):
                     class_num=self.cfg.num_classes,
                     map_type=self.cfg.map_type)
             ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
         elif self.cfg.metric == 'ReID':
-            self._metrics = [ReIDMetric(), ]
+            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))

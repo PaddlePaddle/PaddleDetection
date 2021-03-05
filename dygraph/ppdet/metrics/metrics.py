@@ -26,14 +26,15 @@ from scipy import interpolate
 import paddle.nn.functional as F
 
 from .category import get_categories
-from .map_utils import prune_zero_padding, DetectionMAP
+from .map_utils import prune_zero_padding, DetectionMAP, ap_per_class, bbox_iou_expand
 from .coco_utils import get_infer_results, cocoapi_eval
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results', 'ReIDMetric'
+    'Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results', 'JDEDetMetric',
+    'JDEReIDMetric'
 ]
 
 
@@ -201,7 +202,69 @@ class VOCMetric(Metric):
         self.detection_map.get_map()
 
 
-class ReIDMetric(Metric):
+class JDEDetMetric(Metric):
+    def __init__(self, overlap_thresh=0.5):
+        self.overlap_thresh = overlap_thresh
+        self.reset()
+
+    def reset(self):
+        self.AP_accum = np.zeros(1)
+        self.AP_accum_count = np.zeros(1)
+
+    def update(self, inputs, outputs):
+        bboxes = outputs['bbox'][:, 2:].numpy()
+        scores = outputs['bbox'][:, 1].numpy()
+        labels = outputs['bbox'][:, 0].numpy()
+        bbox_lengths = outputs['bbox_num'].numpy()
+        if bboxes.shape[0] == 1 and bboxes.sum() == 0.0:
+            return
+
+        gt_boxes = inputs['gt_bbox'].numpy()[0]
+        gt_labels = inputs['gt_class'].numpy()[0]
+        if gt_labels.shape[0] == 0:
+            return
+
+        correct = []
+        detected = []
+        for i in range(bboxes.shape[0]):
+            obj_pred = 0
+            pred_bbox = bboxes[i].reshape(1, 4)
+            # Compute iou with target boxes
+            iou = bbox_iou_expand(pred_bbox, gt_boxes, x1y1x2y2=True)[0]
+            # Extract index of largest overlap
+            best_i = np.argmax(iou)
+            # If overlap exceeds threshold and classification is correct mark as correct
+            if iou[best_i] > self.overlap_thresh and obj_pred == gt_labels[
+                    best_i] and best_i not in detected:
+                correct.append(1)
+                detected.append(best_i)
+            else:
+                correct.append(0)
+
+        # Compute Average Precision (AP) per class
+        target_cls = list(gt_labels.T[0])
+        AP, AP_class, R, P = ap_per_class(
+            tp=correct,
+            conf=scores,
+            pred_cls=np.zeros_like(scores),
+            target_cls=target_cls)
+        self.AP_accum_count += np.bincount(AP_class, minlength=1)
+        self.AP_accum += np.bincount(AP_class, minlength=1, weights=AP)
+
+    def accumulate(self):
+        logger.info("Accumulating evaluatation results...")
+        self.map_stat = self.AP_accum[0] / (self.AP_accum_count[0] + 1E-16)
+
+    def log(self):
+        map_stat = 100. * self.map_stat
+        logger.info("mAP({:.2f}) = {:.2f}%".format(self.overlap_thresh,
+                                                   map_stat))
+
+    def get_results(self):
+        return self.map_stat
+
+
+class JDEReIDMetric(Metric):
     def __init__(self, far_levels=[1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]):
         self.far_levels = far_levels
         self.metrics = metrics

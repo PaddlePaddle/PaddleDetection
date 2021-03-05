@@ -1,5 +1,4 @@
-metric: VOC
-map_type: integral
+metric: MOTDet
 num_classes: 1
 
 TrainDataset:

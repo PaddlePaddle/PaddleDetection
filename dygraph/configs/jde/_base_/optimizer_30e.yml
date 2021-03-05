@@ -13,5 +13,5 @@ OptimizerBuilder:
     momentum: 0.9
     type: Momentum
   regularizer:
-    factor: 0.0005
+    factor: 0.0001
     type: L2
