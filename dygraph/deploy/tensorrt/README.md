@@ -47,8 +47,8 @@ TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。�
 （2）不使用TensorRT时，`TestReader.inputs_def.image_shape`这个参数可以不用设置
 **
 
-可以通过[netron](https://github.com/lutzroeder/netron/releases) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
-![img](imgs/netron_look.jpg)
+可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
+![img](imgs/input_shape.png)
 
 #### <b>. 输入TensorRT引擎的数据是动态尺寸
 TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/native_infer.html) 的`SetTRTDynamicShapeInfo`函数说明。
