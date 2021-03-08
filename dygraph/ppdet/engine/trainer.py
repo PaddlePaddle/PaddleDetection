@@ -382,8 +382,9 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if self.slim is None:
-            static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
+        if self.slim is None or self.cfg['slim'] != 'quant':
+            static_model = paddle.jit.to_static(
+                self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
             # input spec, prune input spec here and save with pruned input spec
             pruned_input_spec = self._prune_input_spec(
@@ -398,8 +399,7 @@ class Trainer(object):
             self.slim.save_quantized_model(
                 self.model,
                 os.path.join(save_dir, 'model'),
-                input_spec=input_spec
-            )
+                input_spec=input_spec)
 
     def _prune_input_spec(self, input_spec, program, targets):
         # try to prune static program to figure out pruned input spec

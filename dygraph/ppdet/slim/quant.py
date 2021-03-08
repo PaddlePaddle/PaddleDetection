@@ -48,5 +48,5 @@ class QAT(object):
         return model
 
     def save_quantized_model(self, layer, path, input_spec=None, **config):
-        self.quanter.save_quantized_model(model=layer, path=path, input_spec=input_spec, **config)
-
+        self.quanter.save_quantized_model(
+            model=layer, path=path, input_spec=input_spec, **config)
