@@ -27,7 +27,6 @@ AnchorGeneratorSSD:
   offset: 0.5
   flip: False
   min_max_aspect_ratios_order: false
-  face_detection: true
 
 BBoxPostProcess:
   decode:

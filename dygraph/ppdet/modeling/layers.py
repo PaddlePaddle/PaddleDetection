@@ -243,8 +243,7 @@ class AnchorGeneratorSSD(object):
                  offset=0.5,
                  flip=True,
                  clip=False,
-                 min_max_aspect_ratios_order=False,
-                 face_detection=False):
+                 min_max_aspect_ratios_order=False):
         self.steps = steps
         self.aspect_ratios = aspect_ratios
         self.min_ratio = min_ratio
@@ -256,7 +255,6 @@ class AnchorGeneratorSSD(object):
         self.flip = flip
         self.clip = clip
         self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
-        self.face_detection = face_detection
 
         if self.min_sizes == [] and self.max_sizes == []:
             num_layer = len(aspect_ratios)
@@ -273,7 +271,7 @@ class AnchorGeneratorSSD(object):
         self.num_priors = []
         for aspect_ratio, min_size, max_size in zip(
                 aspect_ratios, self.min_sizes, self.max_sizes):
-            if self.face_detection:
+            if isinstance(min_size, (list, tuple)):
                 self.num_priors.append(
                     len(_to_list(min_size)) + len(_to_list(max_size)))
             else:
