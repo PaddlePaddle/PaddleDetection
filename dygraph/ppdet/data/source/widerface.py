@@ -16,7 +16,7 @@ import os
 import numpy as np
 
 from ppdet.core.workspace import register, serializable
-from .dataset import DataSet
+from .dataset import DetDataset
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -24,7 +24,7 @@ logger = setup_logger(__name__)
 
 @register
 @serializable
-class WIDERFaceDataSet(DataSet):
+class WIDERFaceDataSet(DetDataset):
     """
     Load WiderFace records with 'anno_path'
 
@@ -39,20 +39,23 @@ class WIDERFaceDataSet(DataSet):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
                  with_lmk=False):
         super(WIDERFaceDataSet, self).__init__(
+            dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
+            data_fields=data_fields,
             sample_num=sample_num,
-            dataset_dir=dataset_dir)
+            with_lmk=with_lmk)
         self.anno_path = anno_path
         self.sample_num = sample_num
         self.roidbs = None
         self.cname2cid = None
         self.with_lmk = with_lmk
 
-    def load_roidb_and_cname2cid(self, ):
+    def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -82,9 +85,14 @@ class WIDERFaceDataSet(DataSet):
             widerface_rec = {
                 'im_file': im_fname,
                 'im_id': im_id,
+            } if 'image' in self.data_fields else {}
+            gt_rec = {
                 'gt_bbox': gt_bbox,
                 'gt_class': gt_class,
             }
+            for k, v in gt_rec.items():
+                if k in self.data_fields:
+                    widerface_rec[k] = v
             if self.with_lmk:
                 widerface_rec['gt_keypoint'] = gt_lmk_labels
                 widerface_rec['keypoint_ignore'] = lmk_ignore_flag
@@ -105,18 +113,24 @@ class WIDERFaceDataSet(DataSet):
 
         file_dict = {}
         num_class = 0
+        exts = ['jpg', 'jpeg', 'png', 'bmp']
+        exts += [ext.upper() for ext in exts]
         for i in range(len(lines_input_txt)):
             line_txt = lines_input_txt[i].strip('\n\t\r')
-            if '.jpg' in line_txt:
-                if i != 0:
-                    num_class += 1
-                file_dict[num_class] = []
-                file_dict[num_class].append(line_txt)
-            if '.jpg' not in line_txt:
+            split_str = line_txt.split(' ')
+            if len(split_str) == 1:
+                img_file_name = os.path.split(split_str[0])[1]
+                split_txt = img_file_name.split('.')
+                if len(split_txt) < 2:
+                    continue
+                elif split_txt[-1] in exts:
+                    if i != 0:
+                        num_class += 1
+                    file_dict[num_class] = [line_txt]
+            else:
                 if len(line_txt) <= 6:
                     continue
                 result_boxs = []
-                split_str = line_txt.split(' ')
                 xmin = float(split_str[0])
                 ymin = float(split_str[1])
                 w = float(split_str[2])

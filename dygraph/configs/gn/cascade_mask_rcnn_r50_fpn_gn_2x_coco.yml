@@ -5,7 +5,7 @@ _BASE_: [
   '../cascade_rcnn/_base_/cascade_mask_rcnn_r50_fpn.yml',
   '../cascade_rcnn/_base_/cascade_mask_fpn_reader.yml',
 ]
-weights: output/cascade_mask_rcnn_r50_fpn_gn_2x/model_final
+weights: output/cascade_mask_rcnn_r50_fpn_gn_2x_coco/model_final
 
 CascadeRCNN:
   backbone: ResNet
