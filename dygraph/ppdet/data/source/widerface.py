@@ -70,7 +70,7 @@ class WIDERFaceDataSet(DetDataset):
             im_fname = item[0]
             im_id = np.array([ct])
             gt_bbox = np.zeros((len(item) - 1, 4), dtype=np.float32)
-            gt_class = np.ones((len(item) - 1, 1), dtype=np.int32)
+            gt_class = np.zeros((len(item) - 1, 1), dtype=np.int32)
             gt_lmk_labels = np.zeros((len(item) - 1, 10), dtype=np.float32)
             lmk_ignore_flag = np.zeros((len(item) - 1, 1), dtype=np.int32)
             for index_box in range(len(item)):
