@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 import datetime
 
 import paddle
@@ -169,3 +170,15 @@ class Checkpointer(Callback):
                 else:
                     save_model(self.model.model, self.model.optimizer, save_dir,
                                save_name, epoch_id + 1)
+
+
+class WiferFaceEval(Callback):
+    def __init__(self, model):
+        super(WiferFaceEval, self).__init__(model)
+
+    def on_epoch_begin(self, status):
+        assert self.model.mode == 'eval', \
+            "WiferFaceEval can only be set during evaluation"
+        for metric in self.model._metrics:
+            metric.update(self.model.model)
+        sys.exit()
