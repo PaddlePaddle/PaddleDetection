@@ -19,6 +19,7 @@ from __future__ import print_function
 import os
 
 from ppdet.data.source.voc import pascalvoc_label
+from ppdet.data.source.widerface import widerface_label
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -74,6 +75,9 @@ def get_categories(metric_type, anno_file=None):
         if anno_file and os.path.isfile(anno_file):
             logger.warn("only default categories support for OID19")
         return _oid19_category()
+
+    elif metric_type.lower() == 'widerface':
+        return _widerface_category()
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
@@ -268,6 +272,16 @@ def _vocall_category():
     label_map = sorted(label_map.items(), key=lambda x: x[1])
     cats = [l[0] for l in label_map]
 
+    clsid2catid = {i: i for i in range(len(cats))}
+    catid2name = {i: name for i, name in enumerate(cats)}
+
+    return clsid2catid, catid2name
+
+
+def _widerface_category():
+    label_map = widerface_label()
+    label_map = sorted(label_map.items(), key=lambda x: x[1])
+    cats = [l[0] for l in label_map]
     clsid2catid = {i: i for i in range(len(cats))}
     catid2name = {i: name for i, name in enumerate(cats)}
 
