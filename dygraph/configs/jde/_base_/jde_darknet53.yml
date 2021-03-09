@@ -13,9 +13,10 @@ JDE:
 DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
+  freeze_norm: True
 
-# use default config
-# JDEFPN:
+JDEFPN:
+  freeze_norm: True
 
 JDEHead:
   anchors: [[128,384], [180,540], [256,640], [512,640],

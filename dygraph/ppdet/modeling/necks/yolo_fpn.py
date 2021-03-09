@@ -26,7 +26,7 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'JDEFPN']
 
 
 class YoloDetBlock(nn.Layer):
-    def __init__(self, ch_in, channel, norm_type, name):
+    def __init__(self, ch_in, channel, norm_type, freeze_norm=False, name=''):
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
         self.channel = channel
@@ -51,6 +51,7 @@ class YoloDetBlock(nn.Layer):
                     filter_size=filter_size,
                     padding=(filter_size - 1) // 2,
                     norm_type=norm_type,
+                    freeze_norm=freeze_norm,
                     name=name + post_name))
 
         self.tip = ConvBNLayer(
@@ -59,6 +60,7 @@ class YoloDetBlock(nn.Layer):
             filter_size=3,
             padding=1,
             norm_type=norm_type,
+            freeze_norm=freeze_norm,
             name=name + '.tip')
 
     def forward(self, inputs):
@@ -167,7 +169,10 @@ class PPYOLODetBlock(nn.Layer):
 class YOLOv3FPN(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self, in_channels=[256, 512, 1024], norm_type='bn'):
+    def __init__(self,
+                 in_channels=[256, 512, 1024],
+                 norm_type='bn',
+                 freeze_norm=False):
         super(YOLOv3FPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels
@@ -187,6 +192,7 @@ class YOLOv3FPN(nn.Layer):
                     in_channel,
                     channel=512 // (2**i),
                     norm_type=norm_type,
+                    freeze_norm=freeze_norm,
                     name=name))
             self.yolo_blocks.append(yolo_block)
             # tip layer output channel doubled
@@ -203,6 +209,7 @@ class YOLOv3FPN(nn.Layer):
                         stride=1,
                         padding=0,
                         norm_type=norm_type,
+                        freeze_norm=freeze_norm,
                         name=name))
                 self.routes.append(route)
 
@@ -233,9 +240,52 @@ class YOLOv3FPN(nn.Layer):
 
 @register
 @serializable
-class JDEFPN(YOLOv3FPN):
-    def __init__(self, in_channels=[1024, 768, 384], norm_type='bn'):
+class JDEFPN(nn.Layer):
+    __shared__ = ['norm_type']
+
+    def __init__(self,
+                 in_channels=[1024, 768, 384],
+                 norm_type='bn',
+                 freeze_norm=True):
         super(JDEFPN, self).__init__()
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels
+        self.num_blocks = len(in_channels)
+
+        self._out_channels = []
+        self.yolo_blocks = []
+        self.routes = []
+        for i in range(self.num_blocks):
+            name = 'yolo_block.{}'.format(i)
+            in_channel = in_channels[-i - 1]
+            if i > 0:
+                in_channel += 512 // (2**i)
+            yolo_block = self.add_sublayer(
+                name,
+                YoloDetBlock(
+                    in_channel,
+                    channel=512 // (2**i),
+                    norm_type=norm_type,
+                    freeze_norm=freeze_norm,
+                    name=name))
+            self.yolo_blocks.append(yolo_block)
+            # tip layer output channel doubled
+            self._out_channels.append(1024 // (2**i))
+
+            if i < self.num_blocks - 1:
+                name = 'yolo_transition.{}'.format(i)
+                route = self.add_sublayer(
+                    name,
+                    ConvBNLayer(
+                        ch_in=512 // (2**i),
+                        ch_out=256 // (2**i),
+                        filter_size=1,
+                        stride=1,
+                        padding=0,
+                        norm_type=norm_type,
+                        freeze_norm=freeze_norm,
+                        name=name))
+                self.routes.append(route)
 
     def forward(self, blocks):
         assert len(blocks) == self.num_blocks
@@ -256,6 +306,14 @@ class JDEFPN(YOLOv3FPN):
                 route = F.interpolate(route, scale_factor=2.)
 
         return yolo_feats, identify_feats
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]
 
 
 @register

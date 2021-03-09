@@ -44,15 +44,12 @@ class JDELoss(nn.Layer):
         p_ide = p_ide.transpose((0, 2, 3, 1))  # [1, 19, 34, 512]
 
         loss = dict()
-        loss_conf = paddle.to_tensor([0.], dtype='float32')
-        loss_box = paddle.to_tensor([0.], dtype='float32')
-        loss_ide = paddle.to_tensor([0.], dtype='float32')
-
         # 1. loss_conf: cross_entropy
         p_conf = p_det[:, :, :, :, 4:6]  # [1, 4, 19, 34, 2]
         p_conf_flatten = paddle.reshape(p_conf, [-1, 2])
         t_conf_flatten = t_conf.flatten()
         t_conf_flatten = paddle.cast(t_conf_flatten, dtype="int64")
+        t_conf_flatten.stop_gradient = True
         loss_conf = F.cross_entropy(
             p_conf_flatten, t_conf_flatten, ignore_index=-1, reduction='mean')
         loss['loss_conf'] = loss_conf
@@ -62,30 +59,43 @@ class JDELoss(nn.Layer):
         p_box_flatten = paddle.reshape(p_box, [-1, 4])
         t_box_flatten = paddle.reshape(t_box, [-1, 4])
         fg_inds = paddle.nonzero(t_conf_flatten > 0).flatten()
-        if len(fg_inds) > 0:
+        if fg_inds.numel() > 0:
             reg_delta = paddle.gather(p_box_flatten, fg_inds)
             reg_target = paddle.gather(t_box_flatten, fg_inds)
-            loss_box = F.smooth_l1_loss(
-                reg_delta, reg_target, reduction='mean', delta=1.0)
+        else:
+            reg_delta = paddle.to_tensor([0, 0, 0, 0], dtype='float32')
+            reg_delta.stop_gradient = False
+            reg_target = paddle.to_tensor([0, 0, 0, 0], dtype='float32')
+        reg_target.stop_gradient = True
+        loss_box = F.smooth_l1_loss(
+            reg_delta, reg_target, reduction='mean', delta=1.0)
         loss['loss_box'] = loss_box
 
         # 3. loss_ide: cross_entropy
         p_ide_flatten = paddle.reshape(p_ide, [-1, 512])
         mask = t_conf > 0
         mask = paddle.cast(mask, dtype="int64")
+        mask.stop_gradient = True
         emb_mask = mask.max(1).flatten()
         emb_mask_inds = paddle.nonzero(emb_mask > 0).flatten()
-        if len(emb_mask_inds) > 0:
+        emb_mask_inds.stop_gradient = True
+        if emb_mask_inds.numel() == 0:
+            emb_mask_inds = paddle.to_tensor(
+                [-1], dtype='int64')  # rand select an index
+            ide_target = paddle.to_tensor(
+                [-2], dtype='int64')  # gt ide -1 is ignore_index
+        else:
             # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
             t_ide_flatten = t_ide.max(1).flatten()
             t_ide_flatten = paddle.cast(t_ide_flatten, dtype="int64")
             ide_target = paddle.gather(t_ide_flatten, emb_mask_inds)
+        ide_target.stop_gradient = True
 
-            embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
-            embedding = emb_scale * F.normalize(embedding)
-            logits = classifier(embedding)
-            loss_ide = F.cross_entropy(
-                logits, ide_target, ignore_index=-1, reduction='mean')
+        embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
+        embedding = emb_scale * F.normalize(embedding)
+        logits = classifier(embedding)
+        loss_ide = F.cross_entropy(
+            logits, ide_target, ignore_index=-1, reduction='mean')
         loss['loss_ide'] = loss_ide
 
         loss['loss'] = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
