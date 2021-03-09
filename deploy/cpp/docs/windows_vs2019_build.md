@@ -24,7 +24,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/windows_cpp_inference.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/windows_cpp_inference.html#windows)
 
 解压后`D:\projects\fluid_inference`目录包含内容为：
 ```
@@ -47,24 +47,14 @@ fluid_inference
 
 ### Step4: 编译
 
-#### 通过图形化操作编译CMake
+1. 进入到`cpp`文件夹
+```
+cd D:\projects\PaddleDetection\deploy\cpp
+```
 
-1. 打开Visual Studio 2019 Community，点击`继续但无需代码`
-![step2](https://paddleseg.bj.bcebos.com/inference/vs2019_step1.png)
-2. 点击： `文件`->`打开`->`CMake`
-![step2.1](https://paddleseg.bj.bcebos.com/inference/vs2019_step2.png)
+2. 使用CMake生成项目文件
 
-选择项目代码所在路径，并打开`CMakeList.txt`：
-
-![step2.2](https://paddleseg.bj.bcebos.com/inference/vs2019_step3.png)
-
-3. 点击：`项目`->`cpp_inference_demo的CMake设置`
-
-![step3](https://paddleseg.bj.bcebos.com/inference/vs2019_step4.png)
-
-4. 点击`浏览`，分别设置编译选项指定`CUDA`、`CUDNN_LIB`、`OpenCV`、`Paddle预测库`的路径
-
-三个编译参数的含义说明如下（带*表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
+编译参数的含义说明如下（带*表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
 
 |  参数名   | 含义  |
 |  ----  | ----  |
@@ -73,24 +63,6 @@ fluid_inference
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
 
-**注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉
-![step4](https://paddleseg.bj.bcebos.com/inference/vs2019_step5.png)
-
-**设置完成后**, 点击上图中`保存并生成CMake缓存以加载变量`。
-
-5. 点击`生成`->`全部生成`
-
-![step6](https://paddleseg.bj.bcebos.com/inference/vs2019_step6.png)
-
-
-#### 通过命令行操作编译CMake
-
-1. 进入到`cpp`文件夹
-```
-cd D:\projects\PaddleDetection\deploy\cpp
-```
-
-2. 使用CMake生成项目文件
 ```
 cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DOPENCV_DIR=path_to_opencv
 ```
