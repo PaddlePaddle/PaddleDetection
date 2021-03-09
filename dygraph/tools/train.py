@@ -91,7 +91,7 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='train')
 
     # load weights
-    if not FLAGS.slim_config:
+    if not FLAGS.slim_config and 'pretrain_weights' in cfg and cfg.pretrain_weights:
         trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
 
     # training

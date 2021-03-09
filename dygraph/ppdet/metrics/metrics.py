@@ -25,16 +25,25 @@ import numpy as np
 from .category import get_categories
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
+from .widerface_utils import face_eval_run
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results']
+__all__ = [
+    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results'
+]
 
 
 class Metric(paddle.metric.Metric):
     def name(self):
         return self.__class__.__name__
+
+    def reset(self):
+        pass
+
+    def accumulate(self):
+        pass
 
     # paddle.metric.Metric defined :metch:`update`, :meth:`accumulate`
     # :metch:`reset`, in ppdet, we also need following 2 methods:
@@ -194,3 +203,21 @@ class VOCMetric(Metric):
 
     def get_results(self):
         self.detection_map.get_map()
+
+
+class WiderFaceMetric(Metric):
+    def __init__(self, image_dir, anno_file, multi_scale=True):
+        self.image_dir = image_dir
+        self.anno_file = anno_file
+        self.multi_scale = multi_scale
+        self.clsid2catid, self.catid2name = get_categories('widerface')
+
+    def update(self, model):
+
+        face_eval_run(
+            model,
+            self.image_dir,
+            self.anno_file,
+            pred_dir='output/pred',
+            eval_mode='widerface',
+            multi_scale=self.multi_scale)

@@ -21,6 +21,7 @@ from . import fcos_head
 from . import solov2_head
 from . import ttf_head
 from . import cascade_head
+from . import face_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -31,3 +32,4 @@ from .fcos_head import *
 from .solov2_head import *
 from .ttf_head import *
 from .cascade_head import *
+from .face_head import *
