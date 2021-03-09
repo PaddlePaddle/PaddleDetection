@@ -6,7 +6,9 @@ LearningRate:
   - !PiecewiseDecay
     gamma: 0.1
     milestones: [15, 22]
-    use_warmup: false
+    use_warmup: True
+  - !BurninWarmup
+    steps: 1000
 
 OptimizerBuilder:
   optimizer:

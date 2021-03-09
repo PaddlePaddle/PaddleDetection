@@ -5,13 +5,14 @@ config=configs/jde/${job_name}.yml
 #log_dir=log_dir/${job_name}
 #mkdir -p ${work_dir}
 # 1. training
-#python3.7 -m paddle.distributed.launch --log_dir=${log_dir} --gpu 0,1,2,3 tools/train.py -c ${config} &> ${job_name}.log &
-#CUDA_VISIBLE_DEVICES=7 python3.7 tools/train.py -c ${config} -o use_gpu=true 
+#python3.7 -m paddle.distributed.launch --log_dir=${log_dir} --gpus 0,1,2,3 tools/train.py -c ${config} #&> ${job_name}.log &
+python3.7 -m paddle.distributed.launch --log_dir=${log_dir} --gpus 1,2,5,7 tools/train.py -c ${config} -o pretrain_weights=jde_paddle_1088x608.pdparams use_gpu=true --weight_type resume #&> ${job_name}.log &
+#CUDA_VISIBLE_DEVICES=7 python3.7 tools/train.py -c ${config} -o use_gpu=true
+#CUDA_VISIBLE_DEVICES=7 python3.7 tools/train.py -c ${config} -o pretrain_weights=jde_paddle_1088x608.pdparams use_gpu=true --weight_type resume
 
-#CUDA_VISIBLE_DEVICES=5 python3.7 tools/train.py -c ${config} -o pretrain_weights=jde_paddle_1088x608.pdparams use_gpu=true --weight_type resume
-
-# 2. eval
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams
+# 2. eval:
+#CUDA_VISIBLE_DEVICES=5 python3.7 tools/eval.py -c ${config} -o use_gpu=true weights=output/jde_darknet53_30e_1088x608/0.pdparams
+#CUDA_VISIBLE_DEVICES=5 python3.7 tools/eval.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams
 
 # 3. infer
 #CUDA_VISIBLE_DEVICES=3 python3.7 tools/infer.py -c ${config} -o use_gpu=true weights=jde_paddle_1088x608.pdparams --infer_img=../demo/000000014439.jpg --draw_threshold 0.5
