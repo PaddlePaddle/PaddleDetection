@@ -1,0 +1,16 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../cascade_rcnn/_base_/optimizer_1x.yml',
+  '../cascade_rcnn/_base_/cascade_rcnn_r50_fpn.yml',
+  '../cascade_rcnn/_base_/cascade_fpn_reader.yml',
+]
+weights: output/cascade_rcnn_dcn_r50_fpn_1x_coco/model_final
+
+ResNet:
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  dcn_v2_stages: [1,2,3]

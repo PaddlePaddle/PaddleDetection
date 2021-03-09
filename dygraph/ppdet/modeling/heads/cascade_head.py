@@ -21,10 +21,12 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, create
 from ppdet.modeling import ops
 
-from .bbox_head import BBoxHead, TwoFCHead
+from .bbox_head import BBoxHead, TwoFCHead, XConvNormHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta, delta2bbox, clip_bbox, nonempty_bbox
+
+__all__ = ['CascadeTwoFCHead', 'CascadeXConvNormHead', 'CascadeHead']
 
 
 @register
@@ -45,6 +47,53 @@ class CascadeTwoFCHead(nn.Layer):
         for stage in range(num_cascade_stage):
             head_per_stage = self.add_sublayer(
                 str(stage), TwoFCHead(in_dim, mlp_dim, resolution))
+            self.head_list.append(head_per_stage)
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        s = input_shape
+        s = s[0] if isinstance(s, (list, tuple)) else s
+        return {'in_dim': s.channels}
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=self.mlp_dim, )]
+
+    def forward(self, rois_feat, stage=0):
+        out = self.head_list[stage](rois_feat)
+        return out
+
+
+@register
+class CascadeXConvNormHead(nn.Layer):
+    __shared__ = ['norm_type', 'freeze_norm', 'num_cascade_stage']
+
+    def __init__(self,
+                 in_dim=256,
+                 num_convs=4,
+                 conv_dim=256,
+                 mlp_dim=1024,
+                 resolution=7,
+                 norm_type='gn',
+                 freeze_norm=False,
+                 num_cascade_stage=3):
+        super(CascadeXConvNormHead, self).__init__()
+        self.in_dim = in_dim
+        self.mlp_dim = mlp_dim
+
+        self.head_list = []
+        for stage in range(num_cascade_stage):
+            head_per_stage = self.add_sublayer(
+                str(stage),
+                XConvNormHead(
+                    in_dim,
+                    num_convs,
+                    conv_dim,
+                    mlp_dim,
+                    resolution,
+                    norm_type,
+                    freeze_norm,
+                    stage_name='stage{}_'.format(stage)))
             self.head_list.append(head_per_stage)
 
     @classmethod
@@ -147,7 +196,17 @@ class CascadeHead(BBoxHead):
                 if self.training:
                     rois, rois_num, targets = self.bbox_assigner(
                         rois, rois_num, inputs, i, is_cascade=True)
-                    targets_list.append(targets)
+                    tgt_labels = targets[0]
+                    tgt_labels = paddle.concat(tgt_labels) if len(
+                        tgt_labels) > 1 else tgt_labels[0]
+                    tgt_labels.stop_gradient = True
+                    fg_inds = paddle.nonzero(
+                        paddle.logical_and(tgt_labels >= 0, tgt_labels <
+                                           self.num_classes)).flatten()
+                    if fg_inds.numel() == 0:
+                        targets_list.append(targets_list[-1])
+                    else:
+                        targets_list.append(targets)
 
             rois_feat = self.roi_extractor(body_feats, rois, rois_num)
             bbox_feat = self.head(rois_feat, i)

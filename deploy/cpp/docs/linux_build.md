@@ -68,10 +68,9 @@ CUDA_LIB=/path/to/cuda/lib
 # CUDNN 的 lib 路径
 CUDNN_LIB=/path/to/cudnn/lib
 
-修改脚本设置好主要参数后，执行`build`脚本：
-```shell
+# 修改脚本设置好主要参数后，执行`build`脚本：
 sh ./scripts/build.sh
-```
+
 
 # 请检查以上各个路径是否正确
 
