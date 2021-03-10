@@ -363,7 +363,7 @@ class MultiClassNMS(object):
                  nms_top_k=-1,
                  keep_top_k=100,
                  nms_threshold=.5,
-                 normalized=False,
+                 normalized=True,
                  nms_eta=1.0,
                  return_rois_num=True):
         super(MultiClassNMS, self).__init__()

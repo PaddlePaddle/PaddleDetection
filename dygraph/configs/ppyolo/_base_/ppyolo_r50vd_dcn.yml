@@ -64,5 +64,4 @@ BBoxPostProcess:
     score_threshold: 0.01
     post_threshold: 0.01
     nms_top_k: -1
-    normalized: false
     background_label: -1

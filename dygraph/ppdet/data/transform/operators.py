@@ -214,8 +214,8 @@ class RandomErasingImage(BaseOperator):
                 continue
 
             x1, y1, x2, y2 = gt_bbox[idx, :]
-            w_bbox = x2 - x1 + 1
-            h_bbox = y2 - y1 + 1
+            w_bbox = x2 - x1
+            h_bbox = y2 - y1
             area = w_bbox * h_bbox
 
             target_area = random.uniform(self.lower, self.higher) * area
