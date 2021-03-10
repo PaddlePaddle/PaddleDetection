@@ -35,22 +35,21 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 |      v0.3          |        >=1.7      |     --    |
 |      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
 |      v0.5          |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
+|  vrelease/2.0-rc   |       >= 2.0.1    |     --    |
 
 
 ```
 # install paddlepaddle
-python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
-
 # 如果您的机器安装的是CUDA9，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.0.1.post97 -i https://mirror.baidu.com/pypi/simple
 
-如果您的机器安装的是CUDA10，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
+如果您的机器安装的是CUDA10.1，请运行以下命令安装
+python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
 
 如果您的机器是CPU，请运行以下命令安装
-
-python -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 ```
+
 更多的安装方式如conda, docker安装，请参考[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
 
 请确保您的PaddlePaddle安装成功并且版本不低于需求版本。使用以下命令进行验证。
