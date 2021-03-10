@@ -30,12 +30,12 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
-| PaddleDetection版本 | PaddlePaddle版本  |    备注    |
-| :----------------: | :---------------: | :-------: |
-|      v0.3          |        >=1.7      |     --    |
-|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
-|      v0.5          |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
-|  vrelease/2.0-rc   |       >= 2.0.1    |     --    |
+|  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
+| :------------------: | :---------------: | :-------: |
+|    release/0.3       |        >=1.7      |     --    |
+|    release/0.4       |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
+|    release/0.5       |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
+|    release/2.0-rc    |       >= 2.0.1    |     --    |
 
 
 ```
