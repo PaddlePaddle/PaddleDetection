@@ -43,14 +43,8 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
-
-
-def getbbox(self, points):
-    polygons = points
-    mask = self.polygons_to_mask([self.height, self.width], polygons)
-    return self.mask2box(mask)
-
-
+        
+        
 def images_labelme(data, num):
     image = {}
     image['height'] = data['imageHeight']
