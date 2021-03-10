@@ -136,8 +136,10 @@ def load_pretrain_weight(model,
     path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
             os.path.exists(path + '.pdparams')):
-        raise ValueError("Model pretrain path {} does not "
-                         "exists.".format(path))
+        raise ValueError("Model pretrain path `{}` does not exists. "
+                         "If you don't want to load pretrain model, "
+                         "please delete `pretrain_weights` field in "
+                         "config file.".format(path))
 
     model_dict = model.state_dict()
 

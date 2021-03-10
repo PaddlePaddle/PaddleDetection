@@ -1,0 +1,45 @@
+worker_num: 2
+TrainReader:
+  inputs_def:
+    num_max_boxes: 90
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {brightness: [0.5, 1.125, 0.875], random_apply: False}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomFlip: {}
+    - CropWithDataAchorSampling: {
+      anchor_sampler: [[1, 10, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.2, 0.0]],
+      batch_sampler: [
+        [1, 50, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [1, 50, 0.3, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+      ],
+      target_size: 640}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 1}
+    - NormalizeBox: {}
+    - PadBox: {num_max_boxes: 90}
+  batch_transforms:
+    - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
+    - Permute: {}
+  batch_size: 8
+  shuffle: true
+  drop_last: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+  drop_empty: false
+
+
+TestReader:
+  sample_transforms:
+    - Decode: {}
+    - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
+    - Permute: {}
+  batch_size: 1

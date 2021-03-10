@@ -271,8 +271,12 @@ class AnchorGeneratorSSD(object):
         self.num_priors = []
         for aspect_ratio, min_size, max_size in zip(
                 aspect_ratios, self.min_sizes, self.max_sizes):
-            self.num_priors.append((len(aspect_ratio) * 2 + 1) * len(
-                _to_list(min_size)) + len(_to_list(max_size)))
+            if isinstance(min_size, (list, tuple)):
+                self.num_priors.append(
+                    len(_to_list(min_size)) + len(_to_list(max_size)))
+            else:
+                self.num_priors.append((len(aspect_ratio) * 2 + 1) * len(
+                    _to_list(min_size)) + len(_to_list(max_size)))
 
     def __call__(self, inputs, image):
         boxes = []
