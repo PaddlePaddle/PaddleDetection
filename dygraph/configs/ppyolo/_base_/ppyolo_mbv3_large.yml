@@ -55,4 +55,3 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 1000
     score_threshold: 0.005
-    normalized: false
