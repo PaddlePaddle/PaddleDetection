@@ -81,9 +81,6 @@ class BBoxPostProcess(object):
             scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
             scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
             expand_scale = paddle.expand(scale, [bbox_num[i], 4])
-            # TODO: Because paddle.expand transform error when dygraph
-            # to static, use reshape to avoid mistakes.
-            expand_scale = paddle.reshape(expand_scale, [bbox_num[i], 4])
             origin_shape_list.append(expand_shape)
             scale_factor_list.append(expand_scale)
 
@@ -154,7 +151,7 @@ class MaskPostProcess(object):
         # TODO: support bs > 1 and mask output dtype is bool
         pred_result = paddle.zeros(
             [num_mask, origin_shape[0][0], origin_shape[0][1]], dtype='int32')
-        if bboxes.shape[0] == 0:
+        if bbox_num == 1 and bboxes[0][0] == -1:
             return pred_result
 
         # TODO: optimize chunk paste

@@ -12,7 +12,7 @@
 
 **环境需求:**
 
-- PaddlePaddle 每日版本
+- PaddlePaddle 2.0.1 或 PaddlePaddle release/2.0分支最新编译安装包
 - OS 64位操作系统
 - Python 3(3.5.1+/3.6/3.7)，64位版本
 - pip/pip3(9.0.1+)，64位版本

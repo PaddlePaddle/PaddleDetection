@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/wider_face.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1000e.yml',
+  '_base_/blazeface.yml',
+  '_base_/face_reader.yml',
+]
+weights: output/blazeface_1000e/model_final
+multi_scale_eval: True
