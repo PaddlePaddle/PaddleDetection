@@ -45,18 +45,15 @@ class MyEncoder(json.JSONEncoder):
             return super(MyEncoder, self).default(obj)
 
 
-def getbbox(self, points):
-    polygons = points
-    mask = self.polygons_to_mask([self.height, self.width], polygons)
-    return self.mask2box(mask)
-
-
 def images_labelme(data, num):
     image = {}
     image['height'] = data['imageHeight']
     image['width'] = data['imageWidth']
     image['id'] = num + 1
-    image['file_name'] = data['imagePath'].split('/')[-1]
+    if '\\' in data['imagePath']:
+        image['file_name'] = data['imagePath'].split('\\')[-1]
+    else:
+        image['file_name'] = data['imagePath'].split('/')[-1]
     return image
 
 
@@ -369,20 +366,26 @@ def main():
         total_num = len(glob.glob(osp.join(args.json_input_dir, '*.json')))
         if args.train_proportion != 0:
             train_num = int(total_num * args.train_proportion)
-            os.makedirs(args.output_dir + '/train')
+            out_dir = args.output_dir + '/train'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
         else:
             train_num = 0
         if args.val_proportion == 0.0:
             val_num = 0
             test_num = total_num - train_num
-            if args.test_proportion != 0.0:
-                os.makedirs(args.output_dir + '/test')
+            out_dir = args.output_dir + '/test'
+            if args.test_proportion != 0.0 and not os.path.exists(out_dir):
+                os.makedirs(out_dir)
         else:
             val_num = int(total_num * args.val_proportion)
             test_num = total_num - train_num - val_num
-            os.makedirs(args.output_dir + '/val')
-            if args.test_proportion != 0.0:
-                os.makedirs(args.output_dir + '/test')
+            val_out_dir = args.output_dir + '/val'
+            if not os.path.exists(val_out_dir):
+                os.makedirs(val_out_dir)
+            test_out_dir = args.output_dir + '/test'
+            if args.test_proportion != 0.0 and not os.path.exists(test_out_dir):
+                os.makedirs(test_out_dir)
         count = 1
         for img_name in os.listdir(args.image_input_dir):
             if count <= train_num:
