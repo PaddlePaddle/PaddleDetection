@@ -79,7 +79,8 @@ class DetDataset(Dataset):
         self._epoch = epoch_id
 
     def parse_dataset(self, ):
-        raise NotImplementedError("Need to implement parse_dataset method of Dataset")
+        raise NotImplementedError(
+            "Need to implement parse_dataset method of Dataset")
 
     def get_anno(self):
         if self.anno_path is None:
