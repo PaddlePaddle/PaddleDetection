@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+import numpy as np
 import paddle
 
 from ppdet.core.workspace import register, serializable
@@ -41,7 +42,10 @@ class RPNTargetAssign(object):
         anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
         """
         gt_boxes = inputs['gt_bbox']
-        batch_size = gt_boxes.shape[0]
+        if isinstance(gt_boxes, list):
+            batch_size = len(gt_boxes)
+        else:
+            batch_size = gt_boxes.shape[0]
         tgt_labels, tgt_bboxes, tgt_deltas = rpn_anchor_target(
             anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random,

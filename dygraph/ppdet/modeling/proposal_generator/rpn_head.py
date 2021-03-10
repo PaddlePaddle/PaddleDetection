@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -131,6 +132,8 @@ class RPNHead(nn.Layer):
         """
         prop_gen = self.train_proposal if self.training else self.test_proposal
         im_shape = inputs['im_shape']
+        if self.training and isinstance(im_shape, np.ndarray):
+            im_shape = paddle.to_tensor(im_shape)
         rpn_rois_list = [[] for i in range(batch_size)]
         rpn_prob_list = [[] for i in range(batch_size)]
         rpn_rois_num_list = [[] for i in range(batch_size)]

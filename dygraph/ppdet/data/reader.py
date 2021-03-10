@@ -24,6 +24,7 @@ else:
     import Queue
 import numpy as np
 
+import paddle
 from paddle.io import DataLoader
 from paddle.io import DistributedBatchSampler
 
@@ -61,10 +62,11 @@ class Compose(object):
 
 
 class BatchCompose(Compose):
-    def __init__(self, transforms, num_classes=80):
+    def __init__(self, transforms, num_classes=80, collate_batch=True):
         super(BatchCompose, self).__init__(transforms, num_classes)
         self.output_fields = mp.Manager().list([])
         self.lock = mp.Lock()
+        self.collate_batch = collate_batch
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -100,11 +102,21 @@ class BatchCompose(Compose):
                         self.output_fields.append(k)
             self.lock.release()
 
-        data = [[data[i][k] for k in self.output_fields]
-                for i in range(len(data))]
-        data = list(zip(*data))
+        batch_data = []
+        if self.collate_batch:
+            data = [[data[i][k] for k in self.output_fields]
+                    for i in range(len(data))]
+            data = list(zip(*data))
+            batch_data = [np.stack(d, axis=0) for d in data]
+        else:
+            for k in self.output_fields:
+                tmp_data = []
+                for i in range(len(data)):
+                    tmp_data.append(data[i][k])
+                if not 'gt_' in k and not 'is_crowd' in k:
+                    tmp_data = np.stack(tmp_data, axis=0)
+                batch_data.append(tmp_data)
 
-        batch_data = [np.stack(d, axis=0) for d in data]
         return batch_data
 
 
@@ -120,18 +132,20 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=80,
+                 collate_batch=True,
                  **kwargs):
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
         # batch transfrom 
-        self._batch_transforms = BatchCompose(batch_transforms, num_classes)
-
+        self._batch_transforms = BatchCompose(batch_transforms, num_classes,
+                                              collate_batch)
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
         self.kwargs = kwargs
+        self.pin_memory = True if collate_batch else False
 
     def __call__(self,
                  dataset,
@@ -162,6 +176,7 @@ class BaseDataLoader(object):
             num_workers=worker_num,
             return_list=return_list,
             use_buffer_reader=use_prefetch,
+            pin_memory=self.pin_memory,
             use_shared_memory=False)
         self.loader = iter(self.dataloader)
 
@@ -203,10 +218,12 @@ class TrainReader(BaseDataLoader):
                  drop_last=True,
                  drop_empty=True,
                  num_classes=80,
+                 collate_batch=True,
                  **kwargs):
-        super(TrainReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(TrainReader, self).__init__(inputs_def, sample_transforms,
+                                          batch_transforms, batch_size, shuffle,
+                                          drop_last, drop_empty, num_classes,
+                                          collate_batch, **kwargs)
 
 
 @register

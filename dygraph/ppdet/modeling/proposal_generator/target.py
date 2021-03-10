@@ -35,6 +35,8 @@ def rpn_anchor_target(anchors,
     tgt_deltas = []
     for i in range(batch_size):
         gt_bbox = gt_boxes[i]
+        if isinstance(gt_bbox, np.ndarray):
+            gt_bbox = paddle.to_tensor(gt_bbox)
 
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
@@ -139,7 +141,12 @@ def generate_proposal_target(rpn_rois,
     bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
         gt_bbox = gt_boxes[i]
+        if isinstance(gt_bbox, np.ndarray):
+            gt_bbox = paddle.to_tensor(gt_bbox)
         gt_class = gt_classes[i]
+        if isinstance(gt_class, np.ndarray):
+            gt_class = paddle.to_tensor(np.squeeze(gt_class, axis=-1))
+
         if not is_cascade:
             bbox = paddle.concat([rpn_roi, gt_bbox])
         else:
@@ -265,32 +272,42 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
     mask_index = []
     tgt_weights = []
     for k in range(len(rois)):
-        has_fg = True
-        rois_per_im = rois[k]
-        gt_segms_per_im = gt_segms[k]
         labels_per_im = labels_int32[k]
         fg_inds = paddle.nonzero(
             paddle.logical_and(labels_per_im != -1, labels_per_im !=
                                num_classes))
+        has_fg = True
         if fg_inds.numel() == 0:
             has_fg = False
             fg_inds = paddle.ones([1], dtype='int32')
-
         inds_per_im = sampled_gt_inds[k]
         inds_per_im = paddle.gather(inds_per_im, fg_inds)
 
-        gt_segms_per_im = paddle.gather(gt_segms_per_im, inds_per_im)
+        rois_per_im = rois[k]
+        gt_segms_per_im = gt_segms[k]
+        if isinstance(gt_segms_per_im, list):
+            new_segm = []
+            for poly in gt_segms_per_im:
+                tmp_p = [np.array(p_p) for p_p in poly]
+                new_segm.append(tmp_p)
+            gt_segms_per_im = np.array(new_segm)
+            gt_segms_per_im = gt_segms_per_im[inds_per_im.numpy()]
+            fg_inds = fg_inds.reshape([-1])
+            fg_segms = gt_segms_per_im[fg_inds.numpy()]
+            new_gt_polys = fg_segms
+        else:
+            gt_segms_per_im = paddle.gather(gt_segms_per_im, inds_per_im)
+            fg_segms = paddle.gather(gt_segms_per_im, fg_inds)
+            gt_polys = fg_segms.numpy()
+            # remove padding
+            new_gt_polys = _strip_pad(gt_polys)
 
         fg_rois = paddle.gather(rois_per_im, fg_inds)
         fg_classes = paddle.gather(labels_per_im, fg_inds)
-        fg_segms = paddle.gather(gt_segms_per_im, fg_inds)
         weight = paddle.ones([fg_rois.shape[0]], dtype='float32')
         if not has_fg:
             weight = weight - 1
-        # remove padding
-        gt_polys = fg_segms.numpy()
         boxes = fg_rois.numpy()
-        new_gt_polys = _strip_pad(gt_polys)
         results = [
             rasterize_polygons_within_box(poly, box, resolution)
             for poly, box in zip(new_gt_polys, boxes)
