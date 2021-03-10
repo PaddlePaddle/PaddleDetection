@@ -41,7 +41,7 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 ```
 # install paddlepaddle
 # 如果您的机器安装的是CUDA9，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==2.0.1.post97 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.0.1.post90 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
 
 如果您的机器安装的是CUDA10.1，请运行以下命令安装
 python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
