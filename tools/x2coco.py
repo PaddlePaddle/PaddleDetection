@@ -207,7 +207,6 @@ def voc_get_label_anno(ann_dir_path, ann_ids_path, labels_path):
 def voc_get_image_info(annotation_root, im_id):
     filename = annotation_root.findtext('filename')
     assert filename is not None
-    img_name = os.path.basename(filename)
 
     size = annotation_root.find('size')
     width = float(size.findtext('width'))
