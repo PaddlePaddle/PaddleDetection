@@ -221,10 +221,12 @@ EvalReader:
   worker_num: 2
 
 TestReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
   batch_size: 1
   dataset:
     !ImageFolder
-    anno_path: dataset/obj365/annotations/val.json
+    anno_path: dataset/coco/objects365_label.txt
   sample_transforms:
   - !DecodeImage
     to_rgb: True
