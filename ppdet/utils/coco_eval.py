@@ -492,7 +492,34 @@ def get_category_info(anno_file=None,
         return coco17_category_info(with_background)
     else:
         logger.info("Load categories from {}".format(anno_file))
-        return get_category_info_from_anno(anno_file, with_background)
+        if anno_file.endswith('.json'):
+            return get_category_info_from_anno(anno_file, with_background)
+        else:
+            return get_category_info_from_txt(anno_file, with_background)
+
+
+def get_category_info_from_txt(anno_file, with_background=True):
+    """
+    Get class id to category id map and category id
+    to category name map from txt file.
+
+    args:
+        anno_file (str): label txt file path.
+        with_background (bool, default True):
+            whether load background as class 0.
+    """
+    with open(anno_file, "r") as f:
+        catid_list = f.readlines()
+    clsid2catid = {}
+    catid2name = {}
+    for i, catid in enumerate(catid_list):
+        catid = catid.strip('\n\t\r')
+        clsid2catid[i + int(with_background)] = i + 1
+        catid2name[i + int(with_background)] = catid
+    if with_background:
+        clsid2catid.update({0: 0})
+        catid2name.update({0: 'background'})
+    return clsid2catid, catid2name
 
 
 def get_category_info_from_anno(anno_file, with_background=True):
