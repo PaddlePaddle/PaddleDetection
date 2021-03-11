@@ -75,8 +75,28 @@ def get_categories(metric_type, anno_file=None):
             logger.warn("only default categories support for OID19")
         return _oid19_category()
 
+    elif metric_type.lower() in ['mot', 'motdet', 'reid']:
+        if anno_file and os.path.isfile(anno_file):
+            logger.warn("only default categories support for MOT")
+        return _mot_category()
+
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
+
+
+def _mot_category():
+    """
+    Get class id to category id map and category id
+    to category name map of mot dataset
+    """
+    label_map = {'person': 0}
+    label_map = sorted(label_map.items(), key=lambda x: x[1])
+    cats = [l[0] for l in label_map]
+
+    clsid2catid = {i: i for i in range(len(cats))}
+    catid2name = {i: name for i, name in enumerate(cats)}
+
+    return clsid2catid, catid2name
 
 
 def _coco17_category():

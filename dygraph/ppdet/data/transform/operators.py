@@ -1979,6 +1979,7 @@ class Resize_LetterBox(BaseOperator):
         """
         im = sample['image']
         h, w = sample['im_shape']
+        sample['img0_shape'] = sample['im_shape']
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image type is not numpy.".format(self))
         if len(im.shape) != 3:

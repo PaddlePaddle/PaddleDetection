@@ -5,3 +5,10 @@ opencv-python
 PyYAML
 shapely
 scipy
+lap
+sklearn
+cython_bbox
+motmetrics
+openpyxl
+numba==0.52.0
+llvmlite==0.35.0

@@ -50,7 +50,8 @@ class BBoxPostProcess(object):
         """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-            bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
+            bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
+                                                         self.num_classes)
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
@@ -59,7 +60,8 @@ class BBoxPostProcess(object):
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-        return bbox_pred, bbox_num
+            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+        return bbox_pred, bbox_num, nms_keep_idx
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """

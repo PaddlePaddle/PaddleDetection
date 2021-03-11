@@ -4,6 +4,7 @@ from __future__ import print_function
 
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+import paddle
 
 __all__ = ['JDE']
 
@@ -18,6 +19,7 @@ class JDE(BaseArch):
                  neck='JDEFPN',
                  jde_head='JDEHead',
                  post_process='BBoxPostProcess',
+                 test_track=False,
                  test_emb=False):
         super(JDE, self).__init__()
         self.backbone = backbone
@@ -25,6 +27,7 @@ class JDE(BaseArch):
         self.jde_head = jde_head
         self.post_process = post_process
         self.test_emb = test_emb
+        self.test_track = test_track
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -54,24 +57,42 @@ class JDE(BaseArch):
             return jde_losses
         else:
             if self.test_emb:
-                embs_and_gts = self.jde_head(yolo_feats, identify_feats,
-                                             self.inputs, self.test_emb)
+                embs_and_gts = self.jde_head(
+                    yolo_feats,
+                    identify_feats,
+                    targets=self.inputs,
+                    test_emb=True)
                 return embs_and_gts
-            else:
-                yolo_outs = self.jde_head(yolo_feats, identify_feats)
-                bbox, bbox_num = self.post_process(
+
+            elif self.test_track:
+                yolo_outs, emb_outs = self.jde_head(
+                    yolo_feats, identify_feats, test_track=True)
+
+                bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_outs, self.jde_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
-                return bbox, bbox_num
+
+                nms_keep_idx.stop_gradient = True
+                embeding = paddle.gather_nd(emb_outs, nms_keep_idx)
+
+                emb_det_results = {
+                    'bbox': bbox,
+                    'bbox_num': bbox_num,
+                    'img0_shape': self.inputs['img0_shape'],
+                    'embeding': embeding
+                }
+                return emb_det_results
+
+            else:
+                yolo_outs = self.jde_head(yolo_feats, identify_feats)
+                bbox_pred, bbox_num, _ = self.post_process(
+                    yolo_outs, self.jde_head.mask_anchors,
+                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                det_results = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+                return det_results
 
     def get_loss(self):
         return self._forward()
 
     def get_pred(self):
-        if self.test_emb:
-            emb_and_gt = self._forward()
-            return emb_and_gt
-        else:
-            bbox_pred, bbox_num = self._forward()
-            output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
-            return output
+        return self._forward()

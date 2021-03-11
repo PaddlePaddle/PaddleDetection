@@ -155,7 +155,12 @@ class JDEHead(nn.Layer):
                 assert mask < anchor_num, "anchor mask index overflow"
                 self.mask_anchors[-1].extend(anchors[mask])
 
-    def forward(self, yolo_feats, identify_feats, targets=None, test_emb=False):
+    def forward(self,
+                yolo_feats,
+                identify_feats,
+                targets=None,
+                test_emb=False,
+                test_track=False):
         assert len(yolo_feats) == len(identify_feats) == len(self.anchors)
         det_outs = []
         ide_outs = []
@@ -177,6 +182,10 @@ class JDEHead(nn.Layer):
                 assert targets != None
                 embs_and_gts = self.get_emb_and_gt_outs(ide_outs, targets)
                 return embs_and_gts
+            elif test_track:
+                yolo_outs = self.get_det_outs(det_outs)
+                emb_outs = self.get_emb_outs(ide_outs)
+                return yolo_outs, emb_outs
             else:
                 yolo_outs = self.get_det_outs(det_outs)
                 return yolo_outs
@@ -214,14 +223,14 @@ class JDEHead(nn.Layer):
             t_ide = targets['tide{}'.format(i)]
 
             p_ide = p_ide.transpose((0, 2, 3, 1))
-            p_ide_flatten = paddle.reshape(p_ide, [-1, 512])
+            p_ide_flatten = paddle.reshape(p_ide, [-1, self.embedding_dim])
 
             mask = t_conf > 0
             mask = paddle.cast(mask, dtype="int64")
             emb_mask = mask.max(1).flatten()
             emb_mask_inds = paddle.nonzero(emb_mask > 0).flatten()
             if len(emb_mask_inds) > 0:
-                t_ide_flatten = paddle.reshape(t_ide.max(1), [-1, 1])  #
+                t_ide_flatten = paddle.reshape(t_ide.max(1), [-1, 1])
                 tids = paddle.gather(t_ide_flatten, emb_mask_inds)
 
                 embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
@@ -233,3 +242,17 @@ class JDEHead(nn.Layer):
             return paddle.concat(emb_and_gts, axis=0)
         else:
             return paddle.zeros((1, self.embedding_dim + 1))
+
+    def get_emb_outs(self, ide_outs):
+        emb_outs = []
+        for i, p_ide in enumerate(ide_outs):
+            p_ide = p_ide.transpose((0, 2, 3, 1))
+            p_ide_flatten = paddle.reshape(p_ide, [-1, self.embedding_dim])
+
+            embedding = F.normalize(p_ide_flatten)
+            emb_outs.append(embedding)
+
+        if len(emb_outs) > 0:
+            return paddle.concat(emb_outs, axis=0)
+        else:
+            return paddle.zeros((1, self.embedding_dim))

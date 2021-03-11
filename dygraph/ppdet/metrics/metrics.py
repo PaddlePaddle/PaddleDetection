@@ -27,14 +27,16 @@ import paddle.nn.functional as F
 
 from .category import get_categories
 from .map_utils import prune_zero_padding, DetectionMAP, ap_per_class, bbox_iou_expand
+from .mot_eval_utils import MOTEvaluator
 from .coco_utils import get_infer_results, cocoapi_eval
+import motmetrics as mm
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
     'Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results', 'JDEDetMetric',
-    'JDEReIDMetric'
+    'JDEReIDMetric', 'MOTMetric'
 ]
 
 
@@ -314,3 +316,35 @@ class JDEReIDMetric(Metric):
 
     def get_results(self):
         return self.eval_results
+
+
+class MOTMetric(Metric):
+    def __init__(self, ):
+        self.MOTEvaluator = MOTEvaluator
+        self.reset()
+
+    def reset(self):
+        self.accs = []
+        self.seqs = []
+
+    def update(self, data_root, seq, data_type, result_root, result_filename,
+               exp_name):
+        evaluator = self.MOTEvaluator(data_root, seq, data_type)
+        self.accs.append(evaluator.eval_file(result_filename))
+        self.seqs.append(seq)
+
+    def accumulate(self):
+        metrics = mm.metrics.motchallenge_metrics
+        mh = mm.metrics.create()
+        summary = self.MOTEvaluator.get_summary(self.accs, self.seqs, metrics)
+        self.strsummary = mm.io.render_summary(
+            summary,
+            formatters=mh.formatters,
+            namemap=mm.io.motchallenge_metric_names)
+        # self.MOTEvaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
+
+    def log(self):
+        print(self.strsummary)
+
+    def get_results(self):
+        return self.strsummary
