@@ -230,8 +230,8 @@ def voc_get_coco_annotation(obj, label2id):
     assert label in label2id, "label is not in label2id."
     category_id = label2id[label]
     bndbox = obj.find('bndbox')
-    xmin = float(bndbox.findtext('xmin')) - 1
-    ymin = float(bndbox.findtext('ymin')) - 1
+    xmin = float(bndbox.findtext('xmin'))
+    ymin = float(bndbox.findtext('ymin'))
     xmax = float(bndbox.findtext('xmax'))
     ymax = float(bndbox.findtext('ymax'))
     assert xmax > xmin and ymax > ymin, "Box size error."
@@ -263,15 +263,14 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
         ann_root = ann_tree.getroot()
 
         img_info = voc_get_image_info(ann_root, im_id)
-        im_id += 1
-        img_id = img_info['id']
         output_json_dict['images'].append(img_info)
 
         for obj in ann_root.findall('object'):
             ann = voc_get_coco_annotation(obj=obj, label2id=label2id)
-            ann.update({'image_id': img_id, 'id': bnd_id})
+            ann.update({'image_id': im_id, 'id': bnd_id})
             output_json_dict['annotations'].append(ann)
             bnd_id = bnd_id + 1
+        im_id += 1
 
     for label, label_id in label2id.items():
         category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
@@ -285,7 +284,9 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--dataset_type', help='the type of dataset')
+    parser.add_argument(
+        '--dataset_type',
+        help='the type of dataset, can be `voc`, `labelme` or `cityscape`')
     parser.add_argument('--json_input_dir', help='input annotated directory')
     parser.add_argument('--image_input_dir', help='image directory')
     parser.add_argument(
