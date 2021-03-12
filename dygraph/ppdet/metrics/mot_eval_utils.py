@@ -18,12 +18,12 @@ import copy
 import motmetrics as mm
 mm.lap.default_solver = 'lap'
 
-
 __all__ = [
     'read_mot_results',
     'unzip_objs',
     'MOTEvaluator',
 ]
+
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
     valid_labels = {1}
@@ -64,13 +64,14 @@ def read_mot_results(filename, is_gt=False, is_ignore=False):
                 #if box_size > 7000:
                 #if box_size <= 7000 or box_size >= 15000:
                 #if box_size < 15000:
-                    #continue
+                #continue
 
                 tlwh = tuple(map(float, linelist[2:6]))
                 target_id = int(linelist[1])
 
                 results_dict[fid].append((tlwh, target_id, score))
     return results_dict
+
 
 """
 labels={'ped', ...			    % 1
@@ -88,6 +89,7 @@ labels={'ped', ...			    % 1
         'crowd' ...			    % 13
 };
 """
+
 
 def unzip_objs(objs):
     if len(objs) > 0:
@@ -109,9 +111,11 @@ class MOTEvaluator(object):
 
     def load_annotations(self):
         assert self.data_type == 'mot'
-        gt_filename = os.path.join(self.data_root, self.seq_name, 'gt', 'gt.txt')
+        gt_filename = os.path.join(self.data_root, self.seq_name, 'gt',
+                                   'gt.txt')
         self.gt_frame_dict = read_mot_results(gt_filename, is_gt=True)
-        self.gt_ignore_frame_dict = read_mot_results(gt_filename, is_ignore=True)
+        self.gt_ignore_frame_dict = read_mot_results(
+            gt_filename, is_ignore=True)
 
     def reset_accumulator(self):
         self.acc = mm.MOTAccumulator(auto_id=True)
@@ -131,7 +135,8 @@ class MOTEvaluator(object):
 
         # remove ignored results
         keep = np.ones(len(trk_tlwhs), dtype=bool)
-        iou_distance = mm.distances.iou_matrix(ignore_tlwhs, trk_tlwhs, max_iou=0.5)
+        iou_distance = mm.distances.iou_matrix(
+            ignore_tlwhs, trk_tlwhs, max_iou=0.5)
         if len(iou_distance) > 0:
             match_is, match_js = mm.lap.linear_sum_assignment(iou_distance)
             match_is, match_js = map(lambda a: np.asarray(a, dtype=int), [match_is, match_js])
@@ -158,7 +163,8 @@ class MOTEvaluator(object):
         # acc
         self.acc.update(gt_ids, trk_ids, iou_distance)
 
-        if rtn_events and iou_distance.size > 0 and hasattr(self.acc, 'last_mot_events'):
+        if rtn_events and iou_distance.size > 0 and hasattr(self.acc,
+                                                            'last_mot_events'):
             events = self.acc.last_mot_events  # only supported by https://github.com/longcw/py-motmetrics
         else:
             events = None
@@ -177,7 +183,10 @@ class MOTEvaluator(object):
         return self.acc
 
     @staticmethod
-    def get_summary(accs, names, metrics=('mota', 'num_switches', 'idp', 'idr', 'idf1', 'precision', 'recall')):
+    def get_summary(accs,
+                    names,
+                    metrics=('mota', 'num_switches', 'idp', 'idr', 'idf1',
+                             'precision', 'recall')):
         names = copy.deepcopy(names)
         if metrics is None:
             metrics = mm.metrics.motchallenge_metrics
@@ -185,11 +194,7 @@ class MOTEvaluator(object):
 
         mh = mm.metrics.create()
         summary = mh.compute_many(
-            accs,
-            metrics=metrics,
-            names=names,
-            generate_overall=True
-        )
+            accs, metrics=metrics, names=names, generate_overall=True)
         return summary
 
     @staticmethod

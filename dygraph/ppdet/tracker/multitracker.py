@@ -45,14 +45,15 @@ class STrack(BaseTrack):
         self.update_features(temp_feat)
         self.features = deque([], maxlen=buffer_size)
         self.alpha = 0.9
-    
+
     def update_features(self, feat):
         feat /= np.linalg.norm(feat)
-        self.curr_feat = feat 
+        self.curr_feat = feat
         if self.smooth_feat is None:
             self.smooth_feat = feat
         else:
-            self.smooth_feat = self.alpha *self.smooth_feat + (1-self.alpha) * feat
+            self.smooth_feat = self.alpha * self.smooth_feat + (1 - self.alpha
+                                                                ) * feat
         self.features.append(feat)
         self.smooth_feat /= np.linalg.norm(self.smooth_feat)
 
@@ -60,8 +61,9 @@ class STrack(BaseTrack):
         mean_state = self.mean.copy()
         if self.state != TrackState.Tracked:
             mean_state[7] = 0
-        self.mean, self.covariance = self.kalman_filter.predict(mean_state, self.covariance)
-        
+        self.mean, self.covariance = self.kalman_filter.predict(mean_state,
+                                                                self.covariance)
+
     @staticmethod
     def multi_predict(stracks, kalman_filter):
         if len(stracks) > 0:
@@ -71,7 +73,8 @@ class STrack(BaseTrack):
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
             # multi_mean, multi_covariance = STrack.kalman_filter.multi_predict(multi_mean, multi_covariance)
-            multi_mean, multi_covariance = kalman_filter.multi_predict(multi_mean, multi_covariance)
+            multi_mean, multi_covariance = kalman_filter.multi_predict(
+                multi_mean, multi_covariance)
             for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
                 stracks[i].mean = mean
                 stracks[i].covariance = cov
@@ -80,7 +83,8 @@ class STrack(BaseTrack):
         """Start a new tracklet"""
         self.kalman_filter = kalman_filter
         self.track_id = self.next_id()
-        self.mean, self.covariance = self.kalman_filter.initiate(self.tlwh_to_xyah(self._tlwh))
+        self.mean, self.covariance = self.kalman_filter.initiate(
+            self.tlwh_to_xyah(self._tlwh))
 
         self.tracklet_len = 0
         self.state = TrackState.Tracked
@@ -90,8 +94,7 @@ class STrack(BaseTrack):
 
     def re_activate(self, new_track, frame_id, new_id=False):
         self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh)
-        )
+            self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh))
 
         self.update_features(new_track.curr_feat)
         self.tracklet_len = 0
@@ -174,14 +177,19 @@ class STrack(BaseTrack):
         return ret
 
     def __repr__(self):
-        return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame, self.end_frame)
+        return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame,
+                                      self.end_frame)
 
 
 class JDETracker(object):
-    def __init__(self, img_size=[1088, 608], det_thresh=0.3, frame_rate=30, track_buffer=30):
-        self.tracked_stracks = []   # type: list[STrack]
-        self.lost_stracks = []      # type: list[STrack]
-        self.removed_stracks = []   # type: list[STrack]
+    def __init__(self,
+                 img_size=[1088, 608],
+                 det_thresh=0.3,
+                 frame_rate=30,
+                 track_buffer=30):
+        self.tracked_stracks = []  # type: list[STrack]
+        self.lost_stracks = []  # type: list[STrack]
+        self.removed_stracks = []  # type: list[STrack]
 
         self.frame_id = 0
         self.det_thresh = det_thresh
@@ -204,20 +212,23 @@ class JDETracker(object):
                 online_tracklets for the recieved image tensor.
         """
         self.frame_id += 1
-        activated_starcks = [] # for storing active tracks, for the current frame
-        refind_stracks = []    # Lost Tracks whose detections are obtained in the current frame
-        lost_stracks = []      # The tracks which are not obtained in the current frame but are not removed.(Lost for some time lesser than the threshold for removing)
+        activated_starcks = [
+        ]  # for storing active tracks, for the current frame
+        refind_stracks = [
+        ]  # Lost Tracks whose detections are obtained in the current frame
+        lost_stracks = [
+        ]  # The tracks which are not obtained in the current frame but are not removed.(Lost for some time lesser than the threshold for removing)
         removed_stracks = []
-
         ''' Step 1: Network forward, get detections & embeddings'''
         if len(pred_dets) > 0:
-            pred_dets[:, :4] = scale_coords(
-                target_shape, pred_dets[:, :4], img0_shape).round()
-            detections = [STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30) for
-                          (tlbrs, f) in zip(pred_dets, pred_embs)]
+            pred_dets[:, :4] = scale_coords(target_shape, pred_dets[:, :4],
+                                            img0_shape).round()
+            detections = [
+                STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
+                for (tlbrs, f) in zip(pred_dets, pred_embs)
+            ]
         else:
             detections = []
-
         ''' Add newly detected tracklets to tracked_stracks'''
         unconfirmed = []
         tracked_stracks = []  # type: list[STrack]
@@ -228,7 +239,6 @@ class JDETracker(object):
             else:
                 # Active tracks are added to the local list 'tracked_stracks'
                 tracked_stracks.append(track)
-
         ''' Step 2: First association, with embedding'''
         # Combining currently tracked_stracks and lost_stracks
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
@@ -236,9 +246,11 @@ class JDETracker(object):
         STrack.multi_predict(strack_pool, self.kalman_filter)
 
         dists = matching.embedding_distance(strack_pool, detections)
-        dists = matching.fuse_motion(self.kalman_filter, dists, strack_pool, detections)
+        dists = matching.fuse_motion(self.kalman_filter, dists, strack_pool,
+                                     detections)
         # The dists is the list of distances of the detection with the tracks in strack_pool
-        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.7)
+        matches, u_track, u_detection = matching.linear_assignment(
+            dists, thresh=0.7)
         # The matches is the array for corresponding matches of the detection with the corresponding strack_pool
 
         for itracked, idet in matches:
@@ -259,16 +271,17 @@ class JDETracker(object):
         ''' Step 3: Second association, with IOU'''
         detections = [detections[i] for i in u_detection]
         # detections is now a list of the unmatched detections
-        r_tracked_stracks = [] 
+        r_tracked_stracks = []
         # This is container for stracks which were tracked till the previous frame but no detection was found for it in the current frame
-        
+
         for i in u_track:
             if strack_pool[i].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[i])
         dists = matching.iou_distance(r_tracked_stracks, detections)
-        matches, u_track, u_detection = matching.linear_assignment(dists, thresh=0.5)
+        matches, u_track, u_detection = matching.linear_assignment(
+            dists, thresh=0.5)
         # matches is the list of detections which matched with corresponding tracks by IOU distance method
-        
+
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
             det = detections[idet]
@@ -286,11 +299,11 @@ class JDETracker(object):
                 track.mark_lost()
                 lost_stracks.append(track)
         # If no detections are obtained for tracks (u_track), the tracks are added to lost_tracks list and are marked lost
-
         '''Deal with unconfirmed tracks, usually tracks with only one beginning frame'''
         detections = [detections[i] for i in u_detection]
         dists = matching.iou_distance(unconfirmed, detections)
-        matches, u_unconfirmed, u_detection = matching.linear_assignment(dists, thresh=0.7)
+        matches, u_unconfirmed, u_detection = matching.linear_assignment(
+            dists, thresh=0.7)
         for itracked, idet in matches:
             unconfirmed[itracked].update(detections[idet], self.frame_id)
             activated_starcks.append(unconfirmed[itracked])
@@ -309,7 +322,6 @@ class JDETracker(object):
                 continue
             track.activate(self.kalman_filter, self.frame_id)
             activated_starcks.append(track)
-
         """ Step 5: Update state"""
         # If the tracks are lost for more frames than the threshold number, the tracks are removed.
         for track in self.lost_stracks:
@@ -318,23 +330,34 @@ class JDETracker(object):
                 removed_stracks.append(track)
 
         # Update the self.tracked_stracks and self.lost_stracks using the updates in this step.
-        self.tracked_stracks = [t for t in self.tracked_stracks if t.state == TrackState.Tracked]
-        self.tracked_stracks = joint_stracks(self.tracked_stracks, activated_starcks)
-        self.tracked_stracks = joint_stracks(self.tracked_stracks, refind_stracks)
-        
+        self.tracked_stracks = [
+            t for t in self.tracked_stracks if t.state == TrackState.Tracked
+        ]
+        self.tracked_stracks = joint_stracks(self.tracked_stracks,
+                                             activated_starcks)
+        self.tracked_stracks = joint_stracks(self.tracked_stracks,
+                                             refind_stracks)
+
         self.lost_stracks = sub_stracks(self.lost_stracks, self.tracked_stracks)
         self.lost_stracks.extend(lost_stracks)
         self.lost_stracks = sub_stracks(self.lost_stracks, self.removed_stracks)
         self.removed_stracks.extend(removed_stracks)
-        self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(self.tracked_stracks, self.lost_stracks)
+        self.tracked_stracks, self.lost_stracks = remove_duplicate_stracks(
+            self.tracked_stracks, self.lost_stracks)
         # get scores of lost tracks
-        output_stracks = [track for track in self.tracked_stracks if track.is_activated]
+        output_stracks = [
+            track for track in self.tracked_stracks if track.is_activated
+        ]
 
         logger.debug('===========Frame {}=========='.format(self.frame_id))
-        logger.debug('Activated: {}'.format([track.track_id for track in activated_starcks]))
-        logger.debug('Refind: {}'.format([track.track_id for track in refind_stracks]))
-        logger.debug('Lost: {}'.format([track.track_id for track in lost_stracks]))
-        logger.debug('Removed: {}'.format([track.track_id for track in removed_stracks]))
+        logger.debug('Activated: {}'.format(
+            [track.track_id for track in activated_starcks]))
+        logger.debug('Refind: {}'.format(
+            [track.track_id for track in refind_stracks]))
+        logger.debug('Lost: {}'.format(
+            [track.track_id for track in lost_stracks]))
+        logger.debug('Removed: {}'.format(
+            [track.track_id for track in removed_stracks]))
 
         return output_stracks
 
@@ -366,21 +389,21 @@ def sub_stracks(tlista, tlistb):
 
 def remove_duplicate_stracks(stracksa, stracksb):
     pdist = matching.iou_distance(stracksa, stracksb)
-    pairs = np.where(pdist<0.15)
+    pairs = np.where(pdist < 0.15)
     dupa, dupb = list(), list()
-    for p,q in zip(*pairs):
+    for p, q in zip(*pairs):
         timep = stracksa[p].frame_id - stracksa[p].start_frame
         timeq = stracksb[q].frame_id - stracksb[q].start_frame
         if timep > timeq:
             dupb.append(q)
         else:
             dupa.append(p)
-    resa = [t for i,t in enumerate(stracksa) if not i in dupa]
-    resb = [t for i,t in enumerate(stracksb) if not i in dupb]
+    resa = [t for i, t in enumerate(stracksa) if not i in dupa]
+    resb = [t for i, t in enumerate(stracksb) if not i in dupb]
     return resa, resb
 
 
-def scale_coords(img_size, coords, img0_shape): 
+def scale_coords(img_size, coords, img0_shape):
     # img_size [w,h], img0_shape [h,w]
     gain_w = float(img_size[0]) / img0_shape[1]  # gain  = old / new
     gain_h = float(img_size[1]) / img0_shape[0]

@@ -17,4 +17,8 @@ EvalDataset:
 
 TestDataset:
   !ImageFolder
-    anno_path: mot16.train # ['caltech.val', 'citypersons.val']
+    anno_path: mot16.train
+
+TrackDataset:
+  !ImageFolder
+    anno_path: mot16.train

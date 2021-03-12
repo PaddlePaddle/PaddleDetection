@@ -40,55 +40,46 @@ logger = setup_logger('train')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        '--benchmark', 
+        '--benchmark',
         default='MOT16_train',
         type=str,
         help='Benchmark name for tracking')
     parser.add_argument(
-        '--target_shape', 
-        type=list, 
-        default=[1088, 608], 
+        '--target_shape',
+        type=list,
+        default=[1088, 608],
         help='Target shape of tracking results')
     parser.add_argument(
         '--det_thresh',
-        type=float, 
-        default=0.5, 
+        type=float,
+        default=0.5,
         help='Object detection confidence threshold')
     parser.add_argument(
-        '--min_box_area', 
-        type=float, 
-        default=200, 
-        help='Filter out tiny boxes')
+        '--min_box_area', type=float, default=200, help='Filter out tiny boxes')
     parser.add_argument(
-        '--track_buffer', 
-        type=int, 
-        default=30, 
-        help='Tracking buffer')
+        '--track_buffer', type=int, default=30, help='Tracking buffer')
     parser.add_argument(
-        '--data_root', 
-        type=str, 
-        default='./dataset/MOT', 
+        '--data_root',
+        type=str,
+        default='./dataset/MOT',
         help='Directory for tracking dataset')
     parser.add_argument(
-        '--exp_name', 
-        type=str, 
-        default='demo', 
-        help='exp_name of tracking dir')
+        '--exp_name', type=str, default='demo', help='exp_name of tracking dir')
 
     parser.add_argument(
-        '--save_images', 
-        action='store_true', 
+        '--save_images',
+        action='store_true',
         help='Save tracking results (image)')
     parser.add_argument(
-        '--save_videos', 
-        action='store_true', 
+        '--save_videos',
+        action='store_true',
         help='Save tracking results (video)')
     parser.add_argument(
-        '--show_image', 
-        action='store_true', 
+        '--show_image',
+        action='store_true',
         help='Show tracking results (image)')
     parser.add_argument(
-        '--save_dir', 
+        '--save_dir',
         default=None,
         type=str,
         help='Directory for saved tracking results (image)')
@@ -99,6 +90,7 @@ def parse_args():
         help="Configuration file of slim method.")
     args = parser.parse_args()
     return args
+
 
 def run(FLAGS, cfg):
     if FLAGS.benchmark == 'MOT17_train':
@@ -157,12 +149,13 @@ def run(FLAGS, cfg):
         det_thresh=FLAGS.det_thresh,
         track_buffer=FLAGS.track_buffer,
         data_root=data_root,
-        seqs=seqs, 
+        seqs=seqs,
         exp_name=FLAGS.exp_name,
-        save_images=FLAGS.save_images, 
-        save_videos=FLAGS.save_videos, 
+        save_images=FLAGS.save_images,
+        save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
         save_dir=FLAGS.save_dir)
+
 
 def main():
     FLAGS = parse_args()
