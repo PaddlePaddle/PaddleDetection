@@ -46,6 +46,11 @@ class Detector(object):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         threshold (float): threshold to reserve the result for output.
     """
 
@@ -54,6 +59,10 @@ class Detector(object):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  threshold=0.5):
         self.pred_config = pred_config
         self.predictor = load_predictor(
@@ -287,11 +296,20 @@ def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
                    use_gpu=False,
-                   min_subgraph_size=3):
+                   min_subgraph_size=3,
+                   use_dynamic_shape=False,
+                   trt_min_shape=1,
+                   trt_max_shape=1280,
+                   trt_opt_shape=640):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -316,11 +334,7 @@ def load_predictor(model_dir,
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
-        # FIXME(dkp): ir optimize may prune variable inside graph
-        #             and incur error in Paddle 2.0, e.g. in SSDLite
-        #             FCOS model, set as False currently and should
-        #             be set as True after switch_ir_optim fixed
-        config.switch_ir_optim(False)
+        config.switch_ir_optim(True)
     else:
         config.disable_gpu()
 
@@ -332,6 +346,13 @@ def load_predictor(model_dir,
             precision_mode=precision_map[run_mode],
             use_static=False,
             use_calib_mode=False)
+
+        if use_dynamic_shape:
+            min_input_shape = (1, 3, trt_min_shape, trt_min_shape)
+            max_input_shape = (1, 3, trt_max_shape, trt_max_shape)
+            opt_input_shape = (1, 3, trt_opt_shape, trt_opt_shape)
+            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape, opt_input_shape)
+            print('trt set dynamic shape done!')
 
     # disable print log when predict
     config.disable_glog_info()
