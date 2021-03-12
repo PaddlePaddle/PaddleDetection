@@ -203,6 +203,8 @@ def main():
         # visualize result
         im_ids = res['im_id'][0]
         for im_id in im_ids:
+            if im_id == -1:
+                continue
             image_path = imid2path[int(im_id)]
             image = Image.open(image_path).convert('RGB')
             image = ImageOps.exif_transpose(image)
