@@ -41,7 +41,6 @@ PaddleDetection depends on PaddlePaddle version relationship:
 |    release/0.5       |       >= 1.8.4    |  Cascade R-CNN and SOLOv2 depends on 2.0.0.rc |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |
 
-
 If you want install paddlepaddle, please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
 ```
