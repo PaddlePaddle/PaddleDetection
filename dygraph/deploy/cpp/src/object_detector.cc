@@ -25,9 +25,9 @@ namespace PaddleDetection {
 void ObjectDetector::LoadModel(const std::string& model_dir,
                                bool use_gpu,
                                const int min_subgraph_size,
-                               const int batch_size,
+                               const int batch_size=1,
                                const std::string& run_mode,
-                               const int gpu_id,
+                               const int gpu_id=0,
                                bool use_dynamic_shape=false,
                                const int trt_min_shape=1,
                                const int trt_max_shape=1280,
@@ -39,18 +39,22 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   if (use_gpu) {
     config.EnableUseGpu(200, gpu_id);
     config.SwitchIrOptim(true);
+    // use tensorrt
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
-      if (run_mode == "trt_fp16") {
-        precision = paddle_infer::Config::Precision::kHalf;
-      } else if (run_mode == "trt_int8") {
-        printf("TensorRT int8 mode is not supported now, "
-               "please use 'trt_fp32' or 'trt_fp16' instead");
-      } else {
-        if (run_mode != "trt_fp32") {
-          printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
-        }
+      if (run_mode == "trt_fp32") {
+        precision = paddle_infer::Config::Precision::kFloat32;
       }
+      else if (run_mode == "trt_fp16") {
+        precision = paddle_infer::Config::Precision::kHalf;
+      }
+      else if (run_mode == "trt_int8") {
+        precision = paddle_infer::Config::Precision::kInt8;
+      }
+      else {
+          printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
+      }
+      // set tensorrt
       config.EnableTensorRtEngine(
           1 << 10,
           batch_size,
@@ -59,6 +63,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           false,
           false);
 
+      // set use dynamic shape
       if (use_dynamic_shape) {
         // set DynamicShsape for image tensor
         const std::vector<int> min_input_shape = {1, trt_min_shape, trt_min_shape};
@@ -74,7 +79,6 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
         std::cout << "TensorRT dynamic shape enabled" << std::endl;
       }
     }
-
 
   } 
   else 
