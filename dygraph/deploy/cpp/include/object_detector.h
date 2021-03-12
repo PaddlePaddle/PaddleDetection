@@ -63,7 +63,7 @@ class ObjectDetector {
                           bool use_dynamic_shape=false,
                           const int trt_min_shape=1,
                           const int trt_max_shape=1280,
-                          const int trt_opt_shape=640}) {
+                          const int trt_opt_shape=640) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
     image_shape_ = config_.image_shape_;
