@@ -79,21 +79,26 @@ class JDELoss(nn.Layer):
         emb_mask = mask.max(1).flatten()
         emb_mask_inds = paddle.nonzero(emb_mask > 0).flatten()
         emb_mask_inds.stop_gradient = True
+
+        # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
+        t_ide_flatten = t_ide.max(1).flatten()
+        t_ide_flatten = paddle.cast(t_ide_flatten, dtype="int64")
+
         if emb_mask_inds.numel() == 0:
+            # bug in some paddle version
+            # embedding = p_ide_flatten[0]
+            # ide_target = t_ide_flatten[0] * 2
+
             emb_mask_inds = paddle.to_tensor(
-                [-1], dtype='int64')  # rand select an index
-            ide_target = paddle.to_tensor(
-                [-2], dtype='int64')  # gt ide -1 is ignore_index
+                [1], dtype='int64')  # rand select an index
+            ide_target = paddle.gather(t_ide_flatten, emb_mask_inds) * 2
+            # gt ide -1 is ignore_index, cross_entropy loss will be nan
         else:
-            # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
-            t_ide_flatten = t_ide.max(1).flatten()
-            t_ide_flatten = paddle.cast(t_ide_flatten, dtype="int64")
             ide_target = paddle.gather(t_ide_flatten, emb_mask_inds)
-        ide_target.stop_gradient = True
 
         embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
-        embedding = emb_scale * F.normalize(embedding)
-        logits = classifier(embedding)
+        logits = classifier(emb_scale * F.normalize(embedding))
+        ide_target.stop_gradient = True
         loss_ide = F.cross_entropy(
             logits, ide_target, ignore_index=-1, reduction='mean')
         loss['loss_ide'] = loss_ide
