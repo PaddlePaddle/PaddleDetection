@@ -25,13 +25,13 @@ namespace PaddleDetection {
 void ObjectDetector::LoadModel(const std::string& model_dir,
                                bool use_gpu,
                                const int min_subgraph_size,
-                               const int batch_size=1,
+                               const int batch_size,
                                const std::string& run_mode,
-                               const int gpu_id=0,
-                               bool use_dynamic_shape=false,
-                               const int trt_min_shape=1,
-                               const int trt_max_shape=1280,
-                               const int trt_opt_shape=640) {
+                               const int gpu_id,
+                               bool use_dynamic_shape,
+                               const int trt_min_shape,
+                               const int trt_max_shape,
+                               const int trt_opt_shape) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";

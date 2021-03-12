@@ -69,7 +69,11 @@ class Detector(object):
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu)
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape)
 
     def preprocess(self, im):
         preprocess_ops = []
@@ -348,14 +352,15 @@ def load_predictor(model_dir,
             use_calib_mode=False)
 
         if use_dynamic_shape:
-            min_input_shape = (1, 3, trt_min_shape, trt_min_shape)
-            max_input_shape = (1, 3, trt_max_shape, trt_max_shape)
-            opt_input_shape = (1, 3, trt_opt_shape, trt_opt_shape)
+            print('use_dynamic_shape')
+            min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
+            max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
+            opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
             config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape, opt_input_shape)
             print('trt set dynamic shape done!')
 
     # disable print log when predict
-    config.disable_glog_info()
+    #config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
@@ -445,7 +450,11 @@ def main():
         pred_config,
         FLAGS.model_dir,
         use_gpu=FLAGS.use_gpu,
-        run_mode=FLAGS.run_mode)
+        run_mode=FLAGS.run_mode,
+        use_dynamic_shape=FLAGS.use_dynamic_shape,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
