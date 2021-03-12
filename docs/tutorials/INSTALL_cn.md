@@ -85,7 +85,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 **安装Python依赖库：**
 
-Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
+Python依赖库在[requirements.txt](../../requirements.txt)中给出，可通过如下命令安装：
 
 ```
 pip install -r requirements.txt
