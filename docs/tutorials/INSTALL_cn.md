@@ -22,7 +22,7 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 - OS 64位操作系统
 - Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64位版本
-- pip/pip3(9.0.1+)，64位版本操作系统是
+- pip/pip3(9.0.1+)，64位版本操作系统
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
