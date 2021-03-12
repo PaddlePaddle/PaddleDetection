@@ -28,9 +28,10 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
                                const int batch_size,
                                const std::string& run_mode,
                                const int gpu_id,
-                               const std::vector<int> trt_min_shape,
-                               const std::vector<int> trt_max_shape,
-                               const std::vector<int> trt_opt_shape) {
+                               bool use_dynamic_shape=false,
+                               const int trt_min_shape=1,
+                               const int trt_max_shape=1280,
+                               const int trt_opt_shape=640) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
@@ -57,17 +58,24 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           precision,
           false,
           false);
+
+      if (use_dynamic_shape) {
+        // set DynamicShsape for image tensor
+        const std::vector<int> min_input_shape = {1, trt_min_shape, trt_min_shape};
+        const std::vector<int> max_input_shape = {1, trt_max_shape, trt_max_shape};
+        const std::vector<int> opt_input_shape = {1, trt_opt_shape, trt_opt_shape};
+        const std::map<std::string, std::vector<int>> map_min_input_shape = {{"image", min_input_shape}};
+        const std::map<std::string, std::vector<int>> map_max_input_shape = {{"image", max_input_shape}};
+        const std::map<std::string, std::vector<int>> map_opt_input_shape = {{"image", opt_input_shape}};
+
+        config.SetTRTDynamicShapeInfo(map_min_input_shape,
+                                      map_max_input_shape,
+                                      map_opt_input_shape);
+        std::cout << "TensorRT dynamic shape enabled" << std::endl;
+      }
     }
 
-    // set DynamicShsape for image tensor
-    const std::map<std::string, std::vector<int>> min_input_shape = {{"image", trt_min_shape}};
-    const std::map<std::string, std::vector<int>> max_input_shape = {{"image", trt_max_shape}};
-    const std::map<std::string, std::vector<int>> opt_input_shape = {{"image", trt_opt_shape}};
 
-    config.SetTRTDynamicShapeInfo(min_input_shape,
-                                 max_input_shape,
-                                 opt_input_shape);
-    std::cout << "TensorRT dynamic shape enabled" << std::endl;
   } 
   else 
   {

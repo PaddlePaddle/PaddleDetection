@@ -1,5 +1,5 @@
 # PaddleDetection 使用TensorRT预测部署教程
-TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度，想YOLO模型可以加速4倍以上。
+TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度。
 
 ## 1、如何安装`Paddle TensorRT`
 - Python安装包，请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release) 下载带有tensorrt的安装包进行安装

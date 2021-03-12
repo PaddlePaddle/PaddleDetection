@@ -60,14 +60,16 @@ class ObjectDetector {
                           bool use_gpu=false,
                           const std::string& run_mode="fluid",
                           const int gpu_id=0,
-                          const std::vector<int> trt_min_shape={1, 1, 1},
-                          const std::vector<int> trt_max_shape={1, 1280, 1280},
-                          const std::vector<int> trt_opt_shape={1, 640, 640}) {
+                          bool use_dynamic_shape=false,
+                          const int trt_min_shape=1,
+                          const int trt_max_shape=1280,
+                          const int trt_opt_shape=640}) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
     image_shape_ = config_.image_shape_;
     preprocessor_.Init(config_.preprocess_info_, image_shape_);
-    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id, trt_min_shape, trt_max_shape, trt_opt_shape);
+    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id,
+    use_dynamic_shape, trt_min_shape, trt_max_shape, trt_opt_shape);
   }
 
   // Load Paddle inference model
@@ -78,9 +80,10 @@ class ObjectDetector {
     const int batch_size = 1,
     const std::string& run_mode = "fluid",
     const int gpu_id=0,
-    const std::vector<int> trt_min_shape={1, 1, 1},
-    const std::vector<int> trt_max_shape={1, 1280, 1280},
-    const std::vector<int> trt_opt_shape={1, 640, 640});
+    bool use_dynamic_shape=false,
+    const int trt_min_shape=1,
+    const int trt_max_shape=1280,
+    const int trt_opt_shape=640);
 
   // Run predictor
   void Predict(const cv::Mat& im,

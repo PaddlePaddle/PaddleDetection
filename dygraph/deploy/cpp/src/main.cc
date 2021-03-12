@@ -42,6 +42,7 @@ DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
+DEFINE_bool(use_dynamic_shape, false, "Trt use dynamic shape or not");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
@@ -209,8 +210,9 @@ int main(int argc, char** argv) {
   const std::vector<int> trt_min_shape = {1, FLAGS_trt_min_shape, FLAGS_trt_min_shape};
   const std::vector<int> trt_max_shape = {1, FLAGS_trt_max_shape, FLAGS_trt_max_shape};
   const std::vector<int> trt_opt_shape = {1, FLAGS_trt_opt_shape, FLAGS_trt_opt_shape};
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
-    FLAGS_run_mode, FLAGS_gpu_id, trt_min_shape, trt_max_shape, trt_opt_shape);
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_run_mode,
+                        FLAGS_gpu_id, FLAGS_use_dynamic_shape, FLAGS_trt_min_shape,
+                        FLAGS_trt_max_shape, FLAGS_trt_opt_shape);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);
