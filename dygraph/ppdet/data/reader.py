@@ -24,11 +24,12 @@ else:
     import Queue
 import numpy as np
 
-from paddle.io import DataLoader
-from paddle.io import DistributedBatchSampler
+from paddle.io import DataLoader, DistributedBatchSampler
+from paddle.fluid.dataloader.collate import default_collate_fn
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
+from .shm_utils import _get_shared_memory_size_in_M
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
@@ -53,7 +54,8 @@ class Compose(object):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                logger.warn("fail to map sample transform [{}] "
+                            "with error: {} and stack:\n{}".
                             format(f, e, str(stack_info)))
                 raise e
 
@@ -63,8 +65,6 @@ class Compose(object):
 class BatchCompose(Compose):
     def __init__(self, transforms, num_classes=80):
         super(BatchCompose, self).__init__(transforms, num_classes)
-        self.output_fields = mp.Manager().list([])
-        self.lock = mp.Lock()
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -72,40 +72,23 @@ class BatchCompose(Compose):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                logger.warn("fail to map batch transform [{}] "
+                            "with error: {} and stack:\n{}".
                             format(f, e, str(stack_info)))
                 raise e
 
-        # accessing ListProxy in main process (no worker subprocess)
-        # may incur errors in some enviroments, ListProxy back to
-        # list if no worker process start, while this `__call__`
-        # will be called in main process
-        global MAIN_PID
-        if os.getpid() == MAIN_PID and \
-            isinstance(self.output_fields, mp.managers.ListProxy):
-            self.output_fields = []
+        # remove keys which is not needed by model
+        extra_key = ['h', 'w', 'flipped']
+        for k in extra_key:
+            for sample in data:
+                if k in sample:
+                    sample.pop(k)
 
-        # parse output fields by first sample
-        # **this shoule be fixed if paddle.io.DataLoader support**
-        # For paddle.io.DataLoader not support dict currently,
-        # we need to parse the key from the first sample,
-        # BatchCompose.__call__ will be called in each worker
-        # process, so lock is need here.
-        if len(self.output_fields) == 0:
-            self.lock.acquire()
-            if len(self.output_fields) == 0:
-                for k, v in data[0].items():
-                    # FIXME(dkp): for more elegent coding
-                    if k not in ['flipped', 'h', 'w']:
-                        self.output_fields.append(k)
-            self.lock.release()
+        # batch data, if user-define batch function needed
+        # use user-defined here
+        data = default_collate_fn(data)
 
-        data = [[data[i][k] for k in self.output_fields]
-                for i in range(len(data))]
-        data = list(zip(*data))
-
-        batch_data = [np.stack(d, axis=0) for d in data]
-        return batch_data
+        return data
 
 
 class BaseDataLoader(object):
@@ -137,8 +120,7 @@ class BaseDataLoader(object):
                  dataset,
                  worker_num,
                  batch_sampler=None,
-                 return_list=False,
-                 use_prefetch=True):
+                 return_list=False):
         self.dataset = dataset
         self.dataset.parse_dataset()
         # get data
@@ -155,14 +137,21 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
+        use_shared_memory = True
+        # check whether shared memory size is bigger than 1G(1024M)
+        shm_size = _get_shared_memory_size_in_M()
+        if shm_size is not None and shm_size < 1024.:
+            logger.warn("Shared memory size is less than 1G, "
+                        "disable shared_memory in DataLoader")
+            use_shared_memory = False
+
         self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,
             return_list=return_list,
-            use_buffer_reader=use_prefetch,
-            use_shared_memory=False)
+            use_shared_memory=use_shared_memory)
         self.loader = iter(self.dataloader)
 
         return self
@@ -178,11 +167,7 @@ class BaseDataLoader(object):
         # looking forward to support dictionary
         # data structure in paddle.io.DataLoader
         try:
-            data = next(self.loader)
-            return {
-                k: v
-                for k, v in zip(self._batch_transforms.output_fields, data)
-            }
+            return next(self.loader)
         except StopIteration:
             self.loader = iter(self.dataloader)
             six.reraise(*sys.exc_info())
