@@ -16,7 +16,7 @@ import os
 
 SIZE_UNIT = ['K', 'M', 'G', 'T']
 SHM_QUERY_CMD = 'df -h'
-SHM_FILESYSTEM = 'shm'
+SHM_KEY = 'shm'
 SHM_DEFAULT_MOUNT = '/dev/shm'
 
 # [ shared memory size check ]
@@ -26,7 +26,7 @@ SHM_DEFAULT_MOUNT = '/dev/shm'
 # disable shared memory use if shared memory size is not enough.
 # Shared memory getting process as follows:
 # 1. use `df -h` get all mount info
-# 2. pick up spaces which is mount as 'shm'
+# 2. pick up spaces whose mount info contains 'shm'
 # 3. if 'shm' space number is only 1, return its size
 # 4. if there are multiple 'shm' space, try to find the default mount
 #    directory '/dev/shm' is Linux-like system, otherwise return the
@@ -48,9 +48,9 @@ def _get_shared_memory_size_in_M():
     else:
         shm_infos = []
         for df_info in df_infos:
-            info = df_info.strip().split()
-            if info[0] == SHM_FILESYSTEM:
-                shm_infos.append(info)
+            info = df_info.strip()
+            if info.find(SHM_KEY) >= 0:
+                shm_infos.append(info.split())
 
         if len(shm_infos) == 0:
             return None
