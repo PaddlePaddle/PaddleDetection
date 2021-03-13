@@ -55,8 +55,8 @@ class Compose(object):
             except Exception as e:
                 stack_info = traceback.format_exc()
                 logger.warn("fail to map sample transform [{}] "
-                            "with error: {} and stack:\n{}".
-                            format(f, e, str(stack_info)))
+                            "with error: {} and stack:\n{}".format(
+                                f, e, str(stack_info)))
                 raise e
 
         return data
@@ -73,8 +73,8 @@ class BatchCompose(Compose):
             except Exception as e:
                 stack_info = traceback.format_exc()
                 logger.warn("fail to map batch transform [{}] "
-                            "with error: {} and stack:\n{}".
-                            format(f, e, str(stack_info)))
+                            "with error: {} and stack:\n{}".format(
+                                f, e, str(stack_info)))
                 raise e
 
         # remove keys which is not needed by model

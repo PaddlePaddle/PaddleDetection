@@ -32,6 +32,7 @@ SHM_DEFAULT_MOUNT = '/dev/shm'
 #    directory '/dev/shm' is Linux-like system, otherwise return the
 #    biggest space size.
 
+
 def _parse_size_in_M(size_str):
     num, unit = size_str[:-1], size_str[-1]
     assert unit in SIZE_UNIT, \
