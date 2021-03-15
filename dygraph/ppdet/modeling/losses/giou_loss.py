@@ -17,8 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-
-from paddle import fluid
+import paddle
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['GiouLoss']
