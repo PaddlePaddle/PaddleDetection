@@ -63,6 +63,7 @@ class COCOMetric(Metric):
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        self.classwise = kwargs.get('classwise', False)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
         self.reset()
@@ -98,7 +99,10 @@ class COCOMetric(Metric):
                 logger.info('The bbox result is saved to bbox.json.')
 
             bbox_stats = cocoapi_eval(
-                'bbox.json', 'bbox', anno_file=self.anno_file)
+                'bbox.json',
+                'bbox',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['bbox'] = bbox_stats
             sys.stdout.flush()
 
@@ -108,7 +112,10 @@ class COCOMetric(Metric):
                 logger.info('The mask result is saved to mask.json.')
 
             seg_stats = cocoapi_eval(
-                'mask.json', 'segm', anno_file=self.anno_file)
+                'mask.json',
+                'segm',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['mask'] = seg_stats
             sys.stdout.flush()
 
@@ -118,7 +125,10 @@ class COCOMetric(Metric):
                 logger.info('The segm result is saved to segm.json.')
 
             seg_stats = cocoapi_eval(
-                'segm.json', 'segm', anno_file=self.anno_file)
+                'segm.json',
+                'segm',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['mask'] = seg_stats
             sys.stdout.flush()
 
@@ -131,16 +141,16 @@ class COCOMetric(Metric):
 
 class VOCMetric(Metric):
     def __init__(self,
-                 anno_file,
+                 label_list,
                  class_num=20,
                  overlap_thresh=0.5,
                  map_type='11point',
                  is_bbox_normalized=False,
-                 evaluate_difficult=False):
-        assert os.path.isfile(anno_file), \
-                "anno_file {} not a file".format(anno_file)
-        self.anno_file = anno_file
-        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file)
+                 evaluate_difficult=False,
+                 classwise=False):
+        assert os.path.isfile(label_list), \
+                "label_list {} not a file".format(label_list)
+        self.clsid2catid, self.catid2name = get_categories('VOC', label_list)
 
         self.overlap_thresh = overlap_thresh
         self.map_type = map_type
@@ -150,7 +160,9 @@ class VOCMetric(Metric):
             overlap_thresh=overlap_thresh,
             map_type=map_type,
             is_bbox_normalized=is_bbox_normalized,
-            evaluate_difficult=evaluate_difficult)
+            evaluate_difficult=evaluate_difficult,
+            catid2name=self.catid2name,
+            classwise=classwise)
 
         self.reset()
 
