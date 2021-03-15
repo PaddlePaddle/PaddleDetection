@@ -313,3 +313,112 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
     tgt_weights = paddle.concat(tgt_weights, axis=0)
 
     return mask_rois, mask_rois_num, tgt_classes, tgt_masks, mask_index, tgt_weights
+
+
+
+# libra
+def libra_subsample_labels(labels,
+                     num_samples,
+                     fg_fraction,
+                     bg_label=0,
+                     use_random=True):
+    positive = paddle.nonzero(
+        paddle.logical_and(labels != -1, labels != bg_label))
+    negative = paddle.nonzero(labels == bg_label)
+
+    positive = positive.cast('int32').flatten()
+    negative = negative.cast('int32').flatten()
+
+    print('positive', positive.shape, 'negative', negative.shape)
+
+    fg_num = int(num_samples * fg_fraction)
+    fg_num = min(positive.numel(), fg_num)
+    bg_num = num_samples - fg_num
+    bg_num = min(negative.numel(), bg_num)
+
+    if (positive.shape[0] > fg_nums) and use_random:
+        # fg_inds = np.random.choice(fg_inds, size=fg_nums, replace=False)
+        fg_inds = libra_sample_pos(max_overlaps, max_classes, fg_inds,
+                                   fg_rois_per_im)
+
+    return fg_inds, bg_inds
+
+
+def libra_sample_bbox(matches,
+                match_labels,
+                gt_classes,
+                batch_size_per_im,
+                fg_fraction,
+                num_classes,
+                use_random=True,
+                is_cascade=False):
+    gt_classes = paddle.gather(gt_classes, matches)
+    gt_classes = paddle.where(match_labels == 0,
+                              paddle.ones_like(gt_classes) * num_classes,
+                              gt_classes)
+    gt_classes = paddle.where(match_labels == -1,
+                              paddle.ones_like(gt_classes) * -1, gt_classes)
+    if is_cascade:
+        return matches, gt_classes
+    rois_per_image = int(batch_size_per_im)
+
+    fg_inds, bg_inds = libra_subsample_labels(gt_classes, rois_per_image, fg_fraction,
+                                        num_classes, use_random)
+    sampled_inds = paddle.concat([fg_inds, bg_inds])
+    sampled_gt_classes = paddle.gather(gt_classes, sampled_inds)
+    return sampled_inds, sampled_gt_classes
+
+def libra_generate_proposal_target(rpn_rois,
+                             gt_classes,
+                             gt_boxes,
+                             batch_size_per_im,
+                             fg_fraction,
+                             fg_thresh,
+                             bg_thresh,
+                             num_classes,
+                             use_random=True,
+                             is_cascade=False,
+                             cascade_iou=0.5,
+                             num_bins=3):
+
+    rois_with_gt = []
+    tgt_labels = []
+    tgt_bboxes = []
+    tgt_gt_inds = []
+    new_rois_num = []
+
+    fg_thresh = cascade_iou if is_cascade else fg_thresh
+    bg_thresh = cascade_iou if is_cascade else bg_thresh
+    for i, rpn_roi in enumerate(rpn_rois):
+        gt_bbox = gt_boxes[i]
+        gt_class = gt_classes[i]
+        if not is_cascade:
+            bbox = paddle.concat([rpn_roi, gt_bbox])
+        else:
+            bbox = rpn_roi
+
+        # Step1: label bbox
+        matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
+                                          False)
+        # Step2: sample bbox
+        sampled_inds, sampled_gt_classes = libra_sample_bbox(
+            matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
+            num_classes, use_random, is_cascade)
+
+        # Step3: make output
+        rois_per_image = bbox if is_cascade else paddle.gather(bbox,
+                                                               sampled_inds)
+        sampled_gt_ind = matches if is_cascade else paddle.gather(matches,
+                                                                  sampled_inds)
+        sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+
+        rois_per_image.stop_gradient = True
+        sampled_gt_ind.stop_gradient = True
+        sampled_bbox.stop_gradient = True
+        tgt_labels.append(sampled_gt_classes)
+        tgt_bboxes.append(sampled_bbox)
+        rois_with_gt.append(rois_per_image)
+        tgt_gt_inds.append(sampled_gt_ind)
+        new_rois_num.append(paddle.shape(sampled_inds)[0])
+    new_rois_num = paddle.concat(new_rois_num)
+    return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num

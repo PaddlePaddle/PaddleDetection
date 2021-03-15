@@ -1453,19 +1453,19 @@ def _parse_policy_info(name, prob, level, replace_value, augmentation_hparams):
     # Check to see if prob is passed into function. This is used for operations
     # where we alter bboxes independently.
     # pytype:disable=wrong-arg-types
-    if 'prob' in inspect.getargspec(func)[0]:
+    if 'prob' in inspect.getfullargspec(func)[0]:
         args = tuple([prob] + list(args))
     # pytype:enable=wrong-arg-types
 
     # Add in replace arg if it is required for the function that is being called.
-    if 'replace' in inspect.getargspec(func)[0]:
+    if 'replace' in inspect.getfullargspec(func)[0]:
         # Make sure replace is the final argument
-        assert 'replace' == inspect.getargspec(func)[0][-1]
+        assert 'replace' == inspect.getfullargspec(func)[0][-1]
         args = tuple(list(args) + [replace_value])
 
     # Add bboxes as the second positional argument for the function if it does
     # not already exist.
-    if 'bboxes' not in inspect.getargspec(func)[0]:
+    if 'bboxes' not in inspect.getfullargspec(func)[0]:
         func = bbox_wrapper(func)
     return (func, prob, args)
 
@@ -1473,11 +1473,11 @@ def _parse_policy_info(name, prob, level, replace_value, augmentation_hparams):
 def _apply_func_with_prob(func, image, args, prob, bboxes):
     """Apply `func` to image w/ `args` as input with probability `prob`."""
     assert isinstance(args, tuple)
-    assert 'bboxes' == inspect.getargspec(func)[0][1]
+    assert 'bboxes' == inspect.getfullargspec(func)[0][1]
 
     # If prob is a function argument, then this randomness is being handled
     # inside the function, so make sure it is always called.
-    if 'prob' in inspect.getargspec(func)[0]:
+    if 'prob' in inspect.getfullargspec(func)[0]:
         prob = 1.0
 
     # Apply the function with probability `prob`.
