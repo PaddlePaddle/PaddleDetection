@@ -197,10 +197,9 @@ class FCOSLoss(object):
         reg_loss = fluid.layers.elementwise_mul(
             reg_loss, mask_positive_float, axis=0) / normalize_sum
         ctn_loss = fluid.layers.sigmoid_cross_entropy_with_logits(
-            x=centerness_flatten,
-            label=tag_center_flatten) * mask_positive_float / num_positive_fp32
+            x=centerness_flatten, label=tag_center_flatten)
         ctn_loss = fluid.layers.elementwise_mul(
-            ctn_loss, mask_positive_float, axis=0) / normalize_sum
+            ctn_loss, mask_positive_float, axis=0) / num_positive_fp32
         loss_all = {
             "loss_centerness": fluid.layers.reduce_sum(ctn_loss),
             "loss_cls": fluid.layers.reduce_sum(cls_loss),
