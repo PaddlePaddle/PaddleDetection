@@ -55,7 +55,7 @@ BBoxHead:
     resolution: 7
     sampling_ratio: 0
     aligned: True
-  bbox_assigner: BBoxAssigner
+  bbox_assigner: BBoxLibraAssigner
 
 TwoFCHead:
   mlp_dim: 1024
