@@ -22,7 +22,7 @@ The Dataset is [Kaggle dataset](https://www.kaggle.com/andrewmvd/road-sign-detec
 The dataset is divided into training set(contains 701 images) and test set(contains 176 images)，[download link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
 
 ```
-# 
+#
 python dataset/roadsign_voc/download_roadsign_voc.py
 ```
 
