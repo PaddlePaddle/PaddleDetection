@@ -115,19 +115,23 @@ class Trainer(object):
         if self.mode == 'test':
             self._metrics = []
             return
+        classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
         if self.cfg.metric == 'COCO':
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(), bias=bias)
+                    anno_file=self.dataset.get_anno(),
+                    classwise=classwise,
+                    bias=bias)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
                 VOCMetric(
-                    anno_file=self.dataset.get_anno(),
+                    label_list=self.dataset.get_label_list(),
                     class_num=self.cfg.num_classes,
-                    map_type=self.cfg.map_type)
+                    map_type=self.cfg.map_type,
+                    classwise=classwise)
             ]
         elif self.cfg.metric == 'WiderFace':
             multi_scale = self.cfg.multi_scale_eval if 'multi_scale_eval' in self.cfg else True
