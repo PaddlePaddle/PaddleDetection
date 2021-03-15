@@ -1,0 +1,10 @@
+_BASE_: [
+  '../datasets/voc.yml',
+  '../runtime.yml',
+  '_base_/optimizer_270e.yml',
+  '_base_/yolov3_darknet53.yml',
+  '_base_/yolov3_reader.yml',
+]
+
+snapshot_epoch: 5
+weights: output/yolov3_darknet53_270e_voc/model_final
