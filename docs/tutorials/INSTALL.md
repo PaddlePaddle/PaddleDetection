@@ -9,7 +9,6 @@ English | [简体中文](INSTALL_cn.md)
 - [PaddlePaddle](#paddlepaddle)
 - [Other Dependencies](#other-dependencies)
 - [PaddleDetection](#paddle-detection)
-- [Datasets](#datasets)
 
 
 ## Introduction
@@ -17,7 +16,7 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection, its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
 
 
 ## Install PaddlePaddle
@@ -61,8 +60,8 @@ Please make sure that your PaddlePaddle is installed successfully and the versio
 
 ```
 # check
->>> import paddle.fluid as fluid
->>> fluid.install_check.run_check()
+>>> import paddle
+>>> paddle.utils.run_check()
 
 # confirm the paddle's version
 python -c "import paddle; print(paddle.__version__)"

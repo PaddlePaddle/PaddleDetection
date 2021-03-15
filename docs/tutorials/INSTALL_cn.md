@@ -13,7 +13,7 @@
 
 这份文档介绍了如何安装PaddleDetection及其依赖项(包括PaddlePaddle)。
 
-PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/README.md).
+PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/README_cn.md).
 
 
 ## 安装PaddlePaddle
@@ -56,8 +56,8 @@ python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 
 ```
 # 在您的Python解释器中确认PaddlePaddle安装成功
->>> import paddle.fluid as fluid
->>> fluid.install_check.run_check()
+>>> import paddle
+>>> paddle.utils.run_check()
 
 # 确认PaddlePaddle版本
 python -c "import paddle; print(paddle.__version__)"
@@ -85,7 +85,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 **安装Python依赖库：**
 
-Python依赖库在[requirements.txt](../../requirements.txt)中给出，可通过如下命令安装：
+Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/requirements.txt) 中给出，可通过如下命令安装：
 
 ```
 pip install -r requirements.txt
