@@ -29,6 +29,7 @@ from paddle.io import DistributedBatchSampler
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
+from .shm_utils import _get_shared_memory_size_in_M
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
@@ -137,8 +138,7 @@ class BaseDataLoader(object):
                  dataset,
                  worker_num,
                  batch_sampler=None,
-                 return_list=False,
-                 use_prefetch=True):
+                 return_list=False):
         self.dataset = dataset
         self.dataset.parse_dataset()
         # get data
@@ -155,14 +155,21 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
+        use_shared_memory = True
+        # check whether shared memory size is bigger than 1G(1024M)
+        shm_size = _get_shared_memory_size_in_M()
+        if shm_size is not None and shm_size < 1024.:
+            logger.warn("Shared memory size is less than 1G, "
+                        "disable shared_memory in DataLoader")
+            use_shared_memory = False
+
         self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,
             return_list=return_list,
-            use_buffer_reader=use_prefetch,
-            use_shared_memory=False)
+            use_shared_memory=use_shared_memory)
         self.loader = iter(self.dataloader)
 
         return self
