@@ -72,6 +72,16 @@ def parse_args():
         help="Enable mixed precision training.")
     parser.add_argument(
         "--fleet", action='store_true', default=False, help="Use fleet or not")
+    parser.add_argument(
+        "--use_vdl",
+        type=bool,
+        default=False,
+        help="whether to record the data to VisualDL.")
+    parser.add_argument(
+        '--vdl_log_dir',
+        type=str,
+        default="vdl_log_dir/scalar",
+        help='VisualDL logging directory for scalar.')
     args = parser.parse_args()
     return args
 
@@ -104,6 +114,8 @@ def main():
     cfg = load_config(FLAGS.config)
     cfg['fp16'] = FLAGS.fp16
     cfg['fleet'] = FLAGS.fleet
+    cfg['use_vdl'] = FLAGS.use_vdl
+    cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)

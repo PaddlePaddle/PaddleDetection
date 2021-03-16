@@ -214,7 +214,7 @@ class VOCMetric(Metric):
                                                        self.map_type, map_stat))
 
     def get_results(self):
-        self.detection_map.get_map()
+        return {'bbox': [self.detection_map.get_map()]}
 
 
 class WiderFaceMetric(Metric):
