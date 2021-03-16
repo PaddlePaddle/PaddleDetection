@@ -43,8 +43,8 @@ class MyEncoder(json.JSONEncoder):
             return obj.tolist()
         else:
             return super(MyEncoder, self).default(obj)
-        
-        
+
+
 def images_labelme(data, num):
     image = {}
     image['height'] = data['imageHeight']
