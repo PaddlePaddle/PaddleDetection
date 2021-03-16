@@ -107,6 +107,9 @@ class Trainer(object):
             if self.cfg.metric == 'WiderFace':
                 self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
+        elif self.mode == 'test':
+            self._callbacks = [LogPrinter(self)]
+            self._compose_callback = ComposeCallback(self._callbacks)
         else:
             self._callbacks = []
             self._compose_callback = None
@@ -268,6 +271,7 @@ class Trainer(object):
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
                 with paddle.no_grad():
+                    self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
     def _eval_with_loader(self, loader):
@@ -297,6 +301,7 @@ class Trainer(object):
         for metric in self._metrics:
             metric.accumulate()
             metric.log()
+        self._compose_callback.on_eval_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
@@ -330,8 +335,9 @@ class Trainer(object):
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
-                end = start + bbox_num[i]
+                self.status['original_image'] = np.array(image.copy())
 
+                end = start + bbox_num[i]
                 bbox_res = batch_res['bbox'][start:end] \
                         if 'bbox' in batch_res else None
                 mask_res = batch_res['mask'][start:end] \
@@ -341,7 +347,8 @@ class Trainer(object):
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
-
+                self.status['result_image'] = np.array(image.copy())
+                self._compose_callback.on_predict_end(self.status)
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
