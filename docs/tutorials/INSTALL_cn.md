@@ -13,7 +13,7 @@
 
 这份文档介绍了如何安装PaddleDetection及其依赖项(包括PaddlePaddle)。
 
-PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/README.md).
+PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/README_cn.md).
 
 
 ## 安装PaddlePaddle
@@ -22,7 +22,7 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 - OS 64位操作系统
 - Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64位版本
-- pip/pip3(9.0.1+)，64位版本操作系统是
+- pip/pip3(9.0.1+)，64位版本操作系统
 - CUDA >= 9.0
 - cuDNN >= 7.6
 
@@ -30,35 +30,34 @@ PaddleDetection的相关信息，请参考[README.md](https://github.com/PaddleP
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
-| PaddleDetection版本 | PaddlePaddle版本  |    备注    |
-| :----------------: | :---------------: | :-------: |
-|      v0.3          |        >=1.7      |     --    |
-|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
-|      v0.5          |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
+|  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
+| :------------------: | :---------------: | :-------: |
+|    release/0.3       |        >=1.7      |     --    |
+|    release/0.4       |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
+|    release/0.5       |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
+|    release/2.0-rc    |       >= 2.0.1    |     --    |
 
 
 ```
 # install paddlepaddle
-python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
-
 # 如果您的机器安装的是CUDA9，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post97 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.0.1.post90 -i https://mirror.baidu.com/pypi/simple
 
-如果您的机器安装的是CUDA10，请运行以下命令安装
-python -m pip install paddlepaddle-gpu==1.8.4.post107 -i https://mirror.baidu.com/pypi/simple
+如果您的机器安装的是CUDA10.1，请运行以下命令安装
+python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
 
 如果您的机器是CPU，请运行以下命令安装
-
-python -m pip install paddlepaddle==1.8.4 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 ```
+
 更多的安装方式如conda, docker安装，请参考[安装文档](https://www.paddlepaddle.org.cn/install/quick)中的说明进行操作
 
 请确保您的PaddlePaddle安装成功并且版本不低于需求版本。使用以下命令进行验证。
 
 ```
 # 在您的Python解释器中确认PaddlePaddle安装成功
->>> import paddle.fluid as fluid
->>> fluid.install_check.run_check()
+>>> import paddle
+>>> paddle.utils.run_check()
 
 # 确认PaddlePaddle版本
 python -c "import paddle; print(paddle.__version__)"
@@ -86,7 +85,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 **安装Python依赖库：**
 
-Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt)中给出，可通过如下命令安装：
+Python依赖库在[requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/requirements.txt) 中给出，可通过如下命令安装：
 
 ```
 pip install -r requirements.txt
