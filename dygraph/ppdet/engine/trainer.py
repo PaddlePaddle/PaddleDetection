@@ -34,7 +34,7 @@ from ppdet.utils.visualizer import visualize_results
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
@@ -101,14 +101,16 @@ class Trainer(object):
     def _init_callbacks(self):
         if self.mode == 'train':
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            if self.cfg.use_vdl:
+                self._callbacks.append(VisualDLWriter(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
             if self.cfg.metric == 'WiderFace':
                 self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
-        elif self.mode == 'test':
-            self._callbacks = [LogPrinter(self)]
+        elif self.mode == 'test' and self.cfg.use_vdl:
+            self._callbacks = [VisualDLWriter(self)]
             self._compose_callback = ComposeCallback(self._callbacks)
         else:
             self._callbacks = []
@@ -295,13 +297,12 @@ class Trainer(object):
 
         self.status['sample_num'] = sample_num
         self.status['cost_time'] = time.time() - tic
-        self._compose_callback.on_epoch_end(self.status)
 
         # accumulate metric to log out
         for metric in self._metrics:
             metric.accumulate()
             metric.log()
-        self._compose_callback.on_eval_end(self.status)
+        self._compose_callback.on_epoch_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
@@ -348,7 +349,7 @@ class Trainer(object):
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
                 self.status['result_image'] = np.array(image.copy())
-                self._compose_callback.on_predict_end(self.status)
+                self._compose_callback.on_step_end(self.status)
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
