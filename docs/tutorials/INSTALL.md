@@ -24,7 +24,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 ### Requirements:
 - OS 64 bit
 - Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64 bit
-- pip/pip3(9.0.1+)，64 bit
+- pip/pip3(9.0.1+), 64 bit
 - CUDA >= 9.0
 - cuDNN >= 7.6
 

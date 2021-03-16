@@ -7,9 +7,9 @@ In order to enable users to quickly produce models in a short time and master th
 export CUDA_VISIBLE_DEVICES=0
 ```
 
-## 一、Quick Start
+## Quick Start
 ```
-# predict an image using pp-yolo
+# predict an image using PP-YOLO
 python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 the result：
@@ -17,7 +17,7 @@ the result：
 ![](../images/000000014439.jpg)
 
 
-## 二、Prepare Dataset
+## Prepare Dataset
 The Dataset is [Kaggle dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) ，Contains 877 images, 4 data categories: crosswalk, speedlimit, stop, trafficlight.
 The dataset is divided into training set(contains 701 images) and test set(contains 176 images)，[download link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
 
@@ -26,7 +26,7 @@ The dataset is divided into training set(contains 701 images) and test set(conta
 python dataset/roadsign_voc/download_roadsign_voc.py
 ```
 
-## 三、Train、Eval、Infer
+## Train、Eval、Infer
 ### 1、Train
 ```
 # It will takes about 5 minutes on GPU
