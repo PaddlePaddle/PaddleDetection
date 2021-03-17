@@ -101,7 +101,7 @@ class Trainer(object):
     def _init_callbacks(self):
         if self.mode == 'train':
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
-            if self.cfg.use_vdl:
+            if 'use_vdl' in self.cfg and self.cfg.use_vdl:
                 self._callbacks.append(VisualDLWriter(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
@@ -109,7 +109,7 @@ class Trainer(object):
             if self.cfg.metric == 'WiderFace':
                 self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
-        elif self.mode == 'test' and self.cfg.use_vdl:
+        elif self.mode == 'test' and 'use_vdl' in self.cfg and self.cfg.use_vdl:
             self._callbacks = [VisualDLWriter(self)]
             self._compose_callback = ComposeCallback(self._callbacks)
         else:
@@ -349,7 +349,8 @@ class Trainer(object):
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
                 self.status['result_image'] = np.array(image.copy())
-                self._compose_callback.on_step_end(self.status)
+                if self._compose_callback:
+                    self._compose_callback.on_step_end(self.status)
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
