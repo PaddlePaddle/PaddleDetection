@@ -1,70 +1,82 @@
 English | [简体中文](QUICK_STARTED_cn.md)
 
 # Quick Start
-
-This tutorial fine-tunes a tiny dataset by pretrained detection model for users to get a model and learn PaddleDetection quickly. The model can be trained in around 20min with good performance.
-
-- **Note: before started, need to specifiy the GPU device as follows.**
-
+In order to enable users to quickly produce models in a short time and master the use of PaddleDetection, this tutorial uses a pre-trained detection model to finetune small data sets. A good model can be produced in a short period of time. In actual business, it is recommended that users select a suitable model configuration file for adaptation according to their needs.
+- **Set GPU**
 ```bash
 export CUDA_VISIBLE_DEVICES=0
 ```
 
-## Data Preparation
+## Quick Start
+```
+# predict an image using PP-YOLO
+python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
+```
+the result：
 
-Dataset refers to [Kaggle](https://www.kaggle.com/mbkinaci/fruit-images-for-object-detection), which contains 240 images in train dataset and 60 images in test dataset. Data categories are apple, orange and banana. Download [here](https://dataset.bj.bcebos.com/PaddleDetection_demo/fruit-detection.tar) and uncompress the dataset after download, script for data preparation is located at [download_fruit.py](../../dataset/fruit/download_fruit.py). Command is as follows:
+![](../images/000000014439.jpg)
 
-```bash
-python dataset/fruit/download_fruit.py
+
+## Prepare Dataset
+The Dataset is [Kaggle dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) ，Contains 877 images, 4 data categories: crosswalk, speedlimit, stop, trafficlight.
+The dataset is divided into training set(contains 701 images) and test set(contains 176 images)，[download link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
+
+```
+#
+python dataset/roadsign_voc/download_roadsign_voc.py
 ```
 
-Training:
+## Train、Eval、Infer
+### 1、Train
+```
+# It will takes about 5 minutes on GPU
+# -c set configt file
+# -o overwrite the settings in the configuration file
+# --eval Evaluate while training, and a model named best_model.pdmodel with the most evaluation results will be automatically saved
 
-```bash
-python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml --eval
+
+python tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true
 ```
 
-Use `yolov3_mobilenet_v1` to fine-tune the model from COCO dataset.
+If you want to observe the loss change curve in real time through VisualDL, add --use_vdl=true to the training command, and set the log save path through --vdl_log_dir.
+**Note: VisualDL need Python>=3.5**
 
-Meanwhile, loss and mAP can be observed on VisualDL by set `--use_vdl` and `--vdl_log_dir`. But note  Python version required >= 3.5 for VisualDL.
+Please install [VisualDL](https://github.com/PaddlePaddle/VisualDL) first
+```
+python -m pip install visualdl -i https://mirror.baidu.com/pypi/simple
+```
 
-```bash
-python -u tools/train.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                        --use_vdl=True \
-                        --vdl_log_dir=vdl_fruit_dir/scalar \
+```
+python -u tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml \
+                        --use_vdl=true \
+                        --vdl_log_dir=vdl_dir/scalar \
                         --eval
 ```
-
-Then observe the loss and mAP curve through VisualDL command:
-
-```bash
-visualdl --logdir vdl_fruit_dir/scalar/ --host <host_IP> --port <port_num>
+View the change curve in real time through the visualdl command:
+```
+visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 ```
 
-Result on VisualDL is shown below:
+### 2、Eval
+```
+# Eval using best_model by default
+# -c set config file
+# -o overwrite the settings in the configuration file
 
-![](../images/visualdl_fruit.jpg)
-
-Model can be downloaded [here](https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar)
-
-Evaluation:
-
-```bash
-python -u tools/eval.py -c configs/yolov3_mobilenet_v1_fruit.yml
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
 
-Inference:
 
-```bash
-python -u tools/infer.py -c configs/yolov3_mobilenet_v1_fruit.yml \
-                         -o weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_fruit.tar \
-                         --infer_img=demo/orange_71.jpg
+### 3、Infer
+```
+# -c set config file
+# -o overwrite the settings in the configuration file
+# --infer_img image path
+# After the prediction is over, an image of the same name with the prediction result will be generated in the output folder
+
+python tools/infer.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true --infer_img=demo/road554.png
 ```
 
-Inference images are shown below:
+The result is as shown below：
 
-![](../../demo/orange_71.jpg)
-
-![](../images/orange_71_detection.jpg)
-
-For detailed infomation of training and evalution, please refer to [GETTING_STARTED.md](GETTING_STARTED.md).
+![](../images/road554.png)

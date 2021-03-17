@@ -63,6 +63,9 @@ def main():
             test_fetches = model.test(feed_vars)
     infer_prog = infer_prog.clone(True)
 
+    exe.run(startup_prog)
+    checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
+
     pruned_params = FLAGS.pruned_params
     assert (
         FLAGS.pruned_params is not None
@@ -89,9 +92,6 @@ def main():
     pruned_flops = flops(infer_prog)
     logger.info("pruned FLOPS: {}".format(
         float(base_flops - pruned_flops) / base_flops))
-
-    exe.run(startup_prog)
-    checkpoint.load_checkpoint(exe, infer_prog, cfg.weights)
 
     dump_infer_config(FLAGS, cfg)
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)

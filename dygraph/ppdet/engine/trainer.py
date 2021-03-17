@@ -34,7 +34,7 @@ from ppdet.utils.visualizer import visualize_results
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
@@ -101,11 +101,16 @@ class Trainer(object):
     def _init_callbacks(self):
         if self.mode == 'train':
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            if 'use_vdl' in self.cfg and self.cfg.use_vdl:
+                self._callbacks.append(VisualDLWriter(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
             if self.cfg.metric == 'WiderFace':
                 self._callbacks.append(WiferFaceEval(self))
+            self._compose_callback = ComposeCallback(self._callbacks)
+        elif self.mode == 'test' and 'use_vdl' in self.cfg and self.cfg.use_vdl:
+            self._callbacks = [VisualDLWriter(self)]
             self._compose_callback = ComposeCallback(self._callbacks)
         else:
             self._callbacks = []
@@ -115,19 +120,23 @@ class Trainer(object):
         if self.mode == 'test':
             self._metrics = []
             return
+        classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
         if self.cfg.metric == 'COCO':
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(), bias=bias)
+                    anno_file=self.dataset.get_anno(),
+                    classwise=classwise,
+                    bias=bias)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
                 VOCMetric(
-                    anno_file=self.dataset.get_anno(),
+                    label_list=self.dataset.get_label_list(),
                     class_num=self.cfg.num_classes,
-                    map_type=self.cfg.map_type)
+                    map_type=self.cfg.map_type,
+                    classwise=classwise)
             ]
         elif self.cfg.metric == 'WiderFace':
             multi_scale = self.cfg.multi_scale_eval if 'multi_scale_eval' in self.cfg else True
@@ -264,6 +273,7 @@ class Trainer(object):
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
                 with paddle.no_grad():
+                    self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
     def _eval_with_loader(self, loader):
@@ -287,12 +297,12 @@ class Trainer(object):
 
         self.status['sample_num'] = sample_num
         self.status['cost_time'] = time.time() - tic
-        self._compose_callback.on_epoch_end(self.status)
 
         # accumulate metric to log out
         for metric in self._metrics:
             metric.accumulate()
             metric.log()
+        self._compose_callback.on_epoch_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
@@ -326,8 +336,9 @@ class Trainer(object):
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
-                end = start + bbox_num[i]
+                self.status['original_image'] = np.array(image.copy())
 
+                end = start + bbox_num[i]
                 bbox_res = batch_res['bbox'][start:end] \
                         if 'bbox' in batch_res else None
                 mask_res = batch_res['mask'][start:end] \
@@ -337,7 +348,9 @@ class Trainer(object):
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
-
+                self.status['result_image'] = np.array(image.copy())
+                if self._compose_callback:
+                    self._compose_callback.on_step_end(self.status)
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
@@ -386,7 +399,7 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if self.slim is None or self.cfg['slim'] != 'quant':
+        if self.slim is None or self.cfg['slim'] != 'QAT':
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program

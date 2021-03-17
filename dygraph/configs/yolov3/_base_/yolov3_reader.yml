@@ -21,7 +21,7 @@ TrainReader:
   shuffle: true
   drop_last: true
   mixup_epoch: 250
-
+  use_shared_memory: true
 
 EvalReader:
   inputs_def:

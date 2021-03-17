@@ -67,5 +67,5 @@ yolov3_darknet # 模型目录
 ### 3.2 编译
 
 仅支持在`Windows`和`Linux`平台编译和使用
-- [Linux 编译指南](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/cpp/docs/linux_build.md)
-- [Windows编译指南(使用Visual Studio 2019)](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/cpp/docs/windows_vs2019_build.md)
+- [Linux 编译指南](docs/linux_build.md)
+- [Windows编译指南(使用Visual Studio 2019)](docs/windows_vs2019_build.md)

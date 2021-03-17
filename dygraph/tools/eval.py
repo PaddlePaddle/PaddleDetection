@@ -64,6 +64,11 @@ def parse_args():
         action="store_true",
         help="whether add bias or not while getting w and h")
 
+    parser.add_argument(
+        "--classwise",
+        action="store_true",
+        help="whether per-category AP and draw P-R Curve or not.")
+
     args = parser.parse_args()
     return args
 
@@ -88,6 +93,7 @@ def main():
     cfg = load_config(FLAGS.config)
     # TODO: bias should be unified
     cfg['bias'] = 1 if FLAGS.bias else 0
+    cfg['classwise'] = True if FLAGS.classwise else False
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)

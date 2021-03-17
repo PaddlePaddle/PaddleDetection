@@ -30,6 +30,7 @@ PaddleDetection在[tools](https://github.com/PaddlePaddle/PaddleDetection/tree/m
 |    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  可选，`--draw_threshold=0.7`  |
 |      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |  可选  |
 |      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  可选，`--infer_img`和`--infer_dir`必须至少设置一个  |
+|      --classwise         |       eval     |  是否评估单类AP和绘制单类PR曲线  |  False  |  可选  |
 
 ### 训练
 
