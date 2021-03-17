@@ -25,18 +25,12 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from paddle.nn.initializer import Normal, Constant
-from IPython import embed
 
-
-def _de_sigmoid(x, eps=1e-7):
-    x = paddle.clip(x, eps, 1. / eps)
-    x = paddle.clip(1. / x - 1., eps, 1. / eps)
-    x = -paddle.log(x)
-    return x
+__all__ = ['JEDEmbeddingHead']
 
 
 class LossParam(nn.Layer):
-    def __init__(self, init_value=0.):
+    def __init__(self, init_value=0., use_uncertainy=True):
         super(LossParam, self).__init__()
         self.loss_param = self.create_parameter(
             shape=[1],
@@ -49,76 +43,49 @@ class LossParam(nn.Layer):
 
 
 @register
-class JDEHead(nn.Layer):
+class JEDEmbeddingHead(nn.Layer):
     __shared__ = ['num_classes']
-    __inject__ = ['jde_loss']
+    __inject__ = ['emb_loss', 'jde_loss']
     """
-    JDEHead
+    JEDEmbeddingHead
     Args:
-        anchors(list): Anchor parameters.
-        anchor_masks(list): Anchor parameters.
         num_classes(int): Number of classes. Only support one class tracking.
         num_identifiers(int): Number of identifiers.
+        anchor_levels(int): Number of anchor levels, same as FPN levels.
         embedding_dim(int): Embedding dimension. Default: 512.
-        jde_loss: 
+        emb_loss(object): Instance of 'JDEEmbeddingLoss'
+        jde_loss(object): Instance of 'JDELoss'
     """
-
     def __init__(
             self,
-            anchors=[[8, 24], [11, 34], [16, 48], [23, 68], [32, 96],
-                     [45, 135], [64, 192], [90, 271], [128, 384], [180, 540],
-                     [256, 640], [512, 640]],
-            anchor_masks=[[8, 9, 10, 11], [4, 5, 6, 7], [0, 1, 2, 3]],
             num_classes=1,
-            num_identifiers=1,  # defined by dataset.nID
+            num_identifiers=1, # defined by dataset.nID
+            anchor_levels=3,
             embedding_dim=512,
-            jde_loss='JDELoss',
-            iou_aware=False,
-            iou_aware_factor=0.4):
-        super(JDEHead, self).__init__()
+            emb_loss='JDEEmbeddingLoss',
+            jde_loss='JDELoss'):
+        super(JEDEmbeddingHead, self).__init__()
         self.num_classes = num_classes
         self.num_identifiers = num_identifiers
+        self.anchor_levels = anchor_levels
         self.embedding_dim = embedding_dim
+        self.emb_loss = emb_loss
         self.jde_loss = jde_loss
-        self.iou_aware = iou_aware
-        self.iou_aware_factor = iou_aware_factor
 
         self.emb_scale = math.sqrt(2) * math.log(
             self.num_identifiers - 1) if self.num_identifiers > 1 else 1
 
-        self.parse_anchor(anchors, anchor_masks)
-        self.num_outputs = len(self.anchors)
-
-        self.yolo_outputs = []
         self.identify_outputs = []
         self.loss_params_cls = []
         self.loss_params_reg = []
         self.loss_params_ide = []
-        for i in range(len(self.anchors)):
-            if self.iou_aware:
-                num_filters = len(self.anchors[i]) * (self.num_classes + 6)
-            else:
-                num_filters = len(self.anchors[i]) * (self.num_classes + 5)
-            name = 'yolo_output.{}'.format(i)
-            yolo_output = self.add_sublayer(
-                name,
-                nn.Conv2D(
-                    in_channels=128 * (2**self.num_outputs) // (2**i),
-                    out_channels=num_filters,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    weight_attr=ParamAttr(name=name + '.conv.weights'),
-                    bias_attr=ParamAttr(
-                        name=name + '.conv.bias', regularizer=L2Decay(0.))))
-            self.yolo_outputs.append(yolo_output)
-
+        for i in range(self.anchor_levels):
             name = 'identify_output.{}'.format(i)
             identify_output = self.add_sublayer(
                 name,
                 nn.Conv2D(
-                    in_channels=64 * (2**self.num_outputs) // (2**i),
-                    out_channels=embedding_dim,
+                    in_channels=64 * (2**self.anchor_levels) // (2**i),
+                    out_channels=self.embedding_dim,
                     kernel_size=3,
                     stride=1,
                     padding=1,
@@ -145,36 +112,17 @@ class JDEHead(nn.Layer):
                 bias_attr=ParamAttr(
                     learning_rate=2., regularizer=L2Decay(0.))))
 
-    def parse_anchor(self, anchors, anchor_masks):
-        self.anchors = [[anchors[i] for i in mask] for mask in anchor_masks]
-        self.mask_anchors = []
-        anchor_num = len(anchors)
-        for masks in anchor_masks:
-            self.mask_anchors.append([])
-            for mask in masks:
-                assert mask < anchor_num, "anchor mask index overflow"
-                self.mask_anchors[-1].extend(anchors[mask])
-
-    def forward(self,
-                yolo_feats,
-                identify_feats,
-                targets=None,
-                test_emb=False,
-                test_track=False):
-        assert len(yolo_feats) == len(identify_feats) == len(self.anchors)
-        det_outs = []
+    def forward(self, identify_feats, targets=None, loss_confs=None, loss_boxes=None, test_emb=False):
+        assert len(identify_feats) == self.anchor_levels
         ide_outs = []
-        for yolo_feat, ide_feat, yolo_head, ide_head in zip(
-                yolo_feats, identify_feats, self.yolo_outputs,
-                self.identify_outputs):
-            det_out = yolo_head(yolo_feat)
-            ide_out = ide_head(ide_feat)
-            det_outs.append(det_out)
-            ide_outs.append(ide_out)
+        for feat, ide_head in zip(identify_feats, self.identify_outputs):
+            ide_outs.append(ide_head(feat))
 
         if self.training:
-            return self.jde_loss(det_outs, ide_outs, targets, self.anchors,
-                                 self.emb_scale, self.classifier,
+            assert targets != None
+            assert len(loss_confs) == len(loss_boxes) == self.anchor_levels
+            loss_ides = self.emb_loss(ide_outs, targets, self.emb_scale, self.classifier)
+            return self.jde_loss(loss_confs, loss_boxes, loss_ides,
                                  self.loss_params_cls, self.loss_params_reg,
                                  self.loss_params_ide)
         else:
@@ -182,44 +130,14 @@ class JDEHead(nn.Layer):
                 assert targets != None
                 embs_and_gts = self.get_emb_and_gt_outs(ide_outs, targets)
                 return embs_and_gts
-            elif test_track:
-                yolo_outs = self.get_det_outs(det_outs)
-                emb_outs = self.get_emb_outs(ide_outs)
-                return yolo_outs, emb_outs
             else:
-                yolo_outs = self.get_det_outs(det_outs)
-                return yolo_outs
-
-    def get_det_outs(self, det_outs):
-        if self.iou_aware:
-            y = []
-            for i, out in enumerate(det_outs):
-                na = len(self.anchors[i])
-                ioup, x = out[:, 0:na, :, :], out[:, na:, :, :]
-                b, c, h, w = x.shape
-                no = c // na
-                x = x.reshape((b, na, no, h * w))
-                ioup = ioup.reshape((b, na, 1, h * w))
-                obj = x[:, :, 4:5, :]
-                ioup = F.sigmoid(ioup)
-                obj = F.sigmoid(obj)
-                obj_t = (obj**(1 - self.iou_aware_factor)) * (
-                    ioup**self.iou_aware_factor)
-                obj_t = _de_sigmoid(obj_t)
-                loc_t = x[:, :, :4, :]
-                cls_t = x[:, :, 5:, :]
-                y_t = paddle.concat([loc_t, obj_t, cls_t], axis=2)
-                y_t = y_t.reshape((b, c, h, w))
-                y.append(y_t)
-            return y
-        else:
-            return det_outs
+                emb_outs = self.get_emb_outs(ide_outs)
+                return emb_outs
 
     def get_emb_and_gt_outs(self, ide_outs, targets):
         emb_and_gts = []
         for i, p_ide in enumerate(ide_outs):
             t_conf = targets['tconf{}'.format(i)]
-            # t_box = targets['tbox{}'.format(i)]
             t_ide = targets['tide{}'.format(i)]
 
             p_ide = p_ide.transpose((0, 2, 3, 1))

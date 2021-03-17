@@ -24,6 +24,13 @@ try:
 except Exception:
     from collections import Sequence
 
+__all__ = [
+    'BBoxPostProcess',
+    'MaskPostProcess',
+    'FCOSPostProcess',
+    'JDEBBoxPostProcess',
+]
+
 
 @register
 class BBoxPostProcess(object):
@@ -50,8 +57,7 @@ class BBoxPostProcess(object):
         """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-            bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
-                                                         self.num_classes)
+            bbox_pred, bbox_num, _ = self.nms(bboxes, score, self.num_classes)
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
@@ -60,8 +66,7 @@ class BBoxPostProcess(object):
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
-        return bbox_pred, bbox_num, nms_keep_idx
+        return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """
@@ -191,3 +196,34 @@ class FCOSPostProcess(object):
                                     centerness, scale_factor)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num
+
+
+@register
+class JDEBBoxPostProcess(BBoxPostProcess):
+    def __call__(self, head_out, rois, im_shape, scale_factor):
+        """
+        Decode the bbox and do NMS if needed. 
+
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
+                               including labels, scores and bboxes. The size of 
+                               bboxes are corresponding to the input image and 
+                               the bboxes may be used in other brunch.
+            bbox_num(Tensor): The number of prediction of each batch with shape
+                              [N, 6].
+            nms_keep_idx(Tensor): The index of predict bbox. 
+        """
+        if self.nms is not None:
+            bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
+            bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
+                                                         self.num_classes)
+        else:
+            bbox_pred, bbox_num, nms_keep_idx = self.decode(
+                head_out, rois, im_shape, scale_factor)
+        if bbox_pred.shape[0] == 0:
+            bbox_pred = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+        return bbox_pred, bbox_num, nms_keep_idx

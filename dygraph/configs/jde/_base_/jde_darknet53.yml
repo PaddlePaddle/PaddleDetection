@@ -6,9 +6,12 @@ norm_type: sync_bn
 JDE:
   backbone: DarkNet
   neck: JDEFPN
-  jde_head: JDEHead
-  post_process: BBoxPostProcess
+  detection_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  embedding_head: JEDEmbeddingHead
+  tracker: JDETracker
   test_emb: False
+  test_track: False
 
 DarkNet:
   depth: 53
@@ -18,19 +21,14 @@ DarkNet:
 JDEFPN:
   freeze_norm: True
 
-JDEHead:
+YOLOv3Head:
   anchors: [[128,384], [180,540], [256,640], [512,640],
             [32,96], [45,135], [64,192], [90,271],
             [8,24], [11,34], [16,48], [23,68]]
   anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-  num_identifiers: 1 # defined by dataset.nID
-  embedding_dim: 512
-  jde_loss: JDELoss
+  loss: JDEDetectionLoss
 
-# use default config
-# JDELoss:
-
-BBoxPostProcess:
+JDEBBoxPostProcess:
   decode:
     name: JDEBox
     conf_thresh: 0.3
@@ -43,3 +41,13 @@ BBoxPostProcess:
     nms_threshold: 0.5
     nms_top_k: 1000
     normalized: true
+
+JEDEmbeddingHead:
+  anchor_levels: 3
+  embedding_dim: 512
+  emb_loss: JDEEmbeddingLoss
+  jde_loss: JDELoss
+
+JDETracker:
+  matching: HungaryMatching
+  motion: KalmanFilter

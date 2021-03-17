@@ -1,0 +1,852 @@
+# python3.7 dygraph_print.py -c configs/jde/jde_darknet53_30e_1088x608_track.yml 2>&1 | tee ppjde_model_print.txt
+
+grep: warning: GREP_OPTIONS is deprecated; please use an alias or script
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: MOT dataset summary:
+[03/16 17:29:56] ppdet.data.source.mot INFO: OrderedDict([('mot17.train4', 540)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: total identities: 541
+[03/16 17:29:56] ppdet.data.source.mot INFO: start index: OrderedDict([('mot17.train4', 0)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: MOT dataset summary:
+[03/16 17:29:56] ppdet.data.source.mot INFO: OrderedDict([('mot17.debug', 540)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: total identities: 541
+[03/16 17:29:56] ppdet.data.source.mot INFO: start index: OrderedDict([('mot17.debug', 0)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+W0316 17:29:56.917248  6980 device_context.cc:362] Please NOTE: device: 0, GPU Compute Capability: 6.1, Driver API Version: 10.2, Runtime API Version: 10.0
+W0316 17:29:56.923424  6980 device_context.cc:372] device: 0, cuDNN Version: 7.6.
+model JDE(
+  (backbone): DarkNet(
+    (conv0): ConvBNLayer(
+      (conv): Conv2D(3, 32, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+    )
+    (downsample0): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(32, 64, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.0): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(64, 32, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(32, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.1): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 64, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(64, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.1.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 64, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(64, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.2): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.4): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.5): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.6): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.7): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.3): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.4): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.5): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.6): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.7): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.4): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.0.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(64, 128, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.1.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(128, 256, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.2.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(256, 512, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.3.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(512, 1024, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      )
+    )
+  )
+  (neck): JDEFPN(
+    (yolo_block.0): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (yolo_transition.0): ConvBNLayer(
+      (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+    )
+    (yolo_block.1): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(768, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (yolo_transition.1): ConvBNLayer(
+      (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+    )
+    (yolo_block.2): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(384, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      )
+    )
+  )
+  (detection_head): YOLOv3Head(
+    (loss): JDEDetectionLoss()
+    (yolo_output.0): Conv2D(1024, 24, kernel_size=[1, 1], data_format=NCHW)
+    (yolo_output.1): Conv2D(512, 24, kernel_size=[1, 1], data_format=NCHW)
+    (yolo_output.2): Conv2D(256, 24, kernel_size=[1, 1], data_format=NCHW)
+  )
+  (embedding_head): JEDEmbeddingHead(
+    (emb_loss): JDEEmbeddingLoss()
+    (jde_loss): JDELoss()
+    (identify_output.0): Conv2D(512, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.0): LossParam()
+    (reg.0): LossParam()
+    (ide.0): LossParam()
+    (identify_output.1): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.1): LossParam()
+    (reg.1): LossParam()
+    (ide.1): LossParam()
+    (identify_output.2): Conv2D(128, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.2): LossParam()
+    (reg.2): LossParam()
+    (ide.2): LossParam()
+    (classifier): Linear(in_features=512, out_features=1, dtype=float32)
+  )
+)
+------------------------------
+[03/16 17:30:00] ppdet.data.source.mot INFO: 3 samples in file ['mot17.debug']
+λ bjyz-sys-gpu-kongming9 /paddle/ppdetcode/splithead/PaddleDetection/dygraph {jdebase_ppjde}
+λ bjyz-sys-gpu-kongming9 /paddle/ppdetcode/splithead/PaddleDetection/dygraph {jdebase_ppjde} ll
+total 120K
+drwxr-xr-x 11 root root 4.0K Mar 16 17:29 ./
+drwxr-xr-x 15 root root 4.0K Mar 16 17:18 ../
+-rw-r--r--  1 root root 1.8K Mar 16 17:18 0run_jde.sh
+drwxr-xr-x 19 root root 4.0K Mar 16 17:25 configs/
+drwxr-xr-x  5 root root 4.0K Mar 16 16:17 dataset/
+drwxr-xr-x  2 root root 4.0K Mar 16 16:17 demo/
+drwxr-xr-x  5 root root 4.0K Mar 16 16:17 deploy/
+drwxr-xr-x  4 root root 4.0K Mar 16 16:17 docs/
+-rwxr-xr-x  1 root root 4.4K Mar 16 16:46 dygraph_print.py*
+-rw-r--r--  1 root root  205 Mar 16 16:46 dygraph_print.sh
+-rw-r--r--  1 root root 1012 Mar 16 17:18 .gitignore
+-rw-r--r--  1 root root  12K Mar 16 17:18 LICENSE
+drwxr-xr-x  3 root root 4.0K Mar 16 17:27 output/
+drwxr-xr-x 14 root root 4.0K Mar 16 16:46 ppdet/
+-rw-r--r--  1 root root  19K Mar 16 17:30 ppjde_model_print.txt
+-rw-r--r--  1 root root  800 Mar 16 17:18 .pre-commit-config.yaml
+drwxr-xr-x  2 root root 4.0K Mar 16 16:17 pytorch2paddle/
+-rw-r--r--  1 root root 4.1K Mar 16 17:18 README.md
+-rw-r--r--  1 root root  167 Mar 16 17:18 requirements.txt
+-rw-r--r--  1 root root 3.1K Mar 16 17:18 setup.py
+-rw-r--r--  1 root root   48 Mar 16 17:18 .style.yapf
+drwxr-xr-x  2 root root 4.0K Mar 16 16:17 tools/
+λ bjyz-sys-gpu-kongming9 /paddle/ppdetcode/splithead/PaddleDetection/dygraph {jdebase_ppjde} cat ppjde_model_print.txt
+grep: warning: GREP_OPTIONS is deprecated; please use an alias or script
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: MOT dataset summary:
+[03/16 17:29:56] ppdet.data.source.mot INFO: OrderedDict([('mot17.train4', 540)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: total identities: 541
+[03/16 17:29:56] ppdet.data.source.mot INFO: start index: OrderedDict([('mot17.train4', 0)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+[03/16 17:29:56] ppdet.data.source.mot INFO: MOT dataset summary:
+[03/16 17:29:56] ppdet.data.source.mot INFO: OrderedDict([('mot17.debug', 540)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: total identities: 541
+[03/16 17:29:56] ppdet.data.source.mot INFO: start index: OrderedDict([('mot17.debug', 0)])
+[03/16 17:29:56] ppdet.data.source.mot INFO: ================================================================================
+W0316 17:29:56.917248  6980 device_context.cc:362] Please NOTE: device: 0, GPU Compute Capability: 6.1, Driver API Version: 10.2, Runtime API Version: 10.0
+W0316 17:29:56.923424  6980 device_context.cc:372] device: 0, cuDNN Version: 7.6.
+model JDE(
+  (backbone): DarkNet(
+    (conv0): ConvBNLayer(
+      (conv): Conv2D(3, 32, kernel_size=[3, 3], padding=1, data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+    )
+    (downsample0): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(32, 64, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.0): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(64, 32, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=32, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(32, 64, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.1): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 64, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(64, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.1.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 64, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=64, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(64, 128, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.2): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.4): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.5): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.6): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.2.7): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.3): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.4): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.5): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.6): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.3.7): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.4): Blocks(
+      (basicblock0): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.1): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.2): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (stage.4.3): BasicBlock(
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+      )
+    )
+    (stage.0.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(64, 128, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.1.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(128, 256, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.2.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(256, 512, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (stage.3.downsample): DownSample(
+      (conv_bn_layer): ConvBNLayer(
+        (conv): Conv2D(512, 1024, kernel_size=[3, 3], stride=[2, 2], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      )
+    )
+  )
+  (neck): JDEFPN(
+    (yolo_block.0): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(1024, 512, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(512, 1024, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=1024, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (yolo_transition.0): ConvBNLayer(
+      (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+    )
+    (yolo_block.1): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(768, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(512, 256, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=512, momentum=0.9, epsilon=1e-05)
+      )
+    )
+    (yolo_transition.1): ConvBNLayer(
+      (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+      (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+    )
+    (yolo_block.2): YoloDetBlock(
+      (conv_module): Sequential(
+        (conv0): ConvBNLayer(
+          (conv): Conv2D(384, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv1): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (conv2): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+        (conv3): ConvBNLayer(
+          (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+        )
+        (route): ConvBNLayer(
+          (conv): Conv2D(256, 128, kernel_size=[1, 1], data_format=NCHW)
+          (batch_norm): SyncBatchNorm(num_features=128, momentum=0.9, epsilon=1e-05)
+        )
+      )
+      (tip): ConvBNLayer(
+        (conv): Conv2D(128, 256, kernel_size=[3, 3], padding=1, data_format=NCHW)
+        (batch_norm): SyncBatchNorm(num_features=256, momentum=0.9, epsilon=1e-05)
+      )
+    )
+  )
+  (detection_head): YOLOv3Head(
+    (loss): JDEDetectionLoss()
+    (yolo_output.0): Conv2D(1024, 24, kernel_size=[1, 1], data_format=NCHW)
+    (yolo_output.1): Conv2D(512, 24, kernel_size=[1, 1], data_format=NCHW)
+    (yolo_output.2): Conv2D(256, 24, kernel_size=[1, 1], data_format=NCHW)
+  )
+  (embedding_head): JEDEmbeddingHead(
+    (emb_loss): JDEEmbeddingLoss()
+    (jde_loss): JDELoss()
+    (identify_output.0): Conv2D(512, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.0): LossParam()
+    (reg.0): LossParam()
+    (ide.0): LossParam()
+    (identify_output.1): Conv2D(256, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.1): LossParam()
+    (reg.1): LossParam()
+    (ide.1): LossParam()
+    (identify_output.2): Conv2D(128, 512, kernel_size=[3, 3], padding=1, data_format=NCHW)
+    (cls.2): LossParam()
+    (reg.2): LossParam()
+    (ide.2): LossParam()
+    (classifier): Linear(in_features=512, out_features=1, dtype=float32)
+  )
+)
+------------------------------
+[03/16 17:30:00] ppdet.data.source.mot INFO: 3 samples in file ['mot17.debug']

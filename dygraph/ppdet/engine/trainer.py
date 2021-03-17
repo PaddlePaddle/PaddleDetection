@@ -72,7 +72,7 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JDEHead']['num_identifiers'] = self.dataset.nID
+            cfg['JEDEmbeddingHead']['num_identifiers'] = self.dataset.nID
 
         # build model
         self.model = create(cfg.architecture)
@@ -366,7 +366,7 @@ class Trainer(object):
                 outs = self.model(data)
                 pred_boxes = outs['bbox'][:, 2:].numpy()
                 pred_scores = outs['bbox'][:, 1:2].numpy()
-                pred_embs = outs['embeding'].numpy()
+                pred_embs = outs['embedding'].numpy()
                 img0_shape = outs['img0_shape'].numpy()[0]
 
                 pred_dets = np.concatenate((pred_boxes, pred_scores), axis=1)

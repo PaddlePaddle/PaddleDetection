@@ -21,19 +21,19 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from IPython import embed
-__all__ = ['JDELoss']
+
+__all__ = ['JDEDetectionLoss', 'JDEEmbeddingLoss', 'JDELoss']
 
 
 @register
-class JDELoss(nn.Layer):
+class JDEDetectionLoss(nn.Layer):
     __shared__ = ['num_classes']
 
     def __init__(self, num_classes=1):
-        super(JDELoss, self).__init__()
+        super(JDEDetectionLoss, self).__init__()
         self.num_classes = num_classes
 
-    def jde_loss(self, p_det, p_ide, anchor, t_conf, t_box, t_ide, l_conf_p,
-                 l_box_p, l_ide_p, emb_scale, classifier):
+    def det_loss(self, p_det, anchor, t_conf, t_box):
         pshape = paddle.shape(p_det)
         pshape.stop_gradient = True
         nB, nGh, nGw = pshape[0], pshape[-2], pshape[-1]
@@ -41,9 +41,7 @@ class JDELoss(nn.Layer):
         p_det = paddle.reshape(
             p_det, [nB, nA, self.num_classes + 5, nGh, nGw]).transpose(
                 (0, 1, 3, 4, 2))  # [1, 4, 19, 34, 6]
-        p_ide = p_ide.transpose((0, 2, 3, 1))  # [1, 19, 34, 512]
 
-        loss = dict()
         # 1. loss_conf: cross_entropy
         p_conf = p_det[:, :, :, :, 4:6]  # [1, 4, 19, 34, 2]
         p_conf_flatten = paddle.reshape(p_conf, [-1, 2])
@@ -52,7 +50,6 @@ class JDELoss(nn.Layer):
         t_conf_flatten.stop_gradient = True
         loss_conf = F.cross_entropy(
             p_conf_flatten, t_conf_flatten, ignore_index=-1, reduction='mean')
-        loss['loss_conf'] = loss_conf
 
         # 2. loss_box: smooth_l1_loss
         p_box = p_det[:, :, :, :, :4]  # [1, 4, 19, 34, 4]
@@ -69,10 +66,32 @@ class JDELoss(nn.Layer):
         reg_target.stop_gradient = True
         loss_box = F.smooth_l1_loss(
             reg_delta, reg_target, reduction='mean', delta=1.0)
-        loss['loss_box'] = loss_box
 
-        # 3. loss_ide: cross_entropy
-        p_ide_flatten = paddle.reshape(p_ide, [-1, 512])
+        return loss_conf, loss_box
+
+    def forward(self, det_outs, targets, anchors):
+        assert len(det_outs) == len(anchors)
+        loss_confs = []
+        loss_boxes = []
+        for i, (p_det, anchor) in enumerate(zip(det_outs, anchors)):
+            t_conf = targets['tconf{}'.format(i)]
+            t_box = targets['tbox{}'.format(i)]
+
+            loss_conf, loss_box = self.det_loss(p_det, anchor, t_conf, t_box)
+            loss_confs.append(loss_conf)
+            loss_boxes.append(loss_box)
+        return loss_confs, loss_boxes
+
+
+@register
+class JDEEmbeddingLoss(nn.Layer):
+    def __init__(self, ):
+        super(JDEEmbeddingLoss, self).__init__()
+
+    def emb_loss(self, p_ide, t_conf, t_ide, emb_scale, classifier):
+        emb_dim = p_ide.shape[1]
+        p_ide = p_ide.transpose((0, 2, 3, 1))  # [1, 19, 34, 512]
+        p_ide_flatten = paddle.reshape(p_ide, [-1, emb_dim])
         mask = t_conf > 0
         mask = paddle.cast(mask, dtype="int64")
         mask.stop_gradient = True
@@ -102,31 +121,54 @@ class JDELoss(nn.Layer):
 
         loss_ide = F.cross_entropy(
             logits, ide_target, ignore_index=-1, reduction='mean') * weight
-        loss['loss_ide'] = loss_ide
+        return loss_ide
 
-        loss['loss'] = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
-            loss_ide)
-        return loss
-
-    def forward(self, det_outs, ide_outs, targets, anchors, emb_scale,
-                classifier, loss_conf_params, loss_box_params, loss_ide_params):
-        assert len(det_outs) == len(ide_outs) == len(anchors)
-        jde_losses = dict()
-        for i, (p_det, p_ide, anchor, l_conf_p, l_box_p, l_ide_p) in enumerate(
-                zip(det_outs, ide_outs, anchors, loss_conf_params,
-                    loss_box_params, loss_ide_params)):
+    def forward(self, ide_outs, targets, emb_scale, classifier):
+        loss_ides = []
+        for i, p_ide in enumerate(ide_outs):
             t_conf = targets['tconf{}'.format(i)]
-            t_box = targets['tbox{}'.format(i)]
             t_ide = targets['tide{}'.format(i)]
 
-            jde_loss = self.jde_loss(p_det, p_ide, anchor, t_conf, t_box, t_ide,
-                                     l_conf_p, l_box_p, l_ide_p, emb_scale,
+            loss_ide = self.emb_loss(p_ide, t_conf, t_ide, emb_scale,
                                      classifier)
+            loss_ides.append(loss_ide)
+        return loss_ides
 
-            for k, v in jde_loss.items():
-                if k in jde_losses:
-                    jde_losses[k] += v
-                else:
-                    jde_losses[k] = v
 
-        return jde_losses
+@register
+class JDELoss(nn.Layer):
+    def __init__(self, use_uncertainy=True):
+        super(JDELoss, self).__init__()
+        self.use_uncertainy = use_uncertainy
+
+    def forward(self, loss_confs, loss_boxes, loss_ides, loss_params_cls,
+                loss_params_reg, loss_params_ide):
+        assert len(loss_confs) == len(loss_boxes) == len(loss_ides)
+        assert len(loss_params_cls) == len(loss_params_reg) == len(
+            loss_params_ide)
+        assert len(loss_confs) == len(loss_params_cls)
+        jde_losses = []
+        for i, (loss_conf, loss_box, loss_ide, l_conf_p, l_box_p,
+                l_ide_p) in enumerate(
+                    zip(loss_confs, loss_boxes, loss_ides, loss_params_cls,
+                        loss_params_reg, loss_params_ide)):
+
+            if self.use_uncertainy:
+                jde_loss = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
+                    loss_ide)
+            else:
+                s_c, s_r, s_id = -4.15, -4.85, -2.3
+                jde_loss = paddle.exp(-s_c) * loss_conf + paddle.exp(
+                    -s_r) * loss_box + paddle.exp(-s_id) * loss_ide + (s_c + s_r
+                                                                       + s_id)
+                jde_loss *= 0.5
+            jde_losses.append(jde_loss)
+
+        loss_all = {
+            "loss_conf": sum(loss_confs),
+            "loss_box": sum(loss_boxes),
+            "loss_ide": sum(loss_ides),
+            "loss": sum(jde_losses),
+            # "nTargets": sum(nTargets) / 3,
+        }
+        return loss_all

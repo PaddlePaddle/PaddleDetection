@@ -7,11 +7,14 @@ metric: MOT
 JDE:
   backbone: DarkNet
   neck: JDEFPN
-  jde_head: JDEHead
-  post_process: BBoxPostProcess
+  detection_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  embedding_head: JEDEmbeddingHead
+  tracker: JDETracker
+  test_emb: False
   test_track: True
 
-BBoxPostProcess:
+JDEBBoxPostProcess:
   decode:
     name: JDEBox
     conf_thresh: 0.5
@@ -23,4 +26,4 @@ BBoxPostProcess:
     score_threshold: 0.01
     nms_threshold: 0.4
     nms_top_k: 1000
-    normalized: true #false
+    normalized: true

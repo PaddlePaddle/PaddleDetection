@@ -7,6 +7,9 @@ metric: ReID
 JDE:
   backbone: DarkNet
   neck: JDEFPN
-  jde_head: JDEHead
-  post_process: BBoxPostProcess
+  detection_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  embedding_head: JEDEmbeddingHead
+  tracker: JDETracker
   test_emb: True
+  test_track: False

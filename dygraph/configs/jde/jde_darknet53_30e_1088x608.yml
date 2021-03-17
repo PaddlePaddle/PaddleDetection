@@ -10,12 +10,30 @@ weights: output/jde_darknet53_30e_1088x608/model_final
 JDE:
   backbone: DarkNet
   neck: JDEFPN
-  jde_head: JDEHead
-  post_process: BBoxPostProcess
+  detection_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  embedding_head: JEDEmbeddingHead
+  tracker: JDETracker
   test_emb: False
+  test_track: False
 
-JDEHead:
+YOLOv3Head:
   anchors: [[128,384], [180,540], [256,640], [512,640],
             [32,96], [45,135], [64,192], [90,271],
             [8,24], [11,34], [16,48], [23,68]]
   anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+  loss: JDEDetectionLoss
+
+JDEBBoxPostProcess:
+  decode:
+    name: JDEBox
+    conf_thresh: 0.3
+    downsample_ratio: 32
+    clip_bbox: true
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.5
+    nms_top_k: 1000
+    normalized: true
