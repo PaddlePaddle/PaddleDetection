@@ -19,9 +19,9 @@ cat /etc/nv_tegra_release
 * (3) 下载`JetPack`，请参考[NVIDIA Jetson Linux Developer Guide](https://docs.nvidia.com/jetson/l4t/index.html) 中的`Preparing a Jetson Developer Kit for Use`章节内容进行刷写系统镜像。
 
 ## 下载或编译`Paddle`预测库
-本文档使用`Paddle`在`JetPack4.3`上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。
+本文档使用`Paddle`在`JetPack4.3`上预先编译好的预测库，请根据硬件在[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 中选择对应版本的`Paddle`预测库。
 
-这里选择[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-rc0-nv-jetson-cuda10-cudnn7.6-trt6/paddle_inference.tgz), `Paddle`版本`2.0.0-rc0`,`CUDA`版本`10.0`,`CUDNN`版本`7.6`，`TensorRT`版本`6`。
+这里选择[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-nv-jetson-jetpack4.3-all/paddle_inference.tgz), `Paddle`版本`2.0.0-rc0`,`CUDA`版本`10.0`,`CUDNN`版本`7.6`，`TensorRT`版本`6`。
 
 若需要自己在`Jetson`平台上自定义编译`Paddle`库，请参考文档[安装与编译 Linux 预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html) 的`NVIDIA Jetson嵌入式硬件预测库源码编译`部分内容。
 
@@ -34,7 +34,7 @@ cat /etc/nv_tegra_release
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-rc0-nv-jetson-cuda10-cudnn7.6-trt6/paddle_inference.tgz) 。
+解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```
