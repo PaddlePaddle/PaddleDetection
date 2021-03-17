@@ -1,0 +1,19 @@
+metric: COCO
+num_classes: 4
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/train.json
+    dataset_dir: /paddle/dataset/roadsign_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/valid.json
+    dataset_dir: /paddle/dataset/roadsign_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/valid.json

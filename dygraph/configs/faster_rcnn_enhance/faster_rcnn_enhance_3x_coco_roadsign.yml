@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
+  '../datasets/roadsign.yml',
   '../runtime.yml',
   '_base_/optimizer_3x.yml',
   '_base_/faster_rcnn_enhance.yml',
