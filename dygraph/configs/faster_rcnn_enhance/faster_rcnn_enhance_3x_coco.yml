@@ -1,9 +1,9 @@
 _BASE_: [
-  '../datasets/coco_001.yml',
+  '../datasets/coco_detection.yml',
   '../runtime.yml',
   '_base_/optimizer_3x.yml',
   '_base_/faster_rcnn_enhance.yml',
   '_base_/faster_rcnn_enhance_reader.yml',
 ]
 weights: output/faster_rcnn_enhance/model_final
-use_gpu: False
+use_gpu: True

@@ -15,6 +15,7 @@ ResNet:
   # index 0 stands for res2
   depth: 50
   norm_type: bn
+  variant: d
   freeze_at: 0
   return_idx: [0,1,2,3]
   num_stages: 4
@@ -61,7 +62,7 @@ BBoxHead:
 TwoFCHead:
   mlp_dim: 1024
 
-BBoxAssigner:
+BBoxLibraAssigner:
   batch_size_per_im: 512
   bg_thresh: 0.5
   fg_thresh: 0.5
