@@ -2,7 +2,7 @@ worker_num: 2
 TrainReader:
   sample_transforms:
   - Decode: {}
-  - RandomResize: {target_size: [[384, 1333], [416, 1333], [448, 1333], [480, 1333], [512, 1333], [544, 1333], [576, 1333], [608, 1333], [640, 1333], [672, 1333]], interp: 2, keep_ratio: True}
+  - RandomResize: {target_size: [384, 416, 448, 480, 512, 544, 576, 608, 640, 672], interp: 2, keep_ratio: True}
   - RandomFlip: {prob: 0.5}
   - AutoAugment: {autoaug_type: v1}
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
