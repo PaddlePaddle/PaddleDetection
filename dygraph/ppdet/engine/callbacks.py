@@ -27,7 +27,7 @@ from ppdet.utils.checkpoint import save_model
 from ppdet.optimizer import ModelEMA
 
 from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
+logger = setup_logger('ppdet.engine')
 
 __all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
 
@@ -51,27 +51,27 @@ class Callback(object):
 
 class ComposeCallback(object):
     def __init__(self, callbacks):
-        callbacks = [h for h in list(callbacks) if h is not None]
-        for h in callbacks:
-            assert isinstance(h,
-                              Callback), "hook shoule be subclass of Callback"
+        callbacks = [c for c in list(callbacks) if c is not None]
+        for c in callbacks:
+            assert isinstance(c,
+                              Callback), "callback should be subclass of Callback"
         self._callbacks = callbacks
 
     def on_step_begin(self, status):
-        for h in self._callbacks:
-            h.on_step_begin(status)
+        for c in self._callbacks:
+            c.on_step_begin(status)
 
     def on_step_end(self, status):
-        for h in self._callbacks:
-            h.on_step_end(status)
+        for c in self._callbacks:
+            c.on_step_end(status)
 
     def on_epoch_begin(self, status):
-        for h in self._callbacks:
-            h.on_epoch_begin(status)
+        for c in self._callbacks:
+            c.on_epoch_begin(status)
 
     def on_epoch_end(self, status):
-        for h in self._callbacks:
-            h.on_epoch_end(status)
+        for c in self._callbacks:
+            c.on_epoch_end(status)
 
 
 class LogPrinter(Callback):
