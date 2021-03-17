@@ -29,6 +29,7 @@ from paddle.io import DistributedBatchSampler
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
+from .shm_utils import _get_shared_memory_size_in_M
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('reader')
@@ -111,8 +112,32 @@ class BatchCompose(Compose):
 
 
 class BaseDataLoader(object):
+    """
+    Base DataLoader implementation for detection models
+
+    Args:
+        sample_transforms (list): a list of transforms to perform
+                                  on each sample
+        batch_transforms (list): a list of transforms to perform
+                                 on batch
+        batch_size (int): batch size for batch collating, default 1.
+        shuffle (bool): whether to shuffle samples
+        drop_last (bool): whether to drop the last incomplete,
+                          default False
+        drop_empty (bool): whether to drop samples with no ground
+                           truth labels, default True
+        num_classes (int): class number of dataset, default 80
+        use_shared_memory (bool): whether to use shared memory to
+                accelerate data loading, enable this only if you
+                are sure that the shared memory size of your OS
+                is larger than memory cost of input datas of model.
+                Note that shared memory will be automatically
+                disabled if the shared memory of OS is less than
+                1G, which is not enough for detection models.
+                Default False.
+    """
+
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -120,6 +145,7 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=80,
+                 use_shared_memory=False,
                  **kwargs):
         # sample transform
         self._sample_transforms = Compose(
@@ -131,14 +157,14 @@ class BaseDataLoader(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
+        self.use_shared_memory = use_shared_memory
         self.kwargs = kwargs
 
     def __call__(self,
                  dataset,
                  worker_num,
                  batch_sampler=None,
-                 return_list=False,
-                 use_prefetch=True):
+                 return_list=False):
         self.dataset = dataset
         self.dataset.parse_dataset()
         # get data
@@ -155,14 +181,22 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
+        use_shared_memory = self.use_shared_memory
+        # check whether shared memory size is bigger than 1G(1024M)
+        if use_shared_memory:
+            shm_size = _get_shared_memory_size_in_M()
+            if shm_size is not None and shm_size < 1024.:
+                logger.warn("Shared memory size is less than 1G, "
+                            "disable shared_memory in DataLoader")
+                use_shared_memory = False
+
         self.dataloader = DataLoader(
             dataset=self.dataset,
             batch_sampler=self._batch_sampler,
             collate_fn=self._batch_transforms,
             num_workers=worker_num,
             return_list=return_list,
-            use_buffer_reader=use_prefetch,
-            use_shared_memory=False)
+            use_shared_memory=use_shared_memory)
         self.loader = iter(self.dataloader)
 
         return self
@@ -197,7 +231,6 @@ class TrainReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -206,9 +239,9 @@ class TrainReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(TrainReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
+                                          batch_size, shuffle, drop_last,
+                                          drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -216,7 +249,6 @@ class EvalReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -225,9 +257,9 @@ class EvalReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(EvalReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(EvalReader, self).__init__(sample_transforms, batch_transforms,
+                                         batch_size, shuffle, drop_last,
+                                         drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -235,7 +267,6 @@ class TestReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -244,6 +275,6 @@ class TestReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(TestReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(TestReader, self).__init__(sample_transforms, batch_transforms,
+                                         batch_size, shuffle, drop_last,
+                                         drop_empty, num_classes, **kwargs)
