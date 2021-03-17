@@ -96,6 +96,7 @@ def main():
     dump_infer_config(FLAGS, cfg)
     save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
 
+
 if __name__ == '__main__':
     enable_static_mode()
     parser = ArgsParser()
