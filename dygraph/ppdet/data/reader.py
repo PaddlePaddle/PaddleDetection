@@ -121,6 +121,7 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=80,
+                 use_shared_memory=False,
                  **kwargs):
         # sample transform
         self._sample_transforms = Compose(
@@ -132,6 +133,7 @@ class BaseDataLoader(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
+        self.use_shared_memory = use_shared_memory
         self.kwargs = kwargs
 
     def __call__(self,
@@ -155,13 +157,14 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
-        use_shared_memory = True
+        use_shared_memory = self.use_shared_memory
         # check whether shared memory size is bigger than 1G(1024M)
-        shm_size = _get_shared_memory_size_in_M()
-        if shm_size is not None and shm_size < 1024.:
-            logger.warn("Shared memory size is less than 1G, "
-                        "disable shared_memory in DataLoader")
-            use_shared_memory = False
+        if use_shared_memory:
+            shm_size = _get_shared_memory_size_in_M()
+            if shm_size is not None and shm_size < 1024.:
+                logger.warn("Shared memory size is less than 1G, "
+                            "disable shared_memory in DataLoader")
+                use_shared_memory = False
 
         self.dataloader = DataLoader(
             dataset=self.dataset,

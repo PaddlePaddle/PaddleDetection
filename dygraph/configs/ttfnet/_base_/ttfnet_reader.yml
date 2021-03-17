@@ -12,6 +12,7 @@ TrainReader:
   batch_size: 12
   shuffle: true
   drop_last: true
+  use_shared_memory: true
 
 EvalReader:
   sample_transforms:
