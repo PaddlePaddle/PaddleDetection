@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <glog/logging.h>
+#include <gflags/gflags.h>
 
 #include <iostream>
 #include <string>

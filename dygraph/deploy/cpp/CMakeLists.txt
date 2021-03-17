@@ -154,22 +154,22 @@ endif()
 
 if (WIN32)
     if (USE_PADDLE_20RC1)
-        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        # 2.0rc1 win32 shared lib name is paddle_inference.dll and paddle_inference.lib
+        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/paddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set(DEPS
-            ${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+            ${PADDLE_DIR}/paddle/fluid/inference/paddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
         else()
             set(DEPS
-                ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+                ${PADDLE_DIR}/paddle/lib/paddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
         endif()
     else()
-        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+        # before 2.0rc1 win32 shared lib name is libpaddle_inference.dll and libpaddle_inference.lib
+        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX}")
             set(DEPS
-                ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+                ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
         else()
             set(DEPS
-                ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+                ${PADDLE_DIR}/paddle/lib/libpaddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
         endif()
     endif()
 endif()
@@ -177,15 +177,15 @@ endif()
 
 if (WIN32)
     if (USE_PADDLE_20RC1)
-        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-        set(DEPS ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        # 2.0rc1 win32 shared lib name is paddle_inference.dll and paddle_inference.lib
+        set(DEPS ${PADDLE_DIR}/paddle/lib/paddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
     else()
-        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-        set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        # before 2.0rc1 win32 shared lib name is libpaddle_inference.dll and libpaddle_inference.lib
+        set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_inference${CMAKE_STATIC_LIBRARY_SUFFIX})
     endif()
 else()
-    # linux shared lib name is libpaddle_fluid.so
-    set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+    # linux shared lib name is libpaddle_inference.so
+    set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_inference${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif()
 
 message("DEPS:" $DEPS)
@@ -254,6 +254,6 @@ endif()
 
 if (WIN32 AND USE_PADDLE_20RC1)
     add_custom_command(TARGET main POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/paddle_fluid.dll ./release/paddle_fluid.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/paddle_inference.dll ./release/paddle_inference.dll
     )
 endif()
