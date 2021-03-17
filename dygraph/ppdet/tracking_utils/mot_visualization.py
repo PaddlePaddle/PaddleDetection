@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
 import cv2
+import numpy as np
 
 
 def tlwhs_to_tlbrs(tlwhs):

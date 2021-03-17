@@ -12,24 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-from numba import jit
-from collections import deque
-import itertools
 import os
 import time
 import cv2
+import numpy as np
+from numba import jit
+from collections import deque
 
-from IPython import embed
 import paddle
 import paddle.nn.functional as F
-from ppdet.tracking_utils.kalman_filter import KalmanFilter
+
 from . import matching
 from .basetracker import BaseTrack, TrackState
+from .kalman_filter import KalmanFilter
+from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
+__all__ = ['STrack', 'JDETracker']
 
+
+@register
+@serializable
 class STrack(BaseTrack):
     def __init__(self, tlwh, score, temp_feat, buffer_size=30):
         # wait activate
@@ -181,24 +185,30 @@ class STrack(BaseTrack):
                                       self.end_frame)
 
 
+@register
+@serializable
 class JDETracker(object):
+    __inject__ = ['motion']
+
     def __init__(self,
                  img_size=[1088, 608],
                  det_thresh=0.3,
-                 frame_rate=30,
-                 track_buffer=30):
-        self.tracked_stracks = []  # type: list[STrack]
-        self.lost_stracks = []  # type: list[STrack]
-        self.removed_stracks = []  # type: list[STrack]
+                 track_buffer=30,
+                 motion='KalmanFilter'):
+        self.tracked_stracks = []
+        self.lost_stracks = []
+        self.removed_stracks = []
 
         self.frame_id = 0
+        self.img_size = img_size
         self.det_thresh = det_thresh
-        self.buffer_size = int(frame_rate / 30.0 * track_buffer)
-        self.max_time_lost = self.buffer_size
+        self.track_buffer = track_buffer
+        self.max_time_lost = 0
+        # max_time_lost is calculated by int(frame_rate / 30.0 * track_buffer)
 
-        self.kalman_filter = KalmanFilter()
+        self.motion = motion
 
-    def update(self, target_shape, pred_dets, pred_embs, img0_shape):
+    def update(self, pred_dets, pred_embs, img0_shape):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
@@ -221,7 +231,7 @@ class JDETracker(object):
         removed_stracks = []
         ''' Step 1: Network forward, get detections & embeddings'''
         if len(pred_dets) > 0:
-            pred_dets[:, :4] = scale_coords(target_shape, pred_dets[:, :4],
+            pred_dets[:, :4] = scale_coords(self.img_size, pred_dets[:, :4],
                                             img0_shape).round()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
@@ -243,10 +253,10 @@ class JDETracker(object):
         # Combining currently tracked_stracks and lost_stracks
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
         # Predict the current location with KF
-        STrack.multi_predict(strack_pool, self.kalman_filter)
+        STrack.multi_predict(strack_pool, self.motion)
 
         dists = matching.embedding_distance(strack_pool, detections)
-        dists = matching.fuse_motion(self.kalman_filter, dists, strack_pool,
+        dists = matching.fuse_motion(self.motion, dists, strack_pool,
                                      detections)
         # The dists is the list of distances of the detection with the tracks in strack_pool
         matches, u_track, u_detection = matching.linear_assignment(
@@ -320,7 +330,7 @@ class JDETracker(object):
             track = detections[inew]
             if track.score < self.det_thresh:
                 continue
-            track.activate(self.kalman_filter, self.frame_id)
+            track.activate(self.motion, self.frame_id)
             activated_starcks.append(track)
         """ Step 5: Update state"""
         # If the tracks are lost for more frames than the threshold number, the tracks are removed.

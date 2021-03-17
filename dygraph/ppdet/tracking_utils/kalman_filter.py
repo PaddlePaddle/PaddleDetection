@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numba
 import numpy as np
 import scipy.linalg
+from ppdet.core.workspace import register, serializable
+
+__all__ = ['KalmanFilter']
 """
 Table for the 0.95 quantile of the chi-square distribution with N degrees of
 freedom (contains values for N=1, ..., 9). Taken from MATLAB/Octave's chi2inv
@@ -33,6 +35,8 @@ chi2inv95 = {
 }
 
 
+@register
+@serializable
 class KalmanFilter(object):
     """
     A simple Kalman filter for tracking bounding boxes in image space.

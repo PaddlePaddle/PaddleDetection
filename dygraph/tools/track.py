@@ -29,7 +29,7 @@ import glob
 import paddle
 from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer
+from ppdet.engine import Tracker
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 
@@ -44,20 +44,6 @@ def parse_args():
         default='MOT16_train',
         type=str,
         help='Benchmark name for tracking')
-    parser.add_argument(
-        '--target_shape',
-        type=list,
-        default=[1088, 608],
-        help='Target shape of tracking results')
-    parser.add_argument(
-        '--det_thresh',
-        type=float,
-        default=0.5,
-        help='Object detection confidence threshold')
-    parser.add_argument(
-        '--min_box_area', type=float, default=200, help='Filter out tiny boxes')
-    parser.add_argument(
-        '--track_buffer', type=int, default=30, help='Tracking buffer')
     parser.add_argument(
         '--data_root',
         type=str,
@@ -136,25 +122,20 @@ def run(FLAGS, cfg):
                    '''
     seqs = [seq.strip() for seq in seqs_str.split()]
 
-    # build trainer
-    trainer = Trainer(cfg, mode='track')
+    # build Tracker
+    tracker = Tracker(cfg, mode='track')
 
     # load weights
-    trainer.load_weights(cfg.weights, 'resume')
+    tracker.load_weights(cfg.weights, 'resume')
 
     # inference
-    trainer.track(
-        target_shape=FLAGS.target_shape,
-        min_box_area=FLAGS.min_box_area,
-        det_thresh=FLAGS.det_thresh,
-        track_buffer=FLAGS.track_buffer,
+    tracker.track(
         data_root=data_root,
         seqs=seqs,
         exp_name=FLAGS.exp_name,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
-        show_image=FLAGS.show_image,
-        save_dir=FLAGS.save_dir)
+        show_image=FLAGS.show_image)
 
 
 def main():

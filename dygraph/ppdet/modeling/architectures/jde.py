@@ -83,20 +83,19 @@ class JDE(BaseArch):
                 dets_and_embs = {
                     'bbox': bbox,
                     'bbox_num': bbox_num,
+                    'embeddings': embeddings,
                     'img0_shape': self.inputs['img0_shape'],
-                    'embedding': embeddings,
                 }
-
                 return dets_and_embs
 
             else:
                 det_outs = self.detection_head(det_feats)
 
-                bbox_pred, bbox_num, _ = self.post_process(
+                bbox, bbox_num, _ = self.post_process(
                     det_outs, self.detection_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
 
-                det_results = {'bbox': bbox_pred, 'bbox_num': bbox_num}
+                det_results = {'bbox': bbox, 'bbox_num': bbox_num}
                 return det_results
 
     def get_loss(self):

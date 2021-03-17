@@ -56,10 +56,11 @@ class JEDEmbeddingHead(nn.Layer):
         emb_loss(object): Instance of 'JDEEmbeddingLoss'
         jde_loss(object): Instance of 'JDELoss'
     """
+
     def __init__(
             self,
             num_classes=1,
-            num_identifiers=1, # defined by dataset.nID
+            num_identifiers=1,  # defined by dataset.nID
             anchor_levels=3,
             embedding_dim=512,
             emb_loss='JDEEmbeddingLoss',
@@ -112,7 +113,12 @@ class JEDEmbeddingHead(nn.Layer):
                 bias_attr=ParamAttr(
                     learning_rate=2., regularizer=L2Decay(0.))))
 
-    def forward(self, identify_feats, targets=None, loss_confs=None, loss_boxes=None, test_emb=False):
+    def forward(self,
+                identify_feats,
+                targets=None,
+                loss_confs=None,
+                loss_boxes=None,
+                test_emb=False):
         assert len(identify_feats) == self.anchor_levels
         ide_outs = []
         for feat, ide_head in zip(identify_feats, self.identify_outputs):
@@ -121,7 +127,8 @@ class JEDEmbeddingHead(nn.Layer):
         if self.training:
             assert targets != None
             assert len(loss_confs) == len(loss_boxes) == self.anchor_levels
-            loss_ides = self.emb_loss(ide_outs, targets, self.emb_scale, self.classifier)
+            loss_ides = self.emb_loss(ide_outs, targets, self.emb_scale,
+                                      self.classifier)
             return self.jde_loss(loss_confs, loss_boxes, loss_ides,
                                  self.loss_params_cls, self.loss_params_reg,
                                  self.loss_params_ide)

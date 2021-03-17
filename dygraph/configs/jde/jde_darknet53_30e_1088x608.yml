@@ -24,6 +24,12 @@ YOLOv3Head:
   anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
   loss: JDEDetectionLoss
 
+JDETracker:
+  img_size: [1088, 608]
+  det_thresh: 0.3
+  track_buffer: 30
+  motion: KalmanFilter
+
 JDEBBoxPostProcess:
   decode:
     name: JDEBox

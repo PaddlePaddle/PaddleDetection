@@ -12,10 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from . import matching
+from . import basetracker
+from . import multitracker
 from . import kalman_filter
 from . import mot_visualization
 from . import timer
 
+from .matching import *
+from .basetracker import *
+from .multitracker import *
 from .kalman_filter import *
 from .mot_visualization import *
 from .timer import *
