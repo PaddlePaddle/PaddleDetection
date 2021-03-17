@@ -7,7 +7,7 @@ TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于
 - 如果Python和CPP官网没有提供已编译好的安装包或预测库，请参考[源码安装](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html) 自行编译
 
 ## 2、准备导出的模型
-模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
+模型导出具体请参考文档[PaddleDetection模型导出教程](../EXPORT_MODEL.md)。
 
 ## 3、TensorRT原理简单介绍
 当训练完成后，导出预测部署格式的模型。当使用TensorRT引擎进行预测时，TensorRT会把可以融合的OP融合成一个大OP，从而减少数据拷贝时间，一个大OP也有助于计算加速。从而提高推理速度。
@@ -41,6 +41,7 @@ config->EnableTensorRtEngine(1 << 20             /*workspace_size*/,
 #### <a>. 输入TensorRT引擎的数据是固定尺寸
 TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。在导出模型时，需要原始config文件中设定`TestReader.inputs_def.image_shape`参数，导出模型后，这个参数会指定输入网络的第一个Tensor的尺寸。
 如果实际输入数据尺寸和这个不一致，会报错。
+或者在导出模型时指定`TestReader.inputs_def.image_shape=[3,640,640]`,具体请参考[PaddleDetection模型导出教程](../EXPORT_MODEL.md) 。
 
 **注意：
 （1）`TestReader.inputs_def.image_shape`并不一定都是输入TensorRT引擎的数据尺寸，`TestReader.inputs_def.image_shape`指定的是在`Pad`操作之前的图像数据尺寸。
@@ -71,10 +72,9 @@ TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入�
 
 ### （3）提示`some trt inputs dynamic shape info not set`
 ![img](imgs/error3.png)
-  
+
 这是由于`TensorRT`会把网络结果划分成多个子图，我们只设置了输入数据的动态尺寸，划分的其他子图的输入并未设置动态尺寸。有两个解决方法：
 #### <a>通过增大`min_subgraph_size`，跳过对这些子图的优化。根据提示，设置min_subgraph_size大于并未设置动态尺寸输入的子图中OP个数即可。
 `min_subgraph_size`的意思是，在加载TensorRT引擎的时候，大于`min_subgraph_size`的OP才会被优化，并且这些OP是连续的且是TensorRT可以优化的。
 
 #### <b>找到子图的这些输入，按照上面方式也设置子图的输入动态尺寸。
-

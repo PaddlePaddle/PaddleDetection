@@ -356,11 +356,12 @@ def load_predictor(model_dir,
             min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
             max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
             opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape, opt_input_shape)
+            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
+                                              opt_input_shape)
             print('trt set dynamic shape done!')
 
     # disable print log when predict
-    #config.disable_glog_info()
+    config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
@@ -516,10 +517,7 @@ if __name__ == '__main__':
         default=False,
         help="Dynamic_shape for TensorRT.")
     parser.add_argument(
-        "--trt_min_shape",
-        type=int,
-        default=1,
-        help="min_shape for TensorRT.")
+        "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
     parser.add_argument(
         "--trt_max_shape",
         type=int,
