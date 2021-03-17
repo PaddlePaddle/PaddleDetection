@@ -112,8 +112,32 @@ class BatchCompose(Compose):
 
 
 class BaseDataLoader(object):
+    """
+    Base DataLoader implementation for detection models
+
+    Args:
+        sample_transforms (list): a list of transforms to perform
+                                  on each sample
+        batch_transforms (list): a list of transforms to perform
+                                 on batch
+        batch_size (int): batch size for batch collating, default 1.
+        shuffle (bool): whether to shuffle samples
+        drop_last (bool): whether to drop the last incomplete,
+                          default False
+        drop_empty (bool): whether to drop samples with no ground
+                           truth labels, default True
+        num_classes (int): class number of dataset, default 80
+        use_shared_memory (bool): whether to use shared memory to
+                accelerate data loading, enable this only if you
+                are sure that the shared memory size of your OS
+                is larger than memory cost of input datas of model.
+                Note that shared memory will be automatically
+                disabled if the shared memory of OS is less than
+                1G, which is not enough for detection models.
+                Default False.
+    """
+
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -207,7 +231,6 @@ class TrainReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -216,9 +239,9 @@ class TrainReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(TrainReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
+                                          batch_size, shuffle, drop_last,
+                                          drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -226,7 +249,6 @@ class EvalReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -235,9 +257,9 @@ class EvalReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(EvalReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(EvalReader, self).__init__(sample_transforms, batch_transforms,
+                                         batch_size, shuffle, drop_last,
+                                         drop_empty, num_classes, **kwargs)
 
 
 @register
@@ -245,7 +267,6 @@ class TestReader(BaseDataLoader):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 inputs_def=None,
                  sample_transforms=[],
                  batch_transforms=[],
                  batch_size=1,
@@ -254,6 +275,6 @@ class TestReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(TestReader, self).__init__(
-            inputs_def, sample_transforms, batch_transforms, batch_size,
-            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+        super(TestReader, self).__init__(sample_transforms, batch_transforms,
+                                         batch_size, shuffle, drop_last,
+                                         drop_empty, num_classes, **kwargs)
