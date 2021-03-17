@@ -145,7 +145,6 @@ class BaseDataLoader(object):
         self.shuffle = shuffle
         self.drop_last = drop_last
         self.kwargs = kwargs
-        self.pin_memory = True if collate_batch else False
 
     def __call__(self,
                  dataset,
@@ -176,7 +175,6 @@ class BaseDataLoader(object):
             num_workers=worker_num,
             return_list=return_list,
             use_buffer_reader=use_prefetch,
-            pin_memory=self.pin_memory,
             use_shared_memory=False)
         self.loader = iter(self.dataloader)
 

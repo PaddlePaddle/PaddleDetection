@@ -14,7 +14,6 @@
 
 import math
 from numbers import Integral
-import numpy as np
 
 import paddle
 import paddle.nn as nn
@@ -528,8 +527,6 @@ class ResNet(nn.Layer):
 
     def forward(self, inputs):
         x = inputs['image']
-        if self.training and isinstance(x, np.ndarray):
-            x = paddle.to_tensor(x)
         conv1 = self.conv1(x)
         x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
         outs = []
