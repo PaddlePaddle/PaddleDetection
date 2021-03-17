@@ -53,8 +53,8 @@ class ComposeCallback(object):
     def __init__(self, callbacks):
         callbacks = [c for c in list(callbacks) if c is not None]
         for c in callbacks:
-            assert isinstance(c,
-                              Callback), "callback should be subclass of Callback"
+            assert isinstance(
+                c, Callback), "callback should be subclass of Callback"
         self._callbacks = callbacks
 
     def on_step_begin(self, status):
