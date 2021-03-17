@@ -174,9 +174,7 @@ class Trainer(object):
             logger.debug("Resume weights of epoch {}".format(self.start_epoch))
         else:
             self.start_epoch = 0
-            load_pretrain_weight(self.model, weights,
-                                 self.cfg.get('load_static_weights', False),
-                                 weight_type)
+            load_pretrain_weight(self.model, weights, weight_type)
             logger.debug("Load {} weights {} to start training".format(
                 weight_type, weights))
 
