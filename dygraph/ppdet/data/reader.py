@@ -253,10 +253,9 @@ class TrainReader(BaseDataLoader):
                  num_classes=80,
                  collate_batch=True,
                  **kwargs):
-        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
-                                          batch_size, shuffle, drop_last,
-                                          drop_empty, num_classes,
-                                          collate_batch, **kwargs)
+        super(TrainReader, self).__init__(
+            sample_transforms, batch_transforms, batch_size, shuffle, drop_last,
+            drop_empty, num_classes, collate_batch, **kwargs)
 
 
 @register
