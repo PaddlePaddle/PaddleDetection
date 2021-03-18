@@ -123,8 +123,7 @@ def load_weight(model, weight, optimizer=None):
     assert incorrect_keys == 0, "Load weight {} incorrectly, \
             {} keys unmatched, please check again.".format(weight,
                                                            incorrect_keys)
-    logger.info('Finish loading model weight parameter: {}'.format(
-        pdparam_path))
+    logger.info('Finish resuming model weights: {}'.format(pdparam_path))
 
     model.set_dict(model_weight)
 
@@ -156,7 +155,8 @@ def load_pretrain_weight(model, pretrain_weight):
 
     model_dict = model.state_dict()
 
-    param_state_dict = paddle.load(path + '.pdparams')
+    weights_path = path + '.pdparams'
+    param_state_dict = paddle.load(weights_path)
     ignore_set = set()
     lack_modules = set()
     for name, weight in model_dict.items():
@@ -168,11 +168,14 @@ def load_pretrain_weight(model, pretrain_weight):
                 param_state_dict.pop(name, None)
         else:
             lack_modules.add(name.split('.')[0])
+            logger.debug('Lack weights: {}'.format(name))
 
     if len(lack_modules) > 0:
         logger.info('Lack weights of modules: {}'.format(', '.join(
             list(lack_modules))))
+
     model.set_dict(param_state_dict)
+    logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
 def save_model(model, optimizer, save_dir, save_name, last_epoch):
