@@ -41,6 +41,21 @@ def is_url(path):
             or path.startswith('ppdet://')
 
 
+def _get_unique_endpoints(trainer_endpoints):
+    # Sorting is to avoid different environmental variables for each card
+    trainer_endpoints.sort()
+    ips = set()
+    unique_endpoints = set()
+    for endpoint in trainer_endpoints:
+        ip = endpoint.split(":")[0]
+        if ip in ips:
+            continue
+        ips.add(ip)
+        unique_endpoints.add(endpoint)
+    logger.info("unique_endpoints {}".format(unique_endpoints))
+    return unique_endpoints
+
+
 def get_weights_path_dist(path):
     env = os.environ
     if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
@@ -53,6 +68,9 @@ def get_weights_path_dist(path):
             weight_path = map_path(path, WEIGHTS_HOME)
             lock_path = weight_path + '.lock'
             if not os.path.exists(weight_path):
+                from paddle.distributed import ParallelEnv
+                unique_endpoints = _get_unique_endpoints(ParallelEnv()
+                                                         .trainer_endpoints[:])
                 try:
                     os.makedirs(os.path.dirname(weight_path))
                 except OSError as e:
@@ -60,7 +78,7 @@ def get_weights_path_dist(path):
                         raise
                 with open(lock_path, 'w'):  # touch    
                     os.utime(lock_path, None)
-                if trainer_id == 0:
+                if ParallelEnv().current_endpoint in unique_endpoints:
                     get_weights_path(path)
                     os.remove(lock_path)
                 else:
@@ -124,10 +142,7 @@ def load_weight(model, weight, optimizer=None):
     return last_epoch
 
 
-def load_pretrain_weight(model,
-                         pretrain_weight,
-                         load_static_weights=False,
-                         weight_type='pretrain'):
+def load_pretrain_weight(model, pretrain_weight, weight_type='pretrain'):
 
     assert weight_type in ['pretrain', 'finetune']
     if is_url(pretrain_weight):
@@ -136,27 +151,12 @@ def load_pretrain_weight(model,
     path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
             os.path.exists(path + '.pdparams')):
-        raise ValueError("Model pretrain path {} does not "
-                         "exists.".format(path))
+        raise ValueError("Model pretrain path `{}` does not exists. "
+                         "If you don't want to load pretrain model, "
+                         "please delete `pretrain_weights` field in "
+                         "config file.".format(path))
 
     model_dict = model.state_dict()
-
-    if load_static_weights:
-        pre_state_dict = paddle.static.load_program_state(path)
-        param_state_dict = {}
-        for key in model_dict.keys():
-            weight_name = model_dict[key].name
-            if weight_name in pre_state_dict.keys():
-                logger.info('Load weight: {}, shape: {}'.format(
-                    weight_name, pre_state_dict[weight_name].shape))
-                param_state_dict[key] = pre_state_dict[weight_name]
-            else:
-                if 'backbone' in key:
-                    logger.info('Lack weight: {}, structure name: {}'.format(
-                        weight_name, key))
-                param_state_dict[key] = model_dict[key]
-        model.set_dict(param_state_dict)
-        return
 
     param_state_dict = paddle.load(path + '.pdparams')
     if weight_type == 'pretrain':

@@ -1,6 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
-load_static_weights: true
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
@@ -64,5 +63,4 @@ BBoxPostProcess:
     score_threshold: 0.01
     post_threshold: 0.01
     nms_top_k: -1
-    normalized: false
     background_label: -1

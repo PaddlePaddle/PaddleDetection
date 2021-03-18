@@ -1,6 +1,5 @@
 architecture: CascadeRCNN
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
 
 CascadeRCNN:
@@ -74,4 +73,3 @@ BBoxPostProcess:
     keep_top_k: 100
     score_threshold: 0.05
     nms_threshold: 0.5
-    normalized: true

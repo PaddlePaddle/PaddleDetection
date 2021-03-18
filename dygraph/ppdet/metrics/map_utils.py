@@ -17,13 +17,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
 import sys
 import numpy as np
+import itertools
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
+    'draw_pr_curve',
     'bbox_area',
     'jaccard_overlap',
     'prune_zero_padding',
@@ -32,6 +35,30 @@ __all__ = [
     'ap_per_class',
     'compute_ap',
 ]
+
+
+def draw_pr_curve(precision,
+                  recall,
+                  iou=0.5,
+                  out_dir='pr_curve',
+                  file_name='precision_recall_curve.jpg'):
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+    output_path = os.path.join(out_dir, file_name)
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        logger.error('Matplotlib not found, plaese install matplotlib.'
+                     'for example: `pip install matplotlib`.')
+        raise e
+    plt.cla()
+    plt.figure('P-R Curve')
+    plt.title('Precision/Recall Curve(IoU={})'.format(iou))
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.grid(True)
+    plt.plot(recall, precision)
+    plt.savefig(output_path)
 
 
 def bbox_area(bbox, is_bbox_normalized):
@@ -92,6 +119,8 @@ class DetectionMAP(object):
             is normalized to range[0, 1]. Default False.
         evaluate_difficult (bool): whether to evaluate
             difficult bounding boxes. Default False.
+        classwise (bool): whether per-category AP and draw
+            P-R Curve or not.
     """
 
     def __init__(self,
@@ -99,7 +128,9 @@ class DetectionMAP(object):
                  overlap_thresh=0.5,
                  map_type='11point',
                  is_bbox_normalized=False,
-                 evaluate_difficult=False):
+                 evaluate_difficult=False,
+                 catid2name=None,
+                 classwise=False):
         self.class_num = class_num
         self.overlap_thresh = overlap_thresh
         assert map_type in ['11point', 'integral'], \
@@ -108,6 +139,10 @@ class DetectionMAP(object):
         self.map_type = map_type
         self.is_bbox_normalized = is_bbox_normalized
         self.evaluate_difficult = evaluate_difficult
+        self.classwise = classwise
+        self.classes = []
+        for cname in catid2name.values():
+            self.classes.append(cname)
         self.reset()
 
     def update(self, bbox, score, label, gt_box, gt_label, difficult=None):
@@ -163,6 +198,7 @@ class DetectionMAP(object):
         """
         mAP = 0.
         valid_cnt = 0
+        eval_results = []
         for score_pos, count in zip(self.class_score_poss,
                                     self.class_gt_counts):
             if count == 0: continue
@@ -178,6 +214,7 @@ class DetectionMAP(object):
                 precision.append(float(ac_tp) / (ac_tp + ac_fp))
                 recall.append(float(ac_tp) / count)
 
+            one_class_ap = 0.0
             if self.map_type == '11point':
                 max_precisions = [0.] * 11
                 start_idx = len(precision) - 1
@@ -191,23 +228,29 @@ class DetectionMAP(object):
                         else:
                             if max_precisions[j] < precision[i]:
                                 max_precisions[j] = precision[i]
-                mAP += sum(max_precisions) / 11.
+                one_class_ap = sum(max_precisions) / 11.
+                mAP += one_class_ap
                 valid_cnt += 1
             elif self.map_type == 'integral':
                 import math
-                ap = 0.
                 prev_recall = 0.
                 for i in range(len(precision)):
                     recall_gap = math.fabs(recall[i] - prev_recall)
                     if recall_gap > 1e-6:
-                        ap += precision[i] * recall_gap
+                        one_class_ap += precision[i] * recall_gap
                         prev_recall = recall[i]
-                mAP += ap
+                mAP += one_class_ap
                 valid_cnt += 1
             else:
                 logger.error("Unspported mAP type {}".format(self.map_type))
                 sys.exit(1)
-
+            eval_results.append({
+                'class': self.classes[valid_cnt - 1],
+                'ap': one_class_ap,
+                'precision': precision,
+                'recall': recall,
+            })
+        self.eval_results = eval_results
         self.mAP = mAP / float(valid_cnt) if valid_cnt > 0 else mAP
 
     def get_map(self):
@@ -216,6 +259,39 @@ class DetectionMAP(object):
         """
         if self.mAP is None:
             logger.error("mAP is not calculated.")
+        if self.classwise:
+            # Compute per-category AP and PR curve
+            try:
+                from terminaltables import AsciiTable
+            except Exception as e:
+                logger.error(
+                    'terminaltables not found, plaese install terminaltables. '
+                    'for example: `pip install terminaltables`.')
+                raise e
+            results_per_category = []
+            for eval_result in self.eval_results:
+                results_per_category.append(
+                    (str(eval_result['class']),
+                     '{:0.3f}'.format(float(eval_result['ap']))))
+                draw_pr_curve(
+                    eval_result['precision'],
+                    eval_result['recall'],
+                    out_dir='voc_pr_curve',
+                    file_name='{}_precision_recall_curve.jpg'.format(
+                        eval_result['class']))
+
+            num_columns = min(6, len(results_per_category) * 2)
+            results_flatten = list(itertools.chain(*results_per_category))
+            headers = ['category', 'AP'] * (num_columns // 2)
+            results_2d = itertools.zip_longest(* [
+                results_flatten[i::num_columns] for i in range(num_columns)
+            ])
+            table_data = [headers]
+            table_data += [result for result in results_2d]
+            table = AsciiTable(table_data)
+            logger.info('Per-category of VOC AP: \n{}'.format(table.table))
+            logger.info(
+                "per-category PR curve has output to voc_pr_curve folder.")
         return self.mAP
 
     def _get_tp_fp_accum(self, score_pos_list):

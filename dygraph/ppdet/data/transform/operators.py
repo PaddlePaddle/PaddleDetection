@@ -252,8 +252,8 @@ class RandomErasingImage(BaseOperator):
                 continue
 
             x1, y1, x2, y2 = gt_bbox[idx, :]
-            w_bbox = x2 - x1 + 1
-            h_bbox = y2 - y1 + 1
+            w_bbox = x2 - x1
+            h_bbox = y2 - y1
             area = w_bbox * h_bbox
 
             target_area = random.uniform(self.lower, self.higher) * area
@@ -1032,7 +1032,7 @@ class CropWithDataAchorSampling(BaseOperator):
               [max sample, max trial, min scale, max scale,
                min aspect ratio, max aspect ratio,
                min overlap, max overlap, min coverage, max coverage]
-            target_size (bool): target image size.
+            target_size (int): target image size.
             das_anchor_scales (list[float]): a list of anchor scales in data
                 anchor smapling.
             min_size (float): minimum size of sampled bbox.
@@ -1064,6 +1064,10 @@ class CropWithDataAchorSampling(BaseOperator):
         gt_bbox = sample['gt_bbox']
         gt_class = sample['gt_class']
         image_height, image_width = im.shape[:2]
+        gt_bbox[:, 0] /= image_width
+        gt_bbox[:, 1] /= image_height
+        gt_bbox[:, 2] /= image_width
+        gt_bbox[:, 3] /= image_height
         gt_score = None
         if 'gt_score' in sample:
             gt_score = sample['gt_score']
@@ -1111,10 +1115,16 @@ class CropWithDataAchorSampling(BaseOperator):
                         continue
                 im = crop_image_sampling(im, sample_bbox, image_width,
                                          image_height, self.target_size)
+                height, width = im.shape[:2]
+                crop_bbox[:, 0] *= width
+                crop_bbox[:, 1] *= height
+                crop_bbox[:, 2] *= width
+                crop_bbox[:, 3] *= height
                 sample['image'] = im
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
-                sample['gt_score'] = crop_score
+                if 'gt_score' in sample:
+                    sample['gt_score'] = crop_score
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = gt_keypoints[0]
                     sample['keypoint_ignore'] = gt_keypoints[1]
@@ -1162,10 +1172,16 @@ class CropWithDataAchorSampling(BaseOperator):
                 ymin = int(sample_bbox[1] * image_height)
                 ymax = int(sample_bbox[3] * image_height)
                 im = im[ymin:ymax, xmin:xmax]
+                height, width = im.shape[:2]
+                crop_bbox[:, 0] *= width
+                crop_bbox[:, 1] *= height
+                crop_bbox[:, 2] *= width
+                crop_bbox[:, 3] *= height
                 sample['image'] = im
                 sample['gt_bbox'] = crop_bbox
                 sample['gt_class'] = crop_class
-                sample['gt_score'] = crop_score
+                if 'gt_score' in sample:
+                    sample['gt_score'] = crop_score
                 if 'gt_keypoint' in sample.keys():
                     sample['gt_keypoint'] = gt_keypoints[0]
                     sample['keypoint_ignore'] = gt_keypoints[1]

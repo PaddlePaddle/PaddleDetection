@@ -33,15 +33,15 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
 
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, JDEDetMetric, JDEReIDMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, JDEDetMetric, JDEReIDMetric
 from ppdet.metrics import get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
+logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
@@ -53,13 +53,14 @@ class Trainer(object):
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
         self.optimizer = None
+        self.slim = None
 
         # model slim build
         if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':
                 self.load_weights(cfg.pretrain_weights, cfg.weight_type)
-            slim = create(cfg.slim)
-            slim(self.model)
+            self.slim = create(cfg.slim)
+            self.slim(self.model)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -97,8 +98,6 @@ class Trainer(object):
         self.start_epoch = 0
         self.end_epoch = cfg.epoch
 
-        self._weights_loaded = False
-
         # initial default callbacks
         self._init_callbacks()
 
@@ -109,9 +108,16 @@ class Trainer(object):
     def _init_callbacks(self):
         if self.mode == 'train':
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            if 'use_vdl' in self.cfg and self.cfg.use_vdl:
+                self._callbacks.append(VisualDLWriter(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
+            if self.cfg.metric == 'WiderFace':
+                self._callbacks.append(WiferFaceEval(self))
+            self._compose_callback = ComposeCallback(self._callbacks)
+        elif self.mode == 'test' and 'use_vdl' in self.cfg and self.cfg.use_vdl:
+            self._callbacks = [VisualDLWriter(self)]
             self._compose_callback = ComposeCallback(self._callbacks)
         else:
             self._callbacks = []
@@ -121,19 +127,32 @@ class Trainer(object):
         if self.mode == 'test':
             self._metrics = []
             return
+        classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
         if self.cfg.metric == 'COCO':
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(), bias=bias)
+                    anno_file=self.dataset.get_anno(),
+                    classwise=classwise,
+                    bias=bias)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
                 VOCMetric(
-                    anno_file=self.dataset.get_anno(),
+                    label_list=self.dataset.get_label_list(),
                     class_num=self.cfg.num_classes,
-                    map_type=self.cfg.map_type)
+                    map_type=self.cfg.map_type,
+                    classwise=classwise)
+            ]
+        elif self.cfg.metric == 'WiderFace':
+            multi_scale = self.cfg.multi_scale_eval if 'multi_scale_eval' in self.cfg else True
+            self._metrics = [
+                WiderFaceMetric(
+                    image_dir=os.path.join(self.dataset.dataset_dir,
+                                           self.dataset.image_dir),
+                    anno_file=self.dataset.get_anno(),
+                    multi_scale=multi_scale)
             ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
@@ -149,7 +168,7 @@ class Trainer(object):
             metric.reset()
 
     def register_callbacks(self, callbacks):
-        callbacks = [h for h in list(callbacks) if h is not None]
+        callbacks = [c for c in list(callbacks) if c is not None]
         for c in callbacks:
             assert isinstance(c, Callback), \
                     "metrics shoule be instances of subclass of Metric"
@@ -171,19 +190,12 @@ class Trainer(object):
             logger.debug("Resume weights of epoch {}".format(self.start_epoch))
         else:
             self.start_epoch = 0
-            load_pretrain_weight(self.model, weights,
-                                 self.cfg.get('load_static_weights', False),
-                                 weight_type)
+            load_pretrain_weight(self.model, weights, weight_type)
             logger.debug("Load {} weights {} to start training".format(
                 weight_type, weights))
-        self._weights_loaded = True
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
-
-        # if no given weights loaded, load backbone pretrain weights as default
-        if not self._weights_loaded:
-            self.load_weights(self.cfg.pretrain_weights)
 
         model = self.model
         if self.cfg.fleet:
@@ -270,6 +282,7 @@ class Trainer(object):
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
                 with paddle.no_grad():
+                    self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
 
     def _eval_with_loader(self, loader):
@@ -293,12 +306,12 @@ class Trainer(object):
 
         self.status['sample_num'] = sample_num
         self.status['cost_time'] = time.time() - tic
-        self._compose_callback.on_epoch_end(self.status)
 
         # accumulate metric to log out
         for metric in self._metrics:
             metric.accumulate()
             metric.log()
+        self._compose_callback.on_epoch_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
@@ -332,8 +345,9 @@ class Trainer(object):
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]
                 image = Image.open(image_path).convert('RGB')
-                end = start + bbox_num[i]
+                self.status['original_image'] = np.array(image.copy())
 
+                end = start + bbox_num[i]
                 bbox_res = batch_res['bbox'][start:end] \
                         if 'bbox' in batch_res else None
                 mask_res = batch_res['mask'][start:end] \
@@ -343,7 +357,9 @@ class Trainer(object):
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
-
+                self.status['result_image'] = np.array(image.copy())
+                if self._compose_callback:
+                    self._compose_callback.on_step_end(self.status)
                 # save image with detection
                 save_name = self._get_save_image_name(output_dir, image_path)
                 logger.info("Detection bbox results save in {}".format(
@@ -392,17 +408,24 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        static_model = paddle.jit.to_static(self.model, input_spec=input_spec)
-        # NOTE: dy2st do not pruned program, but jit.save will prune program
-        # input spec, prune input spec here and save with pruned input spec
-        pruned_input_spec = self._prune_input_spec(
-            input_spec, static_model.forward.main_program,
-            static_model.forward.outputs)
-        paddle.jit.save(
-            static_model,
-            os.path.join(save_dir, 'model'),
-            input_spec=pruned_input_spec)
-        logger.info("Export model and saved in {}".format(save_dir))
+        if self.slim is None or self.cfg['slim'] != 'QAT':
+            static_model = paddle.jit.to_static(
+                self.model, input_spec=input_spec)
+            # NOTE: dy2st do not pruned program, but jit.save will prune program
+            # input spec, prune input spec here and save with pruned input spec
+            pruned_input_spec = self._prune_input_spec(
+                input_spec, static_model.forward.main_program,
+                static_model.forward.outputs)
+            paddle.jit.save(
+                static_model,
+                os.path.join(save_dir, 'model'),
+                input_spec=pruned_input_spec)
+            logger.info("Export model and saved in {}".format(save_dir))
+        else:
+            self.slim.save_quantized_model(
+                self.model,
+                os.path.join(save_dir, 'model'),
+                input_spec=input_spec)
 
     def _prune_input_spec(self, input_spec, program, targets):
         # try to prune static program to figure out pruned input spec

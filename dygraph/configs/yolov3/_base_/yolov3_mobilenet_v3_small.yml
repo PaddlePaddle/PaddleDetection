@@ -1,6 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_small_x1_0_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_small_x1_0_ssld_pretrained.pdparams
 norm_type: sync_bn
 
 YOLOv3:
@@ -43,4 +42,3 @@ BBoxPostProcess:
     score_threshold: 0.01
     nms_threshold: 0.45
     nms_top_k: 1000
-    normalized: false

@@ -17,7 +17,10 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 import datetime
+import six
+import numpy as np
 
 import paddle
 from paddle.distributed import ParallelEnv
@@ -26,7 +29,7 @@ from ppdet.utils.checkpoint import save_model
 from ppdet.optimizer import ModelEMA
 
 from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
+logger = setup_logger('ppdet.engine')
 
 __all__ = ['Callback', 'ComposeCallback', 'LogPrinter', 'Checkpointer']
 
@@ -50,27 +53,27 @@ class Callback(object):
 
 class ComposeCallback(object):
     def __init__(self, callbacks):
-        callbacks = [h for h in list(callbacks) if h is not None]
-        for h in callbacks:
-            assert isinstance(h,
-                              Callback), "hook shoule be subclass of Callback"
+        callbacks = [c for c in list(callbacks) if c is not None]
+        for c in callbacks:
+            assert isinstance(
+                c, Callback), "callback should be subclass of Callback"
         self._callbacks = callbacks
 
     def on_step_begin(self, status):
-        for h in self._callbacks:
-            h.on_step_begin(status)
+        for c in self._callbacks:
+            c.on_step_begin(status)
 
     def on_step_end(self, status):
-        for h in self._callbacks:
-            h.on_step_end(status)
+        for c in self._callbacks:
+            c.on_step_end(status)
 
     def on_epoch_begin(self, status):
-        for h in self._callbacks:
-            h.on_epoch_begin(status)
+        for c in self._callbacks:
+            c.on_epoch_begin(status)
 
     def on_epoch_end(self, status):
-        for h in self._callbacks:
-            h.on_epoch_end(status)
+        for c in self._callbacks:
+            c.on_epoch_end(status)
 
 
 class LogPrinter(Callback):
@@ -139,7 +142,10 @@ class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
         cfg = self.model.cfg
+        self.best_ap = 0.
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        self.save_dir = os.path.join(self.model.cfg.save_dir,
+                                     self.model.cfg.filename)
         if self.use_ema:
             self.ema = ModelEMA(
                 cfg['ema_decay'], self.model.model, use_thres_step=True)
@@ -151,21 +157,102 @@ class Checkpointer(Callback):
     def on_epoch_end(self, status):
         # Checkpointer only performed during training
         mode = status['mode']
-        if mode != 'train':
-            return
-
+        epoch_id = status['epoch_id']
+        weight = None
+        save_name = None
         if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
-            epoch_id = status['epoch_id']
-            end_epoch = self.model.cfg.epoch
-            if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
-                save_dir = os.path.join(self.model.cfg.save_dir,
-                                        self.model.cfg.filename)
-                save_name = str(
-                    epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                if self.use_ema:
-                    state_dict = self.ema.apply()
-                    save_model(state_dict, self.model.optimizer, save_dir,
-                               save_name, epoch_id + 1)
-                else:
-                    save_model(self.model.model, self.model.optimizer, save_dir,
-                               save_name, epoch_id + 1)
+            if mode == 'train':
+                end_epoch = self.model.cfg.epoch
+                if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
+                    save_name = str(
+                        epoch_id) if epoch_id != end_epoch - 1 else "model_final"
+                    if self.use_ema:
+                        weight = self.ema.apply()
+                    else:
+                        weight = self.model.model
+            elif mode == 'eval':
+                if 'save_best_model' in status and status['save_best_model']:
+                    for metric in self.model._metrics:
+                        map_res = metric.get_results()
+                        key = 'bbox' if 'bbox' in map_res else 'mask'
+                        if map_res[key][0] > self.best_ap:
+                            self.best_ap = map_res[key][0]
+                            save_name = 'best_model'
+                            if self.use_ema:
+                                weight = self.ema.apply()
+                            else:
+                                weight = self.model.model
+                        logger.info("Best test {} ap is {:0.3f}.".format(
+                            key, self.best_ap))
+            if weight:
+                save_model(weight, self.model.optimizer, self.save_dir,
+                           save_name, epoch_id + 1)
+
+
+class WiferFaceEval(Callback):
+    def __init__(self, model):
+        super(WiferFaceEval, self).__init__(model)
+
+    def on_epoch_begin(self, status):
+        assert self.model.mode == 'eval', \
+            "WiferFaceEval can only be set during evaluation"
+        for metric in self.model._metrics:
+            metric.update(self.model.model)
+        sys.exit()
+
+
+class VisualDLWriter(Callback):
+    """
+    Use VisualDL to log data or image
+    """
+
+    def __init__(self, model):
+        super(VisualDLWriter, self).__init__(model)
+
+        assert six.PY3, "VisualDL requires Python >= 3.5"
+        try:
+            from visualdl import LogWriter
+        except Exception as e:
+            logger.error('visualdl not found, plaese install visualdl. '
+                         'for example: `pip install visualdl`.')
+            raise e
+        self.vdl_writer = LogWriter(model.cfg.vdl_log_dir)
+        self.vdl_loss_step = 0
+        self.vdl_mAP_step = 0
+        self.vdl_image_step = 0
+        self.vdl_image_frame = 0
+
+    def on_step_end(self, status):
+        mode = status['mode']
+        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+            if mode == 'train':
+                training_staus = status['training_staus']
+                for loss_name, loss_value in training_staus.get().items():
+                    self.vdl_writer.add_scalar(loss_name, loss_value,
+                                               self.vdl_loss_step)
+                    self.vdl_loss_step += 1
+            elif mode == 'test':
+                ori_image = status['original_image']
+                result_image = status['result_image']
+                self.vdl_writer.add_image(
+                    "original/frame_{}".format(self.vdl_image_frame), ori_image,
+                    self.vdl_image_step)
+                self.vdl_writer.add_image(
+                    "result/frame_{}".format(self.vdl_image_frame),
+                    result_image, self.vdl_image_step)
+                self.vdl_image_step += 1
+                # each frame can display ten pictures at most.
+                if self.vdl_image_step % 10 == 0:
+                    self.vdl_image_step = 0
+                    self.vdl_image_frame += 1
+
+    def on_epoch_end(self, status):
+        mode = status['mode']
+        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+            if mode == 'eval':
+                for metric in self.model._metrics:
+                    for key, map_value in metric.get_results().items():
+                        self.vdl_writer.add_scalar("{}-mAP".format(key),
+                                                   map_value[0],
+                                                   self.vdl_mAP_step)
+                self.vdl_mAP_step += 1

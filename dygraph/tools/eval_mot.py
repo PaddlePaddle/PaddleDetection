@@ -50,9 +50,9 @@ def parse_args():
         default='./dataset/MOT',
         help='Directory for tracking dataset.')
     parser.add_argument(
-        '--output_dir', 
-        type=str, 
-        default='output', 
+        '--output_dir',
+        type=str,
+        default='output',
         help='Directory name for output tracking results.')
 
     parser.add_argument(

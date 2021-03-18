@@ -1,6 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 norm_type: sync_bn
 
 YOLOv3:
@@ -40,4 +39,3 @@ BBoxPostProcess:
     score_threshold: 0.01
     nms_threshold: 0.45
     nms_top_k: 1000
-    normalized: false

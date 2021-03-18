@@ -49,7 +49,8 @@ def batch_norm(ch,
                norm_decay=0.,
                freeze_norm=False,
                initializer=None,
-               name=None):
+               name=None,
+               data_format='NCHW'):
     bn_name = name + '.bn'
     if norm_type == 'sync_bn':
         batch_norm = nn.SyncBatchNorm
@@ -69,7 +70,11 @@ def batch_norm(ch,
         regularizer=L2Decay(norm_decay),
         trainable=False if freeze_norm else True)
 
-    norm_layer = batch_norm(ch, weight_attr=weight_attr, bias_attr=bias_attr)
+    norm_layer = batch_norm(
+        ch,
+        weight_attr=weight_attr,
+        bias_attr=bias_attr,
+        data_format=data_format)
 
     norm_params = norm_layer.parameters()
     if freeze_norm:

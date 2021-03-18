@@ -36,7 +36,8 @@ class ConvBNLayer(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=False,
                  act="leaky",
-                 name=None):
+                 name=None,
+                 data_format='NCHW'):
         super(ConvBNLayer, self).__init__()
 
         self.conv = nn.Conv2D(
@@ -47,13 +48,15 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=groups,
             weight_attr=ParamAttr(name=name + '.conv.weights'),
+            data_format=data_format,
             bias_attr=False)
         self.batch_norm = batch_norm(
             ch_out,
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            name=name)
+            name=name,
+            data_format=data_format)
         self.act = act
 
     def forward(self, inputs):
@@ -74,7 +77,8 @@ class DownSample(nn.Layer):
                  norm_type='bn',
                  norm_decay=0.,
                  freeze_norm=False,
-                 name=None):
+                 name=None,
+                 data_format='NCHW'):
 
         super(DownSample, self).__init__()
 
@@ -87,6 +91,7 @@ class DownSample(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name=name)
         self.ch_out = ch_out
 
@@ -102,7 +107,8 @@ class BasicBlock(nn.Layer):
                  norm_type='bn',
                  norm_decay=0.,
                  freeze_norm=False,
-                 name=None):
+                 name=None,
+                 data_format='NCHW'):
         super(BasicBlock, self).__init__()
 
         self.conv1 = ConvBNLayer(
@@ -114,6 +120,7 @@ class BasicBlock(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name=name + '.0')
         self.conv2 = ConvBNLayer(
             ch_in=ch_out,
@@ -124,6 +131,7 @@ class BasicBlock(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name=name + '.1')
 
     def forward(self, inputs):
@@ -141,7 +149,8 @@ class Blocks(nn.Layer):
                  norm_type='bn',
                  norm_decay=0.,
                  freeze_norm=False,
-                 name=None):
+                 name=None,
+                 data_format='NCHW'):
         super(Blocks, self).__init__()
 
         self.basicblock0 = BasicBlock(
@@ -150,6 +159,7 @@ class Blocks(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name=name + '.0')
         self.res_out_list = []
         for i in range(1, count):
@@ -162,6 +172,7 @@ class Blocks(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
+                    data_format=data_format,
                     name=block_name))
             self.res_out_list.append(res_out)
         self.ch_out = ch_out
@@ -179,7 +190,7 @@ DarkNet_cfg = {53: ([1, 2, 8, 8, 4])}
 @register
 @serializable
 class DarkNet(nn.Layer):
-    __shared__ = ['norm_type']
+    __shared__ = ['norm_type', 'data_format']
 
     def __init__(self,
                  depth=53,
@@ -188,7 +199,8 @@ class DarkNet(nn.Layer):
                  num_stages=5,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=False):
+                 freeze_norm=False,
+                 data_format='NCHW'):
         super(DarkNet, self).__init__()
         self.depth = depth
         self.freeze_at = freeze_at
@@ -205,6 +217,7 @@ class DarkNet(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name='yolo_input')
 
         self.downsample0 = DownSample(
@@ -213,6 +226,7 @@ class DarkNet(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            data_format=data_format,
             name='yolo_input.downsample')
 
         self._out_channels = []
@@ -230,6 +244,7 @@ class DarkNet(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
+                    data_format=data_format,
                     name=name))
             self.darknet_conv_block_list.append(conv_block)
             if i in return_idx:
@@ -244,6 +259,7 @@ class DarkNet(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
+                    data_format=data_format,
                     name=down_name))
             self.downsample_list.append(downsample)
 

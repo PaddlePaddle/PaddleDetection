@@ -30,19 +30,32 @@ from .map_utils import prune_zero_padding, DetectionMAP, ap_per_class, bbox_iou_
 from .mot_eval_utils import MOTEvaluator
 from .coco_utils import get_infer_results, cocoapi_eval
 import motmetrics as mm
+from .widerface_utils import face_eval_run
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric', 'COCOMetric', 'VOCMetric', 'get_infer_results', 'JDEDetMetric',
-    'JDEReIDMetric', 'MOTMetric'
+    'Metric',
+    'COCOMetric',
+    'VOCMetric',
+    'WiderFaceMetric',
+    'get_infer_results',
+    'JDEDetMetric',
+    'JDEReIDMetric',
+    'MOTMetric',
 ]
 
 
 class Metric(paddle.metric.Metric):
     def name(self):
         return self.__class__.__name__
+
+    def reset(self):
+        pass
+
+    def accumulate(self):
+        pass
 
     # paddle.metric.Metric defined :metch:`update`, :meth:`accumulate`
     # :metch:`reset`, in ppdet, we also need following 2 methods:
@@ -62,6 +75,7 @@ class COCOMetric(Metric):
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        self.classwise = kwargs.get('classwise', False)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
         self.reset()
@@ -97,7 +111,10 @@ class COCOMetric(Metric):
                 logger.info('The bbox result is saved to bbox.json.')
 
             bbox_stats = cocoapi_eval(
-                'bbox.json', 'bbox', anno_file=self.anno_file)
+                'bbox.json',
+                'bbox',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['bbox'] = bbox_stats
             sys.stdout.flush()
 
@@ -107,7 +124,10 @@ class COCOMetric(Metric):
                 logger.info('The mask result is saved to mask.json.')
 
             seg_stats = cocoapi_eval(
-                'mask.json', 'segm', anno_file=self.anno_file)
+                'mask.json',
+                'segm',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['mask'] = seg_stats
             sys.stdout.flush()
 
@@ -117,7 +137,10 @@ class COCOMetric(Metric):
                 logger.info('The segm result is saved to segm.json.')
 
             seg_stats = cocoapi_eval(
-                'segm.json', 'segm', anno_file=self.anno_file)
+                'segm.json',
+                'segm',
+                anno_file=self.anno_file,
+                classwise=self.classwise)
             self.eval_results['mask'] = seg_stats
             sys.stdout.flush()
 
@@ -130,16 +153,16 @@ class COCOMetric(Metric):
 
 class VOCMetric(Metric):
     def __init__(self,
-                 anno_file,
+                 label_list,
                  class_num=20,
                  overlap_thresh=0.5,
                  map_type='11point',
                  is_bbox_normalized=False,
-                 evaluate_difficult=False):
-        assert os.path.isfile(anno_file), \
-                "anno_file {} not a file".format(anno_file)
-        self.anno_file = anno_file
-        self.clsid2catid, self.catid2name = get_categories('VOC', anno_file)
+                 evaluate_difficult=False,
+                 classwise=False):
+        assert os.path.isfile(label_list), \
+                "label_list {} not a file".format(label_list)
+        self.clsid2catid, self.catid2name = get_categories('VOC', label_list)
 
         self.overlap_thresh = overlap_thresh
         self.map_type = map_type
@@ -149,7 +172,9 @@ class VOCMetric(Metric):
             overlap_thresh=overlap_thresh,
             map_type=map_type,
             is_bbox_normalized=is_bbox_normalized,
-            evaluate_difficult=evaluate_difficult)
+            evaluate_difficult=evaluate_difficult,
+            catid2name=self.catid2name,
+            classwise=classwise)
 
         self.reset()
 
@@ -201,7 +226,7 @@ class VOCMetric(Metric):
                                                        self.map_type, map_stat))
 
     def get_results(self):
-        self.detection_map.get_map()
+        return {'bbox': [self.detection_map.get_map()]}
 
 
 class JDEDetMetric(Metric):
@@ -279,7 +304,7 @@ class JDEReIDMetric(Metric):
 
     def update(self, inputs, outputs):
         for out in outputs:
-            feat, label = out[:-1].clone().detach(), int(out[-1])  # [512], [1]
+            feat, label = out[:-1].clone().detach(), int(out[-1])
             if label != -1:
                 self.embedding.append(feat)
                 self.id_labels.append(label)
@@ -347,3 +372,21 @@ class MOTMetric(Metric):
 
     def get_results(self):
         return self.strsummary
+
+
+class WiderFaceMetric(Metric):
+    def __init__(self, image_dir, anno_file, multi_scale=True):
+        self.image_dir = image_dir
+        self.anno_file = anno_file
+        self.multi_scale = multi_scale
+        self.clsid2catid, self.catid2name = get_categories('widerface')
+
+    def update(self, model):
+
+        face_eval_run(
+            model,
+            self.image_dir,
+            self.anno_file,
+            pred_dir='output/pred',
+            eval_mode='widerface',
+            multi_scale=self.multi_scale)

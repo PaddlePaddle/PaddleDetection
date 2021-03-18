@@ -45,9 +45,9 @@ def parse_args():
         default='test.mp4',
         help='Video name for tracking.')
     parser.add_argument(
-        '--output_dir', 
-        type=str, 
-        default='output', 
+        '--output_dir',
+        type=str,
+        default='output',
         help='Directory name for output tracking results.')
 
     parser.add_argument(

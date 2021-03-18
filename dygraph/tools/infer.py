@@ -130,6 +130,8 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    cfg['use_vdl'] = FLAGS.use_vdl
+    cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)
