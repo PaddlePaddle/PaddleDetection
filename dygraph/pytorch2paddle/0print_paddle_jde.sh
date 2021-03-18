@@ -1,1 +1,0 @@
-python3.7 dygraph_print.py -c configs/jde/jde_darknet53_30e_1088x608.yml 2>&1 | tee jde_paddle_print.txt
