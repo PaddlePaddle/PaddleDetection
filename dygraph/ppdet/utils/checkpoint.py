@@ -158,7 +158,7 @@ def load_pretrain_weight(model, pretrain_weight):
 
     param_state_dict = paddle.load(path + '.pdparams')
     ignore_set = set()
-    lack_segs = set()
+    lack_modules = set()
     for name, weight in model_dict.items():
         if name in param_state_dict.keys():
             if weight.shape != list(param_state_dict[name].shape):
@@ -167,10 +167,11 @@ def load_pretrain_weight(model, pretrain_weight):
                         name, list(param_state_dict[name].shape), weight.shape))
                 param_state_dict.pop(name, None)
         else:
-            lack_segs.add(name.split('.')[0])
+            lack_modules.add(name.split('.')[0])
 
-    if len(lack_segs) > 0:
-        logger.info('Lack weight: {}'.format(', '.join(list(name))))
+    if len(lack_modules) > 0:
+        logger.info('Lack weights of modules: {}'.format(', '.join(
+            list(lack_modules))))
     model.set_dict(param_state_dict)
 
 
