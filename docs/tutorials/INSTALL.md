@@ -9,7 +9,6 @@ English | [简体中文](INSTALL_cn.md)
 - [PaddlePaddle](#paddlepaddle)
 - [Other Dependencies](#other-dependencies)
 - [PaddleDetection](#paddle-detection)
-- [Datasets](#datasets)
 
 
 ## Introduction
@@ -17,16 +16,17 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection, its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/master/).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
 
 
 ## Install PaddlePaddle
 
 ### Requirements:
-- Python2 or Python3 (Only support Python3 for windows)
+- OS 64 bit
+- Python2 >= 2.7.15 or Python 3(3.5.1+/3.6/3.7)，64 bit
+- pip/pip3(9.0.1+), 64 bit
 - CUDA >= 9.0
 - cuDNN >= 7.6
-- nccl >= 2.1.2
 
 If you need GPU multi-card training, firstly please install NCCL. (Windows does not support nccl).
 
@@ -34,24 +34,38 @@ PaddleDetection depends on PaddlePaddle version relationship:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
-|      v0.3          |        >=1.7      |     --    |
-|      v0.4          |       >= 1.8.4    |  PP-YOLO依赖1.8.4 |
-|      v0.5          |       >= 1.8.4   |  Most models can run with >= 1.8.4, Cascade R-CNN and SOLOv2 depend on 2.0.0.rc |
+|    release/0.3       |        >=1.7      |     --    |
+|    release/0.4       |       >= 1.8.4    |  PP-YOLO depends on 1.8.4 |
+|    release/0.5       |       >= 1.8.4    |  Cascade R-CNN and SOLOv2 depends on 2.0.0.rc |
+|    release/2.0-rc    |       >= 2.0.1    |     --    |
+
 
 If you want install paddlepaddle, please follow the instructions in [installation document](http://www.paddlepaddle.org.cn/).
 
-Please make sure your PaddlePaddle installation was successful and the version
-of your PaddlePaddle is not lower than required. Verify with the following commands.
+```
+# install paddlepaddle
+# install paddlepaddle CUDA9.0
+python -m pip install paddlepaddle-gpu==2.0.1.post90 -i https://mirror.baidu.com/pypi/simple
+
+install paddlepaddle CUDA10.0
+python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
+
+install paddlepaddle CPU
+python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
+```
+
+For more installation methods such as conda, docker installation, please refer to the instructions in the [installation document](https://www.paddlepaddle.org.cn/install/quick)
+
+Please make sure that your PaddlePaddle is installed successfully and the version is not lower than the required version. Use the following command to verify.
 
 ```
-# To check PaddlePaddle installation in your Python interpreter
->>> import paddle.fluid as fluid
->>> fluid.install_check.run_check()
+# check
+>>> import paddle
+>>> paddle.utils.run_check()
 
-# To check PaddlePaddle version
+# confirm the paddle's version
 python -c "import paddle; print(paddle.__version__)"
 ```
-
 
 
 ## Other Dependencies
@@ -104,108 +118,24 @@ pip install -r requirements.txt
 python ppdet/modeling/tests/test_architectures.py
 ```
 
-## Datasets
-
-PaddleDetection includes support for [COCO](http://cocodataset.org) and [Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) by default, please follow these instructions to set up the dataset.
-
-**Create symlinks for local datasets:**
-
-Default dataset path in config files is `dataset/coco` and `dataset/voc`, if the
-datasets are already available on disk, you can simply create symlinks to
-their directories:
-
+After the test is passed, the following information will be prompted:
 ```
-ln -sf <path/to/coco> <path/to/paddle_detection>/dataset/coco
-ln -sf <path/to/voc> <path/to/paddle_detection>/dataset/voc
+..........
+----------------------------------------------------------------------
+Ran 12 tests in 2.480s
+OK (skipped=2)
 ```
 
-For Pascal VOC dataset, you should create file list by:
+**Infer by pretrained-model**
+
+Use the pre-trained model to predict the image:
 
 ```
-python dataset/voc/create_list.py
+# set use_gpu
+python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 
-**Download datasets manually:**
+An image of the same name with the predicted result will be generated under the `output` folder.
+The result is as shown below：
 
-On the other hand, to download the datasets, run the following commands:
-
-- COCO
-
-```
-python dataset/coco/download_coco.py
-```
-
-`COCO` dataset with directory structures like this:
-
-  ```
-  dataset/coco/
-  ├── annotations
-  │   ├── instances_train2014.json
-  │   ├── instances_train2017.json
-  │   ├── instances_val2014.json
-  │   ├── instances_val2017.json
-  │   |   ...
-  ├── train2017
-  │   ├── 000000000009.jpg
-  │   ├── 000000580008.jpg
-  │   |   ...
-  ├── val2017
-  │   ├── 000000000139.jpg
-  │   ├── 000000000285.jpg
-  │   |   ...
-  |   ...
-  ```
-
-- Pascal VOC
-
-```
-python dataset/voc/download_voc.py
-```
-
-`Pascal VOC` dataset with directory structure like this:
-
-  ```
-  dataset/voc/
-  ├── trainval.txt
-  ├── test.txt
-  ├── label_list.txt (optional)
-  ├── VOCdevkit/VOC2007
-  │   ├── Annotations
-  │       ├── 001789.xml
-  │       |   ...
-  │   ├── JPEGImages
-  │       ├── 001789.jpg
-  │       |   ...
-  │   ├── ImageSets
-  │       |   ...
-  ├── VOCdevkit/VOC2012
-  │   ├── Annotations
-  │       ├── 2011_003876.xml
-  │       |   ...
-  │   ├── JPEGImages
-  │       ├── 2011_003876.jpg
-  │       |   ...
-  │   ├── ImageSets
-  │       |   ...
-  |   ...
-  ```
-
-**NOTE:** If you set `use_default_label=False` in yaml configs, the `label_list.txt`
-of Pascal VOC dataset will be read, otherwise, `label_list.txt` is unnecessary and
-the default Pascal VOC label list which defined in
-[voc\_loader.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/ppdet/data/source/voc.py) will be used.
-
-**Download datasets automatically:**
-
-If a training session is started but the dataset is not setup properly (e.g,
-not found in `dataset/coco` or `dataset/voc`), PaddleDetection can automatically
-download them from [COCO-2017](http://images.cocodataset.org) and
-[VOC2012](http://host.robots.ox.ac.uk/pascal/VOC), the decompressed datasets
-will be cached in `~/.cache/paddle/dataset/` and can be discovered automatically
-subsequently.
-
-
-**NOTE:**
-
-- If you want to use a custom datasets, please refer to [Custom DataSet Document](Custom_DataSet.md)
-- For further informations on the datasets, please see [READER.md](../advanced_tutorials/READER.md)
+![](../images/000000014439.jpg)
