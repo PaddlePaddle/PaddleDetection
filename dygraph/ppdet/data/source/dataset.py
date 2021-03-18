@@ -79,7 +79,7 @@ class DetDataset(Dataset):
         self._epoch = epoch_id
 
     def parse_dataset(self, ):
-        raise NotImplemented(
+        raise NotImplementedError(
             "Need to implement parse_dataset method of Dataset")
 
     def get_anno(self):
@@ -94,13 +94,13 @@ def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
 
 def _make_dataset(dir):
     dir = os.path.expanduser(dir)
-    if not os.path.isdir(d):
+    if not os.path.isdir(dir):
         raise ('{} should be a dir'.format(dir))
     images = []
     for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
         for fname in sorted(fnames):
             path = os.path.join(root, fname)
-            if is_valid_file(path):
+            if _is_valid_file(path):
                 images.append(path)
     return images
 
