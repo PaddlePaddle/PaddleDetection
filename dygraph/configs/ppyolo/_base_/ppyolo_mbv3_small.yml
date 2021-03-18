@@ -1,5 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_small_x1_0_ssld_pretrained.pdparams
+pretrain_weights: ppdet://models/pretrained/MobileNetV3_small_x1_0_ssld_pretrained.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998

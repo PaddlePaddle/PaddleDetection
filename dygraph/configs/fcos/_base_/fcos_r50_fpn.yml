@@ -1,5 +1,5 @@
 architecture: FCOS
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+pretrain_weights: ppdet://models/pretrained/ResNet50_cos_pretrained.pdparams
 
 FCOS:
   backbone: ResNet
