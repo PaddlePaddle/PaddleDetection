@@ -58,7 +58,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
       // set tensorrt
       config.EnableTensorRtEngine(
-          1 << 10,
+          1 << 30,
           batch_size,
           min_subgraph_size,
           precision,
