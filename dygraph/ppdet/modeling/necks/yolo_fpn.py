@@ -26,7 +26,7 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN']
 
 
 class YoloDetBlock(nn.Layer):
-    def __init__(self, ch_in, channel, norm_type, name):
+    def __init__(self, ch_in, channel, norm_type, name, data_format='NCHW'):
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
         self.channel = channel
@@ -51,6 +51,7 @@ class YoloDetBlock(nn.Layer):
                     filter_size=filter_size,
                     padding=(filter_size - 1) // 2,
                     norm_type=norm_type,
+                    data_format=data_format,
                     name=name + post_name))
 
         self.tip = ConvBNLayer(
@@ -59,6 +60,7 @@ class YoloDetBlock(nn.Layer):
             filter_size=3,
             padding=1,
             norm_type=norm_type,
+            data_format=data_format,
             name=name + '.tip')
 
     def forward(self, inputs):
@@ -68,7 +70,14 @@ class YoloDetBlock(nn.Layer):
 
 
 class SPP(nn.Layer):
-    def __init__(self, ch_in, ch_out, k, pool_size, norm_type, name):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 k,
+                 pool_size,
+                 norm_type,
+                 name,
+                 data_format='NCHW'):
         super(SPP, self).__init__()
         self.pool = []
         for size in pool_size:
@@ -78,10 +87,17 @@ class SPP(nn.Layer):
                     kernel_size=size,
                     stride=1,
                     padding=size // 2,
+                    data_format=data_format,
                     ceil_mode=False))
             self.pool.append(pool)
         self.conv = ConvBNLayer(
-            ch_in, ch_out, k, padding=k // 2, norm_type=norm_type, name=name)
+            ch_in,
+            ch_out,
+            k,
+            padding=k // 2,
+            norm_type=norm_type,
+            name=name,
+            data_format=data_format)
 
     def forward(self, x):
         outs = [x]
@@ -93,30 +109,46 @@ class SPP(nn.Layer):
 
 
 class DropBlock(nn.Layer):
-    def __init__(self, block_size, keep_prob, name):
+    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
         super(DropBlock, self).__init__()
         self.block_size = block_size
         self.keep_prob = keep_prob
         self.name = name
+        self.data_format = data_format
 
     def forward(self, x):
         if not self.training or self.keep_prob == 1:
             return x
         else:
             gamma = (1. - self.keep_prob) / (self.block_size**2)
-            for s in x.shape[2:]:
+            if self.data_format == 'NCHW':
+                shape = x.shape[2:]
+            else:
+                shape = x.shape[1:3]
+            for s in shape:
                 gamma *= s / (s - self.block_size + 1)
 
             matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
             mask_inv = F.max_pool2d(
-                matrix, self.block_size, stride=1, padding=self.block_size // 2)
+                matrix,
+                self.block_size,
+                stride=1,
+                padding=self.block_size // 2,
+                data_format=self.data_format)
             mask = 1. - mask_inv
             y = x * mask * (mask.numel() / mask.sum())
             return y
 
 
 class CoordConv(nn.Layer):
-    def __init__(self, ch_in, ch_out, filter_size, padding, norm_type, name):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 filter_size,
+                 padding,
+                 norm_type,
+                 name,
+                 data_format='NCHW'):
         super(CoordConv, self).__init__()
         self.conv = ConvBNLayer(
             ch_in + 2,
@@ -124,36 +156,53 @@ class CoordConv(nn.Layer):
             filter_size=filter_size,
             padding=padding,
             norm_type=norm_type,
+            data_format=data_format,
             name=name)
+        self.data_format = data_format
 
     def forward(self, x):
         b = x.shape[0]
-        h = x.shape[2]
-        w = x.shape[3]
+        if self.data_format == 'NCHW':
+            h = x.shape[2]
+            w = x.shape[3]
+        else:
+            h = x.shape[1]
+            w = x.shape[2]
 
         gx = paddle.arange(w, dtype='float32') / (w - 1.) * 2.0 - 1.
-        gx = gx.reshape([1, 1, 1, w]).expand([b, 1, h, w])
+        if self.data_format == 'NCHW':
+            gx = gx.reshape([1, 1, 1, w]).expand([b, 1, h, w])
+        else:
+            gx = gx.reshape([1, 1, w, 1]).expand([b, h, w, 1])
         gx.stop_gradient = True
 
         gy = paddle.arange(h, dtype='float32') / (h - 1.) * 2.0 - 1.
-        gy = gy.reshape([1, 1, h, 1]).expand([b, 1, h, w])
+        if self.data_format == 'NCHW':
+            gy = gy.reshape([1, 1, h, 1]).expand([b, 1, h, w])
+        else:
+            gy = gy.reshape([1, h, 1, 1]).expand([b, h, w, 1])
         gy.stop_gradient = True
 
-        y = paddle.concat([x, gx, gy], axis=1)
+        if self.data_format == 'NCHW':
+            y = paddle.concat([x, gx, gy], axis=1)
+        else:
+            y = paddle.concat([x, gx, gy], axis=-1)
         y = self.conv(y)
         return y
 
 
 class PPYOLODetBlock(nn.Layer):
-    def __init__(self, cfg, name):
+    def __init__(self, cfg, name, data_format='NCHW'):
         super(PPYOLODetBlock, self).__init__()
         self.conv_module = nn.Sequential()
         for idx, (conv_name, layer, args, kwargs) in enumerate(cfg[:-1]):
-            kwargs.update(name='{}.{}'.format(name, conv_name))
+            kwargs.update(
+                name='{}.{}'.format(name, conv_name), data_format=data_format)
             self.conv_module.add_sublayer(conv_name, layer(*args, **kwargs))
 
         conv_name, layer, args, kwargs = cfg[-1]
-        kwargs.update(name='{}.{}'.format(name, conv_name))
+        kwargs.update(
+            name='{}.{}'.format(name, conv_name), data_format=data_format)
         self.tip = layer(*args, **kwargs)
 
     def forward(self, inputs):
@@ -165,9 +214,12 @@ class PPYOLODetBlock(nn.Layer):
 @register
 @serializable
 class YOLOv3FPN(nn.Layer):
-    __shared__ = ['norm_type']
+    __shared__ = ['norm_type', 'data_format']
 
-    def __init__(self, in_channels=[256, 512, 1024], norm_type='bn'):
+    def __init__(self,
+                 in_channels=[256, 512, 1024],
+                 norm_type='bn',
+                 data_format='NCHW'):
         super(YOLOv3FPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels
@@ -176,6 +228,7 @@ class YOLOv3FPN(nn.Layer):
         self._out_channels = []
         self.yolo_blocks = []
         self.routes = []
+        self.data_format = data_format
         for i in range(self.num_blocks):
             name = 'yolo_block.{}'.format(i)
             in_channel = in_channels[-i - 1]
@@ -187,6 +240,7 @@ class YOLOv3FPN(nn.Layer):
                     in_channel,
                     channel=512 // (2**i),
                     norm_type=norm_type,
+                    data_format=data_format,
                     name=name))
             self.yolo_blocks.append(yolo_block)
             # tip layer output channel doubled
@@ -203,6 +257,7 @@ class YOLOv3FPN(nn.Layer):
                         stride=1,
                         padding=0,
                         norm_type=norm_type,
+                        data_format=data_format,
                         name=name))
                 self.routes.append(route)
 
@@ -212,13 +267,17 @@ class YOLOv3FPN(nn.Layer):
         yolo_feats = []
         for i, block in enumerate(blocks):
             if i > 0:
-                block = paddle.concat([route, block], axis=1)
+                if self.data_format == 'NCHW':
+                    block = paddle.concat([route, block], axis=1)
+                else:
+                    block = paddle.concat([route, block], axis=-1)
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
             if i < self.num_blocks - 1:
                 route = self.routes[i](route)
-                route = F.interpolate(route, scale_factor=2.)
+                route = F.interpolate(
+                    route, scale_factor=2., data_format=self.data_format)
 
         return yolo_feats
 
@@ -234,9 +293,13 @@ class YOLOv3FPN(nn.Layer):
 @register
 @serializable
 class PPYOLOFPN(nn.Layer):
-    __shared__ = ['norm_type']
+    __shared__ = ['norm_type', 'data_format']
 
-    def __init__(self, in_channels=[512, 1024, 2048], norm_type='bn', **kwargs):
+    def __init__(self,
+                 in_channels=[512, 1024, 2048],
+                 norm_type='bn',
+                 data_format='NCHW',
+                 **kwargs):
         super(PPYOLOFPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels
@@ -332,6 +395,7 @@ class PPYOLOFPN(nn.Layer):
                         stride=1,
                         padding=0,
                         norm_type=norm_type,
+                        data_format=data_format,
                         name=name))
                 self.routes.append(route)
 
@@ -341,13 +405,17 @@ class PPYOLOFPN(nn.Layer):
         yolo_feats = []
         for i, block in enumerate(blocks):
             if i > 0:
-                block = paddle.concat([route, block], axis=1)
+                if self.data_format == 'NCHW':
+                    block = paddle.concat([route, block], axis=1)
+                else:
+                    block = paddle.concat([route, block], axis=-1)
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
             if i < self.num_blocks - 1:
                 route = self.routes[i](route)
-                route = F.interpolate(route, scale_factor=2.)
+                route = F.interpolate(
+                    route, scale_factor=2., data_format=self.data_format)
 
         return yolo_feats
 
