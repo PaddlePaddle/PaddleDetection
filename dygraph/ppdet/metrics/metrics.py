@@ -327,8 +327,7 @@ class MOTMetric(Metric):
         self.accs = []
         self.seqs = []
 
-    def update(self, data_root, seq, data_type, result_root, result_filename,
-               exp_name):
+    def update(self, data_root, seq, data_type, result_root, result_filename):
         evaluator = self.MOTEvaluator(data_root, seq, data_type)
         self.accs.append(evaluator.eval_file(result_filename))
         self.seqs.append(seq)
@@ -341,7 +340,7 @@ class MOTMetric(Metric):
             summary,
             formatters=mh.formatters,
             namemap=mm.io.motchallenge_metric_names)
-        # self.MOTEvaluator.save_summary(summary, os.path.join(result_root, 'summary_{}.xlsx'.format(exp_name)))
+        # self.MOTEvaluator.save_summary(summary, os.path.join(result_root, 'summary.xlsx'))
 
     def log(self):
         print(self.strsummary)

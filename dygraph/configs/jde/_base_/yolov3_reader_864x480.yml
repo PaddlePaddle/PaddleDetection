@@ -64,11 +64,22 @@ TestReader:
   batch_size: 1
 
 
-TrackReader:
+EvalMOTReader:
   inputs_def:
     image_shape: [3, 480, 864]
   sample_transforms:
-    - Decode: {}
+    - Decode: {keep_img0: true}
+    - Resize_LetterBox: {target_size: [480, 864]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 480, 864]
+  sample_transforms:
+    - Decode_video: {}
     - Resize_LetterBox: {target_size: [480, 864]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}

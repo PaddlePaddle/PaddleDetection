@@ -244,7 +244,7 @@ class TestReader(BaseDataLoader):
 
 
 @register
-class TrackReader(BaseDataLoader):
+class EvalMOTReader(BaseDataLoader):
     def __init__(self,
                  inputs_def=None,
                  sample_transforms=[],
@@ -255,6 +255,23 @@ class TrackReader(BaseDataLoader):
                  drop_empty=True,
                  num_classes=80,
                  **kwargs):
-        super(TrackReader, self).__init__(
+        super(EvalMOTReader, self).__init__(
+            inputs_def, sample_transforms, batch_transforms, batch_size,
+            shuffle, drop_last, drop_empty, num_classes, **kwargs)
+
+
+@register
+class TestMOTReader(BaseDataLoader):
+    def __init__(self,
+                 inputs_def=None,
+                 sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=False,
+                 drop_last=False,
+                 drop_empty=True,
+                 num_classes=80,
+                 **kwargs):
+        super(TestMOTReader, self).__init__(
             inputs_def, sample_transforms, batch_transforms, batch_size,
             shuffle, drop_last, drop_empty, num_classes, **kwargs)

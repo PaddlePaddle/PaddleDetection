@@ -40,35 +40,28 @@ logger = setup_logger('train')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        '--benchmark',
-        default='MOT16_train',
+        '--video_file',
         type=str,
-        help='Benchmark name for tracking')
+        default='test.mp4',
+        help='Video name for tracking.')
     parser.add_argument(
-        '--data_root',
-        type=str,
-        default='./dataset/MOT',
-        help='Directory for tracking dataset')
-    parser.add_argument(
-        '--exp_name', type=str, default='demo', help='exp_name of tracking dir')
+        '--output_dir', 
+        type=str, 
+        default='output', 
+        help='Directory name for output tracking results.')
 
     parser.add_argument(
         '--save_images',
         action='store_true',
-        help='Save tracking results (image)')
+        help='Save tracking results (image).')
     parser.add_argument(
         '--save_videos',
         action='store_true',
-        help='Save tracking results (video)')
+        help='Save tracking results (video).')
     parser.add_argument(
         '--show_image',
         action='store_true',
-        help='Show tracking results (image)')
-    parser.add_argument(
-        '--save_dir',
-        default=None,
-        type=str,
-        help='Directory for saved tracking results (image)')
+        help='Show tracking results (image).')
     parser.add_argument(
         "--slim_config",
         default=None,
@@ -79,60 +72,16 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    if FLAGS.benchmark == 'MOT17_train':
-        data_root = '{}/MOT17/images/train'.format(FLAGS.data_root)
-        seqs_str = '''MOT17-02-SDP
-                      MOT17-04-SDP
-                      MOT17-05-SDP
-                      MOT17-09-SDP
-                      MOT17-10-SDP
-                      MOT17-11-SDP
-                      MOT17-13-SDP
-                    '''
-    elif FLAGS.benchmark == 'MOT16_train':
-        data_root = '{}/MOT16/images/train'.format(FLAGS.data_root)
-        seqs_str = '''MOT16-02
-                      MOT16-04
-                      MOT16-05
-                      MOT16-09
-                      MOT16-10
-                      MOT16-11
-                      MOT16-13
-                   '''
-    elif FLAGS.benchmark == 'MOT16_test':
-        data_root = '{}/MOT16/images/test'.format(FLAGS.data_root)
-        seqs_str = '''MOT16-01
-                      MOT16-02
-                      MOT16-03
-                      MOT16-04
-                      MOT16-05
-                      MOT16-06
-                      MOT16-07
-                      MOT16-08
-                      MOT16-09
-                      MOT16-10
-                      MOT16-11
-                      MOT16-12
-                      MOT16-13
-                      MOT16-14
-                   '''
-    elif FLAGS.benchmark == 'MOT16_debug':
-        data_root = '{}/MOT16/images/train'.format(FLAGS.data_root)
-        seqs_str = '''MOT16-02
-                   '''
-    seqs = [seq.strip() for seq in seqs_str.split()]
-
     # build Tracker
-    tracker = Tracker(cfg, mode='track')
+    tracker = Tracker(cfg, mode='test')
 
     # load weights
     tracker.load_weights(cfg.weights, 'resume')
 
     # inference
-    tracker.track(
-        data_root=data_root,
-        seqs=seqs,
-        exp_name=FLAGS.exp_name,
+    tracker.mot_predict(
+        video_file=FLAGS.video_file,
+        output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image)

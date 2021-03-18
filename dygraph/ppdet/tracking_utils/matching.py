@@ -19,7 +19,9 @@ from scipy.spatial.distance import cdist
 from cython_bbox import bbox_overlaps as bbox_ious
 from . import kalman_filter
 
-__all__ = ['merge_matches', 'linear_assignment', 'ious', 'iou_distance', 'fuse_motion']
+__all__ = [
+    'merge_matches', 'linear_assignment', 'ious', 'iou_distance', 'fuse_motion'
+]
 
 
 def merge_matches(m1, m2, shape):

@@ -28,4 +28,5 @@ JDETracker:
   img_size: [576, 320]
   det_thresh: 0.3
   track_buffer: 30
+  min_box_area: 200
   motion: KalmanFilter

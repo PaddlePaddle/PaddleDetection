@@ -21,8 +21,9 @@ import time
 import random
 import datetime
 import numpy as np
-from PIL import Image
+import cv2
 import glob
+from IPython import embed
 
 import paddle
 from paddle.distributed import ParallelEnv, fleet
@@ -50,15 +51,15 @@ __all__ = ['Tracker']
 
 
 class Tracker(object):
-    def __init__(self, cfg, mode='test'):
+    def __init__(self, cfg, mode='eval'):
         self.cfg = cfg
-        assert mode.lower() in ['test', 'track', 'demo'], \
-                "mode should be 'test', demo'"
+        assert mode.lower() in ['test', 'eval'], \
+                "mode should be 'test' or 'eval'"
         self.mode = mode.lower()
         self.optimizer = None
 
         # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
 
         # build model
         self.model = create(cfg.architecture)
@@ -80,14 +81,14 @@ class Tracker(object):
         self._compose_callback = None
 
     def _init_metrics(self):
-        if self.mode in ['test', 'demo']:
+        if self.mode in ['test']:
             self._metrics = []
             return
 
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warn("MOT Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 
@@ -117,7 +118,13 @@ class Tracker(object):
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
         self._weights_loaded = True
 
-    def eval_seq(self, dataloader, data_type, result_filename, save_dir=None, show_image=False, frame_rate=30, min_box_area=200):
+    def eval_seq(self,
+                 dataloader,
+                 data_type,
+                 result_filename,
+                 save_dir=None,
+                 show_image=False,
+                 frame_rate=30):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = create(self.model.tracker)
@@ -151,7 +158,7 @@ class Tracker(object):
                 tlwh = t.tlwh
                 tid = t.track_id
                 vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > min_box_area and not vertical:
+                if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
             timer.toc()
@@ -159,68 +166,79 @@ class Tracker(object):
             # save results
             results.append((frame_id + 1, online_tlwhs, online_ids))
             if show_image or save_dir is not None:
-                online_im = mot_vis.plot_tracking(img0, online_tlwhs, online_ids, frame_id=frame_id,
-                                                  fps=1. / timer.average_time)
+                img0 = outs['img0'].numpy()[0]
+                online_im = mot_vis.plot_tracking(
+                    img0,
+                    online_tlwhs,
+                    online_ids,
+                    frame_id=frame_id,
+                    fps=1. / timer.average_time)
             if show_image:
                 cv2.imshow('online_im', online_im)
             if save_dir is not None:
-                cv2.imwrite(os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), online_im)
+                cv2.imwrite(
+                    os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
+                    online_im)
             frame_id += 1
 
         self.write_mot_results(result_filename, results, data_type)
 
         return frame_id, timer.average_time, timer.calls
 
-    def track(self,
-              data_root='./dataset/MOT/MOT16/train',
-              seqs=('MOT16-02', ),
-              exp_name='submit',
-              save_images=False,
-              save_videos=False,
-              show_image=False,
-              save_dir=None):
-        result_root = os.path.join(data_root, '..', 'results', exp_name)
+    def mot_evaluate(self,
+                     data_root='./dataset/MOT/MOT16/train',
+                     seqs=('MOT16-02', ),
+                     output_dir='output',
+                     save_images=False,
+                     save_videos=False,
+                     show_image=False):
+        if not os.path.exists(output_dir): os.makedirs(output_dir)
+        result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
-        data_type = 'mot'
 
         # run tracking
-        accs = []
+        data_type = 'mot'
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
-            output_dir = os.path.join(
-                data_root, '..', 'outputs', exp_name,
-                seq) if save_images or save_videos else None
+            save_dir = os.path.join(output_dir, 'mot_outputs',
+                                    seq) if save_images or save_videos else None
             logger.info('start seq: {}'.format(seq))
 
             infer_dir = os.path.join(data_root, seq, 'img1')
             images = self.get_infer_images(infer_dir)
             self.dataset.set_images(images)
-            dataloader = create('{}Reader'.format(self.mode.capitalize()))(self.dataset, 0)
-            
+
+            dataloader = create('EvalMOTReader')(self.dataset, 0)
+
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
             meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
 
-            nf, ta, tc = self.eval_seq(dataloader, data_type, result_filename, 
-                                       save_dir=output_dir, show_image=show_image, frame_rate=frame_rate)
+            nf, ta, tc = self.eval_seq(
+                dataloader,
+                data_type,
+                result_filename,
+                save_dir=save_dir,
+                show_image=show_image,
+                frame_rate=frame_rate)
             n_frame += nf
             timer_avgs.append(ta)
             timer_calls.append(tc)
 
             if save_videos:
-                output_video_path = os.path.join(output_dir,
-                                                 '{}.mp4'.format(seq))
+                output_video_path = os.path.join(save_dir, '{}.mp4'.format(seq))
                 cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -c:v copy {}'.format(
-                    output_dir, output_video_path)
+                    save_dir, output_video_path)
                 os.system(cmd_str)
+                logger.info('Save video in {}.'.format(output_video_path))
 
             logger.info('Evaluate seq: {}'.format(seq))
             # update metrics
             for metric in self._metrics:
                 metric.update(data_root, seq, data_type, result_root,
-                              result_filename, exp_name)
+                              result_filename)
 
         timer_avgs = np.asarray(timer_avgs)
         timer_calls = np.asarray(timer_calls)
@@ -251,6 +269,43 @@ class Tracker(object):
         assert len(images) > 0, "no image found in {}".format(infer_dir)
         logger.info("Found {} inference images in total.".format(len(images)))
         return images
+
+    def mot_predict(self,
+                    video_file,
+                    output_dir='output',
+                    save_images=False,
+                    save_videos=True,
+                    show_image=False):
+        if not os.path.exists(output_dir): os.makedirs(output_dir)
+        result_root = os.path.join(output_dir, 'mot_results')
+        if not os.path.exists(result_root): os.makedirs(result_root)
+
+        # run tracking
+        data_type = 'mot'
+        seq = video_file.split('/')[-1].split('.')[0]
+        save_dir = os.path.join(output_dir, 'mot_outputs',
+                                seq) if save_images or save_videos else None
+        logger.info('Starting tracking {}'.format(video_file))
+
+        self.dataset.set_video(video_file)
+        dataloader = create('TestMOTReader')(self.dataset, 0)
+        result_filename = os.path.join(result_root, '{}.txt'.format(seq))
+        frame_rate = self.dataset.frame_rate
+
+        nf, ta, tc = self.eval_seq(
+            dataloader,
+            data_type,
+            result_filename,
+            save_dir=save_dir,
+            show_image=show_image,
+            frame_rate=frame_rate)
+
+        if save_videos:
+            output_video_path = os.path.join(save_dir, '{}.mp4'.format(seq))
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -c:v copy {}'.format(
+                save_dir, output_video_path)
+            os.system(cmd_str)
+            logger.info('Save video in {}'.format(output_video_path))
 
     def write_mot_results(self, filename, results, data_type='mot'):
         if data_type in ['mot', 'mcmot', 'lab']:

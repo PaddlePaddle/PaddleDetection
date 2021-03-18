@@ -12,6 +12,7 @@ EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/MOT
     #anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val']
+    #anno_path: ['citypersons.val', 'caltech.val']
     anno_path: ['mot17.debug']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
 
@@ -19,6 +20,10 @@ TestDataset:
   !ImageFolder
     anno_path: mot16.train
 
-TrackDataset:
+EvalMOTDataset:
   !ImageFolder
-    anno_path: mot16.train
+    dataset_dir: dataset/MOT
+
+TestMOTDataset:
+  !MOTVideoDataset
+    dataset_dir: dataset/MOT

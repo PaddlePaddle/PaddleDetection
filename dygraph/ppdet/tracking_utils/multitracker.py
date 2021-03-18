@@ -194,19 +194,21 @@ class JDETracker(object):
                  img_size=[1088, 608],
                  det_thresh=0.3,
                  track_buffer=30,
+                 min_box_area=200,
                  motion='KalmanFilter'):
+        self.img_size = img_size
+        self.det_thresh = det_thresh
+        self.track_buffer = track_buffer
+        self.min_box_area = min_box_area
+        self.motion = motion
+
+        self.frame_id = 0
         self.tracked_stracks = []
         self.lost_stracks = []
         self.removed_stracks = []
 
-        self.frame_id = 0
-        self.img_size = img_size
-        self.det_thresh = det_thresh
-        self.track_buffer = track_buffer
         self.max_time_lost = 0
         # max_time_lost is calculated by int(frame_rate / 30.0 * track_buffer)
-
-        self.motion = motion
 
     def update(self, pred_dets, pred_embs, img0_shape):
         """
@@ -229,6 +231,10 @@ class JDETracker(object):
         lost_stracks = [
         ]  # The tracks which are not obtained in the current frame but are not removed.(Lost for some time lesser than the threshold for removing)
         removed_stracks = []
+
+        #Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
+        if np.sum(np.array(pred_dets)) == 0.0:
+            return []
         ''' Step 1: Network forward, get detections & embeddings'''
         if len(pred_dets) > 0:
             pred_dets[:, :4] = scale_coords(self.img_size, pred_dets[:, :4],

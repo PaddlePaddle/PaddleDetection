@@ -19,7 +19,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
-
+from IPython import embed
 try:
     from collections.abc import Sequence
 except Exception:
@@ -106,10 +106,11 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, keep_img0=False):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        self.keep_img0 = keep_img0
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -121,6 +122,9 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+        if self.keep_img0:
+            sample['img0_shape'] = np.array(im.shape[:2], dtype=np.float32)
+            sample['img0'] = im
 
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -144,6 +148,40 @@ class Decode(BaseOperator):
 
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        return sample
+
+
+@register_op
+class Decode_video(BaseOperator):
+    def __init__(self):
+        """ Transform the image data to numpy format following the rgb format
+        """
+        super(Decode_video, self).__init__()
+
+    def apply(self, sample, context=None):
+        im = sample['image']
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        sample['image'] = im
+        if 'h' not in sample:
+            sample['h'] = im.shape[0]
+        elif sample['h'] != im.shape[0]:
+            logger.warn(
+                "The actual image height: {} is not equal to the "
+                "height: {} in annotation, and update sample['h'] by actual "
+                "image height.".format(im.shape[0], sample['h']))
+            sample['h'] = im.shape[0]
+        if 'w' not in sample:
+            sample['w'] = im.shape[1]
+        elif sample['w'] != im.shape[1]:
+            logger.warn(
+                "The actual image width: {} is not equal to the "
+                "width: {} in annotation, and update sample['w'] by actual "
+                "image width.".format(im.shape[1], sample['w']))
+            sample['w'] = im.shape[1]
+
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        sample['img0_shape'] = sample['im_shape']
         return sample
 
 
