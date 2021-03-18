@@ -1,5 +1,5 @@
 # PaddleDetection 使用TensorRT预测部署教程
-TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度。
+TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于V100、JETSON Xavier等硬件，它可以极大提高预测速度。Paddle TensorRT教程请参考文档[使用Paddle-TensorRT库预测](https://paddle-inference.readthedocs.io/en/latest/optimize/paddle_trt.html#)
 
 ## 1、如何安装`Paddle TensorRT`
 - Python安装包，请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release) 下载带有tensorrt的安装包进行安装
@@ -61,8 +61,25 @@ TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入�
 
 **注意：`TensorRT`中动态尺寸设置是4维的，这里只设置输入图像的尺寸。**
 
+## 5、TesnorRT int8 使用教程
+### （1）校准，生成校准表
+准备500～1000张图片（不需要标注），运行如下命令生成校准表（Calibration table）。命令结束后，会在模型文件夹下生成`_opt_cache`的文件夹，里面存放校准数据。详细教程请参考文档[Int8量化预测](https://paddle-inference.readthedocs.io/en/latest/optimize/paddle_trt.html#int8)
+```
+python python/trt_int8_calib.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_dir=../images/ --use_gpu=True
+```
+在`../output_inference/ppyolo_r50vd_dcn_1x_coco/_opt_cache/`文件夹下生成校准表:
+![img](imgs/trt_int8_calib.png)
 
-## 5、常见问题QA
+### （2）TensorRT int8 量化预测
+```
+python python/infer.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_file=../demo/000000014439.jpg --use_gpu=True --run_mode=trt_int8
+```
+预测结果如下:
+![img](imgs/trt_int8_000000014439.jpg)
+
+**注意：在`int8`模式下，需要设置use_calib_mode=True**
+
+## 6、常见问题QA
 ### （1）提示没有`tensorrt_op`
 请检查是否使用带有TensorRT的Paddle Python包或预测库。
 
