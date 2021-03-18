@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from IPython import embed
 
 __all__ = ['JDEDetectionLoss', 'JDEEmbeddingLoss', 'JDELoss']
 
@@ -40,10 +39,10 @@ class JDEDetectionLoss(nn.Layer):
         nA = len(anchor)
         p_det = paddle.reshape(
             p_det, [nB, nA, self.num_classes + 5, nGh, nGw]).transpose(
-                (0, 1, 3, 4, 2))  # [1, 4, 19, 34, 6]
+                (0, 1, 3, 4, 2))
 
         # 1. loss_conf: cross_entropy
-        p_conf = p_det[:, :, :, :, 4:6]  # [1, 4, 19, 34, 2]
+        p_conf = p_det[:, :, :, :, 4:6]
         p_conf_flatten = paddle.reshape(p_conf, [-1, 2])
         t_conf_flatten = t_conf.flatten()
         t_conf_flatten = paddle.cast(t_conf_flatten, dtype="int64")
@@ -52,7 +51,7 @@ class JDEDetectionLoss(nn.Layer):
             p_conf_flatten, t_conf_flatten, ignore_index=-1, reduction='mean')
 
         # 2. loss_box: smooth_l1_loss
-        p_box = p_det[:, :, :, :, :4]  # [1, 4, 19, 34, 4]
+        p_box = p_det[:, :, :, :, :4]
         p_box_flatten = paddle.reshape(p_box, [-1, 4])
         t_box_flatten = paddle.reshape(t_box, [-1, 4])
         fg_inds = paddle.nonzero(t_conf_flatten > 0).flatten()
@@ -90,7 +89,7 @@ class JDEEmbeddingLoss(nn.Layer):
 
     def emb_loss(self, p_ide, t_conf, t_ide, emb_scale, classifier):
         emb_dim = p_ide.shape[1]
-        p_ide = p_ide.transpose((0, 2, 3, 1))  # [1, 19, 34, 512]
+        p_ide = p_ide.transpose((0, 2, 3, 1))
         p_ide_flatten = paddle.reshape(p_ide, [-1, emb_dim])
         mask = t_conf > 0
         mask = paddle.cast(mask, dtype="int64")
@@ -98,18 +97,16 @@ class JDEEmbeddingLoss(nn.Layer):
         emb_mask = mask.max(1).flatten()
         emb_mask_inds = paddle.nonzero(emb_mask > 0).flatten()
         emb_mask_inds.stop_gradient = True
-        # For convenience we use max(1) to decide the id, TODO: more reseanable strategy
+        # use max(1) to decide the id, TODO: more reseanable strategy
         t_ide_flatten = t_ide.max(1).flatten()
         t_ide_flatten = paddle.cast(t_ide_flatten, dtype="int64")
 
         weight = paddle.to_tensor([1], dtype='float32')
         if emb_mask_inds.numel() == 0:
             weight = paddle.to_tensor([0], dtype='float32')
-            # emb_mask_inds = paddle.to_tensor(
-            #     [1], dtype='int64')  # rand select an index
+
             logits = p_ide_flatten[0]
             ide_target = -t_ide_flatten[0]
-            # ide_target = paddle.gather(de_flattent_ide_flatten, emb_mask_inds)
             ide_target.stop_gradient = True
         else:
             embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
@@ -169,6 +166,5 @@ class JDELoss(nn.Layer):
             "loss_box": sum(loss_boxes),
             "loss_ide": sum(loss_ides),
             "loss": sum(jde_losses),
-            # "nTargets": sum(nTargets) / 3,
         }
         return loss_all
