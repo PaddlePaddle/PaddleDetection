@@ -9,17 +9,7 @@ TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于
 ## 2、准备导出的模型
 模型导出具体请参考文档[PaddleDetection模型导出教程](../EXPORT_MODEL.md)。
 
-## 3、TensorRT原理简单介绍
-当训练完成后，导出预测部署格式的模型。当使用TensorRT引擎进行预测时，TensorRT会把可以融合的OP融合成一个大OP，从而减少数据拷贝时间，一个大OP也有助于计算加速。从而提高推理速度。
-如下图是一个训练好的模型的结构，如下图所示：
-![img](imgs/tensorrt_before.jpg)
-TensorRT会把其中的卷积操作、加bias操作、Relu操作融合成一个大操作，结果如下图所示：
-![img](imgs/tensorrt_after.jpg)
-TensorRT还会把前后层进行融合，结果如下图所示：
-![img](imgs/tensorrt_after1.jpg)
-优化后的网络结构比原来网络结构，计算效率高，推理速度快。
-
-## 4、PaddleDetection训练的模型如何使用TensorRT进行加速
+## 3、PaddleDetection训练的模型如何使用TensorRT进行加速
 ### （1）Paddle预测库中如何使用TensorRT
 在使用Paddle预测库构建预测器配置config时，打开TensorRT引擎就可以了：
 
@@ -38,53 +28,39 @@ config->EnableTensorRtEngine(1 << 20             /*workspace_size*/,
 
 ### （2）关于固定尺寸和动态尺寸
 使用TensorRT预测时，需要注意输入TensorRT引擎的数据是否是固定尺寸。
-#### <a>. 输入TensorRT引擎的数据是固定尺寸
-TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。在导出模型时，需要原始config文件中设定`TestReader.inputs_def.image_shape`参数，导出模型后，这个参数会指定输入网络的第一个Tensor的尺寸。
+#### a. 输入TensorRT引擎的数据是固定尺寸
+TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。
+
+在导出模型时，需要原始config文件中设定`TestReader.inputs_def.image_shape`参数，导出模型后，这个参数会指定输入网络的第一个Tensor的尺寸。
+
 如果实际输入数据尺寸和这个不一致，会报错。
+
 或者在导出模型时指定`TestReader.inputs_def.image_shape=[3,640,640]`,具体请参考[PaddleDetection模型导出教程](../EXPORT_MODEL.md) 。
 
-**注意：
 （1）`TestReader.inputs_def.image_shape`并不一定都是输入TensorRT引擎的数据尺寸，`TestReader.inputs_def.image_shape`指定的是在`Pad`操作之前的图像数据尺寸。
 （2）不使用TensorRT时，`TestReader.inputs_def.image_shape`这个参数可以不用设置
-**
 
 可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
 ![img](imgs/input_shape.png)
 
-#### <b>. 输入TensorRT引擎的数据是动态尺寸
-TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/native_infer.html) 的`SetTRTDynamicShapeInfo`函数说明。
+#### b. 输入TensorRT引擎的数据是动态尺寸
+
+TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。
+Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/native_infer.html) 的`SetTRTDynamicShapeInfo`函数说明。
+
 `python\infer.py`设置动态尺寸输入参数说明：
+
 - use_dynamic_shape 用于设定TensorRT的输入尺寸是否是动态尺寸，默认值：False
+
 - trt_min_shape 用于设定TensorRT的输入图像的最小尺寸，默认值：1
+
 - trt_max_shape 用于设定TensorRT的输入图像的最大尺寸，默认值：1280
+
 - trt_opt_shape 用于设定TensorRT的输入图像的最优尺寸，默认值：640
 
 **注意：`TensorRT`中动态尺寸设置是4维的，这里只设置输入图像的尺寸。**
 
-## 5、TesnorRT int8 使用教程
-### （1）准备模型
-`Paddle TensorRT int8`模式仅支持固定尺寸输入的模型，因此导出模型的时候需要通过参数`TestReader.inputs_def.image_shape=[3,608,608]`来指定模型输入尺寸。
-
-### （2）校准，生成校准表
-准备500～1000张图片（不需要标注），运行如下命令生成校准表（Calibration table）。命令结束后，会在模型文件夹下生成`_opt_cache`的文件夹，里面存放校准数据。详细教程请参考文档[Int8量化预测](https://paddle-inference.readthedocs.io/en/latest/optimize/paddle_trt.html#int8)
-```
-python python/trt_int8_calib.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_dir=../images/ --use_gpu=True
-```
-在`../output_inference/ppyolo_r50vd_dcn_1x_coco/_opt_cache/`文件夹下生成校准表:
-![img](imgs/trt_int8_calib.png)
-
-这里提供在500张图像上，`ppyolo_r50vd_dcn`模型的校准表，校准数据下载地址[PP-YOLO TensorRT int8校准数据表](https://paddledet.bj.bcebos.com/data/_opt_cache.zip) ，您可以下载该数据表，解压放到模型文件夹下，就可以试用 TensorRT int8量化预测了。
-
-### （3）TensorRT int8 量化预测
-```
-python python/infer.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_file=../demo/000000014439.jpg --use_gpu=True --run_mode=trt_int8
-```
-预测结果如下:
-![img](imgs/trt_int8_000000014439.jpg)
-
-**注意：在`int8`模式下，需要设置use_calib_mode=True**
-
-## 6、常见问题QA
+## 4、常见问题QA
 ### （1）提示没有`tensorrt_op`
 请检查是否使用带有TensorRT的Paddle Python包或预测库。
 
