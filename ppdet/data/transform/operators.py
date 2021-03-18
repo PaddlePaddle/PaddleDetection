@@ -106,10 +106,11 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=True):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -122,7 +123,8 @@ class Decode(BaseOperator):
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
 
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        if self.to_rgb:
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
         if 'h' not in sample:
@@ -149,14 +151,17 @@ class Decode(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=False):
         """
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         im = sample['image']
+        if self.to_rgb:
+            im = np.ascontiguousarray(im[:, :, ::-1])
         im = im.transpose((2, 0, 1))
         sample['image'] = im
         return sample
@@ -1795,7 +1800,8 @@ class Pad(BaseOperator):
         assert pad_mode in [
             -1, 0, 1, 2
         ], 'currently only supports four modes [-1, 0, 1, 2]'
-        assert pad_mode == -1 and offsets, 'if pad_mode is -1, offsets should not be None'
+        if pad_mode == -1 and offsets is None:
+            raise Exception('if pad_mode is -1, offsets should not be None')
 
         self.size = size
         self.size_divisor = size_divisor
@@ -1859,8 +1865,8 @@ class Pad(BaseOperator):
         if self.size:
             h, w = self.size
             assert (
-                im_h < h and im_w < w
-            ), '(h, w) of target size should be greater than (im_h, im_w)'
+                im_h <= h and im_w <= w
+            ), '(h, w) of target size should be greater or equal than (im_h, im_w)'
         else:
             h = np.ceil(im_h // self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
@@ -1932,4 +1938,198 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        return sample
+
+
+@register_op
+class SVAugment(BaseOperator):
+    def __init__(self, fraction=0.5):
+        """ 
+        Augment the SV channel of image data.
+        """
+        super(SVAugment, self).__init__()
+        # SV augmentation by 50%
+        self.fraction = 0.5
+        self.is_bgr = True
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+
+        if self.is_bgr:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        else:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        S = img_hsv[:, :, 1].astype(np.float32)
+        V = img_hsv[:, :, 2].astype(np.float32)
+
+        a = (random.random() * 2 - 1) * self.fraction + 1
+        S *= a
+        if a > 1:
+            np.clip(S, a_min=0, a_max=255, out=S)
+
+        a = (random.random() * 2 - 1) * self.fraction + 1
+        V *= a
+        if a > 1:
+            np.clip(V, a_min=0, a_max=255, out=V)
+
+        img_hsv[:, :, 1] = S.astype(np.uint8)
+        img_hsv[:, :, 2] = V.astype(np.uint8)
+
+        if self.is_bgr:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
+        else:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
+
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class BboxXYWH2XYXY(BaseOperator):
+    """
+    Convert bbox XYWH format to XYXY format.
+    """
+
+    def __init__(self):
+        super(BboxXYWH2XYXY, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        bbox[:, :2] = bbox[:, :2] - bbox[:, 2:4] / 2.
+        bbox[:, 2:4] = bbox[:, 2:4] + bbox[:, 2:4]
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class NormalizedBbox2PixelBbox(BaseOperator):
+    """
+    Transform the bounding box's coornidates which is in [0,1] to pixels.
+    """
+
+    def __init__(self):
+        super(NormalizedBbox2PixelBbox, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        height, width = sample['im_shape']
+        bbox[:, 0::2] = bbox[:, 0::2] * width
+        bbox[:, 1::2] = bbox[:, 1::2] * height
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class RandomAffine(BaseOperator):
+    def __init__(self,
+                 degrees=(-10, 10),
+                 translate=(.1, .1),
+                 scale=(.9, 1.1),
+                 shear=(-2, 2),
+                 borderValue=(127.5, 127.5, 127.5)):
+        """ 
+        Transform the image data with random_affine
+        """
+        super(RandomAffine, self).__init__()
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.borderValue = borderValue
+
+    def apply(self, sample, context=None):
+        # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
+        # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+        border = 0  # width of added border (optional)
+
+        img = sample['image']
+        height, width = img.shape[0], img.shape[1]
+
+        # Rotation and Scale
+        R = np.eye(3)
+        a = random.random() * (self.degrees[1] - self.degrees[0]
+                               ) + self.degrees[0]
+        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
+        R[:2] = cv2.getRotationMatrix2D(
+            angle=a, center=(width / 2, height / 2), scale=s)
+
+        # Translation
+        T = np.eye(3)
+        T[0, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[1] * width + border  # y translation (pixels)
+
+        # Shear
+        S = np.eye(3)
+        S[0, 1] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # y shear (deg)
+
+        M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
+        imw = cv2.warpPerspective(
+            img,
+            M,
+            dsize=(width, height),
+            flags=cv2.INTER_LINEAR,
+            borderValue=self.borderValue)  # BGR order borderValue
+
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            targets = sample['gt_bbox']
+            n = targets.shape[0]
+            points = targets.copy()
+            area0 = (points[:, 2] - points[:, 0]) * (
+                points[:, 3] - points[:, 1])
+
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = (xy @M.T)[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate(
+                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # apply angle-based reduction
+            radians = a * math.pi / 180
+            reduction = max(abs(math.sin(radians)), abs(math.cos(radians)))**0.5
+            x = (xy[:, 2] + xy[:, 0]) / 2
+            y = (xy[:, 3] + xy[:, 1]) / 2
+            w = (xy[:, 2] - xy[:, 0]) * reduction
+            h = (xy[:, 3] - xy[:, 1]) * reduction
+            xy = np.concatenate(
+                (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+            # reject warped points outside of image
+            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            w = xy[:, 2] - xy[:, 0]
+            h = xy[:, 3] - xy[:, 1]
+            area = w * h
+            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
+            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
+
+            if sum(i) > 0:  # todo
+                sample['gt_bbox'] = xy[i]
+                sample['gt_class'] = sample['gt_class'][i]
+                if 'difficult' in sample:
+                    sample['difficult'] = sample['difficult'][i]
+                if 'gt_ide' in sample:
+                    sample['gt_ide'] = sample['gt_ide'][i]
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = sample['is_crowd'][i]
+
+        sample['image'] = img
         return sample

@@ -31,7 +31,7 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results, JDEDetMetric
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
@@ -51,9 +51,6 @@ class Trainer(object):
         self.mode = mode.lower()
         self.optimizer = None
         self.slim = None
-
-        # build model
-        self.model = create(cfg.architecture)
 
         # model slim build
         if 'slim' in cfg and cfg.slim:
@@ -75,6 +72,12 @@ class Trainer(object):
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num, self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
+
+        # build model
+        if cfg.architecture == 'FairMOT' and self.mode != 'test':
+            cfg['FairReIDHead']['num_id'] = self.dataset.nID
+
+        self.model = create(cfg.architecture)
 
         # build optimizer in train mode
         if self.mode == 'train':
@@ -150,6 +153,8 @@ class Trainer(object):
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
             ]
+        elif self.cfg.metric == 'MOT':
+            self._metrics = [JDEDetMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -244,6 +249,48 @@ class Trainer(object):
 
                 curr_lr = self.optimizer.get_lr()
                 self.lr.step()
+
+                if model.reid.classifier.weight.grad is not None:
+                    #print('----------neck ida proj 2 dcn weight grad', np.mean(abs(model.detector.neck.ida_up.proj_2[0].conv.conv_dcn.weight.grad)))
+                    #print('----------neck ida proj 2 dcn bias grad', np.mean(abs(model.detector.neck.ida_up.proj_2[0].conv.conv_dcn.bias.grad)))
+                    #np.save('bias.npy', model.detector.neck.ida_up.proj_2[0].conv.conv_dcn.bias.grad)
+                    #print('----------neck ida proj 2 dcn offset weight grad', np.mean(abs(model.detector.neck.ida_up.proj_2[0].conv.conv_offset.weight.grad)))
+                    #print('----------neck ida proj 2 dcn offset bias grad', np.mean(abs(model.detector.neck.ida_up.proj_2[0].conv.conv_offset.bias.grad)))
+                    #print('----------neck ida node 2 dcn weight grad', np.mean(abs(model.detector.neck.ida_up.node_2[0].conv.conv_dcn.weight.grad)))
+                    #print('----------neck ida node 2 dcn bias grad', np.mean(abs(model.detector.neck.ida_up.node_2[0].conv.conv_dcn.bias.grad)))
+                    #print('----------neck ida node 2 dcn offset weight grad', np.mean(abs(model.detector.neck.ida_up.node_2[0].conv.conv_offset.weight.grad)))
+                    #print('----------neck ida node 2 dcn offset bias grad', np.mean(abs(model.detector.neck.ida_up.node_2[0].conv.conv_offset.bias.grad)))
+                    print('----------neck ida up 2 weight grad',
+                          np.mean(
+                              abs(model.detector.neck.ida_up.up_2.weight.grad)))
+                    print('----------hm head weight grad',
+                          np.mean(
+                              abs(model.detector.head.heatmap[0]
+                                  .conv.weight.grad)))
+                    print(
+                        '----------hm head bias grad',
+                        np.mean(
+                            abs(model.detector.head.heatmap[0].conv.bias.grad)))
+                    print(
+                        '----------size head weight grad',
+                        np.mean(
+                            abs(model.detector.head.size[0].conv.weight.grad)))
+                    print('----------size head bias grad',
+                          np.mean(
+                              abs(model.detector.head.size[0].conv.bias.grad)))
+                    print(
+                        '----------offset head weight grad',
+                        np.mean(
+                            abs(model.detector.head.size[0].conv.weight.grad)))
+                    print('----------offset head bias grad',
+                          np.mean(
+                              abs(model.detector.head.size[0].conv.bias.grad)))
+
+                    print('----------classifier weight grad',
+                          np.mean(abs(model.reid.classifier.weight.grad)))
+                    print('----------classifier bias grad',
+                          np.mean(abs(model.reid.classifier.bias.grad)))
+
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
@@ -308,6 +355,8 @@ class Trainer(object):
         self._eval_with_loader(self.loader)
 
     def predict(self, images, draw_threshold=0.5, output_dir='output'):
+        print('images-------', images)
+        print(self.dataset)
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
@@ -322,6 +371,9 @@ class Trainer(object):
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
+            image = np.load('/rrpn/FairMOT/src/img.npy')
+            image = image[np.newaxis, :]
+            data['image'] = paddle.to_tensor(image)
             outs = self.model(data)
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]

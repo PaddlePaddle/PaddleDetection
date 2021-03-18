@@ -14,6 +14,8 @@ from . import ssd
 from . import fcos
 from . import solov2
 from . import ttfnet
+from . import fairmot
+from . import centernet
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -24,3 +26,5 @@ from .ssd import *
 from .fcos import *
 from .solov2 import *
 from .ttfnet import *
+from .fairmot import *
+from .centernet import *

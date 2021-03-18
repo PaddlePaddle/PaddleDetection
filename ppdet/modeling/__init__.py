@@ -8,6 +8,7 @@ from . import architectures
 from . import post_process
 from . import layers
 from . import utils
+from . import reid
 
 from .ops import *
 from .backbones import *
@@ -19,3 +20,4 @@ from .architectures import *
 from .post_process import *
 from .layers import *
 from .utils import *
+from .reid import *

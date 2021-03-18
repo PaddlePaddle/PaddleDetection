@@ -113,12 +113,29 @@ def load_weight(model, weight, optimizer=None):
     model_weight = {}
     incorrect_keys = 0
 
-    for key in model_dict.keys():
-        if key in param_state_dict.keys():
-            model_weight[key] = param_state_dict[key]
+    #print('******************paddle model dict**************')
+    #for k, weights in model_dict.items():
+    #    print(weights)
+    #    exit()
+    #print('******************torch model dict**************')
+    #print(param_state_dict.keys())
+    #print(param_state_dict)
+
+    for key, weights in model_dict.items():
+        if weights.name in param_state_dict.keys():
+            model_weight[key] = model_dict[key]
+            model_weight[key].set_value(param_state_dict[weights.name])
         else:
-            logger.info('Unmatched key: {}'.format(key))
+            logger.info('Unmatched key: {} weights: {}'.format(key,
+                                                               weights.name))
             incorrect_keys += 1
+
+    #for key in model_dict.keys():
+    #    if key in param_state_dict.keys():
+    #        model_weight[key] = param_state_dict[key]
+    #    else:
+    #        logger.info('Unmatched key: {}'.format(key))
+    #        incorrect_keys += 1
 
     assert incorrect_keys == 0, "Load weight {} incorrectly, \
             {} keys unmatched, please check again.".format(weight,
@@ -159,13 +176,17 @@ def load_pretrain_weight(model, pretrain_weight):
     param_state_dict = paddle.load(weights_path)
     ignore_set = set()
     lack_modules = set()
+    model_weight = dict()
     for name, weight in model_dict.items():
-        if name in param_state_dict.keys():
+        #if name in param_state_dict.keys():
+        if weight.name in param_state_dict.keys():
             if weight.shape != list(param_state_dict[name].shape):
                 logger.info(
                     '{} not used, shape {} unmatched with {} in model.'.format(
                         name, list(param_state_dict[name].shape), weight.shape))
-                param_state_dict.pop(name, None)
+                #param_state_dict.pop(name, None)
+                model_weight[name] = model_dict[name]
+                model_weight[name].set_value(param_state_dict[weight.name])
         else:
             lack_modules.add(name.split('.')[0])
             logger.debug('Lack weights: {}'.format(name))
@@ -174,7 +195,8 @@ def load_pretrain_weight(model, pretrain_weight):
         logger.info('Lack weights of modules: {}'.format(', '.join(
             list(lack_modules))))
 
-    model.set_dict(param_state_dict)
+    #model.set_dict(param_state_dict)
+    model.set_dict(model_weight)
     logger.info('Finish loading model weights: {}'.format(weights_path))
 
 

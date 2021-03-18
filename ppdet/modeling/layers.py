@@ -106,6 +106,7 @@ class DeformableConvV2(nn.Layer):
             num_or_sections=[self.offset_channel, self.mask_channel],
             axis=1)
         mask = F.sigmoid(mask)
+
         y = self.conv_dcn(x, offset, mask=mask)
         return y
 

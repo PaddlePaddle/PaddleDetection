@@ -16,8 +16,10 @@ from . import fpn
 from . import yolo_fpn
 from . import hrfpn
 from . import ttf_fpn
+from . import fair_fpn
 
 from .fpn import *
 from .yolo_fpn import *
 from .hrfpn import *
 from .ttf_fpn import *
+from .fair_fpn import *
