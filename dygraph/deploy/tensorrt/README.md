@@ -62,7 +62,10 @@ TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入�
 **注意：`TensorRT`中动态尺寸设置是4维的，这里只设置输入图像的尺寸。**
 
 ## 5、TesnorRT int8 使用教程
-### （1）校准，生成校准表
+### （1）准备模型
+`Paddle TensorRT int8`模式仅支持固定尺寸输入的模型，因此导出模型的时候需要通过参数`TestReader.inputs_def.image_shape=[3,608,608]`来指定模型输入尺寸。
+
+### （2）校准，生成校准表
 准备500～1000张图片（不需要标注），运行如下命令生成校准表（Calibration table）。命令结束后，会在模型文件夹下生成`_opt_cache`的文件夹，里面存放校准数据。详细教程请参考文档[Int8量化预测](https://paddle-inference.readthedocs.io/en/latest/optimize/paddle_trt.html#int8)
 ```
 python python/trt_int8_calib.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_dir=../images/ --use_gpu=True
@@ -70,7 +73,9 @@ python python/trt_int8_calib.py --model_dir=../output_inference/ppyolo_r50vd_dcn
 在`../output_inference/ppyolo_r50vd_dcn_1x_coco/_opt_cache/`文件夹下生成校准表:
 ![img](imgs/trt_int8_calib.png)
 
-### （2）TensorRT int8 量化预测
+这里提供在500张图像上，`ppyolo_r50vd_dcn`模型的校准表，校准数据下载地址[PP-YOLO TensorRT int8校准数据表](https://paddledet.bj.bcebos.com/data/_opt_cache.zip) ，您可以下载该数据表，解压放到模型文件夹下，就可以试用 TensorRT int8量化预测了。
+
+### （3）TensorRT int8 量化预测
 ```
 python python/infer.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/ --image_file=../demo/000000014439.jpg --use_gpu=True --run_mode=trt_int8
 ```
@@ -95,3 +100,6 @@ python python/infer.py --model_dir=../output_inference/ppyolo_r50vd_dcn_1x_coco/
 `min_subgraph_size`的意思是，在加载TensorRT引擎的时候，大于`min_subgraph_size`的OP才会被优化，并且这些OP是连续的且是TensorRT可以优化的。
 
 #### <b>找到子图的这些输入，按照上面方式也设置子图的输入动态尺寸。
+
+### （4）如何打开日志
+预测库默认是打开日志的，只要注释掉`config.disable_glog_info()`就可以打开日志

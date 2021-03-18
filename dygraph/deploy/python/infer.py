@@ -376,7 +376,7 @@ def load_predictor(model_dir,
             print('trt set dynamic shape done!')
 
     # disable print log when predict
-    #config.disable_glog_info()
+    config.disable_glog_info()
     # enable shared memory
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
