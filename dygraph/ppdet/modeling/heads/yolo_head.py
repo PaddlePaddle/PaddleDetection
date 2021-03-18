@@ -16,7 +16,7 @@ def _de_sigmoid(x, eps=1e-7):
 
 @register
 class YOLOv3Head(nn.Layer):
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'data_format']
     __inject__ = ['loss']
 
     def __init__(self,
@@ -26,7 +26,8 @@ class YOLOv3Head(nn.Layer):
                  num_classes=80,
                  loss='YOLOv3Loss',
                  iou_aware=False,
-                 iou_aware_factor=0.4):
+                 iou_aware_factor=0.4,
+                 data_format='NCHW'):
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.loss = loss
@@ -36,6 +37,7 @@ class YOLOv3Head(nn.Layer):
 
         self.parse_anchor(anchors, anchor_masks)
         self.num_outputs = len(self.anchors)
+        self.data_format = data_format
 
         self.yolo_outputs = []
         for i in range(len(self.anchors)):
@@ -53,6 +55,7 @@ class YOLOv3Head(nn.Layer):
                     kernel_size=1,
                     stride=1,
                     padding=0,
+                    data_format=data_format,
                     weight_attr=ParamAttr(name=name + '.conv.weights'),
                     bias_attr=ParamAttr(
                         name=name + '.conv.bias', regularizer=L2Decay(0.))))
@@ -73,6 +76,8 @@ class YOLOv3Head(nn.Layer):
         yolo_outputs = []
         for i, feat in enumerate(feats):
             yolo_output = self.yolo_outputs[i](feat)
+            if self.data_format == 'NHWC':
+                yolo_output = paddle.transpose(yolo_output, [0, 3, 1, 2])
             yolo_outputs.append(yolo_output)
 
         if self.training:

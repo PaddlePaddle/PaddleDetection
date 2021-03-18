@@ -12,10 +12,14 @@ __all__ = ['BaseArch']
 
 @register
 class BaseArch(nn.Layer):
-    def __init__(self):
+    def __init__(self, data_format='NCHW'):
         super(BaseArch, self).__init__()
+        self.data_format = data_format
 
     def forward(self, inputs):
+        if self.data_format == 'NHWC':
+            image = inputs['image']
+            inputs['image'] = paddle.transpose(image, [0, 2, 3, 1])
         self.inputs = inputs
         self.model_arch()
 
