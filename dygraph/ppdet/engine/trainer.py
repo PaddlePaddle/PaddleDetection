@@ -38,7 +38,7 @@ from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, Wife
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
-logger = setup_logger(__name__)
+logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
@@ -157,7 +157,7 @@ class Trainer(object):
             metric.reset()
 
     def register_callbacks(self, callbacks):
-        callbacks = [h for h in list(callbacks) if h is not None]
+        callbacks = [c for c in list(callbacks) if c is not None]
         for c in callbacks:
             assert isinstance(c, Callback), \
                     "metrics shoule be instances of subclass of Metric"
@@ -179,9 +179,7 @@ class Trainer(object):
             logger.debug("Resume weights of epoch {}".format(self.start_epoch))
         else:
             self.start_epoch = 0
-            load_pretrain_weight(self.model, weights,
-                                 self.cfg.get('load_static_weights', False),
-                                 weight_type)
+            load_pretrain_weight(self.model, weights, weight_type)
             logger.debug("Load {} weights {} to start training".format(
                 weight_type, weights))
 

@@ -142,10 +142,7 @@ def load_weight(model, weight, optimizer=None):
     return last_epoch
 
 
-def load_pretrain_weight(model,
-                         pretrain_weight,
-                         load_static_weights=False,
-                         weight_type='pretrain'):
+def load_pretrain_weight(model, pretrain_weight, weight_type='pretrain'):
 
     assert weight_type in ['pretrain', 'finetune']
     if is_url(pretrain_weight):
@@ -160,23 +157,6 @@ def load_pretrain_weight(model,
                          "config file.".format(path))
 
     model_dict = model.state_dict()
-
-    if load_static_weights:
-        pre_state_dict = paddle.static.load_program_state(path)
-        param_state_dict = {}
-        for key in model_dict.keys():
-            weight_name = model_dict[key].name
-            if weight_name in pre_state_dict.keys():
-                logger.info('Load weight: {}, shape: {}'.format(
-                    weight_name, pre_state_dict[weight_name].shape))
-                param_state_dict[key] = pre_state_dict[weight_name]
-            else:
-                if 'backbone' in key:
-                    logger.info('Lack weight: {}, structure name: {}'.format(
-                        weight_name, key))
-                param_state_dict[key] = model_dict[key]
-        model.set_dict(param_state_dict)
-        return
 
     param_state_dict = paddle.load(path + '.pdparams')
     if weight_type == 'pretrain':

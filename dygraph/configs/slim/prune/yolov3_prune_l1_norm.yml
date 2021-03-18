@@ -1,6 +1,5 @@
 # Weights of yolov3_mobilenet_v1_voc
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_voc.pdparams
-load_static_weights: False
 weight_type: resume
 slim: Pruner
 
