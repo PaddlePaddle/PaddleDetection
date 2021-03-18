@@ -167,6 +167,10 @@ class DetectorSOLOv2(Detector):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
         threshold (float): threshold to reserve the result for output.
     """
 
@@ -175,13 +179,21 @@ class DetectorSOLOv2(Detector):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  threshold=0.5):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu)
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape)
 
     def predict(self,
                 image,
@@ -461,7 +473,11 @@ def main():
             pred_config,
             FLAGS.model_dir,
             use_gpu=FLAGS.use_gpu,
-            run_mode=FLAGS.run_mode)
+            run_mode=FLAGS.run_mode,
+            use_dynamic_shape=FLAGS.use_dynamic_shape,
+            trt_min_shape=FLAGS.trt_min_shape,
+            trt_max_shape=FLAGS.trt_max_shape,
+            trt_opt_shape=FLAGS.trt_opt_shape)
     # predict from image
     if FLAGS.image_file != '':
         predict_image(detector)
