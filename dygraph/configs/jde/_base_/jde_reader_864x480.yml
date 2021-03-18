@@ -10,8 +10,8 @@ TrainReader:
         random_size: False
         random_interp: True
         keep_ratio: False
-        letterbox: True  # todo
-    - BatchRandomAffine: {} # todo
+        letterbox: true
+    - BatchRandomAffine: {}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
