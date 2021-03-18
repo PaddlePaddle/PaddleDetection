@@ -1,6 +1,5 @@
 architecture: MaskRCNN
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
 MaskRCNN:
   backbone: ResNet

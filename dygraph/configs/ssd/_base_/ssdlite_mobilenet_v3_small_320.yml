@@ -1,6 +1,5 @@
 architecture: SSD
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_small_x1_0_ssld_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_small_x1_0_ssld_pretrained.pdparams
 
 SSD:
   backbone: MobileNetV3

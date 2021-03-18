@@ -1,6 +1,5 @@
 architecture: FasterRCNN
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/HRNet_W18_C_pretrained.tar
-load_static_weights: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/HRNet_W18_C_pretrained.pdparams
 
 FasterRCNN:
   backbone: HRNet

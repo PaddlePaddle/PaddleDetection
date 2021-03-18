@@ -1,6 +1,5 @@
 # Weights of yolov3_mobilenet_v1_coco
 pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_mobilenet_v1_270e_coco.pdparams
-load_static_weights: False
 weight_type: resume
 slim: QAT
 
