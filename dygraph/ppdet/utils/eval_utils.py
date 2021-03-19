@@ -23,7 +23,9 @@ __all__ = ['json_eval_results']
 
 logger = logging.getLogger(__name__)
 
-def json_eval_results(metric: object, json_directory: object = None, dataset: object = None) -> object:
+def json_eval_results(metric: object,
+                      json_directory: object = None,
+                      dataset: object = None) -> object:
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
     """

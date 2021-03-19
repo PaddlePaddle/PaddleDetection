@@ -80,8 +80,9 @@ def run(FLAGS, cfg):
             "In json_eval mode, PaddleDetection will evaluate json files in "
             "output_eval directly. And proposal.json, bbox.json and mask.json "
             "will be detected by default.")
-        json_eval_results(
-            cfg.metric, json_directory=FLAGS.output_eval, dataset=cfg['EvalDataset'])
+        json_eval_results(cfg.metric,
+                          json_directory=FLAGS.output_eval,
+                          dataset=cfg['EvalDataset'])
         return
 
     # init parallel environment if nranks > 1
