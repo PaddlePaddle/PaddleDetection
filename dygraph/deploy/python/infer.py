@@ -46,6 +46,11 @@ class Detector(object):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         threshold (float): threshold to reserve the result for output.
     """
 
@@ -54,13 +59,21 @@ class Detector(object):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  threshold=0.5):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu)
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape)
 
     def preprocess(self, im):
         preprocess_ops = []
@@ -154,6 +167,10 @@ class DetectorSOLOv2(Detector):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
         threshold (float): threshold to reserve the result for output.
     """
 
@@ -162,13 +179,21 @@ class DetectorSOLOv2(Detector):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
                  threshold=0.5):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu)
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape)
 
     def predict(self,
                 image,
@@ -287,11 +312,20 @@ def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
                    use_gpu=False,
-                   min_subgraph_size=3):
+                   min_subgraph_size=3,
+                   use_dynamic_shape=False,
+                   trt_min_shape=1,
+                   trt_max_shape=1280,
+                   trt_opt_shape=640):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -301,9 +335,12 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    if run_mode == 'trt_int8':
-        raise ValueError("TensorRT int8 mode is not supported now, "
-                         "please use trt_fp32 or trt_fp16 instead.")
+    if run_mode == 'trt_int8' and not os.path.exists(
+            os.path.join(model_dir, '_opt_cache')):
+        raise ValueError(
+            "TensorRT int8 must calibration first, and model_dir must has _opt_cache dir"
+        )
+    use_calib_mode = True if run_mode == 'trt_int8' else False
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
         os.path.join(model_dir, 'model.pdiparams'))
@@ -316,11 +353,7 @@ def load_predictor(model_dir,
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
-        # FIXME(dkp): ir optimize may prune variable inside graph
-        #             and incur error in Paddle 2.0, e.g. in SSDLite
-        #             FCOS model, set as False currently and should
-        #             be set as True after switch_ir_optim fixed
-        config.switch_ir_optim(False)
+        config.switch_ir_optim(True)
     else:
         config.disable_gpu()
 
@@ -331,7 +364,16 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=False)
+            use_calib_mode=use_calib_mode)
+
+        if use_dynamic_shape:
+            print('use_dynamic_shape')
+            min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
+            max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
+            opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
+            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
+                                              opt_input_shape)
+            print('trt set dynamic shape done!')
 
     # disable print log when predict
     config.disable_glog_info()
@@ -424,13 +466,21 @@ def main():
         pred_config,
         FLAGS.model_dir,
         use_gpu=FLAGS.use_gpu,
-        run_mode=FLAGS.run_mode)
+        run_mode=FLAGS.run_mode,
+        use_dynamic_shape=FLAGS.use_dynamic_shape,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
             FLAGS.model_dir,
             use_gpu=FLAGS.use_gpu,
-            run_mode=FLAGS.run_mode)
+            run_mode=FLAGS.run_mode,
+            use_dynamic_shape=FLAGS.use_dynamic_shape,
+            trt_min_shape=FLAGS.trt_min_shape,
+            trt_max_shape=FLAGS.trt_max_shape,
+            trt_opt_shape=FLAGS.trt_opt_shape)
     # predict from image
     if FLAGS.image_file != '':
         predict_image(detector)
@@ -480,6 +530,23 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory of output visualization files.")
+    parser.add_argument(
+        "--use_dynamic_shape",
+        type=ast.literal_eval,
+        default=False,
+        help="Dynamic_shape for TensorRT.")
+    parser.add_argument(
+        "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
+    parser.add_argument(
+        "--trt_max_shape",
+        type=int,
+        default=1280,
+        help="max_shape for TensorRT.")
+    parser.add_argument(
+        "--trt_opt_shape",
+        type=int,
+        default=640,
+        help="opt_shape for TensorRT.")
 
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)

@@ -25,7 +25,7 @@ void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
       static_cast<float>(im->cols)
   };
   data->scale_factor_ = {1., 1.};
-  data->input_shape_ = {
+  data->in_net_shape_ = {
       static_cast<int>(im->rows),
       static_cast<int>(im->cols)
   };
@@ -62,7 +62,11 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
 
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
-  data->input_shape_ = {
+  data->im_shape_ = {
+      static_cast<int>(im->cols * resize_scale.first),
+      static_cast<int>(im->rows * resize_scale.second)
+  };
+  data->in_net_shape_ = {
       static_cast<int>(im->cols * resize_scale.first),
       static_cast<int>(im->rows * resize_scale.second)
   };
@@ -121,7 +125,7 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
     nw - rw,
     cv::BORDER_CONSTANT,
     cv::Scalar(0));
-  data->input_shape_ = {
+  data->in_net_shape_ = {
     static_cast<int>(im->rows),
     static_cast<int>(im->cols),
   };

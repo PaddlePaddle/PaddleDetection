@@ -27,7 +27,11 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
                                const int min_subgraph_size,
                                const int batch_size,
                                const std::string& run_mode,
-                               const int gpu_id) {
+                               const int gpu_id,
+                               bool use_dynamic_shape,
+                               const int trt_min_shape,
+                               const int trt_max_shape,
+                               const int trt_opt_shape) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
@@ -35,26 +39,48 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   if (use_gpu) {
     config.EnableUseGpu(200, gpu_id);
     config.SwitchIrOptim(true);
+    // use tensorrt
+    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
-      if (run_mode == "trt_fp16") {
-        precision = paddle_infer::Config::Precision::kHalf;
-      } else if (run_mode == "trt_int8") {
-        printf("TensorRT int8 mode is not supported now, "
-               "please use 'trt_fp32' or 'trt_fp16' instead");
-      } else {
-        if (run_mode != "trt_fp32") {
-          printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
-        }
+      if (run_mode == "trt_fp32") {
+        precision = paddle_infer::Config::Precision::kFloat32;
       }
+      else if (run_mode == "trt_fp16") {
+        precision = paddle_infer::Config::Precision::kHalf;
+      }
+      else if (run_mode == "trt_int8") {
+        precision = paddle_infer::Config::Precision::kInt8;
+        use_calib_mode = true;
+      } else {
+          printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
+      }
+      // set tensorrt
       config.EnableTensorRtEngine(
-          1 << 10,
+          1 << 30,
           batch_size,
           min_subgraph_size,
           precision,
           false,
-          false);
-   }
+          use_calib_mode);
+
+      // set use dynamic shape
+      if (use_dynamic_shape) {
+        // set DynamicShsape for image tensor
+        const std::vector<int> min_input_shape = {1, trt_min_shape, trt_min_shape};
+        const std::vector<int> max_input_shape = {1, trt_max_shape, trt_max_shape};
+        const std::vector<int> opt_input_shape = {1, trt_opt_shape, trt_opt_shape};
+        const std::map<std::string, std::vector<int>> map_min_input_shape = {{"image", min_input_shape}};
+        const std::map<std::string, std::vector<int>> map_max_input_shape = {{"image", max_input_shape}};
+        const std::map<std::string, std::vector<int>> map_opt_input_shape = {{"image", opt_input_shape}};
+
+        config.SetTRTDynamicShapeInfo(map_min_input_shape,
+                                      map_max_input_shape,
+                                      map_opt_input_shape);
+        std::cout << "TensorRT dynamic shape enabled" << std::endl;
+      }
+    }
+
   } else {
     config.DisableGpu();
   }
@@ -171,8 +197,8 @@ void ObjectDetector::Predict(const cv::Mat& im,
   for (const auto& tensor_name : input_names) {
     auto in_tensor = predictor_->GetInputHandle(tensor_name);
     if (tensor_name == "image") {
-      int rh = inputs_.input_shape_[0];
-      int rw = inputs_.input_shape_[1];
+      int rh = inputs_.in_net_shape_[0];
+      int rw = inputs_.in_net_shape_[1];
       in_tensor->Reshape({1, 3, rh, rw});
       in_tensor->CopyFromCpu(inputs_.im_data_.data());
     } else if (tensor_name == "im_shape") {
