@@ -266,6 +266,11 @@ class BBoxHead(nn.Layer):
         reg_name = 'loss_bbox_reg'
         loss_bbox = {}
 
+        loss_weight = 1.
+        if fg_inds.numel() == 0:
+            fg_inds = paddle.zeros([1], dtype='int32')
+            loss_weight = 0.
+
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
         else:
@@ -292,8 +297,8 @@ class BBoxHead(nn.Layer):
         loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
         ) / tgt_labels.shape[0]
 
-        loss_bbox[cls_name] = loss_bbox_cls
-        loss_bbox[reg_name] = loss_bbox_reg
+        loss_bbox[cls_name] = loss_bbox_cls * loss_weight
+        loss_bbox[reg_name] = loss_bbox_reg * loss_weight
 
         return loss_bbox
 
