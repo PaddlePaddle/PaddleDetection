@@ -65,6 +65,7 @@ class COCOMetric(Metric):
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
+        self.output_eval = kwargs.get('output_eval', None)
         self.reset()
 
     def reset(self):
@@ -93,17 +94,23 @@ class COCOMetric(Metric):
 
     def accumulate(self):
         if len(self.results['bbox']) > 0:
-            with open("bbox.json", 'w') as f:
+            output = "bbox.json"
+            if self.output_eval:
+                output = os.path.join(self.output_eval, output)
+            with open(output, 'w') as f:
                 json.dump(self.results['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
             bbox_stats = cocoapi_eval(
-                'bbox.json', 'bbox', anno_file=self.anno_file)
+                output, 'bbox', anno_file=self.anno_file)
             self.eval_results['bbox'] = bbox_stats
             sys.stdout.flush()
 
         if len(self.results['mask']) > 0:
-            with open("mask.json", 'w') as f:
+            output = "mask.json"
+            if self.output_eval:
+                output = os.path.join(self.output_eval, output)
+            with open(output, 'w') as f:
                 json.dump(self.results['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
@@ -113,7 +120,10 @@ class COCOMetric(Metric):
             sys.stdout.flush()
 
         if len(self.results['segm']) > 0:
-            with open("segm.json", 'w') as f:
+            output = "segm.json"
+            if self.output_eval:
+                output = os.path.join(self.output_eval, output)
+            with open(output, 'w') as f:
                 json.dump(self.results['segm'], f)
                 logger.info('The segm result is saved to segm.json.')
 
