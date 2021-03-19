@@ -52,8 +52,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
         use_calib_mode = true;
-      }
-      else {
+      } else {
           printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
       // set tensorrt
@@ -82,9 +81,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
     }
 
-  } 
-  else 
-  {
+  } else {
     config.DisableGpu();
   }
   config.SwitchUseFeedFetchOps(false);
