@@ -114,7 +114,7 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='test')
 
     # load weights
-    trainer.load_weights(cfg.weights, 'resume')
+    trainer.load_weights(cfg.weights)
 
     # get inference images
     images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
