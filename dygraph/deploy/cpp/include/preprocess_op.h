@@ -37,8 +37,8 @@ class ImageBlob {
   std::vector<float> im_shape_;
   // Buffer for image data after preprocessing
   std::vector<float> im_data_;
-  // input image width, height
-  std::vector<int> input_shape_;
+  // in net data shape(after pad)
+  std::vector<int> in_net_shape_;
   // Evaluation image width and height
   //std::vector<float>  eval_im_size_f_;
   // Scale factor for image size to origin image size
@@ -90,7 +90,7 @@ class Resize : public PreprocessOp {
     keep_ratio_ = item["keep_ratio"].as<bool>();
     target_size_ = item["target_size"].as<std::vector<int>>();
     if (item["keep_ratio"]) {
-      input_shape_ = image_shape;
+      in_net_shape_ = image_shape;
     }
  }
 
@@ -103,7 +103,7 @@ class Resize : public PreprocessOp {
   int interp_;
   bool keep_ratio_;
   std::vector<int> target_size_;
-  std::vector<int> input_shape_;
+  std::vector<int> in_net_shape_;
 };
 
 // Models with FPN need input shape % stride == 0
