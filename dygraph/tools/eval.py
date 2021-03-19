@@ -32,6 +32,7 @@ from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
+from ppdet.utils.eval_utils import json_eval_results
 from ppdet.engine import Trainer, init_parallel_env
 
 from ppdet.utils.logger import setup_logger
@@ -74,6 +75,15 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    if FLAGS.json_eval:
+        logger.info(
+            "In json_eval mode, PaddleDetection will evaluate json files in "
+            "output_eval directly. And proposal.json, bbox.json and mask.json "
+            "will be detected by default.")
+        json_eval_results(
+            cfg.metric, json_directory=FLAGS.output_eval, dataset=cfg['EvalDataset'])
+        return
+
     # init parallel environment if nranks > 1
     init_parallel_env()
 
@@ -94,6 +104,7 @@ def main():
     # TODO: bias should be unified
     cfg['bias'] = 1 if FLAGS.bias else 0
     cfg['classwise'] = True if FLAGS.classwise else False
+    cfg['output_eval'] = FLAGS.output_eval
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)
