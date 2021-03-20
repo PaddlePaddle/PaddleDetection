@@ -1,5 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: ppdet://models/pretrained/ResNet18_vd_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
 norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998

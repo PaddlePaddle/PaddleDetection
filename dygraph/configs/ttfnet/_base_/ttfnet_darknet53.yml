@@ -1,5 +1,5 @@
 architecture: TTFNet
-pretrain_weights: ppdet://models/pretrained/DarkNet53_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 
 TTFNet:
   backbone: DarkNet

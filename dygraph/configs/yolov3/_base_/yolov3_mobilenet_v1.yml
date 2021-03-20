@@ -1,5 +1,5 @@
 architecture: YOLOv3
-pretrain_weights: ppdet://models/pretrained/MobileNetV1_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV1_pretrained.pdparams
 norm_type: sync_bn
 
 YOLOv3:

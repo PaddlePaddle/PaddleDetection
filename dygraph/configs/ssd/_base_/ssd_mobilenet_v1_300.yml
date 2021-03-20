@@ -1,5 +1,5 @@
 architecture: SSD
-pretrain_weights: ppdet://models/pretrained/ssd_mobilenet_v1_coco_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ssd_mobilenet_v1_coco_pretrained.pdparams
 
 SSD:
   backbone: MobileNet
