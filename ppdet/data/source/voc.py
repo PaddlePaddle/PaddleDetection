@@ -19,14 +19,15 @@ import xml.etree.ElementTree as ET
 
 from ppdet.core.workspace import register, serializable
 
-from .dataset import DataSet
-import logging
-logger = logging.getLogger(__name__)
+from .dataset import DetDataset
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @register
 @serializable
-class VOCDataSet(DataSet):
+class VOCDataSet(DetDataset):
     """
     Load dataset with PascalVOC format.
 
@@ -38,10 +39,6 @@ class VOCDataSet(DataSet):
         image_dir (str): directory for images.
         anno_path (str): voc annotation file path.
         sample_num (int): number of samples to load, -1 means all.
-        use_default_label (bool): whether use the default mapping of
-            label to integer index. Default True.
-        with_background (bool): whether load background as a class,
-            default True.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
     """
@@ -50,58 +47,38 @@ class VOCDataSet(DataSet):
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
-                 use_default_label=False,
-                 with_background=True,
-                 label_list='label_list.txt'):
+                 label_list=None):
         super(VOCDataSet, self).__init__(
+            dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
-            sample_num=sample_num,
-            dataset_dir=dataset_dir,
-            with_background=with_background)
-        # roidbs is list of dict whose structure is:
-        # {
-        #     'im_file': im_fname, # image file name
-        #     'im_id': im_id, # image id
-        #     'h': im_h, # height of image
-        #     'w': im_w, # width
-        #     'is_crowd': is_crowd,
-        #     'gt_class': gt_class,
-        #     'gt_score': gt_score,
-        #     'gt_bbox': gt_bbox,
-        #     'difficult': difficult
-        # }
-        self.roidbs = None
-        # 'cname2id' is a dict to map category name to class id
-        self.cname2cid = None
-        self.use_default_label = use_default_label
+            data_fields=data_fields,
+            sample_num=sample_num)
         self.label_list = label_list
 
-    def load_roidb_and_cname2cid(self):
+    def parse_dataset(self, ):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
         # mapping category name to class id
-        # if with_background is True:
-        #   background:0, first_class:1, second_class:2, ...
-        # if with_background is False:
-        #   first_class:0, second_class:1, ...
+        # first_class:0, second_class:1, ...
         records = []
         ct = 0
         cname2cid = {}
-        if not self.use_default_label:
+        if self.label_list:
             label_path = os.path.join(self.dataset_dir, self.label_list)
             if not os.path.exists(label_path):
                 raise ValueError("label_list {} does not exists".format(
                     label_path))
             with open(label_path, 'r') as fr:
-                label_id = int(self.with_background)
+                label_id = 0
                 for line in fr.readlines():
                     cname2cid[line.strip()] = label_id
                     label_id += 1
         else:
-            cname2cid = pascalvoc_label(self.with_background)
+            cname2cid = pascalvoc_label()
 
         with open(anno_path, 'r') as fr:
             while True:
@@ -136,7 +113,6 @@ class VOCDataSet(DataSet):
                 gt_bbox = []
                 gt_class = []
                 gt_score = []
-                is_crowd = []
                 difficult = []
                 for i, obj in enumerate(objs):
                     cname = obj.find('name').text
@@ -153,7 +129,6 @@ class VOCDataSet(DataSet):
                         gt_bbox.append([x1, y1, x2, y2])
                         gt_class.append([cname2cid[cname]])
                         gt_score.append([1.])
-                        is_crowd.append([0])
                         difficult.append([_difficult])
                     else:
                         logger.warn(
@@ -163,19 +138,25 @@ class VOCDataSet(DataSet):
                 gt_bbox = np.array(gt_bbox).astype('float32')
                 gt_class = np.array(gt_class).astype('int32')
                 gt_score = np.array(gt_score).astype('float32')
-                is_crowd = np.array(is_crowd).astype('int32')
                 difficult = np.array(difficult).astype('int32')
+
                 voc_rec = {
                     'im_file': img_file,
                     'im_id': im_id,
                     'h': im_h,
-                    'w': im_w,
-                    'is_crowd': is_crowd,
+                    'w': im_w
+                } if 'image' in self.data_fields else {}
+
+                gt_rec = {
                     'gt_class': gt_class,
                     'gt_score': gt_score,
                     'gt_bbox': gt_bbox,
                     'difficult': difficult
                 }
+                for k, v in gt_rec.items():
+                    if k in self.data_fields:
+                        voc_rec[k] = v
+
                 if len(objs) != 0:
                     records.append(voc_rec)
 
@@ -187,30 +168,31 @@ class VOCDataSet(DataSet):
         logger.debug('{} samples in file {}'.format(ct, anno_path))
         self.roidbs, self.cname2cid = records, cname2cid
 
+    def get_label_list(self):
+        return os.path.join(self.dataset_dir, self.label_list)
 
-def pascalvoc_label(with_background=True):
+
+def pascalvoc_label():
     labels_map = {
-        'aeroplane': 1,
-        'bicycle': 2,
-        'bird': 3,
-        'boat': 4,
-        'bottle': 5,
-        'bus': 6,
-        'car': 7,
-        'cat': 8,
-        'chair': 9,
-        'cow': 10,
-        'diningtable': 11,
-        'dog': 12,
-        'horse': 13,
-        'motorbike': 14,
-        'person': 15,
-        'pottedplant': 16,
-        'sheep': 17,
-        'sofa': 18,
-        'train': 19,
-        'tvmonitor': 20
+        'aeroplane': 0,
+        'bicycle': 1,
+        'bird': 2,
+        'boat': 3,
+        'bottle': 4,
+        'bus': 5,
+        'car': 6,
+        'cat': 7,
+        'chair': 8,
+        'cow': 9,
+        'diningtable': 10,
+        'dog': 11,
+        'horse': 12,
+        'motorbike': 13,
+        'person': 14,
+        'pottedplant': 15,
+        'sheep': 16,
+        'sofa': 17,
+        'train': 18,
+        'tvmonitor': 19
     }
-    if not with_background:
-        labels_map = {k: v - 1 for k, v in labels_map.items()}
     return labels_map

@@ -18,27 +18,28 @@ from __future__ import print_function
 
 import os
 import os.path as osp
+import yaml
 import shutil
 import requests
 import tqdm
 import hashlib
-import binascii
-import base64
 import tarfile
 import zipfile
 
 from .voc_utils import create_list
+from ppdet.core.workspace import BASE_KEY
 
-import logging
-logger = logging.getLogger(__name__)
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = [
-    'get_weights_path', 'get_dataset_path', 'download_dataset',
-    'create_voc_list'
+    'get_weights_path', 'get_dataset_path', 'get_config_path',
+    'download_dataset', 'create_voc_list'
 ]
 
 WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
+CONFIGS_HOME = osp.expanduser("~/.cache/paddle/configs")
 
 # dict of {dataset_name: (download_info, sub_dirs)}
 # download info: [(url, md5sum)]
@@ -91,13 +92,66 @@ DATASETS = {
 
 DOWNLOAD_RETRY_LIMIT = 3
 
+PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX = 'https://paddlemodels.bj.bcebos.com/object_detection/'
+
+
+def parse_url(url):
+    url = url.replace("ppdet://", PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX)
+    return url
+
 
 def get_weights_path(url):
-    """Get weights path from WEIGHT_HOME, if not exists,
+    """Get weights path from WEIGHTS_HOME, if not exists,
     download it from url.
     """
+    url = parse_url(url)
     path, _ = get_path(url, WEIGHTS_HOME)
     return path
+
+
+def get_config_path(url):
+    """Get weights path from CONFIGS_HOME, if not exists,
+    download it from url.
+    """
+    url = parse_url(url)
+    path, _ = get_path(url, CONFIGS_HOME)
+    _download_config(path, url, CONFIGS_HOME)
+
+    return path
+
+
+def _download_config(cfg_path, cfg_url, cur_dir):
+    with open(cfg_path) as f:
+        cfg = yaml.load(f, Loader=yaml.Loader)
+
+    # download dependence base ymls
+    if BASE_KEY in cfg:
+        base_ymls = list(cfg[BASE_KEY])
+        for base_yml in base_ymls:
+            if base_yml.startswith("~"):
+                base_yml = os.path.expanduser(base_yml)
+                relpath = osp.relpath(base_yml, cfg_path)
+            if not base_yml.startswith('/'):
+                relpath = base_yml
+                base_yml = os.path.join(os.path.dirname(cfg_path), base_yml)
+
+            if osp.isfile(base_yml):
+                logger.debug("Found _BASE_ config: {}".format(base_yml))
+                continue
+
+            # download to CONFIGS_HOME firstly
+            base_yml_url = osp.join(osp.split(cfg_url)[0], relpath)
+            path, _ = get_path(base_yml_url, CONFIGS_HOME)
+
+            # move from CONFIGS_HOME to dst_path to restore config directory structure
+            dst_path = osp.join(cur_dir, relpath)
+            dst_dir = osp.split(dst_path)[0]
+            if not osp.isdir(dst_dir):
+                os.makedirs(dst_dir)
+            shutil.move(path, dst_path)
+
+            # perfrom download base yml recursively
+            _download_config(dst_path, base_yml_url, osp.split(dst_path)[0])
 
 
 def get_dataset_path(path, annotation, image_dir):
@@ -124,7 +178,7 @@ def get_dataset_path(path, annotation, image_dir):
                     "Please apply and download the dataset from "
                     "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
-            # For VOC-style datasets, only check subdirs
+            # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name in ['voc', 'fruit', 'roadsign_voc']:
                 exists = True
                 for sub_dir in dataset[1]:
@@ -157,13 +211,13 @@ def get_dataset_path(path, annotation, image_dir):
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     logger.debug("Create voc file list...")
     devkit_dir = osp.join(data_dir, devkit_subdir)
-    year_dirs = [osp.join(devkit_dir, x) for x in os.listdir(devkit_dir)]
+    years = ['2007', '2012']
 
     # NOTE: since using auto download VOC
     # dataset, VOC default label list should be used, 
     # do not generate label_list.txt here. For default
     # label, see ../data/source/voc.py
-    create_list(year_dirs, data_dir)
+    create_list(devkit_dir, years, data_dir)
     logger.debug("Create voc file list finished")
 
 
@@ -203,29 +257,20 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
         if fullpath.find(k) >= 0:
             fullpath = osp.join(osp.split(fullpath)[0], v)
 
+    exist_flag = False
     if osp.exists(fullpath) and check_exist:
-        # If fullpath is a directory, it has been decompressed
-        # checking MD5 is impossible, so we skip checking when
-        # fullpath is a directory here
-        if osp.isdir(fullpath) or \
-                _md5check_from_req(fullpath,
-                        requests.get(url, stream=True)):
-            logger.debug("Found {}".format(fullpath))
-            return fullpath, True
-        else:
-            if osp.isdir(fullpath):
-                shutil.rmtree(fullpath)
-            else:
-                os.remove(fullpath)
+        exist_flag = True
+        logger.debug("Found {}".format(fullpath))
+    else:
+        exist_flag = False
+        fullname = _download(url, root_dir, md5sum)
 
-    fullname = _download(url, root_dir, md5sum)
+        # new weights format which postfix is 'pdparams' not
+        # need to decompress
+        if osp.splitext(fullname)[-1] not in ['.pdparams', '.yml']:
+            _decompress(fullname)
 
-    # new weights format whose postfix is 'pdparams',
-    # which is not need to decompress
-    if osp.splitext(fullname)[-1] != '.pdparams':
-        _decompress(fullname)
-
-    return fullpath, False
+    return fullpath, exist_flag
 
 
 def download_dataset(path, dataset=None):
@@ -250,19 +295,13 @@ def _dataset_exists(path, annotation, image_dir):
 
     if annotation:
         annotation_path = osp.join(path, annotation)
-        if not osp.exists(annotation_path):
-            logger.error("Config dataset_dir {} is not exits!".format(path))
-
         if not osp.isfile(annotation_path):
-            logger.warning("Config annotation {} is not a "
-                           "file, dataset config is not "
-                           "valid".format(annotation_path))
+            logger.debug("Config annotation {} is not a "
+                         "file, dataset config is not "
+                         "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
-        if not osp.exists(image_path):
-            logger.warning("Config dataset_dir {} is not exits!".format(path))
-
         if not osp.isdir(image_path):
             logger.warning("Config image_dir {} is not a "
                            "directory, dataset config is not "
@@ -315,29 +354,9 @@ def _download(url, path, md5sum=None):
                 for chunk in req.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
+        shutil.move(tmp_fullname, fullname)
 
-        # check md5 after download in Content-MD5 in req.headers
-        if _md5check_from_req(tmp_fullname, req):
-            shutil.move(tmp_fullname, fullname)
-            return fullname
-        else:
-            logger.warn(
-                "Download from url imcomplete, try downloading again...")
-            os.remove(tmp_fullname)
-            continue
-
-
-def _md5check_from_req(weights_path, req):
-    # For weights in bcebos URLs, MD5 value is contained
-    # in request header as 'content_md5'
-    content_md5 = req.headers.get('content-md5')
-    if not content_md5 or _md5check(
-            weights_path,
-            binascii.hexlify(base64.b64decode(content_md5.strip('"'))).decode(
-            )):
-        return True
-    else:
-        return False
+    return fullname
 
 
 def _md5check(fullname, md5sum=None):

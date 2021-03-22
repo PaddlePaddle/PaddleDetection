@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,75 +15,90 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-
-import os
-import sys
+import os, sys
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
+
 import paddle
-from paddle import fluid
 
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
-import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.export_utils import save_infer_model, dump_infer_config
-from ppdet.utils.check import check_config, check_version, check_py_func, enable_static_mode
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+from ppdet.engine import Trainer
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('export_model')
 
 
-def main():
-    cfg = load_config(FLAGS.config)
-    merge_config(FLAGS.opt)
-    check_config(cfg)
-
-    check_version()
-
-    main_arch = cfg.architecture
-
-    # Use CPU for exporting inference model instead of GPU
-    place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
-
-    model = create(main_arch)
-
-    startup_prog = fluid.Program()
-    infer_prog = fluid.Program()
-    with fluid.program_guard(infer_prog, startup_prog):
-        with fluid.unique_name.guard():
-            inputs_def = cfg['TestReader']['inputs_def']
-            inputs_def['use_dataloader'] = False
-            feed_vars, _ = model.build_inputs(**inputs_def)
-            # postprocess not need in exclude_nms, exclude NMS in exclude_nms mode
-            test_fetches = model.test(feed_vars, exclude_nms=FLAGS.exclude_nms)
-    infer_prog = infer_prog.clone(True)
-    check_py_func(infer_prog)
-
-    exe.run(startup_prog)
-    checkpoint.load_params(exe, infer_prog, cfg.weights)
-
-    dump_infer_config(FLAGS, cfg)
-    save_infer_model(FLAGS, exe, feed_vars, test_fetches, infer_prog)
-
-
-if __name__ == '__main__':
-    enable_static_mode()
+def parse_args():
     parser = ArgsParser()
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="output",
+        default="output_inference",
         help="Directory for storing the output model files.")
     parser.add_argument(
-        "--exclude_nms",
-        action='store_true',
+        "--export_serving_model",
+        type=bool,
         default=False,
-        help="Whether prune NMS for benchmark")
+        help="Whether to export serving model or not.")
+    parser.add_argument(
+        "--slim_config",
+        default=None,
+        type=str,
+        help="Configuration file of slim method.")
+    args = parser.parse_args()
+    return args
 
-    FLAGS = parser.parse_args()
+
+def run(FLAGS, cfg):
+    # build detector
+    trainer = Trainer(cfg, mode='test')
+
+    # load weights
+    trainer.load_weights(cfg.weights, 'resume')
+
+    # export model
+    trainer.export(FLAGS.output_dir)
+
+    if FLAGS.export_serving_model:
+        from paddle_serving_client.io import inference_model_to_serving
+        model_name = os.path.splitext(os.path.split(cfg.filename)[-1])[0]
+
+        inference_model_to_serving(
+            dirname="{}/{}".format(FLAGS.output_dir, model_name),
+            serving_server="{}/{}/serving_server".format(FLAGS.output_dir,
+                                                         model_name),
+            serving_client="{}/{}/serving_client".format(FLAGS.output_dir,
+                                                         model_name),
+            model_filename="model.pdmodel",
+            params_filename="model.pdiparams")
+
+
+def main():
+    paddle.set_device("cpu")
+    FLAGS = parse_args()
+
+    cfg = load_config(FLAGS.config)
+    # TODO: to be refined in the future
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
+        FLAGS.opt['norm_type'] = 'bn'
+    merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
+    check_config(cfg)
+    check_gpu(cfg.use_gpu)
+    check_version()
+
+    run(FLAGS, cfg)
+
+
+if __name__ == '__main__':
     main()

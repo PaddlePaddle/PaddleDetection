@@ -3,8 +3,9 @@ project(PaddleObjectDetector CXX C)
 
 option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."          ON)
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
-option(WITH_STATIC_LIB "Compile demo with static/shared library, default use static."   ON)
-option(WITH_TENSORRT "Compile demo with TensorRT."   OFF)
+option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
+option(USE_PADDLE_20RC1 "Compile demo with paddle_inference_lib 2.0rc1"                 ON)
+
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
@@ -36,6 +37,7 @@ endif()
 if (NOT DEFINED PADDLE_DIR OR ${PADDLE_DIR} STREQUAL "")
     message(FATAL_ERROR "please set PADDLE_DIR with -DPADDLE_DIR=/path/paddle_influence_dir")
 endif()
+message("PADDLE_DIR IS:"${PADDLE_DIR})
 
 if (NOT DEFINED OPENCV_DIR OR ${OPENCV_DIR} STREQUAL "")
     message(FATAL_ERROR "please set OPENCV_DIR with -DOPENCV_DIR=/path/opencv")
@@ -70,6 +72,8 @@ link_directories("${PADDLE_DIR}/third_party/install/xxhash/lib")
 link_directories("${PADDLE_DIR}/paddle/lib/")
 link_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
+
+
 if (WIN32)
   include_directories("${PADDLE_DIR}/paddle/fluid/inference")
   include_directories("${PADDLE_DIR}/paddle/include")
@@ -89,10 +93,6 @@ if (WIN32)
     set(CMAKE_C_FLAGS_RELEASE  "${CMAKE_C_FLAGS_RELEASE} /bigobj /MT")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} /bigobj /MTd")
     set(CMAKE_CXX_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} /bigobj /MT")
-    if (WITH_STATIC_LIB)
-        safe_set_static_flag()
-        add_definitions(-DSTATIC_LIB)
-    endif()
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o2 -fopenmp -std=c++11")
     set(CMAKE_STATIC_LIBRARY_PREFIX "")
@@ -113,8 +113,8 @@ endif()
 
 if (NOT WIN32)
   if (WITH_TENSORRT AND WITH_GPU)
-	  include_directories("${TENSORRT_INC_DIR}")
-	  link_directories("${TENSORRT_LIB_DIR}")
+	  include_directories("${TENSORRT_INC_DIR}/")
+	  link_directories("${TENSORRT_LIB_DIR}/")
   endif()
 endif(NOT WIN32)
 
@@ -148,30 +148,47 @@ if(WITH_MKL)
     endif ()
   endif()
 else()
-  if (WIN32)
-    set(MATH_LIB ${PADDLE_DIR}/third_party/install/openblas/lib/openblas${CMAKE_STATIC_LIBRARY_SUFFIX})
-  else()
-    set(MATH_LIB ${PADDLE_DIR}/third_party/install/openblas/lib/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX})
-  endif()
+  set(MATH_LIB ${PADDLE_DIR}/third_party/install/openblas/lib/libopenblas${CMAKE_STATIC_LIBRARY_SUFFIX})
 endif()
 
+
 if (WIN32)
-    if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    if (USE_PADDLE_20RC1)
+        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
+        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set(DEPS
-            ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+            ${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        else()
+            set(DEPS
+                ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        endif()
     else()
-        set(DEPS
-            ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
+        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+            set(DEPS
+                ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        else()
+            set(DEPS
+                ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+        endif()
     endif()
 endif()
 
-if(WITH_STATIC_LIB)
-    set(DEPS
-        ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+if (WIN32)
+    if (USE_PADDLE_20RC1)
+        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
+        set(DEPS ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+    else()
+        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
+        set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
+    endif()
 else()
-    set(DEPS
-        ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+    # linux shared lib name is libpaddle_fluid.so
+    set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif()
+
+message("DEPS:" $DEPS)
 
 if (NOT WIN32)
     set(DEPS ${DEPS}
@@ -220,6 +237,7 @@ endif()
 set(DEPS ${DEPS} ${OpenCV_LIBS})
 add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
 ADD_DEPENDENCIES(main ext-yaml-cpp)
+message("DEPS:" $DEPS)
 target_link_libraries(main ${DEPS})
 
 if (WIN32 AND WITH_MKL)
@@ -230,5 +248,12 @@ if (WIN32 AND WITH_MKL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./release/mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./release/libiomp5md.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./release/mkldnn.dll
+    )
+endif()
+
+
+if (WIN32 AND USE_PADDLE_20RC1)
+    add_custom_command(TARGET main POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/paddle_fluid.dll ./release/paddle_fluid.dll
     )
 endif()

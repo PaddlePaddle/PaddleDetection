@@ -16,14 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import logging
 import numpy as np
 
-import paddle.fluid as fluid
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ["bbox_overlaps", "box_to_delta"]
-
-logger = logging.getLogger(__name__)
 
 
 def bbox_overlaps(boxes_1, boxes_2):

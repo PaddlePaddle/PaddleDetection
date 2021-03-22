@@ -18,7 +18,7 @@
 - 跨平台，支持在 `Windows` 和 `Linux` 完成编译、二次开发集成和部署运行
 - 可扩展性，支持用户针对新模型开发自己特殊的数据预处理等逻辑
 - 高性能，除了`PaddlePaddle`自身带来的性能优势，我们还针对图像检测的特点对关键步骤进行了性能优化
-- 支持各种不同检测模型结构，包括`Yolov3`/`Faster_RCNN`/`SSD`/`RetinaNet`等
+- 支持各种不同检测模型结构，包括`Yolov3`/`Faster_RCNN`/`SSD`等
 
 ## 2.主要目录和文件
 
@@ -52,14 +52,15 @@ deploy/cpp
 ## 3.编译部署
 
 ### 3.1 导出模型
-请确认您已经基于`PaddleDetection`的[export_model.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)。
+请确认您已经基于`PaddleDetection`的[export_model.py](https://github.com/PaddlePaddle/PaddleDetection/blob/dygraph/tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](https://github.com/PaddlePaddle/PaddleDetection/tree/dygraph/deploy/EXPORT_MODEL.md)。
 
 模型导出后, 目录结构如下(以`yolov3_darknet`为例):
 ```
 yolov3_darknet # 模型目录
 ├── infer_cfg.yml # 模型配置信息
-├── __model__     # 模型文件
-└── __params__    # 参数文件
+├── model.pdmodel     # 模型文件
+├── model.pdiparams.info #模型公用信息
+└── model.pdiparams    # 参数文件
 ```
 
 预测时，该目录所在的路径会作为程序的输入参数。

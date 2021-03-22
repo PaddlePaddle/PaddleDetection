@@ -1,165 +1,97 @@
 # 入门使用
 
-关于配置运行环境，请参考[安装指南](INSTALL_cn.md)
+## 安装
+
+关于安装配置运行环境，请参考[安装指南](INSTALL_cn.md)
+
+
+## 准备数据
+- 首先按照[准备数据文档](PrepareDataSet.md) 准备数据。  
+- 然后设置`configs/datasets`中相应的coco或voc等数据配置文件中的数据路径。
 
 
 ## 训练/评估/预测
 
-PaddleDetection提供了训练/评估/预测，支持通过不同可选参数实现特定功能
+PaddleDetection在[tools](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/tools)中提供了`训练`/`评估`/`预测`/`导出模型`等功能，支持通过传入不同可选参数实现特定功能
 
-```bash
-# 设置PYTHONPATH路径
-export PYTHONPATH=$PYTHONPATH:.
-# GPU训练 支持单卡，多卡训练，通过CUDA_VISIBLE_DEVICES指定卡号
-export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-python tools/train.py -c configs/faster_rcnn_r50_1x.yml
-# GPU评估
-export CUDA_VISIBLE_DEVICES=0
-python tools/eval.py -c configs/faster_rcnn_r50_1x.yml
-# 预测
-python tools/infer.py -c configs/faster_rcnn_r50_1x.yml --infer_img=demo/000000570688.jpg
-```
-
-### 可选参数列表
+### 参数列表
 
 以下列表可以通过`--help`查看
 
 |         FLAG             |     支持脚本    |        用途        |      默认值       |         备注         |
 | :----------------------: | :------------: | :---------------: | :--------------: | :-----------------: |
-|          -c              |      ALL       |  指定配置文件  |  None  |  **配置模块说明请参考[配置模块](../advanced_tutorials/config_doc/CONFIG_cn.md)** |
-|          -o              |      ALL       |  设置配置文件里的参数内容  |  None  |  使用-o配置相较于-c选择的配置文件具有更高的优先级。例如：`-o use_gpu=False max_iter=10000`  |  
-|   -r/--resume_checkpoint |     train      |  从某一检查点恢复训练  |  None  |  `-r output/faster_rcnn_r50_1x/10000`  |
-|        --eval            |     train      |  是否边训练边测试  |  False  |    |
-|      --output_eval       |     train/eval |  编辑评测保存json路径  |  当前路径  |  `--output_eval ./json_result`  |
-|       --fp16             |     train      |  是否使用混合精度训练模式  |  False  |  需使用GPU训练  |
-|       --loss_scale       |     train      |  设置混合精度训练模式中损失值的缩放比例  |  8.0  |  需先开启`--fp16`后使用  |  
-|       --json_eval        |       eval     |  是否通过已存在的bbox.json或者mask.json进行评估  |  False  |  json文件路径在`--output_eval`中设置  |
-|       --output_dir       |      infer     |  输出预测后可视化文件  |  `./output`  |  `--output_dir output`  |
-|    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  `--draw_threshold 0.7`  |
-|      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |    |
-|      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  相较于`--infer_dir`具有更高优先级  |
-|        --use_vdl          |   train/infer   |  是否使用[VisualDL](https://github.com/paddlepaddle/visualdl)记录数据，进而在VisualDL面板中显示  |  False  |  VisualDL需Python>=3.5    |
-|        --vdl\_log_dir     |   train/infer   |  指定 VisualDL 记录数据的存储路径  |  train:`vdl_log_dir/scalar` infer: `vdl_log_dir/image`  |  VisualDL需Python>=3.5   |
+|          -c              |      ALL       |  指定配置文件  |  None  |  **必选**，例如-c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml |
+|        --eval            |     train      |  是否边训练边测试  |  False  |  可选，如需指定，直接`--eval`即可 |
+|      --fleet         |       train     |  是否使用fleet API训练  |  False  |  可以使用--fleet来指定使用fleet API进行多机训练  |
+|      --fp16        |       train     |  是否开启混合精度训练  |  False  |  可以使用--fp16来指定使用混合精度训练  |
+|          -o              |      ALL       |  设置或更改配置文件里的参数内容  |  None  |  可选，例如：`-o use_gpu=False`  |
+|       --slim_config             |     ALL      |  模型压缩策略配置文件  |  None  |  可选，例如`--slim_config configs/slim/prune/yolov3_prune_l1_norm.yml`  |
+|       --output_dir       |      infer/export_model     |  预测后结果或导出模型保存路径  |  `./output`  |  可选，例如`--output_dir=output`  |
+|    --draw_threshold      |      infer     |  可视化时分数阈值  |  0.5  |  可选，`--draw_threshold=0.7`  |
+|      --infer_dir         |       infer     |  用于预测的图片文件夹路径  |  None  |  可选  |
+|      --infer_img         |       infer     |  用于预测的图片路径  |  None  |  可选，`--infer_img`和`--infer_dir`必须至少设置一个  |
+|      --classwise         |       eval     |  是否评估单类AP和绘制单类PR曲线  |  False  |  可选  |
 
+### 训练
 
-## 使用示例
-
-### 模型训练
-
-- 边训练边测试
-
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml --eval
-  ```
-
-  在训练中交替执行评估, 评估在每个snapshot\_iter时开始。每次评估后还会评出最佳mAP模型保存到`best_model`文件夹下。
-
-  如果验证集很大，测试将会比较耗时，建议减少评估次数，或训练完再进行评估。
-
-
-- Fine-tune其他任务
-
-  使用预训练模型fine-tune其他任务时，可以直接加载预训练模型，形状不匹配的参数将自动忽略，例如：
-
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
-  ```
-
-  也可以显示的指定忽略参数名，可采用如下两种方式：
-
-  1. 在YAML配置文件中设置`finetune_exclude_pretrained_params`
-  2. 在命令行中添加-o finetune\_exclude\_pretrained_params对预训练模型进行选择性加载。
-
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
-                         -o pretrain_weights=output/faster_rcnn_r50_1x/model_final \
-                            finetune_exclude_pretrained_params=['cls_score','bbox_pred']
-  ```
-
-  详细说明请参考[迁移学习文档](../advanced_tutorials/TRANSFER_LEARNING_cn.md)
-
-- 使用Paddle OP组建的YOLOv3损失函数训练YOLOv3
-
-  为了便于用户重新设计修改YOLOv3的损失函数，我们也提供了不使用`fluid.layer.yolov3_loss`接口而是在python代码中使用Paddle OP的方式组建YOLOv3损失函数,
-  可通过如下命令用Paddle OP组建YOLOv3损失函数版本的YOLOv3模型：
-
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
-  python -u tools/train.py -c configs/yolov3_darknet.yml \
-                           -o use_fine_grained_loss=true
-  ```
-
-  Paddle OP组建YOLOv3损失函数代码位于`ppdet/modeling/losses/yolo_loss.py`
-
-**提示:**  
-
-- `CUDA_VISIBLE_DEVICES` 参数可以指定不同的GPU。例如: `export CUDA_VISIBLE_DEVICES=0,1,2,3`. GPU计算规则可以参考 [FAQ](../FAQ.md)
-- 若本地未找到数据集，将自动下载数据集并保存在`~/.cache/paddle/dataset`中。
-- 预训练模型自动下载并保存在`〜/.cache/paddle/weights`中。
-- 模型checkpoints默认保存在`output`中，可通过修改配置文件中save_dir进行配置。
-
-### 混合精度训练
-
-通过设置 `--fp16` 命令行选项可以启用混合精度训练。目前混合精度训练已经在Faster-FPN, Mask-FPN 及 Yolov3 上进行验证，几乎没有精度损失（小于0.2 mAP)。
-
-建议使用多进程方式来进一步加速混合精度训练。示例如下。
+- 单卡训练
+```bash
+# 通过CUDA_VISIBLE_DEVICES指定GPU卡号
+export CUDA_VISIBLE_DEVICES=0
+python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
+```
+- 多卡训练
 
 ```bash
-python -m paddle.distributed.launch --selected_gpus 0,1,2,3,4,5,6,7 tools/train.py --fp16 -c configs/faster_rcnn_r50_fpn_1x.yml
+export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
 ```
 
-如果训练过程中loss出现`NaN`，请尝试调节`--loss_scale`选项数值，细节请参看混合精度训练相关的[Nvidia文档](https://docs.nvidia.com/deeplearning/sdk/mixed-precision-training/index.html#mptrain)。
+- 混合精度训练
 
-另外，请注意将配置文件中的 `norm_type` 由 `affine_channel` 改为 `bn`。
+```bash
+export CUDA_VISIBLE_DEVICES=0
+python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --fp16
+```
 
+- fleet API训练
 
-### 模型评估
+```bash
+# fleet API用于多机训练，启动方式与单机多卡训练方式基本一致，只不过需要使用--ips指定ip列表以及--fleet开启多机训练
+python -m paddle.distributed.launch --ips="xx.xx.xx.xx,yy.yy.yy.yy" --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --fleet
+```
 
-- 指定权重和数据集路径
+- 边训练边评估
+```bash
+python tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --eval
+```
 
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0
-  python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
-                        -o weights=https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_1x.tar \
-  ```
+### 评估
+```bash
+# 目前只支持单卡评估
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
+```
 
-  评估模型可以为本地路径，例如`output/faster_rcnn_r50_1x/model_final`, 也可以是[MODEL_ZOO](../MODEL_ZOO_cn.md)中给出的模型链接。
+### 预测
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --infer_img={IMAGE_PATH}
+```
 
-- 通过json文件评估
+## 预测部署
 
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0
-  python -u tools/eval.py -c configs/faster_rcnn_r50_1x.yml \
-             --json_eval \
-             --output_eval evaluation/
-  ```
+（1）导出模型
 
-  json文件必须命名为bbox.json或者mask.json，放在`evaluation/`目录下。
+```bash
+python tools/export_model.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml \
+        -o weights=output/faster_rcnn_r50_fpn_1x_coco/model_final \
+        --output_dir=output_inference
+```
 
-**提示:**
+（2）预测部署
 
-- R-CNN和SSD模型目前暂不支持多GPU评估，将在后续版本支持
-
-
-### 模型预测
-
-- 设置输出路径 && 设置预测阈值
-
-  ```bash
-  export CUDA_VISIBLE_DEVICES=0
-  python -u tools/infer.py -c configs/faster_rcnn_r50_1x.yml \
-                      --infer_img=demo/000000570688.jpg \
-                      --output_dir=infer_output/ \
-                      --draw_threshold=0.5 \
-                      -o weights=output/faster_rcnn_r50_1x/model_final \
-  ```
+参考[预测部署文档](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/deploy)。
 
 
-  `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
-  不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行预测，可以设置`-o weights`指定模型路径。
+## 模型压缩
 
-  此预测过程依赖PaddleDetection源码，如果您想使用C++进行服务器端预测、或在移动端预测、或使用PaddleServing部署、或独立于PaddleDetection源码使用Python预测可以参考[模型导出教程](../advanced_tutorials/deploy/EXPORT_MODEL.md)和推理部署。
+参考[模型压缩文档](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/slim)。

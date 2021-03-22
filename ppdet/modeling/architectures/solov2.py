@@ -16,160 +16,95 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from collections import OrderedDict
+import paddle
 
-from paddle import fluid
-
-from ppdet.experimental import mixed_precision_global_state
-from ppdet.core.workspace import register
-from ppdet.utils.check import check_version
+from ppdet.core.workspace import register, create
+from .meta_arch import BaseArch
 
 __all__ = ['SOLOv2']
 
 
 @register
-class SOLOv2(object):
+class SOLOv2(BaseArch):
     """
     SOLOv2 network, see https://arxiv.org/abs/2003.10152
 
     Args:
         backbone (object): an backbone instance
-        fpn (object): feature pyramid network instance
-        bbox_head (object): an `SOLOv2Head` instance
+        solov2_head (object): an `SOLOv2Head` instance
         mask_head (object): an `SOLOv2MaskHead` instance
+        neck (object): neck of network, such as feature pyramid network instance
     """
 
     __category__ = 'architecture'
-    __inject__ = ['backbone', 'fpn', 'bbox_head', 'mask_head']
 
-    def __init__(self,
-                 backbone,
-                 fpn=None,
-                 bbox_head='SOLOv2Head',
-                 mask_head='SOLOv2MaskHead'):
+    def __init__(self, backbone, solov2_head, mask_head, neck=None):
         super(SOLOv2, self).__init__()
-        check_version('2.0.0-rc0')
         self.backbone = backbone
-        self.fpn = fpn
-        self.bbox_head = bbox_head
+        self.neck = neck
+        self.solov2_head = solov2_head
         self.mask_head = mask_head
 
-    def build(self, feed_vars, mode='train'):
-        im = feed_vars['image']
+    @classmethod
+    def from_config(cls, cfg, *args, **kwargs):
+        backbone = create(cfg['backbone'])
 
-        mixed_precision_enabled = mixed_precision_global_state() is not None
+        kwargs = {'input_shape': backbone.out_shape}
+        neck = create(cfg['neck'], **kwargs)
 
-        # cast inputs to FP16
-        if mixed_precision_enabled:
-            im = fluid.layers.cast(im, 'float16')
+        kwargs = {'input_shape': neck.out_shape}
+        solov2_head = create(cfg['solov2_head'], **kwargs)
+        mask_head = create(cfg['mask_head'], **kwargs)
 
-        body_feats = self.backbone(im)
-
-        if self.fpn is not None:
-            body_feats, spatial_scale = self.fpn.get_output(body_feats)
-
-        if isinstance(body_feats, OrderedDict):
-            body_feat_names = list(body_feats.keys())
-            body_feats = [body_feats[name] for name in body_feat_names]
-
-        # cast features back to FP32
-        if mixed_precision_enabled:
-            body_feats = [fluid.layers.cast(v, 'float32') for v in body_feats]
-
-        mask_feat_pred = self.mask_head.get_output(body_feats)
-
-        if mode == 'train':
-            ins_labels = []
-            cate_labels = []
-            grid_orders = []
-            fg_num = feed_vars['fg_num']
-
-            for i in range(self.num_level):
-                ins_label = 'ins_label{}'.format(i)
-                if ins_label in feed_vars:
-                    ins_labels.append(feed_vars[ins_label])
-                cate_label = 'cate_label{}'.format(i)
-                if cate_label in feed_vars:
-                    cate_labels.append(feed_vars[cate_label])
-                grid_order = 'grid_order{}'.format(i)
-                if grid_order in feed_vars:
-                    grid_orders.append(feed_vars[grid_order])
-
-            cate_preds, kernel_preds = self.bbox_head.get_outputs(body_feats)
-
-            losses = self.bbox_head.get_loss(cate_preds, kernel_preds,
-                                             mask_feat_pred, ins_labels,
-                                             cate_labels, grid_orders, fg_num)
-            total_loss = fluid.layers.sum(list(losses.values()))
-            losses.update({'loss': total_loss})
-            return losses
-        else:
-            im_info = feed_vars['im_info']
-            outs = self.bbox_head.get_outputs(body_feats, is_eval=True)
-            seg_inputs = outs + (mask_feat_pred, im_info)
-            return self.bbox_head.get_prediction(*seg_inputs)
-
-    def _inputs_def(self, image_shape, fields):
-        im_shape = [None] + image_shape
-        # yapf: disable
-        inputs_def = {
-            'image':    {'shape': im_shape,   'dtype': 'float32', 'lod_level': 0},
-            'im_info':  {'shape': [None, 3],  'dtype': 'float32', 'lod_level': 0},
-            'im_id':    {'shape': [None, 1],  'dtype': 'int64',   'lod_level': 0},
-            'im_shape': {'shape': [None, 3],  'dtype': 'float32', 'lod_level': 0},
+        return {
+            'backbone': backbone,
+            'neck': neck,
+            'solov2_head': solov2_head,
+            'mask_head': mask_head,
         }
 
-        if 'gt_segm' in fields:
-            for i in range(self.num_level):
-                targets_def = {
-                    'ins_label%d' % i:  {'shape': [None, None, None], 'dtype': 'int32', 'lod_level': 1},
-                    'cate_label%d' % i: {'shape': [None],       'dtype': 'int32', 'lod_level': 1},
-                    'grid_order%d' % i: {'shape': [None], 'dtype': 'int32', 'lod_level': 1},
-                }
-                inputs_def.update(targets_def)
-            targets_def = {
-                'fg_num': {'shape': [None], 'dtype': 'int32', 'lod_level': 0},
-            }
-            # yapf: enable
-            inputs_def.update(targets_def)
-        return inputs_def
+    def model_arch(self):
+        body_feats = self.backbone(self.inputs)
 
-    def build_inputs(
-            self,
-            image_shape=[3, None, None],
-            fields=['image', 'im_id', 'gt_segm'],  # for train
-            num_level=5,
-            use_dataloader=True,
-            iterable=False):
-        self.num_level = num_level
-        inputs_def = self._inputs_def(image_shape, fields)
-        if 'gt_segm' in fields:
-            fields.remove('gt_segm')
-            fields.extend(['fg_num'])
-            for i in range(num_level):
-                fields.extend([
-                    'ins_label%d' % i, 'cate_label%d' % i, 'grid_order%d' % i
-                ])
+        body_feats = self.neck(body_feats)
 
-        feed_vars = OrderedDict([(key, fluid.data(
-            name=key,
-            shape=inputs_def[key]['shape'],
-            dtype=inputs_def[key]['dtype'],
-            lod_level=inputs_def[key]['lod_level'])) for key in fields])
-        loader = fluid.io.DataLoader.from_generator(
-            feed_list=list(feed_vars.values()),
-            capacity=16,
-            use_double_buffer=True,
-            iterable=iterable) if use_dataloader else None
-        return feed_vars, loader
+        self.seg_pred = self.mask_head(body_feats)
 
-    def train(self, feed_vars):
-        return self.build(feed_vars, mode='train')
+        self.cate_pred_list, self.kernel_pred_list = self.solov2_head(
+            body_feats)
 
-    def eval(self, feed_vars):
-        return self.build(feed_vars, mode='test')
+    def get_loss(self, ):
+        loss = {}
+        # get gt_ins_labels, gt_cate_labels, etc.
+        gt_ins_labels, gt_cate_labels, gt_grid_orders = [], [], []
+        fg_num = self.inputs['fg_num']
+        for i in range(len(self.solov2_head.seg_num_grids)):
+            ins_label = 'ins_label{}'.format(i)
+            if ins_label in self.inputs:
+                gt_ins_labels.append(self.inputs[ins_label])
+            cate_label = 'cate_label{}'.format(i)
+            if cate_label in self.inputs:
+                gt_cate_labels.append(self.inputs[cate_label])
+            grid_order = 'grid_order{}'.format(i)
+            if grid_order in self.inputs:
+                gt_grid_orders.append(self.inputs[grid_order])
 
-    def test(self, feed_vars, exclude_nms=False):
-        assert not exclude_nms, "exclude_nms for {} is not support currently".format(
-            self.__class__.__name__)
-        return self.build(feed_vars, mode='test')
+        loss_solov2 = self.solov2_head.get_loss(
+            self.cate_pred_list, self.kernel_pred_list, self.seg_pred,
+            gt_ins_labels, gt_cate_labels, gt_grid_orders, fg_num)
+        loss.update(loss_solov2)
+        total_loss = paddle.add_n(list(loss.values()))
+        loss.update({'loss': total_loss})
+        return loss
+
+    def get_pred(self):
+        seg_masks, cate_labels, cate_scores, bbox_num = self.solov2_head.get_prediction(
+            self.cate_pred_list, self.kernel_pred_list, self.seg_pred,
+            self.inputs['im_shape'], self.inputs['scale_factor'])
+        outs = {
+            "segm": seg_masks,
+            "bbox_num": bbox_num,
+            'cate_label': cate_labels,
+            'cate_score': cate_scores
+        }
+        return outs

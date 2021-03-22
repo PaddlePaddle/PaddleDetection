@@ -76,13 +76,6 @@ class ConfigPaser {
       std::cerr << "Please set draw_threshold." << std::endl;
       return false;
     }
-    // Get with_background
-    if (config["with_background"].IsDefined()) {
-      with_background_ = config["with_background"].as<bool>();
-    } else {
-      std::cerr << "Please set with_background." << std::endl;
-      return false;
-    }
     // Get Preprocess for preprocessing
     if (config["Preprocess"].IsDefined()) {
       preprocess_info_ = config["Preprocess"];
@@ -98,15 +91,22 @@ class ConfigPaser {
       return false;
     }
 
+    if (config["image_shape"].IsDefined()) {
+      image_shape_ = config["image_shape"].as<std::vector<int>>();
+    } else {
+      std::cerr << "Please set image_shape." << std::endl;
+      return false;
+    }
+
     return true;
   }
   std::string mode_;
   float draw_threshold_;
   std::string arch_;
   int min_subgraph_size_;
-  bool with_background_;
   YAML::Node preprocess_info_;
   std::vector<std::string> label_list_;
+  std::vector<int> image_shape_;
 };
 
 }  // namespace PaddleDetection

@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,172 +22,104 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
+
 import paddle
-import paddle.fluid as fluid
+from paddle.distributed import ParallelEnv
 
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results, json_eval_results
-import ppdet.utils.checkpoint as checkpoint
-from ppdet.utils.check import check_gpu, check_xpu, check_version, check_config, enable_static_mode
-
-from ppdet.data.reader import create_reader
-
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config
+from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
+from ppdet.engine import Trainer, init_parallel_env
+from ppdet.metrics.coco_utils import json_eval_results
 
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger('eval')
 
 
-def main():
-    """
-    Main evaluate function
-    """
-    cfg = load_config(FLAGS.config)
-    merge_config(FLAGS.opt)
-    check_config(cfg)
-    # check if set use_gpu=True in paddlepaddle cpu version
-    check_gpu(cfg.use_gpu)
-    use_xpu = False
-    if hasattr(cfg, 'use_xpu'):
-        check_xpu(cfg.use_xpu)
-        use_xpu = cfg.use_xpu
-    # check if paddlepaddle version is satisfied
-    check_version()
+def parse_args():
+    parser = ArgsParser()
+    parser.add_argument(
+        "--output_eval",
+        default=None,
+        type=str,
+        help="Evaluation directory, default is current directory.")
 
-    assert not (use_xpu and cfg.use_gpu), \
-            'Can not run on both XPU and GPU'
+    parser.add_argument(
+        '--json_eval',
+        action='store_true',
+        default=False,
+        help='Whether to re eval with already exists bbox.json or mask.json')
 
-    main_arch = cfg.architecture
+    parser.add_argument(
+        "--slim_config",
+        default=None,
+        type=str,
+        help="Configuration file of slim method.")
 
-    multi_scale_test = getattr(cfg, 'MultiScaleTEST', None)
+    # TODO: bias should be unified
+    parser.add_argument(
+        "--bias",
+        action="store_true",
+        help="whether add bias or not while getting w and h")
 
-    # define executor
-    if cfg.use_gpu:
-        place = fluid.CUDAPlace(0)
-    elif use_xpu:
-        place = fluid.XPUPlace(0)
-    else:
-        place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
+    parser.add_argument(
+        "--classwise",
+        action="store_true",
+        help="whether per-category AP and draw P-R Curve or not.")
 
-    # build program
-    model = create(main_arch)
-    startup_prog = fluid.Program()
-    eval_prog = fluid.Program()
-    with fluid.program_guard(eval_prog, startup_prog):
-        with fluid.unique_name.guard():
-            inputs_def = cfg['EvalReader']['inputs_def']
-            feed_vars, loader = model.build_inputs(**inputs_def)
-            if multi_scale_test is None:
-                fetches = model.eval(feed_vars)
-            else:
-                fetches = model.eval(feed_vars, multi_scale_test)
-    eval_prog = eval_prog.clone(True)
+    args = parser.parse_args()
+    return args
 
-    reader = create_reader(cfg.EvalReader, devices_num=1)
-    # When iterable mode, set set_sample_list_generator(reader, place)
-    loader.set_sample_list_generator(reader)
 
-    dataset = cfg['EvalReader']['dataset']
-
-    # eval already exists json file
+def run(FLAGS, cfg):
     if FLAGS.json_eval:
         logger.info(
             "In json_eval mode, PaddleDetection will evaluate json files in "
             "output_eval directly. And proposal.json, bbox.json and mask.json "
             "will be detected by default.")
         json_eval_results(
-            cfg.metric, json_directory=FLAGS.output_eval, dataset=dataset)
+            cfg.metric,
+            json_directory=FLAGS.output_eval,
+            dataset=cfg['EvalDataset'])
         return
 
-    compile_program = fluid.CompiledProgram(eval_prog).with_data_parallel()
-    if use_xpu:
-        compile_program = eval_prog
+    # init parallel environment if nranks > 1
+    init_parallel_env()
 
-    assert cfg.metric != 'OID', "eval process of OID dataset \
-                          is not supported."
+    # build trainer 
+    trainer = Trainer(cfg, mode='eval')
 
-    if cfg.metric == "WIDERFACE":
-        raise ValueError("metric type {} does not support in tools/eval.py, "
-                         "please use tools/face_eval.py".format(cfg.metric))
-    assert cfg.metric in ['COCO', 'VOC'], \
-            "unknown metric type {}".format(cfg.metric)
-    extra_keys = []
+    # load weights
+    trainer.load_weights(cfg.weights, 'resume')
 
-    if cfg.metric == 'COCO':
-        extra_keys = ['im_info', 'im_id', 'im_shape']
-    if cfg.metric == 'VOC':
-        extra_keys = ['gt_bbox', 'gt_class', 'is_difficult']
+    # training
+    trainer.evaluate()
 
-    keys, values, cls = parse_fetches(fetches, eval_prog, extra_keys)
 
-    # whether output bbox is normalized in model output layer
-    is_bbox_normalized = False
-    if hasattr(model, 'is_bbox_normalized') and \
-            callable(model.is_bbox_normalized):
-        is_bbox_normalized = model.is_bbox_normalized()
+def main():
+    FLAGS = parse_args()
 
-    sub_eval_prog = None
-    sub_keys = None
-    sub_values = None
-    # build sub-program
-    if 'Mask' in main_arch and multi_scale_test:
-        sub_eval_prog = fluid.Program()
-        with fluid.program_guard(sub_eval_prog, startup_prog):
-            with fluid.unique_name.guard():
-                inputs_def = cfg['EvalReader']['inputs_def']
-                inputs_def['mask_branch'] = True
-                feed_vars, eval_loader = model.build_inputs(**inputs_def)
-                sub_fetches = model.eval(
-                    feed_vars, multi_scale_test, mask_branch=True)
-                assert cfg.metric == 'COCO'
-                extra_keys = ['im_id', 'im_shape']
-        sub_keys, sub_values, _ = parse_fetches(sub_fetches, sub_eval_prog,
-                                                extra_keys)
-        sub_eval_prog = sub_eval_prog.clone(True)
+    cfg = load_config(FLAGS.config)
+    # TODO: bias should be unified
+    cfg['bias'] = 1 if FLAGS.bias else 0
+    cfg['classwise'] = True if FLAGS.classwise else False
+    cfg['output_eval'] = FLAGS.output_eval
+    merge_config(FLAGS.opt)
+    if FLAGS.slim_config:
+        slim_cfg = load_config(FLAGS.slim_config)
+        merge_config(slim_cfg)
+    check_config(cfg)
+    check_gpu(cfg.use_gpu)
+    check_version()
 
-    # load model
-    exe.run(startup_prog)
-    if 'weights' in cfg:
-        checkpoint.load_params(exe, startup_prog, cfg.weights)
+    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
+    place = paddle.set_device(place)
 
-    resolution = None
-    if 'Mask' in cfg.architecture or cfg.architecture == 'HybridTaskCascade':
-        resolution = model.mask_head.resolution
-    results = eval_run(exe, compile_program, loader, keys, values, cls, cfg,
-                       sub_eval_prog, sub_keys, sub_values, resolution)
-
-    # evaluation
-    # if map_type not set, use default 11point, only use in VOC eval
-    map_type = cfg.map_type if 'map_type' in cfg else '11point'
-    save_only = getattr(cfg, 'save_prediction_only', False)
-    eval_results(
-        results,
-        cfg.metric,
-        cfg.num_classes,
-        resolution,
-        is_bbox_normalized,
-        FLAGS.output_eval,
-        map_type,
-        dataset=dataset,
-        save_only=save_only)
+    run(FLAGS, cfg)
 
 
 if __name__ == '__main__':
-    enable_static_mode()
-    parser = ArgsParser()
-    parser.add_argument(
-        "--json_eval",
-        action='store_true',
-        default=False,
-        help="Whether to re eval with already exists bbox.json or mask.json")
-    parser.add_argument(
-        "-f",
-        "--output_eval",
-        default=None,
-        type=str,
-        help="Evaluation file directory, default is current directory.")
-    FLAGS = parser.parse_args()
     main()

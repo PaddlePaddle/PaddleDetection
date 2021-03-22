@@ -1,10 +1,10 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# copyright (c) 2020 PaddlePaddle Authors. All Rights Reserve.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,116 +16,351 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from collections import OrderedDict
-
-import paddle.fluid as fluid
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.regularizer import L2Decay
-
-import math
-import numpy as np
-from collections import OrderedDict
-
-from ppdet.core.workspace import register
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
+from paddle import ParamAttr
+from paddle.regularizer import L2Decay
+from ppdet.core.workspace import register, serializable
 from numbers import Integral
+from ..shape_spec import ShapeSpec
 
-__all__ = ['MobileNetV3', 'MobileNetV3RCNN']
+__all__ = ['MobileNetV3']
+
+
+def make_divisible(v, divisor=8, min_value=None):
+    if min_value is None:
+        min_value = divisor
+    new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
+    if new_v < 0.9 * v:
+        new_v += divisor
+    return new_v
+
+
+class ConvBNLayer(nn.Layer):
+    def __init__(self,
+                 in_c,
+                 out_c,
+                 filter_size,
+                 stride,
+                 padding,
+                 num_groups=1,
+                 act=None,
+                 lr_mult=1.,
+                 conv_decay=0.,
+                 norm_type='bn',
+                 norm_decay=0.,
+                 freeze_norm=False,
+                 name=""):
+        super(ConvBNLayer, self).__init__()
+        self.act = act
+        self.conv = nn.Conv2D(
+            in_channels=in_c,
+            out_channels=out_c,
+            kernel_size=filter_size,
+            stride=stride,
+            padding=padding,
+            groups=num_groups,
+            weight_attr=ParamAttr(
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_weights"),
+            bias_attr=False)
+
+        norm_lr = 0. if freeze_norm else lr_mult
+        param_attr = ParamAttr(
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay),
+            name=name + "_bn_scale",
+            trainable=False if freeze_norm else True)
+        bias_attr = ParamAttr(
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay),
+            name=name + "_bn_offset",
+            trainable=False if freeze_norm else True)
+        global_stats = True if freeze_norm else False
+        if norm_type == 'sync_bn':
+            self.bn = nn.SyncBatchNorm(
+                out_c, weight_attr=param_attr, bias_attr=bias_attr)
+        else:
+            self.bn = nn.BatchNorm(
+                out_c,
+                act=None,
+                param_attr=param_attr,
+                bias_attr=bias_attr,
+                use_global_stats=global_stats,
+                moving_mean_name=name + '_bn_mean',
+                moving_variance_name=name + '_bn_variance')
+        norm_params = self.bn.parameters()
+        if freeze_norm:
+            for param in norm_params:
+                param.stop_gradient = True
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = self.bn(x)
+        if self.act is not None:
+            if self.act == "relu":
+                x = F.relu(x)
+            elif self.act == "relu6":
+                x = F.relu6(x)
+            elif self.act == "hard_swish":
+                x = F.hardswish(x)
+            else:
+                raise NotImplementedError(
+                    "The activation function is selected incorrectly.")
+        return x
+
+
+class ResidualUnit(nn.Layer):
+    def __init__(self,
+                 in_c,
+                 mid_c,
+                 out_c,
+                 filter_size,
+                 stride,
+                 use_se,
+                 lr_mult,
+                 conv_decay=0.,
+                 norm_type='bn',
+                 norm_decay=0.,
+                 freeze_norm=False,
+                 act=None,
+                 return_list=False,
+                 name=''):
+        super(ResidualUnit, self).__init__()
+        self.if_shortcut = stride == 1 and in_c == out_c
+        self.use_se = use_se
+        self.return_list = return_list
+
+        self.expand_conv = ConvBNLayer(
+            in_c=in_c,
+            out_c=mid_c,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            act=act,
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_expand")
+        self.bottleneck_conv = ConvBNLayer(
+            in_c=mid_c,
+            out_c=mid_c,
+            filter_size=filter_size,
+            stride=stride,
+            padding=int((filter_size - 1) // 2),
+            num_groups=mid_c,
+            act=act,
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_depthwise")
+        if self.use_se:
+            self.mid_se = SEModule(
+                mid_c, lr_mult, conv_decay, name=name + "_se")
+        self.linear_conv = ConvBNLayer(
+            in_c=mid_c,
+            out_c=out_c,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            act=None,
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_linear")
+
+    def forward(self, inputs):
+        y = self.expand_conv(inputs)
+        x = self.bottleneck_conv(y)
+        if self.use_se:
+            x = self.mid_se(x)
+        x = self.linear_conv(x)
+        if self.if_shortcut:
+            x = paddle.add(inputs, x)
+        if self.return_list:
+            return [y, x]
+        else:
+            return x
+
+
+class SEModule(nn.Layer):
+    def __init__(self, channel, lr_mult, conv_decay, reduction=4, name=""):
+        super(SEModule, self).__init__()
+        self.avg_pool = nn.AdaptiveAvgPool2D(1)
+        mid_channels = int(channel // reduction)
+        self.conv1 = nn.Conv2D(
+            in_channels=channel,
+            out_channels=mid_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            weight_attr=ParamAttr(
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_1_weights"),
+            bias_attr=ParamAttr(
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_1_offset"))
+        self.conv2 = nn.Conv2D(
+            in_channels=mid_channels,
+            out_channels=channel,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            weight_attr=ParamAttr(
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_2_weights"),
+            bias_attr=ParamAttr(
+                learning_rate=lr_mult,
+                regularizer=L2Decay(conv_decay),
+                name=name + "_2_offset"))
+
+    def forward(self, inputs):
+        outputs = self.avg_pool(inputs)
+        outputs = self.conv1(outputs)
+        outputs = F.relu(outputs)
+        outputs = self.conv2(outputs)
+        outputs = F.hardsigmoid(outputs, slope=0.2, offset=0.5)
+        return paddle.multiply(x=inputs, y=outputs)
+
+
+class ExtraBlockDW(nn.Layer):
+    def __init__(self,
+                 in_c,
+                 ch_1,
+                 ch_2,
+                 stride,
+                 lr_mult,
+                 conv_decay=0.,
+                 norm_type='bn',
+                 norm_decay=0.,
+                 freeze_norm=False,
+                 name=None):
+        super(ExtraBlockDW, self).__init__()
+        self.pointwise_conv = ConvBNLayer(
+            in_c=in_c,
+            out_c=ch_1,
+            filter_size=1,
+            stride=1,
+            padding='SAME',
+            act='relu6',
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_extra1")
+        self.depthwise_conv = ConvBNLayer(
+            in_c=ch_1,
+            out_c=ch_2,
+            filter_size=3,
+            stride=stride,
+            padding='SAME',
+            num_groups=int(ch_1),
+            act='relu6',
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_extra2_dw")
+        self.normal_conv = ConvBNLayer(
+            in_c=ch_2,
+            out_c=ch_2,
+            filter_size=1,
+            stride=1,
+            padding='SAME',
+            act='relu6',
+            lr_mult=lr_mult,
+            conv_decay=conv_decay,
+            norm_type=norm_type,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
+            name=name + "_extra2_sep")
+
+    def forward(self, inputs):
+        x = self.pointwise_conv(inputs)
+        x = self.depthwise_conv(x)
+        x = self.normal_conv(x)
+        return x
 
 
 @register
-class MobileNetV3(object):
-    """
-    MobileNet v3, see https://arxiv.org/abs/1905.02244
-    Args:
-	scale (float): scaling factor for convolution groups proportion of mobilenet_v3.
-        model_name (str): There are two modes, small and large.
-        norm_type (str): normalization type, 'bn' and 'sync_bn' are supported.
-        norm_decay (float): weight decay for normalization layer weights.
-        conv_decay (float): weight decay for convolution layer weights.
-        feature_maps (list): index of stages whose feature maps are returned.
-        extra_block_filters (list): number of filter for each extra block.
-        lr_mult_list (list): learning rate ratio of different blocks, lower learning rate ratio
-                             is need for pretrained model got using distillation(default as
-                             [1.0, 1.0, 1.0, 1.0, 1.0]).
-        freeze_norm (bool): freeze normalization layers.
-        multiplier (float): The multiplier by which to reduce the convolution expansion and
-                            number of channels.
-    """
+@serializable
+class MobileNetV3(nn.Layer):
     __shared__ = ['norm_type']
 
     def __init__(
             self,
             scale=1.0,
-            model_name='small',
-            feature_maps=[5, 6, 7, 8, 9, 10],
-            conv_decay=0.0,
-            norm_type='bn',
-            norm_decay=0.0,
+            model_name="large",
+            feature_maps=[6, 12, 15],
+            with_extra_blocks=False,
             extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]],
             lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
-            freeze_norm=False,
-            multiplier=1.0):
+            conv_decay=0.0,
+            multiplier=1.0,
+            norm_type='bn',
+            norm_decay=0.0,
+            freeze_norm=False):
+        super(MobileNetV3, self).__init__()
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
-
         if norm_type == 'sync_bn' and freeze_norm:
             raise ValueError(
                 "The norm_type should not be sync_bn when freeze_norm is True")
-        self.scale = scale
-        self.model_name = model_name
         self.feature_maps = feature_maps
+        self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
-        self.conv_decay = conv_decay
-        self.norm_decay = norm_decay
-        self.inplanes = 16
-        self.end_points = []
-        self.block_stride = 0
 
-        self.lr_mult_list = lr_mult_list
-        self.freeze_norm = freeze_norm
-        self.norm_type = norm_type
-        self.curr_stage = 0
-
+        inplanes = 16
         if model_name == "large":
             self.cfg = [
-                # kernel_size, expand, channel, se_block, act_mode, stride
-                [3, 16, 16, False, 'relu', 1],
-                [3, 64, 24, False, 'relu', 2],
-                [3, 72, 24, False, 'relu', 1],
-                [5, 72, 40, True, 'relu', 2],
-                [5, 120, 40, True, 'relu', 1],
-                [5, 120, 40, True, 'relu', 1],
-                [3, 240, 80, False, 'hard_swish', 2],
-                [3, 200, 80, False, 'hard_swish', 1],
-                [3, 184, 80, False, 'hard_swish', 1],
-                [3, 184, 80, False, 'hard_swish', 1],
-                [3, 480, 112, True, 'hard_swish', 1],
-                [3, 672, 112, True, 'hard_swish', 1],
-                [5, 672, 160, True, 'hard_swish', 2],
-                [5, 960, 160, True, 'hard_swish', 1],
-                [5, 960, 160, True, 'hard_swish', 1],
+                # k, exp, c,  se,     nl,  s,
+                [3, 16, 16, False, "relu", 1],
+                [3, 64, 24, False, "relu", 2],
+                [3, 72, 24, False, "relu", 1],
+                [5, 72, 40, True, "relu", 2],
+                [5, 120, 40, True, "relu", 1],
+                [5, 120, 40, True, "relu", 1],  # YOLOv3 output
+                [3, 240, 80, False, "hard_swish", 2],
+                [3, 200, 80, False, "hard_swish", 1],
+                [3, 184, 80, False, "hard_swish", 1],
+                [3, 184, 80, False, "hard_swish", 1],
+                [3, 480, 112, True, "hard_swish", 1],
+                [3, 672, 112, True, "hard_swish", 1],  # YOLOv3 output
+                [5, 672, 160, True, "hard_swish", 2],  # SSD/SSDLite output
+                [5, 960, 160, True, "hard_swish", 1],
+                [5, 960, 160, True, "hard_swish", 1],  # YOLOv3 output
             ]
-            self.cls_ch_squeeze = 960
-            self.cls_ch_expand = 1280
         elif model_name == "small":
             self.cfg = [
-                # kernel_size, expand, channel, se_block, act_mode, stride
-                [3, 16, 16, True, 'relu', 2],
-                [3, 72, 24, False, 'relu', 2],
-                [3, 88, 24, False, 'relu', 1],
-                [5, 96, 40, True, 'hard_swish', 2],
-                [5, 240, 40, True, 'hard_swish', 1],
-                [5, 240, 40, True, 'hard_swish', 1],
-                [5, 120, 48, True, 'hard_swish', 1],
-                [5, 144, 48, True, 'hard_swish', 1],
-                [5, 288, 96, True, 'hard_swish', 2],
-                [5, 576, 96, True, 'hard_swish', 1],
-                [5, 576, 96, True, 'hard_swish', 1],
+                # k, exp, c,  se,     nl,  s,
+                [3, 16, 16, True, "relu", 2],
+                [3, 72, 24, False, "relu", 2],
+                [3, 88, 24, False, "relu", 1],  # YOLOv3 output
+                [5, 96, 40, True, "hard_swish", 2],
+                [5, 240, 40, True, "hard_swish", 1],
+                [5, 240, 40, True, "hard_swish", 1],
+                [5, 120, 48, True, "hard_swish", 1],
+                [5, 144, 48, True, "hard_swish", 1],  # YOLOv3 output
+                [5, 288, 96, True, "hard_swish", 2],  # SSD/SSDLite output
+                [5, 576, 96, True, "hard_swish", 1],
+                [5, 576, 96, True, "hard_swish", 1],  # YOLOv3 output
             ]
-            self.cls_ch_squeeze = 576
-            self.cls_ch_expand = 1280
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                "mode[{}_model] is not implemented!".format(model_name))
 
         if multiplier != 1.0:
             self.cfg[-3][2] = int(self.cfg[-3][2] * multiplier)
@@ -134,434 +369,128 @@ class MobileNetV3(object):
             self.cfg[-1][1] = int(self.cfg[-1][1] * multiplier)
             self.cfg[-1][2] = int(self.cfg[-1][2] * multiplier)
 
-    def _conv_bn_layer(self,
-                       input,
-                       filter_size,
-                       num_filters,
-                       stride,
-                       padding,
-                       num_groups=1,
-                       if_act=True,
-                       act=None,
-                       name=None,
-                       use_cudnn=True):
-        lr_idx = self.curr_stage // 3
-        lr_idx = min(lr_idx, len(self.lr_mult_list) - 1)
-        lr_mult = self.lr_mult_list[lr_idx]
-        conv = fluid.layers.conv2d(
-            input=input,
-            num_filters=num_filters,
-            filter_size=filter_size,
-            stride=stride,
-            padding=padding,
-            groups=num_groups,
-            act=None,
-            use_cudnn=use_cudnn,
-            param_attr=ParamAttr(
-                name=name + '_weights',
-                learning_rate=lr_mult,
-                regularizer=L2Decay(self.conv_decay)),
-            bias_attr=False)
-        bn_name = name + '_bn'
-        bn = self._bn(conv, bn_name=bn_name)
-
-        if if_act:
-            if act == 'relu':
-                bn = fluid.layers.relu(bn)
-            elif act == 'hard_swish':
-                bn = self._hard_swish(bn)
-            elif act == 'relu6':
-                bn = fluid.layers.relu6(bn)
-        return bn
-
-    def _bn(self, input, act=None, bn_name=None):
-        lr_idx = self.curr_stage // 3
-        lr_idx = min(lr_idx, len(self.lr_mult_list) - 1)
-        lr_mult = self.lr_mult_list[lr_idx]
-        norm_lr = 0. if self.freeze_norm else lr_mult
-        norm_decay = self.norm_decay
-        pattr = ParamAttr(
-            name=bn_name + '_scale',
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
-        battr = ParamAttr(
-            name=bn_name + '_offset',
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
-
-        conv = input
-
-        if self.norm_type in ['bn', 'sync_bn']:
-            global_stats = True if self.freeze_norm else False
-            out = fluid.layers.batch_norm(
-                input=conv,
-                act=act,
-                name=bn_name + '.output.1',
-                param_attr=pattr,
-                bias_attr=battr,
-                moving_mean_name=bn_name + '_mean',
-                moving_variance_name=bn_name + '_variance',
-                use_global_stats=global_stats)
-            scale = fluid.framework._get_var(pattr.name)
-            bias = fluid.framework._get_var(battr.name)
-        elif self.norm_type == 'affine_channel':
-            scale = fluid.layers.create_parameter(
-                shape=[conv.shape[1]],
-                dtype=conv.dtype,
-                attr=pattr,
-                default_initializer=fluid.initializer.Constant(1.))
-            bias = fluid.layers.create_parameter(
-                shape=[conv.shape[1]],
-                dtype=conv.dtype,
-                attr=battr,
-                default_initializer=fluid.initializer.Constant(0.))
-            out = fluid.layers.affine_channel(
-                x=conv, scale=scale, bias=bias, act=act)
-
-        if self.freeze_norm:
-            scale.stop_gradient = True
-            bias.stop_gradient = True
-
-        return out
-
-    def _hard_swish(self, x):
-        return fluid.layers.elementwise_mul(x, fluid.layers.relu6(x + 3) / 6.)
-
-    def _se_block(self, input, num_out_filter, ratio=4, name=None):
-        lr_idx = self.curr_stage // 3
-        lr_idx = min(lr_idx, len(self.lr_mult_list) - 1)
-        lr_mult = self.lr_mult_list[lr_idx]
-
-        num_mid_filter = int(num_out_filter // ratio)
-        pool = fluid.layers.pool2d(
-            input=input, pool_type='avg', global_pooling=True, use_cudnn=False)
-        conv1 = fluid.layers.conv2d(
-            input=pool,
-            filter_size=1,
-            num_filters=num_mid_filter,
-            act='relu',
-            param_attr=ParamAttr(
-                name=name + '_1_weights',
-                learning_rate=lr_mult,
-                regularizer=L2Decay(self.conv_decay)),
-            bias_attr=ParamAttr(
-                name=name + '_1_offset',
-                learning_rate=lr_mult,
-                regularizer=L2Decay(self.conv_decay)))
-        conv2 = fluid.layers.conv2d(
-            input=conv1,
-            filter_size=1,
-            num_filters=num_out_filter,
-            act='hard_sigmoid',
-            param_attr=ParamAttr(
-                name=name + '_2_weights',
-                learning_rate=lr_mult,
-                regularizer=L2Decay(self.conv_decay)),
-            bias_attr=ParamAttr(
-                name=name + '_2_offset',
-                learning_rate=lr_mult,
-                regularizer=L2Decay(self.conv_decay)))
-
-        scale = fluid.layers.elementwise_mul(x=input, y=conv2, axis=0)
-        return scale
-
-    def _residual_unit(self,
-                       input,
-                       num_in_filter,
-                       num_mid_filter,
-                       num_out_filter,
-                       stride,
-                       filter_size,
-                       act=None,
-                       use_se=False,
-                       name=None):
-        input_data = input
-        conv0 = self._conv_bn_layer(
-            input=input,
-            filter_size=1,
-            num_filters=num_mid_filter,
-            stride=1,
-            padding=0,
-            if_act=True,
-            act=act,
-            name=name + '_expand')
-
-        if self.block_stride == 4 and stride == 2:
-            self.block_stride += 1
-            if self.block_stride in self.feature_maps:
-                self.end_points.append(conv0)
-
-        with fluid.name_scope('res_conv1'):
-            conv1 = self._conv_bn_layer(
-                input=conv0,
-                filter_size=filter_size,
-                num_filters=num_mid_filter,
-                stride=stride,
-                padding=int((filter_size - 1) // 2),
-                if_act=True,
-                act=act,
-                num_groups=num_mid_filter,
-                use_cudnn=False,
-                name=name + '_depthwise')
-
-        if use_se:
-            with fluid.name_scope('se_block'):
-                conv1 = self._se_block(
-                    input=conv1,
-                    num_out_filter=num_mid_filter,
-                    name=name + '_se')
-
-        conv2 = self._conv_bn_layer(
-            input=conv1,
-            filter_size=1,
-            num_filters=num_out_filter,
-            stride=1,
-            padding=0,
-            if_act=False,
-            name=name + '_linear')
-        if num_in_filter != num_out_filter or stride != 1:
-            return conv2
-        else:
-            return fluid.layers.elementwise_add(x=input_data, y=conv2, act=None)
-
-    def _extra_block_dw(self,
-                        input,
-                        num_filters1,
-                        num_filters2,
-                        stride,
-                        name=None):
-        pointwise_conv = self._conv_bn_layer(
-            input=input,
-            filter_size=1,
-            num_filters=int(num_filters1),
-            stride=1,
-            padding="SAME",
-            act='relu6',
-            name=name + "_extra1")
-        depthwise_conv = self._conv_bn_layer(
-            input=pointwise_conv,
+        self.conv1 = ConvBNLayer(
+            in_c=3,
+            out_c=make_divisible(inplanes * scale),
             filter_size=3,
-            num_filters=int(num_filters2),
-            stride=stride,
-            padding="SAME",
-            num_groups=int(num_filters1),
-            act='relu6',
-            use_cudnn=False,
-            name=name + "_extra2_dw")
-        normal_conv = self._conv_bn_layer(
-            input=depthwise_conv,
-            filter_size=1,
-            num_filters=int(num_filters2),
-            stride=1,
-            padding="SAME",
-            act='relu6',
-            name=name + "_extra2_sep")
-        return normal_conv
-
-    def _make_divisible(self, v, divisor=8, min_value=None):
-        if min_value is None:
-            min_value = divisor
-        new_v = max(min_value, int(v + divisor / 2) // divisor * divisor)
-        if new_v < 0.9 * v:
-            new_v += divisor
-        return new_v
-
-    def __call__(self, input):
-        scale = self.scale
-        inplanes = self.inplanes
-        cfg = self.cfg
-        blocks = []
-
-        #conv1
-        conv = self._conv_bn_layer(
-            input,
-            filter_size=3,
-            num_filters=self._make_divisible(inplanes * scale),
             stride=2,
             padding=1,
             num_groups=1,
-            if_act=True,
-            act='hard_swish',
-            name='conv1')
-        i = 0
-        inplanes = self._make_divisible(inplanes * scale)
-        for layer_cfg in cfg:
-            if layer_cfg[5] == 2:
-                self.block_stride += 1
-                if self.block_stride in self.feature_maps:
-                    self.end_points.append(conv)
-
-            conv = self._residual_unit(
-                input=conv,
-                num_in_filter=inplanes,
-                num_mid_filter=self._make_divisible(scale * layer_cfg[1]),
-                num_out_filter=self._make_divisible(scale * layer_cfg[2]),
-                act=layer_cfg[4],
-                stride=layer_cfg[5],
-                filter_size=layer_cfg[0],
-                use_se=layer_cfg[3],
-                name='conv' + str(i + 2))
-            inplanes = self._make_divisible(scale * layer_cfg[2])
-            i += 1
-            self.curr_stage += 1
-        self.block_stride += 1
-        if self.block_stride in self.feature_maps:
-            self.end_points.append(conv)
-
-        # extra block
-        # check whether conv_extra is needed
-        if self.block_stride < max(self.feature_maps):
-            conv_extra = self._conv_bn_layer(
-                conv,
-                filter_size=1,
-                num_filters=self._make_divisible(scale * cfg[-1][1]),
-                stride=1,
-                padding="SAME",
-                num_groups=1,
-                if_act=True,
-                act='hard_swish',
-                name='conv' + str(i + 2))
-            self.block_stride += 1
-            if self.block_stride in self.feature_maps:
-                self.end_points.append(conv_extra)
-            i += 1
-        for block_filter in self.extra_block_filters:
-            conv_extra = self._extra_block_dw(conv_extra, block_filter[0],
-                                              block_filter[1], 2,
-                                              'conv' + str(i + 2))
-            self.block_stride += 1
-            if self.block_stride in self.feature_maps:
-                self.end_points.append(conv_extra)
-            i += 1
-
-        return OrderedDict([('mbv3_{}'.format(idx), feat)
-                            for idx, feat in enumerate(self.end_points)])
-
-
-@register
-class MobileNetV3RCNN(MobileNetV3):
-    def __init__(self,
-                 scale=1.0,
-                 model_name='large',
-                 conv_decay=0.0,
-                 norm_type='bn',
-                 norm_decay=0.0,
-                 freeze_norm=True,
-                 feature_maps=[2, 3, 4, 5],
-                 lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0]):
-        super(MobileNetV3RCNN, self).__init__(
-            scale=scale,
-            model_name=model_name,
+            act="hard_swish",
+            lr_mult=lr_mult_list[0],
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            lr_mult_list=lr_mult_list,
-            feature_maps=feature_maps,
-            freeze_norm=freeze_norm)
-        self.curr_stage = 0
-        self.block_stride = 1
+            freeze_norm=freeze_norm,
+            name="conv1")
 
-    def _residual_unit(self,
-                       input,
-                       num_in_filter,
-                       num_mid_filter,
-                       num_out_filter,
-                       stride,
-                       filter_size,
-                       act=None,
-                       use_se=False,
-                       name=None):
-        input_data = input
-        conv0 = self._conv_bn_layer(
-            input=input,
-            filter_size=1,
-            num_filters=num_mid_filter,
-            stride=1,
-            padding=0,
-            if_act=True,
-            act=act,
-            name=name + '_expand')
-
-        feature_level = int(np.log2(self.block_stride))
-        if feature_level in self.feature_maps and stride == 2:
-            self.end_points.append(conv0)
-
-        conv1 = self._conv_bn_layer(
-            input=conv0,
-            filter_size=filter_size,
-            num_filters=num_mid_filter,
-            stride=stride,
-            padding=int((filter_size - 1) // 2),
-            if_act=True,
-            act=act,
-            num_groups=num_mid_filter,
-            use_cudnn=False,
-            name=name + '_depthwise')
-
-        if use_se:
-            conv1 = self._se_block(
-                input=conv1, num_out_filter=num_mid_filter, name=name + '_se')
-
-        conv2 = self._conv_bn_layer(
-            input=conv1,
-            filter_size=1,
-            num_filters=num_out_filter,
-            stride=1,
-            padding=0,
-            if_act=False,
-            name=name + '_linear')
-        if num_in_filter != num_out_filter or stride != 1:
-            return conv2
-        else:
-            return fluid.layers.elementwise_add(x=input_data, y=conv2, act=None)
-
-    def __call__(self, input):
-        scale = self.scale
-        inplanes = self.inplanes
-        cfg = self.cfg
-        #conv1
-        conv = self._conv_bn_layer(
-            input,
-            filter_size=3,
-            num_filters=self._make_divisible(inplanes * scale),
-            stride=2,
-            padding=1,
-            num_groups=1,
-            if_act=True,
-            act='hard_swish',
-            name='conv1')
+        self._out_channels = []
+        self.block_list = []
         i = 0
-        inplanes = self._make_divisible(inplanes * scale)
-        for layer_cfg in cfg:
-            self.block_stride *= layer_cfg[5]
-            conv = self._residual_unit(
-                input=conv,
-                num_in_filter=inplanes,
-                num_mid_filter=self._make_divisible(scale * layer_cfg[1]),
-                num_out_filter=self._make_divisible(scale * layer_cfg[2]),
-                act=layer_cfg[4],
-                stride=layer_cfg[5],
-                filter_size=layer_cfg[0],
-                use_se=layer_cfg[3],
-                name='conv' + str(i + 2))
-            inplanes = self._make_divisible(scale * layer_cfg[2])
-            i += 1
-            self.curr_stage += 1
+        inplanes = make_divisible(inplanes * scale)
+        for (k, exp, c, se, nl, s) in self.cfg:
+            lr_idx = min(i // 3, len(lr_mult_list) - 1)
+            lr_mult = lr_mult_list[lr_idx]
 
-        if np.max(self.feature_maps) >= 5:
-            conv = self._conv_bn_layer(
-                input=conv,
-                filter_size=1,
-                num_filters=self._make_divisible(scale * cfg[-1][1]),
-                stride=1,
-                padding=0,
-                num_groups=1,
-                if_act=True,
-                act='hard_swish',
-                name='conv_last')
-            self.end_points.append(conv)
-            i += 1
+            # for SSD/SSDLite, first head input is after ResidualUnit expand_conv
+            return_list = self.with_extra_blocks and i + 2 in self.feature_maps
 
-        res = OrderedDict([('mv3_{}'.format(idx), self.end_points[idx])
-                           for idx, feat_idx in enumerate(self.feature_maps)])
-        return res
+            block = self.add_sublayer(
+                "conv" + str(i + 2),
+                sublayer=ResidualUnit(
+                    in_c=inplanes,
+                    mid_c=make_divisible(scale * exp),
+                    out_c=make_divisible(scale * c),
+                    filter_size=k,
+                    stride=s,
+                    use_se=se,
+                    act=nl,
+                    lr_mult=lr_mult,
+                    conv_decay=conv_decay,
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    return_list=return_list,
+                    name="conv" + str(i + 2)))
+            self.block_list.append(block)
+            inplanes = make_divisible(scale * c)
+            i += 1
+            self._update_out_channels(
+                make_divisible(scale * exp)
+                if return_list else inplanes, i + 1, feature_maps)
+
+        if self.with_extra_blocks:
+            self.extra_block_list = []
+            extra_out_c = make_divisible(scale * self.cfg[-1][1])
+            lr_idx = min(i // 3, len(lr_mult_list) - 1)
+            lr_mult = lr_mult_list[lr_idx]
+
+            conv_extra = self.add_sublayer(
+                "conv" + str(i + 2),
+                sublayer=ConvBNLayer(
+                    in_c=inplanes,
+                    out_c=extra_out_c,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    num_groups=1,
+                    act="hard_swish",
+                    lr_mult=lr_mult,
+                    conv_decay=conv_decay,
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    name="conv" + str(i + 2)))
+            self.extra_block_list.append(conv_extra)
+            i += 1
+            self._update_out_channels(extra_out_c, i + 1, feature_maps)
+
+            for j, block_filter in enumerate(self.extra_block_filters):
+                in_c = extra_out_c if j == 0 else self.extra_block_filters[j -
+                                                                           1][1]
+                conv_extra = self.add_sublayer(
+                    "conv" + str(i + 2),
+                    sublayer=ExtraBlockDW(
+                        in_c,
+                        block_filter[0],
+                        block_filter[1],
+                        stride=2,
+                        lr_mult=lr_mult,
+                        conv_decay=conv_decay,
+                        norm_type=norm_type,
+                        norm_decay=norm_decay,
+                        freeze_norm=freeze_norm,
+                        name='conv' + str(i + 2)))
+                self.extra_block_list.append(conv_extra)
+                i += 1
+                self._update_out_channels(block_filter[1], i + 1, feature_maps)
+
+    def _update_out_channels(self, channel, feature_idx, feature_maps):
+        if feature_idx in feature_maps:
+            self._out_channels.append(channel)
+
+    def forward(self, inputs):
+        x = self.conv1(inputs['image'])
+        outs = []
+        for idx, block in enumerate(self.block_list):
+            x = block(x)
+            if idx + 2 in self.feature_maps:
+                if isinstance(x, list):
+                    outs.append(x[0])
+                    x = x[1]
+                else:
+                    outs.append(x)
+
+        if not self.with_extra_blocks:
+            return outs
+
+        for i, block in enumerate(self.extra_block_list):
+            idx = i + len(self.block_list)
+            x = block(x)
+            if idx + 2 in self.feature_maps:
+                outs.append(x)
+        return outs
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]
