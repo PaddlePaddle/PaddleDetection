@@ -58,7 +58,8 @@ class MOTDataSet(DetDataset):
         self.tid_num = OrderedDict()
         self.tid_start_index = OrderedDict()
         for ds in self.anno_path:
-            with open(os.path.join(dataset_dir, ds), 'r') as file:
+            with open(os.path.join(dataset_dir, 'annotations', ds),
+                      'r') as file:
                 self.img_files[ds] = file.readlines()
                 self.img_files[ds] = [
                     os.path.join(dataset_dir, x.strip())

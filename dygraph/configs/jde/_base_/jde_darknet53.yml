@@ -1,5 +1,5 @@
 architecture: JDE
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/DarkNet53_pretrained.tar
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
 load_static_weights: True
 norm_type: sync_bn
 

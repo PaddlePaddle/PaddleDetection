@@ -86,6 +86,8 @@ class JDEDetectionLoss(nn.Layer):
 class JDEEmbeddingLoss(nn.Layer):
     def __init__(self, ):
         super(JDEEmbeddingLoss, self).__init__()
+        # for DataParallel training in paddle
+        self.phony = self.create_parameter(shape=[1])
 
     def emb_loss(self, p_ide, t_conf, t_ide, emb_scale, classifier):
         emb_dim = p_ide.shape[1]
@@ -100,14 +102,12 @@ class JDEEmbeddingLoss(nn.Layer):
         # use max(1) to decide the id, TODO: more reseanable strategy
         t_ide_flatten = t_ide.max(1).flatten()
         t_ide_flatten = paddle.cast(t_ide_flatten, dtype="int64")
+        valid_inds = paddle.nonzero(t_ide_flatten != -1).flatten()
 
-        weight = paddle.to_tensor([1], dtype='float32')
-        if emb_mask_inds.numel() == 0:
-            weight = paddle.to_tensor([0], dtype='float32')
-
-            logits = p_ide_flatten[0]
-            ide_target = -t_ide_flatten[0]
-            ide_target.stop_gradient = True
+        if emb_mask_inds.numel() == 0 or valid_inds.numel() == 0:
+            # loss_ide = paddle.to_tensor([0]) will be error in gradient backward
+            loss_ide = self.phony * 0
+            loss_ide.stop_gradient = True
         else:
             embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
             embedding = emb_scale * F.normalize(embedding)
@@ -116,8 +116,8 @@ class JDEEmbeddingLoss(nn.Layer):
             ide_target = paddle.gather(t_ide_flatten, emb_mask_inds)
             ide_target.stop_gradient = True
 
-        loss_ide = F.cross_entropy(
-            logits, ide_target, ignore_index=-1, reduction='mean') * weight
+            loss_ide = F.cross_entropy(
+                logits, ide_target, ignore_index=-1, reduction='mean')
         return loss_ide
 
     def forward(self, ide_outs, targets, emb_scale, classifier):
@@ -139,11 +139,18 @@ class JDELoss(nn.Layer):
         self.use_uncertainy = use_uncertainy
 
     def forward(self, loss_confs, loss_boxes, loss_ides, loss_params_cls,
-                loss_params_reg, loss_params_ide):
+                loss_params_reg, loss_params_ide, targets):
         assert len(loss_confs) == len(loss_boxes) == len(loss_ides)
         assert len(loss_params_cls) == len(loss_params_reg) == len(
             loss_params_ide)
         assert len(loss_confs) == len(loss_params_cls)
+
+        batchsize = targets['gt_bbox'].shape[0]
+        nTargets = paddle.nonzero(paddle.sum(targets['gt_bbox'], axis=2)).shape[
+            0] / batchsize
+        nTargets = paddle.to_tensor(nTargets, dtype='float32')
+        nTargets.stop_gradient = True
+
         jde_losses = []
         for i, (loss_conf, loss_box, loss_ide, l_conf_p, l_box_p,
                 l_ide_p) in enumerate(
@@ -166,5 +173,6 @@ class JDELoss(nn.Layer):
             "loss_box": sum(loss_boxes),
             "loss_ide": sum(loss_ides),
             "loss": sum(jde_losses),
+            "nTargets": nTargets,
         }
         return loss_all

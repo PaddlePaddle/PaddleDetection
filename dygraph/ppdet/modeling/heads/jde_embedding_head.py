@@ -131,7 +131,7 @@ class JEDEmbeddingHead(nn.Layer):
                                       self.classifier)
             return self.jde_loss(loss_confs, loss_boxes, loss_ides,
                                  self.loss_params_cls, self.loss_params_reg,
-                                 self.loss_params_ide)
+                                 self.loss_params_ide, targets)
         else:
             if test_emb:
                 assert targets != None
