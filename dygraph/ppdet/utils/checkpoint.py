@@ -123,8 +123,7 @@ def load_weight(model, weight, optimizer=None):
     assert incorrect_keys == 0, "Load weight {} incorrectly, \
             {} keys unmatched, please check again.".format(weight,
                                                            incorrect_keys)
-    logger.info('Finish loading model weight parameter: {}'.format(
-        pdparam_path))
+    logger.info('Finish resuming model weights: {}'.format(pdparam_path))
 
     model.set_dict(model_weight)
 
@@ -142,9 +141,7 @@ def load_weight(model, weight, optimizer=None):
     return last_epoch
 
 
-def load_pretrain_weight(model, pretrain_weight, weight_type='pretrain'):
-
-    assert weight_type in ['pretrain', 'finetune']
+def load_pretrain_weight(model, pretrain_weight):
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path_dist(pretrain_weight)
 
@@ -158,24 +155,27 @@ def load_pretrain_weight(model, pretrain_weight, weight_type='pretrain'):
 
     model_dict = model.state_dict()
 
-    param_state_dict = paddle.load(path + '.pdparams')
-    if weight_type == 'pretrain':
-        model.backbone.set_dict(param_state_dict)
-    else:
-        ignore_set = set()
-        for name, weight in model_dict.items():
-            if name in param_state_dict.keys():
-                if weight.shape != list(param_state_dict[name].shape):
-                    logger.info(
-                        '{} not used, shape {} unmatched with {} in model.'.
-                        format(name,
-                               list(param_state_dict[name].shape),
-                               weight.shape))
-                    param_state_dict.pop(name, None)
-            else:
-                logger.info('Lack weight: {}'.format(name))
-        model.set_dict(param_state_dict)
-    return
+    weights_path = path + '.pdparams'
+    param_state_dict = paddle.load(weights_path)
+    ignore_set = set()
+    lack_modules = set()
+    for name, weight in model_dict.items():
+        if name in param_state_dict.keys():
+            if weight.shape != list(param_state_dict[name].shape):
+                logger.info(
+                    '{} not used, shape {} unmatched with {} in model.'.format(
+                        name, list(param_state_dict[name].shape), weight.shape))
+                param_state_dict.pop(name, None)
+        else:
+            lack_modules.add(name.split('.')[0])
+            logger.debug('Lack weights: {}'.format(name))
+
+    if len(lack_modules) > 0:
+        logger.info('Lack weights of modules: {}'.format(', '.join(
+            list(lack_modules))))
+
+    model.set_dict(param_state_dict)
+    logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
 def save_model(model, optimizer, save_dir, save_name, last_epoch):

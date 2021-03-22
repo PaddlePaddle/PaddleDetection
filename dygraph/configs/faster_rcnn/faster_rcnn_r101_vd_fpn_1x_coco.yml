@@ -1,7 +1,7 @@
 _BASE_: [
   'faster_rcnn_r50_fpn_1x_coco.yml',
 ]
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet101_vd_pretrained.tar
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_vd_pretrained.pdparams
 weights: output/faster_rcnn_r101_vd_fpn_1x_coco/model_final
 
 ResNet:

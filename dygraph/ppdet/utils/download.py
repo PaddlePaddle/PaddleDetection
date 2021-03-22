@@ -92,7 +92,7 @@ DATASETS = {
 
 DOWNLOAD_RETRY_LIMIT = 3
 
-PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX = 'https://paddlemodels.bj.bcebos.com/object_detection/'
+PPDET_WEIGHTS_DOWNLOAD_URL_PREFIX = 'https://paddledet.bj.bcebos.com/'
 
 
 def parse_url(url):

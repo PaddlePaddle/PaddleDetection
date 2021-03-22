@@ -1,5 +1,5 @@
 architecture: SSD
-pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/dygraph/VGG16_caffe_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/VGG16_caffe_pretrained.pdparams
 
 # Model Achitecture
 SSD:

@@ -58,7 +58,7 @@ class Trainer(object):
         # model slim build
         if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':
-                self.load_weights(cfg.pretrain_weights, cfg.weight_type)
+                self.load_weights(cfg.pretrain_weights)
             self.slim = create(cfg.slim)
             self.slim(self.model)
 
@@ -174,17 +174,14 @@ class Trainer(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights, weight_type='pretrain'):
-        assert weight_type in ['pretrain', 'resume', 'finetune'], \
-                "weight_type can only be 'pretrain', 'resume', 'finetune'"
-        if weight_type == 'resume':
-            self.start_epoch = load_weight(self.model, weights, self.optimizer)
-            logger.debug("Resume weights of epoch {}".format(self.start_epoch))
-        else:
-            self.start_epoch = 0
-            load_pretrain_weight(self.model, weights, weight_type)
-            logger.debug("Load {} weights {} to start training".format(
-                weight_type, weights))
+    def load_weights(self, weights):
+        self.start_epoch = 0
+        load_pretrain_weight(self.model, weights)
+        logger.debug("Load weights {} to start training".format(weights))
+
+    def resume_weights(self, weights):
+        self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
