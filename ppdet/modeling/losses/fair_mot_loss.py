@@ -37,5 +37,9 @@ class FairMOTLoss(nn.Layer):
         loss = paddle.exp(-self.det_weight) * det_loss + paddle.exp(
             -self.reid_weight) * reid_loss + (self.det_weight + self.reid_weight
                                               )
+        #print('self.det_weight', self.det_weight.numpy())
+        #print('self.reid_weight', self.reid_weight.numpy())
+        #print('reid_loss', reid_loss.numpy().mean())
         loss *= 0.5
+        #print('loss', loss.numpy())
         return {'loss': loss}

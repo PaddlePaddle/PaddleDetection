@@ -48,14 +48,10 @@ class DeformableConvV2(nn.Layer):
         self.mask_channel = kernel_size**2
 
         if lr_scale == 1 and regularizer is None:
-            print(
-                'deformable bias no regulizer 4444444444444444444444444444444')
             offset_bias_attr = paddle.ParamAttr(
                 initializer=Constant(0.),
                 name='{}.conv_offset_mask.bias'.format(name))
         else:
-            print(
-                'deformable bias regulizer 8888888888888888888888888888888888')
             offset_bias_attr = paddle.ParamAttr(
                 initializer=Constant(0.),
                 learning_rate=lr_scale,
@@ -423,9 +419,8 @@ class DLA(nn.Layer):
     def forward(self, inputs):
         outs = []
         im = inputs['image']
-        print('image', np.mean(im.numpy()))
-        print('base_layer 0 weights: ',
-              np.mean(self.base_layer[0].conv.weight.numpy()))
+        #print('image', np.mean(im.numpy()))
+        #print('base_layer 0 weights: ', np.mean(self.base_layer[0].conv.weight.numpy()))
         feats = self.base_layer(im)
         for i in range(6):
             feats = getattr(self, 'level{}'.format(i))(feats)

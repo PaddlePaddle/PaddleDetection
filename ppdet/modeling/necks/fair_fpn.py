@@ -37,7 +37,7 @@ class IDAUp(nn.Layer):
                     ch_out,
                     kernel_size=3,
                     padding=1,
-                    dcn_v2=False,
+                    dcn_v2=True,
                     bias=True,
                     name=name + ".proj_{}.conv".format(i)),
                 NormLayer(
@@ -49,7 +49,7 @@ class IDAUp(nn.Layer):
                     ch_out,
                     kernel_size=3,
                     padding=1,
-                    dcn_v2=False,
+                    dcn_v2=True,
                     bias=True,
                     name=name + ".node_{}.conv".format(i)),
                 NormLayer(
@@ -153,17 +153,15 @@ class FairDLAFPN(nn.Layer):
 
     def forward(self, body_feats):
         dla_up_feats = self.dla_up(body_feats)
-        for i in range(len(dla_up_feats)):
-            print('-----------------dla up {}'.format(i),
-                  np.mean(dla_up_feats[i].numpy()))
+        #for i in range(len(dla_up_feats)):
+        #    print('-----------------dla up {}'.format(i), np.mean(dla_up_feats[i].numpy()))
 
         ida_up_feats = []
         for i in range(self.last_level - self.first_level):
             ida_up_feats.append(dla_up_feats[i].clone())
         self.ida_up(ida_up_feats, 0, len(ida_up_feats))
-        for i in range(len(ida_up_feats)):
-            print('-----------------ida up {}'.format(i),
-                  np.mean(ida_up_feats[i].numpy()))
+        #for i in range(len(ida_up_feats)):
+        #    print('-----------------ida up {}'.format(i), np.mean(ida_up_feats[i].numpy()))
 
         return ida_up_feats
 

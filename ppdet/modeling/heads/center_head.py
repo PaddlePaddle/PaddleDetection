@@ -128,24 +128,11 @@ class CenterHead(nn.Layer):
         return {'in_channels': input_shape.channels}
 
     def forward(self, feat, inputs):
-        print('-----------heatmap weight 0',
-              np.mean(self.heatmap[0].conv.weight.numpy()))
-        print('-----------heatmap weight 1',
-              np.mean(self.heatmap[2].conv.weight.numpy()))
-        print('-----------heatmap bias 0',
-              np.mean(self.heatmap[0].conv.bias.numpy()))
-        print('-----------heatmap bias 1',
-              np.mean(self.heatmap[2].conv.bias.numpy()))
-
         heatmap = self.heatmap(feat)
-        print('--------------heat map before sigmoid', np.mean(heatmap.numpy()))
+        #print('--------------heat map before sigmoid', np.mean(heatmap.numpy()))
         heatmap = F.sigmoid(heatmap)
-        print('---------neck feat', np.mean(feat.numpy()))
+        #print('---------neck feat', np.mean(feat.numpy()))
         size = self.size(feat)
-        print('-----------size weight 0',
-              np.mean(self.size[0].conv.weight.numpy()))
-        print('-----------size weight 1',
-              np.mean(self.size[2].conv.weight.numpy()))
         offset = self.offset(feat)
         if self.training:
             loss = self.get_loss(heatmap, size, offset, self.weights, inputs)
@@ -209,6 +196,10 @@ class CenterHead(nn.Layer):
 
         det_loss = weights['heatmap'] * heatmap_loss + weights[
             'size'] * size_loss + weights['offset'] * offset_loss
+        #print('weights heatmap', weights['heatmap'], heatmap_loss.numpy().mean())
+        #print('weights size', weights['size'], size_loss.numpy().mean())
+        #print('weights offset', weights['offset'], offset_loss.numpy().mean())
+        #print('det loss', det_loss.numpy().mean())
 
         return {
             'det_loss': det_loss,

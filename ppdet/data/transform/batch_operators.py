@@ -23,6 +23,7 @@ except Exception:
 
 import cv2
 import numpy as np
+import math
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from scipy import ndimage
@@ -31,12 +32,8 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'PadBatch',
-    'BatchRandomResize',
-    'Gt2YoloTarget',
-    'Gt2FCOSTarget',
-    'Gt2TTFTarget',
-    'Gt2Solov2Target',
+    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2FairMOTTarget'
 ]
 
 
@@ -787,3 +784,110 @@ class Gt2Solov2Target(BaseOperator):
                 data['grid_order{}'.format(idx)] = gt_grid_order
 
         return samples
+
+
+class Gt2FairMOTTarget(Gt2TTFTarget):
+    __shared__ = ['num_classes']
+
+    def __init__(self, num_classes=1, down_ratio=4, max_objs=500):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.max_objs = 500
+
+    def __call__(self, samples, context=None):
+        for b_id, sample in enumerate(samples):
+            output_h = sample['image'].shape[1] // self.down_ratio
+            output_w = sample['image'].shape[2] // self.down_ratio
+
+            heatmap = np.zeros(
+                (self.num_classes, output_h, output_w), dtype='float32')
+            bbox_size = np.zeros((self.max_objs, 4), dtype=np.float32)
+            center_offset = np.zeros((self.max_objs, 2), dtype=np.float32)
+            index = np.zeros((self.max_objs, ), dtype=np.int64)
+            index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
+            reid = np.zeros((self.max_objs, ), dtype=np.int64)
+            bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+
+            gt_bbox = sample['gt_bbox']
+            #np.save('gt_bbox.npy', gt_bbox)
+            gt_class = sample['gt_class']
+            gt_ide = sample['gt_ide']
+            #print('gt_bbox', gt_bbox)
+            #print('gt_class', gt_class)
+            #print('gt_ide', gt_ide)
+
+            for k in range(len(gt_bbox)):
+                cls_id = gt_class[k][0]
+                bbox = gt_bbox[k]
+                ide = gt_ide[k][0]
+                bbox[[0, 2]] = bbox[[0, 2]] * output_w
+                bbox[[1, 3]] = bbox[[1, 3]] * output_h
+                bbox_amodal = copy.deepcopy(bbox)
+                bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+                bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+                bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+                bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
+                bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+                h = bbox[3]
+                w = bbox[2]
+
+                bbox_xy = copy.deepcopy(bbox)
+                bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+                bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+                bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+                bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+
+                if h > 0 and w > 0:
+                    radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                    radius = max(0, int(radius))
+                    ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
+                    ct_int = ct.astype(np.int32)
+                    #if k == 0:
+                    #    print('***************draw_gaussian')
+                    #    print('hm', heatmap[cls_id].shape)
+                    #    print('cls id', cls_id, type(cls_id))
+                    #    print('ct_int', ct_int)
+                    #    print('radius', radius)
+                    #    np.save('hmbefore.npy', heatmap[cls_id])       
+                    self.draw_truncate_gaussian(heatmap[cls_id], ct_int, radius,
+                                                radius)
+                    #if k == 0:
+                    #    print('after hm', heatmap[cls_id].shape)
+                    #    np.save('hm0.npy', heatmap[cls_id])                 
+                    bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                            bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
+
+                    index[k] = ct_int[1] * output_w + ct_int[0]
+                    center_offset[k] = ct - ct_int
+                    index_mask[k] = 1
+                    reid[k] = ide
+                    bbox_xys[k] = bbox_xy
+
+            sample['heatmap'] = heatmap
+            sample['index'] = index
+            sample['offset'] = center_offset
+            sample['size'] = bbox_size
+            sample['index_mask'] = index_mask
+            sample['reid'] = reid
+            sample['bbox_xys'] = bbox_xys
+            del sample['gt_bbox']
+            del sample['gt_class']
+            del sample['gt_ide']
+            #np.save('imgs_{}.npy'.format(b_id), sample['image'])
+            #np.save('ids_{}.npy'.format(b_id), sample['reid'])
+            #np.save('hm_{}.npy'.format(b_id), sample['heatmap'])
+            #np.save('wh_{}.npy'.format(b_id), sample['size'])
+            #np.save('ind_{}.npy'.format(b_id), sample['index'])
+            #np.save('reg_{}.npy'.format(b_id), sample['offset'])
+            #np.save('mask_{}.npy'.format(b_id), sample['index_mask'])
+            #np.save('bbox_{}.npy'.format(b_id), sample['bbox_xys'])
+        #samples[0]['image'] = np.load('/rrpn/FairMOT/src/imgs.npy')
+        #print('image in batch_transform', samples[0]['image'].mean())
+        #samples[0]['reid'] = np.load('/rrpn/FairMOT/src/ids.npy')
+        #samples[0]['heatmap'] = np.load('/rrpn/FairMOT/src/hm.npy')
+        #samples[0]['size'] = np.load('/rrpn/FairMOT/src/wh.npy')
+        #samples[0]['index'] = np.load('/rrpn/FairMOT/src/ind.npy')
+        #samples[0]['offset'] = np.load('/rrpn/FairMOT/src/reg.npy')
+        #samples[0]['index_mask'] = np.load('/rrpn/FairMOT/src/reg_mask.npy').astype(np.int32)

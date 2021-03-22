@@ -45,7 +45,7 @@ class FairMOT(BaseArch):
 
     def _forward(self):
         loss = dict()
-        print('image in faitmot', self.inputs['image'].numpy().mean())
+        #print('image in faitmot', self.inputs['image'].numpy().mean())
         det_outs = self.detector(self.inputs)
         neck_feat = det_outs['neck_feat']
         reid_outs = self.reid(neck_feat, self.inputs)

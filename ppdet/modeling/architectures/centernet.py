@@ -50,12 +50,11 @@ class CenterNet(BaseArch):
         }
 
     def _forward(self):
-        import numpy as np
-        print('image in centernet', self.inputs['image'].numpy().mean())
+        #import numpy as np
+        #print('image in centernet', self.inputs['image'].numpy().mean())
         body_feats = self.backbone(self.inputs)
-        for i in range(len(body_feats)):
-            print('-----------------base {}'.format(i),
-                  np.mean(body_feats[i].numpy()))
+        #for i in range(len(body_feats)):
+        #    print('-----------------base {}'.format(i), np.mean(body_feats[i].numpy()))
         neck_feat = self.neck(body_feats)
         head_out = self.head(neck_feat[-1], self.inputs)
         head_out.update({'neck_feat': neck_feat[-1]})

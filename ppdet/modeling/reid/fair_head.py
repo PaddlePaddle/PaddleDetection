@@ -49,8 +49,7 @@ class FairReIDHead(nn.Layer):
             initializer=KaimingUniform(), name="classifier.weight")
         bound = 1 / math.sqrt(ch_emb)
         bias_attr = paddle.ParamAttr(
-            initializer=nn.initializer.Uniform(-bound, bound),
-            name="classifier.bias")
+            initializer=Uniform(-bound, bound), name="classifier.bias")
         self.classifier = nn.Linear(
             ch_emb, num_id, weight_attr=param_attr, bias_attr=bias_attr)
         self.reid_loss = nn.CrossEntropyLoss(ignore_index=-1)
@@ -65,7 +64,7 @@ class FairReIDHead(nn.Layer):
     def forward(self, feat, inputs):
         output = dict()
         reid_feat = self.reid(feat)
-        print('---------reid_feat', np.mean(reid_feat.numpy()))
+        #print('---------reid_feat', np.mean(reid_feat.numpy()))
         if self.training:
             loss = self.get_loss(reid_feat, inputs)
             output.update(loss)
@@ -80,7 +79,7 @@ class FairReIDHead(nn.Layer):
         target = inputs['reid']
         #reid_feat = np.load('/rrpn/FairMOT/src/reid_feat.npy')
         #feat = paddle.to_tensor(reid_feat)
-        print('---------origin reid', np.mean(target.numpy()))
+        #print('---------origin reid', np.mean(target.numpy()))
         target = paddle.masked_select(target, mask > 0)
         target = paddle.unsqueeze(target, 1)
 
@@ -97,32 +96,38 @@ class FairReIDHead(nn.Layer):
         index = paddle.concat(x=[batch_inds, index], axis=2)
         feat = paddle.gather_nd(feat, index=index)
 
-        print('---------gather reid feat', np.mean(feat.numpy()))
+        #print('---------gather reid feat', np.mean(feat.numpy()))
         mask = paddle.unsqueeze(mask, axis=2)
         mask = paddle.expand_as(mask, feat)
         mask.stop_gradient = True
         feat = paddle.masked_select(feat, mask > 0)
-        print('---------mask reid feat', np.mean(feat.numpy()))
+        #print('---------mask reid feat', np.mean(feat.numpy()))
         feat = paddle.reshape(feat, shape=[-1, feat_c])
         feat = F.normalize(feat)
-        print('---------normalize reid feat', np.mean(feat.numpy()))
+        #print('---------normalize reid feat', np.mean(feat.numpy()))
         feat = self.emb_scale * feat
-        print('-----------emb_scale', self.emb_scale)
-        print('----------classifier feat', np.mean(feat.numpy()))
-        print('----------classifier weight',
-              np.mean(self.classifier.weight.numpy()))
-        print('----------classifier bias',
-              np.mean(self.classifier.bias.numpy()))
+        #feat = paddle.to_tensor(np.load('/rrpn/new/FairMOT/src/classifier_feat.npy'))
+        #print('-----------emb_scale', self.emb_scale)
+        #print('----------classifier feat', np.mean(feat.numpy()))
+        #print('----------classifier weight', np.mean(self.classifier.weight.numpy()))
+        #print('----------classifier bias', np.mean(self.classifier.bias.numpy()))
         #weight = np.load('/rrpn/FairMOT/src/classifier_weight.npy')
         #bias = np.load('/rrpn/FairMOT/src/classifier_bias.npy')
         #self.classifier.weight[:] = weight
         #self.classifier.bias[:] = bias
         logit = self.classifier(feat)
-        print('----------classifier logit', np.mean(logit.numpy()))
-        print('----------classifier target', np.mean(target.numpy()))
+        #logit = feat
+        #logit = paddle.to_tensor(np.load('/rrpn/new/FairMOT/src/classifier_logit.npy'))
+        #target = paddle.to_tensor(np.expand_dims(np.load('/rrpn/new/FairMOT/src/classifier_target.npy'), axis=-1))
+
+        #print('----------classifier logit', np.mean(logit.numpy()))
+        #print('----------classifier target', np.mean(target.numpy()))
         target.stop_gradient = True
         #logit = paddle.to_tensor(np.load('/rrpn/FairMOT/src/id_output.npy'))
         #target = paddle.to_tensor(np.expand_dims(np.load('/rrpn/FairMOT/src/id_target.npy'), 1))
-        loss = F.softmax_with_cross_entropy(logit, target)
-        loss = loss.mean()
+        #loss = F.softmax_with_cross_entropy(logit, target)
+        #loss = loss.mean()
+        #np.save('logit.npy', logit.numpy())
+        #np.save('target.npy', target.numpy())
+        loss = self.reid_loss(logit, target)
         return {'reid_loss': loss}
