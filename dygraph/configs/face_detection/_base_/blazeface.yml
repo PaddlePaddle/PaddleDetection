@@ -1,0 +1,40 @@
+architecture: SSD
+
+SSD:
+  backbone: BlazeNet
+  ssd_head: FaceHead
+  post_process: BBoxPostProcess
+
+BlazeNet:
+  blaze_filters: [[24, 24], [24, 24], [24, 48, 2], [48, 48], [48, 48]]
+  double_blaze_filters: [[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
+                          [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]]
+
+FaceHead:
+  in_channels: [96, 96]
+  anchor_generator: AnchorGeneratorSSD
+  loss: SSDLoss
+
+SSDLoss:
+  overlap_threshold: 0.35
+  neg_overlap: 0.35
+
+AnchorGeneratorSSD:
+  steps: [8., 16.]
+  aspect_ratios: [[1.], [1.]]
+  min_sizes: [[16.,24.], [32., 48., 64., 80., 96., 128.]]
+  max_sizes: [[], []]
+  offset: 0.5
+  flip: False
+  min_max_aspect_ratios_order: false
+
+BBoxPostProcess:
+  decode:
+    name: SSDBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 750
+    score_threshold: 0.01
+    nms_threshold: 0.3
+    nms_top_k: 5000
+    nms_eta: 1.0
