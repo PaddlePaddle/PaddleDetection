@@ -11,6 +11,7 @@
 - 在手机移动端部署，使用[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在手机移动端部署。
   常见模型部署Demo请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo) 。
 - `NV Jetson`嵌入式设备上部署
+- `TensorRT`加速请参考文档[TensorRT预测部署教程](TENSOR_RT.md)
 
 ## 模型导出
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
