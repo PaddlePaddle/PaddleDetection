@@ -313,6 +313,7 @@ class PPYOLOFPN(nn.Layer):
 
         self.spp = kwargs.get('spp', False)
         self.conv_block_num = kwargs.get('conv_block_num', 2)
+        self.data_format = data_format
         if self.coord_conv:
             ConvLayer = CoordConv
         else:
