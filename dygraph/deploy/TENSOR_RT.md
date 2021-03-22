@@ -40,6 +40,8 @@ TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。
 可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
 ![img](imgs/input_shape.png)
 
+同时需要将图像预处理后的尺寸与设置车模型输入尺寸保持一致，需要设置`infer_cfg.yml`配置文件中`Resize OP`的`target_size`参数和`keep_ratio`参数。
+
 ### 3.3 TensorRT动态尺寸预测
 
 TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。
