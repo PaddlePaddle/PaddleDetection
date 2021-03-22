@@ -59,7 +59,7 @@ class ExtraBlockDW(nn.Layer):
             out_c=ch_2,
             filter_size=3,
             stride=stride,
-            padding=1, #
+            padding=1,  #
             num_groups=int(ch_1),
             act='relu6',
             lr_mult=lr_mult,
@@ -101,22 +101,20 @@ class SEBlock(nn.Layer):
             med_ch,
             weight_attr=ParamAttr(
                 learning_rate=lr_mult,
-                initializer=Uniform(-stdv, stdv), 
+                initializer=Uniform(-stdv, stdv),
                 name=name + "_1_weights"),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult,
-                name=name + "_1_offset"))
+                learning_rate=lr_mult, name=name + "_1_offset"))
         stdv = 1.0 / math.sqrt(med_ch * 1.0)
         self.excitation = Linear(
             med_ch,
             num_channels,
             weight_attr=ParamAttr(
                 learning_rate=lr_mult,
-                initializer=Uniform(-stdv, stdv), 
+                initializer=Uniform(-stdv, stdv),
                 name=name + "_2_weights"),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult,
-                name=name + "_2_offset"))
+                learning_rate=lr_mult, name=name + "_2_offset"))
 
     def forward(self, inputs):
         pool = self.pool2d_gap(inputs)
@@ -236,8 +234,7 @@ class GhostBottleneck(nn.Layer):
                 "_depthwise_depthwise"  # looks strange due to an old typo, will be fixed later.
             )
         if use_se:
-            self.se_block = SEBlock(
-                hidden_dim, lr_mult, name=name + "_se")
+            self.se_block = SEBlock(hidden_dim, lr_mult, name=name + "_se")
         self.ghost_module_2 = GhostModule(
             in_channels=hidden_dim,
             output_channels=output_channels,
@@ -289,14 +286,14 @@ class GhostBottleneck(nn.Layer):
         if self._use_se:
             x = self.se_block(x)
         x = self.ghost_module_2(x)
-        
+
         if self._stride == 1 and self._num_channels == self._output_channels:
             shortcut = inputs
         else:
             shortcut = self.shortcut_depthwise(inputs)
             shortcut = self.shortcut_conv(shortcut)
         x = paddle.add(x=x, y=shortcut)
-        
+
         if self.return_list:
             return [y, x]
         else:
@@ -308,16 +305,17 @@ class GhostBottleneck(nn.Layer):
 class GhostNet(nn.Layer):
     __shared__ = ['norm_type']
 
-    def __init__(self, 
-                 scale=1.3, 
-                 feature_maps=[6, 12, 15],
-                 with_extra_blocks=False,
-                 extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]],
-                 lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
-                 conv_decay=0., 
-                 norm_type='bn',
-                 norm_decay=0.0,
-                 freeze_norm=False):
+    def __init__(
+            self,
+            scale=1.3,
+            feature_maps=[6, 12, 15],
+            with_extra_blocks=False,
+            extra_block_filters=[[256, 512], [128, 256], [128, 256], [64, 128]],
+            lr_mult_list=[1.0, 1.0, 1.0, 1.0, 1.0],
+            conv_decay=0.,
+            norm_type='bn',
+            norm_decay=0.0,
+            freeze_norm=False):
         super(GhostNet, self).__init__()
         if isinstance(feature_maps, Integral):
             feature_maps = [feature_maps]
@@ -327,7 +325,7 @@ class GhostNet(nn.Layer):
         self.feature_maps = feature_maps
         self.with_extra_blocks = with_extra_blocks
         self.extra_block_filters = extra_block_filters
-        
+
         inplanes = 16
         self.cfgs = [
             # k, t, c, SE, s
@@ -342,7 +340,7 @@ class GhostNet(nn.Layer):
             [3, 184, 80, 0, 1],
             [3, 480, 112, 1, 1],
             [3, 672, 112, 1, 1],
-            [5, 672, 160, 1, 2], # SSDLite output
+            [5, 672, 160, 1, 2],  # SSDLite output
             [5, 960, 160, 0, 1],
             [5, 960, 160, 1, 1],
             [5, 960, 160, 0, 1],
@@ -444,7 +442,8 @@ class GhostNet(nn.Layer):
                         name='conv' + str(idx + 2)))
                 self.extra_block_list.append(conv_extra)
                 idx += 1
-                self._update_out_channels(block_filter[1], idx + 1, feature_maps)
+                self._update_out_channels(block_filter[1], idx + 1,
+                                          feature_maps)
 
     def _update_out_channels(self, channel, feature_idx, feature_maps):
         if feature_idx in feature_maps:
