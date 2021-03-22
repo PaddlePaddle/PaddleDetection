@@ -14,6 +14,7 @@
 #include <sstream>
 // for setprecision
 #include <iomanip>
+#include <chrono>
 #include "include/object_detector.h"
 
 
@@ -230,7 +231,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
     out_tensor->CopyToCpu(output_data_.data()); 
   }
 
-  std::clock_t start = clock();
+  auto start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeats; i++)
   {
     predictor_->Run();
@@ -250,8 +251,9 @@ void ObjectDetector::Predict(const cv::Mat& im,
     output_data_.resize(output_size);
     out_tensor->CopyToCpu(output_data_.data()); 
   }
-  std::clock_t end = clock();
-  float ms = static_cast<float>(end - start) / CLOCKS_PER_SEC / repeats * 1000.;
+  auto end = std::chrono::steady_clock::now();
+  std::chrono::duration<float> diff = end - start;
+  float ms = diff.count() / repeats * 1000;
   printf("Inference: %f ms per batch image\n", ms);
   // Postprocessing result
   if(!run_benchmark) {
