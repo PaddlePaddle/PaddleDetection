@@ -93,7 +93,7 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='eval')
 
     # load weights
-    trainer.load_weights(cfg.weights, 'resume')
+    trainer.load_weights(cfg.weights)
 
     # training
     trainer.evaluate()

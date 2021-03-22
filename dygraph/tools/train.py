@@ -44,16 +44,12 @@ logger = setup_logger('train')
 def parse_args():
     parser = cli.ArgsParser()
     parser.add_argument(
-        "--weight_type",
-        default='pretrain',
-        type=str,
-        help="Loading Checkpoints only support 'pretrain', 'finetune', 'resume'."
-    )
-    parser.add_argument(
         "--eval",
         action='store_true',
         default=False,
         help="Whether to perform evaluation in train")
+    parser.add_argument(
+        "-r", "--resume", default=None, help="weights path for resume")
     parser.add_argument(
         "--slim_config",
         default=None,
@@ -101,8 +97,10 @@ def run(FLAGS, cfg):
     trainer = Trainer(cfg, mode='train')
 
     # load weights
-    if not FLAGS.slim_config and 'pretrain_weights' in cfg and cfg.pretrain_weights:
-        trainer.load_weights(cfg.pretrain_weights, FLAGS.weight_type)
+    if FLAGS.resume is not None:
+        trainer.resume_weights(FLAGS.resume)
+    elif not FLAGS.slim_config and 'pretrain_weights' in cfg and cfg.pretrain_weights:
+        trainer.load_weights(cfg.pretrain_weights)
 
     # training
     trainer.train(FLAGS.eval)
@@ -120,8 +118,6 @@ def main():
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)
         merge_config(slim_cfg)
-        if 'weight_type' not in cfg:
-            cfg.weight_type = FLAGS.weight_type
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()
