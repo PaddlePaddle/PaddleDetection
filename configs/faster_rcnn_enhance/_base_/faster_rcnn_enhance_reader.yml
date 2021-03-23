@@ -9,7 +9,7 @@ TrainReader:
   - Permute: {}
   batch_transforms:
   - PadBatch: {pad_to_stride: 32, pad_gt: true}
-  batch_size: 2
+  batch_size: 1
   shuffle: true
   drop_last: true
 
