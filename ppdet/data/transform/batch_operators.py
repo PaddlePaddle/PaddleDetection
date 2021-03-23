@@ -50,10 +50,9 @@ class PadBatch(BaseOperator):
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self, pad_to_stride=0, pad_gt=False):
+    def __init__(self, pad_to_stride=0):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
-        self.pad_gt = pad_gt
 
     def __call__(self, samples, context=None):
         """
@@ -70,7 +69,6 @@ class PadBatch(BaseOperator):
             max_shape[2] = int(
                 np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
 
-        padding_batch = []
         for data in samples:
             im = data['image']
             im_c, im_h, im_w = im.shape[:]
@@ -91,55 +89,6 @@ class PadBatch(BaseOperator):
                     dtype=np.uint8)
                 padding_segm[:, :im_h, :im_w] = gt_segm
                 data['gt_segm'] = padding_segm
-
-        if self.pad_gt:
-            gt_num = []
-            if 'gt_poly' in data and data['gt_poly'] is not None and len(data[
-                    'gt_poly']) > 0:
-                pad_mask = True
-            else:
-                pad_mask = False
-
-            if pad_mask:
-                poly_num = []
-                poly_part_num = []
-                point_num = []
-            for data in samples:
-                gt_num.append(data['gt_bbox'].shape[0])
-                if pad_mask:
-                    poly_num.append(len(data['gt_poly']))
-                    for poly in data['gt_poly']:
-                        poly_part_num.append(int(len(poly)))
-                        for p_p in poly:
-                            point_num.append(int(len(p_p) / 2))
-            gt_num_max = max(gt_num)
-
-            for i, data in enumerate(samples):
-                gt_box_data = -np.ones([gt_num_max, 4], dtype=np.float32)
-                gt_class_data = -np.ones([gt_num_max], dtype=np.int32)
-                is_crowd_data = np.ones([gt_num_max], dtype=np.int32)
-
-                if pad_mask:
-                    poly_num_max = max(poly_num)
-                    poly_part_num_max = max(poly_part_num)
-                    point_num_max = max(point_num)
-                    gt_masks_data = -np.ones(
-                        [poly_num_max, poly_part_num_max, point_num_max, 2],
-                        dtype=np.float32)
-
-                gt_num = data['gt_bbox'].shape[0]
-                gt_box_data[0:gt_num, :] = data['gt_bbox']
-                gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
-                is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
-                if pad_mask:
-                    for j, poly in enumerate(data['gt_poly']):
-                        for k, p_p in enumerate(poly):
-                            pp_np = np.array(p_p).reshape(-1, 2)
-                            gt_masks_data[j, k, :pp_np.shape[0], :] = pp_np
-                    data['gt_poly'] = gt_masks_data
-                data['gt_bbox'] = gt_box_data
-                data['gt_class'] = gt_class_data
-                data['is_crowd'] = is_crowd_data
 
         return samples
 
@@ -585,6 +534,9 @@ class Gt2TTFTarget(BaseOperator):
             sample['ttf_heatmap'] = heatmap
             sample['ttf_box_target'] = box_target
             sample['ttf_reg_weight'] = reg_weight
+            sample.pop('is_crowd')
+            sample.pop('gt_class')
+            sample.pop('gt_bbox')
         return samples
 
     def draw_truncate_gaussian(self, heatmap, center, h_radius, w_radius):

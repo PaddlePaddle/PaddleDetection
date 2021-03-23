@@ -41,7 +41,7 @@ class RPNTargetAssign(object):
         anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
         """
         gt_boxes = inputs['gt_bbox']
-        batch_size = gt_boxes.shape[0]
+        batch_size = len(gt_boxes)
         tgt_labels, tgt_bboxes, tgt_deltas = rpn_anchor_target(
             anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random,

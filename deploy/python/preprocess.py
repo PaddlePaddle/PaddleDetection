@@ -172,9 +172,9 @@ class Permute(object):
 
 
 class PadStride(object):
-    """ padding image for model with FPN , instead PadBatch(pad_to_stride, pad_gt) in original config
+    """ padding image for model with FPN, instead PadBatch(pad_to_stride) in original config
     Args:
-        stride (bool): model with FPN need image shape % stride == 0 
+        stride (bool): model with FPN need image shape % stride == 0
     """
 
     def __init__(self, stride=0):
