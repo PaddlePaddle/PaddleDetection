@@ -1,10 +1,15 @@
-architecture: JDE
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
-norm_type: sync_bn
+_BASE_: [
+  '../datasets/mot.yml',
+  '../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/ppjde_r50vd_dcn.yml',
+  '_base_/jde_reader_1088x608.yml',
+]
+weights: output/ppjde_r50vd_dcn_30e_1088x608/model_final
 
 JDE:
-  backbone: DarkNet
-  neck: JDEFPN
+  backbone: ResNet
+  neck: PPJDEFPN
   detection_head: YOLOv3Head
   post_process: JDEBBoxPostProcess
   embedding_head: JEDEmbeddingHead
@@ -12,12 +17,21 @@ JDE:
   test_emb: False
   test_track: False
 
-DarkNet:
-  depth: 53
-  return_idx: [2, 3, 4]
-  freeze_norm: True
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [1, 2, 3]
+  dcn_v2_stages: [3]
+  freeze_at: -1
+  freeze_norm: true #
+  norm_decay: 0.
 
-JDEFPN:
+PPJDEFPN:
+  coord_conv: true
+  drop_block: true
+  block_size: 3
+  keep_prob: 0.9
+  spp: true
   freeze_norm: True
 
 YOLOv3Head:
@@ -26,6 +40,13 @@ YOLOv3Head:
             [8,24], [11,34], [16,48], [23,68]]
   anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
   loss: JDEDetectionLoss
+
+JDETracker:
+  img_size: [1088, 608]
+  det_thresh: 0.3
+  track_buffer: 30
+  min_box_area: 200
+  motion: KalmanFilter
 
 JDEBBoxPostProcess:
   decode:
@@ -40,16 +61,3 @@ JDEBBoxPostProcess:
     nms_threshold: 0.5
     nms_top_k: 1000
     normalized: true
-
-JEDEmbeddingHead:
-  anchor_levels: 3
-  embedding_dim: 512
-  emb_loss: JDEEmbeddingLoss
-  jde_loss: JDELoss
-
-JDETracker:
-  img_size: [1088, 608]
-  det_thresh: 0.3
-  track_buffer: 30
-  min_box_area: 200
-  motion: KalmanFilter

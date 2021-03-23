@@ -84,7 +84,8 @@ class SPP(nn.Layer):
                  k,
                  pool_size,
                  norm_type,
-                 name,
+                 freeze_norm=False,
+                 name='',
                  data_format='NCHW'):
         super(SPP, self).__init__()
         self.pool = []
@@ -104,6 +105,7 @@ class SPP(nn.Layer):
             k,
             padding=k // 2,
             norm_type=norm_type,
+            freeze_norm=freeze_norm,
             name=name,
             data_format=data_format)
 
@@ -155,7 +157,8 @@ class CoordConv(nn.Layer):
                  filter_size,
                  padding,
                  norm_type,
-                 name,
+                 freeze_norm=False,
+                 name='',
                  data_format='NCHW'):
         super(CoordConv, self).__init__()
         self.conv = ConvBNLayer(
@@ -164,6 +167,7 @@ class CoordConv(nn.Layer):
             filter_size=filter_size,
             padding=padding,
             norm_type=norm_type,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name)
         self.data_format = data_format
@@ -309,6 +313,7 @@ class PPYOLOFPN(nn.Layer):
     def __init__(self,
                  in_channels=[512, 1024, 2048],
                  norm_type='bn',
+                 freeze_norm=False,
                  data_format='NCHW',
                  **kwargs):
         super(PPYOLOFPN, self).__init__()
@@ -352,22 +357,22 @@ class PPYOLOFPN(nn.Layer):
                     [
                         'conv{}'.format(2 * j), ConvLayer, [c_in, c_out, 1],
                         dict(
-                            padding=0, norm_type=norm_type)
+                            padding=0, norm_type=norm_type, freeze_norm=freeze_norm)
                     ],
                     [
                         'conv{}'.format(2 * j + 1), ConvBNLayer,
                         [c_out, c_out * 2, 3], dict(
-                            padding=1, norm_type=norm_type)
+                            padding=1, norm_type=norm_type, freeze_norm=freeze_norm)
                     ],
                 ]
                 c_in, c_out = c_out * 2, c_out
 
             base_cfg += [[
                 'route', ConvLayer, [c_in, c_out, 1], dict(
-                    padding=0, norm_type=norm_type)
+                    padding=0, norm_type=norm_type, freeze_norm=freeze_norm)
             ], [
                 'tip', ConvLayer, [c_out, c_out * 2, 3], dict(
-                    padding=1, norm_type=norm_type)
+                    padding=1, norm_type=norm_type, freeze_norm=freeze_norm)
             ]]
 
             if self.conv_block_num == 2:
@@ -375,7 +380,8 @@ class PPYOLOFPN(nn.Layer):
                     if self.spp:
                         spp_cfg = [[
                             'spp', SPP, [channel * 4, channel, 1], dict(
-                                pool_size=[5, 9, 13], norm_type=norm_type)
+                                pool_size=[5, 9, 13], norm_type=norm_type,
+                                freeze_norm=freeze_norm)
                         ]]
                     else:
                         spp_cfg = []
@@ -387,7 +393,8 @@ class PPYOLOFPN(nn.Layer):
                 if self.spp and i == 0:
                     spp_cfg = [[
                         'spp', SPP, [c_in * 4, c_in, 1], dict(
-                            pool_size=[5, 9, 13], norm_type=norm_type)
+                            pool_size=[5, 9, 13], norm_type=norm_type,
+                            freeze_norm=freeze_norm)
                     ]]
                 else:
                     spp_cfg = []
@@ -407,6 +414,7 @@ class PPYOLOFPN(nn.Layer):
                         stride=1,
                         padding=0,
                         norm_type=norm_type,
+                        freeze_norm=freeze_norm,
                         data_format=data_format,
                         name=name))
                 self.routes.append(route)
