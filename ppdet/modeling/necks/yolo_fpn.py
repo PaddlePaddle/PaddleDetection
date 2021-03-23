@@ -26,7 +26,13 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN']
 
 
 class YoloDetBlock(nn.Layer):
-    def __init__(self, ch_in, channel, norm_type, name, data_format='NCHW'):
+    def __init__(self,
+                 ch_in,
+                 channel,
+                 norm_type,
+                 freeze_norm=False,
+                 name='',
+                 data_format='NCHW'):
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
         self.channel = channel
@@ -51,6 +57,7 @@ class YoloDetBlock(nn.Layer):
                     filter_size=filter_size,
                     padding=(filter_size - 1) // 2,
                     norm_type=norm_type,
+                    freeze_norm=freeze_norm,
                     data_format=data_format,
                     name=name + post_name))
 
@@ -60,6 +67,7 @@ class YoloDetBlock(nn.Layer):
             filter_size=3,
             padding=1,
             norm_type=norm_type,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name + '.tip')
 
@@ -219,6 +227,7 @@ class YOLOv3FPN(nn.Layer):
     def __init__(self,
                  in_channels=[256, 512, 1024],
                  norm_type='bn',
+                 freeze_norm=False,
                  data_format='NCHW'):
         super(YOLOv3FPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
@@ -240,6 +249,7 @@ class YOLOv3FPN(nn.Layer):
                     in_channel,
                     channel=512 // (2**i),
                     norm_type=norm_type,
+                    freeze_norm=freeze_norm,
                     data_format=data_format,
                     name=name))
             self.yolo_blocks.append(yolo_block)
@@ -257,6 +267,7 @@ class YOLOv3FPN(nn.Layer):
                         stride=1,
                         padding=0,
                         norm_type=norm_type,
+                        freeze_norm=freeze_norm,
                         data_format=data_format,
                         name=name))
                 self.routes.append(route)

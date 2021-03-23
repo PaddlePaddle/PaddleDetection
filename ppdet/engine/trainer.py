@@ -22,6 +22,7 @@ import random
 import datetime
 import numpy as np
 from PIL import Image
+import glob
 
 import paddle
 from paddle.distributed import ParallelEnv, fleet
@@ -31,7 +32,9 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results
+
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, JDEDetMetric, JDEReIDMetric
+from ppdet.metrics import get_categories, get_infer_results
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
@@ -52,9 +55,6 @@ class Trainer(object):
         self.optimizer = None
         self.slim = None
 
-        # build model
-        self.model = create(cfg.architecture)
-
         # model slim build
         if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':
@@ -67,6 +67,13 @@ class Trainer(object):
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
+
+        if cfg.architecture == 'JDE' and self.mode == 'train':
+            cfg['JEDEmbeddingHead']['num_identifiers'] = self.dataset.nID
+
+        # build model
+        self.model = create(cfg.architecture)
+
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -150,6 +157,10 @@ class Trainer(object):
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
             ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'ReID':
+            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))

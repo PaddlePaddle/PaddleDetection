@@ -34,6 +34,7 @@ class ConvBNLayer(nn.Layer):
                  padding=0,
                  norm_type='bn',
                  norm_decay=0.,
+                 freeze_norm=False,
                  act="leaky",
                  name=None,
                  data_format='NCHW'):
@@ -53,6 +54,7 @@ class ConvBNLayer(nn.Layer):
             ch_out,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             name=name,
             data_format=data_format)
         self.act = act
@@ -74,6 +76,7 @@ class DownSample(nn.Layer):
                  padding=1,
                  norm_type='bn',
                  norm_decay=0.,
+                 freeze_norm=False,
                  name=None,
                  data_format='NCHW'):
 
@@ -87,6 +90,7 @@ class DownSample(nn.Layer):
             padding=padding,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name)
         self.ch_out = ch_out
@@ -102,6 +106,7 @@ class BasicBlock(nn.Layer):
                  ch_out,
                  norm_type='bn',
                  norm_decay=0.,
+                 freeze_norm=False,
                  name=None,
                  data_format='NCHW'):
         super(BasicBlock, self).__init__()
@@ -114,6 +119,7 @@ class BasicBlock(nn.Layer):
             padding=0,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name + '.0')
         self.conv2 = ConvBNLayer(
@@ -124,6 +130,7 @@ class BasicBlock(nn.Layer):
             padding=1,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name + '.1')
 
@@ -141,6 +148,7 @@ class Blocks(nn.Layer):
                  count,
                  norm_type='bn',
                  norm_decay=0.,
+                 freeze_norm=False,
                  name=None,
                  data_format='NCHW'):
         super(Blocks, self).__init__()
@@ -150,6 +158,7 @@ class Blocks(nn.Layer):
             ch_out,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name=name + '.0')
         self.res_out_list = []
@@ -162,6 +171,7 @@ class Blocks(nn.Layer):
                     ch_out,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
                     data_format=data_format,
                     name=block_name))
             self.res_out_list.append(res_out)
@@ -189,6 +199,7 @@ class DarkNet(nn.Layer):
                  num_stages=5,
                  norm_type='bn',
                  norm_decay=0.,
+                 freeze_norm=False,
                  data_format='NCHW'):
         super(DarkNet, self).__init__()
         self.depth = depth
@@ -205,6 +216,7 @@ class DarkNet(nn.Layer):
             padding=1,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name='yolo_input')
 
@@ -213,6 +225,7 @@ class DarkNet(nn.Layer):
             ch_out=32 * 2,
             norm_type=norm_type,
             norm_decay=norm_decay,
+            freeze_norm=freeze_norm,
             data_format=data_format,
             name='yolo_input.downsample')
 
@@ -230,6 +243,7 @@ class DarkNet(nn.Layer):
                     stage,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
                     data_format=data_format,
                     name=name))
             self.darknet_conv_block_list.append(conv_block)
@@ -244,6 +258,7 @@ class DarkNet(nn.Layer):
                     ch_out=32 * (2**(i + 2)),
                     norm_type=norm_type,
                     norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
                     data_format=data_format,
                     name=down_name))
             self.downsample_list.append(downsample)

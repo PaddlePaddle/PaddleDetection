@@ -106,10 +106,11 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, keep_img0=False):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        self.keep_img0 = keep_img0
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -121,6 +122,9 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+        if self.keep_img0:
+            sample['img0_shape'] = np.array(im.shape[:2], dtype=np.float32)
+            sample['img0'] = im
 
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -144,6 +148,40 @@ class Decode(BaseOperator):
 
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        return sample
+
+
+@register_op
+class Decode_video(BaseOperator):
+    def __init__(self):
+        """ Transform the image data to numpy format following the rgb format
+        """
+        super(Decode_video, self).__init__()
+
+    def apply(self, sample, context=None):
+        im = sample['image']
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        sample['image'] = im
+        if 'h' not in sample:
+            sample['h'] = im.shape[0]
+        elif sample['h'] != im.shape[0]:
+            logger.warn(
+                "The actual image height: {} is not equal to the "
+                "height: {} in annotation, and update sample['h'] by actual "
+                "image height.".format(im.shape[0], sample['h']))
+            sample['h'] = im.shape[0]
+        if 'w' not in sample:
+            sample['w'] = im.shape[1]
+        elif sample['w'] != im.shape[1]:
+            logger.warn(
+                "The actual image width: {} is not equal to the "
+                "width: {} in annotation, and update sample['w'] by actual "
+                "image width.".format(im.shape[1], sample['w']))
+            sample['w'] = im.shape[1]
+
+        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
+        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        sample['img0_shape'] = sample['im_shape']
         return sample
 
 
@@ -1602,6 +1640,11 @@ class Mixup(BaseOperator):
                 (is_difficult1, is_difficult2), axis=0)
             result['difficult'] = is_difficult
 
+        if 'gt_ide' in sample[0]:
+            gt_ide1 = sample[0]['gt_ide']
+            gt_ide2 = sample[1]['gt_ide']
+            gt_ide = np.concatenate((gt_ide1, gt_ide2), axis=0)
+            result['gt_ide'] = gt_ide
         return result
 
 
@@ -1698,6 +1741,12 @@ class PadBox(BaseOperator):
             if gt_num > 0:
                 pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
             sample['is_crowd'] = pad_crowd
+
+        if 'gt_ide' in sample:
+            pad_ide = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_ide[:gt_num] = sample['gt_ide'][:gt_num, 0]
+            sample['gt_ide'] = pad_ide
         return sample
 
 
@@ -1932,4 +1981,252 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        return sample
+
+
+@register_op
+class Resize_LetterBox(BaseOperator):
+    def __init__(self, target_size):
+        """
+        Resize image to target size, convert Normalized xywh to pixel xyxy
+        format. Used in train/eval reader.
+        Args:
+            target_size (int|list): image target size.
+        """
+        super(Resize_LetterBox, self).__init__()
+        if not isinstance(target_size, (Integral, Sequence)):
+            raise TypeError(
+                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
+                format(type(target_size)))
+        if isinstance(target_size, Integral):
+            target_size = [target_size, target_size]
+        self.target_size = target_size
+
+    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
+        # letterbox: resize a rectangular image to a padded rectangular
+        shape = img.shape[:2]  # [height, width]
+        ratio = min(float(height) / shape[0], float(width) / shape[1])
+        new_shape = (round(shape[1] * ratio),
+                     round(shape[0] * ratio))  # [width, height]
+        dw = (width - new_shape[0]) / 2  # width padding
+        dh = (height - new_shape[1]) / 2  # height padding
+        top, bottom = round(dh - 0.1), round(dh + 0.1)
+        left, right = round(dw - 0.1), round(dw + 0.1)
+
+        img = cv2.resize(
+            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+        img = cv2.copyMakeBorder(
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
+            value=color)  # padded rectangular
+        return img, ratio, dw, dh
+
+    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
+        bboxes = bbox0.copy()
+        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
+        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
+        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
+        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
+        return bboxes
+
+    def apply(self, sample, context=None):
+        """ Resize the image numpy.
+        """
+        im = sample['image']
+        h, w = sample['im_shape']
+        sample['img0_shape'] = sample['im_shape']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        height, width = self.target_size
+        img, ratio, padw, padh = self.apply_image(
+            im, height=height, width=width)
+        # img = np.ascontiguousarray(img[ :, :, ::-1]) # BGR to RGB
+        # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) # todo, for trainreader aug
+
+        sample['image'] = img
+        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
+        # sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32) # todo
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
+                                                padw, padh)
+        return sample
+
+
+@register_op
+class AugmentHSV(BaseOperator):
+    def __init__(self):
+        """ 
+        Transform the image data with augment_hsv
+        """
+        super(AugmentHSV, self).__init__()
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+        # SV augmentation by 50%
+        fraction = 0.50
+        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        S = img_hsv[:, :, 1].astype(np.float32)
+        V = img_hsv[:, :, 2].astype(np.float32)
+
+        a = (random.random() * 2 - 1) * fraction + 1
+        S *= a
+        if a > 1:
+            np.clip(S, a_min=0, a_max=255, out=S)
+
+        a = (random.random() * 2 - 1) * fraction + 1
+        V *= a
+        if a > 1:
+            np.clip(V, a_min=0, a_max=255, out=V)
+
+        img_hsv[:, :, 1] = S.astype(np.uint8)
+        img_hsv[:, :, 2] = V.astype(np.uint8)
+        cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
+
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class RandomAffine(BaseOperator):
+    def __init__(self):
+        """ 
+        Transform the image data with random_affine
+        """
+        super(RandomAffine, self).__init__()
+
+    def apply(self, sample, context=None):
+        # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
+        # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+        degrees = (-5, 5)
+        translate = (0.10, 0.10)
+        scale = (0.50, 1.20)
+        shear = (-2, 2)
+        borderValue = (127.5, 127.5, 127.5)
+        border = 0  # width of added border (optional)
+
+        img = sample['image']
+        height, width = img.shape[0], img.shape[1]
+
+        # Rotation and Scale
+        R = np.eye(3)
+        a = random.random() * (degrees[1] - degrees[0]) + degrees[0]
+        s = random.random() * (scale[1] - scale[0]) + scale[0]
+        R[:2] = cv2.getRotationMatrix2D(
+            angle=a, center=(width / 2, height / 2), scale=s)
+
+        # Translation
+        T = np.eye(3)
+        T[0, 2] = (random.random() * 2 - 1
+                   ) * translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (random.random() * 2 - 1
+                   ) * translate[1] * width + border  # y translation (pixels)
+
+        # Shear
+        S = np.eye(3)
+        S[0, 1] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
+                           * math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
+                           * math.pi / 180)  # y shear (deg)
+
+        M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
+        imw = cv2.warpPerspective(
+            img,
+            M,
+            dsize=(width, height),
+            flags=cv2.INTER_LINEAR,
+            borderValue=borderValue)  # BGR order borderValue
+
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            targets = sample['gt_bbox']
+            n = targets.shape[0]
+            points = targets.copy()
+            area0 = (points[:, 2] - points[:, 0]) * (
+                points[:, 3] - points[:, 1])
+
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = (xy @M.T)[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate(
+                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # apply angle-based reduction
+            radians = a * math.pi / 180
+            reduction = max(abs(math.sin(radians)), abs(math.cos(radians)))**0.5
+            x = (xy[:, 2] + xy[:, 0]) / 2
+            y = (xy[:, 3] + xy[:, 1]) / 2
+            w = (xy[:, 2] - xy[:, 0]) * reduction
+            h = (xy[:, 3] - xy[:, 1]) * reduction
+            xy = np.concatenate(
+                (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+            # reject warped points outside of image
+            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            w = xy[:, 2] - xy[:, 0]
+            h = xy[:, 3] - xy[:, 1]
+            area = w * h
+            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
+            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
+
+            if sum(i) > 0:  # todo
+                sample['gt_bbox'] = xy[i]
+                sample['gt_class'] = sample['gt_class'][i]
+                sample['difficult'] = sample['difficult'][i]
+                sample['gt_ide'] = sample['gt_ide'][i]
+
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class BboxXYWH2XYXY(BaseOperator):
+    """
+    Convert bbox XYWH format to XYXY format.
+    """
+
+    def __init__(self):
+        super(BboxXYWH2XYXY, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox0 = sample['gt_bbox']
+        bbox = bbox0.copy()
+
+        bbox[:, :2] = bbox0[:, :2] - bbox0[:, 2:4] / 2.
+        bbox[:, 2:4] = bbox0[:, :2] + bbox0[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class Norm2PixelBbox(BaseOperator):
+    """
+    Convert norm bbox format to pixel format.
+    """
+
+    def __init__(self):
+        super(Norm2PixelBbox, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        h, w = sample['im_shape']
+        bbox = sample['gt_bbox']
+        bbox[:, 0] *= w
+        bbox[:, 2] *= w
+        bbox[:, 1] *= h
+        bbox[:, 3] *= h
+        sample['gt_bbox'] = bbox
         return sample

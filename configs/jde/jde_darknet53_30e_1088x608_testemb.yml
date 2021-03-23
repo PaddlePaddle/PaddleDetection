@@ -1,0 +1,15 @@
+_BASE_: [
+  'jde_darknet53_30e_1088x608.yml'
+]
+
+metric: ReID
+
+JDE:
+  backbone: DarkNet
+  neck: JDEFPN
+  detection_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  embedding_head: JEDEmbeddingHead
+  tracker: JDETracker
+  test_emb: True
+  test_track: False

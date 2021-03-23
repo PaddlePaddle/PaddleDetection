@@ -26,8 +26,14 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'draw_pr_curve', 'bbox_area', 'jaccard_overlap', 'prune_zero_padding',
-    'DetectionMAP'
+    'draw_pr_curve',
+    'bbox_area',
+    'jaccard_overlap',
+    'prune_zero_padding',
+    'DetectionMAP',
+    'bbox_iou_expand',
+    'ap_per_class',
+    'compute_ap',
 ]
 
 
@@ -303,3 +309,120 @@ class DetectionMAP(object):
             accum_fp += 1 - int(pos)
             accum_fp_list.append(accum_fp)
         return accum_tp_list, accum_fp_list
+
+
+def bbox_iou_expand(box1, box2, x1y1x2y2=True, eps=1e-16):
+    N, M = len(box1), len(box2)  # usually N != M
+    if x1y1x2y2:
+        b1_x1, b1_y1 = box1[:, 0], box1[:, 1]
+        b1_x2, b1_y2 = box1[:, 2], box1[:, 3]
+        b2_x1, b2_y1 = box2[:, 0], box2[:, 1]
+        b2_x2, b2_y2 = box2[:, 2], box2[:, 3]
+    else:
+        # Transform from center and width to exact coordinates
+        b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:, 2] / 2
+        b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:, 3] / 2
+        b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:, 2] / 2
+        b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
+    # get the coordinates of the intersection rectangle
+    inter_rect_x1 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_y1 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_x2 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_y2 = np.zeros((N, M), dtype=np.float32)
+    for i in range(len(box2)):
+        inter_rect_x1[:, i] = np.maximum(b1_x1, b2_x1[i])
+        inter_rect_y1[:, i] = np.maximum(b1_y1, b2_y1[i])
+        inter_rect_x2[:, i] = np.minimum(b1_x2, b2_x2[i])
+        inter_rect_y2[:, i] = np.minimum(b1_y2, b2_y2[i])
+    # Intersection area
+    inter_area = np.maximum(inter_rect_x2 - inter_rect_x1, 0) * np.maximum(
+        inter_rect_y2 - inter_rect_y1, 0)
+    # Union Area
+    b1_area = np.repeat(
+        ((b1_x2 - b1_x1) * (b1_y2 - b1_y1)).reshape(-1, 1), M, axis=-1)
+    b2_area = np.repeat(
+        ((b2_x2 - b2_x1) * (b2_y2 - b2_y1)).reshape(1, -1), N, axis=0)
+
+    return inter_area / (b1_area + b2_area - inter_area + eps)
+
+
+def ap_per_class(tp, conf, pred_cls, target_cls):
+    """ Computes the average precision, given the recall and precision curves.
+    Method originally from https://github.com/rafaelpadilla/Object-Detection-Metrics.
+    # Arguments
+        tp:    True positives (list).
+        conf:  Objectness value from 0-1 (list).
+        pred_cls: Predicted object classes (list).
+        target_cls: True object classes (list).
+    # Returns
+        The average precision as computed in py-faster-rcnn.
+    """
+    # lists/pytorch to numpy
+    tp, conf, pred_cls, target_cls = np.array(tp), np.array(conf), np.array(
+        pred_cls), np.array(target_cls)
+
+    # Sort by objectness
+    i = np.argsort(-conf)
+    tp, conf, pred_cls = tp[i], conf[i], pred_cls[i]
+
+    # Find unique classes
+    unique_classes = np.unique(np.concatenate((pred_cls, target_cls), 0))
+
+    # Create Precision-Recall curve and compute AP for each class
+    ap, p, r = [], [], []
+    for c in unique_classes:
+        i = pred_cls == c
+        n_gt = sum(target_cls == c)  # Number of ground truth objects
+        n_p = sum(i)  # Number of predicted objects
+
+        if (n_p == 0) and (n_gt == 0):
+            continue
+        elif (n_p == 0) or (n_gt == 0):
+            ap.append(0)
+            r.append(0)
+            p.append(0)
+        else:
+            # Accumulate FPs and TPs
+            fpc = np.cumsum(1 - tp[i])
+            tpc = np.cumsum(tp[i])
+
+            # Recall
+            recall_curve = tpc / (n_gt + 1e-16)
+            r.append(tpc[-1] / (n_gt + 1e-16))
+
+            # Precision
+            precision_curve = tpc / (tpc + fpc)
+            p.append(tpc[-1] / (tpc[-1] + fpc[-1]))
+
+            # AP from recall-precision curve
+            ap.append(compute_ap(recall_curve, precision_curve))
+
+    return np.array(ap), unique_classes.astype('int32'), np.array(r), np.array(
+        p)
+
+
+def compute_ap(recall, precision):
+    """ Computes the average precision, given the recall and precision curves.
+    Code originally from https://github.com/rbgirshick/py-faster-rcnn.
+    # Arguments
+        recall:    The recall curve (list).
+        precision: The precision curve (list).
+    # Returns
+        The average precision as computed in py-faster-rcnn.
+    """
+    # correct AP calculation
+    # first append sentinel values at the end
+    mrec = np.concatenate(([0.], recall, [1.]))
+    mpre = np.concatenate(([0.], precision, [0.]))
+
+    # compute the precision envelope
+    for i in range(mpre.size - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
+
+    # to calculate area under PR curve, look for points
+    # where X axis (recall) changes value
+    i = np.where(mrec[1:] != mrec[:-1])[0]
+
+    # and sum (\Delta recall) * prec
+    ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
+    return ap
