@@ -579,7 +579,11 @@ class RandomFlip(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_LINEAR,
+                 by_hw=False):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
@@ -592,6 +596,7 @@ class Resize(BaseOperator):
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
         self.interp = interp
+        self.by_hw = by_hw
         if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
@@ -603,12 +608,17 @@ class Resize(BaseOperator):
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
 
+        #print('here resize alter')
+        #return cv2.resize(
+        #    image,
+        #    None,
+        #    None,
+        #    fx=im_scale_x,
+        #    fy=im_scale_y,
+        #    interpolation=self.interp)
         return cv2.resize(
-            image,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
+            image, (round(image.shape[1] * im_scale_x),
+                    round(image.shape[0] * im_scale_y)),
             interpolation=self.interp)
 
     def apply_bbox(self, bbox, scale, size):
@@ -618,6 +628,8 @@ class Resize(BaseOperator):
         bbox[:, 1::2] *= im_scale_y
         bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
         bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
+        #print('***************Resize************')
+        #print(bbox)
         return bbox
 
     def apply_segm(self, segms, im_size, scale):
@@ -671,28 +683,41 @@ class Resize(BaseOperator):
         # apply image
         im_shape = im.shape
         if self.keep_ratio:
+            if self.by_hw:
+                im_scale = min(self.target_size[1] / im_shape[1],
+                               self.target_size[0] / im_shape[0])
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
+                im_scale_x = im_scale
+                im_scale_y = im_scale
+            else:
+                im_size_min = np.min(im_shape[0:2])
+                im_size_max = np.max(im_shape[0:2])
 
-            im_size_min = np.min(im_shape[0:2])
-            im_size_max = np.max(im_shape[0:2])
+                target_size_min = np.min(self.target_size)
+                target_size_max = np.max(self.target_size)
 
-            target_size_min = np.min(self.target_size)
-            target_size_max = np.max(self.target_size)
+                im_scale = min(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
 
-            im_scale = min(target_size_min / im_size_min,
-                           target_size_max / im_size_max)
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
 
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
+                im_scale_x = im_scale
+                im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
+        #np.save('before.npy', sample['image'])
+        #print('********************')
+        #print(sample['image'].shape)
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+        #print('origin shape', sample['image'].shape, 'after shape', im.shape, 'ratio', [im_scale_x, im_scale_y])
+        #print(im.shape)
         sample['image'] = im
+        #np.save('after.npy', im)
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
@@ -1638,6 +1663,8 @@ class NormalizeBox(BaseOperator):
                     gt_keypoint[:, i] = gt_keypoint[:, i] / width
             sample['gt_keypoint'] = gt_keypoint
 
+        #print('*************NormalizeBbox')
+        #print(sample['gt_bbox'])
         return sample
 
 
@@ -1656,6 +1683,8 @@ class BboxXYXY2XYWH(BaseOperator):
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
+        #print('***************BboxXYXY2XYWH')
+        #print(sample['gt_bbox'])
         return sample
 
 
@@ -1854,9 +1883,12 @@ class Pad(BaseOperator):
         x, y = offsets
         im_h, im_w = im_size
         h, w = size
-        canvas = np.ones((h, w, 3), dtype=np.float32)
-        canvas *= np.array(self.fill_value, dtype=np.float32)
-        canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
+        #canvas = np.ones((h, w, 3), dtype=np.float32)
+        #canvas *= np.array(self.fill_value, dtype=np.float32)
+        #canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
+        canvas = np.ones((h, w, 3), dtype=image.dtype)
+        canvas *= np.array(self.fill_value, dtype=image.dtype)
+        canvas[y:y + im_h, x:x + im_w, :] = image
         return canvas
 
     def apply(self, sample, context=None):
@@ -1866,7 +1898,8 @@ class Pad(BaseOperator):
             h, w = self.size
             assert (
                 im_h <= h and im_w <= w
-            ), '(h, w) of target size should be greater or equal than (im_h, im_w)'
+            ), '(h, w):({}, {}) of target size should be greater or equal than (im_h, im_w):({}, {})'.format(
+                h, w, im_h, im_w)
         else:
             h = np.ceil(im_h // self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
@@ -1890,7 +1923,11 @@ class Pad(BaseOperator):
         if self.pad_mode == 0:
             return sample
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            #print('alter here')
+            offsets = [(w - im_w) / 2, (h - im_h) / 2]
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], offsets)
+            #print('**************Pad************')
+            #print(sample['gt_bbox'])
 
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], offsets,
@@ -1995,9 +2032,16 @@ class BboxXYWH2XYXY(BaseOperator):
 
     def apply(self, sample, context=None):
         assert 'gt_bbox' in sample
-        bbox = sample['gt_bbox']
-        bbox[:, :2] = bbox[:, :2] - bbox[:, 2:4] / 2.
-        bbox[:, 2:4] = bbox[:, 2:4] + bbox[:, 2:4]
+        #print(sample['gt_bbox'])
+        #print('***********BboxXYWH2XYXY*********')
+        #bbox = sample['gt_bbox']
+        #bbox[:, :2] = bbox[:, :2] - bbox[:, 2:4] / 2.
+        #bbox[:, 2:4] = bbox[:, 2:4] + bbox[:, :2]
+        bbox = sample['gt_bbox'].copy()
+        bbox[:, 0] = sample['gt_bbox'][:, 0] - sample['gt_bbox'][:, 2] / 2.
+        bbox[:, 1] = sample['gt_bbox'][:, 1] - sample['gt_bbox'][:, 3] / 2.
+        bbox[:, 2] = sample['gt_bbox'][:, 0] + sample['gt_bbox'][:, 2] / 2.
+        bbox[:, 3] = sample['gt_bbox'][:, 1] + sample['gt_bbox'][:, 3] / 2.
         sample['gt_bbox'] = bbox
         return sample
 
@@ -2111,10 +2155,6 @@ class RandomAffine(BaseOperator):
                 (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
 
             # reject warped points outside of image
-            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
-            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
-            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
-            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
             w = xy[:, 2] - xy[:, 0]
             h = xy[:, 3] - xy[:, 1]
             area = w * h
@@ -2122,7 +2162,7 @@ class RandomAffine(BaseOperator):
             i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
 
             if sum(i) > 0:  # todo
-                sample['gt_bbox'] = xy[i]
+                sample['gt_bbox'] = xy[i].astype(sample['gt_bbox'].dtype)
                 sample['gt_class'] = sample['gt_class'][i]
                 if 'difficult' in sample:
                     sample['difficult'] = sample['difficult'][i]
@@ -2130,6 +2170,8 @@ class RandomAffine(BaseOperator):
                     sample['gt_ide'] = sample['gt_ide'][i]
                 if 'is_crowd' in sample:
                     sample['is_crowd'] = sample['is_crowd'][i]
-
-        sample['image'] = img
-        return sample
+                sample['image'] = imw
+                return sample
+            else:
+                print('******************no box in RandomAffine**************')
+                return sample

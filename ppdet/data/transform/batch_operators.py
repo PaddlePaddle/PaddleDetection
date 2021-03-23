@@ -24,6 +24,7 @@ except Exception:
 import cv2
 import numpy as np
 import math
+import copy
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from scipy import ndimage

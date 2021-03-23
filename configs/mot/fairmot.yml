@@ -1,0 +1,100 @@
+architecture: FairMOT
+num_classes: 1
+use_gpu: true
+epoch: 30
+snapshot_epoch: 5
+#log_iter: 1
+metric: MOT
+save_dir: output
+pretrain_weights: /rrpn/new/FairMOT/src/crowdhuman_dla34
+weights: /rrpn/new/FairMOT/src/model_last
+
+
+FairMOT:
+  detector: CenterNet
+  reid: FairReIDHead
+  loss: FairMOTLoss
+
+CenterNet:
+  backbone: DLA
+  neck: FairDLAFPN
+  head: CenterHead
+
+DLA:
+  depth: 34
+
+FairDLAFPN:
+  down_ratio: 4
+
+CenterHead:
+  head_planes: 256
+
+FairReIDHead:
+  num_id: 14455
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [20,]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL
+#OptimizerBuilder:
+#  optimizer:
+#    momentum: 0.9
+#    type: Momentum
+#  regularizer:
+#    factor: 0.0001
+#    type: L2
+
+worker_num: 4
+
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: /rrpn/PaddleDetection/dataset/mix/
+    anno_path: ['mot17.train', 'caltech.all', 'citypersons.train', 'cuhksysu.train', 'eth.train', 'mot17.train', 'prw.train']
+    #anno_path: ['mot17.train', 'caltech.all']
+    #anno_path: ['caltech.all']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+
+TrainReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {to_rgb: False}
+    - SVAugment: {}
+    - BboxXYWH2XYXY: {}
+    - NormalizedBbox2PixelBbox: {}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - RandomAffine: {degrees: [-5, 5], translate: [0.10, 0.10], scale: [0.50, 1.20]}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {to_rgb: True}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 6
+  shuffle: True
+  drop_last: True
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 320, 576]
+  sample_transforms:
+    - Decode: {to_rgb: False}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {}
+  batch_size: 1
+
+TestDataset:
+  !ImageFolder
+    anno_path: mot16.train

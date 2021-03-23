@@ -113,12 +113,9 @@ class PiecewiseDecay(object):
             return optimizer.lr.PiecewiseDecay(boundary, self.values)
 
         # value is computed by self.gamma
-        if value is not None:
-            for i in self.gamma:
-                value.append(base_lr * i)
-        #if value is None:
-        #    value = [base_lr]
-        #    value.extend([base_lr * i for i in self.gamma])
+        if value is None:
+            value = [base_lr]
+            value.extend([base_lr * i for i in self.gamma])
 
         return optimizer.lr.PiecewiseDecay(boundary, value)
 

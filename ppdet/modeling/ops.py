@@ -527,6 +527,7 @@ def distribute_fpn_proposals(fpn_rois,
                 refer_level=4,
                 refer_scale=224)
     """
+
     num_lvl = max_level - min_level + 1
 
     if in_dygraph_mode():
@@ -1360,6 +1361,7 @@ def box_coder(prior_box,
                                     box_normalized=False,
                                     axis=1)
     """
+
     check_variable_and_dtype(prior_box, 'prior_box', ['float32', 'float64'],
                              'box_coder')
     check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
