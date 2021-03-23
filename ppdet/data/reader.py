@@ -105,6 +105,12 @@ class BatchCompose(Compose):
             self.lock.release()
 
         batch_data = []
+        # If set collate_batch=True, all data will collate a batch
+        # and it will transfor to paddle.tensor.
+        # If set collate_batch=False, `image`, `im_shape` and
+        # `scale_factor` will collate a batch, but `gt` data(such as:
+        # gt_bbox, gt_class, gt_poly.etc.) will not collate a batch
+        # and it will transfor to list[Tensor] or list[list].
         if self.collate_batch:
             data = [[data[i][k] for k in self.output_fields]
                     for i in range(len(data))]
