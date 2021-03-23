@@ -15,8 +15,4 @@
 from . import metrics
 from .metrics import *
 
-from . import category
-from .category import *
-
-__all__ = metrics.__all__ \
-        + category.__all__
+__all__ = metrics.__all__
