@@ -873,17 +873,17 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             sample['index_mask'] = index_mask
             sample['reid'] = reid
             sample['bbox_xys'] = bbox_xys
+            np.save('imgs_{}.npy'.format(b_id), sample['image'])
+            np.save('ids_{}.npy'.format(b_id), sample['reid'])
+            np.save('hm_{}.npy'.format(b_id), sample['heatmap'])
+            np.save('wh_{}.npy'.format(b_id), sample['size'])
+            np.save('ind_{}.npy'.format(b_id), sample['index'])
+            np.save('reg_{}.npy'.format(b_id), sample['offset'])
+            np.save('mask_{}.npy'.format(b_id), sample['index_mask'])
+            np.save('bbox_{}.npy'.format(b_id), sample['bbox_xys'])
             del sample['gt_bbox']
             del sample['gt_class']
             del sample['gt_ide']
-            #np.save('imgs_{}.npy'.format(b_id), sample['image'])
-            #np.save('ids_{}.npy'.format(b_id), sample['reid'])
-            #np.save('hm_{}.npy'.format(b_id), sample['heatmap'])
-            #np.save('wh_{}.npy'.format(b_id), sample['size'])
-            #np.save('ind_{}.npy'.format(b_id), sample['index'])
-            #np.save('reg_{}.npy'.format(b_id), sample['offset'])
-            #np.save('mask_{}.npy'.format(b_id), sample['index_mask'])
-            #np.save('bbox_{}.npy'.format(b_id), sample['bbox_xys'])
         #samples[0]['image'] = np.load('/rrpn/FairMOT/src/imgs.npy')
         #print('image in batch_transform', samples[0]['image'].mean())
         #samples[0]['reid'] = np.load('/rrpn/FairMOT/src/ids.npy')
@@ -892,3 +892,26 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
         #samples[0]['index'] = np.load('/rrpn/FairMOT/src/ind.npy')
         #samples[0]['offset'] = np.load('/rrpn/FairMOT/src/reg.npy')
         #samples[0]['index_mask'] = np.load('/rrpn/FairMOT/src/reg_mask.npy').astype(np.int32)
+        return samples
+
+    def gaussian_radius(self, det_size, min_overlap=0.7):
+        height, width = det_size
+
+        a1 = 1
+        b1 = (height + width)
+        c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+        sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+        r1 = (b1 + sq1) / 2
+
+        a2 = 4
+        b2 = 2 * (height + width)
+        c2 = (1 - min_overlap) * width * height
+        sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+        r2 = (b2 + sq2) / 2
+
+        a3 = 4 * min_overlap
+        b3 = -2 * min_overlap * (height + width)
+        c3 = (min_overlap - 1) * width * height
+        sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+        r3 = (b3 + sq3) / 2
+        return min(r1, r2, r3)

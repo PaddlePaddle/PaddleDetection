@@ -180,14 +180,17 @@ def load_pretrain_weight(model, pretrain_weight):
     for name, weight in model_dict.items():
         #if name in param_state_dict.keys():
         if weight.name in param_state_dict.keys():
-            if weight.shape != list(param_state_dict[name].shape):
-                logger.info(
-                    '{} not used, shape {} unmatched with {} in model.'.format(
-                        name, list(param_state_dict[name].shape), weight.shape))
+            if weight.shape != list(param_state_dict[weight.name].shape):
+                logger.info('{} not used, shape {} unmatched with {} in model.'.
+                            format(name,
+                                   list(param_state_dict[weight.name].shape),
+                                   weight.shape))
                 #param_state_dict.pop(name, None)
+            else:
                 model_weight[name] = model_dict[name]
                 model_weight[name].set_value(param_state_dict[weight.name])
         else:
+            print(name, weight.name)
             lack_modules.add(name.split('.')[0])
             logger.debug('Lack weights: {}'.format(name))
 

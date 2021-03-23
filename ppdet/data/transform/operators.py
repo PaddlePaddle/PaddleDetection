@@ -146,6 +146,7 @@ class Decode(BaseOperator):
 
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
+        np.save('img_decode.npy', sample['image'])
         return sample
 
 
@@ -164,6 +165,9 @@ class Permute(BaseOperator):
             im = np.ascontiguousarray(im[:, :, ::-1])
         im = im.transpose((2, 0, 1))
         sample['image'] = im
+        np.save('img_permute.npy', sample['image'])
+        print('****************Permute')
+        print('image', sample['image'])
         return sample
 
 
@@ -271,7 +275,7 @@ class NormalizeImage(BaseOperator):
         std = np.array(self.std)[np.newaxis, np.newaxis, :]
 
         if self.is_scale:
-            im = im / 255.0
+            im /= 255.0
 
         im -= mean
         im /= std
@@ -553,7 +557,8 @@ class RandomFlip(BaseOperator):
             sample: the image, bounding box and segmentation part
                     in sample are flipped.
         """
-        if np.random.uniform(0, 1) < self.prob:
+        #if np.random.uniform(0, 1) < self.prob:
+        if True:
             im = sample['image']
             height, width = im.shape[:2]
             im = self.apply_image(im)
@@ -574,6 +579,10 @@ class RandomFlip(BaseOperator):
 
             sample['flipped'] = True
             sample['image'] = im
+            np.save('img_flip.npy', sample['image'])
+            print('***************Flip')
+            print('image', sample['image'])
+            print('gt_bbox', sample['gt_bbox'])
         return sample
 
 
@@ -628,8 +637,8 @@ class Resize(BaseOperator):
         bbox[:, 1::2] *= im_scale_y
         bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
         bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
-        #print('***************Resize************')
-        #print(bbox)
+        print('***************Resize************')
+        print(bbox)
         return bbox
 
     def apply_segm(self, segms, im_size, scale):
@@ -710,13 +719,10 @@ class Resize(BaseOperator):
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
-        #np.save('before.npy', sample['image'])
-        #print('********************')
-        #print(sample['image'].shape)
         im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        #print('origin shape', sample['image'].shape, 'after shape', im.shape, 'ratio', [im_scale_x, im_scale_y])
-        #print(im.shape)
         sample['image'] = im
+        np.save('img_resize.npy', sample['image'])
+        print('*************resize image', sample['image'])
         #np.save('after.npy', im)
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
@@ -1663,8 +1669,8 @@ class NormalizeBox(BaseOperator):
                     gt_keypoint[:, i] = gt_keypoint[:, i] / width
             sample['gt_keypoint'] = gt_keypoint
 
-        #print('*************NormalizeBbox')
-        #print(sample['gt_bbox'])
+        print('*************NormalizeBbox')
+        print(sample['gt_bbox'])
         return sample
 
 
@@ -1683,8 +1689,8 @@ class BboxXYXY2XYWH(BaseOperator):
         bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
         bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
-        #print('***************BboxXYXY2XYWH')
-        #print(sample['gt_bbox'])
+        print('***************BboxXYXY2XYWH')
+        print(sample['gt_bbox'])
         return sample
 
 
@@ -1919,6 +1925,9 @@ class Pad(BaseOperator):
         offsets, im_size, size = [offset_x, offset_y], [im_h, im_w], [h, w]
 
         sample['image'] = self.apply_image(im, offsets, im_size, size)
+        print('**************Pad************')
+        print(sample['image'])
+        np.save('img_pad.npy', sample['image'])
 
         if self.pad_mode == 0:
             return sample
@@ -1926,8 +1935,8 @@ class Pad(BaseOperator):
             #print('alter here')
             offsets = [(w - im_w) / 2, (h - im_h) / 2]
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], offsets)
-            #print('**************Pad************')
-            #print(sample['gt_bbox'])
+            print('**************Pad************')
+            print(sample['gt_bbox'])
 
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], offsets,
@@ -1999,12 +2008,14 @@ class SVAugment(BaseOperator):
         S = img_hsv[:, :, 1].astype(np.float32)
         V = img_hsv[:, :, 2].astype(np.float32)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
+        #a = (random.random() * 2 - 1) * self.fraction + 1
+        a = (0.5 * 2 - 1) * self.fraction + 1
         S *= a
         if a > 1:
             np.clip(S, a_min=0, a_max=255, out=S)
 
-        a = (random.random() * 2 - 1) * self.fraction + 1
+        #a = (random.random() * 2 - 1) * self.fraction + 1
+        a = (0.5 * 2 - 1) * self.fraction + 1
         V *= a
         if a > 1:
             np.clip(V, a_min=0, a_max=255, out=V)
@@ -2018,6 +2029,8 @@ class SVAugment(BaseOperator):
             cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
 
         sample['image'] = img
+        print('************** svaugment image', sample['image'])
+        np.save('img_sva.npy', sample['image'])
         return sample
 
 
@@ -2032,7 +2045,6 @@ class BboxXYWH2XYXY(BaseOperator):
 
     def apply(self, sample, context=None):
         assert 'gt_bbox' in sample
-        #print(sample['gt_bbox'])
         #print('***********BboxXYWH2XYXY*********')
         #bbox = sample['gt_bbox']
         #bbox[:, :2] = bbox[:, :2] - bbox[:, 2:4] / 2.
@@ -2043,6 +2055,8 @@ class BboxXYWH2XYXY(BaseOperator):
         bbox[:, 2] = sample['gt_bbox'][:, 0] + sample['gt_bbox'][:, 2] / 2.
         bbox[:, 3] = sample['gt_bbox'][:, 1] + sample['gt_bbox'][:, 3] / 2.
         sample['gt_bbox'] = bbox
+        print('***********BboxXYWH2XYXY*********')
+        print(sample['gt_bbox'])
         return sample
 
 
@@ -2062,6 +2076,9 @@ class NormalizedBbox2PixelBbox(BaseOperator):
         bbox[:, 0::2] = bbox[:, 0::2] * width
         bbox[:, 1::2] = bbox[:, 1::2] * height
         sample['gt_bbox'] = bbox
+        print('**********NormalizedBbox2PixelBbox**********')
+        print(sample['gt_bbox'])
+
         return sample
 
 
@@ -2093,27 +2110,30 @@ class RandomAffine(BaseOperator):
 
         # Rotation and Scale
         R = np.eye(3)
-        a = random.random() * (self.degrees[1] - self.degrees[0]
-                               ) + self.degrees[0]
-        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
+        #a = random.random() * (self.degrees[1] - self.degrees[0]
+        a = 0.5 * (self.degrees[1] - self.degrees[0]) + self.degrees[0]
+        #s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
+        s = 0.5 * (self.scale[1] - self.scale[0]) + self.scale[0]
         R[:2] = cv2.getRotationMatrix2D(
             angle=a, center=(width / 2, height / 2), scale=s)
 
         # Translation
         T = np.eye(3)
-        T[0, 2] = (
-            random.random() * 2 - 1
+        T[0, 2] = (  #random.random() * 2 - 1
+            0.5 * 2 - 1
         ) * self.translate[0] * height + border  # x translation (pixels)
-        T[1, 2] = (
-            random.random() * 2 - 1
+        T[1, 2] = (  #random.random() * 2 - 1
+            0.5 * 2 - 1
         ) * self.translate[1] * width + border  # y translation (pixels)
 
         # Shear
         S = np.eye(3)
-        S[0, 1] = math.tan((random.random() *
+        #S[0, 1] = math.tan((random.random() *
+        S[0, 1] = math.tan((0.5 *
                             (self.shear[1] - self.shear[0]) + self.shear[0]) *
                            math.pi / 180)  # x shear (deg)
-        S[1, 0] = math.tan((random.random() *
+        #S[1, 0] = math.tan((random.random() *
+        S[1, 0] = math.tan((0.5 *
                             (self.shear[1] - self.shear[0]) + self.shear[0]) *
                            math.pi / 180)  # y shear (deg)
 
@@ -2171,6 +2191,11 @@ class RandomAffine(BaseOperator):
                 if 'is_crowd' in sample:
                     sample['is_crowd'] = sample['is_crowd'][i]
                 sample['image'] = imw
+                np.save('img_affine.npy', sample['image'])
+                print('**********RandomAffine***********')
+                print('image', sample['image'])
+                print('bbox', sample['gt_bbox'])
+
                 return sample
             else:
                 print('******************no box in RandomAffine**************')

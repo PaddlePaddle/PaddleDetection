@@ -83,10 +83,14 @@ class Trainer(object):
         if self.mode == 'train':
             steps_per_epoch = len(self.loader)
             self.lr = create('LearningRate')(steps_per_epoch)
-            self.optimizer = create('OptimizerBuilder')(self.lr,
-                                                        self.model.parameters())
+            #self.optimizer = create('OptimizerBuilder')(self.lr,
+            #                                            self.model.parameters())
             #self.optimizer = paddle.optimizer.SGD(learning_rate=0.001, parameters=self.model.parameters(), weight_decay=0.)
-            #self.optimizer = paddle.optimizer.Momentum(learning_rate=0.001, momentum=0.9, parameters=self.model.parameters(), weight_decay=0.0001)
+            self.optimizer = paddle.optimizer.Momentum(
+                learning_rate=0.001,
+                momentum=0.9,
+                parameters=self.model.parameters(),
+                weight_decay=0.0001)
         #print('#############')
         #for param in self.model.parameters():
         #    print(param.name)
@@ -251,11 +255,12 @@ class Trainer(object):
                     loss = outputs['loss']
                     # model backward
                     loss.backward()
-                    #print('**********************')
-                    #for param in self.model.parameters():
-                    #    if param.grad is None:
-                    #        continue
-                    #    print(param.name, param.numpy().mean(), param.grad.mean())
+                    print('**********************')
+                    for param in self.model.parameters():
+                        if param.grad is None:
+                            continue
+                        print(param.name,
+                              param.numpy().mean(), param.grad.mean())
                     #print('reid_loss grad', outputs['reid_loss'].grad.mean())        
                     #print('reid_loss logit', outputs['logit'].grad.mean())
 
