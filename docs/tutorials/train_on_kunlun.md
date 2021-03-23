@@ -6,7 +6,7 @@
 ## yolov3
 
 ### Prepare data
-Prepare data roadsign
+Download dataset from https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar, and put it in teh dataset directory.
 
 
 ### Train
