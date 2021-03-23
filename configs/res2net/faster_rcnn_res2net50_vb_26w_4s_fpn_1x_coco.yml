@@ -5,7 +5,7 @@ _BASE_: [
   '../faster_rcnn/_base_/faster_rcnn_r50_fpn.yml',
   '../faster_rcnn/_base_/faster_fpn_reader.yml',
 ]
-weights: output/faster_rcnn_res2net50_26w_4s_fpn_1x_coco/model_final
+weights: output/faster_rcnn_res2net50_vb_26w_4s_fpn_1x_coco/model_final
 
 FasterRCNN:
   backbone: Res2Net
@@ -25,3 +25,4 @@ Res2Net:
   freeze_at: 0
   return_idx: [0,1,2,3]
   num_stages: 4
+  variant: b

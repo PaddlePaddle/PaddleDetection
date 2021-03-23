@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ class BottleNeck(nn.Layer):
                  name,
                  width,
                  scales=4,
+                 variant='b',
                  groups=1,
                  lr=1.0,
                  norm_type='bn',
@@ -58,23 +59,43 @@ class BottleNeck(nn.Layer):
         self.scales = scales
         self.stride = stride
         if not shortcut:
-            self.branch1 = ConvNormLayer(
-                ch_in=ch_in,
-                ch_out=ch_out,
-                filter_size=1,
-                stride=stride,
-                name_adapter=name_adapter,
-                norm_type=norm_type,
-                norm_decay=norm_decay,
-                freeze_norm=freeze_norm,
-                lr=lr,
-                name=shortcut_name)
+            if variant == 'd' and stride == 2:
+                self.branch1 = nn.Sequential()
+                self.branch1.add_sublayer(
+                    'pool',
+                    nn.AvgPool2D(
+                        kernel_size=2, stride=2, padding=0, ceil_mode=True))
+                self.branch1.add_sublayer(
+                    'conv',
+                    ConvNormLayer(
+                        ch_in=ch_in,
+                        ch_out=ch_out,
+                        filter_size=1,
+                        stride=1,
+                        name_adapter=name_adapter,
+                        norm_type=norm_type,
+                        norm_decay=norm_decay,
+                        freeze_norm=freeze_norm,
+                        lr=lr,
+                        name=shortcut_name))
+            else:
+                self.branch1 = ConvNormLayer(
+                    ch_in=ch_in,
+                    ch_out=ch_out,
+                    filter_size=1,
+                    stride=stride,
+                    name_adapter=name_adapter,
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    lr=lr,
+                    name=shortcut_name)
 
         self.branch2a = ConvNormLayer(
             ch_in=ch_in,
             ch_out=width * scales,
             filter_size=1,
-            stride=1,
+            stride=stride if variant == 'a' else 1,
             name_adapter=name_adapter,
             groups=1,
             act='relu',
@@ -89,7 +110,7 @@ class BottleNeck(nn.Layer):
                 ch_in=width,
                 ch_out=width,
                 filter_size=3,
-                stride=stride,
+                stride=1 if variant == 'a' else stride,
                 name_adapter=name_adapter,
                 groups=groups,
                 act='relu',
@@ -131,12 +152,13 @@ class BottleNeck(nn.Layer):
         else:
             out_split.append(F.avg_pool2d(feature_split[-1], 3, self.stride, 1))
         out = self.branch2c(paddle.concat(out_split, 1))
+
         if self.shortcut:
             short = inputs
         else:
             short = self.branch1(inputs)
 
-        out = paddle.add(x=out, y=short)
+        out = paddle.add(out, short)
         out = F.relu(out)
 
         return out
@@ -151,6 +173,7 @@ class Blocks(nn.Layer):
                  stage_num,
                  width,
                  scales=4,
+                 variant='b',
                  groups=1,
                  lr=1.0,
                  norm_type='bn',
@@ -173,6 +196,7 @@ class Blocks(nn.Layer):
                     name=conv_name,
                     width=width * (2**(stage_num - 2)),
                     scales=scales,
+                    variant=variant,
                     groups=groups,
                     lr=lr,
                     norm_type=norm_type,
@@ -187,6 +211,27 @@ class Blocks(nn.Layer):
 @register
 @serializable
 class Res2Net(nn.Layer):
+    """
+    Res2Net, see https://arxiv.org/abs/1904.01169
+    Args:
+        depth (int): Res2Net depth, should be 50, 101, 152, 200.
+        width (int): Res2Net width
+        scales (int): Res2Net scale
+        variant (str): Res2Net variant, supports 'a', 'b', 'c', 'd' currently
+        lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                             lower learning rate ratio is need for pretrained model
+                             got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
+        groups (int): The groups number of the Conv Layer.
+        norm_type (str): normalization type, 'bn' or 'sync_bn'
+        norm_decay (float): weight decay for normalization layer weights
+        freeze_norm (bool): freeze normalization layers
+        freeze_at (int): freeze the backbone at which stage
+        return_idx (list): index of stages whose feature maps are returned,
+                           index 0 stands for res2
+        dcn_v2_stages (list): index of stages who select deformable conv v2
+        num_stages (int): number of stages created
+
+    """
     __shared__ = ['norm_type']
 
     def __init__(self,
@@ -197,20 +242,20 @@ class Res2Net(nn.Layer):
                  lr_mult_list=[1.0, 1.0, 1.0, 1.0],
                  groups=1,
                  norm_type='bn',
-                 norm_decay=0,
+                 norm_decay=0.,
                  freeze_norm=True,
                  freeze_at=0,
                  return_idx=[0, 1, 2, 3],
                  dcn_v2_stages=[-1],
-                 num_stages=4,
-                 in_channels=3):
+                 num_stages=4):
         super(Res2Net, self).__init__()
 
         self._model_type = 'Res2Net' if groups == 1 else 'Res2NeXt'
 
+        assert depth in [50, 101, 152, 200], \
+            "depth {} not in [50, 101, 152, 200]"
+        assert variant in ['a', 'b', 'c', 'd'], "invalid Res2Net variant"
         assert num_stages >= 1 and num_stages <= 4
-        assert depth >= 50, "just support depth>=50 in res2net, but got depth=".format(
-            depth)
 
         self.depth = depth
         self.variant = variant
@@ -242,19 +287,31 @@ class Res2Net(nn.Layer):
 
         # C1 stage
         conv1_name = na.fix_c1_stage_name()
-        self.conv1 = ConvNormLayer(
-            ch_in=in_channels,
-            ch_out=64,
-            filter_size=7,
-            stride=2,
-            name_adapter=na,
-            groups=1,
-            act='relu',
-            norm_type=norm_type,
-            norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            lr=1.0,
-            name=conv1_name)
+        if self.variant in ['c', 'd']:
+            conv_def = [
+                [3, 32, 3, 2, "conv1_1"],
+                [32, 32, 3, 1, "conv1_2"],
+                [32, 64, 3, 1, "conv1_3"],
+            ]
+        else:
+            conv_def = [[3, 64, 7, 2, conv1_name]]
+        self.conv1 = nn.Sequential()
+        for (c_in, c_out, k, s, _name) in conv_def:
+            self.conv1.add_sublayer(
+                _name,
+                ConvNormLayer(
+                    ch_in=c_in,
+                    ch_out=c_out,
+                    filter_size=k,
+                    stride=s,
+                    name_adapter=na,
+                    groups=1,
+                    act='relu',
+                    norm_type=norm_type,
+                    norm_decay=norm_decay,
+                    freeze_norm=freeze_norm,
+                    lr=1.0,
+                    name=_name))
 
         self._in_channels = [64, 256, 512, 1024]
         self._out_channels = [256, 512, 1024, 2048]
@@ -305,7 +362,7 @@ class Res2Net(nn.Layer):
 
 @register
 class Res2NetC5(nn.Layer):
-    def __init__(self, depth=50, width=26, scales=4):
+    def __init__(self, depth=50, width=26, scales=4, variant='b'):
         super(Res2NetC5, self).__init__()
         feat_in, feat_out = [1024, 2048]
         na = NameAdapter(self)
@@ -316,7 +373,8 @@ class Res2NetC5(nn.Layer):
             name_adapter=na,
             stage_num=5,
             width=width,
-            scales=scales)
+            scales=scales,
+            variant=variant)
         self.feat_out = feat_out
 
     @property

@@ -5,7 +5,7 @@ _BASE_: [
   '../mask_rcnn/_base_/mask_rcnn_r50_fpn.yml',
   '../mask_rcnn/_base_/mask_fpn_reader.yml',
 ]
-weights: output/mask_rcnn_res2net50_26w_4s_fpn_2x_coco/model_final
+weights: output/mask_rcnn_res2net50_vb_26w_4s_fpn_2x_coco/model_final
 
 MaskRCNN:
   backbone: Res2Net
@@ -27,6 +27,7 @@ Res2Net:
   freeze_at: 0
   return_idx: [0,1,2,3]
   num_stages: 4
+  variant: b
 
 epoch: 24
 LearningRate:
