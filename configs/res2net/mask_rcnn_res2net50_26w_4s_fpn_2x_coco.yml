@@ -7,6 +7,17 @@ _BASE_: [
 ]
 weights: output/mask_rcnn_res2net50_26w_4s_fpn_2x_coco/model_final
 
+MaskRCNN:
+  backbone: Res2Net
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
+
+
 Res2Net:
   # index 0 stands for res2
   depth: 50
