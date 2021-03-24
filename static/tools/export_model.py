@@ -50,6 +50,7 @@ except ImportError as e:
     else:
         raise e
 
+
 def main():
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
