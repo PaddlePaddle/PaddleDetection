@@ -22,6 +22,11 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+
 import time
 import numpy as np
 import random
@@ -35,24 +40,32 @@ from paddle import fluid
 from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
 from paddle.fluid.optimizer import ExponentialMovingAverage
 
-from ppdet.experimental import mixed_precision_context
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.reader import create_reader
-
-from ppdet.utils import dist_utils
-from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
-from ppdet.utils.stats import TrainingStats
-from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
-import ppdet.utils.checkpoint as checkpoint
-
 from paddle.fluid.incubate.fleet.collective import fleet, DistributedStrategy  # new line 1
 from paddle.fluid.incubate.fleet.base import role_maker  # new line 2
 
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+try:
+    from ppdet.experimental import mixed_precision_context
+    from ppdet.core.workspace import load_config, merge_config, create
+    from ppdet.data.reader import create_reader
+
+    from ppdet.utils import dist_utils
+    from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
+    from ppdet.utils.stats import TrainingStats
+    from ppdet.utils.cli import ArgsParser
+    from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+    import ppdet.utils.checkpoint as checkpoint
+except ImportError as e:
+    if sys.argv[0].find('static') >= 0:
+        logger.error("Importing ppdet failed when running static model "
+                     "with error: {}\n"
+                     "please try:\n"
+                     "\t1. run static model under PaddleDetection/static "
+                     "directory\n"
+                     "\t2. run 'pip uninstall ppdet' to uninstall ppdet "
+                     "dynamic version firstly.".format(e))
+        sys.exit(-1)
+    else:
+        raise e
 
 
 def main():
