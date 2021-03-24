@@ -129,7 +129,7 @@ python tools/infer.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --i
   ```
 
   `--draw_threshold` 是个可选参数. 根据 [NMS](https://ieeexplore.ieee.org/document/1699659) 的计算，
-  不同阈值会产生不同的结果。如果用户需要对自定义路径的模型进行预测，可以设置`-o weights`指定模型路径。
+  不同阈值会产生不同的结果。
 
 
 
