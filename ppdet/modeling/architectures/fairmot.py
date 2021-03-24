@@ -26,12 +26,15 @@ __all__ = ['FairMOT']
 @register
 class FairMOT(BaseArch):
     __category__ = 'architecture'
+    __inject__ = ['post_process']
 
-    def __init__(self, detector, reid, loss):
+    def __init__(self, detector, reid, loss, post_process, tracker):
         super(FairMOT, self).__init__()
         self.detector = detector
         self.reid = reid
         self.loss = loss
+        self.post_process = post_process
+        self.tracker = tracker
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -65,12 +68,9 @@ class FairMOT(BaseArch):
             size = det_outs['size']
             offset = det_outs['offset']
             embedding = reid_outs['embedding']
-            output = {
-                'heatmap': heatmap,
-                'size': size,
-                'offset': offset,
-                'embedding': embedding
-            }
+            dets, id_feature = self.post_process(heatmap, size, offset,
+                                                 embedding)
+            output = {'dets': dets, 'id_feature': id_feature}
             return output
 
     def get_pred(self):

@@ -7,13 +7,16 @@ snapshot_epoch: 5
 metric: MOT
 save_dir: output
 pretrain_weights: /rrpn/new/FairMOT/src/crowdhuman_dla34
-weights: /rrpn/new/FairMOT/src/model_last
+weights: dygraph/output/fairmot/model_final
+#weights: /rrpn/new/FairMOT/src/fairmot_dla34.pdparams
 
 
 FairMOT:
   detector: CenterNet
   reid: FairReIDHead
   loss: FairMOTLoss
+  post_process: FairMOTPostProcess
+  tracker: JDETracker
 
 CenterNet:
   backbone: DLA
@@ -54,14 +57,25 @@ OptimizerBuilder:
 
 worker_num: 4
 
-TrainDataset:
-  !MOTDataSet
-    dataset_dir: /rrpn/PaddleDetection/dataset/mix/
-    anno_path: ['mot17.train', 'caltech.all', 'citypersons.train', 'cuhksysu.train', 'eth.train', 'mot17.train', 'prw.train']
-    #anno_path: ['mot17.train', 'caltech.all']
-    #anno_path: ['caltech.all']
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+#TrainDataset:
+#  !MOTDataSet
+#    dataset_dir: /rrpn/PaddleDetection/dataset/mix/
+#    anno_path: ['mot17.train', 'caltech.all', 'citypersons.train', 'cuhksysu.train', 'eth.train', 'mot17.train', 'prw.train']
+#    #anno_path: ['mot17.train', 'caltech.all']
+#    #anno_path: ['caltech.all']
+#    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+#
+#
+#EvalDataset:
+#  !MOTDataSet
+#    dataset_dir: /rrpn/PaddleDetection/dataset/mix/
+#    anno_path: ['mot17.train', 'caltech.all', 'citypersons.train', 'cuhksysu.train', 'eth.train', 'mot17.train', 'prw.train']
+#    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'h', 'w']
 
+
+EvalMOTDataset:
+  !ImageFolder
+    dataset_dir: /rrpn/PaddleDetection/dataset/mix/
 
 TrainReader:
   inputs_def:
@@ -84,6 +98,39 @@ TrainReader:
   batch_size: 6
   shuffle: True
   drop_last: True
+
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {to_rgb: False}
+    - BboxXYWH2XYXY: {}
+    - NormalizedBbox2PixelBbox: {}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {to_rgb: True}
+  batch_transforms:
+    - Gt2FairMOTTarget: {}
+  batch_size: 1
+  shuffle: False
+  drop_last: False
+
+
+EvalMOTReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {to_rgb: False}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {to_rgb: True}
+  batch_size: 1
+
 
 TestReader:
   inputs_def:

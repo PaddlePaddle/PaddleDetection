@@ -898,3 +898,48 @@ class MaskMatrixNMS(object):
         cate_scores = paddle.gather(cate_scores, index=sort_inds)
         cate_labels = paddle.gather(cate_labels, index=sort_inds)
         return seg_preds, cate_scores, cate_labels
+
+
+@register
+class FairMOTBox(TTFBox):
+    __shared__ = ['down_ratio']
+
+    def __init__(self, max_per_img=500, down_ratio=4):
+        super(TTFBox, self).__init__()
+        self.max_per_img = max_per_img
+        self.down_ratio = down_ratio
+
+    def __call__(self, hm, wh, reg, id_feature):
+        heat = self._simple_nms(heatmap)
+        scores, inds, clses, ys, xs = self._topk(heat)
+        ys = paddle.cast(ys, 'float32') * self.down_ratio
+        xs = paddle.cast(xs, 'float32') * self.down_ratio
+        scores = paddle.tensor.unsqueeze(scores, [1])
+        clses = paddle.tensor.unsqueeze(clses, [1])
+
+        reg_t = paddle.transpose(reg, [0, 2, 3, 1])
+        # batch size is 1
+        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+        reg = paddle.gather(reg, inds)
+        xs = xs + reg[:, 0:1]
+        ys = ys + reg[:, 1:2]
+
+        wh_t = paddle.transpose(wh, [0, 2, 3, 1])
+        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.gather(wh, inds)
+
+        x1 = xs - wh[:, 0:1]
+        y1 = ys - wh[:, 1:2]
+        x2 = xs + wh[:, 2:3]
+        y2 = ys + wh[:, 3:4]
+
+        bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
+
+        results = paddle.concat([bboxes, scores, clses], axis=1)
+
+        id_feature_t = paddle.transpose(id_feature, [0, 2, 3, 1])
+        id_feature = paddle.reshape(id_feature_t,
+                                    [-1, paddle.shape(id_feature_t)[-1]])
+        id_feature = paddle.gather(id_feature, inds)
+
+        return results, id_feature

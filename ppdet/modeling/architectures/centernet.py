@@ -27,11 +27,16 @@ __all__ = ['CenterNet']
 class CenterNet(BaseArch):
     __category__ = 'architecture'
 
-    def __init__(self, backbone='DLA', neck='FairDLAFPN', head='CenterHead'):
+    def __init__(self,
+                 backbone='DLA',
+                 neck='FairDLAFPN',
+                 head='CenterHead',
+                 post_process='CenterPostProcess'):
         super(CenterNet, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.head = head
+        self.post_process = post_process
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):

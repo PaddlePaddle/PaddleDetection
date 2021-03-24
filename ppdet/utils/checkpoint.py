@@ -121,21 +121,21 @@ def load_weight(model, weight, optimizer=None):
     #print(param_state_dict.keys())
     #print(param_state_dict)
 
-    for key, weights in model_dict.items():
-        if weights.name in param_state_dict.keys():
-            model_weight[key] = model_dict[key]
-            model_weight[key].set_value(param_state_dict[weights.name])
-        else:
-            logger.info('Unmatched key: {} weights: {}'.format(key,
-                                                               weights.name))
-            incorrect_keys += 1
-
-    #for key in model_dict.keys():
-    #    if key in param_state_dict.keys():
-    #        model_weight[key] = param_state_dict[key]
+    #for key, weights in model_dict.items():
+    #    if weights.name in param_state_dict.keys():
+    #        model_weight[key] = model_dict[key]
+    #        model_weight[key].set_value(param_state_dict[weights.name])
     #    else:
-    #        logger.info('Unmatched key: {}'.format(key))
+    #        logger.info('Unmatched key: {} weights: {}'.format(key,
+    #                                                           weights.name))
     #        incorrect_keys += 1
+
+    for key in model_dict.keys():
+        if key in param_state_dict.keys():
+            model_weight[key] = param_state_dict[key]
+        else:
+            logger.info('Unmatched key: {}'.format(key))
+            incorrect_keys += 1
 
     assert incorrect_keys == 0, "Load weight {} incorrectly, \
             {} keys unmatched, please check again.".format(weight,

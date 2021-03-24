@@ -99,8 +99,9 @@ class BatchCompose(Compose):
             if len(self.output_fields) == 0:
                 for k, v in data[0].items():
                     # FIXME(dkp): for more elegent coding
-                    if k not in ['flipped', 'h', 'w']:
-                        self.output_fields.append(k)
+                    #if k not in ['flipped', 'h', 'w']:
+                    #    self.output_fields.append(k)
+                    self.output_fields.append(k)
             self.lock.release()
 
         data = [[data[i][k] for k in self.output_fields]
@@ -278,3 +279,39 @@ class TestReader(BaseDataLoader):
         super(TestReader, self).__init__(sample_transforms, batch_transforms,
                                          batch_size, shuffle, drop_last,
                                          drop_empty, num_classes, **kwargs)
+
+
+@register
+class EvalMOTReader(BaseDataLoader):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=False,
+                 drop_last=False,
+                 drop_empty=True,
+                 num_classes=1,
+                 **kwargs):
+        super(EvalMOTReader, self).__init__(sample_transforms, batch_transforms,
+                                            batch_size, shuffle, drop_last,
+                                            drop_empty, num_classes, **kwargs)
+
+
+@register
+class TestMOTReader(BaseDataLoader):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 sample_transforms=[],
+                 batch_transforms=[],
+                 batch_size=1,
+                 shuffle=False,
+                 drop_last=False,
+                 drop_empty=True,
+                 num_classes=1,
+                 **kwargs):
+        super(TestMOTReader, self).__init__(sample_transforms, batch_transforms,
+                                            batch_size, shuffle, drop_last,
+                                            drop_empty, num_classes, **kwargs)

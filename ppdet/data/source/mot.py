@@ -184,3 +184,58 @@ class MOTDataSet(DetDataset):
 def mot_label():
     labels_map = {'person': 0}
     return labels_map
+
+
+def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
+    return f.lower().endswith(extensions)
+
+
+@register
+@serializable
+class MOTVideoDataset(DetDataset):
+    """
+    Load MOT dataset with MOT format from video for inference.
+    Args:
+        video_file (str): name of the video file
+        dataset_dir (str): root directory for dataset.
+        frame_interval (int): get one image of every N frames.
+    """
+
+    def __init__(self, video_file='', dataset_dir=None, **kwargs):
+        super(MOTVideoDataset, self).__init__(dataset_dir=dataset_dir)
+        self.video_file = video_file
+        self.dataset_dir = dataset_dir
+        self.roidbs = None
+
+    def parse_dataset(self, ):
+        if not self.roidbs:
+            self.roidbs = self._load_video_images()
+
+    def _load_video_images(self):
+        video_path = self.video_file
+        self.cap = cv2.VideoCapture(video_path)
+        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
+        self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        logger.info('Lenth of the video: {:d} frames'.format(self.vn))
+        res = True
+        ct = 0
+        records = []
+        while res:
+            res, img = self.cap.read()
+            image = np.ascontiguousarray(img, dtype=np.float32)
+            rec = {
+                'im_id': np.array([ct]),
+                'image': image,
+                'img0': image,
+            }
+            ct += 1
+            records.append(rec)
+        records = records[:-1]
+        assert len(records) > 0, "No image file found"
+        return records
+
+    def set_video(self, video_file):
+        self.video_file = video_file
+        assert os.path.isfile(self.video_file) and _is_valid_video(self.video_file), \
+                "wrong or unsupported file format: {}".format(self.video_file)
+        self.roidbs = self._load_video_images()

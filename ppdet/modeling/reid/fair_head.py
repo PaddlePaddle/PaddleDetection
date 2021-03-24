@@ -64,12 +64,11 @@ class FairReIDHead(nn.Layer):
     def forward(self, feat, inputs):
         output = dict()
         reid_feat = self.reid(feat)
-        #print('---------reid_feat', np.mean(reid_feat.numpy()))
         if self.training:
             loss = self.get_loss(reid_feat, inputs)
             output.update(loss)
         else:
-            reid_feat = F.normalize(feat)
+            reid_feat = F.normalize(reid_feat)
             output['embedding'] = reid_feat
         return output
 
