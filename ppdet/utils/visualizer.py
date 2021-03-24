@@ -86,21 +86,31 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         if score < threshold:
             continue
 
-        xmin, ymin, w, h = bbox
-        xmax = xmin + w
-        ymax = ymin + h
-
         if catid not in catid2color:
             idx = np.random.randint(len(color_list))
             catid2color[catid] = color_list[idx]
         color = tuple(catid2color[catid])
 
         # draw bbox
-        draw.line(
-            [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
-             (xmin, ymin)],
-            width=2,
-            fill=color)
+        if len(bbox) == 4:
+            # draw bbox
+            xmin, ymin, w, h = bbox
+            xmax = xmin + w
+            ymax = ymin + h
+            draw.line(
+                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                 (xmin, ymin)],
+                width=2,
+                fill=color)
+        else:
+            x1, y1, x2, y2, x3, y3, x4, y4 = bbox
+            draw.line(
+                [(x1, y1), (x2, y2), (x3, y3), (x4, y4),
+                 (x1, y1)],
+                width=2,
+                fill=color)
+            xmin = min(x1, x2, x3, x4)
+            ymin = min(y1, y2, y3, y4)
 
         # draw label
         text = "{} {:.2f}".format(catid2name[catid], score)

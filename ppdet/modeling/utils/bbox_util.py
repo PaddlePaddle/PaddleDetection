@@ -19,6 +19,7 @@ from __future__ import print_function
 import paddle
 import paddle.nn.functional as F
 import math
+import numpy as np
 
 
 def xywh2xyxy(box):
@@ -141,3 +142,147 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
                 return iou - (rho2 / c2 + v * alpha)
     else:
         return iou
+
+
+def rect2rbox(bboxes):
+    """
+    :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
+    :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
+    """
+    bboxes = bboxes.reshape(-1, 4)
+    num_boxes = bboxes.shape[0]
+
+    x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
+    y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
+    edges1 = np.abs(bboxes[:, 2] - bboxes[:, 0])
+    edges2 = np.abs(bboxes[:, 3] - bboxes[:, 1])
+    angles = np.zeros([num_boxes], dtype=bboxes.dtype)
+
+    inds = edges1 < edges2
+
+    rboxes = np.stack((x_ctr, y_ctr, edges1, edges2, angles), axis=1)
+    rboxes[inds, 2] = edges2[inds]
+    rboxes[inds, 3] = edges1[inds]
+    rboxes[inds, 4] = np.pi / 2.0
+    return rboxes
+
+
+def delta2rbox(Rrois,
+                  deltas,
+                  means=[0, 0, 0, 0, 0],
+                  stds=[1, 1, 1, 1, 1],
+                  wh_ratio_clip=1e-6):
+    """
+    :param Rrois: (cx, cy, w, h, theta)
+    :param deltas: (dx, dy, dw, dh, dtheta)
+    :param means:
+    :param stds:
+    :param wh_ratio_clip:
+    :return:
+    """
+    means = paddle.to_tensor(means)
+    stds = paddle.to_tensor(stds)
+    deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
+    denorm_deltas = deltas * stds + means
+
+    dx = denorm_deltas[:, 0]
+    dy = denorm_deltas[:, 1]
+    dw = denorm_deltas[:, 2]
+    dh = denorm_deltas[:, 3]
+    dangle = denorm_deltas[:, 4]
+
+    max_ratio = np.abs(np.log(wh_ratio_clip))
+    dw = paddle.clip(dw, min=-max_ratio, max=max_ratio)
+    dh = paddle.clip(dh, min=-max_ratio, max=max_ratio)
+
+    Rroi_x = Rrois[:, 0]
+    Rroi_y = Rrois[:, 1]
+    Rroi_w = Rrois[:, 2]
+    Rroi_h = Rrois[:, 3]
+    Rroi_angle = Rrois[:, 4]
+
+    gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(Rroi_angle) + Rroi_x
+    gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(Rroi_angle) + Rroi_y
+    gw = Rroi_w * dw.exp()
+    gh = Rroi_h * dh.exp()
+    ga = np.pi * dangle + Rroi_angle
+    ga = (ga + np.pi / 4) % np.pi - np.pi / 4
+    ga = paddle.to_tensor(ga)
+
+    gw = paddle.to_tensor(gw, dtype='float32')
+    gh = paddle.to_tensor(gh, dtype='float32')
+    bboxes = paddle.stack([gx, gy, gw, gh, ga], axis=-1)
+    return bboxes
+
+
+def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
+    """
+
+    Args:
+        proposals:
+        gt:
+        means: 1x5
+        stds: 1x5
+
+    Returns:
+
+    """
+    proposals = proposals.astype(np.float64)
+
+    PI = np.pi
+
+    gt_widths = gt[..., 2]
+    gt_heights = gt[..., 3]
+    gt_angle = gt[..., 4]
+
+    proposals_widths = proposals[..., 2]
+    proposals_heights = proposals[..., 3]
+    proposals_angle = proposals[..., 4]
+
+    coord = gt[..., 0:2] - proposals[..., 0:2]
+    dx = (np.cos(proposals[..., 4]) * coord[..., 0] +
+          np.sin(proposals[..., 4]) * coord[..., 1]) / proposals_widths
+    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] +
+          np.cos(proposals[..., 4]) * coord[..., 1]) / proposals_heights
+    dw = np.log(gt_widths / proposals_widths)
+    dh = np.log(gt_heights / proposals_heights)
+    da = (gt_angle - proposals_angle)
+
+    da = (da + PI / 4) % PI - PI / 4
+    da /= PI
+
+    deltas = np.stack([dx, dy, dw, dh, da], axis=-1)
+    means = np.array(means, dtype=deltas.dtype)
+    stds = np.array(stds, dtype=deltas.dtype)
+    deltas = (deltas - means) / stds
+    deltas = deltas.astype(np.float32)
+    return deltas
+
+
+def bbox_decode(bbox_preds,
+                anchors,
+                means=[0, 0, 0, 0, 0],
+                stds=[1, 1, 1, 1, 1]):
+    """decode bbox from deltas
+    Args:
+        bbox_preds: [N,H,W,5]
+        anchors: [H*W,5]
+    return:
+        bboxes: [N,H,W,5]
+    """
+    num_imgs, H, W, _ = bbox_preds.shape
+    bboxes_list = []
+    for img_id in range(num_imgs):
+        bbox_pred = bbox_preds[img_id]
+        # bbox_pred.shape=[5,H,W]
+        bbox_delta = bbox_pred
+        anchors = paddle.to_tensor(anchors)
+        bboxes = delta2rbox(
+            anchors,
+            bbox_delta,
+            means,
+            stds,
+            wh_ratio_clip=1e-6)
+        bboxes = paddle.reshape(bboxes, [H, W, 5])
+        bboxes_list.append(bboxes)
+    return paddle.stack(bboxes_list, axis=0)

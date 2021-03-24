@@ -91,14 +91,26 @@ class COCODataSet(DetDataset):
                     else:
                         if not any(np.array(inst['bbox'])):
                             continue
-                    x1, y1, box_w, box_h = inst['bbox']
-                    x2 = x1 + box_w
-                    y2 = y1 + box_h
+                    angle = 0.0
+                    if len(inst['bbox']) > 4:
+                        xc, yc, box_w, box_h, angle = inst['bbox']
+                        x1 = xc - box_w / 2.0
+                        y1 = yc - box_h / 2.0
+                        x2 = x1 + box_w
+                        y2 = y1 + box_h
+                    else:
+                        x1, y1, box_w, box_h = inst['bbox']
+                        x2 = x1 + box_w
+                        y2 = y1 + box_h
                     eps = 1e-5
                     if inst['area'] > 0 and x2 - x1 > eps and y2 - y1 > eps:
-                        inst['clean_bbox'] = [
-                            round(float(x), 3) for x in [x1, y1, x2, y2]
-                        ]
+                        if len(inst['bbox']) > 4:
+                            inst['clean_bbox'] = [xc, yc, box_w, box_h]
+                            inst['gt_theta'] = angle
+                        else:
+                            inst['clean_bbox'] = [
+                                round(float(x), 3) for x in [x1, y1, x2, y2]
+                            ]
                         bboxes.append(inst)
                     else:
                         logger.warning(
@@ -111,6 +123,7 @@ class COCODataSet(DetDataset):
                     continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
+                gt_theta = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
                 difficult = np.zeros((num_bbox, 1), dtype=np.int32)
@@ -143,6 +156,7 @@ class COCODataSet(DetDataset):
                     'is_crowd': is_crowd,
                     'gt_class': gt_class,
                     'gt_bbox': gt_bbox,
+                    'gt_theta': gt_theta,
                     'gt_poly': gt_poly,
                 }
                 for k, v in gt_rec.items():

@@ -343,6 +343,7 @@ class Trainer(object):
                         if 'mask' in batch_res else None
                 segm_res = batch_res['segm'][start:end] \
                         if 'segm' in batch_res else None
+
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)

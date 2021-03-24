@@ -43,6 +43,30 @@ def get_det_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
     return det_res
 
 
+def get_det_poly_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
+    det_res = []
+    k = 0
+    for i in range(len(bbox_nums)):
+        cur_image_id = int(image_id[i][0])
+        det_nums = bbox_nums[i]
+        for j in range(det_nums):
+            dt = bboxes[k]
+            k = k + 1
+            num_id, score, x1, y1, x2, y2, x3, y3, x4, y4 = dt.tolist()
+            if int(num_id) < 0:
+                continue
+            category_id = int(num_id)
+            rbox = [x1, y1, x2, y2, x3, y3, x4, y4]
+            dt_res = {
+                'image_id': cur_image_id,
+                'category_id': category_id,
+                'bbox': rbox,
+                'score': score
+            }
+            det_res.append(dt_res)
+    return det_res
+
+
 def get_seg_res(masks, bboxes, mask_nums, image_id, label_to_cat_id_map):
     import pycocotools.mask as mask_util
     seg_res = []

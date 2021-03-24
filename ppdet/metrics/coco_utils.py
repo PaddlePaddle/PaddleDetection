@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_segm_res
+from ppdet.py_op.post_process import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -45,8 +45,12 @@ def get_infer_results(outs, catid, bias=0):
 
     infer_res = {}
     if 'bbox' in outs:
-        infer_res['bbox'] = get_det_res(
-            outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
+        if len(outs['bbox']) > 0 and len(outs['bbox'][0]) > 6:
+            infer_res['bbox'] = get_det_poly_res(
+                outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
+        else:
+            infer_res['bbox'] = get_det_res(
+                outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
 
     if 'mask' in outs:
         # mask post process

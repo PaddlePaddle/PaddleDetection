@@ -186,3 +186,107 @@ class FCOSPostProcess(object):
                                     centerness, scale_factor)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num
+
+
+@register
+class S2ANetBBoxPostProcess(object):
+    __inject__ = ['nms']
+
+    def __init__(self,  nms_pre=2000, min_bbox_size=0, nms=None):
+        super(S2ANetBBoxPostProcess, self).__init__()
+        self.nms_pre = nms_pre
+        self.min_bbox_size = min_bbox_size
+        self.nms = nms
+        self.origin_shape_list = []
+
+    def rbox2poly(self, rrect, get_best_begin_point=True):
+        """
+        rrect: [N, 5] [x_ctr,y_ctr,w,h,angle]
+        to
+        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+        """
+        bbox_num = rrect.shape[0]
+        x_ctr = rrect[:, 0]
+        y_ctr = rrect[:, 1]
+        width = rrect[:, 2]
+        height = rrect[:, 3]
+        angle = rrect[:, 4]
+
+        tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
+        # rect 2x4
+        rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle), np.cos(angle)]])
+
+        # R:[2,2,M]  rect:[2,4,M]
+        # print('R is', R.shape, 'rect is', rect.shape)
+        # poly
+        #poly = R.dot(rect)
+        poly = []
+        for i in range(R.shape[2]):
+            poly.append(R[:, :, i].dot(rect[:, :, i]))
+        # poly:[M, 2, 4]
+        poly = np.array(poly)
+        coor_x = poly[:, 0, :4] + x_ctr.reshape(bbox_num, 1)
+        coor_y = poly[:, 1, :4] + y_ctr.reshape(bbox_num, 1)
+        poly = np.stack([coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
+                         coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]], axis=1)
+        if get_best_begin_point:
+            poly_lst = [get_best_begin_point_single(e) for e in poly]
+            poly = np.array(poly_lst)
+        #print('poly res:', poly.shape)
+        return poly
+
+    def get_nms_result(self, pred_scores, pred_bboxes):
+        """
+        pred_scores : [N, M]  score
+        pred_bboxes : [N, 5]  xc, yc, w, h, a
+        """
+        # print('before nms pred_scores', pred_scores.shape, 'pred_bboxes', pred_bboxes.shape)
+        pred_ploys = self.rbox2poly(pred_bboxes.numpy(), False)
+        pred_ploys = paddle.to_tensor(pred_ploys)
+        pred_ploys = paddle.reshape(pred_ploys, [1, pred_ploys.shape[0], pred_ploys.shape[1]])
+
+        pred_scores = paddle.to_tensor(pred_scores)
+        # pred_scores [NA, 16] --> [16, NA]
+        pred_scores = paddle.transpose(pred_scores, [1, 0])
+        pred_scores = paddle.reshape(pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
+        #print('pred_ploys, ', pred_ploys.shape, 'pred_scores', pred_scores.shape)
+        bbox_pred, bbox_num, index = self.nms(pred_ploys, pred_scores)
+        #print('after nms', bbox_pred.shape, bbox_pred[:, 1].min(), 'bbox_num', bbox_num)
+        return bbox_pred, bbox_num, index
+
+    def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
+        """
+        Rescale, clip and filter the bbox from the output of NMS to
+        get final prediction.
+
+        Args:
+            bboxes(Tensor): The output of __call__ with shape [N, 6]
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
+                               including labels, scores and bboxes. The size of
+                               bboxes are corresponding to the original image.
+        """
+
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
+
+        origin_shape_list = []
+        scale_factor_list = []
+        # scale_factor: scale_y, scale_x
+        for i in range(bbox_num.shape[0]):
+            expand_shape = paddle.expand(origin_shape[i:i + 1, :],
+                                         [bbox_num[i], 2])
+            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
+            scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
+            expand_scale = paddle.expand(scale, [bbox_num[i], 4])
+            origin_shape_list.append(expand_shape)
+            scale_factor_list.append(expand_scale)
+
+        self.origin_shape_list = paddle.concat(origin_shape_list)
+        scale_factor_list = paddle.concat(scale_factor_list)
+
+        return pred_result
+
+    def get_origin_shape(self, ):
+        return self.origin_shape_list
