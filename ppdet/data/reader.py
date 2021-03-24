@@ -64,10 +64,11 @@ class Compose(object):
 
 
 class BatchCompose(Compose):
-    def __init__(self, transforms, num_classes=80):
+    def __init__(self, transforms, num_classes=80, collate_batch=True):
         super(BatchCompose, self).__init__(transforms, num_classes)
         self.output_fields = mp.Manager().list([])
         self.lock = mp.Lock()
+        self.collate_batch = collate_batch
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -103,11 +104,27 @@ class BatchCompose(Compose):
                         self.output_fields.append(k)
             self.lock.release()
 
-        data = [[data[i][k] for k in self.output_fields]
-                for i in range(len(data))]
-        data = list(zip(*data))
+        batch_data = []
+        # If set collate_batch=True, all data will collate a batch
+        # and it will transfor to paddle.tensor.
+        # If set collate_batch=False, `image`, `im_shape` and
+        # `scale_factor` will collate a batch, but `gt` data(such as:
+        # gt_bbox, gt_class, gt_poly.etc.) will not collate a batch
+        # and it will transfor to list[Tensor] or list[list].
+        if self.collate_batch:
+            data = [[data[i][k] for k in self.output_fields]
+                    for i in range(len(data))]
+            data = list(zip(*data))
+            batch_data = [np.stack(d, axis=0) for d in data]
+        else:
+            for k in self.output_fields:
+                tmp_data = []
+                for i in range(len(data)):
+                    tmp_data.append(data[i][k])
+                if not 'gt_' in k and not 'is_crowd' in k:
+                    tmp_data = np.stack(tmp_data, axis=0)
+                batch_data.append(tmp_data)
 
-        batch_data = [np.stack(d, axis=0) for d in data]
         return batch_data
 
 
@@ -145,6 +162,7 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=80,
+                 collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
         # sample transform
@@ -152,8 +170,8 @@ class BaseDataLoader(object):
             sample_transforms, num_classes=num_classes)
 
         # batch transfrom 
-        self._batch_transforms = BatchCompose(batch_transforms, num_classes)
-
+        self._batch_transforms = BatchCompose(batch_transforms, num_classes,
+                                              collate_batch)
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
@@ -238,10 +256,11 @@ class TrainReader(BaseDataLoader):
                  drop_last=True,
                  drop_empty=True,
                  num_classes=80,
+                 collate_batch=True,
                  **kwargs):
-        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
-                                          batch_size, shuffle, drop_last,
-                                          drop_empty, num_classes, **kwargs)
+        super(TrainReader, self).__init__(
+            sample_transforms, batch_transforms, batch_size, shuffle, drop_last,
+            drop_empty, num_classes, collate_batch, **kwargs)
 
 
 @register
