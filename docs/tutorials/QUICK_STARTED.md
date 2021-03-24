@@ -22,7 +22,7 @@ the result：
 ![](../images/000000014439.jpg)
 
 
-## Prepare Dataset
+## Data preparation
 The Dataset is [Kaggle dataset](https://www.kaggle.com/andrewmvd/road-sign-detection) ，including 877 images and 4 data categories: crosswalk, speedlimit, stop, trafficlight. The dataset is divided into training set (701 images) and test set (176 images)，[download link](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar).
 
 ```
