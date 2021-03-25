@@ -184,6 +184,7 @@ class BaseDataLoader(object):
                  batch_sampler=None,
                  return_list=False):
         self.dataset = dataset
+        self.dataset.check_or_download_dataset()
         self.dataset.parse_dataset()
         # get data
         self.dataset.set_transform(self._sample_transforms)
