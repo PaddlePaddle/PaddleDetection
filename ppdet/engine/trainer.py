@@ -31,7 +31,8 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_categories, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
+from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
@@ -116,8 +117,8 @@ class Trainer(object):
             self._callbacks = []
             self._compose_callback = None
 
-    def _init_metrics(self):
-        if self.mode == 'test':
+    def _init_metrics(self, validate=False):
+        if self.mode == 'test' or (self.mode == 'train' and not validate):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
@@ -126,9 +127,12 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
+            clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
+                                if self.mode == 'eval' else None
             self._metrics = [
                 COCOMetric(
                     anno_file=self.dataset.get_anno(),
+                    clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
                     bias=bias)
@@ -185,6 +189,11 @@ class Trainer(object):
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
+
+        # if validation in training is enabled, metrics should be re-init
+        if validate:
+            self._init_metrics(validate=validate)
+            self._reset_metrics()
 
         model = self.model
         if self.cfg.fleet:
