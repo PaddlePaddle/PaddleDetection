@@ -10,7 +10,6 @@ ResNet:
   variant: d
   groups: 64
   base_width: 4
-  base_channels: 64
   norm_type: bn
   freeze_at: 0
   return_idx: [0,1,2,3]
