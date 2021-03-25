@@ -1,29 +1,29 @@
 # 是否使用GPU(即是否使用 CUDA)
-WITH_GPU=ON
+WITH_GPU=OFF
 
 # 是否使用MKL or openblas，TX2需要设置为OFF
 WITH_MKL=ON
 
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
-WITH_TENSORRT=ON
+WITH_TENSORRT=OFF
 
 # paddle 预测库lib名称
 PADDLE_LIB_NAME=libpaddle_fluid
 
 # TensorRT 的include路径
-TENSORRT_INC_DIR=/usr/local/TensorRT6-cuda10.1-cudnn7/targets/x86_64-linux-gnu/include/
+TENSORRT_INC_DIR=/path/to/tensorrt/include
 
 # TensorRT 的lib路径
-TENSORRT_LIB_DIR=/usr/local/TensorRT6-cuda10.1-cudnn7/targets/x86_64-linux-gnu/lib/
+TENSORRT_LIB_DIR=/path/to/tensorrt/lib
 
 # Paddle 预测库路径
-PADDLE_DIR=/paddle/inference/paddle_inference/
+PADDLE_DIR=/paddle/to/paddle_inference
 
 # CUDA 的 lib 路径
-CUDA_LIB=/usr/local/cuda-10.1/lib64/
+CUDA_LIB=/path/to/cuda/lib
 
 # CUDNN 的 lib 路径
-CUDNN_LIB=/usr/lib/x86_64-linux-gnu/
+CUDNN_LIB=/path/to/cudnn/lib
 
 
 MACHINE_TYPE=`uname -m`
