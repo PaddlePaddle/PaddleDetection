@@ -43,8 +43,7 @@ class Upsample(nn.Layer):
                 regularizer=L2Decay(0.),
                 learning_rate=2.),
             lr_scale=2.,
-            regularizer=L2Decay(0.),
-            name=name)
+            regularizer=L2Decay(0.))
 
         self.bn = batch_norm(
             ch_out, norm_type='bn', initializer=Constant(1.), name=name)
