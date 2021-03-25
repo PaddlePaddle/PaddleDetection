@@ -35,7 +35,7 @@ python dataset/roadsign_voc/download_roadsign_voc.py
 # -o 参数表示指定配置文件中的全局变量（覆盖配置文件中的设置），这里设置使用gpu
 # --eval 参数表示边训练边评估，最后会自动保存一个名为model_final.pdparams的模型
 
-python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true --weight_type finetune
+python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --eval -o use_gpu=true
 ```
 
 
