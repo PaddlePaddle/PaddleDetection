@@ -20,6 +20,7 @@ from . import mobilenet_v3
 from . import hrnet
 from . import blazenet
 from . import ghostnet
+from . import senet
 
 from .vgg import *
 from .resnet import *
@@ -29,3 +30,4 @@ from .mobilenet_v3 import *
 from .hrnet import *
 from .blazenet import *
 from .ghostnet import *
+from .senet import *
