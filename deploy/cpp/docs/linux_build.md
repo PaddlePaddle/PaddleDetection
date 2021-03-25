@@ -1,10 +1,10 @@
 # Linux平台编译指南
 
 ## 说明
-本文档在 `Linux`平台使用`GCC 4.8.5` 和 `GCC 4.9.4`测试过，如果需要使用更高G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。本文档使用的预置的opencv库是在ubuntu 16.04上用gcc4.8编译的，如果需要在ubuntu 16.04以外的系统环境编译，那么需自行编译opencv库。
+本文档在 `Linux`平台使用`GCC 8.2`测试过，如果需要使用其他G++版本编译使用，则需要重新编译Paddle预测库，请参考: [从源码编译Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。本文档使用的预置的opencv库是在ubuntu 16.04上用gcc4.8编译的，如果需要在ubuntu 16.04以外的系统环境编译，那么需自行编译opencv库。
 
 ## 前置条件
-* G++ 4.8.2 ~ 4.9.4
+* G++ 8.2
 * CUDA 9.0 / CUDA 10.0, cudnn 7+ （仅在使用GPU版本的预测库时需要）
 * CMake 3.0+
 
@@ -21,6 +21,7 @@
 
 PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc1/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)
 
+本示例使用[paddle_inference.tgz](https://paddle-inference-lib.bj.bcebos.com/2.0.0-gpu-cuda10.1-cudnn7-avx-mkl/paddle_inference.tgz)
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```

@@ -4,10 +4,10 @@ project(PaddleObjectDetector CXX C)
 option(WITH_MKL        "Compile demo with MKL/OpenBlas support,defaultuseMKL."          ON)
 option(WITH_GPU        "Compile demo with GPU/CPU, default use CPU."                    ON)
 option(WITH_TENSORRT   "Compile demo with TensorRT."                                    OFF)
-option(USE_PADDLE_20RC1 "Compile demo with paddle_inference_lib 2.0rc1"                 ON)
 
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
+SET(PADDLE_LIB_NAME "" CACHE STRING "Libaray name of paddle")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(CUDA_LIB "" CACHE PATH "Location of libraries")
 SET(CUDNN_LIB "" CACHE PATH "Location of libraries")
@@ -153,41 +153,23 @@ endif()
 
 
 if (WIN32)
-    if (USE_PADDLE_20RC1)
-        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
+    if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/${PADDLE_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX}")
         set(DEPS
-            ${PADDLE_DIR}/paddle/fluid/inference/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        else()
-            set(DEPS
-                ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        endif()
+            ${PADDLE_DIR}/paddle/fluid/inference/${PADDLE_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
     else()
-        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-        if(EXISTS "${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX}")
-            set(DEPS
-                ${PADDLE_DIR}/paddle/fluid/inference/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        else()
-            set(DEPS
-                ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-        endif()
+        set(DEPS
+            ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
     endif()
 endif()
 
 
 if (WIN32)
-    if (USE_PADDLE_20RC1)
-        # 2.0rc1 win32 shared lib name is paddle_fluid.dll and paddle_fluid.lib
-        set(DEPS ${PADDLE_DIR}/paddle/lib/paddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-    else()
-        # before 2.0rc1 win32 shared lib name is libpaddle_fluid.dll and libpaddle_fluid.lib
-        set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_STATIC_LIBRARY_SUFFIX})
-    endif()
+    set(DEPS ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}${CMAKE_STATIC_LIBRARY_SUFFIX})
 else()
-    # linux shared lib name is libpaddle_fluid.so
-    set(DEPS ${PADDLE_DIR}/paddle/lib/libpaddle_fluid${CMAKE_SHARED_LIBRARY_SUFFIX})
+    set(DEPS ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 endif()
 
+message("PADDLE_LIB_NAME:" ${PADDLE_LIB_NAME})
 message("DEPS:" $DEPS)
 
 if (NOT WIN32)

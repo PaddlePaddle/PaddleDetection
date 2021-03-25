@@ -1,29 +1,29 @@
 # 是否使用GPU(即是否使用 CUDA)
-WITH_GPU=OFF
+WITH_GPU=ON
 
 # 是否使用MKL or openblas，TX2需要设置为OFF
 WITH_MKL=ON
 
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
-WITH_TENSORRT=OFF
+WITH_TENSORRT=ON
 
-# 是否使用2.0rc1预测库
-USE_PADDLE_20RC1=ON
+# paddle 预测库lib名称
+PADDLE_LIB_NAME=libpaddle_fluid
 
 # TensorRT 的include路径
-TENSORRT_INC_DIR=/path/to/tensorrt/lib
+TENSORRT_INC_DIR=/usr/local/TensorRT6-cuda10.1-cudnn7/targets/x86_64-linux-gnu/include/
 
 # TensorRT 的lib路径
-TENSORRT_LIB_DIR=/path/to/tensorrt/include
+TENSORRT_LIB_DIR=/usr/local/TensorRT6-cuda10.1-cudnn7/targets/x86_64-linux-gnu/lib/
 
 # Paddle 预测库路径
-PADDLE_DIR=/path/to/fluid_inference/
+PADDLE_DIR=/paddle/inference/paddle_inference/
 
 # CUDA 的 lib 路径
-CUDA_LIB=/path/to/cuda/lib
+CUDA_LIB=/usr/local/cuda-10.1/lib64/
 
 # CUDNN 的 lib 路径
-CUDNN_LIB=/path/to/cudnn/lib
+CUDNN_LIB=/usr/lib/x86_64-linux-gnu/
 
 
 MACHINE_TYPE=`uname -m`
@@ -72,7 +72,8 @@ cmake .. \
     -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR}
+    -DOPENCV_DIR=${OPENCV_DIR} \
+    -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME}
 
 make
 echo "make finished!"
