@@ -33,6 +33,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.slim import build_slim_model
 
 import ppdet.utils.cli as cli
 import ppdet.utils.check as check
@@ -108,15 +109,16 @@ def run(FLAGS, cfg):
 def main():
     FLAGS = parse_args()
 
-    cfg = load_config(FLAGS.config)
+    if FLAGS.slim_config:
+        cfg = build_slim_model(FLAGS.config, FLAGS.slim_config)
+    else:
+        cfg = load_config(FLAGS.config)
     cfg['fp16'] = FLAGS.fp16
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
-    if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()

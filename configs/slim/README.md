@@ -4,6 +4,7 @@
 
 - [剪裁](prune)
 - [量化](quant)
+- [蒸馏](distill)
 
 推荐您使用剪裁和蒸馏联合训练，或者使用剪裁和量化，进行检测模型压缩。 下面以YOLOv3为例，进行剪裁、蒸馏和量化实验。
 
@@ -30,6 +31,17 @@
 | YOLOv3-MobileNetV3 | PACT在线量化 | 608      | 29.0 (-2.4) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v3_coco_qat.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/yolov3/yolov3_mobilenet_v3_large_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/slim/quant/yolov3_mobilenet_v3_qat.yml) |
 
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延
+
+
+### 蒸馏
+
+#### COCO上benchmark
+| 模型               | 压缩策略     | 输入尺寸 |   Box AP    |                             下载                             |                         模型配置文件                         |                       压缩算法配置文件                       |
+| ------------------ | ------------ | -------- | :---------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+| YOLOv3-MobileNetV1 | baseline     | 608      |    28.8     | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) |                              -                               |
+| YOLOv3-MobileNetV1 | 蒸馏 | 608      | 30.8(+2.0) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml) |
+
+- 具体蒸馏方法请参考[蒸馏策略文档](distill/README.md)
 
 ## 实验环境
 
