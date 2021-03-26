@@ -6,3 +6,4 @@ PyYAML
 shapely
 scipy
 terminaltables
+pycocotools
