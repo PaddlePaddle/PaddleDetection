@@ -155,7 +155,7 @@ COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO数据�
 
     ```
     # 执行代码自动化下载COCO数据集  
-    python dataset/voc/download_coco.py
+    python dataset/coco/download_coco.py
     ```
 
     代码执行完成后COCO数据集文件组织结构为：
