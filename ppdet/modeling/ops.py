@@ -59,11 +59,8 @@ def batch_norm(ch,
     return batch_norm(
         ch,
         weight_attr=ParamAttr(
-            name=bn_name + '.scale',
-            initializer=initializer,
-            regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(
-            name=bn_name + '.offset', regularizer=L2Decay(norm_decay)),
+            initializer=initializer, regularizer=L2Decay(norm_decay)),
+        bias_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
         data_format=data_format)
 
 
@@ -1558,7 +1555,6 @@ def sigmoid_cross_entropy_with_logits(input,
     output = F.binary_cross_entropy_with_logits(input, label, reduction='none')
     mask_tensor = paddle.cast(label != ignore_index, 'float32')
     output = paddle.multiply(output, mask_tensor)
-    output = paddle.reshape(output, shape=[output.shape[0], -1])
     if normalize:
         sum_valid_mask = paddle.sum(mask_tensor)
         output = output / sum_valid_mask
