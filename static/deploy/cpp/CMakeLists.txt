@@ -7,7 +7,7 @@ option(WITH_TENSORRT   "Compile demo with TensorRT."                            
 
 
 SET(PADDLE_DIR "" CACHE PATH "Location of libraries")
-SET(PADDLE_LIB_NAME "" CACHE STRING "Libaray name of paddle")
+SET(PADDLE_LIB_NAME "" CACHE STRING "libpaddle_inference")
 SET(OPENCV_DIR "" CACHE PATH "Location of libraries")
 SET(CUDA_LIB "" CACHE PATH "Location of libraries")
 SET(CUDNN_LIB "" CACHE PATH "Location of libraries")

@@ -7,8 +7,8 @@ WITH_MKL=ON
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
-# paddle 预测库lib名称
-PADDLE_LIB_NAME=libpaddle_fluid
+# paddle 预测库lib名称，由于不同平台不同版本预测库lib名称不同，请查看所下载的预测库中`paddle_inference/lib/`文件夹下`lib`的名称
+PADDLE_LIB_NAME=libpaddle_inference
 
 # TensorRT 的include路径
 TENSORRT_INC_DIR=/path/to/tensorrt/include
