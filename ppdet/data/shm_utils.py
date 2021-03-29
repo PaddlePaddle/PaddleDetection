@@ -58,10 +58,10 @@ def _get_shared_memory_size_in_M():
         elif len(shm_infos) == 1:
             return _parse_size_in_M(shm_infos[0][3])
         else:
-            shm_infos = [si for si in shm_infos \
-                         if si[-1] == SHM_DEFAULT_MOUNT]
-            if len(shm_infos) == 0:
-                return _parse_size_in_M(shm_infos[0][3])
+            default_mount_infos = [
+                si for si in shm_infos if si[-1] == SHM_DEFAULT_MOUNT
+            ]
+            if default_mount_infos:
+                return _parse_size_in_M(default_mount_infos[0][3])
             else:
-                return max([_parse_size_in_M(si[3]) \
-                                for si in shm_infos])
+                return max([_parse_size_in_M(si[3]) for si in shm_infos])
