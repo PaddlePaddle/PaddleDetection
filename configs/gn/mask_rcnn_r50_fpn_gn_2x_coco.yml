@@ -31,7 +31,7 @@ BBoxHead:
 
 XConvNormHead:
   num_convs: 4
-  mlp_dim: 1024
+  out_channel: 1024
   norm_type: gn
 
 MaskHead:
@@ -45,7 +45,7 @@ MaskHead:
 
 MaskFeat:
   num_convs: 4
-  out_channels: 256
+  out_channel: 256
   norm_type: gn
 
 

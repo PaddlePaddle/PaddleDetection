@@ -25,6 +25,24 @@ from .. import ops
 
 @register
 class AnchorGenerator(nn.Layer):
+    """
+    Generate anchors according to the feature maps
+
+    Args:
+        anchor_sizes (list[float] | list[list[float]]): The anchor sizes at 
+            each feature point. list[float] means all feature levels share the 
+            same sizes. list[list[float]] means the anchor sizes for 
+            each level. The sizes stand for the scale of input size.
+        aspect_ratios (list[float] | list[list[float]]): The aspect ratios at
+            each feature point. list[float] means all feature levels share the
+            same ratios. list[list[float]] means the aspect ratios for
+            each level.
+        strides (list[float]): The strides of feature maps which generate 
+            anchors
+        offset (float): The offset of the coordinate of anchors, default 0.
+        
+    """
+
     def __init__(self,
                  anchor_sizes=[32, 64, 128, 256, 512],
                  aspect_ratios=[0.5, 1.0, 2.0],
