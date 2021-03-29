@@ -42,6 +42,13 @@ TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。
 
 同时需要将图像预处理后的尺寸与设置车模型输入尺寸保持一致，需要设置`infer_cfg.yml`配置文件中`Resize OP`的`target_size`参数和`keep_ratio`参数。
 
+注意：由于TesnorRT不支持在batch维度进行slice操作，Faster RCNN 和 Mask RCNN使用固定尺寸输入预测会报错，这两个模型请使用动态尺寸输入。
+
+以`YOLOv3`为例，使用动态尺寸输入预测：
+```
+python python/infer.py --model_dir=../inference_model/yolov3_darknet53_270e_coco/ --image_file=../demo/000000014439_640x640.jpg --use_gpu=True --run_mode=trt_fp32 --run_benchmark=True
+```
+
 ### 3.3 TensorRT动态尺寸预测
 
 TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。
@@ -58,6 +65,11 @@ Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.p
 - trt_opt_shape 用于设定TensorRT的输入图像height、width中的最优尺寸，默认值：640
 
 **注意：`TensorRT`中动态尺寸设置是4维的，这里只设置输入图像的尺寸。**
+
+以`Faster RCNN`为例，使用动态尺寸输入预测：
+```
+python python/infer.py --model_dir=../inference_model/faster_rcnn_r50_fpn_1x_coco/ --image_file=../demo/000000014439.jpg --use_gpu=True --run_mode=trt_fp16 --run_benchmark=True --use_dynamic_shape=True --trt_max_shape=1280 --trt_min_shape=800 --trt_opt_shape=960
+```
 
 ## 4、常见问题QA
 **Q:** 提示没有`tensorrt_op`</br>
@@ -76,3 +88,6 @@ Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.p
 
 **Q:** 如何打开日志</br>
 **A:** 预测库默认是打开日志的，只要注释掉`config.disable_glog_info()`就可以打开日志
+
+**Q:** 开启TensorRT，预测时提示Slice on batch axis is not supported in TensorRT</br>
+**A:** 请尝试使用动态尺寸输入
