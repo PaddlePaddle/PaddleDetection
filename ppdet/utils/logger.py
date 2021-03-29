@@ -17,7 +17,7 @@ import logging
 import os
 import sys
 
-from paddle.distributed import ParallelEnv
+import paddle.distributed as dist
 
 __all__ = ['setup_logger']
 
@@ -47,7 +47,7 @@ def setup_logger(name="ppdet", output=None):
         "[%(asctime)s] %(name)s %(levelname)s: %(message)s",
         datefmt="%m/%d %H:%M:%S")
     # stdout logging: master only
-    local_rank = ParallelEnv().local_rank
+    local_rank = dist.get_rank()
     if local_rank == 0:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(logging.DEBUG)

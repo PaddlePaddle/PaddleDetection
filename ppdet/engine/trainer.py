@@ -24,7 +24,8 @@ import numpy as np
 from PIL import Image
 
 import paddle
-from paddle.distributed import ParallelEnv, fleet
+import paddle.distributed as dist
+from paddle.distributed import fleet
 from paddle import amp
 from paddle.static import InputSpec
 
@@ -84,8 +85,8 @@ class Trainer(object):
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
 
-        self._nranks = ParallelEnv().nranks
-        self._local_rank = ParallelEnv().local_rank
+        self._nranks = dist.get_world_size()
+        self._local_rank = dist.get_rank()
 
         self.status = {}
 
