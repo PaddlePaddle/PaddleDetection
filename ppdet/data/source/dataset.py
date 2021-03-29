@@ -68,8 +68,7 @@ class DetDataset(Dataset):
         return self.transform(roidb)
 
     def check_or_download_dataset(self):
-        self.dataset_dir = get_dataset_path(self.dataset_dir,
-                                            self.anno_path,
+        self.dataset_dir = get_dataset_path(self.dataset_dir, self.anno_path,
                                             self.image_dir)
 
     def set_kwargs(self, **kwargs):
