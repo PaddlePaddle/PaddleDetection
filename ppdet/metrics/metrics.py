@@ -22,10 +22,10 @@ import json
 import paddle
 import numpy as np
 
-from .category import get_categories
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
 from .widerface_utils import face_eval_run
+from ppdet.data.source.category import get_categories
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -62,7 +62,9 @@ class COCOMetric(Metric):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
         self.anno_file = anno_file
-        self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
+        self.clsid2catid = kwargs.get('clsid2catid', None)
+        if self.clsid2catid is None:
+            self.clsid2catid, _ = get_categories('COCO', anno_file)
         self.classwise = kwargs.get('classwise', False)
         self.output_eval = kwargs.get('output_eval', None)
         # TODO: bias should be unified

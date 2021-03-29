@@ -49,10 +49,10 @@ class COCODataSet(DetDataset):
         records = []
         ct = 0
 
-        catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
-        cname2cid = dict({
+        self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
+        self.cname2cid = dict({
             coco.loadCats(catid)[0]['name']: clsid
-            for catid, clsid in catid2clsid.items()
+            for catid, clsid in self.catid2clsid.items()
         })
 
         if 'annotations' not in coco.dataset:
@@ -119,7 +119,7 @@ class COCODataSet(DetDataset):
                 has_segmentation = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
-                    gt_class[i][0] = catid2clsid[catid]
+                    gt_class[i][0] = self.catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
                     # check RLE format 
@@ -163,4 +163,4 @@ class COCODataSet(DetDataset):
                 break
         assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
-        self.roidbs, self.cname2cid = records, cname2cid
+        self.roidbs = records
