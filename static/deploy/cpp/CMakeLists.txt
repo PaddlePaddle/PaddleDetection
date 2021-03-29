@@ -230,12 +230,12 @@ if (WIN32 AND WITH_MKL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./release/mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./release/libiomp5md.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./release/mkldnn.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}.dll ./release/${PADDLE_LIB_NAME}.dll
     )
 endif()
 
-
-if (WIN32 AND USE_PADDLE_20RC1)
+if (WIN32)
     add_custom_command(TARGET main POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/paddle_fluid.dll ./release/paddle_fluid.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}.dll ./release/${PADDLE_LIB_NAME}.dll
     )
 endif()

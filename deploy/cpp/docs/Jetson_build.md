@@ -129,6 +129,9 @@ TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 # Paddle 预测库路径
 PADDLE_DIR=/home/nvidia/PaddleDetection_infer/fluid_inference/
 
+# Paddle 预测库名称
+PADDLE_LIB_NAME=paddle_inference
+
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
 WITH_STATIC_LIB=OFF

@@ -19,9 +19,8 @@
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc1/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)
 
-本示例使用[paddle_inference.tgz](https://paddle-inference-lib.bj.bcebos.com/2.0.0-gpu-cuda10.1-cudnn7-avx-mkl/paddle_inference.tgz)
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```
@@ -59,6 +58,9 @@ TENSORRT_LIB_DIR=/path/to/TensorRT/lib
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference
 
+# Paddle 预测库名称
+PADDLE_LIB_NAME=paddle_inference
+
 # CUDA 的 lib 路径
 CUDA_LIB=/path/to/cuda/lib
 
@@ -77,7 +79,8 @@ cmake .. \
     -DPADDLE_DIR=${PADDLE_DIR} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR}
+    -DOPENCV_DIR=${OPENCV_DIR} \
+    -DPADDLE_LIB_NAME={PADDLE_LIB_NAME}
 make
 
 ```

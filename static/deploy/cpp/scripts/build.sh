@@ -8,20 +8,16 @@ WITH_MKL=ON
 WITH_TENSORRT=OFF
 
 # paddle 预测库lib名称
-PADDLE_LIB_NAME=libpaddle_inference
+PADDLE_LIB_NAME=libpaddle_fluid
 
 # TensorRT 的include路径
-TENSORRT_INC_DIR=/path/to/tensorrt/lib
+TENSORRT_INC_DIR=/path/to/tensorrt/include
 
 # TensorRT 的lib路径
-TENSORRT_LIB_DIR=/path/to/tensorrt/include
+TENSORRT_LIB_DIR=/path/to/tensorrt/lib
 
 # Paddle 预测库路径
-PADDLE_DIR=/path/to/fluid_inference/
-
-# Paddle 的预测库是否使用静态库来编译
-# 使用TensorRT时，Paddle的预测库通常为动态库
-WITH_STATIC_LIB=OFF
+PADDLE_DIR=/paddle/to/paddle_inference
 
 # CUDA 的 lib 路径
 CUDA_LIB=/path/to/cuda/lib
