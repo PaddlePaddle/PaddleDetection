@@ -23,7 +23,7 @@ import six
 import numpy as np
 
 import paddle
-from paddle.distributed import ParallelEnv
+import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
 from ppdet.optimizer import ModelEMA
@@ -81,7 +81,7 @@ class LogPrinter(Callback):
         super(LogPrinter, self).__init__(model)
 
     def on_step_end(self, status):
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             mode = status['mode']
             if mode == 'train':
                 epoch_id = status['epoch_id']
@@ -129,7 +129,7 @@ class LogPrinter(Callback):
                     logger.info("Eval iter: {}".format(step_id))
 
     def on_epoch_end(self, status):
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             mode = status['mode']
             if mode == 'eval':
                 sample_num = status['sample_num']
@@ -160,7 +160,7 @@ class Checkpointer(Callback):
         epoch_id = status['epoch_id']
         weight = None
         save_name = None
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
                 end_epoch = self.model.cfg.epoch
                 if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
@@ -224,7 +224,7 @@ class VisualDLWriter(Callback):
 
     def on_step_end(self, status):
         mode = status['mode']
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
                 training_staus = status['training_staus']
                 for loss_name, loss_value in training_staus.get().items():
@@ -248,7 +248,7 @@ class VisualDLWriter(Callback):
 
     def on_epoch_end(self, status):
         mode = status['mode']
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'eval':
                 for metric in self.model._metrics:
                     for key, map_value in metric.get_results().items():

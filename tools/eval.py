@@ -27,7 +27,6 @@ import warnings
 warnings.filterwarnings('ignore')
 
 import paddle
-from paddle.distributed import ParallelEnv
 
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
@@ -115,8 +114,7 @@ def main():
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-    place = paddle.set_device(place)
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 

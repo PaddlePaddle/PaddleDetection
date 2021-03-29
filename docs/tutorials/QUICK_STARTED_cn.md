@@ -70,6 +70,7 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 
 python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
+最终模型精度在mAP=0.85左右，由于数据集较小因此每次训练结束后精度会有一定波动
 
 
 ### 3、预测
