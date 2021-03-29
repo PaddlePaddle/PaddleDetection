@@ -7,8 +7,8 @@ WITH_MKL=ON
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
-# 是否使用2.0rc1预测库
-USE_PADDLE_20RC1=OFF
+# paddle 预测库lib名称
+PADDLE_LIB_NAME=libpaddle_inference
 
 # TensorRT 的include路径
 TENSORRT_INC_DIR=/path/to/tensorrt/lib
@@ -39,11 +39,11 @@ then
   echo "set OPENCV_DIR for x86_64"
   # linux系统通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
-  wget -c https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2
-  tar xvfj opencv3.4.6gcc4.8ffmpeg.tar.gz2 && cd ..
+  wget -c https://paddledet.bj.bcebos.com/data/opencv3.4.6gcc8.2ffmpeg.zip
+  unzip opencv3.4.6gcc8.2ffmpeg.zip && cd ..
 
   # set OPENCV_DIR
-  OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
+  OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc8.2ffmpeg
 
 elif [ "$MACHINE_TYPE" = "aarch64" ]
 then
@@ -76,7 +76,8 @@ cmake .. \
     -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR}
+    -DOPENCV_DIR=${OPENCV_DIR} \
+    -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME}
 
 make
 echo "make finished!"
