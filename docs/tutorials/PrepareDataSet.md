@@ -51,7 +51,7 @@ VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数�
 
 ##### VOC数据集下载  
 
-- 通过代码自动化下载VOC数据集  
+- 通过代码自动化下载VOC数据集，数据集较大，下载需要较长时间
 
     ```
     # 执行代码自动化下载VOC数据集  
@@ -151,11 +151,11 @@ COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO数据�
 
 
 ##### COCO数据下载  
-- 通过代码自动化下载COCO数据集  
+- 通过代码自动化下载COCO数据集，数据集较大，下载需要较长时间
 
     ```
     # 执行代码自动化下载COCO数据集  
-    python dataset/voc/download_coco.py
+    python dataset/coco/download_coco.py
     ```
 
     代码执行完成后COCO数据集文件组织结构为：

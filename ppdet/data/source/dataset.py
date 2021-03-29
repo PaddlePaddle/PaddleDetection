@@ -129,6 +129,9 @@ class ImageFolder(DetDataset):
         self.roidbs = None
         self.sample_num = sample_num
 
+    def check_or_download_dataset(self):
+        return
+
     def parse_dataset(self, ):
         if not self.roidbs:
             self.roidbs = self._load_images()
