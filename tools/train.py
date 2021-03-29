@@ -29,7 +29,6 @@ import random
 import numpy as np
 
 import paddle
-from paddle.distributed import ParallelEnv
 
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -122,8 +121,7 @@ def main():
     check.check_gpu(cfg.use_gpu)
     check.check_version()
 
-    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-    place = paddle.set_device(place)
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 
