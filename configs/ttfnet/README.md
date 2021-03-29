@@ -13,7 +13,7 @@ TTFNet是一种用于实时目标检测且对训练时间友好的网络，对Ce
 
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| DarkNet53    | TTFNet           |    12    |   1x      |     ----     |  33.5  | [下载链接](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
+| DarkNet53    | TTFNet           |    12    |   1x      |     ----     |  33.5  | [下载链接](https://paddledet.bj.bcebos.com/models/ttfnet_darknet53_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/ttfnet_darknet53_1x_coco.yml) |
 
 ## Citations
 ```

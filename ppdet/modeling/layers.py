@@ -616,20 +616,20 @@ class AnchorGrid(object):
 @register
 @serializable
 class FCOSBox(object):
-    __shared__ = ['num_classes', 'batch_size']
+    __shared__ = ['num_classes']
 
-    def __init__(self, num_classes=80, batch_size=1):
+    def __init__(self, num_classes=80):
         super(FCOSBox, self).__init__()
         self.num_classes = num_classes
-        self.batch_size = batch_size
 
     def _merge_hw(self, inputs, ch_type="channel_first"):
         """
+        Merge h and w of the feature map into one dimension.
         Args:
-            inputs (Variables): Feature map whose H and W will be merged into one dimension
-            ch_type     (str): channel_first / channel_last
+            inputs (Tensor): Tensor of the input feature map
+            ch_type (str): "channel_first" or "channel_last" style
         Return:
-            new_shape (Variables): The new shape after h and w merged into one dimension
+            new_shape (Tensor): The new shape after h and w merged
         """
         shape_ = paddle.shape(inputs)
         bs, ch, hi, wi = shape_[0], shape_[1], shape_[2], shape_[3]
@@ -647,16 +647,18 @@ class FCOSBox(object):
     def _postprocessing_by_level(self, locations, box_cls, box_reg, box_ctn,
                                  scale_factor):
         """
+        Postprocess each layer of the output with corresponding locations.
         Args:
-            locations (Variables): anchor points for current layer, [H*W, 2]
-            box_cls   (Variables): categories prediction, [N, C, H, W],  C is the number of classes 
-            box_reg   (Variables): bounding box prediction, [N, 4, H, W]
-            box_ctn   (Variables): centerness prediction, [N, 1, H, W]
-            scale_factor   (Variables): [h_scale, w_scale] for input images
+            locations (Tensor): anchor points for current layer, [H*W, 2]
+            box_cls (Tensor): categories prediction, [N, C, H, W], 
+                C is the number of classes
+            box_reg (Tensor): bounding box prediction, [N, 4, H, W]
+            box_ctn (Tensor): centerness prediction, [N, 1, H, W]
+            scale_factor (Tensor): [h_scale, w_scale] for input images
         Return:
-            box_cls_ch_last  (Variables): score for each category, in [N, C, M]
+            box_cls_ch_last (Tensor): score for each category, in [N, C, M]
                 C is the number of classes and M is the number of anchor points
-            box_reg_decoding (Variables): decoded bounding box, in [N, M, 4]
+            box_reg_decoding (Tensor): decoded bounding box, in [N, M, 4]
                 last dimension is [x1, y1, x2, y2]
         """
         act_shape_cls = self._merge_hw(box_cls)
@@ -712,12 +714,18 @@ class TTFBox(object):
         self.down_ratio = down_ratio
 
     def _simple_nms(self, heat, kernel=3):
+        """
+        Use maxpool to filter the max score, get local peaks.
+        """
         pad = (kernel - 1) // 2
         hmax = F.max_pool2d(heat, kernel, stride=1, padding=pad)
         keep = paddle.cast(hmax == heat, 'float32')
         return heat * keep
 
     def _topk(self, scores):
+        """
+        Select top k scores and decode to get xy coordinates.
+        """
         k = self.max_per_img
         shape_fm = paddle.shape(scores)
         shape_fm.stop_gradient = True
