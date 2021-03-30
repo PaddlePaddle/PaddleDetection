@@ -28,6 +28,21 @@ __all__ = ['SSDLoss']
 
 @register
 class SSDLoss(nn.Layer):
+    """
+    SSDLoss
+
+    Args:
+        match_type (str): The type of matching method, should be
+           'bipartite' or 'per_prediction'. None ('bipartite') by default.
+        overlap_threshold (float32, optional): If `match_type` is 'per_prediction',
+            this threshold is to determine the extra matching bboxes based
+            on the maximum distance, 0.5 by default.
+        neg_pos_ratio (float): The ratio of negative samples / positive samples.
+        neg_overlap (float): The overlap threshold of negative samples.
+        loc_loss_weight (float): The weight of loc_loss.
+        conf_loss_weight (float): The weight of conf_loss.
+    """
+
     def __init__(self,
                  match_type='per_prediction',
                  overlap_threshold=0.5,
