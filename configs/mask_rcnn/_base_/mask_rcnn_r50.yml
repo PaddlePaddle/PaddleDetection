@@ -78,7 +78,7 @@ MaskHead:
 
 MaskFeat:
   num_convs: 0
-  out_channels: 256
+  out_channel: 256
 
 MaskAssigner:
   mask_resolution: 14

@@ -32,7 +32,6 @@ def parse_requirements(fname):
 
 
 def package_model_zoo():
-    from ppdet.model_zoo import MODEL_ZOO_FILENAME
     cur_dir = osp.dirname(osp.realpath(__file__))
     cfg_dir = osp.join(cur_dir, "configs")
     cfgs = glob.glob(osp.join(cfg_dir, '*/*.yml'))
@@ -44,7 +43,7 @@ def package_model_zoo():
             valid_cfgs.append(cfg)
     model_names = [osp.splitext(osp.split(cfg)[1])[0] for cfg in valid_cfgs]
 
-    model_zoo_file = osp.join(cur_dir, 'ppdet', 'model_zoo', MODEL_ZOO_FILENAME)
+    model_zoo_file = osp.join(cur_dir, 'ppdet', 'model_zoo', 'MODEL_ZOO')
     with open(model_zoo_file, 'w') as wf:
         for model_name in model_names:
             wf.write("{}\n".format(model_name))

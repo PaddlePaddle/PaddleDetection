@@ -22,6 +22,32 @@ from .target import rpn_anchor_target, generate_proposal_target, generate_mask_t
 @register
 @serializable
 class RPNTargetAssign(object):
+    """
+    RPN targets assignment module
+
+    The assignment consists of three steps:
+        1. Match anchor and ground-truth box, label the anchor with foreground
+           or background sample
+        2. Sample anchors to keep the properly ratio between foreground and 
+           background
+        3. Generate the targets for classification and regression branch
+
+
+    Args:
+        batch_size_per_im (int): Total number of RPN samples per image. 
+            default 256
+        fg_fraction (float): Fraction of anchors that is labeled
+            foreground, default 0.5
+        positive_overlap (float): Minimum overlap required between an anchor
+            and ground-truth box for the (anchor, gt box) pair to be 
+            a foreground sample. default 0.7
+        negative_overlap (float): Maximum overlap allowed between an anchor
+            and ground-truth box for the (anchor, gt box) pair to be 
+            a background sample. default 0.3
+        use_random (bool): Use random sampling to choose foreground and 
+            background boxes, default true.
+    """
+
     def __init__(self,
                  batch_size_per_im=256,
                  fg_fraction=0.5,
@@ -54,6 +80,33 @@ class RPNTargetAssign(object):
 @register
 class BBoxAssigner(object):
     __shared__ = ['num_classes']
+    """
+    RCNN targets assignment module
+
+    The assignment consists of three steps:
+        1. Match RoIs and ground-truth box, label the RoIs with foreground
+           or background sample
+        2. Sample anchors to keep the properly ratio between foreground and 
+           background
+        3. Generate the targets for classification and regression branch
+
+    Args:
+        batch_size_per_im (int): Total number of RoIs per image. 
+            default 512 
+        fg_fraction (float): Fraction of RoIs that is labeled
+            foreground, default 0.25
+        positive_overlap (float): Minimum overlap required between a RoI
+            and ground-truth box for the (roi, gt box) pair to be 
+            a foreground sample. default 0.5
+        negative_overlap (float): Maximum overlap allowed between a RoI 
+            and ground-truth box for the (roi, gt box) pair to be 
+            a background sample. default 0.5
+        use_random (bool): Use random sampling to choose foreground and 
+            background boxes, default true
+        cascade_iou (list[iou]): The list of overlap to select foreground and 
+            background of each stage, which is only used In Cascade RCNN.
+        num_classes (int): The number of class.
+    """
 
     def __init__(self,
                  batch_size_per_im=512,
@@ -61,7 +114,6 @@ class BBoxAssigner(object):
                  fg_thresh=.5,
                  bg_thresh=.5,
                  use_random=True,
-                 is_cls_agnostic=False,
                  cascade_iou=[0.5, 0.6, 0.7],
                  num_classes=80):
         super(BBoxAssigner, self).__init__()
@@ -70,7 +122,6 @@ class BBoxAssigner(object):
         self.fg_thresh = fg_thresh
         self.bg_thresh = bg_thresh
         self.use_random = use_random
-        self.is_cls_agnostic = is_cls_agnostic
         self.cascade_iou = cascade_iou
         self.num_classes = num_classes
 
@@ -99,6 +150,18 @@ class BBoxAssigner(object):
 @serializable
 class MaskAssigner(object):
     __shared__ = ['num_classes', 'mask_resolution']
+    """
+    Mask targets assignment module
+
+    The assignment consists of three steps:
+        1. Select RoIs labels with foreground.
+        2. Encode the RoIs and corresponding gt polygons to generate 
+           mask target
+
+    Args:
+        num_classes (int): The number of class
+        mask_resolution (int): The resolution of mask target, default 14
+    """
 
     def __init__(self, num_classes=80, mask_resolution=14):
         super(MaskAssigner, self).__init__()

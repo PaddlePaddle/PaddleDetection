@@ -37,7 +37,7 @@ TRT_MIN_SUBGRAPH = {
     'EfficientDet': 40,
     'Face': 3,
     'TTFNet': 3,
-    'FCOS': 3,
+    'FCOS': 33,
     'SOLOv2': 60,
 }
 RESIZE_SCALE_SET = {
