@@ -27,6 +27,18 @@ import copy
 
 @serializable
 class DetDataset(Dataset):
+    """
+    Load detection dataset.
+
+    Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+        use_default_label (bool): whether to load default label list.
+    """
+
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,

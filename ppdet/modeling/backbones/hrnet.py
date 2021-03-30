@@ -97,7 +97,12 @@ class ConvNormLayer(nn.Layer):
 
 
 class Layer1(nn.Layer):
-    def __init__(self, num_channels, has_se=False, freeze_norm=True, name=None):
+    def __init__(self,
+                 num_channels,
+                 has_se=False,
+                 norm_decay=0.,
+                 freeze_norm=True,
+                 name=None):
         super(Layer1, self).__init__()
 
         self.bottleneck_block_list = []
@@ -111,6 +116,7 @@ class Layer1(nn.Layer):
                     has_se=has_se,
                     stride=1,
                     downsample=True if i == 0 else False,
+                    norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
                     name=name + '_' + str(i + 1)))
             self.bottleneck_block_list.append(bottleneck_block)
@@ -123,7 +129,12 @@ class Layer1(nn.Layer):
 
 
 class TransitionLayer(nn.Layer):
-    def __init__(self, in_channels, out_channels, freeze_norm=True, name=None):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 norm_decay=0.,
+                 freeze_norm=True,
+                 name=None):
         super(TransitionLayer, self).__init__()
 
         num_in = len(in_channels)
@@ -140,6 +151,7 @@ class TransitionLayer(nn.Layer):
                             ch_in=in_channels[i],
                             ch_out=out_channels[i],
                             filter_size=3,
+                            norm_decay=norm_decay,
                             freeze_norm=freeze_norm,
                             act='relu',
                             name=name + '_layer_' + str(i + 1)))
@@ -151,6 +163,7 @@ class TransitionLayer(nn.Layer):
                         ch_out=out_channels[i],
                         filter_size=3,
                         stride=2,
+                        norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
                         act='relu',
                         name=name + '_layer_' + str(i + 1)))
@@ -175,6 +188,7 @@ class Branches(nn.Layer):
                  in_channels,
                  out_channels,
                  has_se=False,
+                 norm_decay=0.,
                  freeze_norm=True,
                  name=None):
         super(Branches, self).__init__()
@@ -190,6 +204,7 @@ class Branches(nn.Layer):
                         num_channels=in_ch,
                         num_filters=out_channels[i],
                         has_se=has_se,
+                        norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
                         name=name + '_branch_layer_' + str(i + 1) + '_' +
                         str(j + 1)))
@@ -213,6 +228,7 @@ class BottleneckBlock(nn.Layer):
                  has_se,
                  stride=1,
                  downsample=False,
+                 norm_decay=0.,
                  freeze_norm=True,
                  name=None):
         super(BottleneckBlock, self).__init__()
@@ -224,6 +240,7 @@ class BottleneckBlock(nn.Layer):
             ch_in=num_channels,
             ch_out=num_filters,
             filter_size=1,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             act="relu",
             name=name + "_conv1")
@@ -232,6 +249,7 @@ class BottleneckBlock(nn.Layer):
             ch_out=num_filters,
             filter_size=3,
             stride=stride,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             act="relu",
             name=name + "_conv2")
@@ -239,6 +257,7 @@ class BottleneckBlock(nn.Layer):
             ch_in=num_filters,
             ch_out=num_filters * 4,
             filter_size=1,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             act=None,
             name=name + "_conv3")
@@ -248,6 +267,7 @@ class BottleneckBlock(nn.Layer):
                 ch_in=num_channels,
                 ch_out=num_filters * 4,
                 filter_size=1,
+                norm_decay=norm_decay,
                 freeze_norm=freeze_norm,
                 act=None,
                 name=name + "_downsample")
@@ -283,6 +303,7 @@ class BasicBlock(nn.Layer):
                  stride=1,
                  has_se=False,
                  downsample=False,
+                 norm_decay=0.,
                  freeze_norm=True,
                  name=None):
         super(BasicBlock, self).__init__()
@@ -293,6 +314,7 @@ class BasicBlock(nn.Layer):
             ch_in=num_channels,
             ch_out=num_filters,
             filter_size=3,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             stride=stride,
             act="relu",
@@ -301,6 +323,7 @@ class BasicBlock(nn.Layer):
             ch_in=num_filters,
             ch_out=num_filters,
             filter_size=3,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             stride=1,
             act=None,
@@ -311,6 +334,7 @@ class BasicBlock(nn.Layer):
                 ch_in=num_channels,
                 ch_out=num_filters * 4,
                 filter_size=1,
+                norm_decay=norm_decay,
                 freeze_norm=freeze_norm,
                 act=None,
                 name=name + "_downsample")
@@ -381,6 +405,7 @@ class Stage(nn.Layer):
                  num_modules,
                  num_filters,
                  has_se=False,
+                 norm_decay=0.,
                  freeze_norm=True,
                  multi_scale_output=True,
                  name=None):
@@ -396,6 +421,7 @@ class Stage(nn.Layer):
                         num_channels=num_channels,
                         num_filters=num_filters,
                         has_se=has_se,
+                        norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
                         multi_scale_output=False,
                         name=name + '_' + str(i + 1)))
@@ -406,6 +432,7 @@ class Stage(nn.Layer):
                         num_channels=num_channels,
                         num_filters=num_filters,
                         has_se=has_se,
+                        norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
                         name=name + '_' + str(i + 1)))
 
@@ -424,6 +451,7 @@ class HighResolutionModule(nn.Layer):
                  num_filters,
                  has_se=False,
                  multi_scale_output=True,
+                 norm_decay=0.,
                  freeze_norm=True,
                  name=None):
         super(HighResolutionModule, self).__init__()
@@ -432,6 +460,7 @@ class HighResolutionModule(nn.Layer):
             in_channels=num_channels,
             out_channels=num_filters,
             has_se=has_se,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name=name)
 
@@ -439,6 +468,7 @@ class HighResolutionModule(nn.Layer):
             in_channels=num_filters,
             out_channels=num_filters,
             multi_scale_output=multi_scale_output,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name=name)
 
@@ -453,6 +483,7 @@ class FuseLayers(nn.Layer):
                  in_channels,
                  out_channels,
                  multi_scale_output=True,
+                 norm_decay=0.,
                  freeze_norm=True,
                  name=None):
         super(FuseLayers, self).__init__()
@@ -473,6 +504,7 @@ class FuseLayers(nn.Layer):
                             filter_size=1,
                             stride=1,
                             act=None,
+                            norm_decay=norm_decay,
                             freeze_norm=freeze_norm,
                             name=name + '_layer_' + str(i + 1) + '_' +
                             str(j + 1)))
@@ -489,6 +521,7 @@ class FuseLayers(nn.Layer):
                                     ch_out=out_channels[i],
                                     filter_size=3,
                                     stride=2,
+                                    norm_decay=norm_decay,
                                     freeze_norm=freeze_norm,
                                     act=None,
                                     name=name + '_layer_' + str(i + 1) + '_' +
@@ -503,6 +536,7 @@ class FuseLayers(nn.Layer):
                                     ch_out=out_channels[j],
                                     filter_size=3,
                                     stride=2,
+                                    norm_decay=norm_decay,
                                     freeze_norm=freeze_norm,
                                     act="relu",
                                     name=name + '_layer_' + str(i + 1) + '_' +
@@ -544,6 +578,7 @@ class HRNet(nn.Layer):
         has_se (bool): whether to add SE block for each stage
         freeze_at (int): the stage to freeze
         freeze_norm (bool): whether to freeze norm in HRNet
+        norm_decay (float): weight decay for normalization layer weights
         return_idx (List): the stage to return
     """
 
@@ -586,6 +621,7 @@ class HRNet(nn.Layer):
             ch_out=64,
             filter_size=3,
             stride=2,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             act='relu',
             name="layer1_1")
@@ -595,6 +631,7 @@ class HRNet(nn.Layer):
             ch_out=64,
             filter_size=3,
             stride=2,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             act='relu',
             name="layer1_2")
@@ -602,12 +639,14 @@ class HRNet(nn.Layer):
         self.la1 = Layer1(
             num_channels=64,
             has_se=has_se,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="layer2")
 
         self.tr1 = TransitionLayer(
             in_channels=[256],
             out_channels=channels_2,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="tr1")
 
@@ -616,12 +655,14 @@ class HRNet(nn.Layer):
             num_modules=num_modules_2,
             num_filters=channels_2,
             has_se=self.has_se,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="st2")
 
         self.tr2 = TransitionLayer(
             in_channels=channels_2,
             out_channels=channels_3,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="tr2")
 
@@ -630,12 +671,14 @@ class HRNet(nn.Layer):
             num_modules=num_modules_3,
             num_filters=channels_3,
             has_se=self.has_se,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="st3")
 
         self.tr3 = TransitionLayer(
             in_channels=channels_3,
             out_channels=channels_4,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="tr3")
         self.st4 = Stage(
@@ -643,6 +686,7 @@ class HRNet(nn.Layer):
             num_modules=num_modules_4,
             num_filters=channels_4,
             has_se=self.has_se,
+            norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             name="st4")
 

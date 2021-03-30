@@ -25,6 +25,18 @@ __all__ = ['CascadeRCNN']
 
 @register
 class CascadeRCNN(BaseArch):
+    """
+    Cascade R-CNN network, see https://arxiv.org/abs/1712.00726
+
+    Args:
+        backbone (object): backbone instance
+        rpn_head (object): `RPNHead` instance
+        bbox_head (object): `BBoxHead` instance
+        bbox_post_process (object): `BBoxPostProcess` instance
+        neck (object): 'FPN' instance
+        mask_head (object): `MaskHead` instance
+        mask_post_process (object): `MaskPostProcess` instance
+    """
     __category__ = 'architecture'
     __inject__ = [
         'bbox_post_process',
