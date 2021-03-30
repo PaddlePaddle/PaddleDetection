@@ -29,6 +29,34 @@ __all__ = ['FPN']
 @register
 @serializable
 class FPN(nn.Layer):
+    """
+    Feature Pyramid Network, see https://arxiv.org/abs/1612.03144
+
+    Args:
+        in_channels (list[int]): input channels of each level which can be 
+            derived from the output shape of backbone by from_config
+        out_channel (list[int]): output channel of each level
+        spatial_scales (list[float]): the spatial scales between input feature
+            maps and original input image which can be derived from the output 
+            shape of backbone by from_config
+        has_extra_convs (bool): whether to add extra conv to the last level.
+            default False
+        extra_stage (int): the number of extra stages added to the last level.
+            default 1
+        use_c5 (bool): Whether to use c5 as the input of extra stage, 
+            otherwise p5 is used. default True
+        norm_type (string|None): The normalization type in FPN module. If 
+            norm_type is None, norm will not be used after conv and if 
+            norm_type is string, bn, gn, sync_bn are available. default None
+        norm_decay (float): weight decay for normalization layer weights.
+            default 0.
+        freeze_norm (bool): whether to freeze normalization layer.  
+            default False
+        relu_before_extra_convs (bool): whether to add relu before extra convs.
+            default False
+        
+    """
+
     def __init__(self,
                  in_channels,
                  out_channel,
@@ -67,7 +95,7 @@ class FPN(nn.Layer):
             else:
                 lateral_name = 'fpn_inner_res{}_sum_lateral'.format(i + 2)
             in_c = in_channels[i - st_stage]
-            if self.norm_type == 'gn':
+            if self.norm_type is not None:
                 lateral = self.add_sublayer(
                     lateral_name,
                     ConvNormLayer(
@@ -93,7 +121,7 @@ class FPN(nn.Layer):
             self.lateral_convs.append(lateral)
 
             fpn_name = 'fpn_res{}_sum'.format(i + 2)
-            if self.norm_type == 'gn':
+            if self.norm_type is not None:
                 fpn_conv = self.add_sublayer(
                     fpn_name,
                     ConvNormLayer(
@@ -128,7 +156,7 @@ class FPN(nn.Layer):
                 else:
                     in_c = out_channel
                 extra_fpn_name = 'fpn_{}'.format(lvl + 2)
-                if self.norm_type == 'gn':
+                if self.norm_type is not None:
                     extra_fpn_conv = self.add_sublayer(
                         extra_fpn_name,
                         ConvNormLayer(

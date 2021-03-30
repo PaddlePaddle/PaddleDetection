@@ -135,12 +135,15 @@ def generate_proposal_target(rpn_rois,
     tgt_gt_inds = []
     new_rois_num = []
 
+    # In cascade rcnn, the threshold for foreground and background
+    # is used from cascade_iou
     fg_thresh = cascade_iou if is_cascade else fg_thresh
     bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
         gt_bbox = gt_boxes[i]
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
+        # Concat RoIs and gt boxes except cascade rcnn
         if not is_cascade:
             bbox = paddle.concat([rpn_roi, gt_bbox])
         else:
@@ -247,10 +250,12 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
     tgt_weights = []
     for k in range(len(rois)):
         labels_per_im = labels_int32[k]
+        # select rois labeled with foreground
         fg_inds = paddle.nonzero(
             paddle.logical_and(labels_per_im != -1, labels_per_im !=
                                num_classes))
         has_fg = True
+        # generate fake roi if foreground is empty
         if fg_inds.numel() == 0:
             has_fg = False
             fg_inds = paddle.ones([1], dtype='int32')
@@ -259,6 +264,8 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
 
         rois_per_im = rois[k]
         fg_rois = paddle.gather(rois_per_im, fg_inds)
+        # Copy the foreground roi to cpu
+        # to generate mask target with ground-truth
         boxes = fg_rois.numpy()
         gt_segms_per_im = gt_segms[k]
         new_segm = []
