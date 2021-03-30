@@ -207,9 +207,6 @@ int main(int argc, char** argv) {
     return -1;
   }
   // Load model and create a object detector
-  const std::vector<int> trt_min_shape = {1, FLAGS_trt_min_shape, FLAGS_trt_min_shape};
-  const std::vector<int> trt_max_shape = {1, FLAGS_trt_max_shape, FLAGS_trt_max_shape};
-  const std::vector<int> trt_opt_shape = {1, FLAGS_trt_opt_shape, FLAGS_trt_opt_shape};
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_run_mode,
                         FLAGS_gpu_id, FLAGS_use_dynamic_shape, FLAGS_trt_min_shape,
                         FLAGS_trt_max_shape, FLAGS_trt_opt_shape);
