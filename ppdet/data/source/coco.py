@@ -91,8 +91,10 @@ class COCODataSet(DetDataset):
                     else:
                         if not any(np.array(inst['bbox'])):
                             continue
-                    angle = 0.0
-                    if len(inst['bbox']) > 4:
+
+                    # read rbox anno or not
+                    is_rbox_anno = True if len(inst['bbox']) == 5 else False
+                    if is_rbox_anno:
                         xc, yc, box_w, box_h, angle = inst['bbox']
                         x1 = xc - box_w / 2.0
                         y1 = yc - box_h / 2.0
@@ -104,13 +106,11 @@ class COCODataSet(DetDataset):
                         y2 = y1 + box_h
                     eps = 1e-5
                     if inst['area'] > 0 and x2 - x1 > eps and y2 - y1 > eps:
-                        if len(inst['bbox']) > 4:
-                            inst['clean_bbox'] = [xc, yc, box_w, box_h]
-                            inst['gt_theta'] = angle
-                        else:
-                            inst['clean_bbox'] = [
-                                round(float(x), 3) for x in [x1, y1, x2, y2]
-                            ]
+                        inst['clean_bbox'] = [
+                            round(float(x), 3) for x in [x1, y1, x2, y2]
+                        ]
+                        if is_rbox_anno:
+                            inst['clean_rbox'] = [xc, yc, box_w, box_h, angle]
                         bboxes.append(inst)
                     else:
                         logger.warning(
@@ -123,6 +123,7 @@ class COCODataSet(DetDataset):
                     continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
+                gt_rbox = np.zeros((num_bbox, 5), dtype=np.float32)
                 gt_theta = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
@@ -134,6 +135,9 @@ class COCODataSet(DetDataset):
                     catid = box['category_id']
                     gt_class[i][0] = catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
+                    # xc, yc, w, h, theta
+                    if is_rbox_anno:
+                        gt_rbox[i, :] = box['clean_rbox']
                     is_crowd[i][0] = box['iscrowd']
                     # check RLE format 
                     if 'segmentation' in box and box['iscrowd'] == 1:
@@ -156,7 +160,7 @@ class COCODataSet(DetDataset):
                     'is_crowd': is_crowd,
                     'gt_class': gt_class,
                     'gt_bbox': gt_bbox,
-                    'gt_theta': gt_theta,
+                    'gt_rbox': gt_rbox,
                     'gt_poly': gt_poly,
                 }
                 for k, v in gt_rec.items():

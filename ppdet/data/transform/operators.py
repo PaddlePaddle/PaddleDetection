@@ -700,6 +700,7 @@ class Resize(BaseOperator):
 
         # apply bbox
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            print('deng gt_bbox', sample)
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
@@ -1932,4 +1933,204 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        return sample
+
+
+@register_op
+class ResizeRbox(BaseOperator):
+    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+        """
+        Resize image to target size. if keep_ratio is True,
+        resize the image's long side to the maximum of target_size
+        if keep_ratio is False, resize the image to target size(h, w)
+        Args:
+            target_size (int|list): image target size
+            keep_ratio (bool): whether keep_ratio or not, default true
+            interp (int): the interpolation method
+        """
+        super(ResizeRbox, self).__init__()
+        self.keep_ratio = keep_ratio
+        self.interp = interp
+        if not isinstance(target_size, (Integral, Sequence)):
+            raise TypeError(
+                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
+                format(type(target_size)))
+        if isinstance(target_size, Integral):
+            target_size = [target_size, target_size]
+        self.target_size = target_size
+
+    def apply_image(self, image, scale):
+        im_scale_x, im_scale_y = scale
+
+        return cv2.resize(
+            image,
+            None,
+            None,
+            fx=im_scale_x,
+            fy=im_scale_y,
+            interpolation=self.interp)
+
+    def apply_bbox(self, bbox, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        bbox[:, 0::2] *= im_scale_x
+        bbox[:, 1::2] *= im_scale_y
+        bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
+        bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
+        return bbox
+
+    def apply(self, sample, context=None):
+        """ Resize the image numpy.
+        """
+        im = sample['image']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        im_shape = im.shape
+        if self.keep_ratio:
+
+            im_size_min = np.min(im_shape[0:2])
+            im_size_max = np.max(im_shape[0:2])
+
+            target_size_min = np.min(self.target_size)
+            target_size_max = np.max(self.target_size)
+
+            im_scale = min(target_size_min / im_size_min,
+                           target_size_max / im_size_max)
+
+            resize_h = im_scale * float(im_shape[0])
+            resize_w = im_scale * float(im_shape[1])
+
+            im_scale_x = im_scale
+            im_scale_y = im_scale
+        else:
+            resize_h, resize_w = self.target_size
+            im_scale_y = resize_h / im_shape[0]
+            im_scale_x = resize_w / im_shape[1]
+
+        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+        sample['image'] = im
+        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
+        if 'scale_factor' in sample:
+            scale_factor = sample['scale_factor']
+            sample['scale_factor'] = np.asarray(
+                [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
+                dtype=np.float32)
+        else:
+            sample['scale_factor'] = np.asarray(
+                [im_scale_y, im_scale_x], dtype=np.float32)
+
+        # apply bbox
+        if 'gt_rbox2poly' in sample and len(sample['gt_rbox2poly']) > 0:
+            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
+                                                [im_scale_x, im_scale_y],
+                                                [resize_w, resize_h])
+
+        return sample
+
+
+@register_op
+class Rbox2Poly(BaseOperator):
+    """
+    Convert rbbox format to poly format.
+    """
+
+    def __init__(self):
+        super(Rbox2Poly, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_rbox' in sample
+        assert sample['gt_rbox'].shape[1] == 5
+        rrect = sample['gt_rbox']
+        bbox_num = rrect.shape[0]
+        x_ctr = rrect[:, 0]
+        y_ctr = rrect[:, 1]
+        width = rrect[:, 2]
+        height = rrect[:, 3]
+        angle = rrect[:, 4]
+        tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
+        # rect 2x4
+        rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle), np.cos(angle)]])
+
+        poly = []
+        for i in range(R.shape[2]):
+            tmp_r = R[:, :, i].reshape(2, 2)
+            poly.append(tmp_r.dot(rect[:, :, i]))
+
+        # poly:[M, 2, 4]
+        poly = np.array(poly)
+        coor_x = poly[:, 0, :4] + x_ctr.reshape(bbox_num, 1)
+        coor_y = poly[:, 1, :4] + y_ctr.reshape(bbox_num, 1)
+        poly = np.stack([coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
+                         coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]], axis=1)
+        x1 = x_ctr - width / 2.0
+        y1 = y_ctr - height / 2.0
+        x2 = x_ctr + width / 2.0
+        y2 = y_ctr + height / 2.0
+        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
+        sample['gt_rbox2poly'] = poly
+        return sample
+
+@register_op
+class Poly2Rbox(BaseOperator):
+    """
+    Convert poly format to rbbox format.
+    """
+
+    def __init__(self):
+        super(Poly2Rbox, self).__init__()
+
+    def poly_to_rbox(self, polys):
+        """
+        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+        to
+        rotated_boxes:[x_ctr,y_ctr,w,h,angle]
+        """
+        rotated_boxes = []
+        for poly in polys:
+            poly = np.array(poly[:8], dtype=np.float32)
+
+            pt1 = (poly[0], poly[1])
+            pt2 = (poly[2], poly[3])
+            pt3 = (poly[4], poly[5])
+            pt4 = (poly[6], poly[7])
+
+            edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) +
+                            (pt1[1] - pt2[1]) * (pt1[1] - pt2[1]))
+            edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) +
+                            (pt2[1] - pt3[1]) * (pt2[1] - pt3[1]))
+
+            width = max(edge1, edge2)
+            height = min(edge1, edge2)
+
+            angle = 0
+            if edge1 > edge2:
+                angle = np.arctan2(
+                    np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+            elif edge2 >= edge1:
+                angle = np.arctan2(
+                    np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+
+            def norm_angle(angle, range=[-np.pi / 4, np.pi]):
+                return (angle - range[0]) % range[1] + range[0]
+            angle = norm_angle(angle)
+
+            x_ctr = np.float(pt1[0] + pt3[0]) / 2
+            y_ctr = np.float(pt1[1] + pt3[1]) / 2
+            rotated_box = np.array([x_ctr, y_ctr, width, height, angle])
+            rotated_boxes.append(rotated_box)
+        ret_rotated_boxes = np.array(rotated_boxes)
+        assert ret_rotated_boxes.shape[1] == 5
+        return ret_rotated_boxes
+
+    def apply(self, sample, context=None):
+        assert 'gt_rbox2poly' in sample
+        poly = sample['gt_rbox2poly']
+        rbox = self.poly_to_rbox(poly)
+        sample['gt_rbox'] = rbox
         return sample

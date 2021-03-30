@@ -57,7 +57,8 @@ class S2ANet(BaseArch):
         out_shape = neck and neck.out_shape or backbone.out_shape
         kwargs = {'input_shape': out_shape}
         s2anet_head = create(cfg['s2anet_head'], **kwargs)
-        s2anet_bbox_post_process = create(cfg['s2anet_bbox_post_process'], **kwargs)
+        s2anet_bbox_post_process = create(cfg['s2anet_bbox_post_process'],
+                                          **kwargs)
         s2anet_anchor_assigner = create(cfg['s2anet_anchor_assigner'], **kwargs)
 
         return {
@@ -81,7 +82,8 @@ class S2ANet(BaseArch):
     def get_loss(self, ):
         s2anet_head_out = self._forward()
 
-        loss = self.s2anet_head.get_loss(self.inputs, s2anet_head_out, self.s2anet_anchor_assigner)
+        loss = self.s2anet_head.get_loss(self.inputs, s2anet_head_out,
+                                         self.s2anet_anchor_assigner)
         total_loss = paddle.add_n(list(loss.values()))
         loss.update({'loss': total_loss})
         return loss
@@ -92,14 +94,23 @@ class S2ANet(BaseArch):
         im_shape = self.inputs['im_shape']
         scale_factor = self.inputs['scale_factor']
         nms_pre = self.s2anet_bbox_post_process.nms_pre
-        pred_scores, pred_bboxes = self.s2anet_head.get_prediction(s2anet_head_out, nms_pre)
+        pred_scores, pred_bboxes = self.s2anet_head.get_prediction(
+            s2anet_head_out, nms_pre)
 
         # post_process
-        bbox_pred, bbox_num, index = self.s2anet_bbox_post_process.get_nms_result(pred_scores, pred_bboxes)
-        # pred_result = self.s2anet_bbox_post_process.get_pred(bbox_pred, bbox_num, im_shape, scale_factor)
+        pred_cls_score_bbox, bbox_num, index = self.s2anet_bbox_post_process.get_nms_result(
+            pred_scores, pred_bboxes)
 
-        output = {
-            'bbox': bbox_pred,
-            'bbox_num': bbox_num
-        }
+        # result [n, 10]
+        if bbox_num > 0:
+            pred_bbox, bbox_num = self.s2anet_bbox_post_process.get_result(
+                pred_cls_score_bbox[:, 2:], bbox_num, im_shape[0], scale_factor[0])
+
+            pred_cls_score_bbox = paddle.concat(
+                [pred_cls_score_bbox[:, 0:2], pred_bbox], axis=1)
+        else:
+            pred_cls_score_bbox = paddle.to_tensor(
+                np.array([[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        output = {'bbox': pred_cls_score_bbox, 'bbox_num': bbox_num}
         return output
