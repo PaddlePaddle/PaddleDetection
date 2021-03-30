@@ -102,13 +102,13 @@ TrainReader:
     - Gt2YoloTarget: {anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]], anchors: [[10, 13], [16, 30], [33, 23], [30, 61], [62, 45], [59, 119], [116, 90], [156, 198], [373, 326]], downsample_ratios: [32, 16, 8]}
   # 训练时batch_size
   batch_size: 24
-  # 是否shuffle
+  # 读取数据是是否乱序
   shuffle: true
-  # 是否drop_last
+  # 是否丢弃最后不能完整组成batch的数据
   drop_last: true
-  # mixup_epoch
+  # mixup_epoch，大于最大epoch，表示训练过程一直使用mixup数据增广
   mixup_epoch: 25000
-  # 是否使用shared_memory
+  # 是否通过共享内存进行数据读取加速，需要保证共享内存大小(如/dev/shm)满足大于1G
   use_shared_memory: true
 
 # 评估数据
@@ -121,7 +121,7 @@ EvalReader:
     - Permute: {}
   # 评估时batch_size
   batch_size: 8
-  # 是否drop_empty
+  # 是否丢弃没有标注的数据
   drop_empty: false
 
 # 测试数据

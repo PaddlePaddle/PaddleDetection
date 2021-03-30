@@ -90,11 +90,11 @@ TrainReader:
   - PadBatch: {pad_to_stride: 32}
   # 训练时batch_size
   batch_size: 1
-  # 是否shuffle
+  # 读取数据是是否乱序
   shuffle: true
-  # 是否drop_last
+  # 是否丢弃最后不能完整组成batch的数据
   drop_last: true
-  # 是否collate_batch， faster rcnn模型中需要设置为false
+  # 表示reader是否对gt进行组batch的操作，在rcnn系列算法中设置为false，得到的gt格式为list[Tensor]
   collate_batch: false
 
 # 评估数据
@@ -110,11 +110,11 @@ EvalReader:
   - PadBatch: {pad_to_stride: 32}
   # 评估时batch_size
   batch_size: 1
-  # 是否shuffle
+  # 读取数据是是否乱序
   shuffle: false
-  # 是否drop_last
+  # 是否丢弃最后不能完整组成batch的数据
   drop_last: false
-  # 是否drop_empty
+  # 是否丢弃没有标注的数据
   drop_empty: false
 
 # 测试数据
@@ -130,9 +130,9 @@ TestReader:
   - PadBatch: {pad_to_stride: 32}
   # 测试时batch_size
   batch_size: 1
-  # 是否shuffle
+  # 读取数据是是否乱序
   shuffle: false
-  # 是否drop_last
+  # 是否丢弃最后不能完整组成batch的数据
   drop_last: false
 ```
 
