@@ -105,8 +105,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         else:
             x1, y1, x2, y2, x3, y3, x4, y4 = bbox
             draw.line(
-                [(x1, y1), (x2, y2), (x3, y3), (x4, y4),
-                 (x1, y1)],
+                [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)],
                 width=2,
                 fill=color)
             xmin = min(x1, x2, x3, x4)

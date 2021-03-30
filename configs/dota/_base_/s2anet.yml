@@ -1,0 +1,64 @@
+architecture: S2ANet
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_cos_pretrained.tar
+weights: output/s2anet_r50_fpn_1x_dota/model_final.pdparams
+
+load_static_weights: True
+
+# Model Achitecture
+S2ANet:
+  backbone: ResNet
+  neck: FPN
+  s2anet_head: S2ANetHead
+  # post process
+  s2anet_bbox_post_process: S2ANetBBoxPostProcess
+  # anchor_assign
+  s2anet_anchor_assigner: S2ANetAnchorAssigner
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1,2,3]
+  num_stages: 4
+
+FPN:
+  in_channels: [256, 512, 1024]
+  out_channel: 256
+  spatial_scales: [0.25, 0.125, 0.0625]
+  has_extra_convs: True
+  extra_stage: 2
+  use_c5: True
+  norm_type: None
+  norm_decay: 0
+  freeze_norm: False
+  relu_before_extra_convs: False
+
+
+S2ANetHead:
+  stacked_convs: 2
+  feat_in: 256
+  feat_out: 256
+  num_classes: 15
+  anchor_strides: [8, 16, 32, 64, 128]
+  anchor_scales: [4]
+  anchor_ratios: [1.0]
+  align_conv_type: 'Conv'  # AlignConv Conv
+  use_custom_smooth_l1_loss: True
+  use_sigmoid_cls: True
+
+
+S2ANetAnchorAssigner:
+  pos_iou_thr: 0.5
+  neg_iou_thr: 0.4
+  min_iou_thr: 0.0
+  ignore_iof_thr: -2
+
+S2ANetBBoxPostProcess:
+  nms_pre: 2000
+  min_bbox_size: 0.0
+  nms:
+    name: MultiClassNMS
+    keep_top_k: -1
+    score_threshold: 0.05
+    nms_threshold: 0.1

@@ -168,10 +168,10 @@ def rect2rbox(bboxes):
 
 
 def delta2rbox(Rrois,
-                  deltas,
-                  means=[0, 0, 0, 0, 0],
-                  stds=[1, 1, 1, 1, 1],
-                  wh_ratio_clip=1e-6):
+               deltas,
+               means=[0, 0, 0, 0, 0],
+               stds=[1, 1, 1, 1, 1],
+               wh_ratio_clip=1e-6):
     """
     :param Rrois: (cx, cy, w, h, theta)
     :param deltas: (dx, dy, dw, dh, dtheta)
@@ -201,8 +201,10 @@ def delta2rbox(Rrois,
     Rroi_h = Rrois[:, 3]
     Rroi_angle = Rrois[:, 4]
 
-    gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(Rroi_angle) + Rroi_x
-    gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(Rroi_angle) + Rroi_y
+    gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(
+        Rroi_angle) + Rroi_x
+    gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(
+        Rroi_angle) + Rroi_y
     gw = Rroi_w * dw.exp()
     gh = Rroi_h * dh.exp()
     ga = np.pi * dangle + Rroi_angle
@@ -240,10 +242,10 @@ def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
     proposals_angle = proposals[..., 4]
 
     coord = gt[..., 0:2] - proposals[..., 0:2]
-    dx = (np.cos(proposals[..., 4]) * coord[..., 0] +
-          np.sin(proposals[..., 4]) * coord[..., 1]) / proposals_widths
-    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] +
-          np.cos(proposals[..., 4]) * coord[..., 1]) / proposals_heights
+    dx = (np.cos(proposals[..., 4]) * coord[..., 0] + np.sin(proposals[..., 4])
+          * coord[..., 1]) / proposals_widths
+    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] + np.cos(proposals[..., 4])
+          * coord[..., 1]) / proposals_heights
     dw = np.log(gt_widths / proposals_widths)
     dh = np.log(gt_heights / proposals_heights)
     da = (gt_angle - proposals_angle)
@@ -278,11 +280,7 @@ def bbox_decode(bbox_preds,
         bbox_delta = bbox_pred
         anchors = paddle.to_tensor(anchors)
         bboxes = delta2rbox(
-            anchors,
-            bbox_delta,
-            means,
-            stds,
-            wh_ratio_clip=1e-6)
+            anchors, bbox_delta, means, stds, wh_ratio_clip=1e-6)
         bboxes = paddle.reshape(bboxes, [H, W, 5])
         bboxes_list.append(bboxes)
     return paddle.stack(bboxes_list, axis=0)

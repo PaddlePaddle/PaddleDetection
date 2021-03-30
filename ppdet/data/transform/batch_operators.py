@@ -37,6 +37,8 @@ __all__ = [
     'Gt2FCOSTarget',
     'Gt2TTFTarget',
     'Gt2Solov2Target',
+    'PadRboxBatch',
+    'Poly2RboxBatch'
 ]
 
 
@@ -787,3 +789,136 @@ class Gt2Solov2Target(BaseOperator):
                 data['grid_order{}'.format(idx)] = gt_grid_order
 
         return samples
+
+
+@register_op
+class PadRboxBatch(BaseOperator):
+    """
+    Pad a batch of samples so they can be divisible by a stride.
+    The layout of each image should be 'CHW'.
+    Args:
+        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
+            height and width is divisible by `pad_to_stride`.
+    """
+
+    def __init__(self, pad_to_stride=0, pad_gt=False):
+        super(PadRboxBatch, self).__init__()
+        self.pad_to_stride = pad_to_stride
+        self.pad_gt = pad_gt
+
+    def __call__(self, samples, context=None):
+        """
+        Args:
+            samples (list): a batch of sample, each is dict.
+        """
+        coarsest_stride = self.pad_to_stride
+
+        max_shape = np.array([data['image'].shape for data in samples]).max(
+            axis=0)
+        if coarsest_stride > 0:
+            max_shape[1] = int(
+                np.ceil(max_shape[1] / coarsest_stride) * coarsest_stride)
+            max_shape[2] = int(
+                np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
+
+        padding_batch = []
+        for data in samples:
+            im = data['image']
+            im_c, im_h, im_w = im.shape[:]
+            padding_im = np.zeros(
+                (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
+            padding_im[:, :im_h, :im_w] = im
+            data['image'] = padding_im
+
+        if self.pad_gt:
+            gt_num = []
+            for data in samples:
+                gt_num.append(data['gt_bbox'].shape[0])
+            gt_num_max = max(gt_num)
+
+            for i, data in enumerate(samples):
+                gt_rbox_data = -np.ones([gt_num_max, 5], dtype=np.float32)
+                gt_class_data = -np.ones([gt_num_max], dtype=np.int32)
+                is_crowd_data = np.ones([gt_num_max], dtype=np.int32)
+
+                gt_num = data['gt_rbox'].shape[0]
+                gt_rbox_data[0:gt_num, :] = data['gt_rbox']
+                gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
+                is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
+
+                data['gt_rbox'] = gt_rbox_data
+                data['gt_class'] = gt_class_data
+                data['is_crowd'] = is_crowd_data
+
+        return samples
+
+
+@register_op
+class Poly2RboxBatch(BaseOperator):
+    """
+    Pad a batch of samples so they can be divisible by a stride.
+    The layout of each image should be 'CHW'.
+    Args:
+        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
+            height and width is divisible by `pad_to_stride`.
+    """
+
+    def __init__(self,):
+        super(Poly2RboxBatch, self).__init__()
+
+    def poly_to_rbox(self, polys):
+        """
+        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+        to
+        rotated_boxes:[x_ctr,y_ctr,w,h,angle]
+        """
+        rotated_boxes = []
+        for poly in polys:
+            poly = np.array(poly[:8], dtype=np.float32)
+
+            pt1 = (poly[0], poly[1])
+            pt2 = (poly[2], poly[3])
+            pt3 = (poly[4], poly[5])
+            pt4 = (poly[6], poly[7])
+
+            edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) +
+                            (pt1[1] - pt2[1]) * (pt1[1] - pt2[1]))
+            edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) +
+                            (pt2[1] - pt3[1]) * (pt2[1] - pt3[1]))
+
+            width = max(edge1, edge2)
+            height = min(edge1, edge2)
+
+            angle = 0
+            if edge1 > edge2:
+                angle = np.arctan2(
+                    np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+            elif edge2 >= edge1:
+                angle = np.arctan2(
+                    np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+
+            def norm_angle(angle, range=[-np.pi / 4, np.pi]):
+                return (angle - range[0]) % range[1] + range[0]
+            angle = norm_angle(angle)
+
+            x_ctr = np.float(pt1[0] + pt3[0]) / 2.0
+            y_ctr = np.float(pt1[1] + pt3[1]) / 2.0
+            rotated_box = np.array([x_ctr, y_ctr, width, height, angle])
+            rotated_boxes.append(rotated_box)
+        ret_rotated_boxes = np.array(rotated_boxes)
+        assert ret_rotated_boxes.shape[1] == 5
+        return ret_rotated_boxes
+
+    def __call__(self, samples, context=None):
+        """
+        Args:
+            samples (list): a batch of sample, each is dict.
+        """
+
+        for sample in samples:
+            assert 'gt_rbox2poly' in sample
+            polys = sample['gt_rbox2poly']
+            rbox = self.poly_to_rbox(polys)
+            sample['gt_rbox'] = rbox
+        return samples
+
