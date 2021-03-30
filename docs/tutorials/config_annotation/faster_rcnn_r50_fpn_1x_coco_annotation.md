@@ -232,7 +232,7 @@ BBoxAssigner:
 # TwoFCHead
 TwoFCHead:
   # TwoFCHead特征维度
-  mlp_dim: 1024
+  out_channel: 1024
 
 
 # BBoxPostProcess
