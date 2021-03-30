@@ -26,8 +26,8 @@ void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
   };
   data->scale_factor_ = {1., 1.};
   data->in_net_shape_ = {
-      static_cast<int>(im->rows),
-      static_cast<int>(im->cols)
+      static_cast<float>(im->rows),
+      static_cast<float>(im->cols)
   };
 }
 
@@ -63,12 +63,12 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
   data->im_shape_ = {
-      static_cast<int>(im->cols * resize_scale.first),
-      static_cast<int>(im->rows * resize_scale.second)
+      static_cast<float>(im->cols * resize_scale.first),
+      static_cast<float>(im->rows * resize_scale.second)
   };
   data->in_net_shape_ = {
-      static_cast<int>(im->cols * resize_scale.first),
-      static_cast<int>(im->rows * resize_scale.second)
+      static_cast<float>(im->cols * resize_scale.first),
+      static_cast<float>(im->rows * resize_scale.second)
   };
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
@@ -126,8 +126,8 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
     cv::BORDER_CONSTANT,
     cv::Scalar(0));
   data->in_net_shape_ = {
-    static_cast<int>(im->rows),
-    static_cast<int>(im->cols),
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
   };
 
 }
