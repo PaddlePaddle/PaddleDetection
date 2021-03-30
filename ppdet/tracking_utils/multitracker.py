@@ -233,10 +233,10 @@ class JDETracker(object):
         removed_stracks = []
 
         #Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-        if np.sum(np.array(pred_dets)) == 0.0:
-            return []
+        empty_pred = True if len(pred_dets) == 1 and np.sum(
+            np.array(pred_dets)) == 0.0 else False
         ''' Step 1: Network forward, get detections & embeddings'''
-        if len(pred_dets) > 0:
+        if len(pred_dets) > 0 and not empty_pred:
             pred_dets[:, :4] = scale_coords(self.img_size, pred_dets[:, :4],
                                             img0_shape).round()
             detections = [

@@ -52,6 +52,7 @@ class JEDEmbeddingHead(nn.Layer):
         num_classes(int): Number of classes. Only support one class tracking.
         num_identifiers(int): Number of identifiers.
         anchor_levels(int): Number of anchor levels, same as FPN levels.
+        anchor_scales(int): Number of anchor scales on each FPN level.
         embedding_dim(int): Embedding dimension. Default: 512.
         emb_loss(object): Instance of 'JDEEmbeddingLoss'
         jde_loss(object): Instance of 'JDELoss'
@@ -62,6 +63,7 @@ class JEDEmbeddingHead(nn.Layer):
             num_classes=1,
             num_identifiers=1,  # defined by dataset.nID
             anchor_levels=3,
+            anchor_scales=4,
             embedding_dim=512,
             emb_loss='JDEEmbeddingLoss',
             jde_loss='JDELoss'):
@@ -69,6 +71,7 @@ class JEDEmbeddingHead(nn.Layer):
         self.num_classes = num_classes
         self.num_identifiers = num_identifiers
         self.anchor_levels = anchor_levels
+        self.anchor_scales = anchor_scales
         self.embedding_dim = embedding_dim
         self.emb_loss = emb_loss
         self.jde_loss = jde_loss
@@ -172,10 +175,12 @@ class JEDEmbeddingHead(nn.Layer):
         emb_outs = []
         for i, p_ide in enumerate(ide_outs):
             p_ide = p_ide.transpose((0, 2, 3, 1))
-            p_ide_flatten = paddle.reshape(p_ide, [-1, self.embedding_dim])
 
-            embedding = F.normalize(p_ide_flatten)
-            emb_outs.append(embedding)
+            p_ide_repeat = paddle.tile(
+                p_ide.unsqueeze(axis=0), [1, self.anchor_scales, 1, 1, 1])
+            embedding = F.normalize(p_ide_repeat, axis=-1)
+            emb = paddle.reshape(embedding, [-1, self.embedding_dim])
+            emb_outs.append(emb)
 
         if len(emb_outs) > 0:
             return paddle.concat(emb_outs, axis=0)

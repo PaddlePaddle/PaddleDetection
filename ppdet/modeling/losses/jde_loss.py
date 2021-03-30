@@ -49,6 +49,7 @@ class JDEDetectionLoss(nn.Layer):
         t_conf_flatten.stop_gradient = True
         loss_conf = F.cross_entropy(
             p_conf_flatten, t_conf_flatten, ignore_index=-1, reduction='mean')
+        loss_conf.stop_gradient = False
 
         # 2. loss_box: smooth_l1_loss
         p_box = p_det[:, :, :, :, :4]
@@ -65,6 +66,7 @@ class JDEDetectionLoss(nn.Layer):
         reg_target.stop_gradient = True
         loss_box = F.smooth_l1_loss(
             reg_delta, reg_target, reduction='mean', delta=1.0)
+        loss_box.stop_gradient = False
 
         return loss_conf, loss_box
 
@@ -105,19 +107,19 @@ class JDEEmbeddingLoss(nn.Layer):
         valid_inds = paddle.nonzero(t_ide_flatten != -1).flatten()
 
         if emb_mask_inds.numel() == 0 or valid_inds.numel() == 0:
-            # loss_ide = paddle.to_tensor([0]) will be error in gradient backward
+            # loss_ide = paddle.to_tensor([0]) # will be error in gradient backward
             loss_ide = self.phony * 0
-            loss_ide.stop_gradient = True
         else:
             embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
             embedding = emb_scale * F.normalize(embedding)
             logits = classifier(embedding)
 
             ide_target = paddle.gather(t_ide_flatten, emb_mask_inds)
-            ide_target.stop_gradient = True
 
             loss_ide = F.cross_entropy(
                 logits, ide_target, ignore_index=-1, reduction='mean')
+        loss_ide.stop_gradient = False
+
         return loss_ide
 
     def forward(self, ide_outs, targets, emb_scale, classifier):

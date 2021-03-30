@@ -113,7 +113,7 @@ def run(FLAGS, cfg):
                       MOT17-08-SDP
                       MOT17-12-SDP
                       MOT17-14-SDP'''
-    elif FLAGS.benchmark == 'MO20_train':
+    elif FLAGS.benchmark == 'MOT20_train':
         data_root = '{}/MOT20/images/train'.format(FLAGS.data_root)
         seqs_str = '''MOT20-01
                       MOT20-02

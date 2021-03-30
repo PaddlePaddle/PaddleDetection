@@ -87,12 +87,13 @@ class JDE(BaseArch):
                 det_outs = self.detection_head(det_feats, self.inputs)
                 emb_outs = self.embedding_head(emb_feats, self.inputs)
 
-                bbox, bbox_num, nms_keep_idx = self.post_process(
+                boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
                     det_outs, self.detection_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
 
                 nms_keep_idx.stop_gradient = True
-                embeddings = paddle.gather_nd(emb_outs, nms_keep_idx)
+                emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
+                embeddings = paddle.gather_nd(emb_valid, nms_keep_idx)
 
                 dets_and_embs = {
                     'bbox': bbox,
@@ -106,7 +107,7 @@ class JDE(BaseArch):
             else:
                 det_outs = self.detection_head(det_feats)
 
-                bbox, bbox_num, _ = self.post_process(
+                _, bbox, bbox_num, _ = self.post_process(
                     det_outs, self.detection_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
 

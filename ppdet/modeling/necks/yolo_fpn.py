@@ -357,12 +357,16 @@ class PPYOLOFPN(nn.Layer):
                     [
                         'conv{}'.format(2 * j), ConvLayer, [c_in, c_out, 1],
                         dict(
-                            padding=0, norm_type=norm_type, freeze_norm=freeze_norm)
+                            padding=0,
+                            norm_type=norm_type,
+                            freeze_norm=freeze_norm)
                     ],
                     [
                         'conv{}'.format(2 * j + 1), ConvBNLayer,
                         [c_out, c_out * 2, 3], dict(
-                            padding=1, norm_type=norm_type, freeze_norm=freeze_norm)
+                            padding=1,
+                            norm_type=norm_type,
+                            freeze_norm=freeze_norm)
                     ],
                 ]
                 c_in, c_out = c_out * 2, c_out
@@ -380,7 +384,8 @@ class PPYOLOFPN(nn.Layer):
                     if self.spp:
                         spp_cfg = [[
                             'spp', SPP, [channel * 4, channel, 1], dict(
-                                pool_size=[5, 9, 13], norm_type=norm_type,
+                                pool_size=[5, 9, 13],
+                                norm_type=norm_type,
                                 freeze_norm=freeze_norm)
                         ]]
                     else:
@@ -393,7 +398,8 @@ class PPYOLOFPN(nn.Layer):
                 if self.spp and i == 0:
                     spp_cfg = [[
                         'spp', SPP, [c_in * 4, c_in, 1], dict(
-                            pool_size=[5, 9, 13], norm_type=norm_type,
+                            pool_size=[5, 9, 13],
+                            norm_type=norm_type,
                             freeze_norm=freeze_norm)
                     ]]
                 else:

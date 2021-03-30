@@ -197,30 +197,26 @@ class FCOSPostProcess(object):
 
 @register
 class JDEBBoxPostProcess(BBoxPostProcess):
-    def __call__(self, head_out, rois, im_shape, scale_factor):
+    def __call__(self, head_out, anchors, im_shape, scale_factor):
         """
-        Decode the bbox and do NMS if needed. 
+        Decode the bbox and do NMS. 
 
         Returns:
-            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
-                               including labels, scores and bboxes. The size of 
-                               bboxes are corresponding to the input image and 
-                               the bboxes may be used in other brunch.
-            bbox_num(Tensor): The number of prediction of each batch with shape
-                              [N, 6].
-            nms_keep_idx(Tensor): The index of predict bbox. 
+            boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'. 
+            bbox_pred (Tensor): The output is the prediction with shape [N, 6]
+                including labels, scores and bboxes.
+            bbox_num (Tensor): The number of prediction of each batch with shape [N].
+            nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
         """
-        if self.nms is not None:
-            bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
-            bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
-                                                         self.num_classes)
-        else:
-            bbox_pred, bbox_num, nms_keep_idx = self.decode(
-                head_out, rois, im_shape, scale_factor)
+        boxes_idx, bboxes, score = self.decode(head_out, anchors, im_shape,
+                                               scale_factor)
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
+                                                     self.num_classes)
+
         if bbox_pred.shape[0] == 0:
             bbox_pred = paddle.to_tensor(
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
             nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
-        return bbox_pred, bbox_num, nms_keep_idx
+        return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
