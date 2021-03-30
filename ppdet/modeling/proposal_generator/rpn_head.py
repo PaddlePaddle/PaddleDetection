@@ -27,12 +27,20 @@ from .proposal_generator import ProposalGenerator
 
 
 class RPNFeat(nn.Layer):
-    def __init__(self, feat_in=1024, feat_out=1024):
+    """
+    Feature extraction in RPN head
+
+    Args:
+        in_channel (int): Input channel
+        out_channel (int): Output channel
+    """
+
+    def __init__(self, in_channel=1024, out_channel=1024):
         super(RPNFeat, self).__init__()
         # rpn feat is shared with each level
         self.rpn_conv = nn.Conv2D(
-            in_channels=feat_in,
-            out_channels=feat_out,
+            in_channels=in_channel,
+            out_channels=out_channel,
             kernel_size=3,
             padding=1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
@@ -47,6 +55,20 @@ class RPNFeat(nn.Layer):
 
 @register
 class RPNHead(nn.Layer):
+    """
+    Region Proposal Network
+
+    Args:
+        anchor_generator (dict): configure of anchor generation
+        rpn_target_assign (dict): configure of rpn targets assignment
+        train_proposal (dict): configure of proposals generation 
+            at the stage of training
+        test_proposal (dict): configure of proposals generation
+            at the stage of prediction
+        in_channel (int): channel of input feature maps which can be 
+            derived by from_config
+    """
+
     def __init__(self,
                  anchor_generator=AnchorGenerator().__dict__,
                  rpn_target_assign=RPNTargetAssign().__dict__,
