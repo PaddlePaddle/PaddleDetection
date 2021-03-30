@@ -27,10 +27,10 @@ __all__ = ['CTFocalLoss']
 @serializable
 class CTFocalLoss(object):
     """
-    CTFocalLoss
+    CTFocalLoss: CornerNet & CenterNet Focal Loss
     Args:
-        loss_weight (float):  loss weight
-        gamma (float):  gamma parameter for Focal Loss
+        loss_weight (float): loss weight
+        gamma (float): gamma parameter for Focal Loss
     """
 
     def __init__(self, loss_weight=1., gamma=2.0):
@@ -41,8 +41,8 @@ class CTFocalLoss(object):
         """
         Calculate the loss
         Args:
-            pred(Tensor): heatmap prediction
-            target(Tensor): target for positive samples
+            pred (Tensor): heatmap prediction
+            target (Tensor): target for positive samples
         Return:
             ct_focal_loss (Tensor): Focal Loss used in CornerNet & CenterNet.
                 Note that the values in target are in [0, 1] since gaussian is
