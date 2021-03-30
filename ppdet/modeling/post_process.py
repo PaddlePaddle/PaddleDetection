@@ -181,6 +181,9 @@ class FCOSPostProcess(object):
         self.nms = nms
 
     def __call__(self, fcos_head_outs, scale_factor):
+        """
+        Decode the bbox and do NMS in FCOS.
+        """
         locations, cls_logits, bboxes_reg, centerness = fcos_head_outs
         bboxes, score = self.decode(locations, cls_logits, bboxes_reg,
                                     centerness, scale_factor)

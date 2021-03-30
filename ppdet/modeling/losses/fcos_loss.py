@@ -20,8 +20,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
+from ppdet.modeling import ops
 
-INF = 1e8
 __all__ = ['FCOSLoss']
 
 
@@ -29,32 +29,19 @@ def flatten_tensor(inputs, channel_first=False):
     """
     Flatten a Tensor
     Args:
-        inputs  (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
-        channel_first(bool): if true the dimension order of
-            Tensor is [N, C, H, W], otherwise is [N, H, W, C]
+        inputs (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
+        channel_first (bool): If true the dimension order of Tensor is 
+            [N, C, H, W], otherwise is [N, H, W, C]
     Return:
-        input_channel_last (Tensor): The flattened Tensor in channel_last style
+        output_channel_last (Tensor): The flattened Tensor in channel_last style
     """
     if channel_first:
         input_channel_last = paddle.transpose(inputs, perm=[0, 2, 3, 1])
     else:
         input_channel_last = inputs
     output_channel_last = paddle.flatten(
-        input_channel_last, start_axis=0, stop_axis=2)  # [N*H*W, C]
+        input_channel_last, start_axis=0, stop_axis=2)
     return output_channel_last
-
-
-def sigmoid_cross_entropy_with_logits_loss(inputs,
-                                           label,
-                                           ignore_index=-100,
-                                           normalize=False):
-    output = F.binary_cross_entropy_with_logits(inputs, label, reduction='none')
-    mask_tensor = paddle.cast(label != ignore_index, 'float32')
-    output = paddle.multiply(output, mask_tensor)
-    if normalize:
-        sum_valid_mask = paddle.sum(mask_tensor)
-        output = output / sum_valid_mask
-    return output
 
 
 @register
@@ -64,8 +51,8 @@ class FCOSLoss(nn.Layer):
     Args:
         loss_alpha (float): alpha in focal loss
         loss_gamma (float): gamma in focal loss
-        iou_loss_type(str): location loss type, IoU/GIoU/LINEAR_IoU
-        reg_weights(float): weight for location loss
+        iou_loss_type (str): location loss type, IoU/GIoU/LINEAR_IoU
+        reg_weights (float): weight for location loss
     """
 
     def __init__(self,
@@ -83,10 +70,10 @@ class FCOSLoss(nn.Layer):
         """
         Calculate the loss for location prediction
         Args:
-            pred          (Tensor): bounding boxes prediction
-            targets       (Tensor): targets for positive samples
+            pred (Tensor): bounding boxes prediction
+            targets (Tensor): targets for positive samples
             positive_mask (Tensor): mask of positive samples
-            weights       (Tensor): weights for each positive samples
+            weights (Tensor): weights for each positive samples
         Return:
             loss (Tensor): location loss
         """
@@ -226,8 +213,8 @@ class FCOSLoss(nn.Layer):
 
         # 3. centerness: sigmoid_cross_entropy_with_logits_loss
         centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
-        ctn_loss = sigmoid_cross_entropy_with_logits_loss(centerness_flatten,
-                                                          tag_center_flatten)
+        ctn_loss = ops.sigmoid_cross_entropy_with_logits(centerness_flatten,
+                                                         tag_center_flatten)
         ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
 
         loss_all = {
