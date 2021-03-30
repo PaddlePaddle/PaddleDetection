@@ -11,7 +11,7 @@
 
 | 网络结构 | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy/Medium/Hard Set  | 预测时延（SD855）| 模型大小(MB) | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace  | 640  |    8    | 1000e     | 0.889 / 0.859 / 0.740 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/blazeface_1000e.yml) |
+| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/blazeface_1000e.yml) |
 
 **注意:**  
 - 我们使用多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
@@ -54,11 +54,10 @@ cd dataset/wider_face && ./download_wider_face.sh
 
 ### 训练与评估
 训练流程与评估流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../../docs/tutorials/GETTING_STARTED_cn.md)。  
-**注意:**
-- 人脸检测模型目前不支持边训练边评估。
+**注意:** 人脸检测模型目前不支持边训练边评估。
 
 #### 在WIDER-FACE数据集上评估
-评估并生成结果文件：
+- 步骤一：评估并生成结果文件：
 ```shell
 python -u tools/eval.py -c configs/face_detection/blazeface_1000e.yml \
        -o weights=output/blazeface_1000e/model_final \
@@ -66,20 +65,31 @@ python -u tools/eval.py -c configs/face_detection/blazeface_1000e.yml \
 ```
 设置`multi_scale=True`进行多尺度评估，评估完成后，将在`output/pred`中生成txt格式的测试结果。
 
-- 下载官方评估脚本来评估AP指标：
+- 步骤二：下载官方评估脚本和Ground Truth文件：
 ```
 wget http://mmlab.ie.cuhk.edu.hk/projects/WIDERFace/support/eval_script/eval_tools.zip
 unzip eval_tools.zip && rm -f eval_tools.zip
 ```
-- 在`eval_tools/wider_eval.m`中修改保存结果路径和绘制曲线的名称：
+
+- 步骤三：开始评估
+
+方法一：python评估：
 ```
-# Modify the folder name where the result is stored.
+git clone https://github.com/wondervictor/WiderFace-Evaluation.git
+cd WiderFace-Evaluation
+# 编译
+python3 setup.py build_ext --inplace
+# 开始评估
+python3 evaluation.py -p /path/to/PaddleDetection/output/pred -g /path/to/eval_tools/ground_truth
+```
+
+方法二：MatLab评估：
+```
+# 在`eval_tools/wider_eval.m`中修改保存结果路径和绘制曲线的名称：
 pred_dir = './pred';  
-# Modify the name of the curve to be drawn
-legend_name = 'Fluid-BlazeFace';
-```
-- `wider_eval.m` 是评估模块的主要执行程序。运行命令如下：
-```
+legend_name = 'Paddle-BlazeFace';
+
+`wider_eval.m` 是评估模块的主要执行程序。运行命令如下：
 matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
 
