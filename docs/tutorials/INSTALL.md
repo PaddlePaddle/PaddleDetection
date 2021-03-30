@@ -3,8 +3,7 @@ English | [简体中文](INSTALL_cn.md)
 # Installation
 
 
-This document covers how to install PaddleDetection and its dependencies
-(including PaddlePaddle), together with COCO and Pascal VOC dataset.
+This document covers how to install PaddleDetection and its dependencies.
 
 For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
 
