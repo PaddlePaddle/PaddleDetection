@@ -79,7 +79,7 @@ class WHHead(nn.Layer):
         ch_out (int): The channel number of output Tensor.
         conv_num (int): The convolution number of wh_feat.
     Return:
-        WH head output
+        Width & Height head output
     """
 
     def __init__(self, ch_in, ch_out=64, conv_num=2):
@@ -121,17 +121,22 @@ class TTFHead(nn.Layer):
     """
     TTFHead
     Args:
-        in_channels (int): the channel number of input to TTFHead. 
+        in_channels (int): the channel number of input to TTFHead.
         num_classes (int): the number of classes, 80 by default.
-        hm_head_planes (int): the channel number in heatmap head, 128 by default.
-        wh_head_planes (int): the channel number in wh head, 64 by default.
-        hm_head_conv_num (int): the number of convolution in heatmap head, 2 by default.
-        wh_head_conv_num (int): the number of convolution in wh head, 2 by default.
+        hm_head_planes (int): the channel number in heatmap head,
+            128 by default.
+        wh_head_planes (int): the channel number in width & height head,
+            64 by default.
+        hm_head_conv_num (int): the number of convolution in heatmap head,
+            2 by default.
+        wh_head_conv_num (int): the number of convolution in width & height
+            head, 2 by default.
         hm_loss (object): Instance of 'CTFocalLoss'.
         wh_loss (object): Instance of 'GIoULoss'.
-        wh_offset_base (flaot): the base offset of width and height, 16.0 by default.
-        down_ratio (int): the actual down_ratio is calculated by base_down_ratio(default 16)
-            and the number of upsample layers.
+        wh_offset_base (float): the base offset of width and height,
+            16.0 by default.
+        down_ratio (int): the actual down_ratio is calculated by base_down_ratio
+            (default 16) and the number of upsample layers.
     """
 
     __shared__ = ['num_classes', 'down_ratio']
