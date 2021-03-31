@@ -17,8 +17,9 @@
 - 首先要获取模型，可在[模型配置文件](../../configs)里配置`solov2`与`blazeface_keypoint`，训练模型，并[导出模型](../../docs/advanced_tutorials/deploy/EXPORT_MODEL.md)。也可直接下载我们准备好模型：
 [blazeface_keypoint模型](https://paddlemodels.bj.bcebos.com/object_detection/application/blazeface_keypoint.tar)和
 [solov2模型](https://paddlemodels.bj.bcebos.com/object_detection/application/solov2_r101_vd_fpn_3x.tar)。
+**注意：** 下载的模型需要解压后使用。
 
-- 然后将模型分别拷贝至`blazeface/blazeface_keypoint/` 和 `solov2/solov2_r101_vd_fpn_3x/`文件夹内。
+- 然后将两个模型文件夹中的文件(`infer_cfg.yml`、`__model__`和`__params__`)分别拷贝至`blazeface/blazeface_keypoint/` 和 `solov2/solov2_r101_vd_fpn_3x/`文件夹内。
 
 ### hub安装blazeface和solov2模型
 
