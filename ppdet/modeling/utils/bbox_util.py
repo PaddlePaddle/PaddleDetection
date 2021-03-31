@@ -263,8 +263,8 @@ def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
 
 def bbox_decode(bbox_preds,
                 anchors,
-                means=[0, 0, 0, 0, 0],
-                stds=[1, 1, 1, 1, 1]):
+                means=[0,0,0,0,0],
+                stds=[1,1,1,1,1]):
     """decode bbox from deltas
     Args:
         bbox_preds: [N,H,W,5]
@@ -272,6 +272,8 @@ def bbox_decode(bbox_preds,
     return:
         bboxes: [N,H,W,5]
     """
+    means = paddle.to_tensor(means)
+    stds = paddle.to_tensor(stds)
     num_imgs, H, W, _ = bbox_preds.shape
     bboxes_list = []
     for img_id in range(num_imgs):

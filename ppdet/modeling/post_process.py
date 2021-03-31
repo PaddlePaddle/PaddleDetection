@@ -238,10 +238,12 @@ class S2ANetBBoxPostProcess(object):
             poly = np.array(poly_lst)
         return poly
 
-    def get_nms_result(self, pred_scores, pred_bboxes):
+    def get_prediction(self, pred_scores, pred_bboxes, im_shape, scale_factor):
         """
         pred_scores : [N, M]  score
         pred_bboxes : [N, 5]  xc, yc, w, h, a
+        im_shape : [N, 2]  im_shape
+        scale_factor : [N, 2]  scale_factor
         """
         # TODO: support bs>1
         pred_ploys = self.rbox2poly(pred_bboxes.numpy(), False)
@@ -254,10 +256,23 @@ class S2ANetBBoxPostProcess(object):
         pred_scores = paddle.transpose(pred_scores, [1, 0])
         pred_scores = paddle.reshape(
             pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
-        pred_box, bbox_num, index = self.nms(pred_ploys, pred_scores)
-        return pred_box, bbox_num, index
+        pred_cls_score_bbox, bbox_num, index = self.nms(pred_ploys, pred_scores)
 
-    def get_result(self, bboxes, bbox_num, im_shape, scale_factor):
+        # post process scale
+        # result [n, 10]
+        if bbox_num > 0:
+            pred_bbox, bbox_num = self.post_process(
+                pred_cls_score_bbox[:, 2:], bbox_num, im_shape[0], scale_factor[0])
+
+            pred_cls_score_bbox = paddle.concat(
+                [pred_cls_score_bbox[:, 0:2], pred_bbox], axis=1)
+        else:
+            pred_cls_score_bbox = paddle.to_tensor(
+                np.array([[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        return pred_cls_score_bbox, bbox_num, index
+
+    def post_process(self, bboxes, bbox_num, im_shape, scale_factor):
         """
         Rescale, clip and filter the bbox from the output of NMS to
         get final prediction.

@@ -11,16 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import paddle
-import paddle.nn as nn
-import paddle.nn.functional as F
-from paddle import ParamAttr
-from paddle.nn.initializer import Constant, Uniform, Normal
-from paddle.regularizer import L2Decay
-from ppdet.core.workspace import register
-import numpy as np
-
 import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
@@ -35,15 +25,6 @@ from ppdet.modeling import ops
 from ppdet.modeling.utils import bbox_util
 import numpy as np
 
-import paddle
-#from paddle.utils.cpp_extension import load
-
-G_USE_CUSTOM_OP = False
-g_idx = 0
-if G_USE_CUSTOM_OP:
-    custom_ops = load(
-        name="custom_jit_ops",
-        sources=["ppdet/ext_op/rbox_iou_op.cc", "ppdet/ext_op/rbox_iou_op.cu"])
 
 
 def sa2net_smooth_l1_loss(pred, label, delta=1.0 / 9.0):
@@ -63,9 +44,9 @@ def sa2net_smooth_l1_loss(pred, label, delta=1.0 / 9.0):
     return loss
 
 
-class AnchorGenerator(object):
+class S2ANetAnchorGenerator(object):
     """
-    AnchorGenerator by np
+    S2ANetAnchorGenerator by np
     """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
@@ -289,7 +270,7 @@ class S2ANetHead(nn.Layer):
         self.anchor_generators = []
         for anchor_base in self.anchor_base_sizes:
             self.anchor_generators.append(
-                AnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
+                S2ANetAnchorGenerator(anchor_base, anchor_scales, anchor_ratios))
 
         self.fam_cls_convs = Sequential()
         self.fam_reg_convs = Sequential()
@@ -431,8 +412,7 @@ class S2ANetHead(nn.Layer):
             fam_cls = self.fam_cls(fam_cls_feat)
             # [N, CLS, H, W] --> [N, H, W, CLS]
             fam_cls = fam_cls.transpose([0, 2, 3, 1])
-            fam_cls_reshape = fam_cls.reshape(
-                [fam_cls.shape[0], -1, self.cls_out_channels])
+            fam_cls_reshape = paddle.reshape(fam_cls, [fam_cls.shape[0], -1, self.cls_out_channels])
             fam_cls_branch_list.append(fam_cls_reshape)
 
             fam_reg_feat = self.fam_reg_convs(feat)
@@ -440,7 +420,7 @@ class S2ANetHead(nn.Layer):
             fam_reg = self.fam_reg(fam_reg_feat)
             # [N, 5, H, W] --> [N, H, W, 5]
             fam_reg = fam_reg.transpose([0, 2, 3, 1])
-            fam_reg_reshape = fam_reg.reshape([fam_reg.shape[0], -1, 5])
+            fam_reg_reshape = paddle.reshape(fam_reg, [fam_reg.shape[0], -1, 5])
             fam_reg_branch_list.append(fam_reg_reshape)
 
             # prepare anchor
@@ -452,9 +432,11 @@ class S2ANetHead(nn.Layer):
             init_anchors = bbox_util.rect2rbox(init_anchors)
             self.base_anchors[(i, featmap_size[0])] = init_anchors
 
+            fam_reg1 = fam_reg
+            fam_reg1.stop_gradient = True
             refine_anchor = bbox_util.bbox_decode(
-                fam_reg.detach(), init_anchors, self.target_means,
-                self.target_stds)
+                            fam_reg1, init_anchors, self.target_means, self.target_stds)
+
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -481,7 +463,7 @@ class S2ANetHead(nn.Layer):
             odm_cls_score = self.odm_cls(odm_cls_feat)
             # [N, CLS, H, W] --> [N, H, W, CLS]
             odm_cls_score = odm_cls_score.transpose([0, 2, 3, 1])
-            odm_cls_score_reshape = odm_cls_score.reshape(
+            odm_cls_score_reshape = paddle.reshape(odm_cls_score,
                 [odm_cls_score.shape[0], -1, self.cls_out_channels])
 
             odm_cls_branch_list.append(odm_cls_score_reshape)
@@ -489,7 +471,7 @@ class S2ANetHead(nn.Layer):
             odm_bbox_pred = self.odm_reg(odm_reg_feat)
             # [N, 5, H, W] --> [N, H, W, 5]
             odm_bbox_pred = odm_bbox_pred.transpose([0, 2, 3, 1])
-            odm_bbox_pred_reshape = odm_bbox_pred.reshape(
+            odm_bbox_pred_reshape = paddle.reshape(odm_bbox_pred,
                 [odm_bbox_pred.shape[0], -1, 5])
             odm_reg_branch_list.append(odm_bbox_pred_reshape)
 
@@ -533,15 +515,15 @@ class S2ANetHead(nn.Layer):
             st_idx += feat_anchor_num
 
             # step2: calc cls loss
-            feat_labels = feat_labels.reshape(-1)
-            feat_label_weights = feat_label_weights.reshape(-1)
+            feat_labels = paddle.reshape(feat_labels, [-1])
+            feat_label_weights = paddle.reshape(feat_label_weights, [-1])
 
             fam_cls_score = fam_cls_branch_list[idx]
             fam_cls_score = paddle.squeeze(fam_cls_score, axis=0)
             fam_cls_score1 = fam_cls_score
 
             # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-            feat_labels = feat_labels.reshape(-1) + 1
+            feat_labels = paddle.reshape(feat_labels, [-1]) + 1
             np_one_hot_targets = np.eye(self.cls_out_channels + 1)[feat_labels]
             np_one_hot_targets = np_one_hot_targets[:, 1:]
             feat_labels_one_hot = paddle.to_tensor(
@@ -550,14 +532,14 @@ class S2ANetHead(nn.Layer):
             num_total_samples = paddle.to_tensor(
                 num_total_samples, dtype='float32', stop_gradient=True)
 
-            fam_cls = paddle.nn.functional.sigmoid_focal_loss(
+            fam_cls = F.sigmoid_focal_loss(
                 fam_cls_score1,
                 feat_labels_one_hot,
                 normalizer=num_total_samples,
                 reduction='none')
 
-            feat_label_weights = feat_label_weights.reshape(
-                feat_label_weights.shape[0], 1)
+            feat_label_weights = paddle.reshape(feat_label_weights,
+                [feat_label_weights.shape[0], 1])
             feat_label_weights = np.repeat(
                 feat_label_weights, self.cls_out_channels, axis=1)
             feat_label_weights = paddle.to_tensor(
@@ -581,7 +563,7 @@ class S2ANetHead(nn.Layer):
                 fam_bbox = sa2net_smooth_l1_loss(fam_bbox_pred,
                                                  feat_bbox_targets)
             else:
-                fam_bbox = paddle.nn.functional.smooth_l1_loss(
+                fam_bbox = F.smooth_l1_loss(
                     fam_bbox_pred, feat_bbox_targets, reduction='none')
                 delate = 1.0 / 9.0
                 delate = paddle.to_tensor(delate, stop_gradient=True)
@@ -622,29 +604,29 @@ class S2ANetHead(nn.Layer):
             st_idx += feat_anchor_num
 
             # step2: calc cls loss
-            feat_labels = feat_labels.reshape(-1)
-            feat_label_weights = feat_label_weights.reshape(-1)
+            feat_labels = paddle.reshape(feat_labels, [-1])
+            feat_label_weights = paddle.reshape(feat_label_weights, [-1])
 
             odm_cls_score = odm_cls_branch_list[idx]
             odm_cls_score = paddle.squeeze(odm_cls_score, axis=0)
             odm_cls_score1 = odm_cls_score
 
             # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-            feat_labels = feat_labels.reshape(-1) + 1
+            feat_labels = paddle.reshape(feat_labels, [-1]) + 1
             np_one_hot_targets = np.eye(self.cls_out_channels + 1)[feat_labels]
             np_one_hot_targets = np_one_hot_targets[:, 1:]
             feat_labels_one_hot = paddle.to_tensor(
                 np_one_hot_targets, dtype='float32', stop_gradient=True)
             num_total_samples = paddle.to_tensor(
                 num_total_samples, dtype='float32', stop_gradient=True)
-            odm_cls = paddle.nn.functional.sigmoid_focal_loss(
+            odm_cls = F.sigmoid_focal_loss(
                 odm_cls_score1,
                 feat_labels_one_hot,
                 normalizer=num_total_samples,
                 reduction='none')
 
-            feat_label_weights = feat_label_weights.reshape(
-                feat_label_weights.shape[0], 1)
+            feat_label_weights = paddle.reshape(feat_label_weights,
+                [feat_label_weights.shape[0], 1])
             feat_label_weights = np.repeat(
                 feat_label_weights, self.cls_out_channels, axis=1)
             feat_label_weights = paddle.to_tensor(feat_label_weights)
@@ -668,7 +650,7 @@ class S2ANetHead(nn.Layer):
                 odm_bbox = sa2net_smooth_l1_loss(odm_bbox_pred,
                                                  feat_bbox_targets)
             else:
-                odm_bbox = paddle.nn.functional.smooth_l1_loss(
+                odm_bbox = F.smooth_l1_loss(
                     odm_bbox_pred, feat_bbox_targets, reduction='none')
                 delate = 1.0 / 9.0
                 delate = paddle.to_tensor(delate, stop_gradient=True)
@@ -796,7 +778,7 @@ class S2ANetHead(nn.Layer):
             refine_anchor = self.refine_anchor_list[i]
             refine_anchor = paddle.squeeze(refine_anchor, axis=0)
             refine_anchor = refine_anchor.numpy()
-            refine_anchor = refine_anchor.reshape(-1, refine_anchor.shape[-1])
+            refine_anchor = np.reshape(refine_anchor, [-1, refine_anchor.shape[-1]])
             refine_anchors_list.extend(refine_anchor)
 
         # for each image, we compute valid flags of multi level anchors

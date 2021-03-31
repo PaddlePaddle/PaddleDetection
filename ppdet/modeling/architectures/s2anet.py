@@ -98,19 +98,9 @@ class S2ANet(BaseArch):
             s2anet_head_out, nms_pre)
 
         # post_process
-        pred_cls_score_bbox, bbox_num, index = self.s2anet_bbox_post_process.get_nms_result(
-            pred_scores, pred_bboxes)
+        pred_cls_score_bbox, bbox_num, index = self.s2anet_bbox_post_process.get_prediction(
+            pred_scores, pred_bboxes, im_shape, scale_factor)
 
-        # result [n, 10]
-        if bbox_num > 0:
-            pred_bbox, bbox_num = self.s2anet_bbox_post_process.get_result(
-                pred_cls_score_bbox[:, 2:], bbox_num, im_shape[0], scale_factor[0])
-
-            pred_cls_score_bbox = paddle.concat(
-                [pred_cls_score_bbox[:, 0:2], pred_bbox], axis=1)
-        else:
-            pred_cls_score_bbox = paddle.to_tensor(
-                np.array([[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        # output
         output = {'bbox': pred_cls_score_bbox, 'bbox_num': bbox_num}
         return output

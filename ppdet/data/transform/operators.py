@@ -700,7 +700,6 @@ class Resize(BaseOperator):
 
         # apply bbox
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            print('deng gt_bbox', sample)
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
