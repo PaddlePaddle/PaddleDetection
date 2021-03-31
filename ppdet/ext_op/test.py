@@ -5,15 +5,16 @@ import cv2
 import time
 import shapely
 from shapely.geometry import Polygon
-
 import paddle
-from paddle.utils.cpp_extension import load
 
 paddle.set_device('gpu:0')
 paddle.disable_static()
 
-custom_ops = load(
-    name="custom_jit_ops", sources=["rbox_iou_op.cc", "rbox_iou_op.cu"])
+try:
+    from rbox_iou_ops import rbox_iou
+except Exception as e:
+    print('import custom_ops error', e)
+    sys.exit(-1)
 
 # generate random data
 rbox1 = np.random.rand(13000, 5)
@@ -33,7 +34,7 @@ print('rbox1', rbox1.shape, 'rbox2', rbox2.shape)
 pd_rbox1 = paddle.to_tensor(rbox1)
 pd_rbox2 = paddle.to_tensor(rbox2)
 
-iou = custom_ops.rbox_iou(pd_rbox1, pd_rbox2)
+iou = rbox_iou(pd_rbox1, pd_rbox2)
 start_time = time.time()
 print('paddle time:', time.time() - start_time)
 print('iou is', iou.cpu().shape)
@@ -151,5 +152,3 @@ sum_abs_diff = np.sum(np.abs(iou_pd - iou_py))
 print('sum of abs diff', sum_abs_diff)
 if sum_abs_diff < 0.02:
     print("rbox_iou OP compute right!")
-
-

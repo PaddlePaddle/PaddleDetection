@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -17,14 +17,6 @@ from ppdet.core.workspace import register, serializable
 from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.modeling.utils import bbox_util
 import numpy as np
-
-try:
-    from paddle.utils.cpp_extension import load
-    custom_ops = load(
-        name="custom_jit_ops",
-        sources=["ppdet/ext_op/rbox_iou_op.cc", "ppdet/ext_op/rbox_iou_op.cu"])
-except Exception as e:
-    print('build ext_op error!', e)
 
 
 @register
@@ -182,7 +174,14 @@ class S2ANetAnchorAssigner(object):
         anchors_xc_yc = paddle.to_tensor(anchors_xc_yc, place=paddle.CPUPlace())
         gt_bboxes_xc_yc = paddle.to_tensor(
             gt_bboxes_xc_yc, place=paddle.CPUPlace())
-        iou = custom_ops.rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
+
+        try:
+            from rbox_iou_ops import rbox_iou
+        except Exception as e:
+            print('import custom_ops error', e)
+            sys.exit(-1)
+
+        iou = rbox_iou_ops.rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
         iou = iou.numpy()
         iou = iou.T
 

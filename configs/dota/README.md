@@ -66,7 +66,12 @@ print(paddle.__version__)
 paddle.utils.run_check()
 ```
 
-进入到`ext_op`文件夹，测试自定义op是否可以正常编译以及计算结果：
+进入到`ext_op`文件夹，安装：
+```
+python3.7 setup.py install
+```
+
+安装完成后，测试自定义op是否可以正常编译以及计算结果：
 ```
 cd PaddleDetecetion/ppdet/ext_op
 python3.7 test.py

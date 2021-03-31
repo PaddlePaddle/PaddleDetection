@@ -123,7 +123,8 @@ class COCODataSet(DetDataset):
                     continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
-                gt_rbox = np.zeros((num_bbox, 5), dtype=np.float32)
+                if is_rbox_anno:
+                    gt_rbox = np.zeros((num_bbox, 5), dtype=np.float32)
                 gt_theta = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
@@ -156,13 +157,22 @@ class COCODataSet(DetDataset):
                     'w': im_w,
                 } if 'image' in self.data_fields else {}
 
-                gt_rec = {
-                    'is_crowd': is_crowd,
-                    'gt_class': gt_class,
-                    'gt_bbox': gt_bbox,
-                    'gt_rbox': gt_rbox,
-                    'gt_poly': gt_poly,
-                }
+                if is_rbox_anno:
+                    gt_rec = {
+                        'is_crowd': is_crowd,
+                        'gt_class': gt_class,
+                        'gt_bbox': gt_bbox,
+                        'gt_rbox': gt_rbox,
+                        'gt_poly': gt_poly,
+                    }
+                else:
+                    gt_rec = {
+                        'is_crowd': is_crowd,
+                        'gt_class': gt_class,
+                        'gt_bbox': gt_bbox,
+                        'gt_poly': gt_poly,
+                    }
+
                 for k, v in gt_rec.items():
                     if k in self.data_fields:
                         coco_rec[k] = v
