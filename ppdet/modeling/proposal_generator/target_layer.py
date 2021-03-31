@@ -24,7 +24,7 @@ try:
         name="custom_jit_ops",
         sources=["ppdet/ext_op/rbox_iou_op.cc", "ppdet/ext_op/rbox_iou_op.cu"])
 except Exception as e:
-   print('build ext_op error!', e)
+    print('build ext_op error!', e)
 
 
 @register
@@ -154,7 +154,8 @@ class S2ANetAnchorAssigner(object):
         anchor_inds = np.arange(anchor_num)
         return anchor_inds
 
-    def assign_anchor(self, anchors,
+    def assign_anchor(self,
+                      anchors,
                       gt_bboxes,
                       gt_lables,
                       pos_iou_thr,
@@ -179,7 +180,8 @@ class S2ANetAnchorAssigner(object):
         # calc rbox iou
         anchors_xc_yc = anchors_xc_yc.astype(np.float32)
         anchors_xc_yc = paddle.to_tensor(anchors_xc_yc, place=paddle.CPUPlace())
-        gt_bboxes_xc_yc = paddle.to_tensor(gt_bboxes_xc_yc, place=paddle.CPUPlace())
+        gt_bboxes_xc_yc = paddle.to_tensor(
+            gt_bboxes_xc_yc, place=paddle.CPUPlace())
         iou = custom_ops.rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
         iou = iou.numpy()
         iou = iou.T
@@ -194,7 +196,7 @@ class S2ANetAnchorAssigner(object):
         anchor_gt_bbox_iou = iou[np.arange(iou.shape[0]), anchor_gt_bbox_inds]
 
         # (1) set labels=-2 as default
-        labels = np.ones((iou.shape[0],), dtype=np.int32) * ignore_iof_thr
+        labels = np.ones((iou.shape[0], ), dtype=np.int32) * ignore_iof_thr
 
         # (2) assign ignore
         labels[anchor_gt_bbox_iou < min_iou_thr] = ignore_iof_thr

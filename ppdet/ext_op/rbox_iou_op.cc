@@ -15,19 +15,29 @@ limitations under the License. */
 
 #include <vector>
 
-std::vector<paddle::Tensor> RboxIouForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2);
+std::vector <paddle::Tensor> RboxIouForward(const paddle::Tensor &rbox1,
+                                            const paddle::Tensor &rbox2);
 
-std::vector<std::vector<int64_t>> InferShape(std::vector<int64_t> rbox1_shape, std::vector<int64_t> rbox2_shape) {
+std::vector <std::vector<int64_t>> InferShape(std::vector <int64_t> rbox1_shape,
+                                              std::vector <int64_t> rbox2_shape) {
     return {{rbox1_shape[0], rbox2_shape[0]}};
 }
 
-std::vector<paddle::DataType> InferDtype(paddle::DataType t1, paddle::DataType t2) {
+std::vector <paddle::DataType> InferDtype(paddle::DataType t1, paddle::DataType t2) {
     return {t1};
 }
 
 PD_BUILD_OP(rbox_iou)
-    .Inputs({"RBOX1", "RBOX2"})
-    .Outputs({"Output"})
-    .SetKernelFn(PD_KERNEL(RboxIouForward))
-    .SetInferShapeFn(PD_INFER_SHAPE(InferShape))
-    .SetInferDtypeFn(PD_INFER_DTYPE(InferDtype));
+.Inputs({
+"RBOX1", "RBOX2"})
+.Outputs({
+"Output"})
+.
+SetKernelFn(PD_KERNEL(RboxIouForward)
+)
+.
+SetInferShapeFn(PD_INFER_SHAPE(InferShape)
+)
+.
+SetInferDtypeFn(PD_INFER_DTYPE(InferDtype)
+);

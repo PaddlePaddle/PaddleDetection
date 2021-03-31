@@ -263,8 +263,8 @@ def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
 
 def bbox_decode(bbox_preds,
                 anchors,
-                means=[0,0,0,0,0],
-                stds=[1,1,1,1,1]):
+                means=[0, 0, 0, 0, 0],
+                stds=[1, 1, 1, 1, 1]):
     """decode bbox from deltas
     Args:
         bbox_preds: [N,H,W,5]

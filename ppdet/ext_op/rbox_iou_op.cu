@@ -423,7 +423,8 @@ __global__ void rbox_iou_cuda_kernel(
 
   if (threadIdx.x < rbox1_thread_num && threadIdx.y < rbox2_thread_num) {
     int offset = (rbox1_block_idx + threadIdx.x) * rbox2_num + rbox2_block_idx + threadIdx.y;
-    output_data_ptr[offset] = rbox_iou_single<T>(block_boxes1 + threadIdx.x * 5, block_boxes2 + threadIdx.y * 5);
+    output_data_ptr[offset] = rbox_iou_single<T>(block_boxes1 + threadIdx.x * 5,
+                                                 block_boxes2 + threadIdx.y * 5);
   }
 }
 
