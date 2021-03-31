@@ -13,21 +13,18 @@
 # limitations under the License.
 
 import paddle
-
 from ppdet.core.workspace import register, serializable
-
 from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
 from ppdet.modeling.utils import bbox_util
 import numpy as np
-'''
-from paddle.utils.cpp_extension import load
-G_USE_CUSTOM_OP = True
-g_idx = 0
-if G_USE_CUSTOM_OP:
+
+try:
+    from paddle.utils.cpp_extension import load
     custom_ops = load(
         name="custom_jit_ops",
         sources=["ppdet/ext_op/rbox_iou_op.cc", "ppdet/ext_op/rbox_iou_op.cu"])
-'''
+except Exception as e:
+   print('build ext_op error!', e)
 
 
 @register
