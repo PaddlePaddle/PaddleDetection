@@ -330,14 +330,13 @@ class S2ANetHead(nn.Layer):
                 padding=(self.align_conv_size - 1) // 2,
                 bias_attr=ParamAttr(initializer=Constant(0)))
 
-        if True:
-            self.or_conv = Conv2D(
-                self.feat_out,
-                self.feat_out,
-                kernel_size=3,
-                padding=1,
-                weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
-                bias_attr=ParamAttr(initializer=Constant(0)))
+        self.or_conv = Conv2D(
+            self.feat_out,
+            self.feat_out,
+            kernel_size=3,
+            padding=1,
+            weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
+            bias_attr=ParamAttr(initializer=Constant(0)))
 
         # ODM
         self.odm_cls_convs = Sequential()
@@ -670,14 +669,12 @@ class S2ANetHead(nn.Layer):
         # inputs: im_id image im_shape scale_factor gt_bbox gt_class is_crowd
 
         # make loss
-        fam_cls_loss = paddle.to_tensor(
-            1e-8, dtype='float32', stop_gradient=True)
-        fam_reg_loss = paddle.to_tensor(
-            1e-8, dtype='float32', stop_gradient=True)
-        odm_cls_loss = paddle.to_tensor(
-            1e-8, dtype='float32', stop_gradient=True)
-        odm_reg_loss = paddle.to_tensor(
-            1e-8, dtype='float32', stop_gradient=True)
+        fam_cls_loss = paddle.to_tensor(0)
+        fam_reg_loss = paddle.to_tensor(0)
+        odm_cls_loss = paddle.to_tensor(0)
+        odm_reg_loss = paddle.to_tensor(0)
+
+        pd_zero = paddle.to_tensor(0, stop_gradient=True)
 
         # loss of each image
         im_shape = inputs['im_shape']
@@ -716,6 +713,9 @@ class S2ANetHead(nn.Layer):
                     im_fam_target, im_s2anet_head_out)
                 fam_cls_loss += im_fam_cls_loss
                 fam_reg_loss += im_fam_reg_loss
+            else:
+                fam_cls_loss += pd_zero
+                fam_reg_loss += pd_zero
 
             # ODM
             refine_anchors_list, valid_flag_list = self.get_refine_anchors(
@@ -729,6 +729,9 @@ class S2ANetHead(nn.Layer):
                     im_odm_target, im_s2anet_head_out)
                 odm_cls_loss += im_odm_cls_loss
                 odm_reg_loss += im_odm_reg_loss
+            else:
+                odm_cls_loss += pd_zero
+                odm_reg_loss += pd_zero
 
         return {
             'fam_cls_loss': fam_cls_loss,
