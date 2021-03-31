@@ -128,11 +128,23 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
+
+            # pass clsid2catid info to metric instance to avoid multiple loading
+            # annotation file
             clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
                                 if self.mode == 'eval' else None
+
+            # when do validation in train, annotation file should be get from
+            # EvalReader instead of self.dataset(which is TrainReader)
+            anno_file = self.dataset.get_anno()
+            if self.mode == 'train' and validate:
+                eval_dataset = self.cfg['EvalDataset']
+                eval_dataset.check_or_download_dataset()
+                anno_file = eval_dataset.get_anno()
+
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(),
+                    anno_file=anno_file,
                     clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
