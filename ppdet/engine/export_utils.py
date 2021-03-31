@@ -20,7 +20,7 @@ import os
 import yaml
 from collections import OrderedDict
 
-from ppdet.metrics import get_categories
+from ppdet.data.source.category import get_categories
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
