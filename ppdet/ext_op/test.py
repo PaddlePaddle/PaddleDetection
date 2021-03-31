@@ -34,6 +34,7 @@ pd_rbox1 = paddle.to_tensor(rbox1)
 pd_rbox2 = paddle.to_tensor(rbox2)
 
 iou = custom_ops.rbox_iou(pd_rbox1, pd_rbox2)
+start_time = time.time()
 print('paddle time:', time.time() - start_time)
 print('iou is', iou.cpu().shape)
 
@@ -135,6 +136,8 @@ def rbox_overlaps(anchors, gt_bboxes, use_cv2=False):
 
 
 # make coor as int
+ploy_rbox1 = rbox1
+ploy_rbox2 = rbox2
 ploy_rbox1[:, 0:4] = rbox1[:, 0:4] * 1024
 ploy_rbox2[:, 0:4] = rbox2[:, 0:4] * 1024
 
@@ -144,6 +147,9 @@ print('rbox time', time.time() - start_time)
 print(iou_py.shape)
 
 iou_pd = iou.cpu().numpy()
-print('diff sum', np.sum(np.abs(iou_pd - iou_py)))
-diff1 = (iou_pd - iou_py) / (iou_py + 1e-8)
-print('diff1:', np.sum(np.abs(diff1)))
+sum_abs_diff = np.sum(np.abs(iou_pd - iou_py))
+print('sum of abs diff', sum_abs_diff)
+if sum_abs_diff < 0.02:
+    print("rbox_iou OP compute right!")
+
+

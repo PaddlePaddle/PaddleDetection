@@ -25,3 +25,22 @@ pd_rbox2 = paddle.to_tensor(rbox2)
 iou = custom_ops.rbox_iou(pd_rbox1, pd_rbox2)
 print('iou', iou)
 ```
+
+## 3. 单元测试
+单元测试`test.py`文件中，通过对比python实现的结果和测试自定义op结果。
+
+由于python计算细节与cpp计算细节略有区别，误差区间设置为0.02。
+```
+python3.7 test.py
+
+# result
+paddle time: 9.059906005859375e-06
+iou is [13000, 7]
+intersection  all sp_time 36.13534760475159
+rbox time 36.680736780166626
+(13000, 7)
+sum of abs diff 0.0012188556971352176
+rbox_iou OP compute right!
+```
+
+

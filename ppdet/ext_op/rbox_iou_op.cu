@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+/* Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -423,16 +423,15 @@ __global__ void rbox_iou_cuda_kernel(
 
   if (threadIdx.x < rbox1_thread_num && threadIdx.y < rbox2_thread_num) {
     int offset = (rbox1_block_idx + threadIdx.x) * rbox2_num + rbox2_block_idx + threadIdx.y;
-    output_data_ptr[offset] = rbox_iou_single<T>(block_boxes1 + threadIdx.x * 5,
-                                                 block_boxes2 + threadIdx.y * 5);
+    output_data_ptr[offset] = rbox_iou_single<T>(block_boxes1 + threadIdx.x * 5, block_boxes2 + threadIdx.y * 5);
   }
 }
 
-#define CHECK_INPUT(x) PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
+#define CHECK_INPUT_GPU(x) PD_CHECK(x.place() == paddle::PlaceType::kGPU, #x " must be a GPU Tensor.")
 
-std::vector<paddle::Tensor> RboxIouForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2) {
-    CHECK_INPUT(rbox1);
-    CHECK_INPUT(rbox2);
+std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2) {
+    CHECK_INPUT_GPU(rbox1);
+    CHECK_INPUT_GPU(rbox2);
 
     auto rbox1_num = rbox1.shape()[0];
     auto rbox2_num = rbox2.shape()[0];
@@ -458,5 +457,51 @@ std::vector<paddle::Tensor> RboxIouForward(const paddle::Tensor& rbox1, const pa
                 output.mutable_data<data_t>());
         }));
 
+    return {output};
+}
+
+
+template <typename T>
+void rbox_iou_cpu_kernel(
+    const int rbox1_num,
+    const int rbox2_num,
+    const T* rbox1_data_ptr,
+    const T* rbox2_data_ptr,
+    T* output_data_ptr) {
+
+    int i, j;
+    for (i = 0; i < rbox1_num; i++) {
+        for (j = 0; j < rbox2_num; j++) {
+		int offset = i * rbox2_num + j;
+		output_data_ptr[offset] = rbox_iou_single<T>(rbox1_data_ptr + i * 5, rbox2_data_ptr + j * 5);
+        }
+    }
+}
+
+
+#define CHECK_INPUT_CPU(x) PD_CHECK(x.place() == paddle::PlaceType::kCPU, #x " must be a CPU Tensor.")
+
+std::vector<paddle::Tensor> RboxIouCPUForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2) {
+    CHECK_INPUT_CPU(rbox1);
+    CHECK_INPUT_CPU(rbox2);
+
+    auto rbox1_num = rbox1.shape()[0];
+    auto rbox2_num = rbox2.shape()[0];
+
+    auto output = paddle::Tensor(paddle::PlaceType::kCPU);
+    output.reshape({rbox1_num, rbox2_num});
+
+    PD_DISPATCH_FLOATING_TYPES(
+        rbox1.type(),
+        "rbox_iou_cpu_kernel",
+        ([&] {
+            rbox_iou_cpu_kernel<data_t>(
+                rbox1_num,
+                rbox2_num,
+                rbox1.data<data_t>(),
+                rbox2.data<data_t>(),
+                output.mutable_data<data_t>());
+        }));
+    
     return {output};
 }

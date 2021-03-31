@@ -42,7 +42,7 @@ S2ANetHead:
   anchor_strides: [8, 16, 32, 64, 128]
   anchor_scales: [4]
   anchor_ratios: [1.0]
-  align_conv_type: 'Conv'  # AlignConv Conv
+  align_conv_type: 'AlignConv'  # AlignConv Conv
   use_custom_smooth_l1_loss: True
   use_sigmoid_cls: True
 
