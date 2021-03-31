@@ -26,7 +26,7 @@ __pycache__/
 /lib64/
 /output/
 /inference_model/
-/dygraph/output_inference/
+/output_inference/
 /parts/
 /sdist/
 /var/
