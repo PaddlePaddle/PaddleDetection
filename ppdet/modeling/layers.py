@@ -93,10 +93,8 @@ class JDEBox(object):
         pred_map = paddle.reshape(pred_list, shape=[nB, -1, 4])
         return pred_map
 
-    def __call__(self, yolo_head_out, anchors, im_shape, scale_factor):
+    def __call__(self, yolo_head_out, anchors):
         bbox_pred_list = []
-        # origin_shape = im_shape / scale_factor
-        # origin_shape = paddle.cast(origin_shape, 'int32')
         for i, head_out in enumerate(yolo_head_out):
             stride = self.downsample_ratio // 2**i
             anc_w, anc_h = anchors[i][0::2], anchors[i][1::2]
@@ -125,20 +123,20 @@ class JDEBox(object):
         boxes_idx = paddle.nonzero(yolo_boxes_pred[:, :, -1] > self.conf_thresh)
         boxes_idx.stop_gradient = True
         if boxes_idx.shape[0] == 0:
-            boxes_idx = paddle.to_tensor(np.array([[[0.0]]], dtype='float32'))
+            boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
             yolo_boxes_out = paddle.to_tensor(
                 np.array(
                     [[[0.0, 0.0, 0.0, 0.0]]], dtype='float32'))
             yolo_scores_out = paddle.to_tensor(
                 np.array(
                     [[[0.0]]], dtype='float32'))
-            return boxes_idx[:, 1:], yolo_boxes_out, yolo_scores_out
+            return boxes_idx, yolo_boxes_out, yolo_scores_out
 
         yolo_boxes = paddle.gather_nd(yolo_boxes_pred, boxes_idx)
         yolo_boxes_out = paddle.reshape(yolo_boxes[:, :4], shape=[nB, -1, 4])
         yolo_scores_out = paddle.reshape(yolo_boxes[:, 4:5], shape=[nB, 1, -1])
-        return boxes_idx[:,
-                         1:], yolo_boxes_out, yolo_scores_out  # [163], [1, 163, 4], [1, 1, 163]
+        boxes_idx = boxes_idx[:, 1:]
+        return boxes_idx, yolo_boxes_out, yolo_scores_out  # [163], [1, 163, 4], [1, 1, 163]
 
 
 def _to_list(l):

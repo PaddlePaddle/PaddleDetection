@@ -197,7 +197,7 @@ class FCOSPostProcess(object):
 
 @register
 class JDEBBoxPostProcess(BBoxPostProcess):
-    def __call__(self, head_out, anchors, im_shape, scale_factor):
+    def __call__(self, head_out, anchors):
         """
         Decode the bbox and do NMS. 
 
@@ -208,15 +208,14 @@ class JDEBBoxPostProcess(BBoxPostProcess):
             bbox_num (Tensor): The number of prediction of each batch with shape [N].
             nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
         """
-        boxes_idx, bboxes, score = self.decode(head_out, anchors, im_shape,
-                                               scale_factor)
+        boxes_idx, bboxes, score = self.decode(head_out, anchors)
         bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
                                                      self.num_classes)
-
         if bbox_pred.shape[0] == 0:
             bbox_pred = paddle.to_tensor(
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
             nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+
         return boxes_idx, bbox_pred, bbox_num, nms_keep_idx

@@ -77,7 +77,33 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    if FLAGS.benchmark == 'MOT16_train':
+    if FLAGS.benchmark == 'MOT15_train':
+        data_root = '{}/MOT15/images/train'.format(FLAGS.data_root)
+        seqs_str = '''Venice-2
+                      KITTI-13
+                      KITTI-17
+                      ETH-Bahnhof
+                      ETH-Sunnyday
+                      PETS09-S2L1
+                      TUD-Campus
+                      TUD-Stadtmitte
+                      ADL-Rundle-6
+                      ADL-Rundle-8
+                      ETH-Pedcross2'''
+    elif FLAGS.benchmark == 'MOT15_test':
+        data_root = '{}/MOT15/images/test'.format(FLAGS.data_root)
+        seqs_str = '''ADL-Rundle-1
+                      ADL-Rundle-3
+                      AVG-TownCentre
+                      ETH-Crossing
+                      ETH-Jelmoli
+                      ETH-Linthescher
+                      KITTI-16
+                      KITTI-19
+                      PETS09-S2L2
+                      TUD-Crossing
+                      Venice-1'''
+    elif FLAGS.benchmark == 'MOT16_train':
         data_root = '{}/MOT16/images/train'.format(FLAGS.data_root)
         seqs_str = '''MOT16-02
                       MOT16-04

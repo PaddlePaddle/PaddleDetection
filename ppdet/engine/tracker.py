@@ -17,30 +17,22 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import time
-import random
-import datetime
 import numpy as np
 import cv2
 import glob
 
 import paddle
-from paddle.distributed import ParallelEnv, fleet
-from paddle import amp
-from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results
 
-from ppdet.tracking_utils.multitracker import JDETracker
 from ppdet.tracking_utils.timer import Timer
 from ppdet.tracking_utils import mot_visualization as mot_vis
 
-from ppdet.metrics import Metric, MOTMetric, get_categories, get_infer_results
+from ppdet.metrics import Metric, MOTMetric
 import ppdet.utils.stats as stats
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer
+from .callbacks import Callback, ComposeCallback
 from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
@@ -126,8 +118,9 @@ class Tracker(object):
                  frame_rate=30):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
-        tracker = create(self.model.tracker)
-        tracker.max_time_lost = int(frame_rate / 30.0 * tracker.track_buffer)
+
+        self.model.tracker.max_time_lost = int(frame_rate / 30.0 *
+                                               self.model.tracker.track_buffer)
 
         timer = Timer()
         results = []
@@ -142,14 +135,7 @@ class Tracker(object):
 
             # forward
             timer.tic()
-            outs = self.model(data)
-            pred_boxes = outs['bbox'][:, 2:].numpy()
-            pred_scores = outs['bbox'][:, 1:2].numpy()
-            pred_dets = np.concatenate((pred_boxes, pred_scores), axis=1)
-            pred_embs = outs['embeddings'].numpy()
-            img0_shape = outs['img0_shape'].numpy()[0]
-
-            online_targets = tracker.update(pred_dets, pred_embs, img0_shape)
+            online_targets = self.model(data)
 
             online_tlwhs = []
             online_ids = []
@@ -157,7 +143,8 @@ class Tracker(object):
                 tlwh = t.tlwh
                 tid = t.track_id
                 vertical = tlwh[2] / tlwh[3] > 1.6
-                if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
+                if tlwh[2] * tlwh[
+                        3] > self.model.tracker.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
             timer.toc()
@@ -165,7 +152,8 @@ class Tracker(object):
             # save results
             results.append((frame_id + 1, online_tlwhs, online_ids))
             if show_image or save_dir is not None:
-                img0 = outs['img0'].numpy()[0]
+                assert 'img0' in data
+                img0 = data['img0'].numpy()[0]
                 online_im = mot_vis.plot_tracking(
                     img0,
                     online_tlwhs,

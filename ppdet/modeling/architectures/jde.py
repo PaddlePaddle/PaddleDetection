@@ -16,9 +16,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import paddle
+import numpy as np
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-import paddle
 
 __all__ = ['JDE']
 
@@ -61,11 +62,15 @@ class JDE(BaseArch):
         detection_head = create(cfg['detection_head'], **kwargs)
         embedding_head = create(cfg['embedding_head'], **kwargs)
 
+        # tracker
+        tracker = create(cfg['tracker'])
+
         return {
             'backbone': backbone,
             'neck': neck,
             "detection_head": detection_head,
             "embedding_head": embedding_head,
+            "tracker": tracker,
         }
 
     def _forward(self):
@@ -88,28 +93,26 @@ class JDE(BaseArch):
                 emb_outs = self.embedding_head(emb_feats, self.inputs)
 
                 boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
-                    det_outs, self.detection_head.mask_anchors,
-                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                    det_outs, self.detection_head.mask_anchors)
 
-                nms_keep_idx.stop_gradient = True
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 embeddings = paddle.gather_nd(emb_valid, nms_keep_idx)
 
-                dets_and_embs = {
-                    'bbox': bbox,
-                    'bbox_num': bbox_num,
-                    'embeddings': embeddings,
-                    'img0_shape': self.inputs['img0_shape'],
-                    'img0': self.inputs['img0'],
-                }
-                return dets_and_embs
+                pred_boxes = bbox[:, 2:].numpy()
+                pred_scores = bbox[:, 1:2].numpy()
+                pred_dets = np.concatenate((pred_boxes, pred_scores), axis=1)
+                pred_embs = embeddings.numpy()
+                img0_shape = self.inputs['img0_shape'].numpy()[0]
+
+                online_targets = self.tracker.update(pred_dets, pred_embs,
+                                                     img0_shape)
+                return online_targets
 
             else:
                 det_outs = self.detection_head(det_feats)
 
                 _, bbox, bbox_num, _ = self.post_process(
-                    det_outs, self.detection_head.mask_anchors,
-                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                    det_outs, self.detection_head.mask_anchors)
 
                 det_results = {'bbox': bbox, 'bbox_num': bbox_num}
                 return det_results
