@@ -37,7 +37,7 @@ __all__ = [
     'Gt2FCOSTarget',
     'Gt2TTFTarget',
     'Gt2Solov2Target',
-    'Gt2S2ANetBatch'
+    'S2ANetPadBatch'
 ]
 
 
@@ -791,17 +791,19 @@ class Gt2Solov2Target(BaseOperator):
 
 
 @register_op
-class Gt2S2ANetBatch(BaseOperator):
+class S2ANetPadBatch(BaseOperator):
     """
     Pad a batch of samples so they can be divisible by a stride.
-    The layout of each image should be 'CHW'.
+    The layout of each image should be 'CHW'. And convert poly to rbox.
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
             height and width is divisible by `pad_to_stride`.
     """
 
-    def __init__(self,):
-        super(Poly2RboxBatch, self).__init__()
+    def __init__(self, pad_to_stride=0, pad_gt=False):
+        super(Gt2S2ANetTarget, self).__init__()
+        self.pad_to_stride = pad_to_stride
+        self.pad_gt = pad_gt
 
     def poly_to_rbox(self, polys):
         """
