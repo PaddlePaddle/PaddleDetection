@@ -171,6 +171,7 @@ class S2ANetAnchorAssigner(object):
 
         # calc rbox iou
         anchors_xc_yc = anchors_xc_yc.astype(np.float32)
+        gt_bboxes_xc_yc = gt_bboxes_xc_yc.astype(np.float32)
         anchors_xc_yc = paddle.to_tensor(anchors_xc_yc, place=paddle.CPUPlace())
         gt_bboxes_xc_yc = paddle.to_tensor(
             gt_bboxes_xc_yc, place=paddle.CPUPlace())
@@ -181,7 +182,7 @@ class S2ANetAnchorAssigner(object):
             print('import custom_ops error', e)
             sys.exit(-1)
 
-        iou = rbox_iou_ops.rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
+        iou = rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
         iou = iou.numpy()
         iou = iou.T
 

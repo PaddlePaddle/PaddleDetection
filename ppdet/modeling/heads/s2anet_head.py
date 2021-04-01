@@ -514,15 +514,15 @@ class S2ANetHead(nn.Layer):
             st_idx += feat_anchor_num
 
             # step2: calc cls loss
-            feat_labels = paddle.reshape(feat_labels, [-1])
-            feat_label_weights = paddle.reshape(feat_label_weights, [-1])
+            feat_labels = feat_labels.reshape(-1)
+            feat_label_weights = feat_label_weights.reshape(-1)
 
             fam_cls_score = fam_cls_branch_list[idx]
             fam_cls_score = paddle.squeeze(fam_cls_score, axis=0)
             fam_cls_score1 = fam_cls_score
 
             # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-            feat_labels = paddle.reshape(feat_labels, [-1]) + 1
+            feat_labels = feat_labels.reshape(-1) + 1
             np_one_hot_targets = np.eye(self.cls_out_channels + 1)[feat_labels]
             np_one_hot_targets = np_one_hot_targets[:, 1:]
             feat_labels_one_hot = paddle.to_tensor(
@@ -537,8 +537,7 @@ class S2ANetHead(nn.Layer):
                 normalizer=num_total_samples,
                 reduction='none')
 
-            feat_label_weights = paddle.reshape(feat_label_weights,
-                [feat_label_weights.shape[0], 1])
+            feat_label_weights = feat_label_weights.reshape(feat_label_weights.shape[0], 1)
             feat_label_weights = np.repeat(
                 feat_label_weights, self.cls_out_channels, axis=1)
             feat_label_weights = paddle.to_tensor(
@@ -603,15 +602,15 @@ class S2ANetHead(nn.Layer):
             st_idx += feat_anchor_num
 
             # step2: calc cls loss
-            feat_labels = paddle.reshape(feat_labels, [-1])
-            feat_label_weights = paddle.reshape(feat_label_weights, [-1])
+            feat_labels = feat_labels.reshape(-1)
+            feat_label_weights = feat_label_weights.reshape(-1)
 
             odm_cls_score = odm_cls_branch_list[idx]
             odm_cls_score = paddle.squeeze(odm_cls_score, axis=0)
             odm_cls_score1 = odm_cls_score
 
             # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-            feat_labels = paddle.reshape(feat_labels, [-1]) + 1
+            feat_labels = feat_labels.reshape(-1) + 1
             np_one_hot_targets = np.eye(self.cls_out_channels + 1)[feat_labels]
             np_one_hot_targets = np_one_hot_targets[:, 1:]
             feat_labels_one_hot = paddle.to_tensor(
@@ -624,8 +623,7 @@ class S2ANetHead(nn.Layer):
                 normalizer=num_total_samples,
                 reduction='none')
 
-            feat_label_weights = paddle.reshape(feat_label_weights,
-                [feat_label_weights.shape[0], 1])
+            feat_label_weights = feat_label_weights.reshape(feat_label_weights.shape[0], 1)
             feat_label_weights = np.repeat(
                 feat_label_weights, self.cls_out_channels, axis=1)
             feat_label_weights = paddle.to_tensor(feat_label_weights)

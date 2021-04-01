@@ -796,7 +796,7 @@ class S2ANetPadBatch(BaseOperator):
     """
 
     def __init__(self, pad_to_stride=0, pad_gt=False):
-        super(Gt2S2ANetTarget, self).__init__()
+        super(S2ANetPadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.pad_gt = pad_gt
 

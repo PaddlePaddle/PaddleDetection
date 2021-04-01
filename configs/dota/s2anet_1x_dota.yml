@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/dota_debug.yml',
+  '../datasets/dota.yml',
   '../runtime.yml',
   '_base_/s2anet_optimizer_1x.yml',
   '_base_/s2anet.yml',
