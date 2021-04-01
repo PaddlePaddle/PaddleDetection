@@ -360,16 +360,17 @@ class Trainer(object):
                     save_name))
                 image.save(save_name, quality=95)
                 if save_txt:
-                    with open(save_name[0:-4] + '.txt', 'w') as f:
+                    with open(os.path.splitext(save_name)[0] + '.txt', 'w') as f:
                         for dt in bbox_res:
                             catid, bbox, score = dt['category_id'], dt[
                                 'bbox'], dt['score']
-                            x1, y1, x2, y2, x3, y3, x4, y4 = bbox
                             if score < draw_threshold:
                                 continue
-                            f.write('{} {} {} {} {} {} {} {} {} {}\n'.format(
-                                catid2name[
-                                    catid], score, y1, x2, y2, x3, y3, x4, y4))
+                            # each bbox result as a line
+                            # for rbox: classname score x1 y1 x2 y2 x3 y3 x4 y4
+                            # for bbox: classname score x1 y1 w h
+                            bbox_pred = '{} {}'.format(catid2name[catid], score) + ' '.join([str(e) for e in bbox])
+                            f.write(bbox_pred + '\n')
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):

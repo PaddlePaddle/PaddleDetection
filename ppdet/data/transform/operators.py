@@ -2025,8 +2025,8 @@ class ResizeRbox(BaseOperator):
         # apply bbox
         if 'gt_rbox2poly' in sample and len(sample['gt_rbox2poly']) > 0:
             sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
-                                                [im_scale_x, im_scale_y],
-                                                [resize_w, resize_h])
+                                                     [im_scale_x, im_scale_y],
+                                                     [resize_w, resize_h])
 
         return sample
 
@@ -2065,8 +2065,12 @@ class Rbox2Poly(BaseOperator):
         poly = np.array(poly)
         coor_x = poly[:, 0, :4] + x_ctr.reshape(bbox_num, 1)
         coor_y = poly[:, 1, :4] + y_ctr.reshape(bbox_num, 1)
-        poly = np.stack([coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
-                         coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]], axis=1)
+        poly = np.stack(
+            [
+                coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
+                coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]
+            ],
+            axis=1)
         x1 = x_ctr - width / 2.0
         y1 = y_ctr - height / 2.0
         x2 = x_ctr + width / 2.0
@@ -2074,6 +2078,7 @@ class Rbox2Poly(BaseOperator):
         sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
         sample['gt_rbox2poly'] = poly
         return sample
+
 
 @register_op
 class Poly2Rbox(BaseOperator):
@@ -2099,10 +2104,10 @@ class Poly2Rbox(BaseOperator):
             pt3 = (poly[4], poly[5])
             pt4 = (poly[6], poly[7])
 
-            edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) +
-                            (pt1[1] - pt2[1]) * (pt1[1] - pt2[1]))
-            edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) +
-                            (pt2[1] - pt3[1]) * (pt2[1] - pt3[1]))
+            edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) + (pt1[
+                1] - pt2[1]) * (pt1[1] - pt2[1]))
+            edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) + (pt2[
+                1] - pt3[1]) * (pt2[1] - pt3[1]))
 
             width = max(edge1, edge2)
             height = min(edge1, edge2)
@@ -2117,6 +2122,7 @@ class Poly2Rbox(BaseOperator):
 
             def norm_angle(angle, range=[-np.pi / 4, np.pi]):
                 return (angle - range[0]) % range[1] + range[0]
+
             angle = norm_angle(angle)
 
             x_ctr = np.float(pt1[0] + pt3[0]) / 2
