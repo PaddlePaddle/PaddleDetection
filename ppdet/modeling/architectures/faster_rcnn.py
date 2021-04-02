@@ -25,6 +25,16 @@ __all__ = ['FasterRCNN']
 
 @register
 class FasterRCNN(BaseArch):
+    """
+    Faster R-CNN network, see https://arxiv.org/abs/1506.01497
+
+    Args:
+        backbone (object): backbone instance
+        rpn_head (object): `RPNHead` instance
+        bbox_head (object): `BBoxHead` instance
+        bbox_post_process (object): `BBoxPostProcess` instance
+        neck (object): 'FPN' instance
+    """
     __category__ = 'architecture'
     __inject__ = ['bbox_post_process']
 
@@ -34,13 +44,6 @@ class FasterRCNN(BaseArch):
                  bbox_head,
                  bbox_post_process,
                  neck=None):
-        """
-        backbone (nn.Layer): backbone instance.
-        rpn_head (nn.Layer): generates proposals using backbone features.
-        bbox_head (nn.Layer): a head that performs per-region computation.
-        mask_head (nn.Layer): generates mask from bbox and backbone features.
-        """
-
         super(FasterRCNN, self).__init__()
         self.backbone = backbone
         self.neck = neck

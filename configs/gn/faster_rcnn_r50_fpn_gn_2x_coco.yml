@@ -29,7 +29,7 @@ BBoxHead:
 
 XConvNormHead:
   num_convs: 4
-  mlp_dim: 1024
+  out_channel: 1024
   norm_type: gn
 
 

@@ -24,6 +24,17 @@ logger = setup_logger(__name__)
 @register
 @serializable
 class COCODataSet(DetDataset):
+    """
+    Load dataset with COCO format.
+
+    Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): coco annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+    """
+
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
@@ -49,10 +60,10 @@ class COCODataSet(DetDataset):
         records = []
         ct = 0
 
-        catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
-        cname2cid = dict({
+        self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
+        self.cname2cid = dict({
             coco.loadCats(catid)[0]['name']: clsid
-            for catid, clsid in catid2clsid.items()
+            for catid, clsid in self.catid2clsid.items()
         })
 
         if 'annotations' not in coco.dataset:
@@ -134,7 +145,7 @@ class COCODataSet(DetDataset):
                 has_segmentation = False
                 for i, box in enumerate(bboxes):
                     catid = box['category_id']
-                    gt_class[i][0] = catid2clsid[catid]
+                    gt_class[i][0] = self.catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     # xc, yc, w, h, theta
                     if is_rbox_anno:
@@ -191,4 +202,4 @@ class COCODataSet(DetDataset):
                 break
         assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
-        self.roidbs, self.cname2cid = records, cname2cid
+        self.roidbs = records

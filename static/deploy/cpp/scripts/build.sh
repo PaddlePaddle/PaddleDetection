@@ -7,21 +7,17 @@ WITH_MKL=ON
 # 是否集成 TensorRT(仅WITH_GPU=ON 有效)
 WITH_TENSORRT=OFF
 
-# 是否使用2.0rc1预测库
-USE_PADDLE_20RC1=OFF
+# paddle 预测库lib名称，由于不同平台不同版本预测库lib名称不同，请查看所下载的预测库中`paddle_inference/lib/`文件夹下`lib`的名称
+PADDLE_LIB_NAME=libpaddle_inference
 
 # TensorRT 的include路径
-TENSORRT_INC_DIR=/path/to/tensorrt/lib
+TENSORRT_INC_DIR=/path/to/tensorrt/include
 
 # TensorRT 的lib路径
-TENSORRT_LIB_DIR=/path/to/tensorrt/include
+TENSORRT_LIB_DIR=/path/to/tensorrt/lib
 
 # Paddle 预测库路径
-PADDLE_DIR=/path/to/fluid_inference/
-
-# Paddle 的预测库是否使用静态库来编译
-# 使用TensorRT时，Paddle的预测库通常为动态库
-WITH_STATIC_LIB=OFF
+PADDLE_DIR=/paddle/to/paddle_inference
 
 # CUDA 的 lib 路径
 CUDA_LIB=/path/to/cuda/lib
@@ -39,11 +35,11 @@ then
   echo "set OPENCV_DIR for x86_64"
   # linux系统通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
-  wget -c https://bj.bcebos.com/paddleseg/deploy/opencv3.4.6gcc4.8ffmpeg.tar.gz2
-  tar xvfj opencv3.4.6gcc4.8ffmpeg.tar.gz2 && cd ..
+  wget -c https://paddledet.bj.bcebos.com/data/opencv3.4.6gcc8.2ffmpeg.zip
+  unzip opencv3.4.6gcc8.2ffmpeg.zip && cd ..
 
   # set OPENCV_DIR
-  OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc4.8ffmpeg/
+  OPENCV_DIR=$(pwd)/deps/opencv3.4.6gcc8.2ffmpeg
 
 elif [ "$MACHINE_TYPE" = "aarch64" ]
 then
@@ -76,7 +72,8 @@ cmake .. \
     -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR}
+    -DOPENCV_DIR=${OPENCV_DIR} \
+    -DPADDLE_LIB_NAME=${PADDLE_LIB_NAME}
 
 make
 echo "make finished!"
