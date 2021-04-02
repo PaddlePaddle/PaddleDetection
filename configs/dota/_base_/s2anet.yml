@@ -28,7 +28,6 @@ FPN:
   has_extra_convs: True
   extra_stage: 2
   use_c5: True
-  norm_type: None
   norm_decay: 0
   freeze_norm: False
   relu_before_extra_convs: False
