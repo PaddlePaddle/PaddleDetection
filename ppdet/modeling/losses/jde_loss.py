@@ -81,7 +81,7 @@ class JDEDetectionLoss(nn.Layer):
             loss_conf, loss_box = self.det_loss(p_det, anchor, t_conf, t_box)
             loss_confs.append(loss_conf)
             loss_boxes.append(loss_box)
-        return loss_confs, loss_boxes
+        return {'loss_confs': loss_confs, 'loss_boxes': loss_boxes}
 
 
 @register

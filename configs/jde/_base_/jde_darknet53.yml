@@ -3,21 +3,25 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pr
 norm_type: sync_bn
 
 JDE:
-  backbone: DarkNet
-  neck: JDEFPN
-  detection_head: YOLOv3Head
-  post_process: JDEBBoxPostProcess
-  embedding_head: JEDEmbeddingHead
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
   tracker: JDETracker
   test_emb: False
   test_track: False
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
 
 DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
   freeze_norm: True
 
-JDEFPN:
+YOLOv3FPN:
   freeze_norm: True
 
 YOLOv3Head:

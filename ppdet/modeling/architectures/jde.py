@@ -27,73 +27,58 @@ __all__ = ['JDE']
 @register
 class JDE(BaseArch):
     __category__ = 'architecture'
-    __inject__ = ['post_process']
 
     def __init__(self,
-                 backbone='DarkNet',
-                 neck='JDEFPN',
-                 detection_head='YOLOv3Head',
-                 post_process='JDEBBoxPostProcess',
-                 embedding_head='JEDEmbeddingHead',
+                 detector='YOLOv3',
+                 reid='JEDEmbeddingHead',
                  tracker='JDETracker',
                  test_emb=False,
                  test_track=False):
         super(JDE, self).__init__()
-        self.backbone = backbone
-        self.neck = neck
-        self.detection_head = detection_head
-        self.post_process = post_process
-        self.embedding_head = embedding_head
+        self.detector = detector
+        self.reid = reid
         self.tracker = tracker
         self.test_emb = test_emb
         self.test_track = test_track
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
-        # backbone
-        backbone = create(cfg['backbone'])
+        detector = create(cfg['detector'])
+        kwargs = {'input_shape': detector.neck.out_shape}
 
-        # fpn
-        kwargs = {'input_shape': backbone.out_shape}
-        neck = create(cfg['neck'], **kwargs)
+        reid = create(cfg['reid'], **kwargs)
 
-        # head
-        kwargs = {'input_shape': neck.out_shape}
-        detection_head = create(cfg['detection_head'], **kwargs)
-        embedding_head = create(cfg['embedding_head'], **kwargs)
-
-        # tracker
         tracker = create(cfg['tracker'])
 
         return {
-            'backbone': backbone,
-            'neck': neck,
-            "detection_head": detection_head,
-            "embedding_head": embedding_head,
+            "detector": detector,
+            "reid": reid,
             "tracker": tracker,
         }
 
     def _forward(self):
-        body_feats = self.backbone(self.inputs)
-        det_feats, emb_feats = self.neck(body_feats)
+        det_outs = self.detector(self.inputs)
 
         if self.training:
-            loss_confs, loss_boxes = self.detection_head(det_feats, self.inputs)
-            jde_losses = self.embedding_head(emb_feats, self.inputs, loss_confs,
-                                             loss_boxes)
+            emb_feats = det_outs['emb_feats']
+            loss_confs = det_outs['yolo_losses']['loss_confs']
+            loss_boxes = det_outs['yolo_losses']['loss_boxes']
+            jde_losses = self.reid(emb_feats, self.inputs, loss_confs,
+                                   loss_boxes)
             return jde_losses
         else:
             if self.test_emb:
-                embs_and_gts = self.embedding_head(
-                    emb_feats, self.inputs, test_emb=True)
+                emb_feats = det_outs['emb_feats']
+                embs_and_gts = self.reid(emb_feats, self.inputs, test_emb=True)
                 return embs_and_gts
 
             elif self.test_track:
-                det_outs = self.detection_head(det_feats, self.inputs)
-                emb_outs = self.embedding_head(emb_feats, self.inputs)
+                emb_feats = det_outs['emb_feats']
+                emb_outs = self.reid(emb_feats, self.inputs)
 
-                boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
-                    det_outs, self.detection_head.mask_anchors)
+                boxes_idx = det_outs['boxes_idx']
+                bbox = det_outs['bbox']
+                nms_keep_idx = det_outs['nms_keep_idx']
 
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 embeddings = paddle.gather_nd(emb_valid, nms_keep_idx)
@@ -109,12 +94,10 @@ class JDE(BaseArch):
                 return online_targets
 
             else:
-                det_outs = self.detection_head(det_feats)
-
-                _, bbox, bbox_num, _ = self.post_process(
-                    det_outs, self.detection_head.mask_anchors)
-
-                det_results = {'bbox': bbox, 'bbox_num': bbox_num}
+                det_results = {
+                    'bbox': det_outs['bbox'],
+                    'bbox_num': det_outs['bbox_num'],
+                }
                 return det_results
 
     def get_loss(self):

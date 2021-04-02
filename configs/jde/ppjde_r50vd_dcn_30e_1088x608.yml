@@ -8,14 +8,18 @@ _BASE_: [
 weights: output/ppjde_r50vd_dcn_30e_1088x608/model_final
 
 JDE:
-  backbone: ResNet
-  neck: PPJDEFPN
-  detection_head: YOLOv3Head
-  post_process: JDEBBoxPostProcess
-  embedding_head: JEDEmbeddingHead
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
   tracker: JDETracker
   test_emb: False
   test_track: False
+
+YOLOv3:
+  backbone: ResNet
+  neck: PPJDEFPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
 
 ResNet:
   depth: 50

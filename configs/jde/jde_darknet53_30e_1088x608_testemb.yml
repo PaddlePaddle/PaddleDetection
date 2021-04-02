@@ -5,11 +5,8 @@ _BASE_: [
 metric: ReID
 
 JDE:
-  backbone: DarkNet
-  neck: JDEFPN
-  detection_head: YOLOv3Head
-  post_process: JDEBBoxPostProcess
-  embedding_head: JEDEmbeddingHead
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
   tracker: JDETracker
   test_emb: True
   test_track: False

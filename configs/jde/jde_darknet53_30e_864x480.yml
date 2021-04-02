@@ -8,14 +8,18 @@ _BASE_: [
 weights: output/jde_darknet53_30e_864x480/model_final
 
 JDE:
-  backbone: DarkNet
-  neck: JDEFPN
-  detection_head: YOLOv3Head
-  post_process: JDEBBoxPostProcess
-  embedding_head: JEDEmbeddingHead
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
   tracker: JDETracker
   test_emb: False
   test_track: False
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
 
 YOLOv3Head:
   anchors: [[102,305], [143, 429], [203,508], [407,508],

@@ -5,14 +5,18 @@ _BASE_: [
 metric: MOT
 
 JDE:
-  backbone: DarkNet
-  neck: JDEFPN
-  detection_head: YOLOv3Head
-  post_process: JDEBBoxPostProcess
-  embedding_head: JEDEmbeddingHead
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
   tracker: JDETracker
   test_emb: False
   test_track: True
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
 
 JDEBBoxPostProcess:
   decode:

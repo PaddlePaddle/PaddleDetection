@@ -276,10 +276,12 @@ class YOLOv3FPN(nn.Layer):
                         name=name))
                 self.routes.append(route)
 
-    def forward(self, blocks):
+    def forward(self, blocks, for_mot=False):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
         yolo_feats = []
+        if for_mot:
+            emb_feats = []
         for i, block in enumerate(blocks):
             if i > 0:
                 if self.data_format == 'NCHW':
@@ -289,12 +291,19 @@ class YOLOv3FPN(nn.Layer):
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
+            if for_mot:
+                # add emb_feats output
+                emb_feats.append(route)
+
             if i < self.num_blocks - 1:
                 route = self.routes[i](route)
                 route = F.interpolate(
                     route, scale_factor=2., data_format=self.data_format)
 
-        return yolo_feats
+        if for_mot:
+            return {'yolo_feats': yolo_feats, 'emb_feats': emb_feats}
+        else:
+            return yolo_feats
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -425,10 +434,12 @@ class PPYOLOFPN(nn.Layer):
                         name=name))
                 self.routes.append(route)
 
-    def forward(self, blocks):
+    def forward(self, blocks, for_mot=False):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
         yolo_feats = []
+        if for_mot:
+            emb_feats = []
         for i, block in enumerate(blocks):
             if i > 0:
                 if self.data_format == 'NCHW':
@@ -438,12 +449,19 @@ class PPYOLOFPN(nn.Layer):
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
+            if for_mot:
+                # add emb_feats output
+                emb_feats.append(route)
+
             if i < self.num_blocks - 1:
                 route = self.routes[i](route)
                 route = F.interpolate(
                     route, scale_factor=2., data_format=self.data_format)
 
-        return yolo_feats
+        if for_mot:
+            return {'yolo_feats': yolo_feats, 'emb_feats': emb_feats}
+        else:
+            return yolo_feats
 
     @classmethod
     def from_config(cls, cfg, input_shape):
