@@ -31,31 +31,40 @@ __all__ = ['TwoFCHead', 'XConvNormHead', 'BBoxHead']
 
 @register
 class TwoFCHead(nn.Layer):
-    def __init__(self, in_dim=256, mlp_dim=1024, resolution=7):
+    """
+    RCNN bbox head with Two fc layers to extract feature
+
+    Args:
+        in_channel (int): Input channel which can be derived by from_config
+        out_channel (int): Output channel
+        resolution (int): Resolution of input feature map, default 7
+    """
+
+    def __init__(self, in_channel=256, out_channel=1024, resolution=7):
         super(TwoFCHead, self).__init__()
-        self.in_dim = in_dim
-        self.mlp_dim = mlp_dim
-        fan = in_dim * resolution * resolution
+        self.in_channel = in_channel
+        self.out_channel = out_channel
+        fan = in_channel * resolution * resolution
         self.fc6 = nn.Linear(
-            in_dim * resolution * resolution,
-            mlp_dim,
+            in_channel * resolution * resolution,
+            out_channel,
             weight_attr=paddle.ParamAttr(
                 initializer=XavierUniform(fan_out=fan)))
 
         self.fc7 = nn.Linear(
-            mlp_dim,
-            mlp_dim,
+            out_channel,
+            out_channel,
             weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
 
     @classmethod
     def from_config(cls, cfg, input_shape):
         s = input_shape
         s = s[0] if isinstance(s, (list, tuple)) else s
-        return {'in_dim': s.channels}
+        return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
-        return [ShapeSpec(channels=self.mlp_dim, )]
+        return [ShapeSpec(channels=self.out_channel, )]
 
     def forward(self, rois_feat):
         rois_feat = paddle.flatten(rois_feat, start_axis=1, stop_axis=-1)
@@ -68,34 +77,36 @@ class TwoFCHead(nn.Layer):
 
 @register
 class XConvNormHead(nn.Layer):
+    __shared__ = ['norm_type', 'freeze_norm']
     """
     RCNN bbox head with serveral convolution layers
+
     Args:
-        in_dim(int): num of channels for the input rois_feat
-        num_convs(int): num of convolution layers for the rcnn bbox head
-        conv_dim(int): num of channels for the conv layers
-        mlp_dim(int): num of channels for the fc layers
-        resolution(int): resolution of the rois_feat
-        norm_type(str): norm type, 'gn' by defalut
-        freeze_norm(bool): whether to freeze the norm
-        stage_name(str): used in CascadeXConvNormHead, '' by default
+        in_channel (int): Input channels which can be derived by from_config
+        num_convs (int): The number of conv layers
+        conv_dim (int): The number of channels for the conv layers
+        out_channel (int): Output channels
+        resolution (int): Resolution of input feature map
+        norm_type (string): Norm type, bn, gn, sync_bn are available, 
+            default `gn`
+        freeze_norm (bool): Whether to freeze the norm
+        stage_name (string): Prefix name for conv layer,  '' by default
     """
-    __shared__ = ['norm_type', 'freeze_norm']
 
     def __init__(self,
-                 in_dim=256,
+                 in_channel=256,
                  num_convs=4,
                  conv_dim=256,
-                 mlp_dim=1024,
+                 out_channel=1024,
                  resolution=7,
                  norm_type='gn',
                  freeze_norm=False,
                  stage_name=''):
         super(XConvNormHead, self).__init__()
-        self.in_dim = in_dim
+        self.in_channel = in_channel
         self.num_convs = num_convs
         self.conv_dim = conv_dim
-        self.mlp_dim = mlp_dim
+        self.out_channel = out_channel
         self.norm_type = norm_type
         self.freeze_norm = freeze_norm
 
@@ -103,7 +114,7 @@ class XConvNormHead(nn.Layer):
         fan = conv_dim * 3 * 3
         initializer = KaimingNormal(fan_in=fan)
         for i in range(self.num_convs):
-            in_c = in_dim if i == 0 else conv_dim
+            in_c = in_channel if i == 0 else conv_dim
             head_conv_name = stage_name + 'bbox_head_conv{}'.format(i)
             head_conv = self.add_sublayer(
                 head_conv_name,
@@ -122,7 +133,7 @@ class XConvNormHead(nn.Layer):
         fan = conv_dim * resolution * resolution
         self.fc6 = nn.Linear(
             conv_dim * resolution * resolution,
-            mlp_dim,
+            out_channel,
             weight_attr=paddle.ParamAttr(
                 initializer=XavierUniform(fan_out=fan)),
             bias_attr=paddle.ParamAttr(
@@ -132,11 +143,11 @@ class XConvNormHead(nn.Layer):
     def from_config(cls, cfg, input_shape):
         s = input_shape
         s = s[0] if isinstance(s, (list, tuple)) else s
-        return {'in_dim': s.channels}
+        return {'in_channel': s.channels}
 
     @property
     def out_shape(self):
-        return [ShapeSpec(channels=self.mlp_dim, )]
+        return [ShapeSpec(channels=self.out_channel, )]
 
     def forward(self, rois_feat):
         for i in range(self.num_convs):
@@ -151,14 +162,17 @@ class BBoxHead(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['bbox_assigner']
     """
-    head (nn.Layer): Extract feature in bbox head
-    in_channel (int): Input channel after RoI extractor
-    roi_extractor (object): The module of RoI Extractor
-    bbox_assigner (object): The module of Box Assigner, label and sample the 
-                            box.
-    with_pool (bool): Whether to use pooling for the RoI feature.
-    num_classes (int): The number of classes
-    bbox_weight (List[float]): The weight to get the decode box 
+    RCNN bbox head
+
+    Args:
+        head (nn.Layer): Extract feature in bbox head
+        in_channel (int): Input channel after RoI extractor
+        roi_extractor (object): The module of RoI Extractor
+        bbox_assigner (object): The module of Box Assigner, label and sample the 
+            box.
+        with_pool (bool): Whether to use pooling for the RoI feature.
+        num_classes (int): The number of classes
+        bbox_weight (List[float]): The weight to get the decode box 
     """
 
     def __init__(self,

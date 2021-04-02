@@ -64,7 +64,7 @@ BBoxAssigner:
   use_random: True
 
 CascadeTwoFCHead:
-  mlp_dim: 1024
+  out_channel: 1024
 
 BBoxPostProcess:
   decode:
@@ -88,7 +88,7 @@ MaskHead:
 
 MaskFeat:
   num_convs: 4
-  out_channels: 256
+  out_channel: 256
 
 MaskAssigner:
   mask_resolution: 28

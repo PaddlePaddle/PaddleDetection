@@ -27,18 +27,29 @@ from .roi_extractor import RoIAlign
 
 @register
 class MaskFeat(nn.Layer):
+    """
+    Feature extraction in Mask head
+
+    Args:
+        in_channel (int): Input channels
+        out_channel (int): Output channels
+        num_convs (int): The number of conv layers, default 4
+        norm_type (string | None): Norm type, bn, gn, sync_bn are available,
+            default None
+    """
+
     def __init__(self,
+                 in_channel=256,
+                 out_channel=256,
                  num_convs=4,
-                 in_channels=256,
-                 out_channels=256,
                  norm_type=None):
         super(MaskFeat, self).__init__()
         self.num_convs = num_convs
-        self.in_channels = in_channels
-        self.out_channels = out_channels
+        self.in_channel = in_channel
+        self.out_channel = out_channel
         self.norm_type = norm_type
-        fan_conv = out_channels * 3 * 3
-        fan_deconv = out_channels * 2 * 2
+        fan_conv = out_channel * 3 * 3
+        fan_deconv = out_channel * 2 * 2
 
         mask_conv = nn.Sequential()
         if norm_type == 'gn':
@@ -47,8 +58,8 @@ class MaskFeat(nn.Layer):
                 mask_conv.add_sublayer(
                     conv_name,
                     ConvNormLayer(
-                        ch_in=in_channels if i == 0 else out_channels,
-                        ch_out=out_channels,
+                        ch_in=in_channel if i == 0 else out_channel,
+                        ch_out=out_channel,
                         filter_size=3,
                         stride=1,
                         norm_type=self.norm_type,
@@ -62,8 +73,8 @@ class MaskFeat(nn.Layer):
                 mask_conv.add_sublayer(
                     conv_name,
                     nn.Conv2D(
-                        in_channels=in_channels if i == 0 else out_channels,
-                        out_channels=out_channels,
+                        in_channels=in_channel if i == 0 else out_channel,
+                        out_channels=out_channel,
                         kernel_size=3,
                         padding=1,
                         weight_attr=paddle.ParamAttr(
@@ -72,8 +83,8 @@ class MaskFeat(nn.Layer):
         mask_conv.add_sublayer(
             'conv5_mask',
             nn.Conv2DTranspose(
-                in_channels=self.in_channels,
-                out_channels=self.out_channels,
+                in_channels=self.in_channel,
+                out_channels=self.out_channel,
                 kernel_size=2,
                 stride=2,
                 weight_attr=paddle.ParamAttr(
@@ -85,10 +96,10 @@ class MaskFeat(nn.Layer):
     def from_config(cls, cfg, input_shape):
         if isinstance(input_shape, (list, tuple)):
             input_shape = input_shape[0]
-        return {'in_channels': input_shape.channels, }
+        return {'in_channel': input_shape.channels, }
 
-    def out_channel(self):
-        return self.out_channels
+    def out_channels(self):
+        return self.out_channel
 
     def forward(self, feats):
         return self.upsample(feats)
@@ -98,6 +109,18 @@ class MaskFeat(nn.Layer):
 class MaskHead(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['mask_assigner']
+    """
+    RCNN mask head
+
+    Args:
+        head (nn.Layer): Extract feature in mask head
+        roi_extractor (object): The module of RoI Extractor
+        mask_assigner (object): The module of Mask Assigner, 
+            label and sample the mask
+        num_classes (int): The number of classes
+        share_bbox_feat (bool): Whether to share the feature from bbox head,
+            default false
+    """
 
     def __init__(self,
                  head,
@@ -112,7 +135,7 @@ class MaskHead(nn.Layer):
         if isinstance(roi_extractor, dict):
             self.roi_extractor = RoIAlign(**roi_extractor)
         self.head = head
-        self.in_channels = head.out_channel()
+        self.in_channels = head.out_channels()
         self.mask_assigner = mask_assigner
         self.share_bbox_feat = share_bbox_feat
         self.bbox_head = None
@@ -159,7 +182,6 @@ class MaskHead(nn.Layer):
         rois_num (Tensor): The number of proposals for each batch
         inputs (dict): ground truth info
         """
-        #assert self.bbox_head
         tgt_labels, _, tgt_gt_inds = targets
         rois, rois_num, tgt_classes, tgt_masks, mask_index, tgt_weights = self.mask_assigner(
             rois, tgt_labels, tgt_gt_inds, inputs)
