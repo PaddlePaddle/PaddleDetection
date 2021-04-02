@@ -24,6 +24,17 @@ logger = setup_logger(__name__)
 @register
 @serializable
 class COCODataSet(DetDataset):
+    """
+    Load dataset with COCO format.
+
+    Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): coco annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+    """
+
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
