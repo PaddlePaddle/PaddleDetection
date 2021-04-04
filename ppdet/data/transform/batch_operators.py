@@ -32,7 +32,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'S2ANetPadBatch'
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'RboxPadBatch'
 ]
 
 
@@ -738,7 +738,7 @@ class Gt2Solov2Target(BaseOperator):
 
 
 @register_op
-class S2ANetPadBatch(BaseOperator):
+class RboxPadBatch(BaseOperator):
     """
     Pad a batch of samples so they can be divisible by a stride.
     The layout of each image should be 'CHW'. And convert poly to rbox.
@@ -748,7 +748,7 @@ class S2ANetPadBatch(BaseOperator):
     """
 
     def __init__(self, pad_to_stride=0, pad_gt=False):
-        super(S2ANetPadBatch, self).__init__()
+        super(RboxPadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.pad_gt = pad_gt
 

@@ -30,23 +30,23 @@ class S2ANet(BaseArch):
     __inject__ = [
         's2anet_head',
         's2anet_bbox_post_process',
-        's2anet_anchor_assigner',
     ]
 
-    def __init__(self,
-                 backbone,
-                 neck,
-                 s2anet_head,
-                 s2anet_bbox_post_process,
-                 s2anet_anchor_assigner=None):
+    def __init__(self, backbone, neck, s2anet_head, s2anet_bbox_post_process):
         """
+        S2ANet, see https://arxiv.org/pdf/2008.09397.pdf
+
+        Args:
+            backbone (object): backbone instance
+            neck (object): `FPN` instance
+            s2anet_head (object): `S2ANetHead` instance
+            s2anet_bbox_post_process (object): `S2ANetBBoxPostProcess` instance
         """
         super(S2ANet, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.s2anet_head = s2anet_head
         self.s2anet_bbox_post_process = s2anet_bbox_post_process
-        self.s2anet_anchor_assigner = s2anet_anchor_assigner
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -59,14 +59,12 @@ class S2ANet(BaseArch):
         s2anet_head = create(cfg['s2anet_head'], **kwargs)
         s2anet_bbox_post_process = create(cfg['s2anet_bbox_post_process'],
                                           **kwargs)
-        s2anet_anchor_assigner = create(cfg['s2anet_anchor_assigner'], **kwargs)
 
         return {
             'backbone': backbone,
             'neck': neck,
             "s2anet_head": s2anet_head,
             "s2anet_bbox_post_process": s2anet_bbox_post_process,
-            "s2anet_anchor_assigner": s2anet_anchor_assigner,
         }
 
     def _forward(self):
@@ -75,7 +73,7 @@ class S2ANet(BaseArch):
             body_feats = self.neck(body_feats)
         self.s2anet_head(body_feats)
         if self.training:
-            loss = self.s2anet_head.get_loss(self.inputs, self.s2anet_anchor_assigner)
+            loss = self.s2anet_head.get_loss(self.inputs)
             total_loss = paddle.add_n(list(loss.values()))
             loss.update({'loss': total_loss})
             return loss
@@ -96,29 +94,7 @@ class S2ANet(BaseArch):
     def get_loss(self, ):
         loss = self._forward()
         return loss
-        s2anet_head_out = self._forward()
-
-        loss = self.s2anet_head.get_loss(self.inputs, s2anet_head_out,
-                                         self.s2anet_anchor_assigner)
-        total_loss = paddle.add_n(list(loss.values()))
-        loss.update({'loss': total_loss})
-        return loss
 
     def get_pred(self):
         output = self._forward()
-        return output
-        s2anet_head_out = self._forward()
-
-        im_shape = self.inputs['im_shape']
-        scale_factor = self.inputs['scale_factor']
-        nms_pre = self.s2anet_bbox_post_process.nms_pre
-        pred_scores, pred_bboxes = self.s2anet_head.get_prediction(
-            s2anet_head_out, nms_pre)
-
-        # post_process
-        pred_cls_score_bbox, bbox_num, index = self.s2anet_bbox_post_process.get_prediction(
-            pred_scores, pred_bboxes, im_shape, scale_factor)
-
-        # output
-        output = {'bbox': pred_cls_score_bbox, 'bbox_num': bbox_num}
         return output

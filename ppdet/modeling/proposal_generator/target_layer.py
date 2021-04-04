@@ -179,13 +179,21 @@ class MaskAssigner(object):
 
 
 @register
-class S2ANetAnchorAssigner(object):
+class RBoxAssigner(object):
+    """
+    assigner of rbox
+    Args:
+        pos_iou_thr (float): threshold of pos samples
+        neg_iou_thr (float): threshold of neg samples
+        min_iou_thr (float): the min threshold of samples
+        ignore_iof_thr (int): the ignored threshold
+    """
     def __init__(self,
                  pos_iou_thr=0.5,
                  neg_iou_thr=0.4,
                  min_iou_thr=0.0,
                  ignore_iof_thr=-2):
-        super(S2ANetAnchorAssigner, self).__init__()
+        super(RBoxAssigner, self).__init__()
 
         self.pos_iou_thr = pos_iou_thr
         self.neg_iou_thr = neg_iou_thr
