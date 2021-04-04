@@ -44,8 +44,8 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 旋转框IOU计算OP[ext_op](../../ppdet/ext_op)是参考Paddle[自定义外部算子](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/07_new_op/new_custom_op.html) 的方式开发。
 
 若使用旋转框IOU计算OP，需要环境满足：
-- Paddle >= 2.0.1
-- gcc == 8.2
+- PaddlePaddle >= 2.0.1
+- GCC == 8.2
 
 推荐使用docker镜像[paddle:2.0.1-gpu-cuda10.1-cudnn7](registry.baidubce.com/paddlepaddle/paddle:2.0.1-gpu-cuda10.1-cudnn7)。
 

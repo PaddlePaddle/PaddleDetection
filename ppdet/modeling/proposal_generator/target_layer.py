@@ -188,6 +188,7 @@ class RBoxAssigner(object):
         min_iou_thr (float): the min threshold of samples
         ignore_iof_thr (int): the ignored threshold
     """
+
     def __init__(self,
                  pos_iou_thr=0.5,
                  neg_iou_thr=0.4,

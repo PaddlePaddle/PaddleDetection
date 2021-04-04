@@ -14,34 +14,14 @@
 import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
-from paddle.nn import Conv2D, BatchNorm2D
 import paddle.nn.functional as F
-from paddle.nn import ReLU
-from paddle.nn import Layer, Sequential
 from paddle.nn.initializer import Normal, Constant
-from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
 from ppdet.modeling.utils import bbox_util
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 import numpy as np
 
-
-def sa2net_smooth_l1_loss(pred, label, delta=1.0 / 9.0):
-    """
-    Args:
-        pred:
-        label:
-        delta:
-
-    Returns: loss
-    """
-    assert pred.shape == label.shape and label.numel() > 0
-    assert delta > 0
-    diff = paddle.abs(pred - label)
-    loss = paddle.where(diff < delta, 0.5 * diff * diff / delta,
-                        diff - 0.5 * delta)
-    return loss
 
 
 class S2ANetAnchorGenerator(object):
@@ -142,7 +122,7 @@ class S2ANetAnchorGenerator(object):
         return valid
 
 
-class AlignConv(Layer):
+class AlignConv(nn.Layer):
     def __init__(self, in_channels, out_channels, kernel_size=3, groups=1):
         super(AlignConv, self).__init__()
         self.kernel_size = kernel_size
@@ -296,15 +276,15 @@ class S2ANetHead(nn.Layer):
                 S2ANetAnchorGenerator(anchor_base, anchor_scales,
                                       anchor_ratios))
 
-        self.fam_cls_convs = Sequential()
-        self.fam_reg_convs = Sequential()
+        self.fam_cls_convs = nn.Sequential()
+        self.fam_reg_convs = nn.Sequential()
 
         for i in range(self.stacked_convs):
             chan_in = self.feat_in if i == 0 else self.feat_out
 
             self.fam_cls_convs.add_sublayer(
                 'fam_cls_conv_{}'.format(i),
-                Conv2D(
+                nn.Conv2D(
                     in_channels=chan_in,
                     out_channels=self.feat_out,
                     kernel_size=3,
@@ -313,11 +293,11 @@ class S2ANetHead(nn.Layer):
                     bias_attr=ParamAttr(initializer=Constant(0))))
 
             self.fam_cls_convs.add_sublayer('fam_cls_conv_{}_act'.format(i),
-                                            ReLU())
+                                            nn.ReLU())
 
             self.fam_reg_convs.add_sublayer(
                 'fam_reg_conv_{}'.format(i),
-                Conv2D(
+                nn.Conv2D(
                     in_channels=chan_in,
                     out_channels=self.feat_out,
                     kernel_size=3,
@@ -326,9 +306,9 @@ class S2ANetHead(nn.Layer):
                     bias_attr=ParamAttr(initializer=Constant(0))))
 
             self.fam_reg_convs.add_sublayer('fam_reg_conv_{}_act'.format(i),
-                                            ReLU())
+                                            nn.ReLU())
 
-        self.fam_reg = Conv2D(
+        self.fam_reg = nn.Conv2D(
             self.feat_out,
             5,
             1,
@@ -336,7 +316,7 @@ class S2ANetHead(nn.Layer):
             bias_attr=ParamAttr(initializer=Constant(0)))
         prior_prob = 0.01
         bias_init = float(-np.log((1 - prior_prob) / prior_prob))
-        self.fam_cls = Conv2D(
+        self.fam_cls = nn.Conv2D(
             self.feat_out,
             self.cls_out_channels,
             1,
@@ -347,14 +327,14 @@ class S2ANetHead(nn.Layer):
             self.align_conv = AlignConv(self.feat_out, self.feat_out,
                                         self.align_conv_size)
         elif self.align_conv_type == "Conv":
-            self.align_conv = Conv2D(
+            self.align_conv = nn.Conv2D(
                 self.feat_out,
                 self.feat_out,
                 self.align_conv_size,
                 padding=(self.align_conv_size - 1) // 2,
                 bias_attr=ParamAttr(initializer=Constant(0)))
 
-        self.or_conv = Conv2D(
+        self.or_conv = nn.Conv2D(
             self.feat_out,
             self.feat_out,
             kernel_size=3,
@@ -363,8 +343,8 @@ class S2ANetHead(nn.Layer):
             bias_attr=ParamAttr(initializer=Constant(0)))
 
         # ODM
-        self.odm_cls_convs = Sequential()
-        self.odm_reg_convs = Sequential()
+        self.odm_cls_convs = nn.Sequential()
+        self.odm_reg_convs = nn.Sequential()
 
         for i in range(self.stacked_convs):
             ch_in = self.feat_out
@@ -372,7 +352,7 @@ class S2ANetHead(nn.Layer):
 
             self.odm_cls_convs.add_sublayer(
                 'odm_cls_conv_{}'.format(i),
-                Conv2D(
+                nn.Conv2D(
                     in_channels=ch_in,
                     out_channels=self.feat_out,
                     kernel_size=3,
@@ -382,11 +362,11 @@ class S2ANetHead(nn.Layer):
                     bias_attr=ParamAttr(initializer=Constant(0))))
 
             self.odm_cls_convs.add_sublayer('odm_cls_conv_{}_act'.format(i),
-                                            ReLU())
+                                            nn.ReLU())
 
             self.odm_reg_convs.add_sublayer(
                 'odm_reg_conv_{}'.format(i),
-                Conv2D(
+                nn.Conv2D(
                     in_channels=self.feat_out,
                     out_channels=self.feat_out,
                     kernel_size=3,
@@ -396,16 +376,16 @@ class S2ANetHead(nn.Layer):
                     bias_attr=ParamAttr(initializer=Constant(0))))
 
             self.odm_reg_convs.add_sublayer('odm_reg_conv_{}_act'.format(i),
-                                            ReLU())
+                                            nn.ReLU())
 
-        self.odm_cls = Conv2D(
+        self.odm_cls = nn.Conv2D(
             self.feat_out,
             self.cls_out_channels,
             3,
             padding=1,
             weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
             bias_attr=ParamAttr(initializer=Constant(bias_init)))
-        self.odm_reg = Conv2D(
+        self.odm_reg = nn.Conv2D(
             self.feat_out,
             5,
             3,
@@ -515,6 +495,21 @@ class S2ANetHead(nn.Layer):
             use_sigmoid_cls=self.use_sigmoid_cls)
         return pred_scores, pred_bboxes
 
+    def smooth_l1_loss(self, pred, label, delta=1.0 / 9.0):
+        """
+        Args:
+            pred: pred score
+            label: label
+            delta: delta
+        Returns: loss
+        """
+        assert pred.shape == label.shape and label.numel() > 0
+        assert delta > 0
+        diff = paddle.abs(pred - label)
+        loss = paddle.where(diff < delta, 0.5 * diff * diff / delta,
+                            diff - 0.5 * delta)
+        return loss
+
     def get_fam_loss(self, fam_target, s2anet_head_out):
         (labels, label_weights, bbox_targets, bbox_weights, pos_inds,
          neg_inds) = fam_target
@@ -583,7 +578,7 @@ class S2ANetHead(nn.Layer):
             fam_bbox_pred = fam_reg_branch_list[idx]
             fam_bbox_pred = paddle.squeeze(fam_bbox_pred, axis=0)
             fam_bbox_pred = paddle.reshape(fam_bbox_pred, [-1, 5])
-            fam_bbox = sa2net_smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
+            fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
             feat_bbox_weights = paddle.to_tensor(
                 feat_bbox_weights, stop_gradient=True)
             fam_bbox = fam_bbox * feat_bbox_weights
@@ -660,7 +655,7 @@ class S2ANetHead(nn.Layer):
             odm_bbox_pred = fam_reg_branch_list[idx]
             odm_bbox_pred = paddle.squeeze(odm_bbox_pred, axis=0)
             odm_bbox_pred = paddle.reshape(odm_bbox_pred, [-1, 5])
-            odm_bbox = sa2net_smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
+            odm_bbox = self.smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
             feat_bbox_weights = paddle.to_tensor(
                 feat_bbox_weights, stop_gradient=True)
             odm_bbox = odm_bbox * feat_bbox_weights

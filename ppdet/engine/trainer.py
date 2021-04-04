@@ -31,7 +31,7 @@ from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results
+from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -382,20 +382,8 @@ class Trainer(object):
                     save_name))
                 image.save(save_name, quality=95)
                 if save_txt:
-                    with open(os.path.splitext(save_name)[0] + '.txt',
-                              'w') as f:
-                        for dt in bbox_res:
-                            catid, bbox, score = dt['category_id'], dt[
-                                'bbox'], dt['score']
-                            if score < draw_threshold:
-                                continue
-                            # each bbox result as a line
-                            # for rbox: classname score x1 y1 x2 y2 x3 y3 x4 y4
-                            # for bbox: classname score x1 y1 w h
-                            bbox_pred = '{} {}'.format(
-                                catid2name[catid], score) + ' '.join(
-                                    [str(e) for e in bbox])
-                            f.write(bbox_pred + '\n')
+                    save_path = os.path.splitext(save_name)[0] + '.txt'
+                    save_result(save_path, bbox_res, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):
