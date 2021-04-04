@@ -262,9 +262,10 @@ class S2ANetHead(nn.Layer):
         self.use_custom_smooth_l1_loss = use_custom_smooth_l1_loss
 
         self.use_sigmoid_cls = use_sigmoid_cls
-        num_classes = 15
         self.cls_out_channels = num_classes if self.use_sigmoid_cls else 1
         self.sampling = False
+
+        self.s2anet_head_out = None
 
         # anchor
         self.anchor_generators = []
@@ -474,12 +475,13 @@ class S2ANetHead(nn.Layer):
                 [odm_bbox_pred.shape[0], -1, 5])
             odm_reg_branch_list.append(odm_bbox_pred_reshape)
 
-        return (fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list,
+        self.s2anet_head_out = (fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list,
                 odm_reg_branch_list)
+        return self.s2anet_head_out
 
-    def get_prediction(self, s2anet_head_out, nms_pre):
+    def get_prediction(self, nms_pre):
         refine_anchors = self.refine_anchor_list
-        fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = s2anet_head_out
+        fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = self.s2anet_head_out
         pred_scores, pred_bboxes = self.get_bboxes(
             odm_cls_branch_list,
             odm_reg_branch_list,

@@ -8,16 +8,12 @@ S2ANet:
   backbone: ResNet
   neck: FPN
   s2anet_head: S2ANetHead
-  # post process
   s2anet_bbox_post_process: S2ANetBBoxPostProcess
-  # anchor_assign
   s2anet_anchor_assigner: S2ANetAnchorAssigner
 
 ResNet:
-  # index 0 stands for res2
   depth: 50
   norm_type: bn
-  freeze_at: 0
   return_idx: [1,2,3]
   num_stages: 4
 
@@ -27,9 +23,6 @@ FPN:
   spatial_scales: [0.25, 0.125, 0.0625]
   has_extra_convs: True
   extra_stage: 2
-  use_c5: True
-  norm_decay: 0
-  freeze_norm: False
   relu_before_extra_convs: False
 
 

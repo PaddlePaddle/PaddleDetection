@@ -73,13 +73,29 @@ class S2ANet(BaseArch):
         body_feats = self.backbone(self.inputs)
         if self.neck is not None:
             body_feats = self.neck(body_feats)
+        self.s2anet_head(body_feats)
+        if self.training:
+            loss = self.s2anet_head.get_loss(self.inputs, self.s2anet_anchor_assigner)
+            total_loss = paddle.add_n(list(loss.values()))
+            loss.update({'loss': total_loss})
+            return loss
+        else:
+            im_shape = self.inputs['im_shape']
+            scale_factor = self.inputs['scale_factor']
+            nms_pre = self.s2anet_bbox_post_process.nms_pre
+            pred_scores, pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
 
-        # fam_list  odm_list
-        s2anet_head_out = self.s2anet_head(body_feats)
+            # post_process
+            pred_cls_score_bbox, bbox_num, index = self.s2anet_bbox_post_process.get_prediction(
+                pred_scores, pred_bboxes, im_shape, scale_factor)
 
-        return s2anet_head_out
+            # output
+            output = {'bbox': pred_cls_score_bbox, 'bbox_num': bbox_num}
+            return output
 
     def get_loss(self, ):
+        loss = self._forward()
+        return loss
         s2anet_head_out = self._forward()
 
         loss = self.s2anet_head.get_loss(self.inputs, s2anet_head_out,
@@ -89,6 +105,8 @@ class S2ANet(BaseArch):
         return loss
 
     def get_pred(self):
+        output = self._forward()
+        return output
         s2anet_head_out = self._forward()
 
         im_shape = self.inputs['im_shape']

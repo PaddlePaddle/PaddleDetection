@@ -707,7 +707,9 @@ class Resize(BaseOperator):
         # apply rbox
         if 'gt_rbox2poly' in sample:
             if np.array(sample['gt_rbox2poly']).sha[e[1]] != 8:
-                logger.warn("gt_rbox2poly's length shoule be 8, but actually is {}".format(len(sample['gt_rbox2poly'])))
+                logger.warn(
+                    "gt_rbox2poly's length shoule be 8, but actually is {}".
+                    format(len(sample['gt_rbox2poly'])))
             sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
                                                      [im_scale_x, im_scale_y],
                                                      [resize_w, resize_h])
