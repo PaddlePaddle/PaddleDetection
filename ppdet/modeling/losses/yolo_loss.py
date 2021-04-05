@@ -46,6 +46,18 @@ class YOLOv3Loss(nn.Layer):
                  scale_x_y=1.,
                  iou_loss=None,
                  iou_aware_loss=None):
+        """
+        YOLOv3Loss layer
+
+        Args:
+            num_calsses (int): number of foreground classes
+            ignore_thresh (float): threshold to ignore confidence loss
+            label_smooth (bool): whether to use label smoothing
+            downsample (list): downsample ratio for each detection block
+            scale_x_y (float): scale_x_y factor
+            iou_loss (object): IoULoss instance
+            iou_aware_loss (object): IouAwareLoss instance  
+        """
         super(YOLOv3Loss, self).__init__()
         self.num_classes = num_classes
         self.ignore_thresh = ignore_thresh
