@@ -28,6 +28,18 @@ class YOLOv3Head(nn.Layer):
                  iou_aware=False,
                  iou_aware_factor=0.4,
                  data_format='NCHW'):
+        """
+        Head for YOLOv3 network
+
+        Args:
+            num_classes (int): number of foreground classes
+            anchors (list): anchors
+            anchor_masks (list): anchor masks
+            loss (object): YOLOv3Loss instance
+            iou_aware (bool): whether to use iou_aware
+            iou_aware_factor (float): iou aware factor
+            data_format (str): data format, NCHW or NHWC
+        """
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.loss = loss
