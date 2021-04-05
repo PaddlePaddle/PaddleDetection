@@ -8,7 +8,7 @@ TrainReader:
   - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
   - Permute: {}
   batch_transforms:
-  - S2ANetPadBatch: {pad_to_stride: 32, pad_gt: true}
+  - RboxPadBatch: {pad_to_stride: 32, pad_gt: true}
   batch_size: 1
   shuffle: true
   drop_last: true

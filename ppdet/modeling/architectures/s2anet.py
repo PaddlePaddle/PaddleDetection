@@ -32,7 +32,11 @@ class S2ANet(BaseArch):
         's2anet_bbox_post_process',
     ]
 
-    def __init__(self, backbone, neck, s2anet_head, s2anet_bbox_post_process):
+    def __init__(self,
+                 backbone,
+                 neck,
+                 s2anet_head,
+                 s2anet_bbox_post_process):
         """
         S2ANet, see https://arxiv.org/pdf/2008.09397.pdf
 
