@@ -183,17 +183,4 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 
 
 ## 性能测试
-测试环境为：硬件: TX2，JetPack版本: 4.3, Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.5, TensorRT: 5.0.  
-
-去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
-
-
-|模型 | 输入| AnalysisPredictor(ms) |
-|---|----|---|
-| yolov3_mobilenet_v1 |  608*608  | 56.243858
-| faster_rcnn_r50_1x  | 1333*1333  | 73.552460
-| faster_rcnn_r50_vd_fpn_2x | 1344*1344 | 87.582146
-| mask_rcnn_r50_fpn_1x | 1344*1344  | 107.317848
-| mask_rcnn_r50_vd_fpn_2x | 1344*1344  | 87.98.708122
-| ppyolo_r18vd | 320*320  |  22.876789
-| ppyolo_2x | 608*608  | 68.562050
+benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)
