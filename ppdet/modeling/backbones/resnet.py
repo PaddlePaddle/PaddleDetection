@@ -423,6 +423,27 @@ class ResNet(nn.Layer):
                  dcn_v2_stages=[-1],
                  num_stages=4,
                  std_senet=False):
+        """
+        Residual Network, see https://arxiv.org/abs/1512.03385
+        
+        Args:
+            depth (int): ResNet depth, should be 18, 34, 50, 101, 152.
+            ch_in (int): output channel of first stage, default 64
+            variant (str): ResNet variant, supports 'a', 'b', 'c', 'd' currently
+            lr_mult_list (list): learning rate ratio of different resnet stages(2,3,4,5),
+                                 lower learning rate ratio is need for pretrained model 
+                                 got using distillation(default as [1.0, 1.0, 1.0, 1.0]).
+            groups (int): group convolution cardinality
+            base_width (int): base width of each group convolution
+            norm_type (str): normalization type, 'bn', 'sync_bn' or 'affine_channel'
+            norm_decay (float): weight decay for normalization layer weights
+            freeze_norm (bool): freeze normalization layers
+            freeze_at (int): freeze the backbone at which stage
+            return_idx (list): index of the stages whose feature maps are returned
+            dcn_v2_stages (list): index of stages who select deformable conv v2
+            num_stages (int): total num of stages
+            std_senet (bool): whether use senet, default True
+        """
         super(ResNet, self).__init__()
         self._model_type = 'ResNet' if groups == 1 else 'ResNeXt'
         assert num_stages >= 1 and num_stages <= 4
