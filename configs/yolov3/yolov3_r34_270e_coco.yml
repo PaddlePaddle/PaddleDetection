@@ -7,4 +7,4 @@ _BASE_: [
 ]
 
 snapshot_epoch: 5
-weights: output/yolov3_darknet53_270e_coco/model_final
+weights: output/yolov3_r34_270e_coco/model_final

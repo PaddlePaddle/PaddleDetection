@@ -101,21 +101,21 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(FLAGS.config, FLAGS.slim_config)
-    else:
-        cfg = load_config(FLAGS.config)
+    cfg = load_config(FLAGS.config)
     # TODO: bias should be unified
     cfg['bias'] = 1 if FLAGS.bias else 0
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
     merge_config(FLAGS.opt)
+
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if FLAGS.slim_config:
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
-
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 

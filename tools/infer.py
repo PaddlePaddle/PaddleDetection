@@ -128,19 +128,20 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(FLAGS.config, FLAGS.slim_config)
-    else:
-        cfg = load_config(FLAGS.config)
+    cfg = load_config(FLAGS.config)
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
+
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if FLAGS.slim_config:
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
     run(FLAGS, cfg)
 
 

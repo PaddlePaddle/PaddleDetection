@@ -99,7 +99,7 @@ def run(FLAGS, cfg):
     # load weights
     if FLAGS.resume is not None:
         trainer.resume_weights(FLAGS.resume)
-    elif not FLAGS.slim_config and 'pretrain_weights' in cfg and cfg.pretrain_weights:
+    elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
         trainer.load_weights(cfg.pretrain_weights)
 
     # training
@@ -108,22 +108,21 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(FLAGS.config, FLAGS.slim_config)
-    else:
-        cfg = load_config(FLAGS.config)
+    cfg = load_config(FLAGS.config)
     cfg['fp16'] = FLAGS.fp16
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
 
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if FLAGS.slim_config:
+        cfg = build_slim_model(cfg, FLAGS.slim_config)
+
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()
-
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 
