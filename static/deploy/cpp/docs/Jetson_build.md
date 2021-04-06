@@ -34,7 +34,7 @@ cat /etc/nv_tegra_release
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.0-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
+解压下载的[nv_jetson_cuda10_cudnn7.6_trt6(jetpack4.3)](https://paddle-inference-lib.bj.bcebos.com/2.0.1-nv-jetson-jetpack4.3-all/paddle_inference.tgz) 。
 
 下载并解压后`/root/projects/fluid_inference`目录包含内容为：
 ```
@@ -74,6 +74,9 @@ TENSORRT_LIB_DIR=/usr/lib/aarch64-linux-gnu
 # Paddle 预测库路径
 PADDLE_DIR=/path/to/fluid_inference/
 
+# Paddle 预测库名称
+PADDLE_LIB_NAME=paddle_inference
+
 # Paddle 的预测库是否使用静态库来编译
 # 使用TensorRT时，Paddle的预测库通常为动态库
 WITH_STATIC_LIB=OFF
@@ -101,7 +104,8 @@ cmake .. \
     -DWITH_STATIC_LIB=${WITH_STATIC_LIB} \
     -DCUDA_LIB=${CUDA_LIB} \
     -DCUDNN_LIB=${CUDNN_LIB} \
-    -DOPENCV_DIR=${OPENCV_DIR}
+    -DOPENCV_DIR=${OPENCV_DIR} \
+    -DPADDLE_LIB_NAME={PADDLE_LIB_NAME}
 make
 ```
 

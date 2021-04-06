@@ -24,6 +24,8 @@ try:
 except Exception:
     from collections import Sequence
 
+__all__ = ['BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess']
+
 
 @register
 class BBoxPostProcess(object):
@@ -40,13 +42,17 @@ class BBoxPostProcess(object):
         """
         Decode the bbox and do NMS if needed. 
 
+        Args:
+            head_out (tuple): bbox_pred and cls_prob of bbox_head output.
+            rois (tuple): roi and rois_num of rpn_head output.
+            im_shape (Tensor): The shape of the input image.
+            scale_factor (Tensor): The scale factor of the input image.
         Returns:
-            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
-                               including labels, scores and bboxes. The size of 
-                               bboxes are corresponding to the input image and 
-                               the bboxes may be used in other brunch.
-            bbox_num(Tensor): The number of prediction of each batch with shape
-                              [N, 6].
+            bbox_pred (Tensor): The output prediction with shape [N, 6], including
+                labels, scores and bboxes. The size of bboxes are corresponding
+                to the input image, the bboxes may be used in other branch.
+            bbox_num (Tensor): The number of prediction boxes of each batch with
+                shape [1], and is N.
         """
         if self.nms is not None:
             bboxes, score = self.decode(head_out, rois, im_shape, scale_factor)
@@ -54,6 +60,9 @@ class BBoxPostProcess(object):
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
+
+        # Prevent empty bbox_pred from decode or NMS.
+        # Bboxes and score before NMS may be empty due to the score threshold.
         if bbox_pred.shape[0] == 0:
             bbox_pred = paddle.to_tensor(
                 np.array(
@@ -64,16 +73,22 @@ class BBoxPostProcess(object):
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """
         Rescale, clip and filter the bbox from the output of NMS to 
-        get final prediction.
+        get final prediction. 
+        
+        Notes:
+        Currently only support bs = 1.
 
         Args:
-            bboxes(Tensor): The output of __call__ with shape [N, 6]
+            bbox_pred (Tensor): The output bboxes with shape [N, 6] after decode
+                and NMS, including labels, scores and bboxes.
+            bbox_num (Tensor): The number of prediction boxes of each batch with
+                shape [1], and is N.
+            im_shape (Tensor): The shape of the input image.
+            scale_factor (Tensor): The scale factor of the input image.
         Returns:
-            bbox_pred(Tensor): The output is the prediction with shape [N, 6]
-                               including labels, scores and bboxes. The size of
-                               bboxes are corresponding to the original image.
+            pred_result (Tensor): The final prediction results with shape [N, 6]
+                including labels, scores and bboxes.
         """
-
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
@@ -125,7 +140,9 @@ class MaskPostProcess(object):
         self.binary_thresh = binary_thresh
 
     def paste_mask(self, masks, boxes, im_h, im_w):
-        # paste each mask on image
+        """
+        Paste the mask prediction to the original image.
+        """
         x0, y0, x1, y1 = paddle.split(boxes, 4, axis=1)
         masks = paddle.unsqueeze(masks, [0, 1])
         img_y = paddle.arange(0, im_h, dtype='float32') + 0.5
@@ -148,7 +165,19 @@ class MaskPostProcess(object):
 
     def __call__(self, mask_out, bboxes, bbox_num, origin_shape):
         """
-        Paste the mask prediction to the original image.
+        Decode the mask_out and paste the mask to the origin image.
+
+        Args:
+            mask_out (Tensor): mask_head output with shape [N, 28, 28].
+            bbox_pred (Tensor): The output bboxes with shape [N, 6] after decode
+                and NMS, including labels, scores and bboxes.
+            bbox_num (Tensor): The number of prediction boxes of each batch with
+                shape [1], and is N.
+            origin_shape (Tensor): The origin shape of the input image, the tensor
+                shape is [N, 2], and each row is [h, w].
+        Returns:
+            pred_result (Tensor): The final prediction mask results with shape
+                [N, h, w] in binary mask style.
         """
         num_mask = mask_out.shape[0]
         origin_shape = paddle.cast(origin_shape, 'int32')

@@ -31,8 +31,10 @@ class WIDERFaceDataSet(DetDataset):
     Args:
         dataset_dir (str): root directory for dataset.
         image_dir (str): directory for images.
-        anno_path (str): root directory for voc annotation data
-        sample_num (int): number of samples to load, -1 means all
+        anno_path (str): WiderFace annotation data.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+        with_lmk (bool): whether to load face landmark keypoint labels.
     """
 
     def __init__(self,

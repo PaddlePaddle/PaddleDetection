@@ -25,6 +25,19 @@ __all__ = ['MaskRCNN']
 
 @register
 class MaskRCNN(BaseArch):
+    """
+    Mask R-CNN network, see https://arxiv.org/abs/1703.06870
+
+    Args:
+        backbone (object): backbone instance
+        rpn_head (object): `RPNHead` instance
+        bbox_head (object): `BBoxHead` instance
+        mask_head (object): `MaskHead` instance
+        bbox_post_process (object): `BBoxPostProcess` instance
+        mask_post_process (object): `MaskPostProcess` instance
+        neck (object): 'FPN' instance
+    """
+
     __category__ = 'architecture'
     __inject__ = [
         'bbox_post_process',
@@ -39,12 +52,6 @@ class MaskRCNN(BaseArch):
                  bbox_post_process,
                  mask_post_process,
                  neck=None):
-        """
-        backbone (nn.Layer): backbone instance.
-        rpn_head (nn.Layer): generates proposals using backbone features.
-        bbox_head (nn.Layer): a head that performs per-region computation.
-        mask_head (nn.Layer): generates mask from bbox and backbone features.
-        """
         super(MaskRCNN, self).__init__()
         self.backbone = backbone
         self.neck = neck
