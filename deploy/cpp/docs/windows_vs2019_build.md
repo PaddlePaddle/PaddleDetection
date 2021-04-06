@@ -125,18 +125,4 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 
 ## 性能测试
-测试环境为：系统: Windows 10专业版系统，CPU: I9-9820X, GPU: GTX 2080 Ti，Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.4.  
-
-去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
-
-
-|模型 | AnalysisPredictor(ms) | 输入|
-|---|----|---|
-| YOLOv3-MobileNetv1 | 41.51 |  608*608
-| faster_rcnn_r50_1x | 194.47 | 1333*1333
-| faster_rcnn_r50_vd_fpn_2x | 43.35 | 1344*1344
-| mask_rcnn_r50_fpn_1x | 96.96 | 1344*1344
-| mask_rcnn_r50_vd_fpn_2x | 97.66 | 1344*1344
-| ppyolo_r18vd | 5.54 | 320*320
-| ppyolo_2x | 56.93 | 608*608
-| ttfnet_darknet | 36.17 | 512*512
+benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)

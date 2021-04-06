@@ -124,3 +124,6 @@ make
 ./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --use_gpu=1
 ```
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。
+
+## 性能测试
+benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)
