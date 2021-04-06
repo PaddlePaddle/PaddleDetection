@@ -402,6 +402,6 @@ OptimizerBuilder:
 - 可以设置LearningRate.schedulers设置不同学习率调整策略的组合，PaddlePaddle目前支持多种学习率调整策略，具体也可参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)。需要注意的是，你需要对于PaddlePaddle中的学习率调整策略进行简单的封装，具体可参考源码`ppdet/optimizer.py`。
 
 ##### 2.2.3Reader配置文件
-关于Reader的配置可以参考[Reader配置文档](./READER.md#配置及运行)。
+关于Reader的配置可以参考[Reader配置文档](./READER.md#5.配置及运行)。
 
 > 看过此文档，您应该对PaddleDetection中模型搭建与配置有了一定经验，结合源码会理解的更加透彻。关于模型技术，如您有其他问题或建议，请给我们提issue，我们非常欢迎您的反馈。
