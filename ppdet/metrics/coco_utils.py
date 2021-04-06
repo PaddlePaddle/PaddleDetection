@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_segm_res
+from ppdet.metrics.post_process import get_det_res, get_seg_res, get_solov2_segm_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -130,7 +130,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            *[results_flatten[i::num_columns] for i in range(num_columns)])
+            * [results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)
