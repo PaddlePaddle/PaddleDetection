@@ -2,22 +2,22 @@
 为了让用户更好的使用PaddleDetection，本文档中，我们将介绍PaddleDetection的主要模型技术细节及应用
 
 ## 目录
-- [简介](#简介)
-- [新增模型](#新增模型)
-  - [新增网络结构](#新增网络结构)
-    - [新增Backbone](#新增Backbone)
-    - [新增Neck](#新增Neck)
-    - [新增Head](#新增Head)
-    - [新增Loss](#新增Loss)
-    - [新增后处理模块](#新增后处理模块)
-    - [新增Architecture](#新增Architecture)
-  - [新增配置文件](#新增配置文件)
-    - [网络结构配置文件](#网络结构配置文件)
-    - [优化器配置文件](#优化器配置文件)
-    - [Reader配置文件](#Reader配置文件)
+- [1.简介](#1.简介)
+- [2.新增模型](#2.新增模型)
+  - [2.1新增网络结构](#2.1新增网络结构)
+    - [2.1.1新增Backbone](#2.1.1新增Backbone)
+    - [2.1.2新增Neck](#2.1.2新增Neck)
+    - [2.1.3新增Head](#2.1.3新增Head)
+    - [2.1.4新增Loss](#2.1.4新增Loss)
+    - [2.1.5新增后处理模块](#2.1.5新增后处理模块)
+    - [2.1.6新增Architecture](#2.1.6新增Architecture)
+  - [2.2新增配置文件](#2.2新增配置文件)
+    - [2.2.1网络结构配置文件](#2.2.1网络结构配置文件)
+    - [2.2.2优化器配置文件](#2.2.2优化器配置文件)
+    - [2.2.3Reader配置文件](#2.2.3Reader配置文件)
 
-### 简介
-PaddleDetecion中的每一种模型对应一个文件夹，以yolov3为例，`configs/yolov3/yolov3_darknet53_270e_coco.yml`文件的内容如下：
+### 1.简介
+PaddleDetecion中的每一种模型对应一个文件夹，以yolov3为例，yolov3系列的模型对应于`configs/yolov3`文件夹，其中yolov3_darknet的总配置文件`configs/yolov3/yolov3_darknet53_270e_coco.yml`的内容如下：
 ```
 _BASE_: [
   '../datasets/coco_detection.yml', # 数据集配置文件，所有模型共用
@@ -33,7 +33,7 @@ weights: output/yolov3_darknet53_270e_coco/model_final
 ```
 可以看到，配置文件中的模块进行了清晰的划分，除了公共的数据集配置以及运行时配置，其他配置被划分为优化器，网络结构以及Reader模块。PaddleDetection中支持丰富的优化器，学习率调整策略，预处理算子等，因此大多数情况下不需要编写优化器以及Reader相关的代码，而只需要在配置文件中配置即可。因此，新增一个模型的主要在于搭建网络结构。
 
-PaddleDetection网络结构的代码在`ppdet/modeling/`中，所有网络模型是以组件的形式进行定义与组合，网络模型模块的主要构成如下架构所示：
+PaddleDetection网络结构的代码在`ppdet/modeling/`中，所有网络结构以组件的形式进行定义与组合，网络结构的主要构成如下所示：
 ```
   ppdet/modeling/
   ├── architectures
@@ -68,12 +68,12 @@ PaddleDetection网络结构的代码在`ppdet/modeling/`中，所有网络模型
 
 ![](../images/model_figure.png)
 
-### 新增模型
+### 2.新增模型
 接下来，以单阶段检测器YOLOv3为例，对建立模型过程进行详细描述，按照此思路您可以快速搭建新的模型。
 
-#### 新增网络结构
+#### 2.1新增网络结构
 
-##### 新增Backbone
+##### 2.1.1新增Backbone
 
 PaddleDetection中现有所有Backbone网络代码都放置在`ppdet/modeling/backbones`目录下，所以我们在其中新建`darknet.py`如下：
 ```python
@@ -113,7 +113,7 @@ from .darknet import *
 - 所有的Backbone需继承`paddle.nn.Layer`类，并实现forward函数。此外，还需实现out_shape属性定义输出的feature map的channel信息，具体可参见源码；
 - `__shared__`为了实现一些参数的配置全局共享，这些参数可以被backbone, neck，head，loss等所有注册模块共享。
 
-##### 新增Neck
+##### 2.1.2新增Neck
 特征融合模块放置在`ppdet/modeling/necks`目录下，我们在其中新建`yolo_fpn.py`如下：
 
 ``` python
@@ -155,7 +155,7 @@ from .yolo_fpn import *
 - neck模块需要继承`paddle.nn.Layer`类，并实现forward函数。除此之外，还需要实现`out_shape`属性，用于定义输出的feature map的channel信息，还需要实现类函数`from_config`用于在配置文件中推理出输入channel，并用于`YOLOv3FPN`的初始化；
 - neck模块可以使用`__shared__`实现一些参数的配置全局共享。
 
-##### 新增Head
+##### 2.1.3新增Head
 Head模块全部存放在`ppdet/modeling/heads`目录下，我们在其中新建`yolo_head.py`如下
 ``` python
 import paddle.nn as nn
@@ -192,7 +192,7 @@ from .yolo_head import *
 - Head模块需要继承`paddle.nn.Layer`类，并实现forward函数。
 - `__inject__`表示引入全局字典中已经封装好的模块。如loss等。
 
-##### 新增Loss
+##### 2.1.4新增Loss
 Loss模块全部存放在`ppdet/modeling/losses`目录下，我们在其中新建`yolo_loss.py`下
 ```python
 import paddle.nn as nn
@@ -229,7 +229,7 @@ from .yolo_loss import *
 - loss模块需要继承`paddle.nn.Layer`类，并实现forward函数。
 - 可以使用`__inject__`表示引入全局字典中已经封装好的模块，使用`__shared__`可以实现一些参数的配置全局共享。
 
-##### 新增后处理模块
+##### 2.1.5新增后处理模块
 后处理模块定义在`ppdet/modeling/post_process.py`中，其中定义了`BBoxPostProcess`类来进行后处理操作，如下所示：
 ``` python
 from ppdet.core.workspace import register
@@ -251,7 +251,7 @@ class BBoxPostProcess(object):
 - 后处理模块需要使用`register`进行注册
 - `__inject__`注入了全局字典中封装好的模块，如decode和nms等。decode和nms定义在`ppdet/modeling/layers.py`中。
 
-##### 新增Architecture
+##### 2.1.6新增Architecture
 
 所有architecture网络代码都放置在`ppdet/modeling/architectures`目录下，`meta_arch.py`中定义了`BaseArch`类，代码如下：
 ``` python
@@ -320,9 +320,9 @@ class YOLOv3(BaseArch):
 - backbone, neck, yolo_head以及post_process等检测组件传入到architecture中组成最终的网络。像这样将检测模块化，提升了检测模型的复用性，可以通过组合不同的检测组件得到多个模型。
 - from_config类函数实现了模块间组合时channel的自动配置。
 
-#### 新增配置文件
+#### 2.2新增配置文件
 
-##### 网络结构配置文件
+##### 2.2.1网络结构配置文件
 上面详细地介绍了如何新增一个architecture，接下来演示如何配置一个模型，yolov3关于网络结构的配置在`configs/yolov3/_base_/`文件夹中定义，如`yolov3_darknet53.yml`定义了yolov3_darknet的网络结构，其定义如下：
 ```
 architecture: YOLOv3
@@ -371,7 +371,7 @@ BBoxPostProcess:
 可以看到在配置文件中，首先需要指定网络的architecture，pretrain_weights指定训练模型的url或者路径，norm_type等可以作为全局参数共享。模型的定义自上而下依次在文件中定义，与上节中的模型组件一一对应。对于一些模型组件，如果采用默认
 的参数，可以不用配置，如上文中的`yolo_fpn`。通过改变相关配置，我们可以轻易地组合出另一个模型，比如`configs/yolov3/_base_/yolov3_mobilenet_v1.yml`将backbone从Darknet切换成MobileNet。
 
-##### 优化器配置文件
+##### 2.2.2优化器配置文件
 优化器配置文件定义模型使用的优化器以及学习率的调度策略，目前PaddleDetection中已经集成了多种多样的优化器和学习率策略，具体可参见代码`ppdet/optimizer.py`。比如，yolov3的优化器配置文件定义在`configs/yolov3/_base_/optimizer_270e.yml`，其定义如下：
 ```
 epoch: 270
@@ -398,10 +398,10 @@ OptimizerBuilder:
     type: L2
 ```
 **几点说明：**
-- 可以通过OptimizerBuilder.optimizer指定优化器的类型及参数，目前支持的优化可以参考![PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
-- 可以设置LearningRate.schedulers设置不同学习率调整策略的组合，PaddlePaddle目前支持多种学习率调整策略，具体也可参考![PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)。需要注意的是，你需要对于PaddlePaddle中的学习率调整策略进行简单的封装，具体可参考源码`ppdet/optimizer.py`。
+- 可以通过OptimizerBuilder.optimizer指定优化器的类型及参数，目前支持的优化可以参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
+- 可以设置LearningRate.schedulers设置不同学习率调整策略的组合，PaddlePaddle目前支持多种学习率调整策略，具体也可参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)。需要注意的是，你需要对于PaddlePaddle中的学习率调整策略进行简单的封装，具体可参考源码`ppdet/optimizer.py`。
 
-##### Reader配置文件
+##### 2.2.3Reader配置文件
 关于Reader的配置可以参考[Reader配置文档](./READER.md#配置及运行)。
 
 > 看过此文档，您应该对PaddleDetection中模型搭建与配置有了一定经验，结合源码会理解的更加透彻。关于模型技术，如您有其他问题或建议，请给我们提issue，我们非常欢迎您的反馈。

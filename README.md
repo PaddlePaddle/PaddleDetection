@@ -143,6 +143,9 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [C++端推理部署](deploy/cpp)
     - [服务端部署](deploy/serving)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
+- [进阶开发]
+    - [数据处理模块](docs/advanced_tutorials/READER.md)
+    - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 
 
 ## 模型库
