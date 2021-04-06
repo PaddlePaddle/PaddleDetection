@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.metrics.post_process import get_det_res, get_seg_res, get_solov2_segm_res
+from ppdet.metrics.json_results import get_det_res, get_seg_res, get_solov2_segm_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
