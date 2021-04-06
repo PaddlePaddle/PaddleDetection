@@ -1,20 +1,20 @@
 # 数据处理模块
 
 ## 目录
-- [简介](#简介)
-- [数据集](#数据集)
-  - [COCO数据集](#COCO数据集)
-  - [Pascal VOC数据集](#Pascal-VOC数据集)
-  - [自定义数据集](#自定义数据集)
-- [数据预处理](#数据预处理)
-  - [数据增强算子](#数据增强算子)
-  - [自定义数据增强算子](#自定义数据增强算子)
-- [Raeder](#Reader)
-- [配置及运行](#配置及运行)
-  - [配置](#配置)
-  - [运行](#运行)
+- [1.简介](#1.简介)
+- [2.数据集](#2.数据集)
+  - [2.1COCO数据集](#2.1COCO数据集)
+  - [2.2Pascal VOC数据集](#2.2Pascal-VOC数据集)
+  - [2.3自定义数据集](#2.3自定义数据集)
+- [3.数据预处理](#3.数据预处理)
+  - [3.1数据增强算子](#3.1数据增强算子)
+  - [3.2自定义数据增强算子](#3.2自定义数据增强算子)
+- [4.Raeder](#4.Reader)
+- [5.配置及运行](#5.配置及运行)
+  - [5.1配置](#5.1配置)
+  - [5.2运行](#5.2运行)
 
-### 简介
+### 1.简介
 PaddleDetection的数据处理模块的所有代码逻辑在`ppdet/data/`中，数据处理模块用于加载数据并将其转换成适用于物体检测模型的训练、评估、推理所需要的格式。
 数据处理模块的主要构成如下架构所示：
 ```bash
@@ -36,7 +36,7 @@ PaddleDetection的数据处理模块的所有代码逻辑在`ppdet/data/`中，�
   ```
 
 
-### 数据集
+### 2.数据集
 数据集定义在`source`目录下，其中`dataset.py`中定义了数据集的基类`DetDataSet`, 所有的数据集均继承于基类，`DetDataset`基类里定义了如下等方法：
 
 | 方法                        | 输入   | 输出           |  备注                   |
@@ -69,7 +69,7 @@ xxx_rec中的内容也可以通过`DetDataSet`的data_fields参数来控制，�
 
 此外，在parse_dataset函数中，保存了类别名到id的映射的一个字典`cname2cid`。在coco数据集中，会利用[COCO API](https://github.com/cocodataset/cocoapi)从标注文件中加载数据集的类别名，并设置此字典。在voc数据集中，如果设置`use_default_label=False`，将从`label_list.txt`中读取类别列表，反之将使用voc默认的类别列表。
 
-#### COCO数据集
+#### 2.1COCO数据集
 COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
 
   ```
@@ -92,7 +92,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
 
 在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。将其他数据集转换成COCO格式可以参考[用户数据转成COCO数据](../tutorials/PrepareDataSet.md#用户数据转成COCO数据)
 
-#### Pascal VOC数据集
+#### 2.2Pascal VOC数据集
 该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
 ```
   dataset/voc/
@@ -120,7 +120,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   ```
 在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。将其他数据集转换成VOC格式可以参考[用户数据转成VOC数据](../tutorials/PrepareDataSet.md#用户数据转成VOC数据)
 
-#### 自定义数据集
+#### 2.3自定义数据集
 如果COCODataSet和VOCDataSet不能满足你的需求，可以通过自定义数据集的方式来加载你的数据集。只需要以下两步即可实现自定义数据集
 
 1. 新建`source/xxx.py`，定义类`XXXDataSet`继承自`DetDataSet`基类，完成注册与序列化，并重写`parse_dataset`方法对`roidbs`与`cname2cid`更新：
@@ -155,9 +155,9 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   ```
 完成以上两步就将新的数据源`XXXDataSet`添加好了，你可以参考[配置及运行](#配置及运行)实现自定义数据集的使用。
 
-### 数据预处理
+### 3.数据预处理
 
-#### 数据增强算子
+#### 3.1数据增强算子
 PaddleDetection中支持了种类丰富的数据增强算子，有单图像数据增强算子与批数据增强算子两种方式，您可选取合适的算子组合使用。单图像数据增强算子定义在`transform/operators.py`中，已支持的单图像数据增强算子详见下表：
 
 | 名称                     |  作用                   |
@@ -210,7 +210,7 @@ PaddleDetection中支持了种类丰富的数据增强算子，有单图像数�
     - Gt2XXXTarget: {...} # 建议与PadBatch放置在最后的位置
   ```
 
-#### 自定义数据增强算子
+#### 3.2自定义数据增强算子
 如果需要自定义数据增强算子，那么您需要了解下数据增强算子的相关逻辑。数据增强算子基类为定义在`transform/operators.py`中的`BaseOperator`类，单图像数据增强算子与批数据增强算子均继承自这个基类。完整定义参考源码，以下代码显示了`BaseOperator`类的关键函数: apply和__call__方法
   ``` python
   class BaseOperator(object):
@@ -253,13 +253,13 @@ __call__方法为`BaseOperator`的调用入口，接收一个sample(单图像)�
   ```
 大多数情况下，只需要重写apply方法即可，如`transform/operators.py`中除Mixup和Cutmix外的预处理算子。对于批处理的情况一般需要重写__call__方法，如`transform/batch_operators.py`的预处理算子。
 
-### Reader
+### 4.Reader
 Reader相关的类定义在`reader.py`, 其中定义了`BaseDataLoader`类。`BaseDataLoader`在`paddle.io.DataLoader`的基础上封装了一层，其具备`paddle.io.DataLoader`的所有功能，并能够实现不同模型对于`DetDataset`的不同需求，如可以通过对Reader进行设置，以控制`DetDataset`支持Mixup, Cutmix等操作。除此之外，数据预处理算子通过`Compose`类和`BatchCompose`类组合起来分别传入`DetDataset`和`paddle.io.DataLoader`中。
 所有的Reader类都继承自`BaseDataLoader`类，具体可参见源码。
 
-### 配置及运行
+### 5.配置及运行
 
-#### 配置
+#### 5.1配置
 
 与数据预处理相关的模块的配置文件包含所有模型公用的Datas set的配置文件以及不同模型专用的Reader的配置文件。关于Dataset的配置文件存在于`configs/datasets`文件夹。比如COCO数据集的配置文件如下：
 ```
@@ -315,7 +315,7 @@ TestReader:
 ```
 你可以在Reader中定义不同的预处理算子，每张卡的batch_size以及DataLoader的worker_num等。
 
-#### 运行
+#### 5.2运行
 在PaddleDetection的训练、评估和测试运行程序中，都通过创建Reader迭代器。Reader在`ppdet/engine/trainer.py`中创建。下面的代码展示了如何创建训练时的Reader
 ``` python
 from ppdet.core.workspace import create
