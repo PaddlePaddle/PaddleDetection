@@ -626,7 +626,7 @@ class GridMaskOp(BaseOperator):
                                                sample['curr_iter'])
         if not batch_input:
             samples = samples[0]
-        return sample
+        return samples
 
 
 @register_op

@@ -45,7 +45,7 @@ class GridMask(object):
         self.prob = self.st_prob * min(1, 1.0 * curr_iter / self.upper_iter)
         if np.random.rand() > self.prob:
             return x
-        _, h, w = x.shape
+        h, w, _ = x.shape
         hh = int(1.5 * h)
         ww = int(1.5 * w)
         d = np.random.randint(2, h)
