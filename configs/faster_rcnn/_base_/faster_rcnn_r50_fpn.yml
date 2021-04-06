@@ -61,7 +61,7 @@ BBoxAssigner:
   use_random: True
 
 TwoFCHead:
-  mlp_dim: 1024
+  out_channel: 1024
 
 
 BBoxPostProcess:

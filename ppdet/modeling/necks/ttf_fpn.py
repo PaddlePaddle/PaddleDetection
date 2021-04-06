@@ -17,7 +17,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Constant, Uniform, Normal
-from paddle.nn import Conv2D, ReLU, Sequential
 from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
@@ -25,8 +24,6 @@ from ppdet.modeling.layers import DeformableConvV2
 import math
 from ppdet.modeling.ops import batch_norm
 from ..shape_spec import ShapeSpec
-
-__all__ = ['TTFFPN']
 
 __all__ = ['TTFFPN']
 
@@ -63,7 +60,7 @@ class Upsample(nn.Layer):
 class ShortCut(nn.Layer):
     def __init__(self, layer_num, ch_out, name=None):
         super(ShortCut, self).__init__()
-        shortcut_conv = Sequential()
+        shortcut_conv = nn.Sequential()
         ch_in = ch_out * 2
         for i in range(layer_num):
             fan_out = 3 * 3 * ch_out
@@ -72,7 +69,7 @@ class ShortCut(nn.Layer):
             shortcut_name = name + '.conv.{}'.format(i)
             shortcut_conv.add_sublayer(
                 shortcut_name,
-                Conv2D(
+                nn.Conv2D(
                     in_channels=in_channels,
                     out_channels=ch_out,
                     kernel_size=3,
@@ -81,7 +78,7 @@ class ShortCut(nn.Layer):
                     bias_attr=ParamAttr(
                         learning_rate=2., regularizer=L2Decay(0.))))
             if i < layer_num - 1:
-                shortcut_conv.add_sublayer(shortcut_name + '.act', ReLU())
+                shortcut_conv.add_sublayer(shortcut_name + '.act', nn.ReLU())
         self.shortcut = self.add_sublayer('short', shortcut_conv)
 
     def forward(self, feat):

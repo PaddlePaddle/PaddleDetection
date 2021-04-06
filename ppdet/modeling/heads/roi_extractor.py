@@ -25,6 +25,31 @@ def _to_list(v):
 
 @register
 class RoIAlign(object):
+    """
+    RoI Align module
+
+    For more details, please refer to the document of roi_align in
+    in ppdet/modeing/ops.py
+
+    Args:
+        resolution (int): The output size, default 14
+        spatial_scale (float): Multiplicative spatial scale factor to translate
+            ROI coords from their input scale to the scale used when pooling.
+            default 0.0625
+        sampling_ratio (int): The number of sampling points in the interpolation
+            grid, default 0
+        canconical_level (int): The referring level of FPN layer with 
+            specified level. default 4
+        canonical_size (int): The referring scale of FPN layer with 
+            specified scale. default 224
+        start_level (int): The start level of FPN layer to extract RoI feature,
+            default 0
+        end_level (int): The end level of FPN layer to extract RoI feature,
+            default 3
+        aligned (bool): Whether to add offset to rois' coord in roi_align.
+            default false
+    """
+
     def __init__(self,
                  resolution=14,
                  spatial_scale=0.0625,

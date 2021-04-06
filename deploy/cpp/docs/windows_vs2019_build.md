@@ -24,7 +24,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/2.0-rc1/guides/05_inference_deployment/inference/windows_cpp_inference.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/windows_cpp_inference.html)
 
 解压后`D:\projects\fluid_inference`目录包含内容为：
 ```
@@ -62,18 +62,18 @@ cd D:\projects\PaddleDetection\deploy\cpp
 | *CUDNN_LIB | CUDNN的库路径 |
 | OPENCV_DIR  | OpenCV的安装路径， |
 | PADDLE_DIR | Paddle预测库的路径 |
-| USE_PADDLE_20RC1 | 是否使用2.0rc1预测库。如果使用2.0rc1，在windows环境下预测库名称发生变化，且仅支持动态库方式编译 |
+| PADDLE_LIB_NAME | Paddle 预测库名称 |
 
 **注意：** 1. 使用`CPU`版预测库，请把`WITH_GPU`的勾去掉 2. 如果使用的是`openblas`版本，请把`WITH_MKL`勾去掉
 
 执行如下命令项目文件：
 ```
-cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DOPENCV_DIR=path_to_opencv
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=path_to_cuda_lib -DCUDNN_LIB=path_to_cudnn_lib -DPADDLE_DIR=path_to_paddle_lib -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=path_to_opencv
 ```
 
 例如：
 ```
-cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\fluid_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6
+cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=ON -DCMAKE_BUILD_TYPE=Release -DCUDA_LIB=D:\projects\packages\cuda10_0\lib\x64 -DCUDNN_LIB=D:\projects\packages\cuda10_0\lib\x64 -DPADDLE_DIR=D:\projects\packages\fluid_inference -DPADDLE_LIB_NAME=paddle_inference -DOPENCV_DIR=D:\projects\packages\opencv3_4_6
 ```
 
 3. 编译
@@ -125,18 +125,4 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 
 ## 性能测试
-测试环境为：系统: Windows 10专业版系统，CPU: I9-9820X, GPU: GTX 2080 Ti，Paddle预测库: 1.8.4，CUDA: 10.0, CUDNN: 7.4.  
-
-去掉前100轮warmup时间，测试100轮的平均时间，单位ms/image，只计算模型运行时间，不包括数据的处理和拷贝。
-
-
-|模型 | AnalysisPredictor(ms) | 输入|
-|---|----|---|
-| YOLOv3-MobileNetv1 | 41.51 |  608*608
-| faster_rcnn_r50_1x | 194.47 | 1333*1333
-| faster_rcnn_r50_vd_fpn_2x | 43.35 | 1344*1344
-| mask_rcnn_r50_fpn_1x | 96.96 | 1344*1344
-| mask_rcnn_r50_vd_fpn_2x | 97.66 | 1344*1344
-| ppyolo_r18vd | 5.54 | 320*320
-| ppyolo_2x | 56.93 | 608*608
-| ttfnet_darknet | 36.17 | 512*512
+benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)

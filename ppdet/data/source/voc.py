@@ -38,6 +38,7 @@ class VOCDataSet(DetDataset):
         dataset_dir (str): root directory for dataset.
         image_dir (str): directory for images.
         anno_path (str): voc annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.

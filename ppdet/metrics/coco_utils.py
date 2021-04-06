@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.py_op.post_process import get_det_res, get_seg_res, get_solov2_segm_res
+from ppdet.metrics.post_process import get_det_res, get_seg_res, get_solov2_segm_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -67,13 +67,13 @@ def cocoapi_eval(jsonfile,
                  classwise=False):
     """
     Args:
-        jsonfile: Evaluation json file, eg: bbox.json, mask.json.
-        style: COCOeval style, can be `bbox` , `segm` and `proposal`.
-        coco_gt: Whether to load COCOAPI through anno_file,
+        jsonfile (str): Evaluation json file, eg: bbox.json, mask.json.
+        style (str): COCOeval style, can be `bbox` , `segm` and `proposal`.
+        coco_gt (str): Whether to load COCOAPI through anno_file,
                  eg: coco_gt = COCO(anno_file)
-        anno_file: COCO annotations file.
-        max_dets: COCO evaluation maxDets.
-        classwise: whether per-category AP and draw P-R Curve or not.
+        anno_file (str): COCO annotations file.
+        max_dets (tuple): COCO evaluation maxDets.
+        classwise (bool): Whether per-category AP and draw P-R Curve or not.
     """
     assert coco_gt != None or anno_file != None
     from pycocotools.coco import COCO
@@ -142,9 +142,7 @@ def cocoapi_eval(jsonfile,
     return coco_eval.stats
 
 
-def json_eval_results(metric: object,
-                      json_directory: object=None,
-                      dataset: object=None) -> object:
+def json_eval_results(metric, json_directory, dataset):
     """
     cocoapi eval with already exists proposal.json, bbox.json or mask.json
     """

@@ -1558,7 +1558,6 @@ def sigmoid_cross_entropy_with_logits(input,
     output = F.binary_cross_entropy_with_logits(input, label, reduction='none')
     mask_tensor = paddle.cast(label != ignore_index, 'float32')
     output = paddle.multiply(output, mask_tensor)
-    output = paddle.reshape(output, shape=[output.shape[0], -1])
     if normalize:
         sum_valid_mask = paddle.sum(mask_tensor)
         output = output / sum_valid_mask

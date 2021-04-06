@@ -73,6 +73,8 @@ visualdl --logdir vdl_dir/scalar/ --host <host_IP> --port <port_num>
 python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true
 ```
 
+The final mAP should be around 0.85. The dataset is small so the precision may vary a little after each training.
+
 
 ### 3、Inference
 ```

@@ -20,7 +20,7 @@ import os
 import yaml
 from collections import OrderedDict
 
-from ppdet.metrics import get_categories
+from ppdet.data.source.category import get_categories
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
@@ -28,7 +28,7 @@ logger = setup_logger('ppdet.engine')
 # Global dictionary
 TRT_MIN_SUBGRAPH = {
     'YOLO': 3,
-    'SSD': 40,
+    'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
     'EfficientDet': 40,
