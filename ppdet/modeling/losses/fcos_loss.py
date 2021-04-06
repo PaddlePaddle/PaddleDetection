@@ -22,7 +22,6 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
 
-INF = 1e8
 __all__ = ['FCOSLoss']
 
 
@@ -30,18 +29,18 @@ def flatten_tensor(inputs, channel_first=False):
     """
     Flatten a Tensor
     Args:
-        inputs  (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
-        channel_first(bool): if true the dimension order of
-            Tensor is [N, C, H, W], otherwise is [N, H, W, C]
+        inputs (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
+        channel_first (bool): If true the dimension order of Tensor is 
+            [N, C, H, W], otherwise is [N, H, W, C]
     Return:
-        input_channel_last (Tensor): The flattened Tensor in channel_last style
+        output_channel_last (Tensor): The flattened Tensor in channel_last style
     """
     if channel_first:
         input_channel_last = paddle.transpose(inputs, perm=[0, 2, 3, 1])
     else:
         input_channel_last = inputs
     output_channel_last = paddle.flatten(
-        input_channel_last, start_axis=0, stop_axis=2)  # [N*H*W, C]
+        input_channel_last, start_axis=0, stop_axis=2)
     return output_channel_last
 
 
@@ -52,8 +51,8 @@ class FCOSLoss(nn.Layer):
     Args:
         loss_alpha (float): alpha in focal loss
         loss_gamma (float): gamma in focal loss
-        iou_loss_type(str): location loss type, IoU/GIoU/LINEAR_IoU
-        reg_weights(float): weight for location loss
+        iou_loss_type (str): location loss type, IoU/GIoU/LINEAR_IoU
+        reg_weights (float): weight for location loss
     """
 
     def __init__(self,
@@ -71,10 +70,10 @@ class FCOSLoss(nn.Layer):
         """
         Calculate the loss for location prediction
         Args:
-            pred          (Tensor): bounding boxes prediction
-            targets       (Tensor): targets for positive samples
+            pred (Tensor): bounding boxes prediction
+            targets (Tensor): targets for positive samples
             positive_mask (Tensor): mask of positive samples
-            weights       (Tensor): weights for each positive samples
+            weights (Tensor): weights for each positive samples
         Return:
             loss (Tensor): location loss
         """

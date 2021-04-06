@@ -25,6 +25,16 @@ __all__ = ['FCOS']
 
 @register
 class FCOS(BaseArch):
+    """
+    FCOS network, see https://arxiv.org/abs/1904.01355
+
+    Args:
+        backbone (object): backbone instance
+        neck (object): 'FPN' instance
+        fcos_head (object): 'FCOSHead' instance
+        post_process (object): 'FCOSPostProcess' instance
+    """
+
     __category__ = 'architecture'
     __inject__ = ['fcos_post_process']
 
@@ -70,7 +80,7 @@ class FCOS(BaseArch):
         loss = {}
         tag_labels, tag_bboxes, tag_centerness = [], [], []
         for i in range(len(self.fcos_head.fpn_stride)):
-            # reg_target, labels, scores, centerness
+            # labels, reg_target, centerness
             k_lbl = 'labels{}'.format(i)
             if k_lbl in self.inputs:
                 tag_labels.append(self.inputs[k_lbl])
@@ -90,6 +100,6 @@ class FCOS(BaseArch):
         return loss
 
     def get_pred(self):
-        bboxes, bbox_num = self._forward()
-        output = {'bbox': bboxes, 'bbox_num': bbox_num}
+        bbox_pred, bbox_num = self._forward()
+        output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
         return output

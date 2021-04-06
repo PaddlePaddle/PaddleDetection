@@ -24,6 +24,15 @@ __all__ = ['SSD']
 
 @register
 class SSD(BaseArch):
+    """
+    Single Shot MultiBox Detector, see https://arxiv.org/abs/1512.02325
+
+    Args:
+        backbone (nn.Layer): backbone instance
+        ssd_head (nn.Layer): `SSDHead` instance
+        post_process (object): `BBoxPostProcess` instance
+    """
+
     __category__ = 'architecture'
     __inject__ = ['post_process']
 

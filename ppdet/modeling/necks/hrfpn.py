@@ -30,8 +30,8 @@ class HRFPN(nn.Layer):
         in_channels (list): number of input feature channels from backbone
         out_channel (int): number of output feature channels
         share_conv (bool): whether to share conv for different layers' reduction
-        spatial_scales (list): feature map scaling factor
         extra_stage (int): add extra stage for returning HRFPN fpn_feats
+        spatial_scales (list): feature map scaling factor
     """
 
     def __init__(self,

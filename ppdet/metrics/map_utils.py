@@ -101,19 +101,20 @@ class DetectionMAP(object):
     Currently support two types: 11point and integral
 
     Args:
-        class_num (int): the class number.
+        class_num (int): The class number.
         overlap_thresh (float): The threshold of overlap
             ratio between prediction bounding box and 
             ground truth bounding box for deciding 
             true/false positive. Default 0.5.
-        map_type (str): calculation method of mean average
+        map_type (str): Calculation method of mean average
             precision, currently support '11point' and
             'integral'. Default '11point'.
-        is_bbox_normalized (bool): whther bounding boxes
+        is_bbox_normalized (bool): Whether bounding boxes
             is normalized to range[0, 1]. Default False.
-        evaluate_difficult (bool): whether to evaluate
+        evaluate_difficult (bool): Whether to evaluate
             difficult bounding boxes. Default False.
-        classwise (bool): whether per-category AP and draw
+        catid2name (dict): Mapping between category id and category name.
+        classwise (bool): Whether per-category AP and draw
             P-R Curve or not.
     """
 

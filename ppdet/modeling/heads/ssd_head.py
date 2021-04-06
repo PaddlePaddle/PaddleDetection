@@ -68,6 +68,20 @@ class SepConvLayer(nn.Layer):
 
 @register
 class SSDHead(nn.Layer):
+    """
+    SSDHead
+
+    Args:
+        num_classes (int): Number of classes
+        in_channels (list): Number of channels per input feature
+        anchor_generator (dict): Configuration of 'AnchorGeneratorSSD' instance
+        kernel_size (int): Conv kernel size
+        padding (int): Conv padding
+        use_sepconv (bool): Use SepConvLayer if true
+        conv_decay (float): Conv regularization coeff
+        loss (object): 'SSDLoss' instance
+    """
+
     __shared__ = ['num_classes']
     __inject__ = ['anchor_generator', 'loss']
 
