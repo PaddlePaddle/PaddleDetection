@@ -16,7 +16,7 @@
 | 模型         |  压缩策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 | 预测时延（SD855）|   Box AP   |                           下载                          | 模型配置文件 | 压缩算法配置文件  |
 | :----------------| :-------: | :------------: | :-------------: | :------: | :--------: | :------: | :-----------------------------------------------------: |:-------------: | :------: |
 | YOLOv3-MobileNetV1      |  baseline | 24.13          |  93          |   608    | 289.9ms | 75.1       | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  -  |
-| YOLOv3-MobileNetV1      |  剪裁-l1_norm(sensity) | 15.78(-34.49%) |  66(-29%) |   608   | - | 77.6(+2.5) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_voc_prune_l1_norm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/develop/slim/prune/yolov3_prune_l1_norm.yml)  |
+| YOLOv3-MobileNetV1      |  剪裁-l1_norm(sensity) | 15.78(-34.49%) |  66(-29%) |   608   | - | 77.6(+2.5) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_voc_prune_l1_norm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/slim/prune/yolov3_prune_l1_norm.yml)  |
 
 - 目前剪裁支持YOLO系列、SSD、TTFNet、BlazeFace，其余模型正在开发支持中。
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延。
@@ -47,6 +47,8 @@
 - PaddleSlim >= 2.0.0
 - CUDA 9.0+
 - cuDNN >=7.5
+
+**注意：** 量化训练需要依赖Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装合适的PaddlePaddle版本。
 
 ## 快速开始
 
