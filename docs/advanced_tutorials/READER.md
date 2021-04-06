@@ -90,7 +90,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   │   │   ...
   ```
 
-在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。
+在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。将其他数据集转换成COCO格式可以参考[用户数据转成COCO数据](../tutorials/PrepareDataSet.md#用户数据转成COCO数据)
 
 #### Pascal VOC数据集
 该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
@@ -118,7 +118,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   │   ├── ImageSets
   │       │   ...
   ```
-在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。
+在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。将其他数据集转换成VOC格式可以参考[用户数据转成VOC数据](../tutorials/PrepareDataSet.md#用户数据转成VOC数据)
 
 #### 自定义数据集
 如果COCODataSet和VOCDataSet不能满足你的需求，可以通过自定义数据集的方式来加载你的数据集。只需要以下两步即可实现自定义数据集
@@ -193,17 +193,17 @@ PaddleDetection中支持了种类丰富的数据增强算子，有单图像数�
 | BatchRandomResize  | 对一个batch的图片进行resize，使得batch中的图片随机缩放到相同的尺寸  |
 | Gt2YoloTarget      | 通过gt数据生成YOLO系列模型的目标  |
 | Gt2FCOSTarget      | 通过gt数据生成FCOS模型的目标 |
-| Gt2TTFTarget       | 通过gt数据生成TTF模型的目标 |
+| Gt2TTFTarget       | 通过gt数据生成TTFNet模型的目标 |
 | Gt2Solov2Target    | 通过gt数据生成SOLOv2模型的目标 |
 
 **几点说明：**
-- 数据增强算子的输入为smaple或者smaples，每一个sample对应上文所说的`DetDataSet`输出的roidbs中的一个样本，如coco_rec或者voc_rec
+- 数据增强算子的输入为sample或者samples，每一个sample对应上文所说的`DetDataSet`输出的roidbs中的一个样本，如coco_rec或者voc_rec
 - 单图像数据增强算子(Mixup, Cutmix等除外)也可用于批数据处理中。但是，单图像处理算子和批图像处理算子仍有一些差异，以RandomResize和BatchRandomResize为例，RandomResize会将一个Batch中的每张图片进行随机缩放，但是每一张图像Resize之后的形状不尽相同，BatchRandomResize则会将一个Batch中的所有图片随机缩放到相同的形状。
-- 除BatchRandomResize外，定义在`transform/batch_operators.py`的批数据增强算子接收的输入图像均为CHW形式，所以使用这些批数据增强算子，请使用Permute先进行处理。如果用到Gt2xxxTarget算子，需要将其放置在靠后的位置。NormalizeBox算子建议放置在Gt2xxxTarget之前。将这些限制条件总结下来，推荐的预处理算子的顺序为
+- 除BatchRandomResize外，定义在`transform/batch_operators.py`的批数据增强算子接收的输入图像均为CHW形式，所以使用这些批数据增强算子前请先使用Permute进行处理。如果用到Gt2xxxTarget算子，需要将其放置在靠后的位置。NormalizeBox算子建议放置在Gt2xxxTarget之前。将这些限制条件总结下来，推荐的预处理算子的顺序为
   ```
     - XXX: {}
     - ...
-    - BatchRandomResize: {...} # 如果不需要，可以移除，如果需要，建议放置在Permute之前
+    - BatchRandomResize: {...} # 如果不需要，可以移除，如果需要，放置在Permute之前
     - Permute: {} # 必须项
     - NormalizeBox: {} # 如果需要，建议放在Gt2XXXTarget之前
     - PadBatch: {...} # 如果不需要可移除，如果需要，建议放置在Permute之后
