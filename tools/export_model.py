@@ -85,15 +85,15 @@ def run(FLAGS, cfg):
 def main():
     paddle.set_device("cpu")
     FLAGS = parse_args()
-
-    if FLAGS.slim_config:
-        cfg = build_slim_model(FLAGS.config, FLAGS.slim_config)
-    else:
-        cfg = load_config(FLAGS.config)
+    cfg = load_config(FLAGS.config)
     # TODO: to be refined in the future
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
         FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
+
+    if FLAGS.slim_config:
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()

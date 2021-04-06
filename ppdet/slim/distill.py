@@ -19,7 +19,6 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.distributed import ParallelEnv
 
 from ppdet.core.workspace import register, serializable, load_config
 from ppdet.core.workspace import create
@@ -33,8 +32,6 @@ logger = setup_logger(__name__)
 class DistillModel(nn.Layer):
     def __init__(self, cfg, slim_cfg):
         super(DistillModel, self).__init__()
-        place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-        place = paddle.set_device(place)
 
         self.student_model = create(cfg.architecture)
         logger.debug('Load student model pretrain_weights:{}'.format(
