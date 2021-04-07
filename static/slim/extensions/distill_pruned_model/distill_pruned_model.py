@@ -23,6 +23,11 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+
 import numpy as np
 from collections import OrderedDict
 from paddleslim.dist.single_distiller import merge, l2_loss
@@ -31,18 +36,27 @@ from paddleslim.analysis import flops
 
 import paddle
 from paddle import fluid
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.data.reader import create_reader
-from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
-from ppdet.utils.stats import TrainingStats
-from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
-import ppdet.utils.checkpoint as checkpoint
 
-import logging
-FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
-logging.basicConfig(level=logging.INFO, format=FORMAT)
-logger = logging.getLogger(__name__)
+try:
+    from ppdet.core.workspace import load_config, merge_config, create
+    from ppdet.data.reader import create_reader
+    from ppdet.utils.eval_utils import parse_fetches, eval_results, eval_run
+    from ppdet.utils.stats import TrainingStats
+    from ppdet.utils.cli import ArgsParser
+    from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+    import ppdet.utils.checkpoint as checkpoint
+except ImportError as e:
+    if sys.argv[0].find('static') >= 0:
+        logger.error("Importing ppdet failed when running static model "
+                     "with error: {}\n"
+                     "please try:\n"
+                     "\t1. run static model under PaddleDetection/static "
+                     "directory\n"
+                     "\t2. run 'pip uninstall ppdet' to uninstall ppdet "
+                     "dynamic version firstly.".format(e))
+        sys.exit(-1)
+    else:
+        raise e
 
 
 def split_distill(split_output_names, weight, target_number):
