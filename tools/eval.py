@@ -33,6 +33,7 @@ from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.engine import Trainer, init_parallel_env
 from ppdet.metrics.coco_utils import json_eval_results
+from ppdet.slim import build_slim_model
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('eval')
@@ -100,21 +101,21 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     # TODO: bias should be unified
     cfg['bias'] = 1 if FLAGS.bias else 0
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
     merge_config(FLAGS.opt)
+
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
     if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
-
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 

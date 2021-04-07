@@ -54,6 +54,7 @@ class YOLOv3Loss(nn.Layer):
         self.scale_x_y = scale_x_y
         self.iou_loss = iou_loss
         self.iou_aware_loss = iou_aware_loss
+        self.distill_pairs = []
 
     def obj_loss(self, pbox, gbox, pobj, tobj, anchor, downsample):
         # pbox
@@ -108,6 +109,7 @@ class YOLOv3Loss(nn.Layer):
         x, y = p[:, :, :, :, 0:1], p[:, :, :, :, 1:2]
         w, h = p[:, :, :, :, 2:3], p[:, :, :, :, 3:4]
         obj, pcls = p[:, :, :, :, 4:5], p[:, :, :, :, 5:]
+        self.distill_pairs.append([x, y, w, h, obj, pcls])
 
         t = t.transpose((0, 1, 3, 4, 2))
         tx, ty = t[:, :, :, :, 0:1], t[:, :, :, :, 1:2]
@@ -173,6 +175,7 @@ class YOLOv3Loss(nn.Layer):
         gt_targets = [targets['target{}'.format(i)] for i in range(np)]
         gt_box = targets['gt_bbox']
         yolo_losses = dict()
+        self.distill_pairs.clear()
         for x, t, anchor, downsample in zip(inputs, gt_targets, anchors,
                                             self.downsample):
             yolo_loss = self.yolov3_loss(x, t, gt_box, anchor, downsample,

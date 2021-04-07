@@ -55,14 +55,11 @@ class ConvBNLayer(nn.Layer):
             weight_attr=ParamAttr(
                 learning_rate=conv_lr,
                 initializer=KaimingNormal(),
-                regularizer=L2Decay(conv_decay),
-                name=name + "_weights"),
+                regularizer=L2Decay(conv_decay)),
             bias_attr=False)
 
-        param_attr = ParamAttr(
-            name=name + "_bn_scale", regularizer=L2Decay(norm_decay))
-        bias_attr = ParamAttr(
-            name=name + "_bn_offset", regularizer=L2Decay(norm_decay))
+        param_attr = ParamAttr(regularizer=L2Decay(norm_decay))
+        bias_attr = ParamAttr(regularizer=L2Decay(norm_decay))
         if norm_type == 'sync_bn':
             self._batch_norm = nn.SyncBatchNorm(
                 out_channels, weight_attr=param_attr, bias_attr=bias_attr)
@@ -72,9 +69,7 @@ class ConvBNLayer(nn.Layer):
                 act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
-                use_global_stats=False,
-                moving_mean_name=name + '_bn_mean',
-                moving_variance_name=name + '_bn_variance')
+                use_global_stats=False)
 
     def forward(self, x):
         x = self._conv(x)
