@@ -134,11 +134,34 @@ def main():
                 inputs_def = cfg['TrainReader']['inputs_def']
                 feed_vars, train_loader = model.build_inputs(**inputs_def)
                 train_fetches = model.train(feed_vars)
+                print("feed_vars:")
+                print(feed_vars)
                 loss = train_fetches['loss']
                 if FLAGS.fp16:
                     loss *= ctx.get_loss_scale_var()
                 lr = lr_builder()
                 optimizer = optim_builder(lr)
+                if 'AMP' in cfg:
+                    print("use_amp")
+                    AMP_RELATED_FLAGS_SETTING = {
+                        'FLAGS_cudnn_exhaustive_search': 1,
+                        'FLAGS_conv_workspace_size_limit': 1500,
+                        'FLAGS_cudnn_batchnorm_spatial_persistent': 1,
+                        'FLAGS_max_inplace_grad_add': 8,
+                    }
+                    os.environ['FLAGS_cudnn_batchnorm_spatial_persistent'] = '1'
+                    paddle.fluid.set_flags(AMP_RELATED_FLAGS_SETTING)
+                    amp_cfg = cfg.AMP if cfg.AMP else dict()
+                    scale_loss = amp_cfg.get('scale_loss', 1.0)
+                    use_dynamic_loss_scaling = amp_cfg.get('use_dynamic_loss_scaling', False)
+                    use_pure_fp16 = amp_cfg.get('use_pure_fp16', False)
+                    optimizer = paddle.static.amp.decorate(
+                        optimizer,
+                        init_loss_scaling=scale_loss,
+                        use_dynamic_loss_scaling=use_dynamic_loss_scaling,
+                        use_pure_fp16=use_pure_fp16,
+                        use_fp16_guard=True)
+
                 optimizer.minimize(loss)
 
                 if FLAGS.fp16:

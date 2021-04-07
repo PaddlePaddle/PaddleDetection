@@ -19,6 +19,7 @@ from __future__ import print_function
 from collections import OrderedDict
 
 import paddle.fluid as fluid
+import paddle
 
 from ppdet.experimental import mixed_precision_global_state
 from ppdet.core.workspace import register
@@ -59,6 +60,7 @@ class SSD(object):
             self.output_decoder = SSDOutputDecoder(**output_decoder)
 
     def build(self, feed_vars, mode='train'):
+        #with paddle.static.amp.fp16_guard():
         im = feed_vars['image']
         if mode == 'train' or mode == 'eval':
             gt_bbox = feed_vars['gt_bbox']

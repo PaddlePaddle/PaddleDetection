@@ -52,7 +52,6 @@ class Trainer(object):
 
         # build model
         self.model = create(cfg.architecture)
-
         # model slim build
         if 'slim' in cfg and cfg.slim:
             if self.mode == 'train':

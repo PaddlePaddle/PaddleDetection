@@ -11,6 +11,12 @@ weights: output/ssd_vgg16_300_voc/model_final
 # 20(label_class) + 1(background)
 num_classes: 21
 
+# # mixed precision training
+# AMP:
+#     scale_loss: 128.0
+#     use_dynamic_loss_scaling: True
+#     use_pure_fp16: &use_pure_fp16 True
+
 SSD:
   backbone: VGG
   multi_box_head: MultiBoxHead
@@ -89,7 +95,7 @@ TrainReader:
     is_scale: false
     mean: [104, 117, 123]
     std: [1, 1, 1]
-  batch_size: 8
+  batch_size: 32
   shuffle: true
   worker_num: 8
   bufsize: 16

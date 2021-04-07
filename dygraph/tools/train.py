@@ -70,6 +70,9 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    print("FLAGS:")
+    print(FLAGS)
+    print(cfg)
     # init parallel environment if nranks > 1
     init_parallel_env()
 
