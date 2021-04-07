@@ -13,15 +13,13 @@
 # limitations under the License.
 
 from . import matching
-from . import basetracker
-from . import multitracker
-from . import kalman_filter
+from . import tracker
+from . import motion
 from . import mot_visualization
-from . import timer
+from . import mot_utils
 
 from .matching import *
-from .basetracker import *
-from .multitracker import *
-from .kalman_filter import *
+from .tracker import *
+from .motion import *
 from .mot_visualization import *
-from .timer import *
+from .mot_utils import *

@@ -15,6 +15,7 @@ from . import fcos
 from . import solov2
 from . import ttfnet
 from . import jde
+from . import deepsort
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -26,3 +27,4 @@ from .fcos import *
 from .solov2 import *
 from .ttfnet import *
 from .jde import *
+from .deepsort import *

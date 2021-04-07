@@ -17,19 +17,70 @@ import time
 import cv2
 import numpy as np
 from numba import jit
-from collections import deque
+from collections import deque, OrderedDict
 
 import paddle
 import paddle.nn.functional as F
 
-from . import matching
-from .basetracker import BaseTrack, TrackState
-from .kalman_filter import KalmanFilter
+from ppdet.mot.mot_utils import scale_coords
+from ppdet.mot.matching import jde_matching as matching
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['STrack', 'JDETracker']
+__all__ = ['JDETracker']
+
+
+class TrackState(object):
+    New = 0
+    Tracked = 1
+    Lost = 2
+    Removed = 3
+
+
+@register
+@serializable
+class BaseTrack(object):
+    _count = 0
+
+    track_id = 0
+    is_activated = False
+    state = TrackState.New
+
+    history = OrderedDict()
+    features = []
+    curr_feature = None
+    score = 0
+    start_frame = 0
+    frame_id = 0
+    time_since_update = 0
+
+    # multi-camera
+    location = (np.inf, np.inf)
+
+    @property
+    def end_frame(self):
+        return self.frame_id
+
+    @staticmethod
+    def next_id():
+        BaseTrack._count += 1
+        return BaseTrack._count
+
+    def activate(self, *args):
+        raise NotImplementedError
+
+    def predict(self):
+        raise NotImplementedError
+
+    def update(self, *args, **kwargs):
+        raise NotImplementedError
+
+    def mark_lost(self):
+        self.state = TrackState.Lost
+
+    def mark_removed(self):
+        self.state = TrackState.Removed
 
 
 @register
@@ -417,17 +468,3 @@ def remove_duplicate_stracks(stracksa, stracksb):
     resa = [t for i, t in enumerate(stracksa) if not i in dupa]
     resb = [t for i, t in enumerate(stracksb) if not i in dupb]
     return resa, resb
-
-
-def scale_coords(img_size, coords, img0_shape):
-    # img_size [w,h], img0_shape [h,w]
-    gain_w = float(img_size[0]) / img0_shape[1]  # gain  = old / new
-    gain_h = float(img_size[1]) / img0_shape[0]
-    gain = min(gain_w, gain_h)
-    pad_x = (img_size[0] - img0_shape[1] * gain) / 2  # width padding
-    pad_y = (img_size[1] - img0_shape[0] * gain) / 2  # height padding
-    coords[:, [0, 2]] -= pad_x
-    coords[:, [1, 3]] -= pad_y
-    coords[:, 0:4] /= gain
-    coords[:, :4] = np.clip(coords[:, :4], a_min=0, a_max=coords[:, :4].max())
-    return coords

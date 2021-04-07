@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,5 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import (core, data, engine, modeling, model_zoo, optimizer, metrics,
-               py_op, utils, slim, mot)
+from . import jde_matching
+from . import iou_matching
+from . import nn_matching
+from . import linear_assignment
+
+from .jde_matching import *
+from .iou_matching import *
+from .nn_matching import *
+from .linear_assignment import *
