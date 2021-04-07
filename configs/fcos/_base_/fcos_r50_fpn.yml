@@ -47,7 +47,6 @@ FCOSPostProcess:
   decode:
     name: FCOSBox
     num_classes: 80
-    batch_size: 1
   nms:
     name: MultiClassNMS
     nms_top_k: 1000

@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+# OP docs may contains math formula which may cause
+# DeprecationWarning in string parsing
+import warnings
+warnings.filterwarnings(
+    action='ignore', category=DeprecationWarning, module='ops')
+
 from . import ops
 from . import backbones
 from . import necks
@@ -21,7 +27,6 @@ from . import losses
 from . import architectures
 from . import post_process
 from . import layers
-from . import utils
 from . import reid
 
 from .ops import *
@@ -33,5 +38,4 @@ from .losses import *
 from .architectures import *
 from .post_process import *
 from .layers import *
-from .utils import *
 from .reid import *

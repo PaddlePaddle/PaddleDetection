@@ -23,7 +23,7 @@ import six
 import numpy as np
 
 import paddle
-from paddle.distributed import ParallelEnv
+import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
 from ppdet.optimizer import ModelEMA
@@ -81,7 +81,7 @@ class LogPrinter(Callback):
         super(LogPrinter, self).__init__(model)
 
     def on_step_end(self, status):
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             mode = status['mode']
             if mode == 'train':
                 epoch_id = status['epoch_id']
@@ -129,7 +129,7 @@ class LogPrinter(Callback):
                     logger.info("Eval iter: {}".format(step_id))
 
     def on_epoch_end(self, status):
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             mode = status['mode']
             if mode == 'eval':
                 sample_num = status['sample_num']
@@ -146,13 +146,17 @@ class Checkpointer(Callback):
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         self.save_dir = os.path.join(self.model.cfg.save_dir,
                                      self.model.cfg.filename)
+        if hasattr(self.model.model, 'student_model'):
+            self.weight = self.model.model.student_model
+        else:
+            self.weight = self.model.model
         if self.use_ema:
             self.ema = ModelEMA(
-                cfg['ema_decay'], self.model.model, use_thres_step=True)
+                cfg['ema_decay'], self.weight, use_thres_step=True)
 
     def on_step_end(self, status):
         if self.use_ema:
-            self.ema.update(self.model.model)
+            self.ema.update(self.weight)
 
     def on_epoch_end(self, status):
         # Checkpointer only performed during training
@@ -160,7 +164,7 @@ class Checkpointer(Callback):
         epoch_id = status['epoch_id']
         weight = None
         save_name = None
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
                 end_epoch = self.model.cfg.epoch
                 if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
@@ -169,7 +173,7 @@ class Checkpointer(Callback):
                     if self.use_ema:
                         weight = self.ema.apply()
                     else:
-                        weight = self.model.model
+                        weight = self.weight
             elif mode == 'eval':
                 if 'save_best_model' in status and status['save_best_model']:
                     for metric in self.model._metrics:
@@ -181,7 +185,7 @@ class Checkpointer(Callback):
                             if self.use_ema:
                                 weight = self.ema.apply()
                             else:
-                                weight = self.model.model
+                                weight = self.weight
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
             if weight:
@@ -224,7 +228,7 @@ class VisualDLWriter(Callback):
 
     def on_step_end(self, status):
         mode = status['mode']
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
                 training_staus = status['training_staus']
                 for loss_name, loss_value in training_staus.get().items():
@@ -248,7 +252,7 @@ class VisualDLWriter(Callback):
 
     def on_epoch_end(self, status):
         mode = status['mode']
-        if ParallelEnv().nranks < 2 or ParallelEnv().local_rank == 0:
+        if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'eval':
                 for metric in self.model._metrics:
                     for key, map_value in metric.get_results().items():

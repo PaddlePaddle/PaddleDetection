@@ -47,7 +47,6 @@ class ConvBNLayer(nn.Layer):
             stride=stride,
             padding=padding,
             groups=groups,
-            weight_attr=ParamAttr(name=name + '.conv.weights'),
             data_format=data_format,
             bias_attr=False)
         self.batch_norm = batch_norm(

@@ -32,6 +32,8 @@ def get_categories(metric_type, anno_file=None):
     to category name map from annotation file.
 
     Args:
+        metric_type (str): metric type, currently support 'coco', 'voc', 'oid'
+            and 'widerface'.
         anno_file (str): annotation file path
     """
     if metric_type.lower() == 'coco':

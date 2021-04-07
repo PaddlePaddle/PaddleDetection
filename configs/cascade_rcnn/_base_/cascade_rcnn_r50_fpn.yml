@@ -62,7 +62,7 @@ BBoxAssigner:
   use_random: True
 
 CascadeTwoFCHead:
-  mlp_dim: 1024
+  out_channel: 1024
 
 BBoxPostProcess:
   decode:

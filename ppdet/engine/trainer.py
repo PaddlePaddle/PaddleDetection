@@ -25,7 +25,8 @@ from PIL import Image
 import glob
 
 import paddle
-from paddle.distributed import ParallelEnv, fleet
+import paddle.distributed as dist
+from paddle.distributed import fleet
 from paddle import amp
 from paddle.static import InputSpec
 
@@ -33,8 +34,9 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
 
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, JDEDetMetric, JDEReIDMetric
-from ppdet.metrics import get_categories, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
+from ppdet.metrics import JDEDetMetric, JDEReIDMetric
+from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter
@@ -53,14 +55,14 @@ class Trainer(object):
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
         self.optimizer = None
-        self.slim = None
+        self.is_loaded_weights = False
 
-        # model slim build
-        if 'slim' in cfg and cfg.slim:
-            if self.mode == 'train':
-                self.load_weights(cfg.pretrain_weights)
-            self.slim = create(cfg.slim)
-            self.slim(self.model)
+        # build model
+        if 'model' not in self.cfg:
+            self.model = create(cfg.architecture)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -90,8 +92,8 @@ class Trainer(object):
             self.optimizer = create('OptimizerBuilder')(self.lr,
                                                         self.model.parameters())
 
-        self._nranks = ParallelEnv().nranks
-        self._local_rank = ParallelEnv().local_rank
+        self._nranks = dist.get_world_size()
+        self._local_rank = dist.get_rank()
 
         self.status = {}
 
@@ -123,8 +125,8 @@ class Trainer(object):
             self._callbacks = []
             self._compose_callback = None
 
-    def _init_metrics(self):
-        if self.mode == 'test':
+    def _init_metrics(self, validate=False):
+        if self.mode == 'test' or (self.mode == 'train' and not validate):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
@@ -133,9 +135,24 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
+
+            # pass clsid2catid info to metric instance to avoid multiple loading
+            # annotation file
+            clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
+                                if self.mode == 'eval' else None
+
+            # when do validation in train, annotation file should be get from
+            # EvalReader instead of self.dataset(which is TrainReader)
+            anno_file = self.dataset.get_anno()
+            if self.mode == 'train' and validate:
+                eval_dataset = self.cfg['EvalDataset']
+                eval_dataset.check_or_download_dataset()
+                anno_file = eval_dataset.get_anno()
+
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(),
+                    anno_file=anno_file,
+                    clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
                     bias=bias)
@@ -186,16 +203,28 @@ class Trainer(object):
         self._metrics.extend(metrics)
 
     def load_weights(self, weights):
+        if self.is_loaded_weights:
+            return
         self.start_epoch = 0
         load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
-        self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        # support Distill resume weights
+        if hasattr(self.model, 'student_model'):
+            self.start_epoch = load_weight(self.model.student_model, weights,
+                                           self.optimizer)
+        else:
+            self.start_epoch = load_weight(self.model, weights, self.optimizer)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
+
+        # if validation in training is enabled, metrics should be re-init
+        if validate:
+            self._init_metrics(validate=validate)
+            self._reset_metrics()
 
         model = self.model
         if self.cfg.fleet:
@@ -408,7 +437,7 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if self.slim is None or self.cfg['slim'] != 'QAT':
+        if 'slim' not in self.cfg or self.cfg['slim'] != 'QAT':
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
@@ -422,7 +451,7 @@ class Trainer(object):
                 input_spec=pruned_input_spec)
             logger.info("Export model and saved in {}".format(save_dir))
         else:
-            self.slim.save_quantized_model(
+            self.cfg.slim.save_quantized_model(
                 self.model,
                 os.path.join(save_dir, 'model'),
                 input_spec=input_spec)

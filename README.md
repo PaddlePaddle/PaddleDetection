@@ -137,11 +137,12 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 ### 进阶教程
 
 - [模型压缩](configs/slim)
-- [推理部署](deploy)
+- [推理部署](deploy/README.md)
     - [模型导出教程](deploy/EXPORT_MODEL.md)
     - [Python端推理部署](deploy/python)
     - [C++端推理部署](deploy/cpp)
     - [服务端部署](deploy/serving)
+    - [推理benchmark](deploy/BENCHMARK_INFER.md)
 
 
 ## 模型库

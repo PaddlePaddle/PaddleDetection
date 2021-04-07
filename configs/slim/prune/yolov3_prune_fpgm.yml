@@ -5,11 +5,11 @@ slim: Pruner
 
 Pruner:
   criterion: fpgm
-  pruned_params: ['yolo_block.0.0.0.conv.weights', 'yolo_block.0.0.1.conv.weights', 'yolo_block.0.1.0.conv.weights',
-                  'yolo_block.0.1.1.conv.weights', 'yolo_block.0.2.conv.weights', 'yolo_block.0.tip.conv.weights',
-                  'yolo_block.1.0.0.conv.weights', 'yolo_block.1.0.1.conv.weights', 'yolo_block.1.1.0.conv.weights',
-                  'yolo_block.1.1.1.conv.weights', 'yolo_block.1.2.conv.weights', 'yolo_block.1.tip.conv.weights',
-                  'yolo_block.2.0.0.conv.weights', 'yolo_block.2.0.1.conv.weights', 'yolo_block.2.1.0.conv.weights',
-                  'yolo_block.2.1.1.conv.weights', 'yolo_block.2.2.conv.weights', 'yolo_block.2.tip.conv.weights']
+  pruned_params: ['conv2d_27.w_0', 'conv2d_28.w_0', 'conv2d_29.w_0',
+                  'conv2d_30.w_0', 'conv2d_31.w_0', 'conv2d_32.w_0',
+                  'conv2d_34.w_0', 'conv2d_35.w_0', 'conv2d_36.w_0',
+                  'conv2d_37.w_0', 'conv2d_38.w_0', 'conv2d_39.w_0',
+                  'conv2d_41.w_0', 'conv2d_42.w_0', 'conv2d_43.w_0',
+                  'conv2d_44.w_0', 'conv2d_45.w_0', 'conv2d_46.w_0']
   pruned_ratios: [0.1,0.2,0.2,0.2,0.2,0.1,0.2,0.3,0.3,0.3,0.2,0.1,0.3,0.4,0.4,0.4,0.4,0.3]
   print_params: False

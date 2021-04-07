@@ -21,17 +21,14 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-# ignore warning log
-import warnings
-warnings.filterwarnings('ignore')
 import glob
 
 import paddle
-from paddle.distributed import ParallelEnv
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
+from ppdet.slim import build_slim_model
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('train')
@@ -128,20 +125,20 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
+
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
     if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
 
-    place = 'gpu:{}'.format(ParallelEnv().dev_id) if cfg.use_gpu else 'cpu'
-    place = paddle.set_device(place)
     run(FLAGS, cfg)
 
 

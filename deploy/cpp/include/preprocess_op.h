@@ -38,7 +38,7 @@ class ImageBlob {
   // Buffer for image data after preprocessing
   std::vector<float> im_data_;
   // in net data shape(after pad)
-  std::vector<int> in_net_shape_;
+  std::vector<float> in_net_shape_;
   // Evaluation image width and height
   //std::vector<float>  eval_im_size_f_;
   // Scale factor for image size to origin image size

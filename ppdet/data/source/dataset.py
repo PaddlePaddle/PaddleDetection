@@ -27,6 +27,18 @@ import copy
 
 @serializable
 class DetDataset(Dataset):
+    """
+    Load detection dataset.
+
+    Args:
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+        use_default_label (bool): whether to load default label list.
+    """
+
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
@@ -66,6 +78,10 @@ class DetDataset(Dataset):
             ]
 
         return self.transform(roidb)
+
+    def check_or_download_dataset(self):
+        self.dataset_dir = get_dataset_path(self.dataset_dir, self.anno_path,
+                                            self.image_dir)
 
     def set_kwargs(self, **kwargs):
         self.mixup_epoch = kwargs.get('mixup_epoch', -1)
@@ -124,6 +140,9 @@ class ImageFolder(DetDataset):
         self._imid2path = {}
         self.roidbs = None
         self.sample_num = sample_num
+
+    def check_or_download_dataset(self):
+        return
 
     def parse_dataset(self, ):
         if not self.roidbs:

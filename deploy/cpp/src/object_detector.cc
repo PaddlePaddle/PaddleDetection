@@ -68,9 +68,9 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       // set use dynamic shape
       if (use_dynamic_shape) {
         // set DynamicShsape for image tensor
-        const std::vector<int> min_input_shape = {1, trt_min_shape, trt_min_shape};
-        const std::vector<int> max_input_shape = {1, trt_max_shape, trt_max_shape};
-        const std::vector<int> opt_input_shape = {1, trt_opt_shape, trt_opt_shape};
+        const std::vector<int> min_input_shape = {1, 3, trt_min_shape, trt_min_shape};
+        const std::vector<int> max_input_shape = {1, 3, trt_max_shape, trt_max_shape};
+        const std::vector<int> opt_input_shape = {1, 3, trt_opt_shape, trt_opt_shape};
         const std::map<std::string, std::vector<int>> map_min_input_shape = {{"image", min_input_shape}};
         const std::map<std::string, std::vector<int>> map_max_input_shape = {{"image", max_input_shape}};
         const std::map<std::string, std::vector<int>> map_opt_input_shape = {{"image", opt_input_shape}};
