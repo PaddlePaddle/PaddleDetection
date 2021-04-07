@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 
-from ..utils import decode_yolo, xywh2xyxy, iou_similarity
+from ..bbox_utils import decode_yolo, xywh2xyxy, iou_similarity
 
 __all__ = ['YOLOv3Loss']
 
