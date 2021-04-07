@@ -52,17 +52,14 @@ class Trainer(object):
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
         self.optimizer = None
-        self.slim = None
+        self.is_loaded_weights = False
 
         # build model
-        self.model = create(cfg.architecture)
-
-        # model slim build
-        if 'slim' in cfg and cfg.slim:
-            if self.mode == 'train':
-                self.load_weights(cfg.pretrain_weights)
-            self.slim = create(cfg.slim)
-            self.slim(self.model)
+        if 'model' not in self.cfg:
+            self.model = create(cfg.architecture)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -192,12 +189,19 @@ class Trainer(object):
         self._metrics.extend(metrics)
 
     def load_weights(self, weights):
+        if self.is_loaded_weights:
+            return
         self.start_epoch = 0
         load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
-        self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        # support Distill resume weights
+        if hasattr(self.model, 'student_model'):
+            self.start_epoch = load_weight(self.model.student_model, weights,
+                                           self.optimizer)
+        else:
+            self.start_epoch = load_weight(self.model, weights, self.optimizer)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
@@ -419,7 +423,7 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if self.slim is None or self.cfg['slim'] != 'QAT':
+        if 'slim' not in self.cfg or self.cfg['slim'] != 'QAT':
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
@@ -433,7 +437,7 @@ class Trainer(object):
                 input_spec=pruned_input_spec)
             logger.info("Export model and saved in {}".format(save_dir))
         else:
-            self.slim.save_quantized_model(
+            self.cfg.slim.save_quantized_model(
                 self.model,
                 os.path.join(save_dir, 'model'),
                 input_spec=input_spec)
