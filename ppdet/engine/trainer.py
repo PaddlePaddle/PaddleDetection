@@ -33,7 +33,6 @@ from paddle.static import InputSpec
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results
-
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.metrics import JDEDetMetric, JDEReIDMetric
 from ppdet.data.source.category import get_categories
@@ -57,13 +56,6 @@ class Trainer(object):
         self.optimizer = None
         self.is_loaded_weights = False
 
-        # build model
-        if 'model' not in self.cfg:
-            self.model = create(cfg.architecture)
-        else:
-            self.model = self.cfg.model
-            self.is_loaded_weights = True
-
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
         if self.mode == 'train':
@@ -74,7 +66,11 @@ class Trainer(object):
             cfg['JEDEmbeddingHead']['num_identifiers'] = self.dataset.nID
 
         # build model
-        self.model = create(cfg.architecture)
+        if 'model' not in self.cfg:
+            self.model = create(cfg.architecture)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
 
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate

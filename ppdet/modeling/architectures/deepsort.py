@@ -44,7 +44,7 @@ class DeepSORT(BaseArch):
         if cfg['detector'] != 'None':
             detector = create(cfg['detector'])
         else:
-            detector =  None
+            detector = None
         reid = create(cfg['reid'])
         tracker = create(cfg['tracker'])
 
@@ -66,19 +66,22 @@ class DeepSORT(BaseArch):
             bbox_num = outs['bbox_num']
             if bbox_num > 0:
                 bbox_xyxy = outs['bbox'][:, 2:].numpy()
-                bbox_xyxy = scale_coords(img_size, bbox_xyxy, img0_shape).round()
+                bbox_xyxy = scale_coords(img_size, bbox_xyxy,
+                                         img0_shape).round()
                 pred_scores = outs['bbox'][:, 1:2].numpy()
             else:
-                bbox_xyxy = []         
+                bbox_xyxy = []
                 pred_scores = []
         else:
             bbox_xyxy = self.inputs['bbox_xyxy']
             pred_scores = self.inputs['pred_scores']
-            
+
         if len(bbox_xyxy) > 0:
             bbox_xyxy = clip_box(bbox_xyxy, img0_shape)
-            bbox_tlwh = np.hstack((bbox_xyxy[:, 0:2], bbox_xyxy[:, 2:4] - bbox_xyxy[:, 0:2] + 1))
-            crops, pred_scores= get_crops(bbox_xyxy, img0, pred_scores, w=64, h=192)
+            bbox_tlwh = np.hstack(
+                (bbox_xyxy[:, 0:2], bbox_xyxy[:, 2:4] - bbox_xyxy[:, 0:2] + 1))
+            crops, pred_scores = get_crops(
+                bbox_xyxy, img0, pred_scores, w=64, h=192)
             if len(crops) > 0:
                 features = self.reid(paddle.to_tensor(crops))
                 detections = [Detection(bbox_tlwh[i], conf, features[i])\

@@ -51,8 +51,7 @@ def iou(bbox, candidates):
     return area_intersection / (area_bbox + area_candidates - area_intersection)
 
 
-def iou_cost(tracks, detections, track_indices=None,
-             detection_indices=None):
+def iou_cost(tracks, detections, track_indices=None, detection_indices=None):
     """An intersection over union distance metric.
 
     Parameters

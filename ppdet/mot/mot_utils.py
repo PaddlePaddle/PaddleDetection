@@ -73,10 +73,11 @@ class Detection(object):
         feature (Tensor): A feature vector that describes the object 
             contained in this image.
     """
+
     def __init__(self, tlwh, confidence, feature):
         #self.tlwh = tlwh
         #self.confidence = confidence
-         
+
         self.tlwh = np.asarray(tlwh, dtype=np.float32)
         self.confidence = np.asarray(confidence, dtype=np.float32)
         self.feature = feature.numpy()
@@ -106,7 +107,7 @@ def load_det_results(det_file, num_frames):
     results_list = []
     for frame_i in range(0, num_frames):
         results = {'bbox': [], 'score': []}
-        lables_with_frame = labels[labels[:,0] == frame_i + 1]
+        lables_with_frame = labels[labels[:, 0] == frame_i + 1]
         for l in lables_with_frame:
             results['bbox'].append(l[2:6])
             results['score'].append(l[6])
@@ -163,6 +164,6 @@ def scale_coords(img_size, coords, img0_shape):
 
 
 def clip_box(xxyy, img0_shape):
-    xxyy[:,[0,2]] = np.clip(xxyy[:,[0,2]], a_min=0, a_max=img0_shape[1])
-    xxyy[:,[1,3]] = np.clip(xxyy[:,[1,3]], a_min=0, a_max=img0_shape[0])
+    xxyy[:, [0, 2]] = np.clip(xxyy[:, [0, 2]], a_min=0, a_max=img0_shape[1])
+    xxyy[:, [1, 3]] = np.clip(xxyy[:, [1, 3]], a_min=0, a_max=img0_shape[0])
     return xxyy

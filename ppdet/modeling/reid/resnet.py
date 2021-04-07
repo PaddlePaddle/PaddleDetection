@@ -49,7 +49,10 @@ class ConvBNLayer(nn.Layer):
             padding=(filter_size - 1) // 2,
             dilation=dilation,
             groups=groups,
-            weight_attr=ParamAttr(name=name + "_weights",learning_rate=lr_mult, initializer=Normal(0, math.sqrt(2./conv_stdv))),
+            weight_attr=ParamAttr(
+                name=name + "_weights",
+                learning_rate=lr_mult,
+                initializer=Normal(0, math.sqrt(2. / conv_stdv))),
             bias_attr=False,
             data_format=data_format)
         if name == "conv1":
@@ -184,7 +187,11 @@ class BasicBlock(nn.Layer):
 
 
 class ResNet(nn.Layer):
-    def __init__(self, layers=50,lr_mult=1.0, last_conv_stride=2, last_conv_dilation=1):
+    def __init__(self,
+                 layers=50,
+                 lr_mult=1.0,
+                 last_conv_stride=2,
+                 last_conv_dilation=1):
         super(ResNet, self).__init__()
         self.layers = layers
         self.data_format = "NCHW"
@@ -201,7 +208,8 @@ class ResNet(nn.Layer):
             depth = [3, 4, 23, 3]
         elif layers == 152:
             depth = [3, 8, 36, 3]
-        num_channels = [64, 256, 512, 1024] if layers >= 50 else [64, 64, 128, 256]
+        num_channels = [64, 256, 512,
+                        1024] if layers >= 50 else [64, 64, 128, 256]
         num_filters = [64, 128, 256, 512]
         self.conv = ConvBNLayer(
             num_channels=self.input_image_channel,
@@ -213,10 +221,7 @@ class ResNet(nn.Layer):
             name="conv1",
             data_format=self.data_format)
         self.pool2d_max = nn.MaxPool2D(
-            kernel_size=3,
-            stride=2,
-            padding=1,
-            data_format=self.data_format)
+            kernel_size=3, stride=2, padding=1, data_format=self.data_format)
         self.block_list = []
         if layers >= 50:
             for block in range(len(depth)):
@@ -245,7 +250,8 @@ class ResNet(nn.Layer):
                             shortcut=shortcut,
                             name=conv_name,
                             lr_mult=lr_mult,
-                            dilation=last_conv_dilation if block == len(depth) - 1 else 1,
+                            dilation=last_conv_dilation
+                            if block == len(depth) - 1 else 1,
                             data_format=self.data_format))
                     self.block_list.append(bottleneck_block)
                     shortcut = True
@@ -288,7 +294,8 @@ def ResNet34(**args):
 def ResNet50(pretrained=None, **args):
     model = ResNet(layers=50, **args)
     if pretrained is not None:
-        if not (os.path.isdir(pretrained) or os.path.exists(pretrained + '.pdparams')):
+        if not (os.path.isdir(pretrained) or
+                os.path.exists(pretrained + '.pdparams')):
             raise ValueError("Model pretrain path {} does not "
                              "exists.".format(pretrained))
         param_state_dict = paddle.load(pretrained + '.pdparams')
@@ -299,7 +306,8 @@ def ResNet50(pretrained=None, **args):
 def ResNet101(pretrained=None, **args):
     model = ResNet(layers=101, **args)
     if pretrained is not None:
-        if not (os.path.isdir(pretrained) or os.path.exists(pretrained + '.pdparams')):
+        if not (os.path.isdir(pretrained) or
+                os.path.exists(pretrained + '.pdparams')):
             raise ValueError("Model pretrain path {} does not "
                              "exists.".format(pretrained))
         param_state_dict = paddle.load(pretrained + '.pdparams')
