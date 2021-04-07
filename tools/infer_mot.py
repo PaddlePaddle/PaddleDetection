@@ -45,6 +45,22 @@ def parse_args():
         default='test.mp4',
         help='Video name for tracking.')
     parser.add_argument(
+        "--data_type",
+        default='mot',
+        type=str,
+        help='Data type of tracking dataset, should be in ["mot", "kitti"]')
+    parser.add_argument(
+        "--model_type",
+        default='jde',
+        type=str,
+        help='Model type of tracking, should be in ["jde", "deepsort", "fairmot"]'
+    )
+    parser.add_argument(
+        "--det_dir",
+        default='output/mot_results/',
+        type=str,
+        help="Directory name for detection results.")
+    parser.add_argument(
         '--output_dir',
         type=str,
         default='output',
@@ -76,15 +92,25 @@ def run(FLAGS, cfg):
     tracker = Tracker(cfg, mode='test')
 
     # load weights
-    tracker.load_weights(cfg.weights, 'resume')
+    if FLAGS.model_type == 'deepsort':
+        if cfg.det_weights != None:
+            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights,
+                                          'resume')
+        else:
+            tracker.load_weights_deepsort(None, cfg.reid_weights, 'resume')
+    else:
+        tracker.load_weights(cfg.weights, 'resume')
 
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
+        data_type=FLAGS.data_type,
+        model_type=FLAGS.model_type,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
-        show_image=FLAGS.show_image)
+        show_image=FLAGS.show_image,
+        det_dir=FLAGS.det_dir)
 
 
 def main():
