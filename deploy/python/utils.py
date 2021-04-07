@@ -237,7 +237,6 @@ class LoggerHelper(object):
         print("enable_mkldnn:", self.args.enable_mkldnn)
         print("cpu_math_library_num_threads:", self.args.cpu_threads)
 
-        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         print("----------------------- Model info ----------------------")
         print("model_name:", self.model_name)
 

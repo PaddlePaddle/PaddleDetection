@@ -18,6 +18,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <numeric>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -51,7 +52,7 @@ DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
-  LOG(INFO) << "----------------------- Cong info -----------------------";
+  LOG(INFO) << "----------------------- Config info -----------------------";
   LOG(INFO) << "runtime_device: " << (FLAGS_use_gpu ? "gpu" : "cpu");
   LOG(INFO) << "ir_optim: " << "True";
   LOG(INFO) << "enable_memory_optim: " << "True";
