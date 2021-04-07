@@ -20,7 +20,7 @@ import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
-from ..utils import xywh2xyxy, bbox_iou, decode_yolo
+from ..bbox_utils import xywh2xyxy, bbox_iou
 
 
 @register
