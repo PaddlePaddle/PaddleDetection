@@ -29,6 +29,7 @@
 #endif
 
 #include "include/object_detector.h"
+#include <gflags/gflags.h>
 
 
 DEFINE_string(model_dir, "", "Path of inference model");

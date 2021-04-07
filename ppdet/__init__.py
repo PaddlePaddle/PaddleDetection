@@ -13,4 +13,4 @@
 # limitations under the License.
 
 from . import (core, data, engine, modeling, model_zoo, optimizer, metrics,
-               py_op, utils, slim)
+               utils, slim)

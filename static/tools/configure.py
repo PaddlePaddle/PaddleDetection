@@ -23,10 +23,28 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+import logging
+FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT)
+logger = logging.getLogger(__name__)
+
 import yaml
 
-from ppdet.core.workspace import get_registered_modules, load_config, dump_value
-from ppdet.utils.cli import ColorTTY, print_total_cfg
+try:
+    from ppdet.core.workspace import get_registered_modules, load_config, dump_value
+    from ppdet.utils.cli import ColorTTY, print_total_cfg
+except ImportError as e:
+    if sys.argv[0].find('static') >= 0:
+        logger.error("Importing ppdet failed when running static model "
+                     "with error: {}\n"
+                     "please try:\n"
+                     "\t1. run static model under PaddleDetection/static "
+                     "directory\n"
+                     "\t2. run 'pip uninstall ppdet' to uninstall ppdet "
+                     "dynamic version firstly.".format(e))
+        sys.exit(-1)
+    else:
+        raise e
 
 color_tty = ColorTTY()
 
