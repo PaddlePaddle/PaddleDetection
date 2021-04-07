@@ -54,9 +54,7 @@ class YOLOv3Head(nn.Layer):
                 stride=1,
                 padding=0,
                 data_format=data_format,
-                weight_attr=ParamAttr(name=name + '.conv.weights'),
-                bias_attr=ParamAttr(
-                    name=name + '.conv.bias', regularizer=L2Decay(0.)))
+                bias_attr=ParamAttr(regularizer=L2Decay(0.)))
             conv.skip_quant = True
             yolo_output = self.add_sublayer(name, conv)
             self.yolo_outputs.append(yolo_output)

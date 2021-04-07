@@ -30,20 +30,33 @@ from PIL import Image, ImageOps
 import paddle
 from paddle import fluid
 
-from ppdet.core.workspace import load_config, merge_config, create
-
-from ppdet.utils.eval_utils import parse_fetches
-from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
-from ppdet.utils.visualizer import visualize_results
-import ppdet.utils.checkpoint as checkpoint
-
-from ppdet.data.reader import create_reader
-
 import logging
 FORMAT = '%(asctime)s-%(levelname)s: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
+
+try:
+    from ppdet.core.workspace import load_config, merge_config, create
+
+    from ppdet.utils.eval_utils import parse_fetches
+    from ppdet.utils.cli import ArgsParser
+    from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+    from ppdet.utils.visualizer import visualize_results
+    import ppdet.utils.checkpoint as checkpoint
+
+    from ppdet.data.reader import create_reader
+except ImportError as e:
+    if sys.argv[0].find('static') >= 0:
+        logger.error("Importing ppdet failed when running static model "
+                     "with error: {}\n"
+                     "please try:\n"
+                     "\t1. run static model under PaddleDetection/static "
+                     "directory\n"
+                     "\t2. run 'pip uninstall ppdet' to uninstall ppdet "
+                     "dynamic version firstly.".format(e))
+        sys.exit(-1)
+    else:
+        raise e
 
 
 def get_save_image_name(output_dir, image_path):

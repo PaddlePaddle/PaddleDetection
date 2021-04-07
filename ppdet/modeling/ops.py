@@ -59,11 +59,8 @@ def batch_norm(ch,
     return batch_norm(
         ch,
         weight_attr=ParamAttr(
-            name=bn_name + '.scale',
-            initializer=initializer,
-            regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(
-            name=bn_name + '.offset', regularizer=L2Decay(norm_decay)),
+            initializer=initializer, regularizer=L2Decay(norm_decay)),
+        bias_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
         data_format=data_format)
 
 
