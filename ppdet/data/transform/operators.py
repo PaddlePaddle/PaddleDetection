@@ -536,6 +536,17 @@ class RandomFlip(BaseOperator):
         bbox[:, 2] = width - oldx1
         return bbox
 
+    def apply_rbox(self, bbox, width):
+        oldx1 = bbox[:, 0].copy()
+        oldx2 = bbox[:, 2].copy()
+        oldx3 = bbox[:, 4].copy()
+        oldx4 = bbox[:, 6].copy()
+        bbox[:, 0] = width - oldx2
+        bbox[:, 2] = width - oldx1
+        bbox[:, 4] = width - oldx3
+        bbox[:, 6] = width - oldx4
+        return bbox
+
     def apply(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -566,6 +577,9 @@ class RandomFlip(BaseOperator):
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
+
+            if 'gt_rbox2poly' in sample and sample['gt_rbox2poly'].any():
+                sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'], width)
 
             sample['flipped'] = True
             sample['image'] = im
