@@ -232,22 +232,21 @@ class S2ANetHead(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['anchor_assign']
 
-    def __init__(
-            self,
-            stacked_convs=2,
-            feat_in=256,
-            feat_out=256,
-            num_classes=15,
-            anchor_strides=[8, 16, 32, 64, 128],
-            anchor_scales=[4],
-            anchor_ratios=[1.0],
-            target_means=(.0, .0, .0, .0, .0),
-            target_stds=(1.0, 1.0, 1.0, 1.0, 1.0),
-            align_conv_type='AlignConv',
-            align_conv_size=3,
-            use_sigmoid_cls=True,
-            anchor_assign=RBoxAssigner().__dict__,
-            reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0]):
+    def __init__(self,
+                 stacked_convs=2,
+                 feat_in=256,
+                 feat_out=256,
+                 num_classes=15,
+                 anchor_strides=[8, 16, 32, 64, 128],
+                 anchor_scales=[4],
+                 anchor_ratios=[1.0],
+                 target_means=(.0, .0, .0, .0, .0),
+                 target_stds=(1.0, 1.0, 1.0, 1.0, 1.0),
+                 align_conv_type='AlignConv',
+                 align_conv_size=3,
+                 use_sigmoid_cls=True,
+                 anchor_assign=RBoxAssigner().__dict__,
+                 reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0]):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
