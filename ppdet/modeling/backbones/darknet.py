@@ -37,6 +37,22 @@ class ConvBNLayer(nn.Layer):
                  act="leaky",
                  name=None,
                  data_format='NCHW'):
+        """
+        conv + bn + activation layer
+
+        Args:
+            ch_in (int): input channel
+            ch_out (int): output channel
+            filter_size (int): filter size, default 3
+            stride (int): stride, default 1
+            groups (int): number of groups of conv layer, default 1
+            padding (int): padding size, default 0
+            norm_type (str): batch norm type, default bn
+            norm_decay (str): decay for weight and bias of batch norm layer, default 0.
+            act (str): activation function type, default 'leaky', which means leaky_relu
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(ConvBNLayer, self).__init__()
 
         self.conv = nn.Conv2D(
@@ -75,6 +91,20 @@ class DownSample(nn.Layer):
                  norm_decay=0.,
                  name=None,
                  data_format='NCHW'):
+        """
+        downsample layer
+
+        Args:
+            ch_in (int): input channel
+            ch_out (int): output channel
+            filter_size (int): filter size, default 3
+            stride (int): stride, default 2
+            padding (int): padding size, default 1
+            norm_type (str): batch norm type, default bn
+            norm_decay (str): decay for weight and bias of batch norm layer, default 0.
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
 
         super(DownSample, self).__init__()
 
@@ -103,6 +133,18 @@ class BasicBlock(nn.Layer):
                  norm_decay=0.,
                  name=None,
                  data_format='NCHW'):
+        """
+        BasicBlock layer of DarkNet
+
+        Args:
+            ch_in (int): input channel
+            ch_out (int): output channel
+            norm_type (str): batch norm type, default bn
+            norm_decay (str): decay for weight and bias of batch norm layer, default 0.
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
+
         super(BasicBlock, self).__init__()
 
         self.conv1 = ConvBNLayer(
@@ -142,6 +184,18 @@ class Blocks(nn.Layer):
                  norm_decay=0.,
                  name=None,
                  data_format='NCHW'):
+        """
+        Blocks layer, which consist of some BaickBlock layers
+
+        Args:
+            ch_in (int): input channel
+            ch_out (int): output channel
+            count (int): number of BasicBlock layer
+            norm_type (str): batch norm type, default bn
+            norm_decay (str): decay for weight and bias of batch norm layer, default 0.
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(Blocks, self).__init__()
 
         self.basicblock0 = BasicBlock(
@@ -189,6 +243,18 @@ class DarkNet(nn.Layer):
                  norm_type='bn',
                  norm_decay=0.,
                  data_format='NCHW'):
+        """
+        Darknet, see https://pjreddie.com/darknet/yolo/
+
+        Args:
+            depth (int): depth of network
+            freeze_at (int): freeze the backbone at which stage
+            filter_size (int): filter size, default 3
+            return_idx (list): index of stages whose feature maps are returned
+            norm_type (str): batch norm type, default bn
+            norm_decay (str): decay for weight and bias of batch norm layer, default 0.
+            data_format (str): data format, NCHW or NHWC
+        """
         super(DarkNet, self).__init__()
         self.depth = depth
         self.freeze_at = freeze_at
