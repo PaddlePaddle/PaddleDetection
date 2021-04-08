@@ -33,6 +33,8 @@ class COCODataSet(DetDataset):
         anno_path (str): coco annotation file path.
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
+        load_crowd (bool): whether to load crowded ground-truth
+        allow_empty (bool): whether to load empty entry
     """
 
     def __init__(self,
@@ -40,11 +42,15 @@ class COCODataSet(DetDataset):
                  image_dir=None,
                  anno_path=None,
                  data_fields=['image'],
-                 sample_num=-1):
+                 sample_num=-1,
+                 load_crowd=False,
+                 allow_empty=False):
         super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
                                           data_fields, sample_num)
         self.load_image_only = False
         self.load_semantic = False
+        self.load_crowd = load_crowd
+        self.allow_empty = allow_empty
 
     def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -91,12 +97,15 @@ class COCODataSet(DetDataset):
                 continue
 
             if not self.load_image_only:
-                ins_anno_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=False)
+                ins_anno_ids = coco.getAnnIds(
+                    imgIds=[img_id], iscrowd=self.load_crowd)
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
                 for inst in instances:
                     # check gt bbox
+                    if inst.get('ignore', False):
+                        continue
                     if 'bbox' not in inst.keys():
                         continue
                     else:
@@ -118,7 +127,7 @@ class COCODataSet(DetDataset):
                                 img_id, float(inst['area']), x1, y1, x2, y2))
 
                 num_bbox = len(bboxes)
-                if num_bbox <= 0:
+                if num_bbox <= 0 and not self.allow_empty:
                     continue
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
