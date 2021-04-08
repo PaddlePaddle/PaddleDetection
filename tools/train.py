@@ -33,6 +33,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config, create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.slim import build_slim_model
 
 import ppdet.utils.cli as cli
 import ppdet.utils.check as check
@@ -98,7 +99,7 @@ def run(FLAGS, cfg):
     # load weights
     if FLAGS.resume is not None:
         trainer.resume_weights(FLAGS.resume)
-    elif not FLAGS.slim_config and 'pretrain_weights' in cfg and cfg.pretrain_weights:
+    elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
         trainer.load_weights(cfg.pretrain_weights)
 
     # training
@@ -107,21 +108,21 @@ def run(FLAGS, cfg):
 
 def main():
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     cfg['fp16'] = FLAGS.fp16
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
     merge_config(FLAGS.opt)
+
+    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
     if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+        cfg = build_slim_model(cfg, FLAGS.slim_config)
+
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
     check.check_version()
-
-    place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
     run(FLAGS, cfg)
 
