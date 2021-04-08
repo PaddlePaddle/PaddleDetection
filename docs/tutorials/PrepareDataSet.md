@@ -289,7 +289,7 @@ classname2
 ...
 ```
 
-##### 用户数据转成COCO  
+##### 用户数据转成COCO数据
 在`./tools/`中提供了`x2coco.py`用于将VOC数据集、labelme标注的数据集或cityscape数据集转换为COCO数据，例如:
 
 （1）labelme数据转换为COCO数据：
@@ -328,7 +328,7 @@ dataset/xxx/
 ```
 
 ##### 用户数据自定义reader  
-如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#添加新数据源)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
+如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#2.3自定义数据集)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
 
 
 #### 用户数据数据转换示例  

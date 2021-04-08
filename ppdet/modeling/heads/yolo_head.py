@@ -47,16 +47,16 @@ class YOLOv3Head(nn.Layer):
             else:
                 num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
-            yolo_output = self.add_sublayer(
-                name,
-                nn.Conv2D(
-                    in_channels=128 * (2**self.num_outputs) // (2**i),
-                    out_channels=num_filters,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    data_format=data_format,
-                    bias_attr=ParamAttr(regularizer=L2Decay(0.))))
+            conv = nn.Conv2D(
+                in_channels=128 * (2**self.num_outputs) // (2**i),
+                out_channels=num_filters,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                data_format=data_format,
+                bias_attr=ParamAttr(regularizer=L2Decay(0.)))
+            conv.skip_quant = True
+            yolo_output = self.add_sublayer(name, conv)
             self.yolo_outputs.append(yolo_output)
 
     def parse_anchor(self, anchors, anchor_masks):
