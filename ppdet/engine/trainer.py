@@ -387,7 +387,7 @@ class Trainer(object):
                 image.save(save_name, quality=95)
                 if save_txt:
                     save_path = os.path.splitext(save_name)[0] + '.txt'
-                    save_result(save_path, bbox_res, draw_threshold)
+                    save_result(save_path, bbox_res, catid2name, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):

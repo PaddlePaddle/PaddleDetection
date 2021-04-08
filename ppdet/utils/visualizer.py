@@ -121,7 +121,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     return image
 
 
-def save_result(save_path, bbox_res, threshold):
+def save_result(save_path, bbox_res, catid2name, threshold):
     """
     save result as txt
     """
