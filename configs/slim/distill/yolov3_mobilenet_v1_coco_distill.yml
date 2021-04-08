@@ -1,0 +1,12 @@
+_BASE_: [
+  '../../yolov3/yolov3_r34_270e_coco.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_r34_270e_coco.pdparams
+
+
+slim: Distill
+distill_loss: DistillYOLOv3Loss
+
+DistillYOLOv3Loss:
+  weight: 1000

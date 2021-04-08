@@ -31,6 +31,7 @@ from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.engine import Trainer
+from ppdet.slim import build_slim_model
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
@@ -84,15 +85,15 @@ def run(FLAGS, cfg):
 def main():
     paddle.set_device("cpu")
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     # TODO: to be refined in the future
     if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn':
         FLAGS.opt['norm_type'] = 'bn'
     merge_config(FLAGS.opt)
+
     if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+        cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
