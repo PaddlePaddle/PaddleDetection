@@ -227,6 +227,7 @@ class S2ANetHead(nn.Layer):
         align_conv_type (str): align_conv_type ['Conv', 'AlignConv']
         align_conv_size (int): kernel size of align_conv
         use_sigmoid_cls (bool): use sigmoid_cls or not
+        reg_loss_weight (list): reg loss weight
     """
     __shared__ = ['num_classes']
     __inject__ = ['anchor_assign']
@@ -245,7 +246,8 @@ class S2ANetHead(nn.Layer):
             align_conv_type='AlignConv',
             align_conv_size=3,
             use_sigmoid_cls=True,
-            anchor_assign=RBoxAssigner().__dict__, ):
+            anchor_assign=RBoxAssigner().__dict__,
+            reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0]):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -265,6 +267,7 @@ class S2ANetHead(nn.Layer):
         self.cls_out_channels = num_classes if self.use_sigmoid_cls else 1
         self.sampling = False
         self.anchor_assign = anchor_assign
+        self.reg_loss_weight = reg_loss_weight
 
         self.s2anet_head_out = None
 
@@ -274,6 +277,12 @@ class S2ANetHead(nn.Layer):
             self.anchor_generators.append(
                 S2ANetAnchorGenerator(anchor_base, anchor_scales,
                                       anchor_ratios))
+
+        # featmap_sizes
+        self.featmap_sizes = []
+        self.base_anchors = []
+        self.rbox_anchors = []
+        self.refine_anchor_list = []
 
         self.fam_cls_convs = nn.Sequential()
         self.fam_reg_convs = nn.Sequential()
@@ -391,11 +400,6 @@ class S2ANetHead(nn.Layer):
             padding=1,
             weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
             bias_attr=ParamAttr(initializer=Constant(0)))
-
-        self.base_anchors = dict()
-        self.featmap_sizes = dict()
-        self.base_anchors = dict()
-        self.refine_anchor_list = []
 
     def forward(self, feats):
         fam_reg_branch_list = []
@@ -653,7 +657,7 @@ class S2ANetHead(nn.Layer):
             feat_bbox_targets = paddle.reshape(feat_bbox_targets, [-1, 5])
             feat_bbox_targets.stop_gradient = True
 
-            odm_bbox_pred = fam_reg_branch_list[idx]
+            odm_bbox_pred = odm_reg_branch_list[idx]
             odm_bbox_pred = paddle.squeeze(odm_bbox_pred, axis=0)
             odm_bbox_pred = paddle.reshape(odm_bbox_pred, [-1, 5])
             odm_bbox = self.smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
