@@ -20,8 +20,9 @@ from __future__ import unicode_literals
 import numpy as np
 from PIL import Image, ImageDraw
 import cv2
-
 from .colormap import colormap
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = ['visualize_results']
 
@@ -102,7 +103,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
                  (xmin, ymin)],
                 width=2,
                 fill=color)
-        else:
+        elif len(bbox) == 8:
             x1, y1, x2, y2, x3, y3, x4, y4 = bbox
             draw.line(
                 [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)],
@@ -110,6 +111,8 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
                 fill=color)
             xmin = min(x1, x2, x3, x4)
             ymin = min(y1, y2, y3, y4)
+        else:
+            logger.error('the shape of bbox must be [M, 4] or [M, 8]!')
 
         # draw label
         text = "{} {:.2f}".format(catid2name[catid], score)
