@@ -45,6 +45,7 @@ class RPNFeat(nn.Layer):
             padding=1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0., std=0.01)))
+        self.rpn_conv.skip_quant = True
 
     def forward(self, feats):
         rpn_feats = []
@@ -100,6 +101,7 @@ class RPNHead(nn.Layer):
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0., std=0.01)))
+        self.rpn_rois_score.skip_quant = True
 
         # rpn roi bbox regression deltas
         self.rpn_rois_delta = nn.Conv2D(
@@ -109,6 +111,7 @@ class RPNHead(nn.Layer):
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0., std=0.01)))
+        self.rpn_rois_delta.skip_quant = True
 
     @classmethod
     def from_config(cls, cfg, input_shape):

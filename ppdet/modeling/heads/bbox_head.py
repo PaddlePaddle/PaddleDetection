@@ -50,11 +50,13 @@ class TwoFCHead(nn.Layer):
             out_channel,
             weight_attr=paddle.ParamAttr(
                 initializer=XavierUniform(fan_out=fan)))
+        self.fc6.skip_quant = True
 
         self.fc7 = nn.Linear(
             out_channel,
             out_channel,
             weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
+        self.fc7.skip_quant = True
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -199,12 +201,14 @@ class BBoxHead(nn.Layer):
             self.num_classes + 1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0.0, std=0.01)))
+        self.bbox_score.skip_quant = True
 
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0.0, std=0.001)))
+        self.bbox_delta.skip_quant = True
         self.assigned_label = None
         self.assigned_rois = None
 
