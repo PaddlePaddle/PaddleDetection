@@ -24,8 +24,8 @@ else:
     import Queue
 import numpy as np
 
-from paddle.io import DataLoader, DistributedBatchSampler
-from paddle.fluid.dataloader.collate import default_collate_fn
+from paddle.io import DataLoader
+from paddle.io import DistributedBatchSampler
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
@@ -44,9 +44,11 @@ class Compose(object):
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
-                self.transforms_cls.append(op_cls(**v))
-                if hasattr(op_cls, 'num_classes'):
-                    op_cls.num_classes = num_classes
+                f = op_cls(**v)
+                if hasattr(f, 'num_classes'):
+                    f.num_classes = num_classes
+
+                self.transforms_cls.append(f)
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -54,18 +56,18 @@ class Compose(object):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map sample transform [{}] "
-                            "with error: {} and stack:\n{}".format(
-                                f, e, str(stack_info)))
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                            format(f, e, str(stack_info)))
                 raise e
 
         return data
 
 
 class BatchCompose(Compose):
-    def __init__(self, transforms, num_classes=80, collate_batch=True):
+    def __init__(self, transforms, num_classes=80):
         super(BatchCompose, self).__init__(transforms, num_classes)
-        self.collate_batch = collate_batch
+        self.output_fields = mp.Manager().list([])
+        self.lock = mp.Lock()
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -73,32 +75,39 @@ class BatchCompose(Compose):
                 data = f(data)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map batch transform [{}] "
-                            "with error: {} and stack:\n{}".format(
-                                f, e, str(stack_info)))
+                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
+                            format(f, e, str(stack_info)))
                 raise e
 
-        # remove keys which is not needed by model
-        extra_key = ['h', 'w', 'flipped']
-        for k in extra_key:
-            for sample in data:
-                if k in sample:
-                    sample.pop(k)
+        # accessing ListProxy in main process (no worker subprocess)
+        # may incur errors in some enviroments, ListProxy back to
+        # list if no worker process start, while this `__call__`
+        # will be called in main process
+        global MAIN_PID
+        if os.getpid() == MAIN_PID and \
+            isinstance(self.output_fields, mp.managers.ListProxy):
+            self.output_fields = []
 
-        # batch data, if user-define batch function needed
-        # use user-defined here
-        if self.collate_batch:
-            batch_data = default_collate_fn(data)
-        else:
-            batch_data = {}
-            for k in data[0].keys():
-                tmp_data = []
-                for i in range(len(data)):
-                    tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k:
-                    tmp_data = np.stack(tmp_data, axis=0)
-                batch_data[k] = tmp_data
+        # parse output fields by first sample
+        # **this shoule be fixed if paddle.io.DataLoader support**
+        # For paddle.io.DataLoader not support dict currently,
+        # we need to parse the key from the first sample,
+        # BatchCompose.__call__ will be called in each worker
+        # process, so lock is need here.
+        if len(self.output_fields) == 0:
+            self.lock.acquire()
+            if len(self.output_fields) == 0:
+                for k, v in data[0].items():
+                    # FIXME(dkp): for more elegent coding
+                    if k not in ['flipped', 'h', 'w']:
+                        self.output_fields.append(k)
+            self.lock.release()
 
+        data = [[data[i][k] for k in self.output_fields]
+                for i in range(len(data))]
+        data = list(zip(*data))
+
+        batch_data = [np.stack(d, axis=0) for d in data]
         return batch_data
 
 
@@ -136,16 +145,15 @@ class BaseDataLoader(object):
                  drop_last=False,
                  drop_empty=True,
                  num_classes=80,
-                 collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
         # sample transform
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
-        # batch transfrom 
-        self._batch_transforms = BatchCompose(batch_transforms, num_classes,
-                                              collate_batch)
+        # batch transfrom
+        self._batch_transforms = BatchCompose(batch_transforms, num_classes)
+
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.drop_last = drop_last
@@ -201,8 +209,15 @@ class BaseDataLoader(object):
         return self
 
     def __next__(self):
+        # pack {filed_name: field_data} here
+        # looking forward to support dictionary
+        # data structure in paddle.io.DataLoader
         try:
-            return next(self.loader)
+            data = next(self.loader)
+            return {
+                k: v
+                for k, v in zip(self._batch_transforms.output_fields, data)
+            }
         except StopIteration:
             self.loader = iter(self.dataloader)
             six.reraise(*sys.exc_info())
@@ -224,11 +239,10 @@ class TrainReader(BaseDataLoader):
                  drop_last=True,
                  drop_empty=True,
                  num_classes=80,
-                 collate_batch=True,
                  **kwargs):
-        super(TrainReader, self).__init__(
-            sample_transforms, batch_transforms, batch_size, shuffle, drop_last,
-            drop_empty, num_classes, collate_batch, **kwargs)
+        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
+                                          batch_size, shuffle, drop_last,
+                                          drop_empty, num_classes, **kwargs)
 
 
 @register
