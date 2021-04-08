@@ -65,20 +65,21 @@ class MaskFeat(nn.Layer):
                         norm_type=self.norm_type,
                         norm_name=conv_name + '_norm',
                         initializer=KaimingNormal(fan_in=fan_conv),
+                        skip_quant=True,
                         name=conv_name))
                 mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
         else:
             for i in range(self.num_convs):
                 conv_name = 'mask_inter_feat_{}'.format(i + 1)
-                mask_conv.add_sublayer(
-                    conv_name,
-                    nn.Conv2D(
-                        in_channels=in_channel if i == 0 else out_channel,
-                        out_channels=out_channel,
-                        kernel_size=3,
-                        padding=1,
-                        weight_attr=paddle.ParamAttr(
-                            initializer=KaimingNormal(fan_in=fan_conv))))
+                conv = nn.Conv2D(
+                    in_channels=in_channel if i == 0 else out_channel,
+                    out_channels=out_channel,
+                    kernel_size=3,
+                    padding=1,
+                    weight_attr=paddle.ParamAttr(
+                        initializer=KaimingNormal(fan_in=fan_conv)))
+                conv.skip_quant = True
+                mask_conv.add_sublayer(conv_name, conv)
                 mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
         mask_conv.add_sublayer(
             'conv5_mask',
@@ -146,6 +147,7 @@ class MaskHead(nn.Layer):
             kernel_size=1,
             weight_attr=paddle.ParamAttr(initializer=KaimingNormal(
                 fan_in=self.num_classes)))
+        self.mask_fcn_logits.skip_quant = True
 
     @classmethod
     def from_config(cls, cfg, input_shape):
