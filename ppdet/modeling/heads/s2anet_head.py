@@ -18,7 +18,7 @@ import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
 from ppdet.modeling import ops
-from ppdet.modeling.utils import bbox_util
+from ppdet.modeling import bbox_utils
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 import numpy as np
 
@@ -435,12 +435,12 @@ class S2ANetHead(nn.Layer):
             init_anchors = self.anchor_generators[i].grid_anchors(
                 featmap_size, self.anchor_strides[i])
 
-            init_anchors = bbox_util.rect2rbox(init_anchors)
+            init_anchors = bbox_utils.rect2rbox(init_anchors)
             self.base_anchors[(i, featmap_size[0])] = init_anchors
 
             #fam_reg1 = fam_reg
             #fam_reg1.stop_gradient = True
-            refine_anchor = bbox_util.bbox_decode(
+            refine_anchor = bbox_utils.bbox_decode(
                 fam_reg.detach(), init_anchors, self.target_means,
                 self.target_stds)
 
@@ -696,7 +696,7 @@ class S2ANetHead(nn.Layer):
             anchors_list_all = []
             for ii, anchor in enumerate(anchors_list):
                 anchor = anchor.reshape(-1, 4)
-                anchor = bbox_util.rect2rbox(anchor)
+                anchor = bbox_utils.rect2rbox(anchor)
                 anchors_list_all.extend(anchor)
             anchors_list_all = np.array(anchors_list_all)
 
@@ -853,8 +853,8 @@ class S2ANetHead(nn.Layer):
 
             target_means = (.0, .0, .0, .0, .0)
             target_stds = (1.0, 1.0, 1.0, 1.0, 1.0)
-            bboxes = bbox_util.delta2rbox(anchors, bbox_pred, target_means,
-                                          target_stds)
+            bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, target_means,
+                                           target_stds)
 
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)

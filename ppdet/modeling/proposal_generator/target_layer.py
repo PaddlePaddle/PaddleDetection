@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-
+import sys
 import paddle
 from ppdet.core.workspace import register, serializable
 from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
-from ppdet.modeling.utils import bbox_util
+from ppdet.modeling import bbox_utils
 import numpy as np
 
 
@@ -331,8 +331,8 @@ class RBoxAssigner(object):
         #print('ancho target pos_inds', pos_inds, len(pos_inds))
         pos_sampled_gt_boxes = gt_bboxes[anchor_gt_bbox_inds[pos_inds]]
         if len(pos_inds) > 0:
-            pos_bbox_targets = bbox_util.rbox2delta(pos_sampled_anchors,
-                                                    pos_sampled_gt_boxes)
+            pos_bbox_targets = bbox_utils.rbox2delta(pos_sampled_anchors,
+                                                     pos_sampled_gt_boxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 

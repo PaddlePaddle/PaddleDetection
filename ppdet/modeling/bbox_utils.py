@@ -16,6 +16,7 @@ import math
 import paddle
 import paddle.nn.functional as F
 import math
+import numpy as np
 
 
 def bbox2delta(src_boxes, tgt_boxes, weights):
