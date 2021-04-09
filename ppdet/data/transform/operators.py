@@ -1862,7 +1862,7 @@ class Pad(BaseOperator):
                 im_h < h and im_w < w
             ), '(h, w) of target size should be greater than (im_h, im_w)'
         else:
-            h = np.ceil(im_h // self.size_divisor) * self.size_divisor
+            h = np.ceil(im_h / self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
 
         if h == im_h and w == im_w:
