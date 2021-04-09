@@ -71,6 +71,11 @@ def parse_args():
         type=str,
         default="vdl_log_dir/image",
         help='VisualDL logging directory for image.')
+    parser.add_argument(
+        "--save_txt",
+        type=bool,
+        default=False,
+        help="whether to record the data to VisualDL.")
     args = parser.parse_args()
     return args
 
@@ -120,7 +125,8 @@ def run(FLAGS, cfg):
     trainer.predict(
         images,
         draw_threshold=FLAGS.draw_threshold,
-        output_dir=FLAGS.output_dir)
+        output_dir=FLAGS.output_dir,
+        save_txt=FLAGS.save_txt)
 
 
 def main():

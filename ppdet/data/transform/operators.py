@@ -536,6 +536,17 @@ class RandomFlip(BaseOperator):
         bbox[:, 2] = width - oldx1
         return bbox
 
+    def apply_rbox(self, bbox, width):
+        oldx1 = bbox[:, 0].copy()
+        oldx2 = bbox[:, 2].copy()
+        oldx3 = bbox[:, 4].copy()
+        oldx4 = bbox[:, 6].copy()
+        bbox[:, 0] = width - oldx2
+        bbox[:, 2] = width - oldx1
+        bbox[:, 4] = width - oldx3
+        bbox[:, 6] = width - oldx4
+        return bbox
+
     def apply(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -566,6 +577,10 @@ class RandomFlip(BaseOperator):
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
+
+            if 'gt_rbox2poly' in sample and sample['gt_rbox2poly'].any():
+                sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
+                                                         width)
 
             sample['flipped'] = True
             sample['image'] = im
@@ -703,6 +718,16 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
+
+        # apply rbox
+        if 'gt_rbox2poly' in sample:
+            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
+                logger.warn(
+                    "gt_rbox2poly's length shoule be 8, but actually is {}".
+                    format(len(sample['gt_rbox2poly'])))
+            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
+                                                     [im_scale_x, im_scale_y],
+                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -1932,4 +1957,114 @@ class Poly2Mask(BaseOperator):
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        return sample
+
+
+@register_op
+class Rbox2Poly(BaseOperator):
+    """
+    Convert rbbox format to poly format.
+    """
+
+    def __init__(self):
+        super(Rbox2Poly, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_rbox' in sample
+        assert sample['gt_rbox'].shape[1] == 5
+        rrect = sample['gt_rbox']
+        bbox_num = rrect.shape[0]
+        x_ctr = rrect[:, 0]
+        y_ctr = rrect[:, 1]
+        width = rrect[:, 2]
+        height = rrect[:, 3]
+        angle = rrect[:, 4]
+        tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
+        # rect 2x4
+        rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle), np.cos(angle)]])
+
+        poly = []
+        for i in range(R.shape[2]):
+            tmp_r = R[:, :, i].reshape(2, 2)
+            poly.append(tmp_r.dot(rect[:, :, i]))
+
+        # poly:[M, 2, 4]
+        poly = np.array(poly)
+        coor_x = poly[:, 0, :4] + x_ctr.reshape(bbox_num, 1)
+        coor_y = poly[:, 1, :4] + y_ctr.reshape(bbox_num, 1)
+        poly = np.stack(
+            [
+                coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
+                coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]
+            ],
+            axis=1)
+        x1 = x_ctr - width / 2.0
+        y1 = y_ctr - height / 2.0
+        x2 = x_ctr + width / 2.0
+        y2 = y_ctr + height / 2.0
+        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
+        sample['gt_rbox2poly'] = poly
+        return sample
+
+
+@register_op
+class Poly2Rbox(BaseOperator):
+    """
+    Convert poly format to rbbox format.
+    """
+
+    def __init__(self):
+        super(Poly2Rbox, self).__init__()
+
+    def poly_to_rbox(self, polys):
+        """
+        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+        to
+        rotated_boxes:[x_ctr,y_ctr,w,h,angle]
+        """
+        rotated_boxes = []
+        for poly in polys:
+            poly = np.array(poly[:8], dtype=np.float32)
+
+            pt1 = (poly[0], poly[1])
+            pt2 = (poly[2], poly[3])
+            pt3 = (poly[4], poly[5])
+            pt4 = (poly[6], poly[7])
+
+            edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) + (pt1[
+                1] - pt2[1]) * (pt1[1] - pt2[1]))
+            edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) + (pt2[
+                1] - pt3[1]) * (pt2[1] - pt3[1]))
+
+            width = max(edge1, edge2)
+            height = min(edge1, edge2)
+
+            angle = 0
+            if edge1 > edge2:
+                angle = np.arctan2(
+                    np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+            elif edge2 >= edge1:
+                angle = np.arctan2(
+                    np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+
+            def norm_angle(angle, range=[-np.pi / 4, np.pi]):
+                return (angle - range[0]) % range[1] + range[0]
+
+            angle = norm_angle(angle)
+
+            x_ctr = np.float(pt1[0] + pt3[0]) / 2
+            y_ctr = np.float(pt1[1] + pt3[1]) / 2
+            rotated_box = np.array([x_ctr, y_ctr, width, height, angle])
+            rotated_boxes.append(rotated_box)
+        ret_rotated_boxes = np.array(rotated_boxes)
+        assert ret_rotated_boxes.shape[1] == 5
+        return ret_rotated_boxes
+
+    def apply(self, sample, context=None):
+        assert 'gt_rbox2poly' in sample
+        poly = sample['gt_rbox2poly']
+        rbox = self.poly_to_rbox(poly)
+        sample['gt_rbox'] = rbox
         return sample
