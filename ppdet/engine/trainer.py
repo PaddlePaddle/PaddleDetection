@@ -31,7 +31,7 @@ from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results
+from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -333,7 +333,11 @@ class Trainer(object):
     def evaluate(self):
         self._eval_with_loader(self.loader)
 
-    def predict(self, images, draw_threshold=0.5, output_dir='output'):
+    def predict(self,
+                images,
+                draw_threshold=0.5,
+                output_dir='output',
+                save_txt=False):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
@@ -369,6 +373,7 @@ class Trainer(object):
                         if 'mask' in batch_res else None
                 segm_res = batch_res['segm'][start:end] \
                         if 'segm' in batch_res else None
+
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
@@ -380,6 +385,9 @@ class Trainer(object):
                 logger.info("Detection bbox results save in {}".format(
                     save_name))
                 image.save(save_name, quality=95)
+                if save_txt:
+                    save_path = os.path.splitext(save_name)[0] + '.txt'
+                    save_result(save_path, bbox_res, catid2name, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):
