@@ -1795,7 +1795,8 @@ class Pad(BaseOperator):
         assert pad_mode in [
             -1, 0, 1, 2
         ], 'currently only supports four modes [-1, 0, 1, 2]'
-        assert pad_mode == -1 and offsets, 'if pad_mode is -1, offsets should not be None'
+        if pad_mode == -1:
+            assert offsets, 'if pad_mode is -1, offsets should not be None'
 
         self.size = size
         self.size_divisor = size_divisor
