@@ -5,3 +5,4 @@ opencv-python
 PyYAML
 shapely
 scipy
+pycocotools
