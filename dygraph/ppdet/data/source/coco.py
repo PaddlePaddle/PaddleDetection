@@ -79,6 +79,13 @@ class COCODataSet(DetDataset):
                                    im_w, im_h, img_id))
                 continue
 
+            coco_rec = {
+                'im_file': im_path,
+                'im_id': np.array([img_id]),
+                'h': im_h,
+                'w': im_w,
+            } if 'image' in self.data_fields else {}
+
             if not self.load_image_only:
                 ins_anno_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=False)
                 instances = coco.loadAnns(ins_anno_ids)
@@ -131,13 +138,6 @@ class COCODataSet(DetDataset):
 
                 if has_segmentation and not any(gt_poly):
                     continue
-
-                coco_rec = {
-                    'im_file': im_path,
-                    'im_id': np.array([img_id]),
-                    'h': im_h,
-                    'w': im_w,
-                } if 'image' in self.data_fields else {}
 
                 gt_rec = {
                     'is_crowd': is_crowd,
