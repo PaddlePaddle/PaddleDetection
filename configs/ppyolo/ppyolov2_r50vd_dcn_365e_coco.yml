@@ -1,0 +1,10 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  './_base_/ppyolov2_r50vd_dcn.yml',
+  './_base_/optimizer_365e.yml',
+  './_base_/ppyolov2_reader.yml',
+]
+
+snapshot_epoch: 8
+weights: output/ppyolov2_r50vd_dcn_365e_coco/model_final
