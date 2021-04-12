@@ -14,7 +14,8 @@
 import sys
 import paddle
 from ppdet.core.workspace import register, serializable
-from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
+
+from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target
 from ppdet.modeling import bbox_utils
 import numpy as np
 
@@ -139,6 +140,52 @@ class BBoxAssigner(object):
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
             self.use_random, is_cascade, self.cascade_iou[stage])
+        rois = outs[0]
+        rois_num = outs[-1]
+        # tgt_labels, tgt_bboxes, tgt_gt_inds
+        targets = outs[1:4]
+        return rois, rois_num, targets
+
+
+@register
+class BBoxLibraAssigner(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self,
+                 batch_size_per_im=512,
+                 fg_fraction=.25,
+                 fg_thresh=.5,
+                 bg_thresh=.5,
+                 use_random=True,
+                 is_cls_agnostic=False,
+                 cascade_iou=[0.5, 0.6, 0.7],
+                 num_classes=80,
+                 num_bins=3):
+        super(BBoxLibraAssigner, self).__init__()
+        self.batch_size_per_im = batch_size_per_im
+        self.fg_fraction = fg_fraction
+        self.fg_thresh = fg_thresh
+        self.bg_thresh = bg_thresh
+        self.use_random = use_random
+        self.is_cls_agnostic = is_cls_agnostic
+        self.cascade_iou = cascade_iou
+        self.num_classes = num_classes
+        self.num_bins = num_bins
+
+    def __call__(self,
+                 rpn_rois,
+                 rpn_rois_num,
+                 inputs,
+                 stage=0,
+                 is_cascade=False):
+        gt_classes = inputs['gt_class']
+        gt_boxes = inputs['gt_bbox']
+        # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
+        # new_rois_num
+        outs = libra_generate_proposal_target(
+            rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
+            self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
+            self.use_random, is_cascade, self.cascade_iou[stage], self.num_bins)
         rois = outs[0]
         rois_num = outs[-1]
         # tgt_labels, tgt_bboxes, tgt_gt_inds

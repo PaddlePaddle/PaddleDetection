@@ -162,7 +162,7 @@ class XConvNormHead(nn.Layer):
 @register
 class BBoxHead(nn.Layer):
     __shared__ = ['num_classes']
-    __inject__ = ['bbox_assigner']
+    __inject__ = ['bbox_assigner', 'bbox_loss']
     """
     RCNN bbox head
 
@@ -184,7 +184,8 @@ class BBoxHead(nn.Layer):
                  bbox_assigner='BboxAssigner',
                  with_pool=False,
                  num_classes=80,
-                 bbox_weight=[10., 10., 5., 5.]):
+                 bbox_weight=[10., 10., 5., 5.],
+                 bbox_loss=None):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -195,6 +196,7 @@ class BBoxHead(nn.Layer):
         self.with_pool = with_pool
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
+        self.bbox_loss = bbox_loss
 
         self.bbox_score = nn.Linear(
             in_channel,
@@ -311,8 +313,12 @@ class BBoxHead(nn.Layer):
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
-        loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
-        ) / tgt_labels.shape[0]
+        if self.bbox_loss is not None:
+            loss_bbox_reg = self.bbox_loss(
+                reg_delta, reg_target).sum() / tgt_labels.shape[0]
+        else:
+            loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
+            ) / tgt_labels.shape[0]
 
         loss_bbox[cls_name] = loss_bbox_cls * loss_weight
         loss_bbox[reg_name] = loss_bbox_reg * loss_weight
