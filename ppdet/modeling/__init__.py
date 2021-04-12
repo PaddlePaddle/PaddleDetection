@@ -1,3 +1,9 @@
+# OP docs may contains math formula which may cause
+# DeprecationWarning in string parsing
+import warnings
+warnings.filterwarnings(
+    action='ignore', category=DeprecationWarning, module='ops')
+
 from . import ops
 from . import backbones
 from . import necks
