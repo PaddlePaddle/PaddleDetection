@@ -1,0 +1,170 @@
+architecture: TTFNet
+use_gpu: true
+max_iters: 150000
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 10000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/ResNet50_vd_ssld_pretrained.tar
+weights: output/pafnet_10x_coco/model_final
+num_classes: 80
+use_ema: true
+ema_decay: 0.9998
+
+TTFNet:
+  backbone: ResNet
+  ttf_head: TTFHead
+
+ResNet:
+  norm_type: sync_bn
+  freeze_at: 0
+  freeze_norm: false
+  norm_decay: 0.
+  depth: 50
+  feature_maps: [2, 3, 4, 5]
+  variant: d
+  dcn_v2_stages: [3, 4, 5]
+
+TTFHead:
+  head_conv: 128
+  wh_conv: 64
+  hm_head_conv_num: 2
+  wh_head_conv_num: 2
+  wh_offset_base: 16
+  wh_loss: GiouLoss
+  dcn_head: True
+
+GiouLoss:
+  loss_weight: 5.
+  do_average: false
+  use_class_weight: false
+
+LearningRate:
+  base_lr: 0.015
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 112500
+    - 137500
+  - !LinearWarmup
+    start_factor: 0.2
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0004
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'ttf_heatmap', 'ttf_box_target', 'ttf_reg_weight']
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_cutmix: True
+  - !CutmixImage
+    alpha: 1.5
+    beta: 1.5
+  - !ColorDistort
+    hue: [-18., 18., 0.5]
+    saturation: [0.5, 1.5, 0.5]
+    contrast: [0.5, 1.5, 0.5]
+    brightness: [-32., 32., 0.5]
+    random_apply: False
+    hsv_format: True
+    random_channel: True
+  - !RandomExpand
+    ratio: 4
+    prob: 0.5
+    fill_value: [123.675, 116.28, 103.53]
+  - !RandomCrop
+    aspect_ratio: NULL
+    cover_all_box: True
+  - !RandomFlipImage
+    prob: 0.5
+  batch_transforms:
+  - !RandomShape
+    sizes: [416, 448, 480, 512, 544, 576, 608, 640, 672]
+    random_inter: True
+    resize_box: True
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123.675, 116.28, 103.53]
+    std: [58.395, 57.12, 57.375]
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  - !Gt2TTFTarget
+    num_classes: 80
+    down_ratio: 4
+  - !PadBatch
+    pad_to_stride: 32
+  batch_size: 12
+  shuffle: true
+  worker_num: 8
+  bufsize: 2
+  use_process: false
+  cutmix_epoch: 100
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !COCODataSet
+      image_dir: val2017
+      anno_path: annotations/instances_val2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      target_dim: 512
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
+  drop_empty: false
+  worker_num: 8
+  bufsize: 16
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 512, 512]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !ImageFolder
+      anno_path: annotations/instances_val2017.json
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      interp: 1
+      target_dim: 512
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
