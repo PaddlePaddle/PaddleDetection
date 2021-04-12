@@ -33,7 +33,7 @@ S2ANetHead:
   feat_in: 256
   feat_out: 256
   num_classes: 15
-  align_conv_type: 'AlignConv'  # AlignConv Conv
+  align_conv_type: 'Conv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
 
@@ -51,3 +51,5 @@ S2ANetBBoxPostProcess:
     keep_top_k: -1
     score_threshold: 0.05
     nms_threshold: 0.1
+    normalized: False
+    #background_label: -1
