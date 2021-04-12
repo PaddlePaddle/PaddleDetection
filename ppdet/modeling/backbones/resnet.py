@@ -64,7 +64,7 @@ class ConvNormLayer(nn.Layer):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 weight_attr=paddle.ParamAttr(
-                    learning_rate=lr, name=name + "_weights"),
+                    learning_rate=lr, ),
                 bias_attr=False)
         else:
             self.conv = DeformableConvV2(
@@ -75,7 +75,7 @@ class ConvNormLayer(nn.Layer):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 weight_attr=paddle.ParamAttr(
-                    learning_rate=lr, name=name + '_weights'),
+                    learning_rate=lr, ),
                 bias_attr=False,
                 name=name)
 
@@ -84,12 +84,10 @@ class ConvNormLayer(nn.Layer):
         param_attr = paddle.ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=bn_name + "_scale",
             trainable=False if freeze_norm else True)
         bias_attr = paddle.ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=bn_name + "_offset",
             trainable=False if freeze_norm else True)
 
         global_stats = True if freeze_norm else False
@@ -102,9 +100,7 @@ class ConvNormLayer(nn.Layer):
                 act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
-                use_global_stats=global_stats,
-                moving_mean_name=bn_name + '_mean',
-                moving_variance_name=bn_name + '_variance')
+                use_global_stats=global_stats)
         norm_params = self.norm.parameters()
 
         if freeze_norm:
