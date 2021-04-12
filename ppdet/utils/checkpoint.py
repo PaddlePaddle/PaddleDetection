@@ -157,7 +157,7 @@ def load_pretrain_weight(model, pretrain_weight):
 
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
-    ignore_set = set()
+    lack_weights_cnt = 0
     lack_modules = set()
     for name, weight in model_dict.items():
         if name in param_state_dict.keys():
@@ -168,7 +168,12 @@ def load_pretrain_weight(model, pretrain_weight):
                 param_state_dict.pop(name, None)
         else:
             lack_modules.add(name.split('.')[0])
-            logger.debug('Lack weights: {}'.format(name))
+            if name.find('backbone') >= 0:
+                logger.info('Lack weights: {}'.format(name))
+                lack_weights_cnt += 1
+
+    if lack_weights_cnt > 0:
+        logger.info('Lack {} weights in backbone.'.format(lack_weights_cnt))
 
     if len(lack_modules) > 0:
         logger.info('Lack weights of modules: {}'.format(', '.join(
