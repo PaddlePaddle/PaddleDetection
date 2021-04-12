@@ -21,7 +21,9 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import Uniform
-from ppdet.modeling.layers import DeformableConvV2
+from paddle import ParamAttr
+from paddle.nn.initializer import Constant
+from paddle.vision.ops import DeformConv2D
 from .name_adapter import NameAdapter
 from ..shape_spec import ShapeSpec
 
@@ -53,8 +55,9 @@ class ConvNormLayer(nn.Layer):
         assert norm_type in ['bn', 'sync_bn']
         self.norm_type = norm_type
         self.act = act
+        self.dcn_v2 = dcn_v2
 
-        if not dcn_v2:
+        if not self.dcn_v2:
             self.conv = nn.Conv2D(
                 in_channels=ch_in,
                 out_channels=ch_out,
@@ -62,25 +65,37 @@ class ConvNormLayer(nn.Layer):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 groups=groups,
-                weight_attr=paddle.ParamAttr(learning_rate=lr),
+                weight_attr=ParamAttr(learning_rate=lr),
                 bias_attr=False)
         else:
-            self.conv = DeformableConvV2(
+            self.offset_channel = 2 * filter_size**2
+            self.mask_channel = filter_size**2
+
+            self.conv_offset = nn.Conv2D(
+                in_channels=ch_in,
+                out_channels=3 * filter_size**2,
+                kernel_size=filter_size,
+                stride=stride,
+                padding=(filter_size - 1) // 2,
+                weight_attr=ParamAttr(initializer=Constant(0.)),
+                bias_attr=ParamAttr(initializer=Constant(0.)))
+            self.conv = DeformConv2D(
                 in_channels=ch_in,
                 out_channels=ch_out,
                 kernel_size=filter_size,
                 stride=stride,
                 padding=(filter_size - 1) // 2,
+                dilation=1,
                 groups=groups,
-                weight_attr=paddle.ParamAttr(learning_rate=lr),
+                weight_attr=ParamAttr(learning_rate=lr),
                 bias_attr=False)
 
         norm_lr = 0. if freeze_norm else lr
-        param_attr = paddle.ParamAttr(
+        param_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
             trainable=False if freeze_norm else True)
-        bias_attr = paddle.ParamAttr(
+        bias_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
             trainable=False if freeze_norm else True)
@@ -103,7 +118,17 @@ class ConvNormLayer(nn.Layer):
                 param.stop_gradient = True
 
     def forward(self, inputs):
-        out = self.conv(inputs)
+        if not self.dcn_v2:
+            out = self.conv(inputs)
+        else:
+            offset_mask = self.conv_offset(inputs)
+            offset, mask = paddle.split(
+                offset_mask,
+                num_or_sections=[self.offset_channel, self.mask_channel],
+                axis=1)
+            mask = F.sigmoid(mask)
+            out = self.conv(inputs, offset, mask=mask)
+
         if self.norm_type in ['bn', 'sync_bn']:
             out = self.norm(out)
         if self.act:
