@@ -8,7 +8,6 @@ ResNet:
   depth: 101
   groups: 64
   base_width: 4
-  base_channels: 64
   variant: d
   norm_type: bn
   freeze_at: 0
