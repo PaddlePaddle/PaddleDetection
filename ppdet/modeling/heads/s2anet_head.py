@@ -227,7 +227,7 @@ class S2ANetHead(nn.Layer):
         align_conv_type (str): align_conv_type ['Conv', 'AlignConv']
         align_conv_size (int): kernel size of align_conv
         use_sigmoid_cls (bool): use sigmoid_cls or not
-        reg_loss_weight (list): reg loss weight
+        reg_loss_weight (list): loss weight for regression
     """
     __shared__ = ['num_classes']
     __inject__ = ['anchor_assign']
@@ -258,7 +258,7 @@ class S2ANetHead(nn.Layer):
         self.anchor_base_sizes = list(anchor_strides)
         self.target_means = target_means
         self.target_stds = target_stds
-        assert align_conv_type in ['AlignConv', 'Conv']
+        assert align_conv_type in ['AlignConv', 'Conv', 'DCN']
         self.align_conv_type = align_conv_type
         self.align_conv_size = align_conv_size
 
@@ -276,12 +276,6 @@ class S2ANetHead(nn.Layer):
             self.anchor_generators.append(
                 S2ANetAnchorGenerator(anchor_base, anchor_scales,
                                       anchor_ratios))
-
-        # featmap_sizes
-        self.featmap_sizes = []
-        self.base_anchors = []
-        self.rbox_anchors = []
-        self.refine_anchor_list = []
 
         self.fam_cls_convs = nn.Sequential()
         self.fam_reg_convs = nn.Sequential()
@@ -340,6 +334,22 @@ class S2ANetHead(nn.Layer):
                 self.align_conv_size,
                 padding=(self.align_conv_size - 1) // 2,
                 bias_attr=ParamAttr(initializer=Constant(0)))
+
+        elif self.align_conv_type == "DCN":
+            self.align_conv_offset = nn.Conv2D(
+                self.feat_out,
+                2 * self.align_conv_size**2,
+                1,
+                weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
+                bias_attr=ParamAttr(initializer=Constant(0)))
+
+            self.align_conv = paddle.vision.ops.DeformConv2D(
+                self.feat_out,
+                self.feat_out,
+                self.align_conv_size,
+                padding=(self.align_conv_size - 1) // 2,
+                weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
+                bias_attr=False)
 
         self.or_conv = nn.Conv2D(
             self.feat_out,
@@ -400,6 +410,11 @@ class S2ANetHead(nn.Layer):
             weight_attr=ParamAttr(initializer=Normal(0.0, 0.01)),
             bias_attr=ParamAttr(initializer=Constant(0)))
 
+        self.base_anchors = dict()
+        self.featmap_sizes = dict()
+        self.base_anchors = dict()
+        self.refine_anchor_list = []
+
     def forward(self, feats):
         fam_reg_branch_list = []
         fam_cls_branch_list = []
@@ -451,9 +466,6 @@ class S2ANetHead(nn.Layer):
                                              refine_anchor.clone(),
                                              self.anchor_strides[i])
             elif self.align_conv_type == 'DCN':
-                align_offset = self.align_conv_offset(feat)
-                align_feat = self.align_conv(feat, align_offset)
-            elif self.align_conv_type == 'GA_DCN':
                 align_offset = self.align_conv_offset(feat)
                 align_feat = self.align_conv(feat, align_offset)
             elif self.align_conv_type == 'Conv':
@@ -582,6 +594,9 @@ class S2ANetHead(nn.Layer):
             fam_bbox_pred = paddle.squeeze(fam_bbox_pred, axis=0)
             fam_bbox_pred = paddle.reshape(fam_bbox_pred, [-1, 5])
             fam_bbox = self.smooth_l1_loss(fam_bbox_pred, feat_bbox_targets)
+            loss_weight = paddle.to_tensor(
+                self.reg_loss_weight, dtype='float32', stop_gradient=True)
+            fam_bbox = paddle.multiply(fam_bbox, loss_weight)
             feat_bbox_weights = paddle.to_tensor(
                 feat_bbox_weights, stop_gradient=True)
             fam_bbox = fam_bbox * feat_bbox_weights
@@ -590,6 +605,7 @@ class S2ANetHead(nn.Layer):
             fam_bbox_losses.append(fam_bbox_total)
 
         fam_cls_loss = paddle.add_n(fam_cls_losses)
+        fam_cls_loss = fam_cls_loss * 2.0
         fam_reg_loss = paddle.add_n(fam_bbox_losses)
         return fam_cls_loss, fam_reg_loss
 
@@ -660,6 +676,9 @@ class S2ANetHead(nn.Layer):
             odm_bbox_pred = paddle.squeeze(odm_bbox_pred, axis=0)
             odm_bbox_pred = paddle.reshape(odm_bbox_pred, [-1, 5])
             odm_bbox = self.smooth_l1_loss(odm_bbox_pred, feat_bbox_targets)
+            loss_weight = paddle.to_tensor(
+                self.reg_loss_weight, dtype='float32', stop_gradient=True)
+            odm_bbox = paddle.multiply(odm_bbox, loss_weight)
             feat_bbox_weights = paddle.to_tensor(
                 feat_bbox_weights, stop_gradient=True)
             odm_bbox = odm_bbox * feat_bbox_weights
@@ -667,6 +686,7 @@ class S2ANetHead(nn.Layer):
             odm_bbox_losses.append(odm_bbox_total)
 
         odm_cls_loss = paddle.add_n(odm_cls_losses)
+        odm_cls_loss = odm_cls_loss * 2.0
         odm_reg_loss = paddle.add_n(odm_bbox_losses)
         return odm_cls_loss, odm_reg_loss
 
@@ -799,25 +819,6 @@ class S2ANetHead(nn.Layer):
 
         return refine_anchors_list, valid_flag_list
 
-    def rbox2poly_single(self, rrect, get_best_begin_point=False):
-        """
-        rrect:[x_ctr,y_ctr,w,h,angle]
-        to
-        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
-        """
-        x_ctr, y_ctr, width, height, angle = rrect[:5]
-        tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
-        # rect 2x4
-        rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
-        R = np.array([[np.cos(angle), -np.sin(angle)],
-                      [np.sin(angle), np.cos(angle)]])
-        # poly
-        poly = R.dot(rect)
-        x0, x1, x2, x3 = poly[0, :4] + x_ctr
-        y0, y1, y2, y3 = poly[1, :4] + y_ctr
-        poly = np.array([x0, y0, x1, y1, x2, y2, x3, y3], dtype=np.float32)
-        return poly
-
     def get_bboxes(self, cls_score_list, bbox_pred_list, mlvl_anchors, nms_pre,
                    cls_out_channels, use_sigmoid_cls):
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
@@ -855,7 +856,6 @@ class S2ANetHead(nn.Layer):
             target_stds = (1.0, 1.0, 1.0, 1.0, 1.0)
             bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, target_means,
                                            target_stds)
-
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 

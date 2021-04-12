@@ -52,31 +52,25 @@ class DeformableConvV2(nn.Layer):
                  bias_attr=None,
                  lr_scale=1,
                  regularizer=None,
-                 skip_quant=False,
-                 name=None):
+                 skip_quant=False):
         super(DeformableConvV2, self).__init__()
         self.offset_channel = 2 * kernel_size**2
         self.mask_channel = kernel_size**2
 
         if lr_scale == 1 and regularizer is None:
-            offset_bias_attr = ParamAttr(
-                initializer=Constant(0.),
-                name='{}._conv_offset.bias'.format(name))
+            offset_bias_attr = ParamAttr(initializer=Constant(0.))
         else:
             offset_bias_attr = ParamAttr(
                 initializer=Constant(0.),
                 learning_rate=lr_scale,
-                regularizer=regularizer,
-                name='{}._conv_offset.bias'.format(name))
+                regularizer=regularizer)
         self.conv_offset = nn.Conv2D(
             in_channels,
             3 * kernel_size**2,
             kernel_size,
             stride=stride,
             padding=(kernel_size - 1) // 2,
-            weight_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}._conv_offset.weight'.format(name)),
+            weight_attr=ParamAttr(initializer=Constant(0.0)),
             bias_attr=offset_bias_attr)
         if skip_quant:
             self.conv_offset.skip_quant = True
@@ -84,7 +78,6 @@ class DeformableConvV2(nn.Layer):
         if bias_attr:
             # in FCOS-DCN head, specifically need learning_rate and regularizer
             dcn_bias_attr = ParamAttr(
-                name=name + "_bias",
                 initializer=Constant(value=0),
                 regularizer=L2Decay(0.),
                 learning_rate=2.)

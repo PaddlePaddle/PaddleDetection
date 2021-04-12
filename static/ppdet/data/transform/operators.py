@@ -626,7 +626,7 @@ class GridMaskOp(BaseOperator):
                                                sample['curr_iter'])
         if not batch_input:
             samples = samples[0]
-        return sample
+        return samples
 
 
 @register_op
@@ -2100,7 +2100,7 @@ class BboxXYXY2XYWH(BaseOperator):
 @register_op
 class Lighting(BaseOperator):
     """
-    Lighting the imagen by eigenvalues and eigenvectors
+    Lighting the image by eigenvalues and eigenvectors
     Args:
         eigval (list): eigenvalues
         eigvec (list): eigenvectors

@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
 from . import ops
 try:
     from collections.abc import Sequence
@@ -231,45 +231,6 @@ class S2ANetBBoxPostProcess(object):
         self.nms = nms
         self.origin_shape_list = []
 
-    def rbox2poly(self, rrect, get_best_begin_point=True):
-        """
-        rrect: [N, 5] [x_ctr,y_ctr,w,h,angle]
-        to
-        poly:[x0,y0,x1,y1,x2,y2,x3,y3]
-        """
-        bbox_num = rrect.shape[0]
-        x_ctr = rrect[:, 0]
-        y_ctr = rrect[:, 1]
-        width = rrect[:, 2]
-        height = rrect[:, 3]
-        angle = rrect[:, 4]
-
-        tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
-        # rect 2x4
-        rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
-        R = np.array([[np.cos(angle), -np.sin(angle)],
-                      [np.sin(angle), np.cos(angle)]])
-
-        # R:[2,2,M]  rect:[2,4,M]
-        #poly = R.dot(rect)
-        poly = []
-        for i in range(R.shape[2]):
-            poly.append(R[:, :, i].dot(rect[:, :, i]))
-        # poly:[M, 2, 4]
-        poly = np.array(poly)
-        coor_x = poly[:, 0, :4] + x_ctr.reshape(bbox_num, 1)
-        coor_y = poly[:, 1, :4] + y_ctr.reshape(bbox_num, 1)
-        poly = np.stack(
-            [
-                coor_x[:, 0], coor_y[:, 0], coor_x[:, 1], coor_y[:, 1],
-                coor_x[:, 2], coor_y[:, 2], coor_x[:, 3], coor_y[:, 3]
-            ],
-            axis=1)
-        if get_best_begin_point:
-            poly_lst = [get_best_begin_point_single(e) for e in poly]
-            poly = np.array(poly_lst)
-        return poly
-
     def get_prediction(self, pred_scores, pred_bboxes, im_shape, scale_factor):
         """
         pred_scores : [N, M]  score
@@ -278,7 +239,7 @@ class S2ANetBBoxPostProcess(object):
         scale_factor : [N, 2]  scale_factor
         """
         # TODO: support bs>1
-        pred_ploys = self.rbox2poly(pred_bboxes.numpy(), False)
+        pred_ploys = rbox2poly(pred_bboxes.numpy())
         pred_ploys = paddle.to_tensor(pred_ploys)
         pred_ploys = paddle.reshape(
             pred_ploys, [1, pred_ploys.shape[0], pred_ploys.shape[1]])
@@ -332,14 +293,14 @@ class S2ANetBBoxPostProcess(object):
         bboxes[:, 1::2] = bboxes[:, 1::2] / scale_factor[1]
 
         zeros = paddle.zeros_like(origin_h)
-        x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w), zeros)
-        y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h), zeros)
-        x2 = paddle.maximum(paddle.minimum(bboxes[:, 2], origin_w), zeros)
-        y2 = paddle.maximum(paddle.minimum(bboxes[:, 3], origin_h), zeros)
-        x3 = paddle.maximum(paddle.minimum(bboxes[:, 4], origin_w), zeros)
-        y3 = paddle.maximum(paddle.minimum(bboxes[:, 5], origin_h), zeros)
-        x4 = paddle.maximum(paddle.minimum(bboxes[:, 6], origin_w), zeros)
-        y4 = paddle.maximum(paddle.minimum(bboxes[:, 7], origin_h), zeros)
+        x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w - 1), zeros)
+        y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h - 1), zeros)
+        x2 = paddle.maximum(paddle.minimum(bboxes[:, 2], origin_w - 1), zeros)
+        y2 = paddle.maximum(paddle.minimum(bboxes[:, 3], origin_h - 1), zeros)
+        x3 = paddle.maximum(paddle.minimum(bboxes[:, 4], origin_w - 1), zeros)
+        y3 = paddle.maximum(paddle.minimum(bboxes[:, 5], origin_h - 1), zeros)
+        x4 = paddle.maximum(paddle.minimum(bboxes[:, 6], origin_w - 1), zeros)
+        y4 = paddle.maximum(paddle.minimum(bboxes[:, 7], origin_h - 1), zeros)
         bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
         bboxes = (bbox, bbox_num)
         return bboxes
