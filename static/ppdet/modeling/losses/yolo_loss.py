@@ -238,7 +238,6 @@ class YOLOv3Loss(object):
         along channel dimension
         """
         ioup = fluid.layers.slice(output, axes=[1], starts=[0], ends=[an_num])
-        ioup = fluid.layers.sigmoid(ioup)
         oriout = fluid.layers.slice(
             output,
             axes=[1],
