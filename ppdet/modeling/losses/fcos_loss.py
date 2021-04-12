@@ -20,6 +20,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
+from ppdet.modeling import ops
 
 INF = 1e8
 __all__ = ['FCOSLoss']
@@ -42,19 +43,6 @@ def flatten_tensor(inputs, channel_first=False):
     output_channel_last = paddle.flatten(
         input_channel_last, start_axis=0, stop_axis=2)  # [N*H*W, C]
     return output_channel_last
-
-
-def sigmoid_cross_entropy_with_logits_loss(inputs,
-                                           label,
-                                           ignore_index=-100,
-                                           normalize=False):
-    output = F.binary_cross_entropy_with_logits(inputs, label, reduction='none')
-    mask_tensor = paddle.cast(label != ignore_index, 'float32')
-    output = paddle.multiply(output, mask_tensor)
-    if normalize:
-        sum_valid_mask = paddle.sum(mask_tensor)
-        output = output / sum_valid_mask
-    return output
 
 
 @register
@@ -226,8 +214,8 @@ class FCOSLoss(nn.Layer):
 
         # 3. centerness: sigmoid_cross_entropy_with_logits_loss
         centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
-        ctn_loss = sigmoid_cross_entropy_with_logits_loss(centerness_flatten,
-                                                          tag_center_flatten)
+        ctn_loss = ops.sigmoid_cross_entropy_with_logits(centerness_flatten,
+                                                         tag_center_flatten)
         ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
 
         loss_all = {

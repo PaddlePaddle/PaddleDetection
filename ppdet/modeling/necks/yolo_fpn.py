@@ -27,6 +27,16 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN']
 
 class YoloDetBlock(nn.Layer):
     def __init__(self, ch_in, channel, norm_type, name, data_format='NCHW'):
+        """
+        YOLODetBlock layer for yolov3, see https://arxiv.org/abs/1804.02767
+
+        Args:
+            ch_in (int): input channel
+            channel (int): base channel
+            norm_type (str): batch norm type
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(YoloDetBlock, self).__init__()
         self.ch_in = ch_in
         self.channel = channel
@@ -78,6 +88,17 @@ class SPP(nn.Layer):
                  norm_type,
                  name,
                  data_format='NCHW'):
+        """
+        SPP layer, which consist of four pooling layer follwed by conv layer
+
+        Args:
+            ch_in (int): input channel of conv layer
+            ch_out (int): output channel of conv layer
+            k (int): kernel size of conv layer
+            norm_type (str): batch norm type
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(SPP, self).__init__()
         self.pool = []
         for size in pool_size:
@@ -110,6 +131,15 @@ class SPP(nn.Layer):
 
 class DropBlock(nn.Layer):
     def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+        """
+        DropBlock layer, see https://arxiv.org/abs/1810.12890
+
+        Args:
+            block_size (int): block size
+            keep_prob (int): keep probability
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(DropBlock, self).__init__()
         self.block_size = block_size
         self.keep_prob = keep_prob
@@ -149,6 +179,19 @@ class CoordConv(nn.Layer):
                  norm_type,
                  name,
                  data_format='NCHW'):
+        """
+        CoordConv layer
+
+        Args:
+            ch_in (int): input channel
+            ch_out (int): output channel
+            filter_size (int): filter size, default 3
+            padding (int): padding size, default 0
+            norm_type (str): batch norm type, default bn
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+
+        """
         super(CoordConv, self).__init__()
         self.conv = ConvBNLayer(
             ch_in + 2,
@@ -193,6 +236,14 @@ class CoordConv(nn.Layer):
 
 class PPYOLODetBlock(nn.Layer):
     def __init__(self, cfg, name, data_format='NCHW'):
+        """
+        PPYOLODetBlock layer
+
+        Args:
+            cfg (list): layer configs for this block
+            name (str): block name
+            data_format (str): data format, NCHW or NHWC
+        """
         super(PPYOLODetBlock, self).__init__()
         self.conv_module = nn.Sequential()
         for idx, (conv_name, layer, args, kwargs) in enumerate(cfg[:-1]):
@@ -220,6 +271,15 @@ class YOLOv3FPN(nn.Layer):
                  in_channels=[256, 512, 1024],
                  norm_type='bn',
                  data_format='NCHW'):
+        """
+        YOLOv3FPN layer
+
+        Args:
+            in_channels (list): input channels for fpn
+            norm_type (str): batch norm type, default bn
+            data_format (str): data format, NCHW or NHWC
+
+        """
         super(YOLOv3FPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels
@@ -300,6 +360,16 @@ class PPYOLOFPN(nn.Layer):
                  norm_type='bn',
                  data_format='NCHW',
                  **kwargs):
+        """
+        PPYOLOFPN layer
+
+        Args:
+            in_channels (list): input channels for fpn
+            norm_type (str): batch norm type, default bn
+            data_format (str): data format, NCHW or NHWC
+            kwargs: extra key-value pairs, such as parameter of DropBlock and spp 
+
+        """
         super(PPYOLOFPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels

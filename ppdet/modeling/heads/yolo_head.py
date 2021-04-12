@@ -28,6 +28,18 @@ class YOLOv3Head(nn.Layer):
                  iou_aware=False,
                  iou_aware_factor=0.4,
                  data_format='NCHW'):
+        """
+        Head for YOLOv3 network
+
+        Args:
+            num_classes (int): number of foreground classes
+            anchors (list): anchors
+            anchor_masks (list): anchor masks
+            loss (object): YOLOv3Loss instance
+            iou_aware (bool): whether to use iou_aware
+            iou_aware_factor (float): iou aware factor
+            data_format (str): data format, NCHW or NHWC
+        """
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.loss = loss
@@ -56,9 +68,7 @@ class YOLOv3Head(nn.Layer):
                     stride=1,
                     padding=0,
                     data_format=data_format,
-                    weight_attr=ParamAttr(name=name + '.conv.weights'),
-                    bias_attr=ParamAttr(
-                        name=name + '.conv.bias', regularizer=L2Decay(0.))))
+                    bias_attr=ParamAttr(regularizer=L2Decay(0.))))
             self.yolo_outputs.append(yolo_output)
 
     def parse_anchor(self, anchors, anchor_masks):
