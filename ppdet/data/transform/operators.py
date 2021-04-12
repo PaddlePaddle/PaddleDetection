@@ -165,7 +165,7 @@ class Permute(BaseOperator):
 @register_op
 class Lighting(BaseOperator):
     """
-    Lighting the imagen by eigenvalues and eigenvectors
+    Lighting the image by eigenvalues and eigenvectors
     Args:
         eigval (list): eigenvalues
         eigvec (list): eigenvectors
@@ -1774,12 +1774,13 @@ class Pad(BaseOperator):
                  offsets=None,
                  fill_value=(127.5, 127.5, 127.5)):
         """
-        Pad image to a specified size or multiple of size_divisor. random target_size and interpolation method
+        Pad image to a specified size or multiple of size_divisor.
         Args:
             size (int, Sequence): image target size, if None, pad to multiple of size_divisor, default None
             size_divisor (int): size divisor, default 32
             pad_mode (int): pad mode, currently only supports four modes [-1, 0, 1, 2]. if -1, use specified offsets
                 if 0, only pad to right and bottom. if 1, pad according to center. if 2, only pad left and top
+            offsets (list): [offset_x, offset_y], specify offset while padding, only supported pad_mode=-1
             fill_value (bool): rgb value of pad area, default (127.5, 127.5, 127.5)
         """
         super(Pad, self).__init__()
