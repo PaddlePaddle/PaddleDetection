@@ -2,6 +2,8 @@
 
 ## Model Zoo
 
+### R-CNN on COCO
+
 | 骨架网络              | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
 | :------------------- | :------------| :-----: | :-----: | :------------: | :-----: | :-----: | :-----------------------------------------------------: | :-----: |
 | ResNet50-vd-FPN      | Faster         |    1    |   1x    |     ----     |  41.4  |  -  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/faster_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
@@ -13,6 +15,24 @@
 | ResNet50-vd-FPN         | Cascade Mask         |    1    |   1x    |     ----     |  44.9 |    39.1    | [下载链接](https://paddledet.bj.bcebos.com/models/cascade_mask_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/cascade_mask_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-FPN         | Cascade Mask         |    1    |   2x    |     ----     |  45.7  |    39.7    | [下载链接](https://paddledet.bj.bcebos.com/models/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/cascade_mask_rcnn_r50_vd_fpn_ssld_2x_coco.yml) |
 
+### YOLOv3 on COCO
+
+| 骨架网络             | 输入尺寸   | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
+| :----------------- | :-------- | :-----------: | :------: | :---------: | :----: | :----------------------------------------------------: | :-----: |
+| MobileNet-V1         | 608         |    8    |   270e    |     ----     |  31.0  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_coco.yml) |
+| MobileNet-V1         | 416         |    8    |   270e    |     ----     |  30.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_coco.yml) |
+| MobileNet-V1         | 320         |    8    |   270e    |     ----     |  28.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_coco.yml) |
+
+### YOLOv3 on Pasacl VOC
+
+| 骨架网络             | 输入尺寸   | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
+| :----------------- | :-------- | :-----------: | :------: | :---------: | :----: | :----------------------------------------------------: | :-----: |
+| MobileNet-V1 | 608  |    8    |   270e  |      -        |  78.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_voc.yml) |
+| MobileNet-V1 | 416  |    8    |   270e  |      -        |  79.6  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_voc.yml) |
+| MobileNet-V1 | 320  |    8    |   270e  |      -        |  77.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v1_ssld_270e_voc.yml) |
+| MobileNet-V3 | 608  |    8    |   270e  |      -        |  80.4  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
+| MobileNet-V3 | 416  |    8    |   270e  |      -        |  79.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
+| MobileNet-V3 | 320  |    8    |   270e  |      -        |  77.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssld/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
 
 **注意事项:**  
 
