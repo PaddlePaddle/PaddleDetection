@@ -438,7 +438,12 @@ class PPYOLOFPN(nn.Layer):
                  in_channels=[512, 1024, 2048],
                  norm_type='bn',
                  data_format='NCHW',
-                 **kwargs):
+                 coord_conv=False,
+                 conv_block_num=3,
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9,
+                 spp=False):
         """
         PPYOLOFPN layer
 
@@ -446,7 +451,12 @@ class PPYOLOFPN(nn.Layer):
             in_channels (list): input channels for fpn
             norm_type (str): batch norm type, default bn
             data_format (str): data format, NCHW or NHWC
-            kwargs: extra key-value pairs, such as parameter of DropBlock and spp 
+            coord_conv (bool): whether use CoordConv or not
+            conv_block_num (int): conv block num of each pan block
+            drop_block (bool): whether use DropBlock or not
+            block_size (int): block size of DropBlock
+            keep_prob (float): keep probability of DropBlock
+            spp (bool): whether use spp or not
 
         """
         super(PPYOLOFPN, self).__init__()
@@ -454,14 +464,12 @@ class PPYOLOFPN(nn.Layer):
         self.in_channels = in_channels
         self.num_blocks = len(in_channels)
         # parse kwargs
-        self.coord_conv = kwargs.get('coord_conv', False)
-        self.drop_block = kwargs.get('drop_block', False)
-        if self.drop_block:
-            self.block_size = kwargs.get('block_size', 3)
-            self.keep_prob = kwargs.get('keep_prob', 0.9)
-
-        self.spp = kwargs.get('spp', False)
-        self.conv_block_num = kwargs.get('conv_block_num', 2)
+        self.coord_conv = coord_conv
+        self.drop_block = drop_block
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.spp = spp
+        self.conv_block_num = conv_block_num
         self.data_format = data_format
         if self.coord_conv:
             ConvLayer = CoordConv
@@ -588,16 +596,24 @@ class PPYOLOPAN(nn.Layer):
                  norm_type='bn',
                  data_format='NCHW',
                  act='mish',
-                 **kwargs):
+                 conv_block_num=3,
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9,
+                 spp=False):
         """
-        PPYOLOPAN layer
+        PPYOLOPAN layer with SPP, DropBlock and CSP connection.
 
         Args:
             in_channels (list): input channels for fpn
             norm_type (str): batch norm type, default bn
             data_format (str): data format, NCHW or NHWC
             act (str): activation function, default mish
-            kwargs: extra key-value pairs, such as parameter of DropBlock and spp 
+            conv_block_num (int): conv block num of each pan block
+            drop_block (bool): whether use DropBlock or not
+            block_size (int): block size of DropBlock
+            keep_prob (float): keep probability of DropBlock
+            spp (bool): whether use spp or not
 
         """
         super(PPYOLOPAN, self).__init__()
@@ -605,13 +621,11 @@ class PPYOLOPAN(nn.Layer):
         self.in_channels = in_channels
         self.num_blocks = len(in_channels)
         # parse kwargs
-        self.drop_block = kwargs.get('drop_block', False)
-        if self.drop_block:
-            self.block_size = kwargs.get('block_size', 3)
-            self.keep_prob = kwargs.get('keep_prob', 0.9)
-
-        self.spp = kwargs.get('spp', False)
-        self.conv_block_num = kwargs.get('conv_block_num', 3)
+        self.drop_block = drop_block
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.spp = spp
+        self.conv_block_num = conv_block_num
         self.data_format = data_format
         if self.drop_block:
             dropblock_cfg = [[
