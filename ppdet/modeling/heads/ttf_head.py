@@ -73,7 +73,7 @@ class HMHead(nn.Layer):
                             out_channels=ch_out,
                             kernel_size=3,
                             weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                            name=name))
+                            name='hm.' + name))
                 else:
                     head_conv.add_sublayer(
                         name,
@@ -152,7 +152,7 @@ class WHHead(nn.Layer):
                             out_channels=ch_out,
                             kernel_size=3,
                             weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                            name=name))
+                            name='wh.' + name))
                 else:
                     head_conv.add_sublayer(
                         name,
