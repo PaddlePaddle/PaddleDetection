@@ -65,6 +65,11 @@ def parse_args():
         default=False,
         help="If set True, enable continuous evaluation job."
         "This flag is only used for internal test.")
+    parser.add_argument(
+        '--save_prediction_only',
+        action='store_true',
+        default=False,
+        help='Whether to save the evaluation results only')
     args = parser.parse_args()
     return args
 
@@ -91,6 +96,7 @@ def main():
     FLAGS = parse_args()
 
     cfg = load_config(FLAGS.config)
+    cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
     if FLAGS.slim_config:
         slim_cfg = load_config(FLAGS.slim_config)

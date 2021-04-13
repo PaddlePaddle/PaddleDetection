@@ -116,9 +116,13 @@ class Trainer(object):
         if self.cfg.metric == 'COCO':
             # TODO: bias should be unified
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
+            save_prediction_only = self.cfg['save_prediction_only'] \
+                if 'save_prediction_only' in self.cfg else False
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(), bias=bias)
+                    anno_file=self.dataset.get_anno(),
+                    bias=bias,
+                    save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [

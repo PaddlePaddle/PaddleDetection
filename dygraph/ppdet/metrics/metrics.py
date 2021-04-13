@@ -65,6 +65,7 @@ class COCOMetric(Metric):
         self.clsid2catid, self.catid2name = get_categories('COCO', anno_file)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
+        self.save_prediction_only = kwargs.get('save_prediction_only', False)
         self.reset()
 
     def reset(self):
@@ -97,30 +98,42 @@ class COCOMetric(Metric):
                 json.dump(self.results['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
-            bbox_stats = cocoapi_eval(
-                'bbox.json', 'bbox', anno_file=self.anno_file)
-            self.eval_results['bbox'] = bbox_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The bbox result is saved to bbox.json and do not '
+                            'evaluate the mAP.')
+            else:
+                bbox_stats = cocoapi_eval(
+                    'bbox.json', 'bbox', anno_file=self.anno_file)
+                self.eval_results['bbox'] = bbox_stats
+                sys.stdout.flush()
 
         if len(self.results['mask']) > 0:
             with open("mask.json", 'w') as f:
                 json.dump(self.results['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval(
-                'mask.json', 'segm', anno_file=self.anno_file)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The mask result is saved to mask.json and do not '
+                            'evaluate the mAP.')
+            else:
+                seg_stats = cocoapi_eval(
+                    'mask.json', 'segm', anno_file=self.anno_file)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
         if len(self.results['segm']) > 0:
             with open("segm.json", 'w') as f:
                 json.dump(self.results['segm'], f)
                 logger.info('The segm result is saved to segm.json.')
 
-            seg_stats = cocoapi_eval(
-                'segm.json', 'segm', anno_file=self.anno_file)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The segm result is saved to segm.json and do not '
+                            'evaluate the mAP.')
+            else:
+                seg_stats = cocoapi_eval(
+                    'segm.json', 'segm', anno_file=self.anno_file)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
     def log(self):
         pass
