@@ -69,6 +69,7 @@ class COCOMetric(Metric):
         self.output_eval = kwargs.get('output_eval', None)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
+        self.save_prediction_only = kwargs.get('save_prediction_only', False)
         self.reset()
 
     def reset(self):
@@ -104,13 +105,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
-            bbox_stats = cocoapi_eval(
-                output,
-                'bbox',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['bbox'] = bbox_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The bbox result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                bbox_stats = cocoapi_eval(
+                    output,
+                    'bbox',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['bbox'] = bbox_stats
+                sys.stdout.flush()
 
         if len(self.results['mask']) > 0:
             output = "mask.json"
@@ -120,13 +125,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval(
-                output,
-                'segm',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The mask result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                seg_stats = cocoapi_eval(
+                    output,
+                    'segm',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
         if len(self.results['segm']) > 0:
             output = "segm.json"
@@ -136,13 +145,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['segm'], f)
                 logger.info('The segm result is saved to segm.json.')
 
-            seg_stats = cocoapi_eval(
-                output,
-                'segm',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The segm result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                seg_stats = cocoapi_eval(
+                    output,
+                    'segm',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
     def log(self):
         pass
