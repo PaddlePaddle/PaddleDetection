@@ -308,8 +308,8 @@ class GridMask(BaseOperator):
         self.prob = prob
         self.upper_iter = upper_iter
 
-        from .gridmask_utils import GridMask
-        self.gridmask_op = GridMask(
+        from .gridmask_utils import Gridmask
+        self.gridmask_op = Gridmask(
             use_h,
             use_w,
             rotate=rotate,
