@@ -54,6 +54,7 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
             load_pretrain_weight(model, cfg.pretrain_weights)
         slim = create(cfg.slim)
         cfg['model'] = slim(model)
+        cfg['slim'] = slim
         if mode != 'train':
             load_pretrain_weight(cfg['model'], cfg.weights)
 
