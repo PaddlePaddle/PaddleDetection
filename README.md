@@ -165,3 +165,23 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 ## 贡献代码
 
 我们非常欢迎你可以为PaddleDetection提供代码，也十分感谢你的反馈。
+
+## 引用
+
+```
+@misc{long2020ppyolo, 
+title={PP-YOLO: An Effective and Efficient Implementation of Object Detector}, 
+author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen}, 
+year={2020}, 
+eprint={2007.12099}, 
+archivePrefix={arXiv}, 
+primaryClass={cs.CV} 
+} 
+
+@misc{ppdet2019, 
+title={PaddleDetection, Object detection and instance segmentation toolkit based on PaddlePaddle.}, 
+author={PaddlePaddle Authors}, 
+howpublished = {\url{https://github.com/PaddlePaddle/PaddleDetection}}, 
+year={2019} 
+} 
+```
