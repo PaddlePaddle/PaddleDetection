@@ -53,16 +53,17 @@ class HMHead(nn.Layer):
         super(HMHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
-            name = 'hm.conv.{}'.format(i)
+            name = 'conv.{}'.format(i)
             if lite_head:
+                lite_name = 'hm.' + name
                 head_conv.add_sublayer(
-                    name,
+                    lite_name,
                     LiteConv(
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
                         norm_type=norm_type,
-                        name=name))
-                head_conv.add_sublayer(name + '.act', nn.ReLU6())
+                        name=lite_name))
+                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
                     head_conv.add_sublayer(
@@ -131,16 +132,17 @@ class WHHead(nn.Layer):
         super(WHHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
-            name = 'wh.conv.{}'.format(i)
+            name = 'conv.{}'.format(i)
             if lite_head:
+                lite_name = 'wh.' + name
                 head_conv.add_sublayer(
-                    name,
+                    lite_name,
                     LiteConv(
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
                         norm_type=norm_type,
-                        name=name))
-                head_conv.add_sublayer(name + '.act', nn.ReLU6())
+                        name=lite_name))
+                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
                     head_conv.add_sublayer(
