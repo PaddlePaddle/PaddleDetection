@@ -125,6 +125,8 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
+            save_prediction_only = self.cfg['save_prediction_only'] \
+                if 'save_prediction_only' in self.cfg else False
 
             # pass clsid2catid info to metric instance to avoid multiple loading
             # annotation file
@@ -145,7 +147,8 @@ class Trainer(object):
                     clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
-                    bias=bias)
+                    bias=bias,
+                    save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
