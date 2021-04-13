@@ -31,7 +31,7 @@ from paddle.static import InputSpec
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results
+from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -52,17 +52,14 @@ class Trainer(object):
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
         self.optimizer = None
-        self.slim = None
+        self.is_loaded_weights = False
 
         # build model
-        self.model = create(cfg.architecture)
-
-        # model slim build
-        if 'slim' in cfg and cfg.slim:
-            if self.mode == 'train':
-                self.load_weights(cfg.pretrain_weights)
-            self.slim = create(cfg.slim)
-            self.slim(self.model)
+        if 'model' not in self.cfg:
+            self.model = create(cfg.architecture)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -192,12 +189,19 @@ class Trainer(object):
         self._metrics.extend(metrics)
 
     def load_weights(self, weights):
+        if self.is_loaded_weights:
+            return
         self.start_epoch = 0
         load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
-        self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        # support Distill resume weights
+        if hasattr(self.model, 'student_model'):
+            self.start_epoch = load_weight(self.model.student_model, weights,
+                                           self.optimizer)
+        else:
+            self.start_epoch = load_weight(self.model, weights, self.optimizer)
         logger.debug("Resume weights of epoch {}".format(self.start_epoch))
 
     def train(self, validate=False):
@@ -329,7 +333,11 @@ class Trainer(object):
     def evaluate(self):
         self._eval_with_loader(self.loader)
 
-    def predict(self, images, draw_threshold=0.5, output_dir='output'):
+    def predict(self,
+                images,
+                draw_threshold=0.5,
+                output_dir='output',
+                save_txt=False):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
@@ -365,6 +373,7 @@ class Trainer(object):
                         if 'mask' in batch_res else None
                 segm_res = batch_res['segm'][start:end] \
                         if 'segm' in batch_res else None
+
                 image = visualize_results(image, bbox_res, mask_res, segm_res,
                                           int(outs['im_id']), catid2name,
                                           draw_threshold)
@@ -376,6 +385,9 @@ class Trainer(object):
                 logger.info("Detection bbox results save in {}".format(
                     save_name))
                 image.save(save_name, quality=95)
+                if save_txt:
+                    save_path = os.path.splitext(save_name)[0] + '.txt'
+                    save_result(save_path, bbox_res, catid2name, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):
@@ -419,7 +431,7 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if self.slim is None or self.cfg['slim'] != 'QAT':
+        if 'slim' not in self.cfg or self.cfg['slim'] != 'QAT':
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
@@ -433,7 +445,7 @@ class Trainer(object):
                 input_spec=pruned_input_spec)
             logger.info("Export model and saved in {}".format(save_dir))
         else:
-            self.slim.save_quantized_model(
+            self.cfg.slim.save_quantized_model(
                 self.model,
                 os.path.join(save_dir, 'model'),
                 input_spec=input_spec)

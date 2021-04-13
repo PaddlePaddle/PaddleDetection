@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
 from . import ops
 try:
     from collections.abc import Sequence
@@ -218,3 +218,89 @@ class FCOSPostProcess(object):
                                     centerness, scale_factor)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num
+
+
+@register
+class S2ANetBBoxPostProcess(object):
+    __inject__ = ['nms']
+
+    def __init__(self, nms_pre=2000, min_bbox_size=0, nms=None):
+        super(S2ANetBBoxPostProcess, self).__init__()
+        self.nms_pre = nms_pre
+        self.min_bbox_size = min_bbox_size
+        self.nms = nms
+        self.origin_shape_list = []
+
+    def get_prediction(self, pred_scores, pred_bboxes, im_shape, scale_factor):
+        """
+        pred_scores : [N, M]  score
+        pred_bboxes : [N, 5]  xc, yc, w, h, a
+        im_shape : [N, 2]  im_shape
+        scale_factor : [N, 2]  scale_factor
+        """
+        # TODO: support bs>1
+        pred_ploys = rbox2poly(pred_bboxes.numpy())
+        pred_ploys = paddle.to_tensor(pred_ploys)
+        pred_ploys = paddle.reshape(
+            pred_ploys, [1, pred_ploys.shape[0], pred_ploys.shape[1]])
+
+        pred_scores = paddle.to_tensor(pred_scores)
+        # pred_scores [NA, 16] --> [16, NA]
+        pred_scores = paddle.transpose(pred_scores, [1, 0])
+        pred_scores = paddle.reshape(
+            pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
+        pred_cls_score_bbox, bbox_num, index = self.nms(pred_ploys, pred_scores)
+
+        # post process scale
+        # result [n, 10]
+        if bbox_num > 0:
+            pred_bbox, bbox_num = self.post_process(pred_cls_score_bbox[:, 2:],
+                                                    bbox_num, im_shape[0],
+                                                    scale_factor[0])
+
+            pred_cls_score_bbox = paddle.concat(
+                [pred_cls_score_bbox[:, 0:2], pred_bbox], axis=1)
+        else:
+            pred_cls_score_bbox = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+                    dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        return pred_cls_score_bbox, bbox_num, index
+
+    def post_process(self, bboxes, bbox_num, im_shape, scale_factor):
+        """
+        Rescale, clip and filter the bbox from the output of NMS to
+        get final prediction.
+
+        Args:
+            bboxes(Tensor): bboxes [N, 8]
+            bbox_num(Tensor): bbox_num
+            im_shape(Tensor): [1 2]
+            scale_factor(Tensor): [1 2]
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 8]
+                               including labels, scores and bboxes. The size of
+                               bboxes are corresponding to the original image.
+        """
+
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
+
+        origin_h = origin_shape[0]
+        origin_w = origin_shape[1]
+
+        bboxes[:, 0::2] = bboxes[:, 0::2] / scale_factor[0]
+        bboxes[:, 1::2] = bboxes[:, 1::2] / scale_factor[1]
+
+        zeros = paddle.zeros_like(origin_h)
+        x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w - 1), zeros)
+        y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h - 1), zeros)
+        x2 = paddle.maximum(paddle.minimum(bboxes[:, 2], origin_w - 1), zeros)
+        y2 = paddle.maximum(paddle.minimum(bboxes[:, 3], origin_h - 1), zeros)
+        x3 = paddle.maximum(paddle.minimum(bboxes[:, 4], origin_w - 1), zeros)
+        y3 = paddle.maximum(paddle.minimum(bboxes[:, 5], origin_h - 1), zeros)
+        x4 = paddle.maximum(paddle.minimum(bboxes[:, 6], origin_w - 1), zeros)
+        y4 = paddle.maximum(paddle.minimum(bboxes[:, 7], origin_h - 1), zeros)
+        bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
+        bboxes = (bbox, bbox_num)
+        return bboxes

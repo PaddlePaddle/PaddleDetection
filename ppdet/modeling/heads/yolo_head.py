@@ -28,6 +28,18 @@ class YOLOv3Head(nn.Layer):
                  iou_aware=False,
                  iou_aware_factor=0.4,
                  data_format='NCHW'):
+        """
+        Head for YOLOv3 network
+
+        Args:
+            num_classes (int): number of foreground classes
+            anchors (list): anchors
+            anchor_masks (list): anchor masks
+            loss (object): YOLOv3Loss instance
+            iou_aware (bool): whether to use iou_aware
+            iou_aware_factor (float): iou aware factor
+            data_format (str): data format, NCHW or NHWC
+        """
         super(YOLOv3Head, self).__init__()
         self.num_classes = num_classes
         self.loss = loss
@@ -47,18 +59,16 @@ class YOLOv3Head(nn.Layer):
             else:
                 num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
-            yolo_output = self.add_sublayer(
-                name,
-                nn.Conv2D(
-                    in_channels=128 * (2**self.num_outputs) // (2**i),
-                    out_channels=num_filters,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    data_format=data_format,
-                    weight_attr=ParamAttr(name=name + '.conv.weights'),
-                    bias_attr=ParamAttr(
-                        name=name + '.conv.bias', regularizer=L2Decay(0.))))
+            conv = nn.Conv2D(
+                in_channels=128 * (2**self.num_outputs) // (2**i),
+                out_channels=num_filters,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                data_format=data_format,
+                bias_attr=ParamAttr(regularizer=L2Decay(0.)))
+            conv.skip_quant = True
+            yolo_output = self.add_sublayer(name, conv)
             self.yolo_outputs.append(yolo_output)
 
     def parse_anchor(self, anchors, anchor_masks):

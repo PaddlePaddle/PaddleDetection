@@ -17,7 +17,7 @@ TENSORRT_INC_DIR=/path/to/tensorrt/include
 TENSORRT_LIB_DIR=/path/to/tensorrt/lib
 
 # Paddle 预测库路径
-PADDLE_DIR=/paddle/to/paddle_inference
+PADDLE_DIR=/path/to/paddle_inference
 
 # CUDA 的 lib 路径
 CUDA_LIB=/path/to/cuda/lib
