@@ -113,6 +113,7 @@ class SPP(nn.Layer):
                  pool_size,
                  norm_type,
                  name,
+                 act='leaky',
                  data_format='NCHW'):
         """
         SPP layer, which consist of four pooling layer follwed by conv layer
@@ -145,6 +146,7 @@ class SPP(nn.Layer):
             padding=k // 2,
             norm_type=norm_type,
             name=name,
+            act=act,
             data_format=data_format)
 
     def forward(self, x):
@@ -271,6 +273,7 @@ class PPYOLODetBlock(nn.Layer):
         tip = self.tip(route)
         return route, tip
 
+
 class PPYOLOTinyDetBlock(nn.Layer):
     def __init__(self,
                  ch_in,
@@ -340,6 +343,7 @@ class PPYOLOTinyDetBlock(nn.Layer):
         tip = self.tip(route)
         return route, tip
 
+
 class PPYOLODetBlockCSP(nn.Layer):
     def __init__(self,
                  cfg,
@@ -390,9 +394,8 @@ class PPYOLODetBlockCSP(nn.Layer):
             name=name,
             data_format=data_format)
         self.conv_module = nn.Sequential()
-        for idx, (layer, args, kwargs) in enumerate(cfg):
-            layer_name = name + '.left.' + str(idx)
-            kwargs.update(name=layer_name, data_format=data_format)
+        for idx, (layer_name, layer, args, kwargs) in enumerate(cfg):
+            kwargs.update(name=name + layer_name, data_format=data_format)
             self.conv_module.add_sublayer(layer_name, layer(*args, **kwargs))
 
     def forward(self, inputs):
@@ -644,6 +647,7 @@ class PPYOLOFPN(nn.Layer):
     def out_shape(self):
         return [ShapeSpec(channels=c) for c in self._out_channels]
 
+
 @register
 @serializable
 class PPYOLOTinyFPN(nn.Layer):
@@ -792,7 +796,8 @@ class PPYOLOPAN(nn.Layer):
         self.data_format = data_format
         if self.drop_block:
             dropblock_cfg = [[
-                DropBlock, [self.block_size, self.keep_prob], dict()
+                'dropblock', DropBlock, [self.block_size, self.keep_prob],
+                dict()
             ]]
         else:
             dropblock_cfg = []
@@ -808,21 +813,23 @@ class PPYOLOPAN(nn.Layer):
             base_cfg = []
             for j in range(self.conv_block_num):
                 base_cfg += [
-                    # layer, args
+                    # name, layer, args
                     [
-                        ConvBNLayer, [channel, channel, 1], dict(
+                        '{}.0'.format(j), ConvBNLayer, [channel, channel, 1],
+                        dict(
                             padding=0, act=act, norm_type=norm_type)
                     ],
                     [
-                        ConvBNLayer, [channel, channel, 3], dict(
+                        '{}.1'.format(j), ConvBNLayer, [channel, channel, 3],
+                        dict(
                             padding=1, act=act, norm_type=norm_type)
                     ]
                 ]
 
             if i == 0 and self.spp:
                 base_cfg[3] = [
-                    SPP, [channel * 4, channel, 1], dict(
-                        pool_size=[5, 9, 13], norm_type=norm_type)
+                    'spp', SPP, [channel * 4, channel, 1], dict(
+                        pool_size=[5, 9, 13], act=act, norm_type=norm_type)
                 ]
 
             cfg = base_cfg[:4] + dropblock_cfg + base_cfg[4:]
@@ -843,6 +850,7 @@ class PPYOLOPAN(nn.Layer):
                         filter_size=1,
                         stride=1,
                         padding=0,
+                        act=act,
                         norm_type=norm_type,
                         data_format=data_format,
                         name=name))
@@ -861,6 +869,7 @@ class PPYOLOPAN(nn.Layer):
                     filter_size=3,
                     stride=2,
                     padding=1,
+                    act=act,
                     norm_type=norm_type,
                     data_format=data_format,
                     name=name))
@@ -870,13 +879,15 @@ class PPYOLOPAN(nn.Layer):
             channel = 512 // (2**i)
             for j in range(self.conv_block_num):
                 base_cfg += [
-                    # layer, args
+                    # name, layer, args
                     [
-                        ConvBNLayer, [channel, channel, 1], dict(
+                        '{}.0'.format(j), ConvBNLayer, [channel, channel, 1],
+                        dict(
                             padding=0, act=act, norm_type=norm_type)
                     ],
                     [
-                        ConvBNLayer, [channel, channel, 3], dict(
+                        '{}.1'.format(j), ConvBNLayer, [channel, channel, 3],
+                        dict(
                             padding=1, act=act, norm_type=norm_type)
                     ]
                 ]
