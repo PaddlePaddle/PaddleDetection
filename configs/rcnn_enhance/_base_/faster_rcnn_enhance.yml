@@ -56,7 +56,7 @@ BBoxHead:
     sampling_ratio: 0
     aligned: True
   bbox_assigner: BBoxLibraAssigner
-  bbox_loss: DiouLoss
+  bbox_loss: DIouLoss
 
 TwoFCHead:
   out_channel: 1024
@@ -68,9 +68,8 @@ BBoxLibraAssigner:
   fg_fraction: 0.25
   use_random: True
 
-DiouLoss:
+DIouLoss:
   loss_weight: 10.0
-  is_cls_agnostic: false
   use_complete_iou_loss: true
 
 BBoxPostProcess:
