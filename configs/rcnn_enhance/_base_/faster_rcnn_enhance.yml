@@ -1,0 +1,81 @@
+architecture: FasterRCNN
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+
+FasterRCNN:
+  backbone: ResNet
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  variant: d
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  dcn_v2_stages: [1,2,3]
+  lr_mult_list: [0.05, 0.05, 0.1, 0.15]
+
+FPN:
+  in_channels: [256, 512, 1024, 2048]
+  out_channel: 64
+
+RPNHead:
+  anchor_generator:
+    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_sizes: [[32], [64], [128], [256], [512]]
+    strides: [4, 8, 16, 32, 64]
+  rpn_target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    use_random: True
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 2000
+    topk_after_collect: True
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 500
+    post_nms_top_n: 300
+
+
+BBoxHead:
+  head: TwoFCHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxLibraAssigner
+  bbox_loss: DIouLoss
+
+TwoFCHead:
+  out_channel: 1024
+
+BBoxLibraAssigner:
+  batch_size_per_im: 512
+  bg_thresh: 0.5
+  fg_thresh: 0.5
+  fg_fraction: 0.25
+  use_random: True
+
+DIouLoss:
+  loss_weight: 10.0
+  use_complete_iou_loss: true
+
+BBoxPostProcess:
+  decode: RCNNBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5
