@@ -14,7 +14,8 @@
 import sys
 import paddle
 from ppdet.core.workspace import register, serializable
-from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target
+
+from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target
 from ppdet.modeling import bbox_utils
 import numpy as np
 
@@ -95,15 +96,15 @@ class BBoxAssigner(object):
             default 512 
         fg_fraction (float): Fraction of RoIs that is labeled
             foreground, default 0.25
-        positive_overlap (float): Minimum overlap required between a RoI
-            and ground-truth box for the (roi, gt box) pair to be 
+        fg_thresh (float): Minimum overlap required between a RoI
+            and ground-truth box for the (roi, gt box) pair to be
             a foreground sample. default 0.5
-        negative_overlap (float): Maximum overlap allowed between a RoI 
-            and ground-truth box for the (roi, gt box) pair to be 
+        bg_thresh (float): Maximum overlap allowed between a RoI
+            and ground-truth box for the (roi, gt box) pair to be
             a background sample. default 0.5
-        use_random (bool): Use random sampling to choose foreground and 
+        use_random (bool): Use random sampling to choose foreground and
             background boxes, default true
-        cascade_iou (list[iou]): The list of overlap to select foreground and 
+        cascade_iou (list[iou]): The list of overlap to select foreground and
             background of each stage, which is only used In Cascade RCNN.
         num_classes (int): The number of class.
     """
@@ -139,6 +140,77 @@ class BBoxAssigner(object):
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
             self.use_random, is_cascade, self.cascade_iou[stage])
+        rois = outs[0]
+        rois_num = outs[-1]
+        # tgt_labels, tgt_bboxes, tgt_gt_inds
+        targets = outs[1:4]
+        return rois, rois_num, targets
+
+
+@register
+class BBoxLibraAssigner(object):
+    __shared__ = ['num_classes']
+    """
+    Libra-RCNN targets assignment module
+
+    The assignment consists of three steps:
+        1. Match RoIs and ground-truth box, label the RoIs with foreground
+           or background sample
+        2. Sample anchors to keep the properly ratio between foreground and
+           background
+        3. Generate the targets for classification and regression branch
+
+    Args:
+        batch_size_per_im (int): Total number of RoIs per image.
+            default 512
+        fg_fraction (float): Fraction of RoIs that is labeled
+            foreground, default 0.25
+        fg_thresh (float): Minimum overlap required between a RoI
+            and ground-truth box for the (roi, gt box) pair to be
+            a foreground sample. default 0.5
+        bg_thresh (float): Maximum overlap allowed between a RoI
+            and ground-truth box for the (roi, gt box) pair to be
+            a background sample. default 0.5
+        use_random (bool): Use random sampling to choose foreground and
+            background boxes, default true
+        cascade_iou (list[iou]): The list of overlap to select foreground and
+            background of each stage, which is only used In Cascade RCNN.
+        num_classes (int): The number of class.
+        num_bins (int): The number of libra_sample.
+    """
+
+    def __init__(self,
+                 batch_size_per_im=512,
+                 fg_fraction=.25,
+                 fg_thresh=.5,
+                 bg_thresh=.5,
+                 use_random=True,
+                 cascade_iou=[0.5, 0.6, 0.7],
+                 num_classes=80,
+                 num_bins=3):
+        super(BBoxLibraAssigner, self).__init__()
+        self.batch_size_per_im = batch_size_per_im
+        self.fg_fraction = fg_fraction
+        self.fg_thresh = fg_thresh
+        self.bg_thresh = bg_thresh
+        self.use_random = use_random
+        self.cascade_iou = cascade_iou
+        self.num_classes = num_classes
+        self.num_bins = num_bins
+
+    def __call__(self,
+                 rpn_rois,
+                 rpn_rois_num,
+                 inputs,
+                 stage=0,
+                 is_cascade=False):
+        gt_classes = inputs['gt_class']
+        gt_boxes = inputs['gt_bbox']
+        # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
+        outs = libra_generate_proposal_target(
+            rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
+            self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
+            self.use_random, is_cascade, self.cascade_iou[stage], self.num_bins)
         rois = outs[0]
         rois_num = outs[-1]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
