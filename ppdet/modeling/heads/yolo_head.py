@@ -123,4 +123,3 @@ class YOLOv3Head(nn.Layer):
     @classmethod
     def from_config(cls, cfg, input_shape):
         return {'in_channels': [i.channels for i in input_shape], }
-
