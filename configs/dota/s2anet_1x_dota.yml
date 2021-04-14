@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/dota.yml',
+  '../runtime.yml',
+  '_base_/s2anet_optimizer_1x.yml',
+  '_base_/s2anet.yml',
+  '_base_/s2anet_reader.yml',
+]
+weights: output/s2anet_1x_dota/model_final
