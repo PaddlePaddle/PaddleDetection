@@ -18,7 +18,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
-- 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布PPYOLOv2模型，新增旋转框检测S2ANet模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
+- 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布PP-YOLO v2模型，新增旋转框检测S2ANet模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
 - 2021.02.07: 发布release/2.0-rc版本，PaddleDetection动态图试用版本，详情参考[PaddleDetection动态图](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc)。
 
 ### 特性
@@ -180,8 +180,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - `CBResNet`为`Cascade-Faster-RCNN-CBResNet200vd-FPN`模型，COCO数据集mAP高达53.3%
 - `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
-- `PPYOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
-- `PPYOLOv2`是对`PPYOLO`模型的进一步优化啊，在COCO数据集精度49.5%，Tesla V100预测速度60FPS
+- `PP-YOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
+- `PP-YOLO v2`是对`PP-YOLO`模型的进一步优化，在COCO数据集精度49.5%，Tesla V100预测速度60FPS
 - 图中模型均可在[模型库](#模型库)中获取
 
 ## 文档教程
@@ -195,17 +195,18 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 ### 进阶教程
 
-- [参数配置]
+- 参数配置
     - [RCNN参数说明](docs/tutorials/config_annotation/faster_rcnn_r50_fpn_1x_coco_annotation.md)
-    - [PPYOLO参数说明](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
-- [模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))](configs/slim)
+    - [PP-YOLO参数说明](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
+- 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
+    - [剪裁/量化/蒸馏教程](configs/slim)
 - [推理部署](deploy/README.md)
     - [模型导出教程](deploy/EXPORT_MODEL.md)
     - [Python端推理部署](deploy/python)
     - [C++端推理部署](deploy/cpp)
     - [服务端部署](deploy/serving)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
-- [进阶开发]
+- 进阶开发
     - [数据处理模块](docs/advanced_tutorials/READER.md)
     - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
 
@@ -215,7 +216,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - 通用目标检测:
     - [模型库](docs/MODEL_ZOO_cn.md)
     - [移动端模型](static/configs/mobile/README.md)
-    - [PPYOLO模型](configs/ppyolo/README_cn.md)
+    - [PP-YOLO模型](configs/ppyolo/README_cn.md)
     - [676类目标检测](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
     - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
     - [TTFNet](configs/ttfnet/README.md)
@@ -245,7 +246,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 ## 版本更新
 
-v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持BlazeFace, PSSDet等系列模型和大量骨干网络，发布PPYOLOv2, PPYOLO-tiny和旋转框检测S2ANet模型。支持模型蒸馏、VisualDL，新增动态图预测部署benchmark，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
+v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持BlazeFace, PSSDet等系列模型和大量骨干网络，发布PP-YOLO v2, PP-YOLO tiny和旋转框检测S2ANet模型。支持模型蒸馏、VisualDL，新增动态图预测部署benchmark，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 
 ## 许可证书
