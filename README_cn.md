@@ -2,8 +2,7 @@
 
 # PaddleDetection
 
-### **注意：**
-PaddleDetection默认使用动态图版本，静态图版本位于[static](./static)中
+### PaddleDetection 2.0全面升级！目前默认使用动态图版本，静态图版本位于[static](./static)中
 
 
 # 简介
