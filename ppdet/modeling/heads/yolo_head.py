@@ -20,6 +20,7 @@ class YOLOv3Head(nn.Layer):
     __inject__ = ['loss']
 
     def __init__(self,
+                 in_channels=[1024, 512, 256],
                  anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
                           [59, 119], [116, 90], [156, 198], [373, 326]],
                  anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
@@ -41,6 +42,8 @@ class YOLOv3Head(nn.Layer):
             data_format (str): data format, NCHW or NHWC
         """
         super(YOLOv3Head, self).__init__()
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels
         self.num_classes = num_classes
         self.loss = loss
 
@@ -60,7 +63,7 @@ class YOLOv3Head(nn.Layer):
                 num_filters = len(self.anchors[i]) * (self.num_classes + 5)
             name = 'yolo_output.{}'.format(i)
             conv = nn.Conv2D(
-                in_channels=128 * (2**self.num_outputs) // (2**i),
+                in_channels=self.in_channels[i],
                 out_channels=num_filters,
                 kernel_size=1,
                 stride=1,
@@ -116,3 +119,7 @@ class YOLOv3Head(nn.Layer):
                 return y
             else:
                 return yolo_outputs
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }

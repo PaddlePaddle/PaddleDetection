@@ -88,6 +88,20 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 - Pruning detectiom head of PP-YOLO model with ratio as 75%, while the arguments are `--pruned_params="yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights" --pruned_ratios="0.75,0.75,0.75,0.75"`
 - For Slim PP-YOLO training, evaluation, inference and model exporting, please see [Distill pruned model](../../slim/extentions/distill_pruned_model/README.md)
 
+### PP-YOLO tiny
+
+|            Model             | GPU number | images/GPU | Model Size | Post Quant Model Size | input shape | Box AP<sup>val</sup> | Kirin 990 4xCore(FPS) | download | config | config | post quant model |
+|:----------------------------:|:-------:|:-------------:|:----------:| :-------------------: | :----------:| :------------------: | :-------------------: | :------: | :----: | :----: | :--------------: |
+| PP-YOLO tiny                 |    8    |      32       |   4.2MB    |       **1.3M**        |     320     |         20.6         |          92.3         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/static/configs/ppyolo/ppyolo_tiny.yml) | [inference model](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
+| PP-YOLO tiny                 |    8    |      32       |   4.2MB    |       **1.3M**        |     416     |         22.7         |          65.4         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/static/configs/ppyolo/ppyolo_tiny.yml) | [inference model](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
+
+**Notes:**
+
+- PP-YOLO-tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`, Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
+- PP-YOLO-tiny used 8 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/FAQ.md).
+- PP-YOLO-tiny inference speed is tested on Kirin 990 with 4 threads by arm8
+- we alse provide PP-YOLO-tiny post quant inference model, which can compress model to **1.3MB** with nearly no inference on inference speed and performance
+
 ### PP-YOLO on Pascal VOC
 
 PP-YOLO trained on Pascal VOC dataset as follows:
