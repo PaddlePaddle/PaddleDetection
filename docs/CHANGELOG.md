@@ -3,6 +3,9 @@
 ## 最新版本信息
 
 ### 2.0(04.15/2021)
+
+  **说明：** 自2.0版本开始，动态图作为PaddleDetection默认版本，原`dygraph`目录切换为根目录，原静态图实现移动到`static`目录下。
+
   - 动态图模型丰富度提升：
     - 发布PP-YOLOv2及PP-YOLO tiny模型，PP-YOLOv2 COCO test数据集精度达到49.5%，V100预测速度达到68.9 FPS
     - 发布旋转框检测模型S2ANet
