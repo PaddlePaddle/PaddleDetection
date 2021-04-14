@@ -180,7 +180,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - `CBResNet`为`Cascade-Faster-RCNN-CBResNet200vd-FPN`模型，COCO数据集mAP高达53.3%
 - `Cascade-Faster-RCNN`为`Cascade-Faster-RCNN-ResNet50vd-DCN`，PaddleDetection将其优化到COCO数据mAP为47.8%时推理速度为20FPS
-- `PPYOLOv2`在COCO数据集mAP达到49.5%，推理速度为60FPS
+- `PPYOLO`在COCO数据集精度45.9%，Tesla V100预测速度72.9FPS，精度速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)
+- `PPYOLOv2`是对`PPYOLO`模型的进一步优化啊，在COCO数据集精度49.5%，Tesla V100预测速度60FPS
 - 图中模型均可在[模型库](#模型库)中获取
 
 ## 文档教程
@@ -260,14 +261,6 @@ v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持B
 ## 引用
 
 ```
-@misc{long2020ppyolo,
-title={PP-YOLO: An Effective and Efficient Implementation of Object Detector},
-author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen},
-year={2020},
-eprint={2007.12099},
-archivePrefix={arXiv},
-primaryClass={cs.CV}
-}
 @misc{ppdet2019,
 title={PaddleDetection, Object detection and instance segmentation toolkit based on PaddlePaddle.},
 author={PaddlePaddle Authors},
