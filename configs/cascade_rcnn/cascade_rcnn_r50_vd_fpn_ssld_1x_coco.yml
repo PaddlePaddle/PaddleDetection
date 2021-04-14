@@ -1,12 +1,12 @@
 _BASE_: [
-  '../datasets/coco_instance.yml',
+  '../datasets/coco_detection.yml',
   '../runtime.yml',
-  '../cascade_rcnn/_base_/optimizer_1x.yml',
-  '../cascade_rcnn/_base_/cascade_mask_rcnn_r50_fpn.yml',
-  '../cascade_rcnn/_base_/cascade_mask_fpn_reader.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/cascade_rcnn_r50_fpn.yml',
+  '_base_/cascade_fpn_reader.yml',
 ]
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
-weights: output/cascade_mask_rcnn_r50_vd_fpn_ssld_1x_coco/model_final
+weights: output/cascade_rcnn_r50_vd_fpn_ssld_1x_coco/model_final
 
 ResNet:
   depth: 50
