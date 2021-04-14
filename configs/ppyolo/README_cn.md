@@ -170,3 +170,23 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 - Box AP为在COCO train2017数据集训练，val2017和test-dev2017数据集上评估`mAP(IoU=0.5:0.95)`数据
 - 推理速度为单卡V100上，batch size=1, 使用上述benchmark测试方法的测试结果，测试环境配置为CUDA 10.2，CUDNN 7.5.1
 - [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO.md)
+
+
+## 引用
+
+```
+@misc{long2020ppyolo,
+title={PP-YOLO: An Effective and Efficient Implementation of Object Detector},
+author={Xiang Long and Kaipeng Deng and Guanzhong Wang and Yang Zhang and Qingqing Dang and Yuan Gao and Hui Shen and Jianguo Ren and Shumin Han and Errui Ding and Shilei Wen},
+year={2020},
+eprint={2007.12099},
+archivePrefix={arXiv},
+primaryClass={cs.CV}
+}
+@misc{ppdet2019,
+title={PaddleDetection, Object detection and instance segmentation toolkit based on PaddlePaddle.},
+author={PaddlePaddle Authors},
+howpublished = {\url{https://github.com/PaddlePaddle/PaddleDetection}},
+year={2019}
+}
+```
