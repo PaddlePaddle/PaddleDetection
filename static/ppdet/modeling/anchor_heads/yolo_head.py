@@ -654,6 +654,7 @@ class YOLOv4Head(YOLOv3Head):
 
         return outputs
 
+
 @register
 class PPYOLOTinyHead(YOLOv3Head):
     """
@@ -837,6 +838,7 @@ class PPYOLOTinyHead(YOLOv3Head):
 
         return outputs
 
+
 @register
 class YOLOv3PANHead(YOLOv3Head):
     """
@@ -905,7 +907,10 @@ class YOLOv3PANHead(YOLOv3Head):
                          is_first=False,
                          is_test=True,
                          name=None):
+        conv_left = self._conv_bn(
+            input,
             channel,
+            act=self.act,
             filter_size=1,
             stride=1,
             padding=0,

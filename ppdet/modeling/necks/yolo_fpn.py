@@ -872,7 +872,7 @@ class PPYOLOPAN(nn.Layer):
         # pan
         self.pan_blocks = []
         self.pan_routes = []
-        self._out_channels = []
+        self._out_channels = [512 // (2**(self.num_blocks - 2)), ]
         for i in reversed(range(self.num_blocks - 1)):
             name = 'pan_transition.{}'.format(i)
             route = self.add_sublayer(
@@ -915,6 +915,8 @@ class PPYOLOPAN(nn.Layer):
 
             self.pan_blocks = [pan_block, ] + self.pan_blocks
             self._out_channels.append(channel * 2)
+
+        self._out_channels = self._out_channels[::-1]
 
     def forward(self, blocks):
         assert len(blocks) == self.num_blocks
