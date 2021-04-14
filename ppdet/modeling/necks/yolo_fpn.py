@@ -262,6 +262,77 @@ class PPYOLODetBlock(nn.Layer):
         return route, tip
 
 
+class PPYOLOTinyDetBlock(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 name,
+                 drop_block=False,
+                 block_size=3,
+                 keep_prob=0.9,
+                 data_format='NCHW'):
+        """
+        PPYOLO Tiny DetBlock layer
+
+        Args:
+            ch_in (list): input channel number
+            ch_out (list): output channel number
+            name (str): block name
+            drop_block: whether user DropBlock
+            block_size: drop block size
+            keep_prob: probability to keep block in DropBlock
+            data_format (str): data format, NCHW or NHWC
+        """
+        super(PPYOLOTinyDetBlock, self).__init__()
+        self.drop_block_ = drop_block
+        self.conv_module = nn.Sequential()
+
+        cfgs = [
+            # name, in channels, out channels, filter_size, 
+            # stride, padding, groups
+            ['.0', ch_in, ch_out, 1, 1, 0, 1],
+            ['.1', ch_out, ch_out, 5, 1, 2, ch_out],
+            ['.2', ch_out, ch_out, 1, 1, 0, 1],
+            ['.route', ch_out, ch_out, 5, 1, 2, ch_out],
+        ]
+        for cfg in cfgs:
+            conv_name, conv_ch_in, conv_ch_out, filter_size, stride, padding, \
+                    groups = cfg
+            self.conv_module.add_sublayer(
+                name + conv_name,
+                ConvBNLayer(
+                    ch_in=conv_ch_in,
+                    ch_out=conv_ch_out,
+                    filter_size=filter_size,
+                    stride=stride,
+                    padding=padding,
+                    groups=groups,
+                    name=name + conv_name))
+
+        self.tip = ConvBNLayer(
+            ch_in=ch_out,
+            ch_out=ch_out,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            groups=1,
+            name=name + conv_name)
+
+        if self.drop_block_:
+            self.drop_block = DropBlock(
+                block_size=block_size,
+                keep_prob=keep_prob,
+                data_format=data_format,
+                name=name + '.dropblock')
+
+    def forward(self, inputs):
+        if self.drop_block_:
+            inputs = self.drop_block(inputs)
+        route = self.conv_module(inputs)
+        tip = self.tip(route)
+        return route, tip
+
+
 @register
 @serializable
 class YOLOv3FPN(nn.Layer):
@@ -475,6 +546,119 @@ class PPYOLOFPN(nn.Layer):
         blocks = blocks[::-1]
         yolo_feats = []
         for i, block in enumerate(blocks):
+            if i > 0:
+                if self.data_format == 'NCHW':
+                    block = paddle.concat([route, block], axis=1)
+                else:
+                    block = paddle.concat([route, block], axis=-1)
+            route, tip = self.yolo_blocks[i](block)
+            yolo_feats.append(tip)
+
+            if i < self.num_blocks - 1:
+                route = self.routes[i](route)
+                route = F.interpolate(
+                    route, scale_factor=2., data_format=self.data_format)
+
+        return yolo_feats
+
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
+
+    @property
+    def out_shape(self):
+        return [ShapeSpec(channels=c) for c in self._out_channels]
+
+
+@register
+@serializable
+class PPYOLOTinyFPN(nn.Layer):
+    __shared__ = ['norm_type', 'data_format']
+
+    def __init__(self,
+                 in_channels=[80, 56, 34],
+                 detection_block_channels=[160, 128, 96],
+                 norm_type='bn',
+                 data_format='NCHW',
+                 **kwargs):
+        """
+        PPYOLO Tiny FPN layer
+
+        Args:
+            in_channels (list): input channels for fpn
+            detection_block_channels (list): channels in fpn
+            norm_type (str): batch norm type, default bn
+            data_format (str): data format, NCHW or NHWC
+            kwargs: extra key-value pairs, such as parameter of DropBlock and spp 
+
+        """
+        super(PPYOLOTinyFPN, self).__init__()
+        assert len(in_channels) > 0, "in_channels length should > 0"
+        self.in_channels = in_channels[::-1]
+        assert len(detection_block_channels
+                   ) > 0, "detection_block_channelslength should > 0"
+        self.detection_block_channels = detection_block_channels
+        self.data_format = data_format
+        self.num_blocks = len(in_channels)
+        # parse kwargs
+        self.drop_block = kwargs.get('drop_block', False)
+        self.block_size = kwargs.get('block_size', 3)
+        self.keep_prob = kwargs.get('keep_prob', 0.9)
+
+        self.spp_ = kwargs.get('spp', False)
+        if self.spp_:
+            self.spp = SPP(self.in_channels[0] * 4,
+                           self.in_channels[0],
+                           k=1,
+                           pool_size=[5, 9, 13],
+                           norm_type=norm_type,
+                           name='spp')
+
+        self._out_channels = []
+        self.yolo_blocks = []
+        self.routes = []
+        for i, (
+                ch_in, ch_out
+        ) in enumerate(zip(self.in_channels, self.detection_block_channels)):
+            name = 'yolo_block.{}'.format(i)
+            if i > 0:
+                ch_in += self.detection_block_channels[i - 1]
+            yolo_block = self.add_sublayer(
+                name,
+                PPYOLOTinyDetBlock(
+                    ch_in,
+                    ch_out,
+                    name,
+                    drop_block=self.drop_block,
+                    block_size=self.block_size,
+                    keep_prob=self.keep_prob))
+            self.yolo_blocks.append(yolo_block)
+            self._out_channels.append(ch_out)
+
+            if i < self.num_blocks - 1:
+                name = 'yolo_transition.{}'.format(i)
+                route = self.add_sublayer(
+                    name,
+                    ConvBNLayer(
+                        ch_in=ch_out,
+                        ch_out=ch_out,
+                        filter_size=1,
+                        stride=1,
+                        padding=0,
+                        norm_type=norm_type,
+                        data_format=data_format,
+                        name=name))
+                self.routes.append(route)
+
+    def forward(self, blocks):
+        assert len(blocks) == self.num_blocks
+        blocks = blocks[::-1]
+
+        yolo_feats = []
+        for i, block in enumerate(blocks):
+            if i == 0 and self.spp_:
+                block = self.spp(block)
+
             if i > 0:
                 if self.data_format == 'NCHW':
                     block = paddle.concat([route, block], axis=1)
