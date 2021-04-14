@@ -321,7 +321,7 @@ def load_predictor(model_dir,
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -335,11 +335,6 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    if run_mode == 'trt_int8' and not os.path.exists(
-            os.path.join(model_dir, '_opt_cache')):
-        raise ValueError(
-            "TensorRT int8 must calibration first, and model_dir must has _opt_cache dir"
-        )
     use_calib_mode = True if run_mode == 'trt_int8' else False
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
@@ -512,7 +507,7 @@ if __name__ == '__main__':
         "--run_mode",
         type=str,
         default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16)")
+        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
         "--use_gpu",
         type=ast.literal_eval,
