@@ -273,6 +273,7 @@ class PPYOLODetBlock(nn.Layer):
         tip = self.tip(route)
         return route, tip
 
+
 class PPYOLOTinyDetBlock(nn.Layer):
     def __init__(self,
                  ch_in,
@@ -341,6 +342,7 @@ class PPYOLOTinyDetBlock(nn.Layer):
         route = self.conv_module(inputs)
         tip = self.tip(route)
         return route, tip
+
 
 class PPYOLODetBlockCSP(nn.Layer):
     def __init__(self,
@@ -653,6 +655,7 @@ class PPYOLOFPN(nn.Layer):
     def out_shape(self):
         return [ShapeSpec(channels=c) for c in self._out_channels]
 
+
 @register
 @serializable
 class PPYOLOTinyFPN(nn.Layer):
@@ -869,7 +872,7 @@ class PPYOLOPAN(nn.Layer):
         # pan
         self.pan_blocks = []
         self.pan_routes = []
-        self._out_channels = []
+        self._out_channels = [512 // (2**(self.num_blocks - 2)), ]
         for i in reversed(range(self.num_blocks - 1)):
             name = 'pan_transition.{}'.format(i)
             route = self.add_sublayer(
@@ -912,6 +915,8 @@ class PPYOLOPAN(nn.Layer):
 
             self.pan_blocks = [pan_block, ] + self.pan_blocks
             self._out_channels.append(channel * 2)
+
+        self._out_channels = self._out_channels[::-1]
 
     def forward(self, blocks):
         assert len(blocks) == self.num_blocks
