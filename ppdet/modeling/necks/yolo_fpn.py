@@ -298,28 +298,32 @@ class PPYOLOTinyDetBlock(nn.Layer):
         for cfg in cfgs:
             conv_name, conv_ch_in, conv_ch_out, filter_size, stride, padding, \
                     groups = cfg
-            self.conv_module.add_sublayer(name + conv_name,
-                                ConvBNLayer(ch_in=conv_ch_in,
-                                            ch_out=conv_ch_out,
-                                            filter_size=filter_size,
-                                            stride=stride,
-                                            padding=padding,
-                                            groups=groups,
-                                            name=name + conv_name))
+            self.conv_module.add_sublayer(
+                name + conv_name,
+                ConvBNLayer(
+                    ch_in=conv_ch_in,
+                    ch_out=conv_ch_out,
+                    filter_size=filter_size,
+                    stride=stride,
+                    padding=padding,
+                    groups=groups,
+                    name=name + conv_name))
 
-        self.tip = ConvBNLayer(ch_in=ch_out,
-                               ch_out=ch_out,
-                               filter_size=1,
-                               stride=1,
-                               padding=0,
-                               groups=1,
-                               name=name + conv_name)
-        
+        self.tip = ConvBNLayer(
+            ch_in=ch_out,
+            ch_out=ch_out,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            groups=1,
+            name=name + conv_name)
+
         if self.drop_block_:
-            self.drop_block = DropBlock(block_size=block_size,
-                                        keep_prob=keep_prob,
-                                        data_format=data_format,
-                                        name=name + '.dropblock')
+            self.drop_block = DropBlock(
+                block_size=block_size,
+                keep_prob=keep_prob,
+                data_format=data_format,
+                name=name + '.dropblock')
 
     def forward(self, inputs):
         if self.drop_block_:
@@ -591,8 +595,9 @@ class PPYOLOTinyFPN(nn.Layer):
         super(PPYOLOTinyFPN, self).__init__()
         assert len(in_channels) > 0, "in_channels length should > 0"
         self.in_channels = in_channels[::-1]
-        assert len(detection_block_channels) > 0, "detection_block_channelslength should > 0"
-        self.detection_block_channels = detection_block_channels 
+        assert len(detection_block_channels
+                   ) > 0, "detection_block_channelslength should > 0"
+        self.detection_block_channels = detection_block_channels
         self.data_format = data_format
         self.num_blocks = len(in_channels)
         # parse kwargs
@@ -602,28 +607,31 @@ class PPYOLOTinyFPN(nn.Layer):
 
         self.spp_ = kwargs.get('spp', False)
         if self.spp_:
-            self.spp= SPP(self.in_channels[0] * 4,
-                          self.in_channels[0],
-                          k=1,
-                          pool_size=[5, 9, 13],
-                          norm_type=norm_type,
-                          name='spp')
+            self.spp = SPP(self.in_channels[0] * 4,
+                           self.in_channels[0],
+                           k=1,
+                           pool_size=[5, 9, 13],
+                           norm_type=norm_type,
+                           name='spp')
 
         self._out_channels = []
         self.yolo_blocks = []
         self.routes = []
-        for i, (ch_in, ch_out) in enumerate(zip(self.in_channels, self.detection_block_channels)):
+        for i, (
+                ch_in, ch_out
+        ) in enumerate(zip(self.in_channels, self.detection_block_channels)):
             name = 'yolo_block.{}'.format(i)
             if i > 0:
                 ch_in += self.detection_block_channels[i - 1]
-            yolo_block = self.add_sublayer(name,
-                                PPYOLOTinyDetBlock(
-                                               ch_in,
-                                               ch_out,
-                                               name,
-                                               drop_block=self.drop_block,
-                                               block_size=self.block_size,
-                                               keep_prob=self.keep_prob))
+            yolo_block = self.add_sublayer(
+                name,
+                PPYOLOTinyDetBlock(
+                    ch_in,
+                    ch_out,
+                    name,
+                    drop_block=self.drop_block,
+                    block_size=self.block_size,
+                    keep_prob=self.keep_prob))
             self.yolo_blocks.append(yolo_block)
             self._out_channels.append(ch_out)
 
@@ -648,7 +656,7 @@ class PPYOLOTinyFPN(nn.Layer):
 
         yolo_feats = []
         for i, block in enumerate(blocks):
-            if i== 0 and self.spp_:
+            if i == 0 and self.spp_:
                 block = self.spp(block)
 
             if i > 0:
