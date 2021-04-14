@@ -66,6 +66,12 @@ def parse_args():
         action="store_true",
         help="whether per-category AP and draw P-R Curve or not.")
 
+    parser.add_argument(
+        '--save_prediction_only',
+        action='store_true',
+        default=False,
+        help='Whether to save the evaluation results only')
+
     args = parser.parse_args()
     return args
 
@@ -85,7 +91,7 @@ def run(FLAGS, cfg):
     # init parallel environment if nranks > 1
     init_parallel_env()
 
-    # build trainer 
+    # build trainer
     trainer = Trainer(cfg, mode='eval')
 
     # load weights
@@ -102,6 +108,7 @@ def main():
     cfg['bias'] = 1 if FLAGS.bias else 0
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
+    cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')

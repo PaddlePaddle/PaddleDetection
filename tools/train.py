@@ -75,6 +75,11 @@ def parse_args():
         type=str,
         default="vdl_log_dir/scalar",
         help='VisualDL logging directory for scalar.')
+    parser.add_argument(
+        '--save_prediction_only',
+        action='store_true',
+        default=False,
+        help='Whether to save the evaluation results only')
     args = parser.parse_args()
     return args
 
@@ -110,6 +115,7 @@ def main():
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
+    cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
