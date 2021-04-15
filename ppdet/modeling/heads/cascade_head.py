@@ -137,7 +137,7 @@ class CascadeXConvNormHead(nn.Layer):
 @register
 class CascadeHead(BBoxHead):
     __shared__ = ['num_classes', 'num_cascade_stages']
-    __inject__ = ['bbox_assigner']
+    __inject__ = ['bbox_assigner', 'bbox_loss']
     """
     Cascade RCNN bbox head
 
@@ -161,7 +161,8 @@ class CascadeHead(BBoxHead):
                  num_classes=80,
                  bbox_weight=[[10., 10., 5., 5.], [20.0, 20.0, 10.0, 10.0],
                               [30.0, 30.0, 15.0, 15.0]],
-                 num_cascade_stages=3):
+                 num_cascade_stages=3,
+                 bbox_loss=None):
         nn.Layer.__init__(self, )
         self.head = head
         self.roi_extractor = roi_extractor
@@ -172,6 +173,7 @@ class CascadeHead(BBoxHead):
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
         self.num_cascade_stages = num_cascade_stages
+        self.bbox_loss = bbox_loss
 
         self.bbox_score_list = []
         self.bbox_delta_list = []

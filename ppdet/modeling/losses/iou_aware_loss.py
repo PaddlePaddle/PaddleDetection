@@ -42,7 +42,7 @@ class IouAwareLoss(IouLoss):
         iou = bbox_iou(
             pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
         iou.stop_gradient = True
-        ioup = F.sigmoid(ioup)
-        loss_iou_aware = (-iou * paddle.log(ioup)).sum(-2, keepdim=True)
+        loss_iou_aware = F.binary_cross_entropy_with_logits(
+            ioup, iou, reduction='none')
         loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

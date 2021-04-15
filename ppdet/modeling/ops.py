@@ -41,7 +41,12 @@ __all__ = [
     'collect_fpn_proposals',
     'matrix_nms',
     'batch_norm',
+    'mish',
 ]
+
+
+def mish(x):
+    return x * paddle.tanh(F.softplus(x))
 
 
 def batch_norm(ch,
