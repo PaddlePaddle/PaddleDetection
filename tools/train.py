@@ -24,6 +24,9 @@ if parent_path not in sys.path:
 
 import random
 import numpy as np
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
 
 import paddle
 
