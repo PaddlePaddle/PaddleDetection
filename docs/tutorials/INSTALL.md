@@ -5,7 +5,7 @@ English | [简体中文](INSTALL_cn.md)
 
 This document covers how to install PaddleDetection and its dependencies.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0).
 
 ## Requirements:
 

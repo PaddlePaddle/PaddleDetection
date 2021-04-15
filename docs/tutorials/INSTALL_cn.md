@@ -5,7 +5,7 @@
 
 本文档包含了如何安装PaddleDetection以及相关依赖
 
-其他更多PaddleDetection信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
+其他更多PaddleDetection信息，请参考[README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0).
 
 ## 环境要求
 

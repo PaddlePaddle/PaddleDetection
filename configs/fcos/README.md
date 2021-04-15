@@ -19,7 +19,6 @@ FCOS (Fully Convolutional One-Stage Object Detection) is a fast anchor-free obje
 **Notes:**
 
 - FCOS is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)`.
-- FCOS training performace is dependented on Paddle develop branch, performance reproduction shoule based on [Paddle daily version](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev) or Paddle 2.0.1(will be published on 2021.03), performace will loss slightly is training base on Paddle 2.0.0
 
 ## Citations
 ```
