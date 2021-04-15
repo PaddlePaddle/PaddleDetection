@@ -74,6 +74,7 @@ class IouAwareLoss(IouLoss):
         iouk = self._iou(pred, gt, ioup, eps)
         iouk.stop_gradient = True
 
-        loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)
+        loss_iou_aware = fluid.layers.sigmoid_cross_entropy_with_logits(ioup,
+                                                                        iouk)
         loss_iou_aware = loss_iou_aware * self._loss_weight
         return loss_iou_aware
