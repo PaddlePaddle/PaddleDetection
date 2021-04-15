@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_20x.yml',
+  '_base_/pafnet_lite.yml',
+  '_base_/pafnet_lite_reader.yml',
+]
+weights: output/pafnet_lite_mobilenet_v3_10x_coco/model_final

@@ -1,0 +1,44 @@
+architecture: TTFNet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
+norm_type: sync_bn
+
+TTFNet:
+  backbone: MobileNetV3
+  neck: TTFFPN
+  ttf_head: TTFHead
+  post_process: BBoxPostProcess
+
+MobileNetV3:
+  scale: 1.0
+  model_name: large
+  feature_maps: [5, 8, 14, 17]
+  with_extra_blocks: true
+  lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
+  conv_decay: 0.00001
+  norm_decay: 0.0
+  extra_block_filters: []
+
+TTFFPN:
+  planes: [96, 48, 24]
+  shortcut_num: [2, 2, 1]
+  lite_neck: true
+  fusion_method: concat
+
+TTFHead:
+  hm_head_planes: 48
+  wh_head_planes: 24
+  lite_head: true
+  hm_loss:
+    name: CTFocalLoss
+    loss_weight: 1.
+  wh_loss:
+    name: GIoULoss
+    loss_weight: 5.
+    reduction: sum
+
+BBoxPostProcess:
+  decode:
+    name: TTFBox
+    max_per_img: 100
+    score_thresh: 0.01
+    down_ratio: 4

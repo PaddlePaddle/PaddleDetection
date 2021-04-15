@@ -308,8 +308,8 @@ class GridMask(BaseOperator):
         self.prob = prob
         self.upper_iter = upper_iter
 
-        from .gridmask_utils import GridMask
-        self.gridmask_op = GridMask(
+        from .gridmask_utils import Gridmask
+        self.gridmask_op = Gridmask(
             use_h,
             use_w,
             rotate=rotate,
@@ -1516,14 +1516,14 @@ class Cutmix(BaseOperator):
         bbx2 = np.clip(cx + cut_w // 2, 0, w - 1)
         bby2 = np.clip(cy + cut_h // 2, 0, h - 1)
 
-        img_1 = np.zeros((h, w, img1.shape[2]), 'float32')
-        img_1[:img1.shape[0], :img1.shape[1], :] = \
+        img_1_pad = np.zeros((h, w, img1.shape[2]), 'float32')
+        img_1_pad[:img1.shape[0], :img1.shape[1], :] = \
             img1.astype('float32')
-        img_2 = np.zeros((h, w, img2.shape[2]), 'float32')
-        img_2[:img2.shape[0], :img2.shape[1], :] = \
+        img_2_pad = np.zeros((h, w, img2.shape[2]), 'float32')
+        img_2_pad[:img2.shape[0], :img2.shape[1], :] = \
             img2.astype('float32')
-        img_1[bby1:bby2, bbx1:bbx2, :] = img2[bby1:bby2, bbx1:bbx2, :]
-        return img_1
+        img_1_pad[bby1:bby2, bbx1:bbx2, :] = img_2_pad[bby1:bby2, bbx1:bbx2, :]
+        return img_1_pad
 
     def __call__(self, sample, context=None):
         if not isinstance(sample, Sequence):
@@ -1546,16 +1546,27 @@ class Cutmix(BaseOperator):
         gt_class1 = sample[0]['gt_class']
         gt_class2 = sample[1]['gt_class']
         gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
-        gt_score1 = sample[0]['gt_score']
-        gt_score2 = sample[1]['gt_score']
+        gt_score1 = np.ones_like(sample[0]['gt_class'])
+        gt_score2 = np.ones_like(sample[1]['gt_class'])
         gt_score = np.concatenate(
             (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
-        sample = sample[0]
-        sample['image'] = img
-        sample['gt_bbox'] = gt_bbox
-        sample['gt_score'] = gt_score
-        sample['gt_class'] = gt_class
-        return sample
+        result = copy.deepcopy(sample[0])
+        result['image'] = img
+        result['gt_bbox'] = gt_bbox
+        result['gt_score'] = gt_score
+        result['gt_class'] = gt_class
+        if 'is_crowd' in sample[0]:
+            is_crowd1 = sample[0]['is_crowd']
+            is_crowd2 = sample[1]['is_crowd']
+            is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
+            result['is_crowd'] = is_crowd
+        if 'difficult' in sample[0]:
+            is_difficult1 = sample[0]['difficult']
+            is_difficult2 = sample[1]['difficult']
+            is_difficult = np.concatenate(
+                (is_difficult1, is_difficult2), axis=0)
+            result['difficult'] = is_difficult
+        return result
 
 
 @register_op

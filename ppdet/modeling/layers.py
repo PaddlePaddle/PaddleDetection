@@ -23,7 +23,7 @@ from paddle import ParamAttr
 from paddle import to_tensor
 from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal, Constant
+from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
@@ -112,6 +112,7 @@ class ConvNormLayer(nn.Layer):
                  ch_out,
                  filter_size,
                  stride,
+                 groups=1,
                  norm_type='bn',
                  norm_decay=0.,
                  norm_groups=32,
@@ -142,7 +143,7 @@ class ConvNormLayer(nn.Layer):
                 kernel_size=filter_size,
                 stride=stride,
                 padding=(filter_size - 1) // 2,
-                groups=1,
+                groups=groups,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
                     initializer=initializer,
@@ -158,7 +159,7 @@ class ConvNormLayer(nn.Layer):
                 kernel_size=filter_size,
                 stride=stride,
                 padding=(filter_size - 1) // 2,
-                groups=1,
+                groups=groups,
                 weight_attr=ParamAttr(
                     name=name + "_weight",
                     initializer=initializer,
@@ -194,6 +195,71 @@ class ConvNormLayer(nn.Layer):
     def forward(self, inputs):
         out = self.conv(inputs)
         out = self.norm(out)
+        return out
+
+
+class LiteConv(nn.Layer):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 stride=1,
+                 with_act=True,
+                 norm_type='sync_bn',
+                 name=None):
+        super(LiteConv, self).__init__()
+        self.lite_conv = nn.Sequential()
+        conv1 = ConvNormLayer(
+            in_channels,
+            in_channels,
+            filter_size=5,
+            stride=stride,
+            groups=in_channels,
+            norm_type=norm_type,
+            initializer=XavierUniform(),
+            norm_name=name + '.conv1.norm',
+            name=name + '.conv1')
+        conv2 = ConvNormLayer(
+            in_channels,
+            out_channels,
+            filter_size=1,
+            stride=stride,
+            norm_type=norm_type,
+            initializer=XavierUniform(),
+            norm_name=name + '.conv2.norm',
+            name=name + '.conv2')
+        conv3 = ConvNormLayer(
+            out_channels,
+            out_channels,
+            filter_size=1,
+            stride=stride,
+            norm_type=norm_type,
+            initializer=XavierUniform(),
+            norm_name=name + '.conv3.norm',
+            name=name + '.conv3')
+        conv4 = ConvNormLayer(
+            out_channels,
+            out_channels,
+            filter_size=5,
+            stride=stride,
+            groups=out_channels,
+            norm_type=norm_type,
+            initializer=XavierUniform(),
+            norm_name=name + '.conv4.norm',
+            name=name + '.conv4')
+        conv_list = [conv1, conv2, conv3, conv4]
+        self.lite_conv.add_sublayer('conv1', conv1)
+        self.lite_conv.add_sublayer('relu6_1', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv2', conv2)
+        if with_act:
+            self.lite_conv.add_sublayer('relu6_2', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv3', conv3)
+        self.lite_conv.add_sublayer('relu6_3', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv4', conv4)
+        if with_act:
+            self.lite_conv.add_sublayer('relu6_4', nn.ReLU6())
+
+    def forward(self, inputs):
+        out = self.lite_conv(inputs)
         return out
 
 

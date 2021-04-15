@@ -19,6 +19,7 @@ from paddle import ParamAttr
 from paddle.nn.initializer import Constant, Uniform, Normal
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
+from ppdet.modeling.layers import DeformableConvV2, LiteConv
 import numpy as np
 
 
@@ -30,27 +31,61 @@ class HMHead(nn.Layer):
         ch_out (int): The channel number of output Tensor.
         num_classes (int): Number of classes.
         conv_num (int): The convolution number of hm_feat.
+        dcn_head(bool): whether use dcn in head. False by default. 
+        lite_head(bool): whether use lite version. False by default.
+        norm_type (string): norm type, 'sync_bn', 'bn', 'gn' are optional.
+            bn by default
+
     Return:
         Heatmap head output
     """
-    __shared__ = ['num_classes']
+    __shared__ = ['num_classes', 'norm_type']
 
-    def __init__(self, ch_in, ch_out=128, num_classes=80, conv_num=2):
+    def __init__(
+            self,
+            ch_in,
+            ch_out=128,
+            num_classes=80,
+            conv_num=2,
+            dcn_head=False,
+            lite_head=False,
+            norm_type='bn', ):
         super(HMHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
             name = 'conv.{}'.format(i)
-            head_conv.add_sublayer(
-                name,
-                nn.Conv2D(
-                    in_channels=ch_in if i == 0 else ch_out,
-                    out_channels=ch_out,
-                    kernel_size=3,
-                    padding=1,
-                    weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
-            head_conv.add_sublayer(name + '.act', nn.ReLU())
+            if lite_head:
+                lite_name = 'hm.' + name
+                head_conv.add_sublayer(
+                    lite_name,
+                    LiteConv(
+                        in_channels=ch_in if i == 0 else ch_out,
+                        out_channels=ch_out,
+                        norm_type=norm_type,
+                        name=lite_name))
+                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
+            else:
+                if dcn_head:
+                    head_conv.add_sublayer(
+                        name,
+                        DeformableConvV2(
+                            in_channels=ch_in if i == 0 else ch_out,
+                            out_channels=ch_out,
+                            kernel_size=3,
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+                            name='hm.' + name))
+                else:
+                    head_conv.add_sublayer(
+                        name,
+                        nn.Conv2D(
+                            in_channels=ch_in if i == 0 else ch_out,
+                            out_channels=ch_out,
+                            kernel_size=3,
+                            padding=1,
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+                            bias_attr=ParamAttr(
+                                learning_rate=2., regularizer=L2Decay(0.))))
+                head_conv.add_sublayer(name + '.act', nn.ReLU())
         self.feat = self.add_sublayer('hm_feat', head_conv)
         bias_init = float(-np.log((1 - 0.01) / 0.01))
         self.head = self.add_sublayer(
@@ -78,26 +113,59 @@ class WHHead(nn.Layer):
         ch_in (int): The channel number of input Tensor.
         ch_out (int): The channel number of output Tensor.
         conv_num (int): The convolution number of wh_feat.
+        dcn_head(bool): whether use dcn in head. False by default.
+        lite_head(bool): whether use lite version. False by default.
+        norm_type (string): norm type, 'sync_bn', 'bn', 'gn' are optional.
+            bn by default
     Return:
         Width & Height head output
     """
+    __shared__ = ['norm_type']
 
-    def __init__(self, ch_in, ch_out=64, conv_num=2):
+    def __init__(self,
+                 ch_in,
+                 ch_out=64,
+                 conv_num=2,
+                 dcn_head=False,
+                 lite_head=False,
+                 norm_type='bn'):
         super(WHHead, self).__init__()
         head_conv = nn.Sequential()
         for i in range(conv_num):
             name = 'conv.{}'.format(i)
-            head_conv.add_sublayer(
-                name,
-                nn.Conv2D(
-                    in_channels=ch_in if i == 0 else ch_out,
-                    out_channels=ch_out,
-                    kernel_size=3,
-                    padding=1,
-                    weight_attr=ParamAttr(initializer=Normal(0, 0.001)),
-                    bias_attr=ParamAttr(
-                        learning_rate=2., regularizer=L2Decay(0.))))
-            head_conv.add_sublayer(name + '.act', nn.ReLU())
+            if lite_head:
+                lite_name = 'wh.' + name
+                head_conv.add_sublayer(
+                    lite_name,
+                    LiteConv(
+                        in_channels=ch_in if i == 0 else ch_out,
+                        out_channels=ch_out,
+                        norm_type=norm_type,
+                        name=lite_name))
+                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
+            else:
+                if dcn_head:
+                    head_conv.add_sublayer(
+                        name,
+                        DeformableConvV2(
+                            in_channels=ch_in if i == 0 else ch_out,
+                            out_channels=ch_out,
+                            kernel_size=3,
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+                            name='wh.' + name))
+                else:
+                    head_conv.add_sublayer(
+                        name,
+                        nn.Conv2D(
+                            in_channels=ch_in if i == 0 else ch_out,
+                            out_channels=ch_out,
+                            kernel_size=3,
+                            padding=1,
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+                            bias_attr=ParamAttr(
+                                learning_rate=2., regularizer=L2Decay(0.))))
+                head_conv.add_sublayer(name + '.act', nn.ReLU())
+
         self.feat = self.add_sublayer('wh_feat', head_conv)
         self.head = self.add_sublayer(
             'wh_head',
@@ -137,9 +205,12 @@ class TTFHead(nn.Layer):
             16.0 by default.
         down_ratio (int): the actual down_ratio is calculated by base_down_ratio
             (default 16) and the number of upsample layers.
+        lite_head(bool): whether use lite version. False by default.
+        norm_type (string): norm type, 'sync_bn', 'bn', 'gn' are optional.
+            bn by default
     """
 
-    __shared__ = ['num_classes', 'down_ratio']
+    __shared__ = ['num_classes', 'down_ratio', 'norm_type']
     __inject__ = ['hm_loss', 'wh_loss']
 
     def __init__(self,
@@ -152,12 +223,16 @@ class TTFHead(nn.Layer):
                  hm_loss='CTFocalLoss',
                  wh_loss='GIoULoss',
                  wh_offset_base=16.,
-                 down_ratio=4):
+                 down_ratio=4,
+                 dcn_head=False,
+                 lite_head=False,
+                 norm_type='bn'):
         super(TTFHead, self).__init__()
         self.in_channels = in_channels
         self.hm_head = HMHead(in_channels, hm_head_planes, num_classes,
-                              hm_head_conv_num)
-        self.wh_head = WHHead(in_channels, wh_head_planes, wh_head_conv_num)
+                              hm_head_conv_num, dcn_head, lite_head, norm_type)
+        self.wh_head = WHHead(in_channels, wh_head_planes, wh_head_conv_num,
+                              dcn_head, lite_head, norm_type)
         self.hm_loss = hm_loss
         self.wh_loss = wh_loss
 

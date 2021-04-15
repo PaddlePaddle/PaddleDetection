@@ -1,0 +1,171 @@
+architecture: TTFNet
+use_gpu: true
+max_iters: 300000
+log_smooth_window: 20
+save_dir: output
+snapshot_iter: 50000
+metric: COCO
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/MobileNetV3_large_x1_0_ssld_pretrained.tar
+weights: output/pafnet_lite_mobilenet_v3_20x_coco/model_final
+num_classes: 80
+
+TTFNet:
+  backbone: MobileNetV3RCNN
+  ttf_head: TTFLiteHead
+
+MobileNetV3RCNN:
+  norm_type: sync_bn
+  norm_decay: 0.0
+  model_name: large
+  scale: 1.0
+  conv_decay: 0.00001
+  lr_mult_list: [0.25, 0.25, 0.5, 0.5, 0.75]
+  freeze_norm: false
+
+TTFLiteHead:
+  head_conv: 48
+
+GiouLoss:
+  loss_weight: 5.
+  do_average: false
+  use_class_weight: false
+
+LearningRate:
+  base_lr: 0.015
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 225000
+    - 275000
+  - !LinearWarmup
+    start_factor: 0.2
+    steps: 1000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 35
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0004
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'ttf_heatmap', 'ttf_box_target', 'ttf_reg_weight']
+  dataset:
+    !COCODataSet
+    image_dir: train2017
+    anno_path: annotations/instances_train2017.json
+    dataset_dir: dataset/coco
+    with_background: false
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: true
+    with_cutmix: True
+  - !ColorDistort
+    hue: [-18., 18., 0.5]
+    saturation: [0.5, 1.5, 0.5]
+    contrast: [0.5, 1.5, 0.5]
+    brightness: [-32., 32., 0.5]
+    random_apply: False
+    hsv_format: False
+    random_channel: True
+  - !RandomExpand
+    ratio: 4
+    prob: 0.5
+    fill_value: [123.675, 116.28, 103.53]
+  - !RandomCrop
+    aspect_ratio: NULL
+    cover_all_box: True
+  - !CutmixImage
+    alpha: 1.5
+    beta: 1.5
+  - !RandomFlipImage
+    prob: 0.5
+  - !GridMaskOp
+    use_h: true
+    use_w: true
+    rotate: 1
+    offset: false
+    ratio: 0.5
+    mode: 1
+    prob: 0.7
+    upper_iter: 300000
+  batch_transforms:
+  - !RandomShape
+    sizes: [320, 352, 384, 416, 448, 480, 512]
+    random_inter: True
+    resize_box: True
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: false
+    mean: [123.675, 116.28, 103.53]
+    std: [58.395, 57.12, 57.375]
+  - !Permute
+    to_bgr: false
+    channel_first: true
+  - !Gt2TTFTarget
+    num_classes: 80
+    down_ratio: 4
+  - !PadBatch
+    pad_to_stride: 32
+  batch_size: 12
+  shuffle: true
+  worker_num: 8
+  bufsize: 2
+  use_process: false
+  cutmix_epoch: 200
+
+EvalReader:
+  inputs_def:
+    image_shape: [3, 320, 320]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !COCODataSet
+      image_dir: val2017
+      anno_path: annotations/instances_val2017.json
+      dataset_dir: dataset/coco
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      target_dim: 320
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
+  drop_empty: false
+  worker_num: 2
+  bufsize: 2
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 320, 320]
+    fields: ['image', 'im_id', 'scale_factor']
+  dataset:
+    !ImageFolder
+      anno_path: annotations/instances_val2017.json
+      with_background: false
+  sample_transforms:
+    - !DecodeImage
+      to_rgb: True
+    - !Resize
+      interp: 1
+      target_dim: 320
+    - !NormalizeImage
+      mean: [123.675, 116.28, 103.53]
+      std: [58.395, 57.12, 57.375]
+      is_scale: false
+      is_channel_first: false
+    - !Permute
+      to_bgr: false
+      channel_first: True
+  batch_size: 1
