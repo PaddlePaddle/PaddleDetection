@@ -14,7 +14,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
   <img src="static/docs/images/football.gif" width='800'/>
 </div>
 
-### Product dynamic
+### Product news
 
 - 2021.04.14: Release `release/2.0` version. Dygraph mode in PaddleDetection is fully supported. Cover all the algorithm of static graph and update the performance of mainstream detection models. Release `PP-YOLO v2` and `S2ANet` which is aimed at rotation object detection.Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0) for details.
 - 2020.02.07: Release `release/2.0-rc` version, Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc) for details.
@@ -25,14 +25,14 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 - **Rich Models**
 PaddleDetection provides rich of models, including **100+ pre-trained models** such as **object detection**, **instance segmentation**, **face detection** etc. It covers a variety of **global competition champion** schemes.
 
-- **Use Concisely**
-Modular design, decouple each network component, developers easily build and try various detection models and optimization strategies, quickly get high-performance, customized algorithm.
+- **Highly Flexible:**
+Components are designed to be modular. Model architectures, as well as data preprocess pipelines and optimization strategies, can be easily customized with simple configuration changes.
 
-- **Getting Through End to End**
+- **Production Ready:**
 From data augmentation, constructing models, training, compression, depolyment, get through end to end, and complete support for multi-architecture, multi-device deployment for **cloud and edge device**.
 
 - **High Performance:**
-Based on the high performance core of PaddlePaddle, advantages of training speed and memory occupation are obvious. Support FP16 training, support multi-machine training.
+Based on the high performance core of PaddlePaddle, advantages of training speed and memory occupation are obvious. FP16 training and multi-machine training are supported as well.
 
 #### Overview of Kit Structures
 
