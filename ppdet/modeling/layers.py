@@ -123,16 +123,13 @@ class ConvNormLayer(nn.Layer):
                  freeze_norm=False,
                  initializer=Normal(
                      mean=0., std=0.01),
-                 skip_quant=False,
-                 name=None):
+                 skip_quant=False):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
         if bias_on:
             bias_attr = ParamAttr(
-                name=name + "_bias",
-                initializer=Constant(value=0.),
-                learning_rate=lr_scale)
+                initializer=Constant(value=0.), learning_rate=lr_scale)
         else:
             bias_attr = False
 
@@ -145,9 +142,7 @@ class ConvNormLayer(nn.Layer):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 weight_attr=ParamAttr(
-                    name=name + "_weight",
-                    initializer=initializer,
-                    learning_rate=1.),
+                    initializer=initializer, learning_rate=1.),
                 bias_attr=bias_attr)
             if skip_quant:
                 self.conv.skip_quant = True
@@ -161,14 +156,11 @@ class ConvNormLayer(nn.Layer):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 weight_attr=ParamAttr(
-                    name=name + "_weight",
-                    initializer=initializer,
-                    learning_rate=1.),
+                    initializer=initializer, learning_rate=1.),
                 bias_attr=True,
                 lr_scale=2.,
                 regularizer=L2Decay(norm_decay),
-                skip_quant=skip_quant,
-                name=name)
+                skip_quant=skip_quant)
 
         norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(

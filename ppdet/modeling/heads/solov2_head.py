@@ -76,8 +76,7 @@ class SOLOv2MaskHead(nn.Layer):
                         filter_size=3,
                         stride=1,
                         norm_type='gn',
-                        norm_name=conv_feat_name + '.conv' + str(i) + '.gn',
-                        name=conv_feat_name + '.conv' + str(i)))
+                        norm_name=conv_feat_name + '.conv' + str(i) + '.gn'))
                 self.add_sublayer('conv_pre_feat' + str(i), conv_pre_feat)
                 self.convs_all_levels.append(conv_pre_feat)
             else:
@@ -95,8 +94,8 @@ class SOLOv2MaskHead(nn.Layer):
                             filter_size=3,
                             stride=1,
                             norm_type='gn',
-                            norm_name=conv_feat_name + '.conv' + str(j) + '.gn',
-                            name=conv_feat_name + '.conv' + str(j)))
+                            norm_name=conv_feat_name + '.conv' + str(j) +
+                            '.gn'))
                     conv_pre_feat.add_sublayer(
                         conv_feat_name + '.conv' + str(j) + 'act', nn.ReLU())
                     conv_pre_feat.add_sublayer(
@@ -115,8 +114,7 @@ class SOLOv2MaskHead(nn.Layer):
                 filter_size=1,
                 stride=1,
                 norm_type='gn',
-                norm_name=conv_pred_name + '.gn',
-                name=conv_pred_name))
+                norm_name=conv_pred_name + '.gn'))
 
     def forward(self, inputs):
         """
@@ -217,8 +215,7 @@ class SOLOv2Head(nn.Layer):
                     filter_size=3,
                     stride=1,
                     norm_type='gn',
-                    norm_name='bbox_head.kernel_convs.{}.gn'.format(i),
-                    name='bbox_head.kernel_convs.{}'.format(i)))
+                    norm_name='bbox_head.kernel_convs.{}.gn'.format(i)))
             self.kernel_pred_convs.append(kernel_conv)
             ch_in = self.in_channels if i == 0 else self.seg_feat_channels
             cate_conv = self.add_sublayer(
@@ -229,8 +226,7 @@ class SOLOv2Head(nn.Layer):
                     filter_size=3,
                     stride=1,
                     norm_type='gn',
-                    norm_name='bbox_head.cate_convs.{}.gn'.format(i),
-                    name='bbox_head.cate_convs.{}'.format(i)))
+                    norm_name='bbox_head.cate_convs.{}.gn'.format(i)))
             self.cate_pred_convs.append(cate_conv)
 
         self.solo_kernel = self.add_sublayer(
