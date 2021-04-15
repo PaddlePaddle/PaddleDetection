@@ -33,6 +33,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   if (use_gpu) {
     config.EnableUseGpu(100, gpu_id);
     config.SwitchIrOptim(true);
+    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle::AnalysisConfig::Precision::kFloat32;
       if (run_mode == "trt_fp16") {
