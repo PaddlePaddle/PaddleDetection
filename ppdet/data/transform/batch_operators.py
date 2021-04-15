@@ -27,6 +27,7 @@ from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from scipy import ndimage
 
+from ppdet.modeling import bbox_utils
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
