@@ -393,9 +393,7 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    if run_mode == 'trt_int8':
-        raise ValueError("TensorRT int8 mode is not supported now, "
-                         "please use trt_fp32 or trt_fp16 instead.")
+    use_calib_mode = True if run_mode == 'trt_int8' else False
     precision_map = {
         'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
@@ -419,7 +417,7 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=False)
+            use_calib_mode=use_calib_mode)
 
     # disable print log when predict
     config.disable_glog_info()
@@ -574,7 +572,7 @@ if __name__ == '__main__':
         "--run_mode",
         type=str,
         default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16)")
+        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
         "--use_gpu",
         type=ast.literal_eval,

@@ -32,17 +32,16 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   config.SetModel(prog_file, params_file);
   if (use_gpu) {
     config.EnableUseGpu(100, gpu_id);
+    config.SwitchIrOptim(true);
     if (run_mode != "fluid") {
       auto precision = paddle::AnalysisConfig::Precision::kFloat32;
       if (run_mode == "trt_fp16") {
         precision = paddle::AnalysisConfig::Precision::kHalf;
       } else if (run_mode == "trt_int8") {
-        printf("TensorRT int8 mode is not supported now, "
-               "please use 'trt_fp32' or 'trt_fp16' instead");
+        precision = paddle::AnalysisConfig::Precision::kInt8;
+        use_calib_mode = true;
       } else {
-        if (run_mode != "trt_fp32") {
-          printf("run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'");
-        }
+        printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
       config.EnableTensorRtEngine(
           1 << 10,
@@ -50,7 +49,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           min_subgraph_size,
           precision,
           false,
-          false);
+          use_calib_mode);
    }
   } else {
     config.DisableGpu();
