@@ -199,8 +199,8 @@ int main(int argc, char** argv) {
     return -1;
   }
   if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
-      || FLAGS_run_mode == "trt_fp16")) {
-    std::cout << "run_mode should be 'fluid', 'trt_fp32' or 'trt_fp16'.";
+      || FLAGS_run_mode == "trt_fp16" || FLAGS_run_mode == "trt_int8")) {
+    std::cout << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
 
