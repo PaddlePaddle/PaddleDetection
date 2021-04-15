@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image
 
 
-class GridMask(object):
+class Gridmask(object):
     def __init__(self,
                  use_h=True,
                  use_w=True,
@@ -30,7 +30,7 @@ class GridMask(object):
                  mode=1,
                  prob=0.7,
                  upper_iter=360000):
-        super(GridMask, self).__init__()
+        super(Gridmask, self).__init__()
         self.use_h = use_h
         self.use_w = use_w
         self.rotate = rotate

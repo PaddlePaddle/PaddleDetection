@@ -581,6 +581,11 @@ class Gt2TTFTarget(BaseOperator):
             sample['ttf_heatmap'] = heatmap
             sample['ttf_box_target'] = box_target
             sample['ttf_reg_weight'] = reg_weight
+            sample.pop('is_crowd')
+            sample.pop('gt_class')
+            sample.pop('gt_bbox')
+            if 'gt_score' in sample:
+                sample.pop('gt_score')
         return samples
 
     def draw_truncate_gaussian(self, heatmap, center, h_radius, w_radius):

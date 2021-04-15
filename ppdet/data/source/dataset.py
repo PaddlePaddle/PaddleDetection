@@ -55,6 +55,7 @@ class DetDataset(Dataset):
         self.sample_num = sample_num
         self.use_default_label = use_default_label
         self._epoch = 0
+        self._curr_iter = 0
 
     def __len__(self, ):
         return len(self.roidbs)
@@ -76,6 +77,8 @@ class DetDataset(Dataset):
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(3)
             ]
+        roidb['curr_iter'] = self._curr_iter
+        self._curr_iter += 1
 
         return self.transform(roidb)
 
