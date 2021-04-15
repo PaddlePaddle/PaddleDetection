@@ -171,7 +171,7 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 - 精度与推理速度数据均为使用输入图像尺寸为608的测试结果
 - Box AP为在COCO train2017数据集训练，val2017和test-dev2017数据集上评估`mAP(IoU=0.5:0.95)`数据
 - 推理速度为单卡V100上，batch size=1, 使用上述benchmark测试方法的测试结果，测试环境配置为CUDA 10.2，CUDNN 7.5.1
-- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO.md)
+- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/docs/MODEL_ZOO_cn.md)
 
 ## 引用
 
