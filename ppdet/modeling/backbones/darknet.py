@@ -18,7 +18,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.ops import batch_norm
+from ppdet.modeling.ops import batch_norm, mish
 from ..shape_spec import ShapeSpec
 
 __all__ = ['DarkNet', 'ConvBNLayer']
@@ -77,6 +77,8 @@ class ConvBNLayer(nn.Layer):
         out = self.batch_norm(out)
         if self.act == 'leaky':
             out = F.leaky_relu(out, 0.1)
+        elif self.act == 'mish':
+            out = mish(out)
         return out
 
 

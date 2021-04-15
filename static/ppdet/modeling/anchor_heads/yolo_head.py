@@ -192,6 +192,8 @@ class YOLOv3Head(object):
 
         if act == 'leaky':
             out = fluid.layers.leaky_relu(x=out, alpha=0.1)
+        elif act == 'mish':
+            out = fluid.layers.mish(out)
         return out
 
     def _spp_module(self, input, name=""):
@@ -657,7 +659,6 @@ class YOLOv4Head(YOLOv3Head):
 class PPYOLOTinyHead(YOLOv3Head):
     """
     Head block for YOLOv3 network
-
     Args:
         norm_decay (float): weight decay for normalization layer weights
         num_classes (int): number of output classes
@@ -781,11 +782,9 @@ class PPYOLOTinyHead(YOLOv3Head):
     def _get_outputs(self, input, is_train=True):
         """
         Get PP-YOLO tiny head output
-
         Args:
             input (list): List of Variables, output of backbone stages
             is_train (bool): whether in train or test mode
-
         Returns:
             outputs (list): Variables of each output layer
         """
@@ -836,5 +835,234 @@ class PPYOLOTinyHead(YOLOv3Head):
                     padding=0,
                     name=self.prefix_name + "yolo_transition.{}".format(i))
                 route = self._upsample(route)
+
+        return outputs
+
+
+@register
+class YOLOv3PANHead(YOLOv3Head):
+    """
+    Head block for YOLOv3PANHead network
+
+    Args:
+        conv_block_num (int): number of conv block in each detection block
+        norm_decay (float): weight decay for normalization layer weights
+        num_classes (int): number of output classes
+        anchors (list): anchors
+        anchor_masks (list): anchor masks
+        nms (object): an instance of `MultiClassNMS`
+    """
+    __inject__ = ['yolo_loss', 'nms']
+    __shared__ = ['num_classes', 'weight_prefix_name']
+
+    def __init__(self,
+                 conv_block_num=3,
+                 norm_decay=0.,
+                 num_classes=80,
+                 anchors=[[10, 13], [16, 30], [33, 23], [30, 61], [62, 45],
+                          [59, 119], [116, 90], [156, 198], [373, 326]],
+                 anchor_masks=[[6, 7, 8], [3, 4, 5], [0, 1, 2]],
+                 drop_block=False,
+                 iou_aware=False,
+                 iou_aware_factor=0.4,
+                 block_size=3,
+                 keep_prob=0.9,
+                 yolo_loss="YOLOv3Loss",
+                 spp=False,
+                 nms=MultiClassNMS(
+                     score_threshold=0.01,
+                     nms_top_k=1000,
+                     keep_top_k=100,
+                     nms_threshold=0.45,
+                     background_label=-1).__dict__,
+                 weight_prefix_name='',
+                 downsample=[32, 16, 8],
+                 scale_x_y=1.0,
+                 clip_bbox=True,
+                 act='mish'):
+        super(YOLOv3PANHead, self).__init__(
+            conv_block_num=conv_block_num,
+            norm_decay=norm_decay,
+            num_classes=num_classes,
+            anchors=anchors,
+            anchor_masks=anchor_masks,
+            drop_block=drop_block,
+            iou_aware=iou_aware,
+            iou_aware_factor=iou_aware_factor,
+            block_size=block_size,
+            keep_prob=keep_prob,
+            yolo_loss=yolo_loss,
+            spp=spp,
+            nms=nms,
+            weight_prefix_name=weight_prefix_name,
+            downsample=downsample,
+            scale_x_y=scale_x_y,
+            clip_bbox=clip_bbox)
+        self.act = act
+
+    def _detection_block(self,
+                         input,
+                         channel,
+                         conv_block_num=2,
+                         is_first=False,
+                         is_test=True,
+                         name=None):
+        conv_left = self._conv_bn(
+            input,
+            channel,
+            act=self.act,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            name='{}.left'.format(name))
+        conv_right = self._conv_bn(
+            input,
+            channel,
+            act=self.act,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            name='{}.right'.format(name))
+        for j in range(conv_block_num):
+            conv_left = self._conv_bn(
+                conv_left,
+                channel,
+                act=self.act,
+                filter_size=1,
+                stride=1,
+                padding=0,
+                name='{}.left.{}'.format(name, 2 * j))
+            if self.use_spp and is_first and j == 1:
+                c = conv_left.shape[1]
+                conv_left = self._spp_module(conv_left, name="spp")
+                conv_left = self._conv_bn(
+                    conv_left,
+                    c,
+                    act=self.act,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    name='{}.left.{}'.format(name, 2 * j + 1))
+            else:
+                conv_left = self._conv_bn(
+                    conv_left,
+                    channel,
+                    act=self.act,
+                    filter_size=3,
+                    stride=1,
+                    padding=1,
+                    name='{}.left.{}'.format(name, 2 * j + 1))
+            if self.drop_block and j == 1:
+                conv_left = DropBlock(
+                    conv_left,
+                    block_size=self.block_size,
+                    keep_prob=self.keep_prob,
+                    is_test=is_test)
+
+        conv = fluid.layers.concat(input=[conv_left, conv_right], axis=1)
+        conv = self._conv_bn(
+            conv,
+            channel * 2,
+            act=self.act,
+            filter_size=1,
+            stride=1,
+            padding=0,
+            name=name)
+        return conv, conv
+
+    def _get_outputs(self, input, is_train=True):
+        """
+        Get YOLOv3 head output
+
+        Args:
+            input (list): List of Variables, output of backbone stages
+            is_train (bool): whether in train or test mode
+
+        Returns:
+            outputs (list): Variables of each output layer
+        """
+
+        # get last out_layer_num blocks in reverse order
+        out_layer_num = len(self.anchor_masks)
+        blocks = input[-1:-out_layer_num - 1:-1]
+
+        # fpn
+        yolo_feats = []
+        route = None
+        for i, block in enumerate(blocks):
+            if i > 0:  # perform concat in first 2 detection_block
+                block = fluid.layers.concat(input=[route, block], axis=1)
+            route, tip = self._detection_block(
+                block,
+                channel=512 // (2**i),
+                is_first=i == 0,
+                is_test=(not is_train),
+                conv_block_num=self.conv_block_num,
+                name=self.prefix_name + "fpn.{}".format(i))
+
+            yolo_feats.append(tip)
+
+            if i < len(blocks) - 1:
+                # do not perform upsample in the last detection_block
+                route = self._conv_bn(
+                    input=route,
+                    ch_out=512 // (2**i),
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    act=self.act,
+                    name=self.prefix_name + "fpn_transition.{}".format(i))
+                # upsample
+                route = self._upsample(route)
+
+        # pan
+        pan_feats = [yolo_feats[-1]]
+        route = yolo_feats[out_layer_num - 1]
+        for i in reversed(range(out_layer_num - 1)):
+            channel = 512 // (2**i)
+            route = self._conv_bn(
+                input=route,
+                ch_out=channel,
+                filter_size=3,
+                stride=2,
+                padding=1,
+                act=self.act,
+                name=self.prefix_name + "pan_transition.{}".format(i))
+            block = yolo_feats[i]
+            block = fluid.layers.concat(input=[route, block], axis=1)
+
+            route, tip = self._detection_block(
+                block,
+                channel=channel,
+                is_first=False,
+                is_test=(not is_train),
+                conv_block_num=self.conv_block_num,
+                name=self.prefix_name + "pan.{}".format(i))
+
+            pan_feats.append(tip)
+
+        pan_feats = pan_feats[::-1]
+        outputs = []
+        for i, block in enumerate(pan_feats):
+            if self.iou_aware:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 6)
+            else:
+                num_filters = len(self.anchor_masks[i]) * (self.num_classes + 5)
+            with fluid.name_scope('yolo_output'):
+                block_out = fluid.layers.conv2d(
+                    input=block,
+                    num_filters=num_filters,
+                    filter_size=1,
+                    stride=1,
+                    padding=0,
+                    act=None,
+                    param_attr=ParamAttr(
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.weights".format(i)),
+                    bias_attr=ParamAttr(
+                        regularizer=L2Decay(0.),
+                        name=self.prefix_name +
+                        "yolo_output.{}.conv.bias".format(i)))
+                outputs.append(block_out)
 
         return outputs
