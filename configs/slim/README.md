@@ -17,6 +17,7 @@
 - CUDA 9.0+
 - cuDNN >=7.5
 
+**注意：** 量化训练需要依赖Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装合适的PaddlePaddle版本。
 
 #### 安装PaddleSlim
 - 方法一：直接安装：
