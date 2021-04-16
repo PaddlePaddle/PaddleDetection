@@ -30,36 +30,36 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### Faster R-CNN
 
-请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/faster_rcnn/)
+请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/)
 
 ### Mask R-CNN
 
-请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/mask_rcnn/)
+请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/)
 
 ### Cascade R-CNN
 
-请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/cascade_rcnn/)
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/developh/configs/cascade_rcnn/)
 
 ### YOLOv3
 
-请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/yolov3/)
+请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/)
 
 ### SSD
 
-请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/ssd/)
+请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/)
 
 ### FCOS
 
-请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/fcos/)
+请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/fcos/)
 
 ### SOLOv2
 
-请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/solov2/)
+请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
 
 ### PP-YOLO
 
-请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/ppyolo/)
+请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/)
 
 ### TTFNet
 
-请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/ttfnet/)
+请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/)

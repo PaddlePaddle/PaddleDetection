@@ -21,7 +21,6 @@
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   1x    |     ----     |  41.4  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/faster_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   2x    |     ----     |  42.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_ssld_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/faster_rcnn_r50_vd_ssld_fpn_2x_coco.yml) |
 
-**注意：** Faster R-CNN模型精度依赖Paddle develop分支修改，精度复现须使用[每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)或2.0.1版本(将于2021.03发布)，使用Paddle 2.0.0版本会有少量精度损失。
 
 ## Citations
 ```
