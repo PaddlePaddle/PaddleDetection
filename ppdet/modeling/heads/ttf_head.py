@@ -84,19 +84,17 @@ class HMHead(nn.Layer):
                             bias_attr=ParamAttr(
                                 learning_rate=2., regularizer=L2Decay(0.))))
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
-        self.feat = self.add_sublayer('feat', head_conv)
+        self.feat = head_conv
         bias_init = float(-np.log((1 - 0.01) / 0.01))
-        self.head = self.add_sublayer(
-            'head',
-            nn.Conv2D(
-                in_channels=ch_out,
-                out_channels=num_classes,
-                kernel_size=1,
-                weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                bias_attr=ParamAttr(
-                    learning_rate=2.,
-                    regularizer=L2Decay(0.),
-                    initializer=Constant(bias_init))))
+        self.head = nn.Conv2D(
+            in_channels=ch_out,
+            out_channels=num_classes,
+            kernel_size=1,
+            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+            bias_attr=ParamAttr(
+                learning_rate=2.,
+                regularizer=L2Decay(0.),
+                initializer=Constant(bias_init)))
 
     def forward(self, feat):
         out = self.feat(feat)
@@ -162,16 +160,14 @@ class WHHead(nn.Layer):
                                 learning_rate=2., regularizer=L2Decay(0.))))
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
 
-        self.feat = self.add_sublayer('feat', head_conv)
-        self.head = self.add_sublayer(
-            'head',
-            nn.Conv2D(
-                in_channels=ch_out,
-                out_channels=4,
-                kernel_size=1,
-                weight_attr=ParamAttr(initializer=Normal(0, 0.001)),
-                bias_attr=ParamAttr(
-                    learning_rate=2., regularizer=L2Decay(0.))))
+        self.feat = head_conv
+        self.head = nn.Conv2D(
+            in_channels=ch_out,
+            out_channels=4,
+            kernel_size=1,
+            weight_attr=ParamAttr(initializer=Normal(0, 0.001)),
+            bias_attr=ParamAttr(
+                learning_rate=2., regularizer=L2Decay(0.)))
 
     def forward(self, feat):
         out = self.feat(feat)

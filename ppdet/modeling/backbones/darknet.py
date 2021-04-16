@@ -35,7 +35,8 @@ class ConvBNLayer(nn.Layer):
                  norm_type='bn',
                  norm_decay=0.,
                  act="leaky",
-                 data_format='NCHW'):
+                 data_format='NCHW',
+                 name=''):
         """
         conv + bn + activation layer
 
