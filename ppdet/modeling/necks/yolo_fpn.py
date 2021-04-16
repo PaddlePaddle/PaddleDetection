@@ -25,9 +25,9 @@ from ..shape_spec import ShapeSpec
 __all__ = ['YOLOv3FPN', 'PPYOLOFPN']
 
 
-def add_coord(x):
+def add_coord(x, data_format):
     b = x.shape[0]
-    if self.data_format == 'NCHW':
+    if data_format == 'NCHW':
         h = x.shape[2]
         w = x.shape[3]
     else:
@@ -35,14 +35,14 @@ def add_coord(x):
         w = x.shape[2]
 
     gx = paddle.arange(w, dtype='float32') / (w - 1.) * 2.0 - 1.
-    if self.data_format == 'NCHW':
+    if data_format == 'NCHW':
         gx = gx.reshape([1, 1, 1, w]).expand([b, 1, h, w])
     else:
         gx = gx.reshape([1, 1, w, 1]).expand([b, h, w, 1])
     gx.stop_gradient = True
 
     gy = paddle.arange(h, dtype='float32') / (h - 1.) * 2.0 - 1.
-    if self.data_format == 'NCHW':
+    if data_format == 'NCHW':
         gy = gy.reshape([1, 1, h, 1]).expand([b, 1, h, w])
     else:
         gy = gy.reshape([1, h, 1, 1]).expand([b, h, w, 1])
@@ -237,7 +237,7 @@ class CoordConv(nn.Layer):
         self.data_format = data_format
 
     def forward(self, x):
-        gx, gy = add_coord(x)
+        gx, gy = add_coord(x, self.data_format)
         if self.data_format == 'NCHW':
             y = paddle.concat([x, gx, gy], axis=1)
         else:
@@ -509,7 +509,7 @@ class PPYOLOFPN(nn.Layer):
                  norm_type='bn',
                  data_format='NCHW',
                  coord_conv=False,
-                 conv_block_num=3,
+                 conv_block_num=2,
                  drop_block=False,
                  block_size=3,
                  keep_prob=0.9,

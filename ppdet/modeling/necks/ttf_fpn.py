@@ -29,7 +29,7 @@ __all__ = ['TTFFPN']
 
 
 class Upsample(nn.Layer):
-    def __init__(self, ch_in, ch_out, norm_type='bn', name=None):
+    def __init__(self, ch_in, ch_out, norm_type='bn'):
         super(Upsample, self).__init__()
         fan_in = ch_in * 3 * 3
         stdv = 1. / math.sqrt(fan_in)
@@ -46,7 +46,7 @@ class Upsample(nn.Layer):
             regularizer=L2Decay(0.))
 
         self.bn = batch_norm(
-            ch_out, norm_type=norm_type, initializer=Constant(1.), name=name)
+            ch_out, norm_type=norm_type, initializer=Constant(1.))
 
     def forward(self, feat):
         dcn = self.dcn(feat)
@@ -57,7 +57,7 @@ class Upsample(nn.Layer):
 
 
 class DeConv(nn.Layer):
-    def __init__(self, ch_in, ch_out, norm_type='bn', name=None):
+    def __init__(self, ch_in, ch_out, norm_type='bn'):
         super(DeConv, self).__init__()
         self.deconv = nn.Sequential()
         conv1 = ConvNormLayer(
@@ -66,9 +66,7 @@ class DeConv(nn.Layer):
             stride=1,
             filter_size=1,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv1.norm',
-            name=name + '.conv1')
+            initializer=XavierUniform())
         conv2 = nn.Conv2DTranspose(
             in_channels=ch_out,
             out_channels=ch_out,
@@ -78,17 +76,14 @@ class DeConv(nn.Layer):
             groups=ch_out,
             weight_attr=ParamAttr(initializer=XavierUniform()),
             bias_attr=False)
-        bn = batch_norm(
-            ch_out, norm_type=norm_type, norm_decay=0., name=name + '.bn')
+        bn = batch_norm(ch_out, norm_type=norm_type, norm_decay=0.)
         conv3 = ConvNormLayer(
             ch_in=ch_out,
             ch_out=ch_out,
             stride=1,
             filter_size=1,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv3.norm',
-            name=name + '.conv3')
+            initializer=XavierUniform())
 
         self.deconv.add_sublayer('conv1', conv1)
         self.deconv.add_sublayer('relu6_1', nn.ReLU6())
@@ -103,12 +98,10 @@ class DeConv(nn.Layer):
 
 
 class LiteUpsample(nn.Layer):
-    def __init__(self, ch_in, ch_out, norm_type='bn', name=None):
+    def __init__(self, ch_in, ch_out, norm_type='bn'):
         super(LiteUpsample, self).__init__()
-        self.deconv = DeConv(
-            ch_in, ch_out, norm_type=norm_type, name=name + '.deconv')
-        self.conv = LiteConv(
-            ch_in, ch_out, norm_type=norm_type, name=name + '.liteconv')
+        self.deconv = DeConv(ch_in, ch_out, norm_type=norm_type)
+        self.conv = LiteConv(ch_in, ch_out, norm_type=norm_type)
 
     def forward(self, inputs):
         deconv_up = self.deconv(inputs)
@@ -139,8 +132,7 @@ class ShortCut(nn.Layer):
                         in_channels=in_channels,
                         out_channels=ch_out,
                         with_act=i < layer_num - 1,
-                        norm_type=norm_type,
-                        name=shortcut_name))
+                        norm_type=norm_type))
             else:
                 shortcut_conv.add_sublayer(
                     shortcut_name,
@@ -155,7 +147,7 @@ class ShortCut(nn.Layer):
                 if i < layer_num - 1:
                     shortcut_conv.add_sublayer(shortcut_name + '.act',
                                                nn.ReLU())
-        self.shortcut = self.add_sublayer('short', shortcut_conv)
+        self.shortcut = self.add_sublayer('shortcut', shortcut_conv)
 
     def forward(self, feat):
         out = self.shortcut(feat)
@@ -208,10 +200,7 @@ class TTFFPN(nn.Layer):
             upsample = self.add_sublayer(
                 'upsample.' + str(i),
                 upsample_module(
-                    in_c,
-                    out_c,
-                    norm_type=norm_type,
-                    name='deconv_layers.' + str(i)))
+                    in_c, out_c, norm_type=norm_type))
             self.upsample_list.append(upsample)
             if i < self.shortcut_len:
                 shortcut = self.add_sublayer(
