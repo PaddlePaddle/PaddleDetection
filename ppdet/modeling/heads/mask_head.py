@@ -63,10 +63,8 @@ class MaskFeat(nn.Layer):
                         filter_size=3,
                         stride=1,
                         norm_type=self.norm_type,
-                        norm_name=conv_name + '_norm',
                         initializer=KaimingNormal(fan_in=fan_conv),
-                        skip_quant=True,
-                        name=conv_name))
+                        skip_quant=True))
                 mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
         else:
             for i in range(self.num_convs):

@@ -75,9 +75,7 @@ class SOLOv2MaskHead(nn.Layer):
                         ch_out=self.mid_channels,
                         filter_size=3,
                         stride=1,
-                        norm_type='gn',
-                        norm_name=conv_feat_name + '.conv' + str(i) + '.gn',
-                        name=conv_feat_name + '.conv' + str(i)))
+                        norm_type='gn'))
                 self.add_sublayer('conv_pre_feat' + str(i), conv_pre_feat)
                 self.convs_all_levels.append(conv_pre_feat)
             else:
@@ -94,9 +92,7 @@ class SOLOv2MaskHead(nn.Layer):
                             ch_out=self.mid_channels,
                             filter_size=3,
                             stride=1,
-                            norm_type='gn',
-                            norm_name=conv_feat_name + '.conv' + str(j) + '.gn',
-                            name=conv_feat_name + '.conv' + str(j)))
+                            norm_type='gn'))
                     conv_pre_feat.add_sublayer(
                         conv_feat_name + '.conv' + str(j) + 'act', nn.ReLU())
                     conv_pre_feat.add_sublayer(
@@ -114,9 +110,7 @@ class SOLOv2MaskHead(nn.Layer):
                 ch_out=self.out_channels,
                 filter_size=1,
                 stride=1,
-                norm_type='gn',
-                norm_name=conv_pred_name + '.gn',
-                name=conv_pred_name))
+                norm_type='gn'))
 
     def forward(self, inputs):
         """
@@ -216,9 +210,7 @@ class SOLOv2Head(nn.Layer):
                     ch_out=self.seg_feat_channels,
                     filter_size=3,
                     stride=1,
-                    norm_type='gn',
-                    norm_name='bbox_head.kernel_convs.{}.gn'.format(i),
-                    name='bbox_head.kernel_convs.{}'.format(i)))
+                    norm_type='gn'))
             self.kernel_pred_convs.append(kernel_conv)
             ch_in = self.in_channels if i == 0 else self.seg_feat_channels
             cate_conv = self.add_sublayer(
@@ -228,9 +220,7 @@ class SOLOv2Head(nn.Layer):
                     ch_out=self.seg_feat_channels,
                     filter_size=3,
                     stride=1,
-                    norm_type='gn',
-                    norm_name='bbox_head.cate_convs.{}.gn'.format(i),
-                    name='bbox_head.cate_convs.{}'.format(i)))
+                    norm_type='gn'))
             self.cate_pred_convs.append(cate_conv)
 
         self.solo_kernel = self.add_sublayer(
@@ -241,11 +231,9 @@ class SOLOv2Head(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(
-                    name="bbox_head.solo_kernel.weight",
-                    initializer=Normal(
-                        mean=0., std=0.01)),
-                bias_attr=ParamAttr(name="bbox_head.solo_kernel.bias")))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=True))
         self.solo_cate = self.add_sublayer(
             'bbox_head.solo_cate',
             nn.Conv2D(
@@ -254,14 +242,10 @@ class SOLOv2Head(nn.Layer):
                 kernel_size=3,
                 stride=1,
                 padding=1,
-                weight_attr=ParamAttr(
-                    name="bbox_head.solo_cate.weight",
-                    initializer=Normal(
-                        mean=0., std=0.01)),
-                bias_attr=ParamAttr(
-                    name="bbox_head.solo_cate.bias",
-                    initializer=Constant(
-                        value=float(-np.log((1 - 0.01) / 0.01))))))
+                weight_attr=ParamAttr(initializer=Normal(
+                    mean=0., std=0.01)),
+                bias_attr=ParamAttr(initializer=Constant(
+                    value=float(-np.log((1 - 0.01) / 0.01))))))
 
     def _points_nms(self, heat, kernel_size=2):
         hmax = F.max_pool2d(heat, kernel_size=kernel_size, stride=1, padding=1)

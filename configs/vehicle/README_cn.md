@@ -1,11 +1,11 @@
-[English](CONTRIB.md) | 简体中文
+[English](README.md) | 简体中文
 # 特色垂类检测模型
 
 我们提供了针对不同场景的基于PaddlePaddle的检测模型，用户可以下载模型进行使用。
 
 | 任务                 | 算法 | 精度(Box AP) | 下载                                                                                | 配置文件 |
 |:---------------------|:---------:|:------:| :---------------------------------------------------------------------------------: | :------:|
-| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/dygraph/configs/vehicle/vehicle_yolov3_darknet.yml) |
+| 车辆检测    |  YOLOv3  |  54.5  | [下载链接](https://paddledet.bj.bcebos.com/models/vehicle_yolov3_darknet.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/vehicle/vehicle_yolov3_darknet.yml) |
 
 
 ## 车辆检测（Vehicle Detection）
@@ -18,7 +18,7 @@ Backbone为Dacknet53的YOLOv3。
 
 ### 2. 训练参数配置
 
-PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/dygraph/configs/yolov3/yolov3_darknet53_270e_coco.yml)，与之相比，在进行车辆检测的模型训练时，我们对以下参数进行了修改：
+PaddleDetection提供了使用COCO数据集对YOLOv3进行训练的参数配置文件[yolov3_darknet53_270e_coco.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)，与之相比，在进行车辆检测的模型训练时，我们对以下参数进行了修改：
 
 * num_classes: 6
 * anchors: [[8, 9], [10, 23], [19, 15], [23, 33], [40, 25], [54, 50], [101, 80], [139, 145], [253, 224]]
@@ -49,6 +49,6 @@ python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
 
 预测结果示例：
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/VehicleDetection_001.jpeg)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_001.jpeg)
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/master/docs/images/VehicleDetection_005.png)
+![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_005.png)
