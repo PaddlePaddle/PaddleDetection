@@ -82,7 +82,6 @@ class DetDataset(Dataset):
                 r['curr_iter'] = self._curr_iter
         else:
             roidb['curr_iter'] = self._curr_iter
-        roidb['curr_iter'] = self._curr_iter
         self._curr_iter += 1
 
         return self.transform(roidb)
