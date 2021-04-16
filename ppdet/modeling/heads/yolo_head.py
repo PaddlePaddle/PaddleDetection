@@ -4,7 +4,6 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ..backbones.darknet import ConvBNLayer
 
 
 def _de_sigmoid(x, eps=1e-7):
@@ -70,7 +69,6 @@ class YOLOv3Head(nn.Layer):
                 padding=0,
                 data_format=data_format,
                 bias_attr=ParamAttr(regularizer=L2Decay(0.)))
-            conv.skip_quant = True
             yolo_output = self.add_sublayer(name, conv)
             self.yolo_outputs.append(yolo_output)
 
