@@ -188,7 +188,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 - `PP-YOLO` achieves mAP of 45.9% on COCO and 72.9FPS on Tesla V100. Both precision and speed surpass [YOLOv4](https://arxiv.org/abs/2004.10934)
 
-- `PP-YOLO v2` is optimized version of `PP-YOLO` which has mAP of 49.5% and 60FPS on Tesla V100
+- `PP-YOLO v2` is optimized version of `PP-YOLO` which has mAP of 49.5% and 68.9FPS on Tesla V100
 
 - All these models can be get in [Model Zoo](#ModelZoo)
 
