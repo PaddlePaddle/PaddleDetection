@@ -77,7 +77,11 @@ class DetDataset(Dataset):
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(3)
             ]
-        roidb['curr_iter'] = self._curr_iter
+        if isinstance(roidb, Sequence):
+            for r in roidb:
+                r['curr_iter'] = self._curr_iter
+        else:
+            roidb['curr_iter'] = self._curr_iter
         self._curr_iter += 1
 
         return self.transform(roidb)
