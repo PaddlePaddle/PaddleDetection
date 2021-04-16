@@ -70,7 +70,7 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 **Notes:**
 
-- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`, Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
+- PP-YOLO_MobileNetV3 is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`, Box AP50<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
 - PP-YOLO_MobileNetV3 used 4 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/static/docs/FAQ.md).
 - PP-YOLO_MobileNetV3 inference speed is tested on Kirin 990 with 1 thread.
 
@@ -83,7 +83,7 @@ PP-YOLO improved performance and speed of YOLOv3 with following methods:
 
 **Notes:**
 
-- PP-YOLO-tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`, Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5)`.
+- PP-YOLO-tiny is trained on COCO train2017 datast and evaluated on val2017 dataset，Box AP<sup>val</sup> is evaluation results of `mAP(IoU=0.5:0.95)`.
 - PP-YOLO-tiny used 8 GPUs for training and mini-batch size as 32 on each GPU, if GPU number and mini-batch size is changed, learning rate and iteration times should be adjusted according [FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/static/docs/FAQ.md).
 - PP-YOLO-tiny inference speed is tested on Kirin 990 with 4 threads by arm8
 - we alse provide PP-YOLO-tiny post quant inference model, which can compress model to **1.3MB** with nearly no inference on inference speed and performance
