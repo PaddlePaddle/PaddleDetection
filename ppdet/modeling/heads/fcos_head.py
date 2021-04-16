@@ -28,6 +28,10 @@ from ppdet.modeling.layers import ConvNormLayer
 
 
 class ScaleReg(nn.Layer):
+    """
+    Parameter for scaling the regression outputs.
+    """
+
     def __init__(self):
         super(ScaleReg, self).__init__()
         self.scale_reg = self.create_parameter(
@@ -77,10 +81,8 @@ class FCOSFeat(nn.Layer):
                     stride=1,
                     norm_type=norm_type,
                     use_dcn=use_dcn,
-                    norm_name=cls_conv_name + '_norm',
                     bias_on=True,
-                    lr_scale=2.,
-                    name=cls_conv_name))
+                    lr_scale=2.))
             self.cls_subnet_convs.append(cls_conv)
 
             reg_conv_name = 'fcos_head_reg_tower_conv_{}'.format(i)
@@ -93,10 +95,8 @@ class FCOSFeat(nn.Layer):
                     stride=1,
                     norm_type=norm_type,
                     use_dcn=use_dcn,
-                    norm_name=reg_conv_name + '_norm',
                     bias_on=True,
-                    lr_scale=2.,
-                    name=reg_conv_name))
+                    lr_scale=2.))
             self.reg_subnet_convs.append(reg_conv)
 
     def forward(self, fpn_feat):
@@ -113,12 +113,13 @@ class FCOSHead(nn.Layer):
     """
     FCOSHead
     Args:
-        num_classes(int): Number of classes
-        fpn_stride(list): The stride of each FPN Layer
-        prior_prob(float): Used to set the bias init for the class prediction layer
-        fcos_loss(object): Instance of 'FCOSLoss'
-        norm_reg_targets(bool): Normalization the regression target if true
-        centerness_on_reg(bool): The prediction of centerness on regression or clssification branch
+        fcos_feat (object): Instance of 'FCOSFeat'
+        num_classes (int): Number of classes
+        fpn_stride (list): The stride of each FPN Layer
+        prior_prob (float): Used to set the bias init for the class prediction layer
+        fcos_loss (object): Instance of 'FCOSLoss'
+        norm_reg_targets (bool): Normalization the regression target if true
+        centerness_on_reg (bool): The prediction of centerness on regression or clssification branch
     """
     __inject__ = ['fcos_feat', 'fcos_loss']
     __shared__ = ['num_classes']
@@ -199,7 +200,15 @@ class FCOSHead(nn.Layer):
             scale_reg = self.add_sublayer(feat_name, ScaleReg())
             self.scales_regs.append(scale_reg)
 
-    def _compute_locatioins_by_level(self, fpn_stride, feature):
+    def _compute_locations_by_level(self, fpn_stride, feature):
+        """
+        Compute locations of anchor points of each FPN layer
+        Args:
+            fpn_stride (int): The stride of current FPN feature map
+            feature (Tensor): Tensor of current FPN feature map
+        Return:
+            Anchor points locations of current FPN feature map
+        """
         shape_fm = paddle.shape(feature)
         shape_fm.stop_gradient = True
         h, w = shape_fm[2], shape_fm[3]
@@ -247,8 +256,7 @@ class FCOSHead(nn.Layer):
         if not is_training:
             locations_list = []
             for fpn_stride, feature in zip(self.fpn_stride, fpn_feats):
-                location = self._compute_locatioins_by_level(fpn_stride,
-                                                             feature)
+                location = self._compute_locations_by_level(fpn_stride, feature)
                 locations_list.append(location)
 
             return locations_list, cls_logits_list, bboxes_reg_list, centerness_list
