@@ -47,7 +47,7 @@
 
 ```bash
 # 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/yolov3_darknet53_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --bias
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --bias
 ```
 主要有:
 

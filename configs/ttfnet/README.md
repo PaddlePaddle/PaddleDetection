@@ -40,7 +40,7 @@ PAFNet系列模型从如下方面优化TTFNet模型：
 
 | 骨架网络        | 网络类型       | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP |                           下载                          | 配置文件 |
 | :-------------- | :------------- | :-----: | :-----: | :------------: | :-----: | :-----------------------------------------------------: | :-----: |
-| ResNet50vd   | PAFNet           |    18    |   10x      |     ----     |  39.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/pafnet_10x_coco.yml) |
+| ResNet50vd   | PAFNet           |    18    |   10x      |     ----     |  39.8  | [下载链接](https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0/configs/ttfnet/pafnet_10x_coco.yml) |
 
 
 
@@ -54,7 +54,7 @@ PAFNet系列模型从如下方面优化TTFNet模型：
 
 ```bash
 # 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/pafnet_10x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams --bias
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ttfnet/pafnet_10x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/pafnet_10x_coco.pdparams --bias
 ```
 
 ## Citations
