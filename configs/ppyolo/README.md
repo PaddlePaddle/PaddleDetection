@@ -187,7 +187,8 @@ Optimizing method and ablation experiments of PP-YOLO compared with YOLOv3.
 - Performance and inference spedd are measure with input shape as 608
 - All models are trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5:0.95)`.
 - Inference speed is tested on single Tesla V100 with batch size as 1 following test method and environment configuration in benchmark above.
-- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) with mAP as 39.0 is optimized YOLOv3 model in PaddleDetection，see [Model Zoo](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO.md) for details.
+- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/configs/yolov3/yolov3_darknet53_270e_coco.yml) with mAP as 39.0 is optimized YOLOv3 model in PaddleDetection，see [Model Zoo](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.0/docs/MODEL_ZOO_cn.md) for details.
+
 
 ## Citation
 
