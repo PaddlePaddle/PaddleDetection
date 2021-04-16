@@ -17,6 +17,19 @@
 - CUDA 9.0+
 - cuDNN >=7.5
 
+**注意：** 量化训练需要依赖Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装合适的PaddlePaddle版本。
+
+#### 安装PaddleSlim
+- 方法一：直接安装：
+```
+pip install paddleslim -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+- 方法二：编译安装：
+```
+git clone https://github.com/PaddlePaddle/PaddleSlim.git
+cd PaddleSlim
+python setup.py install
+```
 
 ## 快速开始
 
@@ -74,7 +87,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 | 模型         |  压缩策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 | 预测时延（SD855）|   Box AP   |                           下载                          | 模型配置文件 | 压缩算法配置文件  |
 | :----------------| :-------: | :------------: | :-------------: | :------: | :--------: | :------: | :-----------------------------------------------------: |:-------------: | :------: |
 | YOLOv3-MobileNetV1      |  baseline | 24.13          |  93          |   608    | 289.9ms | 75.1       | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  -  |
-| YOLOv3-MobileNetV1      |  剪裁-l1_norm(sensity) | 15.78(-34.49%) |  66(-29%) |   608   | - | 77.6(+2.5) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_voc_prune_l1_norm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/prune/yolov3_prune_l1_norm.yml)  |
+| YOLOv3-MobileNetV1      |  剪裁-l1_norm(sensity) | 15.78(-34.49%) |  66(-29%) |   608   | - | 78.4(+3.3) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_voc_prune_l1_norm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v1_270e_voc.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/prune/yolov3_prune_l1_norm.yml)  |
 
 - 目前剪裁支持YOLO系列、SSD、TTFNet、BlazeFace，其余模型正在开发支持中。
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延。
@@ -90,7 +103,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 | YOLOv3-MobileNetV3 | baseline     | 608      |    31.4     | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_270e_coco.yml) |                              -                               |
 | YOLOv3-MobileNetV3 | PACT在线量化 | 608      | 29.1 (-2.3) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v3_coco_qat.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/yolov3_mobilenet_v3_qat.yml) |
 | YOLOv3-DarkNet53 | baseline     | 608      |    39.0     | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) |                           -                               |
-| YOLOv3-DarkNet53 | 普通在线量化 | 608      | 38.7 (-0.3) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_darknet_coco_qat.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/yolov3_darknet_qat.yml) |
+| YOLOv3-DarkNet53 | 普通在线量化 | 608      | 38.8 (-0.2) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_darknet_coco_qat.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/yolov3_darknet_qat.yml) |
 | SSD-MobileNet_v1    |  baseline   |   300   |  73.8  | [下载链接](https://paddledet.bj.bcebos.com/models/ssd_mobilenet_v1_300_120e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/ssd_mobilenet_v1_300_120e_voc.yml) |     -    |
 | SSD-MobileNet_v1    |  普通在线量化   |   300   |  72.9(-0.9)  | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ssd_mobilenet_v1_300_voc_qat.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/ssd_mobilenet_v1_300_120e_voc.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/ssd_mobilenet_v1_qat.yml) |
 | Mask-ResNet50-FPN     |    baseline      |    (800, 1333)   |  39.2/35.6    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml) |  -  |

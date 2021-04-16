@@ -31,7 +31,7 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 
