@@ -117,7 +117,6 @@ class ConvNormLayer(nn.Layer):
                  norm_decay=0.,
                  norm_groups=32,
                  use_dcn=False,
-                 norm_name=None,
                  bias_on=False,
                  lr_scale=1.,
                  freeze_norm=False,
@@ -164,13 +163,9 @@ class ConvNormLayer(nn.Layer):
 
         norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
-            name=norm_name + "_scale",
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(
-            name=norm_name + "_offset",
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
         if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
@@ -207,27 +202,21 @@ class LiteConv(nn.Layer):
             stride=stride,
             groups=in_channels,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv1.norm',
-            name=name + '.conv1')
+            initializer=XavierUniform())
         conv2 = ConvNormLayer(
             in_channels,
             out_channels,
             filter_size=1,
             stride=stride,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv2.norm',
-            name=name + '.conv2')
+            initializer=XavierUniform())
         conv3 = ConvNormLayer(
             out_channels,
             out_channels,
             filter_size=1,
             stride=stride,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv3.norm',
-            name=name + '.conv3')
+            initializer=XavierUniform())
         conv4 = ConvNormLayer(
             out_channels,
             out_channels,
@@ -235,9 +224,7 @@ class LiteConv(nn.Layer):
             stride=stride,
             groups=out_channels,
             norm_type=norm_type,
-            initializer=XavierUniform(),
-            norm_name=name + '.conv4.norm',
-            name=name + '.conv4')
+            initializer=XavierUniform())
         conv_list = [conv1, conv2, conv3, conv4]
         self.lite_conv.add_sublayer('conv1', conv1)
         self.lite_conv.add_sublayer('relu6_1', nn.ReLU6())

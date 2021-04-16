@@ -61,8 +61,7 @@ class HMHead(nn.Layer):
                     LiteConv(
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
-                        norm_type=norm_type,
-                        name=lite_name))
+                        norm_type=norm_type))
                 head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
@@ -72,8 +71,7 @@ class HMHead(nn.Layer):
                             in_channels=ch_in if i == 0 else ch_out,
                             out_channels=ch_out,
                             kernel_size=3,
-                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                            name='hm.' + name))
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01))))
                 else:
                     head_conv.add_sublayer(
                         name,
@@ -86,10 +84,10 @@ class HMHead(nn.Layer):
                             bias_attr=ParamAttr(
                                 learning_rate=2., regularizer=L2Decay(0.))))
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
-        self.feat = self.add_sublayer('hm_feat', head_conv)
+        self.feat = self.add_sublayer('feat', head_conv)
         bias_init = float(-np.log((1 - 0.01) / 0.01))
         self.head = self.add_sublayer(
-            'hm_head',
+            'head',
             nn.Conv2D(
                 in_channels=ch_out,
                 out_channels=num_classes,
@@ -140,8 +138,7 @@ class WHHead(nn.Layer):
                     LiteConv(
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
-                        norm_type=norm_type,
-                        name=lite_name))
+                        norm_type=norm_type))
                 head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
@@ -151,8 +148,7 @@ class WHHead(nn.Layer):
                             in_channels=ch_in if i == 0 else ch_out,
                             out_channels=ch_out,
                             kernel_size=3,
-                            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
-                            name='wh.' + name))
+                            weight_attr=ParamAttr(initializer=Normal(0, 0.01))))
                 else:
                     head_conv.add_sublayer(
                         name,
@@ -166,9 +162,9 @@ class WHHead(nn.Layer):
                                 learning_rate=2., regularizer=L2Decay(0.))))
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
 
-        self.feat = self.add_sublayer('wh_feat', head_conv)
+        self.feat = self.add_sublayer('feat', head_conv)
         self.head = self.add_sublayer(
-            'wh_head',
+            'head',
             nn.Conv2D(
                 in_channels=ch_out,
                 out_channels=4,

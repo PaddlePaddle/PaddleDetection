@@ -105,10 +105,8 @@ class FPN(nn.Layer):
                         stride=1,
                         norm_type=self.norm_type,
                         norm_decay=self.norm_decay,
-                        norm_name=lateral_name + '_norm',
                         freeze_norm=self.freeze_norm,
-                        initializer=XavierUniform(fan_out=in_c),
-                        name=lateral_name))
+                        initializer=XavierUniform(fan_out=in_c)))
             else:
                 lateral = self.add_sublayer(
                     lateral_name,
@@ -131,10 +129,8 @@ class FPN(nn.Layer):
                         stride=1,
                         norm_type=self.norm_type,
                         norm_decay=self.norm_decay,
-                        norm_name=fpn_name + '_norm',
                         freeze_norm=self.freeze_norm,
-                        initializer=XavierUniform(fan_out=fan),
-                        name=fpn_name))
+                        initializer=XavierUniform(fan_out=fan)))
             else:
                 fpn_conv = self.add_sublayer(
                     fpn_name,
@@ -166,10 +162,8 @@ class FPN(nn.Layer):
                             stride=2,
                             norm_type=self.norm_type,
                             norm_decay=self.norm_decay,
-                            norm_name=extra_fpn_name + '_norm',
                             freeze_norm=self.freeze_norm,
-                            initializer=XavierUniform(fan_out=fan),
-                            name=extra_fpn_name))
+                            initializer=XavierUniform(fan_out=fan)))
                 else:
                     extra_fpn_conv = self.add_sublayer(
                         extra_fpn_name,

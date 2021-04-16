@@ -81,7 +81,6 @@ class FCOSFeat(nn.Layer):
                     stride=1,
                     norm_type=norm_type,
                     use_dcn=use_dcn,
-                    norm_name=cls_conv_name + '_norm',
                     bias_on=True,
                     lr_scale=2.))
             self.cls_subnet_convs.append(cls_conv)
@@ -96,7 +95,6 @@ class FCOSFeat(nn.Layer):
                     stride=1,
                     norm_type=norm_type,
                     use_dcn=use_dcn,
-                    norm_name=reg_conv_name + '_norm',
                     bias_on=True,
                     lr_scale=2.))
             self.reg_subnet_convs.append(reg_conv)
