@@ -116,7 +116,27 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/ppyolo_test.yml -o
 
 评估结果保存于`bbox.json`中，将其压缩为zip包后通过[COCO数据集评估页](https://competitions.codalab.org/competitions/20794#participate)提交评估。
 
-**注意:** `configs/ppyolo/ppyolo_test.yml`仅用于评估COCO test-dev数据集，不用于训练和评估COCO val2017数据集。
+**注意1:** `configs/ppyolo/ppyolo_test.yml`仅用于评估COCO test-dev数据集，不用于训练和评估COCO val2017数据集。
+
+**注意2:** 由于动态图框架整体升级，以下几个PaddleDetection发布的权重模型评估时需要添加--bias字段, 例如
+
+```bash
+# 使用PaddleDetection发布的权重
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_1x_coco.pdparams --bias
+```
+主要有:
+
+1.ppyolo_r50vd_dcn_1x_coco
+
+2.ppyolo_r50vd_dcn_voc
+
+3.ppyolo_r18vd_coco
+
+4.ppyolo_mbv3_large_coco
+
+5.ppyolo_mbv3_small_coco
+
+6.ppyolo_tiny_650e_coco
 
 ### 3. 推理
 
