@@ -4,7 +4,6 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
-from ..backbones.darknet import ConvBNLayer
 
 
 def _de_sigmoid(x, eps=1e-7):

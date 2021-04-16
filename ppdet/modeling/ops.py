@@ -53,9 +53,7 @@ def batch_norm(ch,
                norm_type='bn',
                norm_decay=0.,
                initializer=None,
-               name=None,
                data_format='NCHW'):
-    bn_name = name + '.bn'
     if norm_type == 'sync_bn':
         batch_norm = nn.SyncBatchNorm
     else:

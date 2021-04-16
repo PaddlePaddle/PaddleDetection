@@ -128,10 +128,8 @@ class XConvNormHead(nn.Layer):
                     filter_size=3,
                     stride=1,
                     norm_type=self.norm_type,
-                    norm_name=head_conv_name + '_norm',
                     freeze_norm=self.freeze_norm,
-                    initializer=initializer,
-                    name=head_conv_name))
+                    initializer=initializer))
             self.bbox_head_convs.append(head_conv)
 
         fan = conv_dim * resolution * resolution
