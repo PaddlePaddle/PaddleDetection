@@ -50,7 +50,7 @@ python -m pip install visualdl -i https://mirror.baidu.com/pypi/simple
 ```
 
 ```
-python -u tools/train.py -c configs/yolov3_mobilenet_v1_roadsign.yml \
+python -u tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
                         --use_vdl=true \
                         --vdl_log_dir=vdl_dir/scalar \
                         --eval
