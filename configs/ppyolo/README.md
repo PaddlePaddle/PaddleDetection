@@ -132,7 +132,27 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/ppyolo_test.yml -o
 
 Evaluation results will be saved in `bbox.json`, compress it into a `zip` package and upload to [COCO dataset evaluation](https://competitions.codalab.org/competitions/20794#participate) to evaluate.
 
-**NOTE:** `configs/ppyolo/ppyolo_test.yml` is only used for evaluation on COCO test-dev2017 dataset, could not be used for training or COCO val2017 dataset evaluating.
+**NOTE 1:** `configs/ppyolo/ppyolo_test.yml` is only used for evaluation on COCO test-dev2017 dataset, could not be used for training or COCO val2017 dataset evaluating.
+
+**NOTE 2:** Due to the overall upgrade of the dynamic graph framework, the following weight models published by paddledetection need to be evaluated by adding the -- bias field, such as
+
+```bash
+# use weights released in PaddleDetection model zoo
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_1x_coco.pdparams --bias
+```
+These models are:
+
+1.ppyolo_r50vd_dcn_1x_coco
+
+2.ppyolo_r50vd_dcn_voc
+
+3.ppyolo_r18vd_coco
+
+4.ppyolo_mbv3_large_coco
+
+5.ppyolo_mbv3_small_coco
+
+6.ppyolo_tiny_650e_coco
 
 ### 3. Inference
 
