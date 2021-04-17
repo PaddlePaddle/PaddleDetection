@@ -45,8 +45,17 @@
 | MobileNet-V3-SSLD | 416  |    8    |   270e  |      -        |  79.2  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
 | MobileNet-V3-SSLD | 320  |    8    |   270e  |      -        |  77.3  | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v3_large_ssld_270e_voc.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_mobilenet_v3_large_ssld_270e_voc.yml) |
 
-**注意：** YOLOv3均使用8GPU训练，训练270个epoch
+**注意：** YOLOv3均使用8GPU训练，训练270个epoch。由于动态图框架整体升级，以下几个PaddleDetection发布的权重模型评估时需要添加--bias字段, 例如
 
+```bash
+# 使用PaddleDetection发布的权重
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/ppyolo/yolov3_darknet53_270e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --bias
+```
+主要有:
+
+1.yolov3_darknet53_270e_coco
+
+2.yolov3_r50vd_dcn_270e_coco
 
 ## Citations
 ```
