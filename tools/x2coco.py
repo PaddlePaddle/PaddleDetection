@@ -192,7 +192,7 @@ def voc_get_label_anno(ann_dir_path, ann_ids_path, labels_path):
     labels_ids = list(range(1, len(labels_str) + 1))
 
     with open(ann_ids_path, 'r') as f:
-        ann_ids = f.read().split()
+        ann_ids = [line.split(' ')[1] for line in f.readlines()]
     ann_paths = []
     for aid in ann_ids:
         if aid.endswith('xml'):
