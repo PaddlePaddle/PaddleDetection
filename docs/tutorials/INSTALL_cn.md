@@ -19,35 +19,9 @@
 
 ## 安装说明
 
-建议使用docker环境安装PaddleDetection并开启你的目标检测之旅。请按照如下步骤说明进行安装，如果您希望使用本机环境，可以跳过步骤1.
+**注意：** 如果您使用的是Linux/Unix操作系统，建议使用docker环境安装PaddleDetection并开启你的目标检测之旅。您可参考步骤3准备dokcer环境。
 
-### 1. （推荐）准备docker环境
-
-已CUDA10.1， CUDNN7.6为例
-
-```bash
-# 首先拉去PaddlePaddle镜像
-sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
-
-# 切换到工作目录
-cd /home/work
-
-# 创建ppdet容器
-# 将存放数据的当前目录映射到容器中的/ppdet目录中
-sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
-```
-
-可以在[DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) 中找到匹配您机器环境的镜像
-
-```
-# ctrl+P+Q 退出容器, 使用如下命令重新进入docker环境：
-sudo docker exec -it ppdet /bin/bash
-```
-
-其他更多docker用法，请参考PaddlePaddle[文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/docker/fromdocker.html)
-
-
-### 安装PaddlePaddle
+### 1. 安装PaddlePaddle
 
 ```
 # CUDA9.0
@@ -75,11 +49,11 @@ python -c "import paddle; print(paddle.__version__)"
 **注意**
 1. 如果您希望在多卡环境下使用PaddleDetection，请首先安装NCCL
 
-### 3. 安装PaddleDetection
+### 2. 安装PaddleDetection
 
 可通过如下两种方式安装PaddleDetection
 
-#### 3.1 通过pip安装
+#### 2.1 通过pip安装
 
 **注意：** pip安装方式只支持Python3
 
@@ -92,7 +66,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 cd PaddleDetection
 ```
 
-#### 3.2 源码编译安装
+#### 2.2 源码编译安装
 
 ```
 # 克隆PaddleDetection仓库
@@ -128,6 +102,32 @@ python ppdet/modeling/tests/test_architectures.py
 Ran 12 tests in 2.480s
 OK (skipped=2)
 ```
+
+### 3. （推荐在Linux/Unix操作系统使用）准备docker环境
+
+已CUDA10.1， CUDNN7.6为例
+
+```bash
+# 首先拉去PaddlePaddle镜像
+sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
+
+# 切换到工作目录
+cd /home/work
+
+# 创建ppdet容器
+# 将存放数据的当前目录映射到容器中的/ppdet目录中
+sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
+```
+
+可以在[DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) 中找到匹配您机器环境的镜像
+
+```
+# ctrl+P+Q 退出容器, 使用如下命令重新进入docker环境：
+sudo docker exec -it ppdet /bin/bash
+```
+
+其他更多docker用法，请参考PaddlePaddle[文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/docker/fromdocker.html)
+
 
 ## 快速体验
 
