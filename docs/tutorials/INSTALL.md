@@ -88,8 +88,8 @@ PaddleDetection can be installed in the following two ways:
 **Note:** Installing via pip only supports Python3
 
 ```
-# install ppdet via pip
-pip install ppdet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# install paddledet via pip
+pip install paddledet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Download and use the configuration files and code examples in the source code
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
