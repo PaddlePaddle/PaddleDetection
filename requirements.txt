@@ -8,3 +8,6 @@ scipy
 terminaltables
 pycocotools
 setuptools>=42.0.0
+
+# extension OPs for rotation bbox
+rbox_iou_ops
