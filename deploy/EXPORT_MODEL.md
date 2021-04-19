@@ -1,8 +1,8 @@
 # PaddleDetection模型导出教程
 
-## 模型导出
+## 一、模型导出
 本章节介绍如何使用`tools/export_model.py`脚本导出模型。
-### 导出模输入输出说明
+### 1、导出模输入输出说明
 - `PaddleDetection`中输入变量以及输入形状如下：
 | 输入名称 | 输入形状 | 表示含义 |
 | :---------: | ----------- | ---------- |
@@ -22,14 +22,14 @@
 **注意**模型动转静导出不支持模型结构中包含numpy相关操作的情况。
 
 
-### 启动参数说明
+### 2、启动参数说明
 
 |      FLAG      |      用途      |    默认值    |                 备注                      |
 |:--------------:|:--------------:|:------------:|:-----------------------------------------:|
 |       -c       |  指定配置文件  |     None     |                                           |
 |  --output_dir  |  模型保存路径  |  `./output_inference`  |  模型默认保存在`output/配置文件名/`路径下 |
 
-### 使用示例
+### 3、使用示例
 
 使用训练得到的模型进行试用，脚本如下
 
@@ -42,7 +42,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --
 预测模型会导出到`inference_model/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
 
 
-### 设置导出模型的输入大小
+### 4、设置导出模型的输入大小
 
 使用Fluid-TensorRT进行预测时，由于<=TensorRT 5.1的版本仅支持定长输入，保存模型的`data`层的图片大小需要和实际输入图片大小一致。而Fluid C++预测引擎没有此限制。设置TestReader中的`image_shape`可以修改保存模型中的输入图片大小。示例如下:
 
