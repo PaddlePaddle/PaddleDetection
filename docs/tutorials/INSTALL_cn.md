@@ -82,8 +82,8 @@ python -c "import paddle; print(paddle.__version__)"
 **注意：** pip安装方式只支持Python3
 
 ```
-# pip安装ppdet
-pip install ppdet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# pip安装paddledet
+pip install paddledet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 下载使用源码中的配置文件和代码示例
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
