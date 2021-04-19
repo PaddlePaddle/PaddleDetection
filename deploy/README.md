@@ -2,7 +2,7 @@
 训练得到一个满足要求的模型后，如果想要将该模型部署到已选择的平台上，需要通过`tools/export_model.py`将模型导出预测部署的模型和配置文件。
 并在同一文件夹下导出预测时使用的配置文件，配置文件名为`infer_cfg.yml`。
 
-## `PaddleDetection`目前支持的部署方式按照部署设备可以分为：
+## 1、`PaddleDetection`目前支持的部署方式按照部署设备可以分为：
 - 在本机`python`语言部署，支持在有`python paddle`(支持`CPU`、`GPU`)环境下部署，有两种方式：
     - 使用`tools/infer.py`，此种方式依赖`PaddleDetection`代码库。
     - 将模型导出，使用`deploy/python/infer.py`，此种方式不依赖`PaddleDetection`代码库，可以单个`python`文件部署。
@@ -13,7 +13,7 @@
 - `NV Jetson`嵌入式设备上部署
 - `TensorRT`加速请参考文档[TensorRT预测部署教程](TENSOR_RT.md)
 
-## 模型导出
+## 2、模型导出
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
@@ -29,12 +29,12 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
-## 如何选择部署时依赖库的版本
+## 3、如何选择部署时依赖库的版本
 
-### CUDA、cuDNN、TensorRT版本选择
+### （1）CUDA、cuDNN、TensorRT版本选择
 由于CUDA、cuDNN、TENSORRT不一定都是向前兼容的，需要使用与编译Paddle预测库使用的环境完全一致的环境进行部署。
 
-### 部署时预测库版本、预测引擎版本选择
+### （2）部署时预测库版本、预测引擎版本选择
 
 - Linux、Windows平台下C++部署，需要使用Paddle预测库进行部署。
   （1）Paddle官网提供在不同平台、不同环境下编译好的预测库，您可以直接使用，请在这里[Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 选择。
@@ -55,7 +55,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
   若列表中没有您需要的预测库，您可以在您的平台上自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 
 
-## 部署
+## 4、部署
 - C++部署，先使用跨平台编译工具`CMake`根据`CMakeLists.txt`生成`Makefile`，支持`Windows、Linux、NV Jetson`平台，然后进行编译产出可执行文件。可以直接使用`cpp/scripts/build.sh`脚本编译：
 ```buildoutcfg
 cd cpp
@@ -69,7 +69,7 @@ sh scripts/build.sh
 - 手机移动端部署，请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。
 
 
-## 常见问题QA
+## 5、常见问题QA
 - 1、`Paddle 1.8.4`训练的模型，可以用`Paddle2.0`部署吗？
   Paddle 2.0是兼容Paddle 1.8.4的，因此是可以的。但是部分模型(如SOLOv2)使用到了Paddle 2.0中新增OP，这类模型不可以。
 
