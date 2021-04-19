@@ -77,6 +77,23 @@ python -c "import paddle; print(paddle.__version__)"
 
 ### 3. 安装PaddleDetection
 
+可通过如下两种方式安装PaddleDetection
+
+#### 3.1 通过pip安装
+
+**注意：** pip安装方式只支持Python3
+
+```
+# pip安装ppdet
+pip install ppdet -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 下载使用源码中的配置文件和代码示例
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+cd PaddleDetection
+```
+
+#### 3.2 源码编译安装
+
 ```
 # 克隆PaddleDetection仓库
 cd <path/to/clone/PaddleDetection>
