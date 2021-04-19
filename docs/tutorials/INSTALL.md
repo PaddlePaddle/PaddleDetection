@@ -20,8 +20,6 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 ## Instruction
 
-**Note:** If you are using Linux/Unix-like operating system, it is recommened to install PaddleDetection and begin your object detection journey via docker environment. Please follow the step 3 to prepare environment firstly if you want to use docker environment.
-
 ### 1. Install PaddlePaddle
 
 ```
@@ -105,34 +103,6 @@ If the tests are passed, the following information will be prompted:
 Ran 12 tests in 2.480s
 OK (skipped=2)
 ```
-
-
-### 3. (Recommended on Linux/Unix-like OS) Prepare docker environment
-
-For example, the environment is CUDA10.1 and CUDNN 7.6
-
-```bash
-# Firstly, pull the PaddlePaddle image
-sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
-
-# Switch to the working directory
-cd /home/work
-
-# Create a container called ppdet and
-# mount the current directory which may contains the dataset
-# to /paddle directory in the container
-sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
-```
-
-You can see [DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) to get the image that matches your machine.
-
-```
-# ctrl+P+Q to exit docker, to re-enter docker using the following command:
-sudo docker exec -it ppdet /bin/bash
-```
-
-For more docker usage, please refer to the PaddlePaddle [document](https://www.paddlepaddle.org.cn/documentation/docs/en/install/docker/fromdocker_en.html).
-
 
 ## Inference demo
 
