@@ -65,14 +65,6 @@ packages = [
 ]
 
 if __name__ == "__main__":
-    # install extension APIs for rotation bbox
-    from paddle.utils import cpp_extension
-    cpp_extension.setup(
-        name='rbox_iou_ops',
-        ext_modules=cpp_extension.CUDAExtension(sources=[
-            'ppdet/ext_op/rbox_iou_op.cc', 'ppdet/ext_op/rbox_iou_op.cu'
-        ]))
-
     setup(
         name='paddledet',
         packages=find_packages(exclude=("configs", "tools", "deploy")),
