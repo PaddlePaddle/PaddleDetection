@@ -3,19 +3,17 @@ TrainReader:
   sample_transforms:
     - Decode: {}
     - AugmentHSV: {}
+    - BboxXYWH2XYXY: {}
+    - NormalizedBbox2PixelBbox: {}
+    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - RandomAffine: {}
     - RandomFlip: {}
-  batch_transforms:
-    - BatchRandomResize:
-        target_size: [320, 576]
-        random_size: False
-        random_interp: True
-        keep_ratio: False
-        letterbox: True
-    - BatchRandomAffine: {}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
+  batch_transforms:
     - Gt2JDETargetThres:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
         anchors: [[[85,255], [120,320], [170,320], [340,320]],
@@ -25,10 +23,10 @@ TrainReader:
         ide_thresh: 0.5
         fg_thresh: 0.5
         bg_thresh: 0.4
-    - PadBox: {num_max_boxes: 50} # for bs>1
   batch_size: 4
   shuffle: true
   drop_last: true
+  use_shared_memory: true
 
 
 EvalReader:

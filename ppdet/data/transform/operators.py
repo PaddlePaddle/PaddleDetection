@@ -522,7 +522,7 @@ class AutoAugment(BaseOperator):
 
 @register_op
 class RandomFlip(BaseOperator):
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.5, normalize=False, cxcywh=False):
         """
         Args:
             prob (float): the probability of flipping image
@@ -531,6 +531,8 @@ class RandomFlip(BaseOperator):
         self.prob = prob
         if not (isinstance(self.prob, float)):
             raise TypeError("{}: input type is invalid.".format(self))
+        self.normalize = normalize
+        self.cxcywh = cxcywh
 
     def apply_segm(self, segms, height, width):
         def _flip_poly(poly, width):
@@ -570,8 +572,11 @@ class RandomFlip(BaseOperator):
     def apply_bbox(self, bbox, width):
         oldx1 = bbox[:, 0].copy()
         oldx2 = bbox[:, 2].copy()
-        bbox[:, 0] = width - oldx2
-        bbox[:, 2] = width - oldx1
+        if not self.cxcywh:
+            bbox[:, 0] = width - oldx2
+            bbox[:, 2] = width - oldx1
+        else:
+            bbox[:, 0] = width - oldx1
         return bbox
 
     def apply(self, sample, context=None):
@@ -590,6 +595,8 @@ class RandomFlip(BaseOperator):
             im = sample['image']
             height, width = im.shape[:2]
             im = self.apply_image(im)
+            if self.normalize:
+                width = 1
             if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
                 sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], width)
             if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -612,7 +619,11 @@ class RandomFlip(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_LINEAR,
+                 by_hw=False):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
@@ -625,6 +636,7 @@ class Resize(BaseOperator):
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
         self.interp = interp
+        self.by_hw = by_hw
         if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
@@ -635,14 +647,19 @@ class Resize(BaseOperator):
 
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
-
-        return cv2.resize(
-            image,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
+        if self.by_hw:
+            return cv2.resize(
+                image, (round(image.shape[1] * im_scale_x),
+                        round(image.shape[0] * im_scale_y)),
+                interpolation=self.interp)
+        else:
+            return cv2.resize(
+                image,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
 
     def apply_bbox(self, bbox, scale, size):
         im_scale_x, im_scale_y = scale
@@ -704,21 +721,28 @@ class Resize(BaseOperator):
         # apply image
         im_shape = im.shape
         if self.keep_ratio:
+            if self.by_hw:
+                im_scale = min(self.target_size[1] / im_shape[1],
+                               self.target_size[0] / im_shape[0])
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
+                im_scale_x = im_scale
+                im_scale_y = im_scale
+            else:
+                im_size_min = np.min(im_shape[0:2])
+                im_size_max = np.max(im_shape[0:2])
 
-            im_size_min = np.min(im_shape[0:2])
-            im_size_max = np.max(im_shape[0:2])
+                target_size_min = np.min(self.target_size)
+                target_size_max = np.max(self.target_size)
 
-            target_size_min = np.min(self.target_size)
-            target_size_max = np.max(self.target_size)
+                im_scale = min(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
 
-            im_scale = min(target_size_min / im_size_min,
-                           target_size_max / im_size_max)
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
 
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
+                im_scale_x = im_scale
+                im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
             im_scale_y = resize_h / im_shape[0]
@@ -1741,7 +1765,6 @@ class PadBox(BaseOperator):
             if gt_num > 0:
                 pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
             sample['is_crowd'] = pad_crowd
-
         if 'gt_ide' in sample:
             pad_ide = np.zeros((num_max, ), dtype=np.int32)
             if gt_num > 0:
@@ -1844,7 +1867,8 @@ class Pad(BaseOperator):
         assert pad_mode in [
             -1, 0, 1, 2
         ], 'currently only supports four modes [-1, 0, 1, 2]'
-        assert pad_mode == -1 and offsets, 'if pad_mode is -1, offsets should not be None'
+        if pad_mode == -1 and offsets is None:
+            raise Exception('if pad_mode is -1, offsets should not be None')
 
         self.size = size
         self.size_divisor = size_divisor
@@ -1897,9 +1921,12 @@ class Pad(BaseOperator):
         x, y = offsets
         im_h, im_w = im_size
         h, w = size
-        canvas = np.ones((h, w, 3), dtype=np.float32)
-        canvas *= np.array(self.fill_value, dtype=np.float32)
-        canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
+        #canvas = np.ones((h, w, 3), dtype=np.float32)
+        #canvas *= np.array(self.fill_value, dtype=np.float32)
+        #canvas[y:y + im_h, x:x + im_w, :] = image.astype(np.float32)
+        canvas = np.ones((h, w, 3), dtype=image.dtype)
+        canvas *= np.array(self.fill_value, dtype=image.dtype)
+        canvas[y:y + im_h, x:x + im_w, :] = image
         return canvas
 
     def apply(self, sample, context=None):
@@ -1908,8 +1935,9 @@ class Pad(BaseOperator):
         if self.size:
             h, w = self.size
             assert (
-                im_h < h and im_w < w
-            ), '(h, w) of target size should be greater than (im_h, im_w)'
+                im_h <= h and im_w <= w
+            ), '(h, w):({}, {}) of target size should be greater or equal than (im_h, im_w):({}, {})'.format(
+                h, w, im_h, im_w)
         else:
             h = np.ceil(im_h // self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
@@ -1933,6 +1961,7 @@ class Pad(BaseOperator):
         if self.pad_mode == 0:
             return sample
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            offsets = [(w - im_w) / 2, (h - im_h) / 2]  # new add
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], offsets)
 
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -2059,54 +2088,84 @@ class Resize_LetterBox(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self):
+    def __init__(self, fraction=0.50, is_bgr=True):
         """ 
-        Transform the image data with augment_hsv
+        Augment the SV channel of image data.
         """
         super(AugmentHSV, self).__init__()
+        self.fraction = fraction
+        self.is_bgr = is_bgr
 
     def apply(self, sample, context=None):
         img = sample['image']
-        # SV augmentation by 50%
-        fraction = 0.50
-        img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        if self.is_bgr:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        else:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
         S = img_hsv[:, :, 1].astype(np.float32)
         V = img_hsv[:, :, 2].astype(np.float32)
 
-        a = (random.random() * 2 - 1) * fraction + 1
+        a = (random.random() * 2 - 1) * self.fraction + 1
         S *= a
         if a > 1:
             np.clip(S, a_min=0, a_max=255, out=S)
 
-        a = (random.random() * 2 - 1) * fraction + 1
+        a = (random.random() * 2 - 1) * self.fraction + 1
         V *= a
         if a > 1:
             np.clip(V, a_min=0, a_max=255, out=V)
 
         img_hsv[:, :, 1] = S.astype(np.uint8)
         img_hsv[:, :, 2] = V.astype(np.uint8)
-        cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
+        if self.is_bgr:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
+        else:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
 
         sample['image'] = img
         return sample
 
 
 @register_op
-class RandomAffine(BaseOperator):
+class NormalizedBbox2PixelBbox(BaseOperator):
+    """
+    Transform the bounding box's coornidates which is in [0,1] to pixels.
+    """
+
     def __init__(self):
+        super(NormalizedBbox2PixelBbox, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        height, width = sample['image'].shape[:2]
+        bbox[:, 0::2] = bbox[:, 0::2] * width
+        bbox[:, 1::2] = bbox[:, 1::2] * height
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class RandomAffine(BaseOperator):
+    def __init__(self,
+                 degrees=(-5, 5),
+                 translate=(0.10, 0.10),
+                 scale=(0.50, 1.20),
+                 shear=(-2, 2),
+                 borderValue=(127.5, 127.5, 127.5)):
         """ 
         Transform the image data with random_affine
         """
         super(RandomAffine, self).__init__()
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.borderValue = borderValue
 
     def apply(self, sample, context=None):
         # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
         # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
-        degrees = (-5, 5)
-        translate = (0.10, 0.10)
-        scale = (0.50, 1.20)
-        shear = (-2, 2)
-        borderValue = (127.5, 127.5, 127.5)
         border = 0  # width of added border (optional)
 
         img = sample['image']
@@ -2114,24 +2173,29 @@ class RandomAffine(BaseOperator):
 
         # Rotation and Scale
         R = np.eye(3)
-        a = random.random() * (degrees[1] - degrees[0]) + degrees[0]
-        s = random.random() * (scale[1] - scale[0]) + scale[0]
+        a = random.random() * (self.degrees[1] - self.degrees[0]
+                               ) + self.degrees[0]
+        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
         R[:2] = cv2.getRotationMatrix2D(
             angle=a, center=(width / 2, height / 2), scale=s)
 
         # Translation
         T = np.eye(3)
-        T[0, 2] = (random.random() * 2 - 1
-                   ) * translate[0] * height + border  # x translation (pixels)
-        T[1, 2] = (random.random() * 2 - 1
-                   ) * translate[1] * width + border  # y translation (pixels)
+        T[0, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[1] * width + border  # y translation (pixels)
 
         # Shear
         S = np.eye(3)
-        S[0, 1] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
-                           * math.pi / 180)  # x shear (deg)
-        S[1, 0] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
-                           * math.pi / 180)  # y shear (deg)
+        S[0, 1] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # y shear (deg)
 
         M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
         imw = cv2.warpPerspective(
@@ -2139,7 +2203,7 @@ class RandomAffine(BaseOperator):
             M,
             dsize=(width, height),
             flags=cv2.INTER_LINEAR,
-            borderValue=borderValue)  # BGR order borderValue
+            borderValue=self.borderValue)  # BGR order borderValue
 
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             targets = sample['gt_bbox']
@@ -2181,14 +2245,19 @@ class RandomAffine(BaseOperator):
             ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
             i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
 
-            if sum(i) > 0:  # todo
+            if sum(i) > 0:
                 sample['gt_bbox'] = xy[i]
                 sample['gt_class'] = sample['gt_class'][i]
-                sample['difficult'] = sample['difficult'][i]
-                sample['gt_ide'] = sample['gt_ide'][i]
-
-        sample['image'] = img
-        return sample
+                if 'difficult' in sample:
+                    sample['difficult'] = sample['difficult'][i]
+                if 'gt_ide' in sample:
+                    sample['gt_ide'] = sample['gt_ide'][i]
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = sample['is_crowd'][i]
+                sample['image'] = imw
+                return sample
+            else:
+                return sample
 
 
 @register_op

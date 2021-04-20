@@ -850,10 +850,48 @@ class Gt2JDETargetThres(BaseOperator):
         dh = np.log(gh / ph)
         return np.stack([dx, dy, dw, dh], axis=1)
 
+    def pad_box(self, sample, num_max):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        gt_num = len(bbox)
+        pad_bbox = np.zeros((num_max, 4), dtype=np.float32)
+        if gt_num > 0:
+            pad_bbox[:gt_num, :] = bbox[:gt_num, :]
+        sample['gt_bbox'] = pad_bbox
+        if 'gt_score' in sample:
+            pad_score = np.zeros((num_max, ), dtype=np.float32)
+            if gt_num > 0:
+                pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
+            sample['gt_score'] = pad_score
+        # in training, for example in op ExpandImage,
+        # the bbox and gt_class is expandded, but the difficult is not,
+        # so, judging by it's length
+        if 'difficult' in sample:
+            pad_diff = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_diff[:gt_num] = sample['difficult'][:gt_num, 0]
+            sample['difficult'] = pad_diff
+        if 'is_crowd' in sample:
+            pad_crowd = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
+            sample['is_crowd'] = pad_crowd
+        if 'gt_ide' in sample:
+            pad_ide = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_ide[:gt_num] = sample['gt_ide'][:gt_num, 0]
+            sample['gt_ide'] = pad_ide
+        return sample
+
     def __call__(self, samples, context=None):
         assert len(self.anchor_masks) == len(self.downsample_ratios), \
             "anchor_masks', and 'downsample_ratios' should have same length."
         h, w = samples[0]['image'].shape[1:3]
+
+        num_max = 0
+        for sample in samples:
+            num_max = max(num_max, len(sample['gt_bbox']))
+
         for sample in samples:
             gt_bbox = sample['gt_bbox']
             gt_ide = sample['gt_ide']
@@ -917,8 +955,8 @@ class Gt2JDETargetThres(BaseOperator):
                 sample['tbox{}'.format(i)] = tbox
                 sample['tconf{}'.format(i)] = tconf
                 sample['tide{}'.format(i)] = tid
-
             sample.pop('gt_class')
+            sample = self.pad_box(sample, num_max)
         return samples
 
 

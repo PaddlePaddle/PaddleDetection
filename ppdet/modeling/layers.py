@@ -48,8 +48,7 @@ class JDEBox(object):
         yv, xv = paddle.meshgrid([paddle.arange(nGh), paddle.arange(nGw)])
         mesh = paddle.stack(
             (xv, yv), axis=0).cast(dtype='float32')  # 2 x nGh x nGw
-        meshs = paddle.stack(
-            [mesh, mesh, mesh, mesh], axis=0)  # nA x 2 x nGh x nGw
+        meshs = paddle.tile(mesh, [nA, 1, 1, 1])
 
         anchor_offset_mesh = anchor_wh[:, :, None][:, :, :, None].repeat(
             int(nGh), axis=-2).repeat(
