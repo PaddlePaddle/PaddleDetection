@@ -18,6 +18,17 @@ For general information about PaddleDetection, please see [README.md](https://gi
 - cuDNN >= 7.6
 
 
+Dependency of PaddleDetection and PaddlePaddle:
+
+| PaddleDetection version | PaddlePaddle version  |    tips    |
+| :----------------: | :---------------: | :-------: |
+|    release/2.0       |       >= 2.0.1    |     --    |
+|    release/2.0-rc    |       >= 2.0.1    |     --    |
+|    release/0.5       |       >= 1.8.4    |  Cascade R-CNN and SOLOv2 depends on 2.0.0.rc |
+|    release/0.4       |       >= 1.8.4    |  PP-YOLO depends on 1.8.4 |
+|    release/0.3       |        >=1.7      |     --    |
+
+
 ## Instruction
 
 It is recommened to install PaddleDetection and begin your object detection journey via docker environment. Please follow the instruction below and if you want to use your local environment, you could skip step 1.
