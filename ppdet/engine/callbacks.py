@@ -179,6 +179,11 @@ class Checkpointer(Callback):
                     for metric in self.model._metrics:
                         map_res = metric.get_results()
                         key = 'bbox' if 'bbox' in map_res else 'mask'
+                        if key not in map_res:
+                            logger.warn("Evaluation results empty, this may be due to " \
+                                        "training iterations being too few or not " \
+                                        "loading the correct weights.")
+                            return
                         if map_res[key][0] > self.best_ap:
                             self.best_ap = map_res[key][0]
                             save_name = 'best_model'
