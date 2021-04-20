@@ -17,35 +17,7 @@
 
 ## 安装说明
 
-建议使用docker环境安装PaddleDetection并开启你的目标检测之旅。请按照如下步骤说明进行安装，如果您希望使用本机环境，可以跳过步骤1.
-
-### 1. （推荐）准备docker环境
-
-已CUDA10.1， CUDNN7.6为例
-
-```bash
-# 首先拉去PaddlePaddle镜像
-sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
-
-# 切换到工作目录
-cd /home/work
-
-# 创建ppdet容器
-# 将存放数据的当前目录映射到容器中的/ppdet目录中
-sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
-```
-
-可以在[DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) 中找到匹配您机器环境的镜像
-
-```
-# ctrl+P+Q 退出容器, 使用如下命令重新进入docker环境：
-sudo docker exec -it ppdet /bin/bash
-```
-
-其他更多docker用法，请参考PaddlePaddle[文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/docker/fromdocker.html)
-
-
-### 安装PaddlePaddle
+### 1. 安装PaddlePaddle
 
 ```
 # CUDA9.0
@@ -73,7 +45,24 @@ python -c "import paddle; print(paddle.__version__)"
 **注意**
 1. 如果您希望在多卡环境下使用PaddleDetection，请首先安装NCCL
 
-### 3. 安装PaddleDetection
+### 2. 安装PaddleDetection
+
+可通过如下两种方式安装PaddleDetection
+
+#### 2.1 通过pip安装
+
+**注意：** pip安装方式只支持Python3
+
+```
+# pip安装paddledet
+pip install paddledet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 下载使用源码中的配置文件和代码示例
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+cd PaddleDetection
+```
+
+#### 2.2 源码编译安装
 
 ```
 # 克隆PaddleDetection仓库

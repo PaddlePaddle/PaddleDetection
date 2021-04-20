@@ -20,36 +20,7 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 ## Instruction
 
-It is recommened to install PaddleDetection and begin your object detection journey via docker environment. Please follow the instruction below and if you want to use your local environment, you could skip step 1.
-
-
-### 1. (Recommended) Prepare docker environment
-
-For example, the environment is CUDA10.1 and CUDNN 7.6
-
-```bash
-# Firstly, pull the PaddlePaddle image
-sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
-
-# Switch to the working directory
-cd /home/work
-
-# Create a container called ppdet and
-# mount the current directory which may contains the dataset
-# to /paddle directory in the container
-sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
-```
-
-You can see [DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) to get the image that matches your machine.
-
-```
-# ctrl+P+Q to exit docker, to re-enter docker using the following command:
-sudo docker exec -it ppdet /bin/bash
-```
-
-For more docker usage, please refer to the PaddlePaddle [document](https://www.paddlepaddle.org.cn/documentation/docs/en/install/docker/fromdocker_en.html).
-
-### 2. Install PaddlePaddle
+### 1. Install PaddlePaddle
 
 ```
 # CUDA9.0
@@ -80,8 +51,24 @@ python -c "import paddle; print(paddle.__version__)"
 1.  If you want to use PaddleDetection on multi-GPU, please install NCCL at first.
 
 
-### 3. Install PaddleDetection
+### 2. Install PaddleDetection
 
+PaddleDetection can be installed in the following two ways:
+
+#### 2.1 Install via pip
+
+**Note:** Installing via pip only supports Python3
+
+```
+# install paddledet via pip
+pip install paddledet==2.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# Download and use the configuration files and code examples in the source code
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+cd PaddleDetection
+```
+
+#### 2.2 Compile and install from Source code
 
 ```
 # Clone PaddleDetection repository
@@ -116,8 +103,6 @@ If the tests are passed, the following information will be prompted:
 Ran 12 tests in 2.480s
 OK (skipped=2)
 ```
-
-
 
 ## Inference demo
 
