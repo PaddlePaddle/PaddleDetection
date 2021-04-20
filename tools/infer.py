@@ -68,7 +68,7 @@ def parse_args():
         "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to VisualDL.")
+        help="Whether to record the data to VisualDL.")
     parser.add_argument(
         '--vdl_log_dir',
         type=str,
@@ -78,7 +78,7 @@ def parse_args():
         "--save_txt",
         type=bool,
         default=False,
-        help="whether to record the data to VisualDL.")
+        help="Whether to save inference result in txt.")
     args = parser.parse_args()
     return args
 
