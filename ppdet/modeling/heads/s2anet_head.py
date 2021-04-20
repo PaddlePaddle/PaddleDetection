@@ -455,11 +455,22 @@ class S2ANetHead(nn.Layer):
             init_anchors = bbox_utils.rect2rbox(init_anchors)
             self.base_anchors[(i, featmap_size[0])] = init_anchors
 
-            #fam_reg1 = fam_reg
-            #fam_reg1.stop_gradient = True
+            fam_reg1 = fam_reg.clone()
+            fam_reg1.stop_gradient = True
+            pd_target_means = paddle.to_tensor(
+                np.array(
+                    self.target_means, dtype=np.float32), dtype='float32')
+            pd_target_stds = paddle.to_tensor(
+                np.array(
+                    self.target_stds, dtype=np.float32), dtype='float32')
+            pd_init_anchors = paddle.to_tensor(
+                np.array(
+                    init_anchors, dtype=np.float32), dtype='float32')
             refine_anchor = bbox_utils.bbox_decode(
-                fam_reg.detach(), init_anchors, self.target_means,
-                self.target_stds)
+                fam_reg1, pd_init_anchors, pd_target_means, pd_target_stds)
+            #refine_anchor = bbox_utils.bbox_decode(
+            #    fam_reg.detach(), init_anchors, self.target_means,
+            #    self.target_stds)
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -858,10 +869,14 @@ class S2ANetHead(nn.Layer):
                 bbox_pred = paddle.gather(bbox_pred, topk_inds)
                 scores = paddle.gather(scores, topk_inds)
 
-            target_means = (.0, .0, .0, .0, .0)
-            target_stds = (1.0, 1.0, 1.0, 1.0, 1.0)
-            bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, target_means,
-                                           target_stds)
+            pd_target_means = paddle.to_tensor(
+                np.array(
+                    self.target_means, dtype=np.float32), dtype='float32')
+            pd_target_stds = paddle.to_tensor(
+                np.array(
+                    self.target_stds, dtype=np.float32), dtype='float32')
+            bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, pd_target_means,
+                                           pd_target_stds)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 

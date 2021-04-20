@@ -299,8 +299,8 @@ def delta2rbox(Rrois,
     :param wh_ratio_clip:
     :return:
     """
-    means = paddle.to_tensor(means)
-    stds = paddle.to_tensor(stds)
+    #means = paddle.to_tensor(means)
+    #stds = paddle.to_tensor(stds)
     deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
     denorm_deltas = deltas * stds + means
 
@@ -391,15 +391,15 @@ def bbox_decode(bbox_preds,
     return:
         bboxes: [N,H,W,5]
     """
-    means = paddle.to_tensor(means)
-    stds = paddle.to_tensor(stds)
+    #means = paddle.to_tensor(means, dtype='float32')
+    #stds = paddle.to_tensor(means, dtype='float32')
     num_imgs, H, W, _ = bbox_preds.shape
     bboxes_list = []
     for img_id in range(num_imgs):
         bbox_pred = bbox_preds[img_id]
         # bbox_pred.shape=[5,H,W]
         bbox_delta = bbox_pred
-        anchors = paddle.to_tensor(anchors)
+        #anchors = paddle.to_tensor(anchors.astype(np.float32), dtype='float32')
         bboxes = delta2rbox(
             anchors, bbox_delta, means, stds, wh_ratio_clip=1e-6)
         bboxes = paddle.reshape(bboxes, [H, W, 5])
@@ -512,8 +512,15 @@ def rbox2poly(rrects):
     poly:[x0,y0,x1,y1,x2,y2,x3,y3]
     """
     polys = []
-    for rrect in rrects:
-        x_ctr, y_ctr, width, height, angle = rrect[:5]
+    rrects = rrects.numpy()
+    for i in range(rrects.shape[0]):
+        rrect = rrects[i]
+        # x_ctr, y_ctr, width, height, angle = rrect[:5]
+        x_ctr = rrect[0]
+        y_ctr = rrect[1]
+        width = rrect[2]
+        height = rrect[3]
+        angle = rrect[4]
         tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
         rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
         R = np.array([[np.cos(angle), -np.sin(angle)],
@@ -525,4 +532,46 @@ def rbox2poly(rrects):
         poly = get_best_begin_point_single(poly)
         polys.append(poly)
     polys = np.array(polys)
+    return polys
+
+
+def pd_rbox2poly(rrects):
+    """
+    rrect:[x_ctr,y_ctr,w,h,angle]
+    to
+    poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+    """
+    N = rrects.shape[0]
+
+    x_ctr = rrects[:, 0]
+    y_ctr = rrects[:, 1]
+    width = rrects[:, 2]
+    height = rrects[:, 3]
+    angle = rrects[:, 4]
+
+    tl_x, tl_y, br_x, br_y = -width * 0.5, -height * 0.5, width * 0.5, height * 0.5
+
+    normal_rects = paddle.stack([tl_x, br_x, br_x, tl_x, tl_y, tl_y, br_y, br_y], axis=0)
+    normal_rects = paddle.reshape(normal_rects, [2, 4, N])
+    normal_rects = paddle.transpose(normal_rects, [2, 0, 1])
+
+    sin, cos = paddle.sin(angle), paddle.cos(angle)
+    # M.shape=[N,2,2]
+    M = paddle.stack([cos, -sin, sin, cos], axis=0)
+    M = paddle.reshape(M, [2, 2, N])
+    M = paddle.transpose(M, [2, 0, 1])
+
+    # polys:[N,8]
+    polys = paddle.matmul(M, normal_rects)
+    polys = paddle.transpose(polys, [2, 1, 0])
+    polys = paddle.reshape(polys, [-1, N])
+    polys = paddle.transpose(polys, [1, 0])
+    polys[:, 0] += x_ctr
+    polys[:, 2] += x_ctr
+    polys[:, 4] += x_ctr
+    polys[:, 6] += x_ctr
+    polys[:, 1] += y_ctr
+    polys[:, 3] += y_ctr
+    polys[:, 5] += y_ctr
+    polys[:, 7] += y_ctr
     return polys
