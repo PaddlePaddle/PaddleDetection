@@ -323,7 +323,9 @@ class RBoxAssigner(object):
         try:
             from rbox_iou_ops import rbox_iou
         except Exception as e:
-            print('import custom_ops error', e)
+            print("import custom_ops error, try install rbox_iou_ops " \
+                  "following ppdet/ext_op/README.md", e)
+            sys.stdout.flush()
             sys.exit(-1)
 
         iou = rbox_iou(gt_bboxes_xc_yc, anchors_xc_yc)
