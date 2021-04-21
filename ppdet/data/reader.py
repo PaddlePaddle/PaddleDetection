@@ -95,10 +95,9 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
-
         return batch_data
 
 

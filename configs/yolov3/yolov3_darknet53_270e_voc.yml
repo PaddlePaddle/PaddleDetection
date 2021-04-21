@@ -8,3 +8,6 @@ _BASE_: [
 
 snapshot_epoch: 5
 weights: output/yolov3_darknet53_270e_voc/model_final
+
+EvalReader:
+  collate_batch: false

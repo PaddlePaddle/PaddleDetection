@@ -6,3 +6,6 @@ _BASE_: [
   '_base_/ssd_reader.yml',
 ]
 weights: output/ssd_vgg16_300_240e_voc/model_final
+
+EvalReader:
+  collate_batch: false

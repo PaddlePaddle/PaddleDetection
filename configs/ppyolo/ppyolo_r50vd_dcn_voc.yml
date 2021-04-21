@@ -21,6 +21,9 @@ TrainReader:
   mixup_epoch: 350
   batch_size: 12
 
+EvalReader:
+  collate_batch: false
+
 epoch: 583
 
 LearningRate:

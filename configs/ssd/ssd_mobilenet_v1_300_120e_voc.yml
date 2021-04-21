@@ -6,3 +6,6 @@ _BASE_: [
   '_base_/ssd_mobilenet_reader.yml',
 ]
 weights: output/ssd_mobilenet_v1_300_120e_voc/model_final
+
+EvalReader:
+  collate_batch: false
