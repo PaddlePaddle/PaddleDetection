@@ -16,7 +16,7 @@ JDE:
 
 YOLOv3:
   backbone: ResNet
-  neck: PPJDEFPN
+  neck: PPYOLOFPN
   yolo_head: YOLOv3Head
   post_process: JDEBBoxPostProcess
   for_mot: True
@@ -27,10 +27,10 @@ ResNet:
   return_idx: [1, 2, 3]
   dcn_v2_stages: [3]
   freeze_at: -1
-  freeze_norm: true #
+  freeze_norm: true
   norm_decay: 0.
 
-PPJDEFPN:
+PPYOLOFPN:
   coord_conv: true
   drop_block: true
   block_size: 3

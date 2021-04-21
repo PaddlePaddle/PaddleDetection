@@ -17,6 +17,7 @@ import os.path as osp
 import glob
 import shutil
 from setuptools import find_packages, setup
+from paddle.utils import cpp_extension
 
 
 def readme():
@@ -59,17 +60,17 @@ packages = [
     'ppdet.metrics',
     'ppdet.modeling',
     'ppdet.model_zoo',
-    'ppdet.py_op',
+    'ppdet.slim',
     'ppdet.utils',
 ]
 
 if __name__ == "__main__":
     setup(
-        name='ppdet',
+        name='paddledet',
         packages=find_packages(exclude=("configs", "tools", "deploy")),
         package_data={'ppdet.model_zoo': package_model_zoo()},
         author='PaddlePaddle',
-        version='2.0-rc',
+        version='2.0.0',
         install_requires=parse_requirements('./requirements.txt'),
         description='Object detection and instance segmentation toolkit based on PaddlePaddle',
         long_description=readme(),
@@ -88,4 +89,4 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3.7', 'Topic :: Utilities'
         ],
         license='Apache License 2.0',
-        ext_modules=[], )
+        ext_modules=[])

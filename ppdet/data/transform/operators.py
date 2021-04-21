@@ -39,6 +39,7 @@ from PIL import Image, ImageEnhance, ImageDraw
 
 from ppdet.core.workspace import serializable
 from ppdet.modeling.layers import AnchorGrid
+from ppdet.modeling import bbox_utils
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -203,7 +204,7 @@ class Permute(BaseOperator):
 @register_op
 class Lighting(BaseOperator):
     """
-    Lighting the imagen by eigenvalues and eigenvectors
+    Lighting the image by eigenvalues and eigenvectors
     Args:
         eigval (list): eigenvalues
         eigvec (list): eigenvectors
@@ -346,8 +347,8 @@ class GridMask(BaseOperator):
         self.prob = prob
         self.upper_iter = upper_iter
 
-        from .gridmask_utils import GridMask
-        self.gridmask_op = GridMask(
+        from .gridmask_utils import Gridmask
+        self.gridmask_op = Gridmask(
             use_h,
             use_w,
             rotate=rotate,
@@ -579,6 +580,18 @@ class RandomFlip(BaseOperator):
             bbox[:, 0] = width - oldx1
         return bbox
 
+    def apply_rbox(self, bbox, width):
+        oldx1 = bbox[:, 0].copy()
+        oldx2 = bbox[:, 2].copy()
+        oldx3 = bbox[:, 4].copy()
+        oldx4 = bbox[:, 6].copy()
+        bbox[:, 0] = width - oldx1
+        bbox[:, 2] = width - oldx2
+        bbox[:, 4] = width - oldx3
+        bbox[:, 6] = width - oldx4
+        bbox = [bbox_utils.get_best_begin_point_single(e) for e in bbox]
+        return bbox
+
     def apply(self, sample, context=None):
         """Filp the image and bounding box.
         Operators:
@@ -611,6 +624,10 @@ class RandomFlip(BaseOperator):
 
             if 'gt_segm' in sample and sample['gt_segm'].any():
                 sample['gt_segm'] = sample['gt_segm'][:, :, ::-1]
+
+            if 'gt_rbox2poly' in sample and sample['gt_rbox2poly'].any():
+                sample['gt_rbox2poly'] = self.apply_rbox(sample['gt_rbox2poly'],
+                                                         width)
 
             sample['flipped'] = True
             sample['image'] = im
@@ -765,6 +782,16 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
+
+        # apply rbox
+        if 'gt_rbox2poly' in sample:
+            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
+                logger.warn(
+                    "gt_rbox2poly's length shoule be 8, but actually is {}".
+                    format(len(sample['gt_rbox2poly'])))
+            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
+                                                     [im_scale_x, im_scale_y],
+                                                     [resize_w, resize_h])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -1552,14 +1579,14 @@ class Cutmix(BaseOperator):
         bbx2 = np.clip(cx + cut_w // 2, 0, w - 1)
         bby2 = np.clip(cy + cut_h // 2, 0, h - 1)
 
-        img_1 = np.zeros((h, w, img1.shape[2]), 'float32')
-        img_1[:img1.shape[0], :img1.shape[1], :] = \
+        img_1_pad = np.zeros((h, w, img1.shape[2]), 'float32')
+        img_1_pad[:img1.shape[0], :img1.shape[1], :] = \
             img1.astype('float32')
-        img_2 = np.zeros((h, w, img2.shape[2]), 'float32')
-        img_2[:img2.shape[0], :img2.shape[1], :] = \
+        img_2_pad = np.zeros((h, w, img2.shape[2]), 'float32')
+        img_2_pad[:img2.shape[0], :img2.shape[1], :] = \
             img2.astype('float32')
-        img_1[bby1:bby2, bbx1:bbx2, :] = img2[bby1:bby2, bbx1:bbx2, :]
-        return img_1
+        img_1_pad[bby1:bby2, bbx1:bbx2, :] = img_2_pad[bby1:bby2, bbx1:bbx2, :]
+        return img_1_pad
 
     def __call__(self, sample, context=None):
         if not isinstance(sample, Sequence):
@@ -1582,16 +1609,27 @@ class Cutmix(BaseOperator):
         gt_class1 = sample[0]['gt_class']
         gt_class2 = sample[1]['gt_class']
         gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
-        gt_score1 = sample[0]['gt_score']
-        gt_score2 = sample[1]['gt_score']
+        gt_score1 = np.ones_like(sample[0]['gt_class'])
+        gt_score2 = np.ones_like(sample[1]['gt_class'])
         gt_score = np.concatenate(
             (gt_score1 * factor, gt_score2 * (1. - factor)), axis=0)
-        sample = sample[0]
-        sample['image'] = img
-        sample['gt_bbox'] = gt_bbox
-        sample['gt_score'] = gt_score
-        sample['gt_class'] = gt_class
-        return sample
+        result = copy.deepcopy(sample[0])
+        result['image'] = img
+        result['gt_bbox'] = gt_bbox
+        result['gt_score'] = gt_score
+        result['gt_class'] = gt_class
+        if 'is_crowd' in sample[0]:
+            is_crowd1 = sample[0]['is_crowd']
+            is_crowd2 = sample[1]['is_crowd']
+            is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
+            result['is_crowd'] = is_crowd
+        if 'difficult' in sample[0]:
+            is_difficult1 = sample[0]['difficult']
+            is_difficult2 = sample[1]['difficult']
+            is_difficult = np.concatenate(
+                (is_difficult1, is_difficult2), axis=0)
+            result['difficult'] = is_difficult
+        return result
 
 
 @register_op
@@ -1846,12 +1884,13 @@ class Pad(BaseOperator):
                  offsets=None,
                  fill_value=(127.5, 127.5, 127.5)):
         """
-        Pad image to a specified size or multiple of size_divisor. random target_size and interpolation method
+        Pad image to a specified size or multiple of size_divisor.
         Args:
             size (int, Sequence): image target size, if None, pad to multiple of size_divisor, default None
             size_divisor (int): size divisor, default 32
             pad_mode (int): pad mode, currently only supports four modes [-1, 0, 1, 2]. if -1, use specified offsets
                 if 0, only pad to right and bottom. if 1, pad according to center. if 2, only pad left and top
+            offsets (list): [offset_x, offset_y], specify offset while padding, only supported pad_mode=-1
             fill_value (bool): rgb value of pad area, default (127.5, 127.5, 127.5)
         """
         super(Pad, self).__init__()
@@ -2014,75 +2053,29 @@ class Poly2Mask(BaseOperator):
 
 
 @register_op
-class Resize_LetterBox(BaseOperator):
-    def __init__(self, target_size):
-        """
-        Resize image to target size, convert Normalized xywh to pixel xyxy
-        format. Used in train/eval reader.
-        Args:
-            target_size (int|list): image target size.
-        """
-        super(Resize_LetterBox, self).__init__()
-        if not isinstance(target_size, (Integral, Sequence)):
-            raise TypeError(
-                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
-                format(type(target_size)))
-        if isinstance(target_size, Integral):
-            target_size = [target_size, target_size]
-        self.target_size = target_size
+class Rbox2Poly(BaseOperator):
+    """
+    Convert rbbox format to poly format.
+    """
 
-    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
-        # letterbox: resize a rectangular image to a padded rectangular
-        shape = img.shape[:2]  # [height, width]
-        ratio = min(float(height) / shape[0], float(width) / shape[1])
-        new_shape = (round(shape[1] * ratio),
-                     round(shape[0] * ratio))  # [width, height]
-        dw = (width - new_shape[0]) / 2  # width padding
-        dh = (height - new_shape[1]) / 2  # height padding
-        top, bottom = round(dh - 0.1), round(dh + 0.1)
-        left, right = round(dw - 0.1), round(dw + 0.1)
-
-        img = cv2.resize(
-            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
-        img = cv2.copyMakeBorder(
-            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
-            value=color)  # padded rectangular
-        return img, ratio, dw, dh
-
-    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
-        bboxes = bbox0.copy()
-        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
-        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
-        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
-        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
-        return bboxes
+    def __init__(self):
+        super(Rbox2Poly, self).__init__()
 
     def apply(self, sample, context=None):
-        """ Resize the image numpy.
-        """
-        im = sample['image']
-        h, w = sample['im_shape']
-        sample['img0_shape'] = sample['im_shape']
-        if not isinstance(im, np.ndarray):
-            raise TypeError("{}: image type is not numpy.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
-
-        # apply image
-        height, width = self.target_size
-        img, ratio, padw, padh = self.apply_image(
-            im, height=height, width=width)
-        # img = np.ascontiguousarray(img[ :, :, ::-1]) # BGR to RGB
-        # im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB) # todo, for trainreader aug
-
-        sample['image'] = img
-        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
-        # sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32) # todo
-
-        # apply bbox
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
-                                                padw, padh)
+        assert 'gt_rbox' in sample
+        assert sample['gt_rbox'].shape[1] == 5
+        rrects = sample['gt_rbox']
+        x_ctr = rrects[:, 0]
+        y_ctr = rrects[:, 1]
+        width = rrects[:, 2]
+        height = rrects[:, 3]
+        x1 = x_ctr - width / 2.0
+        y1 = y_ctr - height / 2.0
+        x2 = x_ctr + width / 2.0
+        y2 = y_ctr + height / 2.0
+        sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
+        polys = bbox_utils.rbox2poly(rrects)
+        sample['gt_rbox2poly'] = polys
         return sample
 
 

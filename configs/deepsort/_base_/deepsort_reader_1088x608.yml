@@ -3,7 +3,8 @@ TestReader:
     image_shape: [3, 608, 1088]
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: [608, 1088], keep_ratio: False, interp: 2}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -14,7 +15,8 @@ EvalMOTReader:
     image_shape: [3, 608, 1088]
   sample_transforms:
     - Decode: {keep_img0: true}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -25,7 +27,8 @@ TestMOTReader:
     image_shape: [3, 608, 1088]
   sample_transforms:
     - Decode_video: {}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
+    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1

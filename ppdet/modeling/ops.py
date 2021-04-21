@@ -41,7 +41,12 @@ __all__ = [
     'collect_fpn_proposals',
     'matrix_nms',
     'batch_norm',
+    'mish',
 ]
+
+
+def mish(x):
+    return x * paddle.tanh(F.softplus(x))
 
 
 def batch_norm(ch,
@@ -49,9 +54,7 @@ def batch_norm(ch,
                norm_decay=0.,
                freeze_norm=False,
                initializer=None,
-               name=None,
                data_format='NCHW'):
-    bn_name = name + '.bn'
     if norm_type == 'sync_bn':
         batch_norm = nn.SyncBatchNorm
     else:

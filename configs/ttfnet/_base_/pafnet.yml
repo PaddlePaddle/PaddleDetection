@@ -1,0 +1,41 @@
+architecture: TTFNet
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_pretrained.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+TTFNet:
+  backbone: ResNet
+  neck: TTFFPN
+  ttf_head: TTFHead
+  post_process: BBoxPostProcess
+
+ResNet:
+  depth: 50
+  variant: d
+  return_idx: [0, 1, 2, 3]
+  freeze_at: -1
+  norm_decay: 0.
+  variant: d
+  dcn_v2_stages: [1, 2, 3]
+
+TTFFPN:
+  planes: [256, 128, 64]
+  shortcut_num: [3, 2, 1]
+
+TTFHead:
+  dcn_head: true
+  hm_loss:
+    name: CTFocalLoss
+    loss_weight: 1.
+  wh_loss:
+    name: GIoULoss
+    loss_weight: 5.
+    reduction: sum
+
+BBoxPostProcess:
+  decode:
+    name: TTFBox
+    max_per_img: 100
+    score_thresh: 0.01
+    down_ratio: 4

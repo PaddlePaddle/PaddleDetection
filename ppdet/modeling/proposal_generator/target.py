@@ -301,3 +301,287 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
     tgt_weights = paddle.concat(tgt_weights, axis=0)
 
     return mask_rois, mask_rois_num, tgt_classes, tgt_masks, mask_index, tgt_weights
+
+
+def libra_sample_pos(max_overlaps, max_classes, pos_inds, num_expected):
+    if len(pos_inds) <= num_expected:
+        return pos_inds
+    else:
+        unique_gt_inds = np.unique(max_classes[pos_inds])
+        num_gts = len(unique_gt_inds)
+        num_per_gt = int(round(num_expected / float(num_gts)) + 1)
+
+        sampled_inds = []
+        for i in unique_gt_inds:
+            inds = np.nonzero(max_classes == i)[0]
+            before_len = len(inds)
+            inds = list(set(inds) & set(pos_inds))
+            after_len = len(inds)
+            if len(inds) > num_per_gt:
+                inds = np.random.choice(inds, size=num_per_gt, replace=False)
+            sampled_inds.extend(list(inds))  # combine as a new sampler
+        if len(sampled_inds) < num_expected:
+            num_extra = num_expected - len(sampled_inds)
+            extra_inds = np.array(list(set(pos_inds) - set(sampled_inds)))
+            assert len(sampled_inds) + len(extra_inds) == len(pos_inds), \
+                "sum of sampled_inds({}) and extra_inds({}) length must be equal with pos_inds({})!".format(
+                    len(sampled_inds), len(extra_inds), len(pos_inds))
+            if len(extra_inds) > num_extra:
+                extra_inds = np.random.choice(
+                    extra_inds, size=num_extra, replace=False)
+            sampled_inds.extend(extra_inds.tolist())
+        elif len(sampled_inds) > num_expected:
+            sampled_inds = np.random.choice(
+                sampled_inds, size=num_expected, replace=False)
+        return paddle.to_tensor(sampled_inds)
+
+
+def libra_sample_via_interval(max_overlaps, full_set, num_expected, floor_thr,
+                              num_bins, bg_thresh):
+    max_iou = max_overlaps.max()
+    iou_interval = (max_iou - floor_thr) / num_bins
+    per_num_expected = int(num_expected / num_bins)
+
+    sampled_inds = []
+    for i in range(num_bins):
+        start_iou = floor_thr + i * iou_interval
+        end_iou = floor_thr + (i + 1) * iou_interval
+
+        tmp_set = set(
+            np.where(
+                np.logical_and(max_overlaps >= start_iou, max_overlaps <
+                               end_iou))[0])
+        tmp_inds = list(tmp_set & full_set)
+
+        if len(tmp_inds) > per_num_expected:
+            tmp_sampled_set = np.random.choice(
+                tmp_inds, size=per_num_expected, replace=False)
+        else:
+            tmp_sampled_set = np.array(tmp_inds, dtype=np.int)
+        sampled_inds.append(tmp_sampled_set)
+
+    sampled_inds = np.concatenate(sampled_inds)
+    if len(sampled_inds) < num_expected:
+        num_extra = num_expected - len(sampled_inds)
+        extra_inds = np.array(list(full_set - set(sampled_inds)))
+        assert len(sampled_inds) + len(extra_inds) == len(full_set), \
+            "sum of sampled_inds({}) and extra_inds({}) length must be equal with full_set({})!".format(
+                len(sampled_inds), len(extra_inds), len(full_set))
+
+        if len(extra_inds) > num_extra:
+            extra_inds = np.random.choice(extra_inds, num_extra, replace=False)
+        sampled_inds = np.concatenate([sampled_inds, extra_inds])
+
+    return sampled_inds
+
+
+def libra_sample_neg(max_overlaps,
+                     max_classes,
+                     neg_inds,
+                     num_expected,
+                     floor_thr=-1,
+                     floor_fraction=0,
+                     num_bins=3,
+                     bg_thresh=0.5):
+    if len(neg_inds) <= num_expected:
+        return neg_inds
+    else:
+        # balance sampling for negative samples
+        neg_set = set(neg_inds.tolist())
+        if floor_thr > 0:
+            floor_set = set(
+                np.where(
+                    np.logical_and(max_overlaps >= 0, max_overlaps < floor_thr))
+                [0])
+            iou_sampling_set = set(np.where(max_overlaps >= floor_thr)[0])
+        elif floor_thr == 0:
+            floor_set = set(np.where(max_overlaps == 0)[0])
+            iou_sampling_set = set(np.where(max_overlaps > floor_thr)[0])
+        else:
+            floor_set = set()
+            iou_sampling_set = set(np.where(max_overlaps > floor_thr)[0])
+            floor_thr = 0
+
+        floor_neg_inds = list(floor_set & neg_set)
+        iou_sampling_neg_inds = list(iou_sampling_set & neg_set)
+
+        num_expected_iou_sampling = int(num_expected * (1 - floor_fraction))
+        if len(iou_sampling_neg_inds) > num_expected_iou_sampling:
+            if num_bins >= 2:
+                iou_sampled_inds = libra_sample_via_interval(
+                    max_overlaps,
+                    set(iou_sampling_neg_inds), num_expected_iou_sampling,
+                    floor_thr, num_bins, bg_thresh)
+            else:
+                iou_sampled_inds = np.random.choice(
+                    iou_sampling_neg_inds,
+                    size=num_expected_iou_sampling,
+                    replace=False)
+        else:
+            iou_sampled_inds = np.array(iou_sampling_neg_inds, dtype=np.int)
+        num_expected_floor = num_expected - len(iou_sampled_inds)
+        if len(floor_neg_inds) > num_expected_floor:
+            sampled_floor_inds = np.random.choice(
+                floor_neg_inds, size=num_expected_floor, replace=False)
+        else:
+            sampled_floor_inds = np.array(floor_neg_inds, dtype=np.int)
+        sampled_inds = np.concatenate((sampled_floor_inds, iou_sampled_inds))
+        if len(sampled_inds) < num_expected:
+            num_extra = num_expected - len(sampled_inds)
+            extra_inds = np.array(list(neg_set - set(sampled_inds)))
+            if len(extra_inds) > num_extra:
+                extra_inds = np.random.choice(
+                    extra_inds, size=num_extra, replace=False)
+            sampled_inds = np.concatenate((sampled_inds, extra_inds))
+        return paddle.to_tensor(sampled_inds)
+
+
+def libra_label_box(anchors, gt_boxes, gt_classes, positive_overlap,
+                    negative_overlap, num_classes):
+    # TODO: use paddle API to speed up
+    gt_classes = gt_classes.numpy()
+    gt_overlaps = np.zeros((anchors.shape[0], num_classes))
+    matches = np.zeros((anchors.shape[0]), dtype=np.int32)
+    if len(gt_boxes) > 0:
+        proposal_to_gt_overlaps = bbox_overlaps(anchors, gt_boxes).numpy()
+        overlaps_argmax = proposal_to_gt_overlaps.argmax(axis=1)
+        overlaps_max = proposal_to_gt_overlaps.max(axis=1)
+        # Boxes which with non-zero overlap with gt boxes
+        overlapped_boxes_ind = np.where(overlaps_max > 0)[0]
+        overlapped_boxes_gt_classes = gt_classes[overlaps_argmax[
+            overlapped_boxes_ind]]
+
+        for idx in range(len(overlapped_boxes_ind)):
+            gt_overlaps[overlapped_boxes_ind[idx], overlapped_boxes_gt_classes[
+                idx]] = overlaps_max[overlapped_boxes_ind[idx]]
+            matches[overlapped_boxes_ind[idx]] = overlaps_argmax[
+                overlapped_boxes_ind[idx]]
+
+    gt_overlaps = paddle.to_tensor(gt_overlaps)
+    matches = paddle.to_tensor(matches)
+
+    matched_vals = paddle.max(gt_overlaps, axis=1)
+    match_labels = paddle.full(matches.shape, -1, dtype='int32')
+    match_labels = paddle.where(matched_vals < negative_overlap,
+                                paddle.zeros_like(match_labels), match_labels)
+    match_labels = paddle.where(matched_vals >= positive_overlap,
+                                paddle.ones_like(match_labels), match_labels)
+
+    return matches, match_labels, matched_vals
+
+
+def libra_sample_bbox(matches,
+                      match_labels,
+                      matched_vals,
+                      gt_classes,
+                      batch_size_per_im,
+                      num_classes,
+                      fg_fraction,
+                      fg_thresh,
+                      bg_thresh,
+                      num_bins,
+                      use_random=True,
+                      is_cascade_rcnn=False):
+    rois_per_image = int(batch_size_per_im)
+    fg_rois_per_im = int(np.round(fg_fraction * rois_per_image))
+    bg_rois_per_im = rois_per_image - fg_rois_per_im
+
+    if is_cascade_rcnn:
+        fg_inds = paddle.nonzero(matched_vals >= fg_thresh)
+        bg_inds = paddle.nonzero(matched_vals < bg_thresh)
+    else:
+        matched_vals_np = matched_vals.numpy()
+        match_labels_np = match_labels.numpy()
+
+        # sample fg
+        fg_inds = paddle.nonzero(matched_vals >= fg_thresh).flatten()
+        fg_nums = int(np.minimum(fg_rois_per_im, fg_inds.shape[0]))
+        if (fg_inds.shape[0] > fg_nums) and use_random:
+            fg_inds = libra_sample_pos(matched_vals_np, match_labels_np,
+                                       fg_inds.numpy(), fg_rois_per_im)
+        fg_inds = fg_inds[:fg_nums]
+
+        # sample bg
+        bg_inds = paddle.nonzero(matched_vals < bg_thresh).flatten()
+        bg_nums = int(np.minimum(rois_per_image - fg_nums, bg_inds.shape[0]))
+        if (bg_inds.shape[0] > bg_nums) and use_random:
+            bg_inds = libra_sample_neg(
+                matched_vals_np,
+                match_labels_np,
+                bg_inds.numpy(),
+                bg_rois_per_im,
+                num_bins=num_bins,
+                bg_thresh=bg_thresh)
+        bg_inds = bg_inds[:bg_nums]
+
+        sampled_inds = paddle.concat([fg_inds, bg_inds])
+
+        gt_classes = paddle.gather(gt_classes, matches)
+        gt_classes = paddle.where(match_labels == 0,
+                                  paddle.ones_like(gt_classes) * num_classes,
+                                  gt_classes)
+        gt_classes = paddle.where(match_labels == -1,
+                                  paddle.ones_like(gt_classes) * -1, gt_classes)
+        sampled_gt_classes = paddle.gather(gt_classes, sampled_inds)
+
+        return sampled_inds, sampled_gt_classes
+
+
+def libra_generate_proposal_target(rpn_rois,
+                                   gt_classes,
+                                   gt_boxes,
+                                   batch_size_per_im,
+                                   fg_fraction,
+                                   fg_thresh,
+                                   bg_thresh,
+                                   num_classes,
+                                   use_random=True,
+                                   is_cascade_rcnn=False,
+                                   max_overlaps=None,
+                                   num_bins=3):
+
+    rois_with_gt = []
+    tgt_labels = []
+    tgt_bboxes = []
+    sampled_max_overlaps = []
+    tgt_gt_inds = []
+    new_rois_num = []
+
+    for i, rpn_roi in enumerate(rpn_rois):
+        max_overlap = max_overlaps[i] if is_cascade_rcnn else None
+        gt_bbox = gt_boxes[i]
+        gt_class = paddle.squeeze(gt_classes[i], axis=-1)
+        if is_cascade_rcnn:
+            rpn_roi = filter_roi(rpn_roi, max_overlap)
+        bbox = paddle.concat([rpn_roi, gt_bbox])
+
+        # Step1: label bbox
+        matches, match_labels, matched_vals = libra_label_box(
+            bbox, gt_bbox, gt_class, fg_thresh, bg_thresh, num_classes)
+
+        # Step2: sample bbox
+        sampled_inds, sampled_gt_classes = libra_sample_bbox(
+            matches, match_labels, matched_vals, gt_class, batch_size_per_im,
+            num_classes, fg_fraction, fg_thresh, bg_thresh, num_bins,
+            use_random, is_cascade_rcnn)
+
+        # Step3: make output
+        rois_per_image = paddle.gather(bbox, sampled_inds)
+        sampled_gt_ind = paddle.gather(matches, sampled_inds)
+        sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+        sampled_overlap = paddle.gather(matched_vals, sampled_inds)
+
+        rois_per_image.stop_gradient = True
+        sampled_gt_ind.stop_gradient = True
+        sampled_bbox.stop_gradient = True
+        sampled_overlap.stop_gradient = True
+
+        tgt_labels.append(sampled_gt_classes)
+        tgt_bboxes.append(sampled_bbox)
+        rois_with_gt.append(rois_per_image)
+        sampled_max_overlaps.append(sampled_overlap)
+        tgt_gt_inds.append(sampled_gt_ind)
+        new_rois_num.append(paddle.shape(sampled_inds)[0])
+    new_rois_num = paddle.concat(new_rois_num)
+    # rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
+    return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num

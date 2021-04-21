@@ -23,7 +23,7 @@ from paddle import ParamAttr
 from paddle import to_tensor
 from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal, Constant
+from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, serializable
@@ -157,36 +157,32 @@ class DeformableConvV2(nn.Layer):
                  bias_attr=None,
                  lr_scale=1,
                  regularizer=None,
-                 name=None):
+                 skip_quant=False):
         super(DeformableConvV2, self).__init__()
         self.offset_channel = 2 * kernel_size**2
         self.mask_channel = kernel_size**2
 
         if lr_scale == 1 and regularizer is None:
-            offset_bias_attr = ParamAttr(
-                initializer=Constant(0.),
-                name='{}._conv_offset.bias'.format(name))
+            offset_bias_attr = ParamAttr(initializer=Constant(0.))
         else:
             offset_bias_attr = ParamAttr(
                 initializer=Constant(0.),
                 learning_rate=lr_scale,
-                regularizer=regularizer,
-                name='{}._conv_offset.bias'.format(name))
+                regularizer=regularizer)
         self.conv_offset = nn.Conv2D(
             in_channels,
             3 * kernel_size**2,
             kernel_size,
             stride=stride,
             padding=(kernel_size - 1) // 2,
-            weight_attr=ParamAttr(
-                initializer=Constant(0.0),
-                name='{}._conv_offset.weight'.format(name)),
+            weight_attr=ParamAttr(initializer=Constant(0.0)),
             bias_attr=offset_bias_attr)
+        if skip_quant:
+            self.conv_offset.skip_quant = True
 
         if bias_attr:
             # in FCOS-DCN head, specifically need learning_rate and regularizer
             dcn_bias_attr = ParamAttr(
-                name=name + "_bias",
                 initializer=Constant(value=0),
                 regularizer=L2Decay(0.),
                 learning_rate=2.)
@@ -221,25 +217,23 @@ class ConvNormLayer(nn.Layer):
                  ch_out,
                  filter_size,
                  stride,
+                 groups=1,
                  norm_type='bn',
                  norm_decay=0.,
                  norm_groups=32,
                  use_dcn=False,
-                 norm_name=None,
                  bias_on=False,
                  lr_scale=1.,
                  freeze_norm=False,
                  initializer=Normal(
                      mean=0., std=0.01),
-                 name=None):
+                 skip_quant=False):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
         if bias_on:
             bias_attr = ParamAttr(
-                name=name + "_bias",
-                initializer=Constant(value=0.),
-                learning_rate=lr_scale)
+                initializer=Constant(value=0.), learning_rate=lr_scale)
         else:
             bias_attr = False
 
@@ -250,12 +244,12 @@ class ConvNormLayer(nn.Layer):
                 kernel_size=filter_size,
                 stride=stride,
                 padding=(filter_size - 1) // 2,
-                groups=1,
+                groups=groups,
                 weight_attr=ParamAttr(
-                    name=name + "_weight",
-                    initializer=initializer,
-                    learning_rate=1.),
+                    initializer=initializer, learning_rate=1.),
                 bias_attr=bias_attr)
+            if skip_quant:
+                self.conv.skip_quant = True
         else:
             # in FCOS-DCN head, specifically need learning_rate and regularizer
             self.conv = DeformableConvV2(
@@ -264,25 +258,19 @@ class ConvNormLayer(nn.Layer):
                 kernel_size=filter_size,
                 stride=stride,
                 padding=(filter_size - 1) // 2,
-                groups=1,
+                groups=groups,
                 weight_attr=ParamAttr(
-                    name=name + "_weight",
-                    initializer=initializer,
-                    learning_rate=1.),
+                    initializer=initializer, learning_rate=1.),
                 bias_attr=True,
                 lr_scale=2.,
                 regularizer=L2Decay(norm_decay),
-                name=name)
+                skip_quant=skip_quant)
 
         norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
-            name=norm_name + "_scale",
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(
-            name=norm_name + "_offset",
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
         if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
@@ -299,6 +287,63 @@ class ConvNormLayer(nn.Layer):
     def forward(self, inputs):
         out = self.conv(inputs)
         out = self.norm(out)
+        return out
+
+
+class LiteConv(nn.Layer):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 stride=1,
+                 with_act=True,
+                 norm_type='sync_bn',
+                 name=None):
+        super(LiteConv, self).__init__()
+        self.lite_conv = nn.Sequential()
+        conv1 = ConvNormLayer(
+            in_channels,
+            in_channels,
+            filter_size=5,
+            stride=stride,
+            groups=in_channels,
+            norm_type=norm_type,
+            initializer=XavierUniform())
+        conv2 = ConvNormLayer(
+            in_channels,
+            out_channels,
+            filter_size=1,
+            stride=stride,
+            norm_type=norm_type,
+            initializer=XavierUniform())
+        conv3 = ConvNormLayer(
+            out_channels,
+            out_channels,
+            filter_size=1,
+            stride=stride,
+            norm_type=norm_type,
+            initializer=XavierUniform())
+        conv4 = ConvNormLayer(
+            out_channels,
+            out_channels,
+            filter_size=5,
+            stride=stride,
+            groups=out_channels,
+            norm_type=norm_type,
+            initializer=XavierUniform())
+        conv_list = [conv1, conv2, conv3, conv4]
+        self.lite_conv.add_sublayer('conv1', conv1)
+        self.lite_conv.add_sublayer('relu6_1', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv2', conv2)
+        if with_act:
+            self.lite_conv.add_sublayer('relu6_2', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv3', conv3)
+        self.lite_conv.add_sublayer('relu6_3', nn.ReLU6())
+        self.lite_conv.add_sublayer('conv4', conv4)
+        if with_act:
+            self.lite_conv.add_sublayer('relu6_4', nn.ReLU6())
+
+    def forward(self, inputs):
+        out = self.lite_conv(inputs)
         return out
 
 
