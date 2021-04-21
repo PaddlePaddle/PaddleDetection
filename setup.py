@@ -65,20 +65,12 @@ packages = [
 ]
 
 if __name__ == "__main__":
-    # install extension APIs for rotation bbox
-    from paddle.utils import cpp_extension
-    cpp_extension.setup(
-        name='rbox_iou_ops',
-        ext_modules=cpp_extension.CUDAExtension(sources=[
-            'ppdet/ext_op/rbox_iou_op.cc', 'ppdet/ext_op/rbox_iou_op.cu'
-        ]))
-
     setup(
         name='paddledet',
         packages=find_packages(exclude=("configs", "tools", "deploy")),
         package_data={'ppdet.model_zoo': package_model_zoo()},
         author='PaddlePaddle',
-        version='2.0',
+        version='2.0.0',
         install_requires=parse_requirements('./requirements.txt'),
         description='Object detection and instance segmentation toolkit based on PaddlePaddle',
         long_description=readme(),
