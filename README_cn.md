@@ -219,7 +219,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [PP-YOLO模型](configs/ppyolo/README_cn.md)
     - [676类目标检测](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
     - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
-    - [TTFNet](configs/ttfnet/README.md)
+    - [增强版Anchor Free模型TTFNet](configs/ttfnet/README.md)
+    - [半监督知识蒸馏预训练检测模型](docs/feature_models/SSLD_PRETRAINED_MODEL.md)
 - 通用实例分割
     - [SOLOv2](configs/solov2/README.md)
 - 旋转框检测
