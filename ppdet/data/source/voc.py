@@ -117,7 +117,12 @@ class VOCDataSet(DetDataset):
                 difficult = []
                 for i, obj in enumerate(objs):
                     cname = obj.find('name').text
-                    _difficult = int(obj.find('difficult').text)
+
+                    # user dataset may not contain difficult field
+                    _difficult = obj.find('difficult')
+                    _difficult = int(
+                        _difficult.text) if _difficult is not None else 0
+
                     x1 = float(obj.find('bndbox').find('xmin').text)
                     y1 = float(obj.find('bndbox').find('ymin').text)
                     x2 = float(obj.find('bndbox').find('xmax').text)
