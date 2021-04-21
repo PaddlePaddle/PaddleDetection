@@ -66,6 +66,16 @@ paddle.utils.run_check()
 python3.7 setup.py install
 ```
 
+Windows环境请按照如下步骤安装：
+
+（1）准备Visual Studio (版本需要>=Visual Studio 2015 update3)，这里以VS2017为例；
+
+（2）点击开始-->Visual Studio 2017-->适用于 VS 2017 的x64本机工具命令提示；
+
+（3）设置环境变量：`set DISTUTILS_USE_SDK=1`
+
+（4）进入`PaddleDetection/ppdet/ext_op`目录，通过`python3.7 setup.py install`命令进行安装。
+
 安装完成后，测试自定义op是否可以正常编译以及计算结果：
 ```
 cd PaddleDetecetion/ppdet/ext_op
