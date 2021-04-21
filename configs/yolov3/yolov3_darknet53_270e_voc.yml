@@ -8,3 +8,7 @@ _BASE_: [
 
 snapshot_epoch: 5
 weights: output/yolov3_darknet53_270e_voc/model_final
+
+EvalReader:
+  batch_transforms:
+  - PadBatch: {pad_gt: True}

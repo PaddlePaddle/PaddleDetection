@@ -40,6 +40,10 @@ TrainReader:
   drop_last: true
   mixup_epoch: 250
 
+EvalReader:
+  batch_transforms:
+  - PadBatch: {pad_gt: True}
+
 LearningRate:
   base_lr: 0.001
   schedulers:

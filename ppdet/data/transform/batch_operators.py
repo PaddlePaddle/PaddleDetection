@@ -115,6 +115,7 @@ class PadBatch(BaseOperator):
                 gt_box_data = -np.ones([gt_num_max, 4], dtype=np.float32)
                 gt_class_data = -np.ones([gt_num_max], dtype=np.int32)
                 is_crowd_data = np.ones([gt_num_max], dtype=np.int32)
+                difficult_data = np.ones([gt_num_max], dtype=np.int32)
 
                 if pad_mask:
                     poly_num_max = max(poly_num)
@@ -127,7 +128,12 @@ class PadBatch(BaseOperator):
                 gt_num = data['gt_bbox'].shape[0]
                 gt_box_data[0:gt_num, :] = data['gt_bbox']
                 gt_class_data[0:gt_num] = np.squeeze(data['gt_class'])
-                is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
+                if 'is_crowd' in data:
+                    is_crowd_data[0:gt_num] = np.squeeze(data['is_crowd'])
+                    data['is_crowd'] = is_crowd_data
+                if 'difficult' in data:
+                    difficult_data[0:gt_num] = np.squeeze(data['difficult'])
+                    data['difficult'] = difficult_data
                 if pad_mask:
                     for j, poly in enumerate(data['gt_poly']):
                         for k, p_p in enumerate(poly):
@@ -136,7 +142,6 @@ class PadBatch(BaseOperator):
                     data['gt_poly'] = gt_masks_data
                 data['gt_bbox'] = gt_box_data
                 data['gt_class'] = gt_class_data
-                data['is_crowd'] = is_crowd_data
 
         return samples
 

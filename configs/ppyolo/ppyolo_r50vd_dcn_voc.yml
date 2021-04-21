@@ -21,6 +21,10 @@ TrainReader:
   mixup_epoch: 350
   batch_size: 12
 
+EvalReader:
+  batch_transforms:
+  - PadBatch: {pad_gt: True}
+
 epoch: 583
 
 LearningRate:
