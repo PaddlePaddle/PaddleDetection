@@ -20,6 +20,8 @@ import cv2
 import numpy as np
 from PIL import Image
 import logging
+import argparse
+
 # add python path of PadleDetection to sys.path
 parent_path = osp.abspath(osp.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
@@ -29,14 +31,26 @@ from ppdet.modeling.bbox_utils import poly_to_rbox
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-class_name_15 = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-               'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter']
+class_name_15 = [
+    'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+    'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
+    'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout',
+    'harbor', 'swimming-pool', 'helicopter'
+]
 
-class_name_16 = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-               'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter', 'container-crane']
+class_name_16 = [
+    'plane', 'baseball-diamond', 'bridge', 'ground-track-field',
+    'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
+    'basketball-court', 'storage-tank', 'soccer-ball-field', 'roundabout',
+    'harbor', 'swimming-pool', 'helicopter', 'container-crane'
+]
 
 
-def dota_2_coco(image_dir, txt_dir, json_path='dota_coco.json', is_obb=True, dota_version='v1.0'):
+def dota_2_coco(image_dir,
+                txt_dir,
+                json_path='dota_coco.json',
+                is_obb=True,
+                dota_version='v1.0'):
     """
     image_dir: image dir
     txt_dir: txt label dir
@@ -57,7 +71,11 @@ def dota_2_coco(image_dir, txt_dir, json_path='dota_coco.json', is_obb=True, dot
     if dota_version == 'v1.0':
         for class_id, class_name in enumerate(class_name_15):
             class_name2id[class_name] = class_id + 1
-            single_cat = {'id': class_id + 1, 'name': class_name, 'supercategory': class_name}
+            single_cat = {
+                'id': class_id + 1,
+                'name': class_name,
+                'supercategory': class_name
+            }
             data_dict['categories'].append(single_cat)
 
     for image_id, img_path in enumerate(img_lists):
@@ -124,7 +142,25 @@ def dota_2_coco(image_dir, txt_dir, json_path='dota_coco.json', is_obb=True, dot
 
 
 if __name__ == '__main__':
-    image_dir = 'path_to_images'
-    txt_dir = 'path_to_labelTxt'
-    dota_2_coco(image_dir, txt_dir, is_obb=False)
+    parser = argparse.ArgumentParser(description='dota anno to coco')
+    parser.add_argument('--images_dir', help='path_to_images')
+    parser.add_argument('--label_dir', help='path_to_labelTxt', type=str)
+    parser.add_argument(
+        '--json_path',
+        help='save json path',
+        type=str,
+        default='dota_coco.json')
+    parser.add_argument(
+        '--is_obb', help='is_obb or not', type=bool, default=True)
+    parser.add_argument(
+        '--dota_version',
+        help='dota_version, v1.0 or v1.5 or v2.0',
+        type=str,
+        default='v1.0')
+
+    args = parser.parse_args()
+
+    # process
+    dota_2_coco(args.images_dir, args.label_dir, args.json_path, args.is_obb,
+                args.dota_version)
     print('done!')
