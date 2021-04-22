@@ -203,7 +203,6 @@ class VOCMetric(Metric):
         if bboxes.shape == (1, 1) or bboxes is None:
             return
         gt_boxes = inputs['gt_bbox']
-        print('gt_boxes: ', gt_boxes)
         gt_labels = inputs['gt_class']
         difficults = inputs['difficult'] if not self.evaluate_difficult \
                             else None
