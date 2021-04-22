@@ -232,7 +232,8 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [PP-YOLO](configs/ppyolo/README.md)
   - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
   - [Two-stage practical PSS-Det](configs/rcnn_enhance/README.md)
-  - [TTFNet](configs/ttfnet/README.md)
+  - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README.md)
+  - [SSLD pretrained models](docs/feature_models/SSLD_PRETRAINED_MODEL_en.md)
 - Universal instance segmentation
   - [SOLOv2](configs/solov2/README.md)
 - Rotation object detection
