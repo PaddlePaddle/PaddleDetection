@@ -284,6 +284,15 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
         output_json = json.dumps(output_json_dict)
         f.write(output_json)
 
+def get_filelist_from_dir(dir, support_ext=".jpg|.jpeg|.png|.JPG|.JPEG|.PNG|.bmp"):
+    if (not os.path.exists(dir) or not os.path.isdir(dir)):
+        raise Exception("Image Directory [%s] invalid" % dir)
+    files = []
+    for item in os.listdir(dir):
+        ext = os.path.splitext(item)[1][1:].strip().lower()
+        if (len(ext) > 0 and ext in support_ext):        
+            files.append(item)
+    return files
 
 def main():
     parser = argparse.ArgumentParser(
@@ -383,24 +392,34 @@ def main():
             os.makedirs(args.output_dir + '/val')
             if args.test_proportion != 0.0:
                 os.makedirs(args.output_dir + '/test')
-        count = 1
-        for img_name in os.listdir(args.image_input_dir):
+        count = 0
+        for img_name in get_filelist_from_dir(args.image_input_dir,support_ext=".jpg|.jpeg|.png|.JPG|.JPEG|.PNG|.bmp"):
+            jsonfilename=os.path.basename(img_name).rsplit('.',1)[0]+'.json'
             if count <= train_num:
                 if osp.exists(args.output_dir + '/train/'):
                     shutil.copyfile(
                         osp.join(args.image_input_dir, img_name),
                         osp.join(args.output_dir + '/train/', img_name))
+                    shutil.copyfile(
+                        osp.join(args.json_input_dir, jsonfilename),
+                        osp.join(args.output_dir + '/train/', jsonfilename))    
             else:
                 if count <= train_num + val_num:
                     if osp.exists(args.output_dir + '/val/'):
                         shutil.copyfile(
                             osp.join(args.image_input_dir, img_name),
                             osp.join(args.output_dir + '/val/', img_name))
+                        shutil.copyfile(
+                            osp.join(args.json_input_dir, jsonfilename),
+                            osp.join(args.output_dir + '/val/', jsonfilename)) 
                 else:
                     if osp.exists(args.output_dir + '/test/'):
                         shutil.copyfile(
                             osp.join(args.image_input_dir, img_name),
                             osp.join(args.output_dir + '/test/', img_name))
+                        shutil.copyfile(
+                            osp.join(args.json_input_dir, jsonfilename),
+                            osp.join(args.output_dir + '/test/', jsonfilename)) 
             count = count + 1
 
         # Deal with the json files.
@@ -411,7 +430,7 @@ def main():
                                         args.output_dir + '/train',
                                         args.json_input_dir)
             train_json_path = osp.join(args.output_dir + '/annotations',
-                                       'instance_train.json')
+                                       'train.json')
             json.dump(
                 train_data_coco,
                 open(train_json_path, 'w'),
@@ -422,7 +441,7 @@ def main():
                                       args.output_dir + '/val',
                                       args.json_input_dir)
             val_json_path = osp.join(args.output_dir + '/annotations',
-                                     'instance_val.json')
+                                     'val.json')
             json.dump(
                 val_data_coco,
                 open(val_json_path, 'w'),
@@ -433,7 +452,7 @@ def main():
                                        args.output_dir + '/test',
                                        args.json_input_dir)
             test_json_path = osp.join(args.output_dir + '/annotations',
-                                      'instance_test.json')
+                                      'test.json')
             json.dump(
                 test_data_coco,
                 open(test_json_path, 'w'),
