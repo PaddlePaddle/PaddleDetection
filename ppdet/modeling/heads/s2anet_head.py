@@ -468,9 +468,6 @@ class S2ANetHead(nn.Layer):
                     init_anchors, dtype=np.float32), dtype='float32')
             refine_anchor = bbox_utils.bbox_decode(
                 fam_reg1, pd_init_anchors, pd_target_means, pd_target_stds)
-            #refine_anchor = bbox_utils.bbox_decode(
-            #    fam_reg.detach(), init_anchors, self.target_means,
-            #    self.target_stds)
 
             self.refine_anchor_list.append(refine_anchor)
 

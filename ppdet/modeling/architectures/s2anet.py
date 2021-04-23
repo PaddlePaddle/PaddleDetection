@@ -83,10 +83,11 @@ class S2ANet(BaseArch):
             nms_pre = self.s2anet_bbox_post_process.nms_pre
             pred_scores, pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
 
-            pred_bboxes, bbox_num = self.s2anet_bbox_post_process(pred_scores, pred_bboxes)
+            pred_bboxes, bbox_num = self.s2anet_bbox_post_process(pred_scores,
+                                                                  pred_bboxes)
             # rescale the prediction back to origin image
-            pred_bboxes = self.s2anet_bbox_post_process.get_pred(pred_bboxes, bbox_num,
-                                                        im_shape, scale_factor)
+            pred_bboxes = self.s2anet_bbox_post_process.get_pred(
+                pred_bboxes, bbox_num, im_shape, scale_factor)
             # output
             output = {'bbox': pred_bboxes, 'bbox_num': bbox_num}
             return output

@@ -42,9 +42,9 @@ class_name_16 = [
 ]
 
 
-def Intersection(g, p):
+def rbox_iou(g, p):
     """
-    Intersection.
+    iou of rbox
     """
     g = np.array(g)
     p = np.array(p)
@@ -106,7 +106,7 @@ def py_cpu_nms_poly_fast(dets, thresh):
         h_inds = np.where(hbb_ovr > 0)[0]
         tmp_order = order[h_inds + 1]
         for j in range(tmp_order.size):
-            iou = Intersection(polys[i], polys[tmp_order[j]])
+            iou = rbox_iou(polys[i], polys[tmp_order[j]])
             hbb_ovr[h_inds[j]] = iou
             # ovr.append(iou)
             # ovr_index.append(tmp_order[j])
@@ -139,8 +139,7 @@ def nmsbynamedict(nameboxdict, nms, thresh):
         nms:   nms
         thresh: nms threshold
 
-    Returns:
-
+    Returns: nms result as dict
     """
     nameboxnmsdict = {x: [] for x in nameboxdict}
     for imgname in nameboxdict:

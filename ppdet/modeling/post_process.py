@@ -111,7 +111,8 @@ class BBoxPostProcess(object):
         pred_score = bboxes[:, 1:2]
         pred_bbox = bboxes[:, 2:]
         # rescale bbox to original image
-        print('pred_bbox', pred_bbox.shape, 'scale_factor_list', scale_factor_list.shape)
+        print('pred_bbox', pred_bbox.shape, 'scale_factor_list',
+              scale_factor_list.shape)
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = self.origin_shape_list[:, 0]
         origin_w = self.origin_shape_list[:, 1]
@@ -251,7 +252,8 @@ class S2ANetBBoxPostProcess(object):
         pred_scores = paddle.reshape(
             pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
 
-        pred_cls_score_bbox, bbox_num, _ = self.nms(pred_ploys, pred_scores, self.num_classes)
+        pred_cls_score_bbox, bbox_num, _ = self.nms(pred_ploys, pred_scores,
+                                                    self.num_classes)
 
         # Prevent empty bbox_pred from decode or NMS.
         # Bboxes and score before NMS may be empty due to the score threshold.
@@ -287,8 +289,10 @@ class S2ANetBBoxPostProcess(object):
             expand_shape = paddle.expand(origin_shape[i:i + 1, :],
                                          [bbox_num[i], 2])
             scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
-            scale = paddle.concat([scale_x, scale_y, scale_x, scale_y,
-                                   scale_x, scale_y, scale_x, scale_y])
+            scale = paddle.concat([
+                scale_x, scale_y, scale_x, scale_y, scale_x, scale_y, scale_x,
+                scale_y
+            ])
             expand_scale = paddle.expand(scale, [bbox_num[i], 8])
             origin_shape_list.append(expand_shape)
             scale_factor_list.append(expand_scale)

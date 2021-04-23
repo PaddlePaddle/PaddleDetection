@@ -299,8 +299,6 @@ def delta2rbox(Rrois,
     :param wh_ratio_clip:
     :return:
     """
-    #means = paddle.to_tensor(means)
-    #stds = paddle.to_tensor(stds)
     deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
     denorm_deltas = deltas * stds + means
 
@@ -391,15 +389,12 @@ def bbox_decode(bbox_preds,
     return:
         bboxes: [N,H,W,5]
     """
-    #means = paddle.to_tensor(means, dtype='float32')
-    #stds = paddle.to_tensor(means, dtype='float32')
     num_imgs, H, W, _ = bbox_preds.shape
     bboxes_list = []
     for img_id in range(num_imgs):
         bbox_pred = bbox_preds[img_id]
         # bbox_pred.shape=[5,H,W]
         bbox_delta = bbox_pred
-        #anchors = paddle.to_tensor(anchors.astype(np.float32), dtype='float32')
         bboxes = delta2rbox(
             anchors, bbox_delta, means, stds, wh_ratio_clip=1e-6)
         bboxes = paddle.reshape(bboxes, [H, W, 5])
@@ -515,7 +510,6 @@ def rbox2poly(rrects):
     rrects = rrects.numpy()
     for i in range(rrects.shape[0]):
         rrect = rrects[i]
-        # x_ctr, y_ctr, width, height, angle = rrect[:5]
         x_ctr = rrect[0]
         y_ctr = rrect[1]
         width = rrect[2]
@@ -551,7 +545,8 @@ def pd_rbox2poly(rrects):
 
     tl_x, tl_y, br_x, br_y = -width * 0.5, -height * 0.5, width * 0.5, height * 0.5
 
-    normal_rects = paddle.stack([tl_x, br_x, br_x, tl_x, tl_y, tl_y, br_y, br_y], axis=0)
+    normal_rects = paddle.stack(
+        [tl_x, br_x, br_x, tl_x, tl_y, tl_y, br_y, br_y], axis=0)
     normal_rects = paddle.reshape(normal_rects, [2, 4, N])
     normal_rects = paddle.transpose(normal_rects, [2, 0, 1])
 
