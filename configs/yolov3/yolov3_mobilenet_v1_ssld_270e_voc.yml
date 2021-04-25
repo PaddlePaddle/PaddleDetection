@@ -1,5 +1,5 @@
 _BASE_: [
-  '../datasets/coco_detection.yml',
+  '../datasets/voc.yml',
   '../runtime.yml',
   '_base_/optimizer_270e.yml',
   '_base_/yolov3_mobilenet_v1.yml',
