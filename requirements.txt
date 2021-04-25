@@ -7,4 +7,5 @@ shapely
 scipy
 terminaltables
 pycocotools
+xtcocotools==1.6
 setuptools>=42.0.0
