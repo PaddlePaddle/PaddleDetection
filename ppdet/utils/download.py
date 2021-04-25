@@ -260,7 +260,8 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
             fullpath = osp.join(osp.split(fullpath)[0], v)
 
     if osp.exists(fullpath) and check_exist:
-        if _check_exist_file_md5(fullpath, md5sum, url):
+        if not osp.isfile(fullpath) or \
+                _check_exist_file_md5(fullpath, md5sum, url):
             logger.debug("Found {}".format(fullpath))
             return fullpath, True
         else:
