@@ -26,7 +26,6 @@ import paddle
 import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
-from ppdet.optimizer import ModelEMA
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
@@ -143,20 +142,12 @@ class Checkpointer(Callback):
         super(Checkpointer, self).__init__(model)
         cfg = self.model.cfg
         self.best_ap = 0.
-        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         self.save_dir = os.path.join(self.model.cfg.save_dir,
                                      self.model.cfg.filename)
         if hasattr(self.model.model, 'student_model'):
             self.weight = self.model.model.student_model
         else:
             self.weight = self.model.model
-        if self.use_ema:
-            self.ema = ModelEMA(
-                cfg['ema_decay'], self.weight, use_thres_step=True)
-
-    def on_step_end(self, status):
-        if self.use_ema:
-            self.ema.update(self.weight)
 
     def on_epoch_end(self, status):
         # Checkpointer only performed during training
@@ -170,10 +161,7 @@ class Checkpointer(Callback):
                 if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
                     save_name = str(
                         epoch_id) if epoch_id != end_epoch - 1 else "model_final"
-                    if self.use_ema:
-                        weight = self.ema.apply()
-                    else:
-                        weight = self.weight
+                    weight = self.weight
             elif mode == 'eval':
                 if 'save_best_model' in status and status['save_best_model']:
                     for metric in self.model._metrics:
@@ -187,10 +175,7 @@ class Checkpointer(Callback):
                         if map_res[key][0] > self.best_ap:
                             self.best_ap = map_res[key][0]
                             save_name = 'best_model'
-                            if self.use_ema:
-                                weight = self.ema.apply()
-                            else:
-                                weight = self.weight
+                            weight = self.weight
                         logger.info("Best test {} ap is {:0.3f}.".format(
                             key, self.best_ap))
             if weight:
