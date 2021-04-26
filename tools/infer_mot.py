@@ -94,12 +94,11 @@ def run(FLAGS, cfg):
     # load weights
     if FLAGS.model_type == 'deepsort':
         if cfg.det_weights != None:
-            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights,
-                                          'resume')
+            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights)
         else:
-            tracker.load_weights_deepsort(None, cfg.reid_weights, 'resume')
+            tracker.load_weights_deepsort(None, cfg.reid_weights)
     else:
-        tracker.load_weights(cfg.weights, 'resume')
+        tracker.load_weights(cfg.weights)
 
     # inference
     tracker.mot_predict(

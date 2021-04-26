@@ -17,7 +17,7 @@ import scipy
 import numpy as np
 from scipy.spatial.distance import cdist
 from cython_bbox import bbox_overlaps as bbox_ious
-from ppdet.mot.motion import kalman_filter
+from ..motion import kalman_filter
 
 __all__ = [
     'merge_matches', 'linear_assignment', 'ious', 'iou_distance', 'fuse_motion'

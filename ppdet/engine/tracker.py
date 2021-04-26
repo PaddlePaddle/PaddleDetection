@@ -24,8 +24,8 @@ import glob
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 
-from ppdet.mot.mot_utils import Timer, load_det_results
-from ppdet.mot import mot_visualization as mot_vis
+from ppdet.modeling.mot.mot_utils import Timer, load_det_results
+from ppdet.modeling.mot import mot_visualization as mot_vis
 
 from ppdet.metrics import Metric, MOTMetric
 import ppdet.utils.stats as stats
@@ -99,19 +99,11 @@ class Tracker(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights, weight_type='resume'):
-        assert weight_type == 'resume', \
-                "weight_type can only be 'resume'"
-        self.start_epoch = load_weight(self.model, weights, self.optimizer)
-        logger.debug("Resume weights of epoch {}".format(self.start_epoch))
+    def load_weights(self, weights):
+        load_weight(self.model, weights, self.optimizer)
         self._weights_loaded = True
 
-    def load_weights_deepsort(self,
-                              det_weights,
-                              reid_weights,
-                              weight_type='resume'):
-        assert weight_type == 'resume', \
-                "weight_type can only be 'resume'"
+    def load_weights_deepsort(self, det_weights, reid_weights):
         if self.model.detector:
             load_weight(self.model.detector, det_weights, self.optimizer)
         load_weight(self.model.reid, reid_weights, self.optimizer)

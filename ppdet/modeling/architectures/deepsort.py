@@ -20,8 +20,7 @@ import numpy as np
 import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-from ppdet.mot.mot_utils import Detection
-from ppdet.mot.mot_utils import get_crops, scale_coords, clip_box
+from ppdet.modeling.mot.mot_utils import Detection, get_crops, scale_coords, clip_box
 
 __all__ = ['DeepSORT']
 

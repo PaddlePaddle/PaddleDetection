@@ -860,6 +860,14 @@ class Gt2JDETargetThres(BaseOperator):
     __shared__ = ['num_classes']
     """
     Generate JDE targets by groud truth data when training
+    Args:
+        anchors (list): anchors of JDE model
+        anchor_masks (list): anchor_masks of JDE model
+        downsample_ratios (list): downsample ratios of JDE model
+        ide_thresh (float): thresh of identity, higher is groud truth 
+        fg_thresh (float): thresh of foreground, higher is foreground
+        bg_thresh (float): thresh of background, lower is background
+        num_classes (int): number of classes
     """
 
     def __init__(self,
@@ -957,9 +965,6 @@ class Gt2JDETargetThres(BaseOperator):
             if gt_num > 0:
                 pad_score[:gt_num] = sample['gt_score'][:gt_num, 0]
             sample['gt_score'] = pad_score
-        # in training, for example in op ExpandImage,
-        # the bbox and gt_class is expandded, but the difficult is not,
-        # so, judging by it's length
         if 'difficult' in sample:
             pad_diff = np.zeros((num_max, ), dtype=np.int32)
             if gt_num > 0:
@@ -1058,7 +1063,13 @@ class Gt2JDETargetThres(BaseOperator):
 class Gt2JDETargetMax(BaseOperator):
     __shared__ = ['num_classes']
     """
-    Generate JDE targets by groud truth data when evaling
+    Generate JDE targets by groud truth data when evaluating
+    Args:
+        anchors (list): anchors of JDE model
+        anchor_masks (list): anchor_masks of JDE model
+        downsample_ratios (list): downsample ratios of JDE model
+        max_iou_thresh (float): iou thresh for high quality anchor
+        num_classes (int): number of classes
     """
 
     def __init__(self,

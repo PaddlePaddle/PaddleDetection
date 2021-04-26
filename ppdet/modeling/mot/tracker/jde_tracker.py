@@ -22,8 +22,8 @@ from collections import deque, OrderedDict
 import paddle
 import paddle.nn.functional as F
 
-from ppdet.mot.mot_utils import scale_coords
-from ppdet.mot.matching import jde_matching as matching
+from ..mot_utils import scale_coords
+from ..matching import jde_matching as matching
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)

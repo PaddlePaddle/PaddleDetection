@@ -1,1 +1,0 @@
-https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/DATASET_ZOO.md

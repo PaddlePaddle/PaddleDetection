@@ -28,6 +28,7 @@ from . import architectures
 from . import post_process
 from . import layers
 from . import reid
+from . import mot
 
 from .ops import *
 from .backbones import *
@@ -39,3 +40,4 @@ from .architectures import *
 from .post_process import *
 from .layers import *
 from .reid import *
+from .mot import *

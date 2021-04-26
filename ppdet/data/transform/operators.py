@@ -107,11 +107,14 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self, keep_img0=False):
-        """ Transform the image data to numpy format following the rgb format
+    def __init__(self, keep_ori_img=False):
+        """ 
+        Transform the image data to numpy format following the rgb format
+        Args:
+            keep_ori_img (bool): whether to keep original image, 
         """
         super(Decode, self).__init__()
-        self.keep_img0 = keep_img0
+        self.keep_ori_img = keep_ori_img
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -123,7 +126,7 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-        if self.keep_img0:
+        if self.keep_ori_img:
             sample['img0_shape'] = np.array(im.shape[:2], dtype=np.float32)
             sample['img0'] = im
 
@@ -153,11 +156,12 @@ class Decode(BaseOperator):
 
 
 @register_op
-class Decode_video(BaseOperator):
+class DecodeVideo(BaseOperator):
     def __init__(self):
-        """ Transform the image data to numpy format following the rgb format
+        """ 
+        Transform the video data to numpy format following the rgb format
         """
-        super(Decode_video, self).__init__()
+        super(DecodeVideo, self).__init__()
 
     def apply(self, sample, context=None):
         im = sample['image']
@@ -527,6 +531,10 @@ class RandomFlip(BaseOperator):
         """
         Args:
             prob (float): the probability of flipping image
+            normalize (bool): whether the bbox format is normalized by the 
+                width/height of the image, if so the bboxes are floating point
+                numbers ranging from 0 to 1
+            cxcywh (bool): whether the bbox format is [x_center, y_center, width, height]
         """
         super(RandomFlip, self).__init__()
         self.prob = prob
@@ -573,11 +581,13 @@ class RandomFlip(BaseOperator):
     def apply_bbox(self, bbox, width):
         oldx1 = bbox[:, 0].copy()
         oldx2 = bbox[:, 2].copy()
-        if not self.cxcywh:
+        if self.cxcywh:
+            # flip for [x_center, y_center, width, height] format, only change x_center
+            bbox[:, 0] = width - oldx1
+        else:
+            # flip for [x0, y0, x1, y1] format, need to change x0 and x1
             bbox[:, 0] = width - oldx2
             bbox[:, 2] = width - oldx1
-        else:
-            bbox[:, 0] = width - oldx1
         return bbox
 
     def apply_rbox(self, bbox, width):
@@ -608,6 +618,8 @@ class RandomFlip(BaseOperator):
             im = sample['image']
             height, width = im.shape[:2]
             im = self.apply_image(im)
+            # Flip in detection only used as horizontal flip, so only depend on
+            # width, for normalized bboxes the max width is 1
             if self.normalize:
                 width = 1
             if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
@@ -649,6 +661,7 @@ class Resize(BaseOperator):
             target_size (int|list): image target size
             keep_ratio (bool): whether keep_ratio or not, default true
             interp (int): the interpolation method
+            by_hw (bool): whether use resize by height/width directly specified
         """
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
@@ -2083,8 +2096,8 @@ class Rbox2Poly(BaseOperator):
 class Resize_LetterBox(BaseOperator):
     def __init__(self, target_size):
         """
-        Resize image to target size, convert Normalized xywh to pixel xyxy
-        format. Used in train reader.
+        Resize image to target size, convert normalized xywh to pixel xyxy
+        format ([x_center, y_center, width, height] -> [x0, y0, x1, y1]).
         Args:
             target_size (int|list): image target size.
         """
@@ -2155,6 +2168,9 @@ class AugmentHSV(BaseOperator):
     def __init__(self, fraction=0.50, is_bgr=True):
         """ 
         Augment the SV channel of image data.
+        Args:
+            fraction (float): the fraction for augment 
+            is_bgr (bool): whether the image is BGR mode
         """
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
@@ -2219,6 +2235,7 @@ class RandomAffine(BaseOperator):
                  borderValue=(127.5, 127.5, 127.5)):
         """ 
         Transform the image data with random_affine
+
         """
         super(RandomAffine, self).__init__()
         self.degrees = degrees
@@ -2228,7 +2245,6 @@ class RandomAffine(BaseOperator):
         self.borderValue = borderValue
 
     def apply(self, sample, context=None):
-        # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
         # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
         border = 0  # width of added border (optional)
 
@@ -2328,6 +2344,7 @@ class RandomAffine(BaseOperator):
 class BboxXYWH2XYXY(BaseOperator):
     """
     Convert bbox XYWH format to XYXY format.
+    [x_center, y_center, width, height] -> [x0, y0, x1, y1]
     """
 
     def __init__(self):
@@ -2340,26 +2357,5 @@ class BboxXYWH2XYXY(BaseOperator):
 
         bbox[:, :2] = bbox0[:, :2] - bbox0[:, 2:4] / 2.
         bbox[:, 2:4] = bbox0[:, :2] + bbox0[:, 2:4] / 2.
-        sample['gt_bbox'] = bbox
-        return sample
-
-
-@register_op
-class Norm2PixelBbox(BaseOperator):
-    """
-    Convert norm bbox format to pixel format.
-    """
-
-    def __init__(self):
-        super(Norm2PixelBbox, self).__init__()
-
-    def apply(self, sample, context=None):
-        assert 'gt_bbox' in sample
-        h, w = sample['im_shape']
-        bbox = sample['gt_bbox']
-        bbox[:, 0] *= w
-        bbox[:, 2] *= w
-        bbox[:, 1] *= h
-        bbox[:, 3] *= h
         sample['gt_bbox'] = bbox
         return sample

@@ -14,7 +14,7 @@
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
-from ppdet.mot.motion import kalman_filter
+from ..motion import kalman_filter
 
 INFTY_COST = 1e+5
 

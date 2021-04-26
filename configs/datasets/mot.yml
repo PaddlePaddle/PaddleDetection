@@ -5,14 +5,14 @@ TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
     anno_path: ['mot17.train', 'caltech.train', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
-    anno_path: ['citypersons.val', 'caltech.val'] # det
-    # anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # reid
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide', 'difficult']
+    anno_path: ['citypersons.val', 'caltech.val'] # for detection
+    # anno_path: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 TestDataset:
   !ImageFolder

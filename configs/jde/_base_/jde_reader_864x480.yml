@@ -46,7 +46,7 @@ EvalReader:
         downsample_ratios: [32, 16, 8]
         max_iou_thresh: 0.60
     - BboxXYWH2XYXY: {}
-    - Norm2PixelBbox: {}
+    - NormalizedBbox2PixelBbox: {}
   batch_size: 1
   drop_empty: false
 
@@ -67,7 +67,7 @@ EvalMOTReader:
   inputs_def:
     image_shape: [3, 480, 864]
   sample_transforms:
-    - Decode: {keep_img0: true}
+    - Decode: {keep_ori_img: true}
     - Resize: {target_size: [480, 864], keep_ratio: True, interp: 3, by_hw: True}
     - Pad: {size: [480, 864], pad_mode: 1, fill_value: [128, 128, 128]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
@@ -79,7 +79,7 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 480, 864]
   sample_transforms:
-    - Decode_video: {}
+    - DecodeVideo: {}
     - Resize: {target_size: [480, 864], keep_ratio: True, interp: 3, by_hw: True}
     - Pad: {size: [480, 864], pad_mode: 1, fill_value: [128, 128, 128]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}

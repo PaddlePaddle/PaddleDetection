@@ -15,8 +15,8 @@
 import numpy as np
 from collections import OrderedDict
 
-from ppdet.mot.matching import iou_matching, linear_assignment
-from ppdet.mot.matching.nn_matching import NearestNeighborDistanceMetric
+from ..matching import iou_matching, linear_assignment
+from ..matching.nn_matching import NearestNeighborDistanceMetric
 
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger

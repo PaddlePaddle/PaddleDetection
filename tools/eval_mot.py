@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument(
         '--data_root',
         type=str,
-        default='./dataset/MOT',
+        default='./dataset/mot',
         help='Directory for tracking dataset.')
     parser.add_argument(
         "--data_type",
@@ -179,12 +179,11 @@ def run(FLAGS, cfg):
     # load weights
     if FLAGS.model_type == 'deepsort':
         if cfg.det_weights != 'None':
-            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights,
-                                          'resume')
+            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights)
         else:
-            tracker.load_weights_deepsort(None, cfg.reid_weights, 'resume')
+            tracker.load_weights_deepsort(None, cfg.reid_weights)
     else:
-        tracker.load_weights(cfg.weights, 'resume')
+        tracker.load_weights(cfg.weights)
 
     # inference
     tracker.mot_evaluate(

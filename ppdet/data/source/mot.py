@@ -31,7 +31,7 @@ class MOTDataSet(DetDataset):
     Args:
         dataset_dir (str): root directory for dataset.
         image_dir (str): directory for images.
-        anno_path (list): mot annotation file path, muiti-source mot dataset.
+        anno_path (str|list): mot annotation file path, muiti-source mot dataset.
         sample_num (int): number of samples to load, -1 means all.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
@@ -57,8 +57,10 @@ class MOTDataSet(DetDataset):
         self.label_files = OrderedDict()
         self.tid_num = OrderedDict()
         self.tid_start_index = OrderedDict()
+        if isinstance(self.anno_path, str):
+            self.anno_path = [self.anno_path]
         for ds in self.anno_path:
-            with open(os.path.join(dataset_dir, 'annotations', ds),
+            with open(os.path.join(dataset_dir, 'image_lists', ds),
                       'r') as file:
                 self.img_files[ds] = file.readlines()
                 self.img_files[ds] = [
@@ -146,14 +148,14 @@ class MOTDataSet(DetDataset):
                 continue
 
             labels0 = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)
+            # each row in labels0 (N, 6) is [gt_class, gt_identity, cx, cy, w, h]
+
             cx, cy = labels0[:, 2], labels0[:, 3]
             w, h = labels0[:, 4], labels0[:, 5]
             gt_bbox = np.stack((cx, cy, w, h)).T.astype('float32')
-
             gt_class = labels0[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels0), 1)).astype('float32')
-            difficult = np.zeros((len(labels0), 1)).astype('int32')
-            gt_ide = labels0[:, 1:2].astype('int32')
+            gt_ide = labels0[:, 1:2].astype('int32')  # gt_identity
 
             mot_rec = {
                 'im_file': img_file,
@@ -164,7 +166,6 @@ class MOTDataSet(DetDataset):
                 'gt_class': gt_class,
                 'gt_score': gt_score,
                 'gt_bbox': gt_bbox,
-                'difficult': difficult,
                 'gt_ide': gt_ide,
             }
 
@@ -198,7 +199,6 @@ class MOTVideoDataset(DetDataset):
     Args:
         video_file (str): name of the video file
         dataset_dir (str): root directory for dataset.
-        frame_interval (int): get one image of every N frames.
     """
 
     def __init__(self, video_file='', dataset_dir=None, **kwargs):
