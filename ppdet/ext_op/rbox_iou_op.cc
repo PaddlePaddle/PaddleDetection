@@ -11,12 +11,59 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License. */
 
+#include <cassert>
+#include <cmath>
 #include "paddle/extension.h"
-
+#include "rbox_iou_single.h"
 #include <vector>
 
 std::vector<paddle::Tensor> RboxIouCPUForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2);
 std::vector<paddle::Tensor> RboxIouCUDAForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2);
+
+template <typename data_t>
+void rbox_iou_cpu_kernel(
+    const int rbox1_num,
+    const int rbox2_num,
+    const data_t* rbox1_data_ptr,
+    const data_t* rbox2_data_ptr,
+    data_t* output_data_ptr) {
+
+    int i, j;
+    for (i = 0; i < rbox1_num; i++) {
+        for (j = 0; j < rbox2_num; j++) {
+		int offset = i * rbox2_num + j;
+		output_data_ptr[offset] = rbox_iou_single<data_t>(rbox1_data_ptr + i * 5, rbox2_data_ptr + j * 5);
+        }
+    }
+}
+
+
+#define CHECK_INPUT_CPU(x) PD_CHECK(x.place() == paddle::PlaceType::kCPU, #x " must be a CPU Tensor.")
+
+std::vector<paddle::Tensor> RboxIouCPUForward(const paddle::Tensor& rbox1, const paddle::Tensor& rbox2) {
+    CHECK_INPUT_CPU(rbox1);
+    CHECK_INPUT_CPU(rbox2);
+
+    auto rbox1_num = rbox1.shape()[0];
+    auto rbox2_num = rbox2.shape()[0];
+
+    auto output = paddle::Tensor(paddle::PlaceType::kCPU);
+    output.reshape({rbox1_num, rbox2_num});
+
+    PD_DISPATCH_FLOATING_TYPES(
+        rbox1.type(),
+        "rbox_iou_cpu_kernel",
+        ([&] {
+            rbox_iou_cpu_kernel<data_t>(
+                rbox1_num,
+                rbox2_num,
+                rbox1.data<data_t>(),
+                rbox2.data<data_t>(),
+                output.mutable_data<data_t>());
+        }));
+    
+    return {output};
+}
 
 
 #define CHECK_INPUT_SAME(x1, x2) PD_CHECK(x1.place() == x2.place(), "input must be smae pacle.")
@@ -37,6 +84,7 @@ std::vector<std::vector<int64_t>> InferShape(std::vector<int64_t> rbox1_shape, s
 std::vector<paddle::DataType> InferDtype(paddle::DataType t1, paddle::DataType t2) {
     return {t1};
 }
+
 
 PD_BUILD_OP(rbox_iou)
     .Inputs({"RBOX1", "RBOX2"})

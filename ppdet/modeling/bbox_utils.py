@@ -268,7 +268,30 @@ def rect2rbox(bboxes):
     :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
     :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
     """
-    bboxes = bboxes.reshape(-1, 4)
+    num_boxes = bboxes.shape[0]
+
+    x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
+    y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
+    edges1 = paddle.abs(bboxes[:, 2] - bboxes[:, 0])
+    edges2 = paddle.abs(bboxes[:, 3] - bboxes[:, 1])
+    angles = paddle.zeros([num_boxes], dtype=bboxes.dtype)
+    rboxes = np.stack((x_ctr, y_ctr, edges1, edges2, angles), axis=1)
+    rboxes[:, 2] = paddle.maximum(edges1, edges2)
+    rboxes[:, 3] = paddle.minimum(edges1, edges2)
+    # set angle
+    inds = edges1 < edges2
+    inds = paddle.cast(inds, 'int32')
+    rboxes[inds, 4] = inds * np.pi / 2.0
+    return rboxes
+
+
+def rect2rbox_pd(bboxes):
+    """
+    :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
+    :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
+    """
+    bboxes = bboxes.numpy()
+    #bboxes = bboxes.reshape(-1, 4)
     num_boxes = bboxes.shape[0]
 
     x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
@@ -283,6 +306,7 @@ def rect2rbox(bboxes):
     rboxes[inds, 2] = edges2[inds]
     rboxes[inds, 3] = edges1[inds]
     rboxes[inds, 4] = np.pi / 2.0
+    rboxes = paddle.to_tensor(rboxes)
     return rboxes
 
 
@@ -300,6 +324,8 @@ def delta2rbox(Rrois,
     :return:
     """
     deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
+    Rrois = paddle.reshape(Rrois, [-1, Rrois.shape[-1]])
+
     denorm_deltas = deltas * stds + means
 
     dx = denorm_deltas[:, 0]
@@ -378,10 +404,7 @@ def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
     return deltas
 
 
-def bbox_decode(bbox_preds,
-                anchors,
-                means=[0, 0, 0, 0, 0],
-                stds=[1, 1, 1, 1, 1]):
+def bbox_decode(bbox_preds, anchors, means, stds):
     """decode bbox from deltas
     Args:
         bbox_preds: [N,H,W,5]
@@ -507,9 +530,9 @@ def rbox2poly(rrects):
     poly:[x0,y0,x1,y1,x2,y2,x3,y3]
     """
     polys = []
-    rrects = rrects.numpy()
     for i in range(rrects.shape[0]):
         rrect = rrects[i]
+        # x_ctr, y_ctr, width, height, angle = rrect[:5]
         x_ctr = rrect[0]
         y_ctr = rrect[1]
         width = rrect[2]
