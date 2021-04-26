@@ -22,6 +22,7 @@ from xtcocotools.coco import COCO
 from .dataset import DetDataset
 from ppdet.core.workspace import register, serializable
 
+
 @serializable
 class KeypointBottomUpBaseDataset(DetDataset):
     """Base class for bottom-up datasets.
@@ -82,6 +83,7 @@ class KeypointBottomUpBaseDataset(DetDataset):
     def parse_dataset(self):
         return
 
+
 @register
 @serializable
 class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
@@ -130,8 +132,8 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
                  transform=[],
                  shard=[0, 1],
                  test_mode=False):
-        super().__init__(dataset_dir, image_dir, anno_path, 
-                         num_joints, transform, shard, test_mode)
+        super().__init__(dataset_dir, image_dir, anno_path, num_joints,
+                         transform, shard, test_mode)
 
         ann_file = os.path.join(dataset_dir, anno_path)
         self.coco = COCO(ann_file)
@@ -140,11 +142,12 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         if not test_mode:
             self.img_ids = [
                 img_id for img_id in self.img_ids
-                if len(self.coco.getAnnIds(imgIds=img_id, iscrowd=None)) > 0
+                if len(self.coco.getAnnIds(
+                    imgIds=img_id, iscrowd=None)) > 0
             ]
         blocknum = int(len(self.img_ids) / shard[1])
-        self.img_ids = self.img_ids[(
-            blocknum * shard[0]):(blocknum * (shard[0] + 1))]
+        self.img_ids = self.img_ids[(blocknum * shard[0]):(blocknum * (shard[0]
+                                                                       + 1))]
         self.num_images = len(self.img_ids)
         self.id2name, self.name2id = self._get_mapping_id_name(self.coco.imgs)
         self.dataset_name = 'coco'
@@ -208,8 +211,8 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         """Get joints for all people in an image."""
         num_people = len(anno)
 
-        joints = np.zeros((num_people, self.ann_info['num_joints'], 3),
-                          dtype=np.float32)
+        joints = np.zeros(
+            (num_people, self.ann_info['num_joints'], 3), dtype=np.float32)
 
         for i, obj in enumerate(anno):
             joints[i, :self.ann_info['num_joints'], :3] = \
@@ -237,13 +240,14 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
                                                        img_info['width'])
                     m += xtcocotools.mask.decode(rle)
                 elif obj['num_keypoints'] == 0:
-                    rles = xtcocotools.mask.frPyObjects(
-                        obj['segmentation'], img_info['height'],
-                        img_info['width'])
+                    rles = xtcocotools.mask.frPyObjects(obj['segmentation'],
+                                                        img_info['height'],
+                                                        img_info['width'])
                     for rle in rles:
                         m += xtcocotools.mask.decode(rle)
 
         return m < 0.5
+
 
 @register
 @serializable
@@ -290,8 +294,8 @@ class KeypointBottomUpCrowdPoseDataset(KeypointBottomUpCocoDataset):
                  transform=[],
                  shard=[0, 1],
                  test_mode=False):
-        super().__init__(dataset_dir, image_dir, anno_path, 
-                         num_joints, transform, shard, test_mode)
+        super().__init__(dataset_dir, image_dir, anno_path, num_joints,
+                         transform, shard, test_mode)
 
         ann_file = os.path.join(dataset_dir, anno_path)
 
@@ -301,14 +305,14 @@ class KeypointBottomUpCrowdPoseDataset(KeypointBottomUpCocoDataset):
         if not test_mode:
             self.img_ids = [
                 img_id for img_id in self.img_ids
-                if len(self.coco.getAnnIds(imgIds=img_id, iscrowd=None)) > 0
+                if len(self.coco.getAnnIds(
+                    imgIds=img_id, iscrowd=None)) > 0
             ]
         blocknum = int(len(self.img_ids) / shard[1])
-        self.img_ids = self.img_ids[(
-            blocknum * shard[0]):(blocknum * (shard[0] + 1))]
+        self.img_ids = self.img_ids[(blocknum * shard[0]):(blocknum * (shard[0]
+                                                                       + 1))]
         self.num_images = len(self.img_ids)
         self.id2name, self.name2id = self._get_mapping_id_name(self.coco.imgs)
 
         self.dataset_name = 'crowdpose'
         print(f'=> num_images: {self.num_images}')
-

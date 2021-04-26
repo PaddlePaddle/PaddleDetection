@@ -29,16 +29,22 @@ import math
 import copy
 import os
 
+from ...modeling.keypoint_utils import get_affine_mat_kernel, warp_affine_joints
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 registered_ops = []
 
-__all__ = ['RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps', 'NormalizePermute', 'EvalAffine', 'get_affine_transform', 'transpred']
+__all__ = [
+    'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
+    'NormalizePermute', 'EvalAffine'
+]
+
 
 def register_keypointop(cls):
     return serializable(cls)
+
 
 @register_keypointop
 class KeyPointFlip(object):
@@ -55,6 +61,7 @@ class KeyPointFlip(object):
         records(dict): contain the image, mask and coords after tranformed
 
     """
+
     def __init__(self, flip_permutation, hmsize, flip_prob=0.5):
         super(KeyPointFlip, self).__init__()
         assert isinstance(flip_permutation, Sequence)
@@ -66,7 +73,6 @@ class KeyPointFlip(object):
         image = records['image']
         kpts_lst = records['joints']
         mask_lst = records['mask']
-        
         flip = np.random.random() < self.flip_prob
         if flip:
             image = image[:, ::-1]
@@ -78,7 +84,6 @@ class KeyPointFlip(object):
                 else:
                     kpts_lst[idx] = kpts_lst[idx][self.flip_permutation]
                 kpts_lst[idx][..., 0] = hmsize - kpts_lst[idx][..., 0]
-                
                 kpts_lst[idx] = kpts_lst[idx].astype(np.int64)
                 kpts_lst[idx][kpts_lst[idx][..., 0] >= hmsize, 2] = 0
                 kpts_lst[idx][kpts_lst[idx][..., 1] >= hmsize, 2] = 0
@@ -88,102 +93,6 @@ class KeyPointFlip(object):
         records['joints'] = kpts_lst
         records['mask'] = mask_lst
         return records
-
-def _get_3rd_point(a, b):
-    """To calculate the affine matrix, three pairs of points are required. This
-    function is used to get the 3rd point, given 2D points a & b.
-
-    The 3rd point is defined by rotating vector `a - b` by 90 degrees
-    anticlockwise, using b as the rotation center.
-
-    Args:
-        a (np.ndarray): point(x,y)
-        b (np.ndarray): point(x,y)
-
-    Returns:
-        np.ndarray: The 3rd point.
-    """
-    assert len(a) == 2
-    assert len(b) == 2
-    direction = a - b
-    third_pt = b + np.array([-direction[1], direction[0]], dtype=np.float32)
-
-    return third_pt
-
-
-def rotate_point(pt, angle_rad):
-    """Rotate a point by an angle.
-
-    Args:
-        pt (list[float]): 2 dimensional point to be rotated
-        angle_rad (float): rotation angle by radian
-
-    Returns:
-        list[float]: Rotated point.
-    """
-    assert len(pt) == 2
-    sn, cs = np.sin(angle_rad), np.cos(angle_rad)
-    new_x = pt[0] * cs - pt[1] * sn
-    new_y = pt[0] * sn + pt[1] * cs
-    rotated_pt = [new_x, new_y]
-
-    return rotated_pt
-
-
-def get_affine_transform(center,
-                         input_size,
-                         rot,
-                         output_size,
-                         shift=(0., 0.),
-                         inv=False):
-    """Get the affine transform matrix, given the center/scale/rot/output_size.
-
-    Args:
-        center (np.ndarray[2, ]): Center of the bounding box (x, y).
-        scale (np.ndarray[2, ]): Scale of the bounding box
-            wrt [width, height].
-        rot (float): Rotation angle (degree).
-        output_size (np.ndarray[2, ]): Size of the destination heatmaps.
-        shift (0-100%): Shift translation ratio wrt the width/height.
-            Default (0., 0.).
-        inv (bool): Option to inverse the affine transform direction.
-            (inv=False: src->dst or inv=True: dst->src)
-
-    Returns:
-        np.ndarray: The transform matrix.
-    """
-    assert len(center) == 2
-    assert len(input_size) == 2
-    assert len(output_size) == 2
-    assert len(shift) == 2
-
-    scale_tmp = input_size
-
-    shift = np.array(shift)
-    src_w = scale_tmp[0]
-    dst_w = output_size[0]
-    dst_h = output_size[1]
-
-    rot_rad = np.pi * rot / 180
-    src_dir = rotate_point([0., src_w * -0.5], rot_rad)
-    dst_dir = np.array([0., dst_w * -0.5])
-
-    src = np.zeros((3, 2), dtype=np.float32)
-    src[0, :] = center + scale_tmp * shift
-    src[1, :] = center + src_dir + scale_tmp * shift
-    src[2, :] = _get_3rd_point(src[0, :], src[1, :])
-
-    dst = np.zeros((3, 2), dtype=np.float32)
-    dst[0, :] = [dst_w * 0.5, dst_h * 0.5]
-    dst[1, :] = np.array([dst_w * 0.5, dst_h * 0.5]) + dst_dir
-    dst[2, :] = _get_3rd_point(dst[0, :], dst[1, :])
-
-    if inv:
-        trans = cv2.getAffineTransform(np.float32(dst), np.float32(src))
-    else:
-        trans = cv2.getAffineTransform(np.float32(src), np.float32(dst))
-
-    return trans
 
 
 def get_warp_matrix(theta, size_input, size_dst, size_target):
@@ -206,32 +115,16 @@ def get_warp_matrix(theta, size_input, size_dst, size_target):
     scale_y = size_dst[1] / size_target[1]
     matrix[0, 0] = math.cos(theta) * scale_x
     matrix[0, 1] = -math.sin(theta) * scale_x
-    matrix[0, 2] = scale_x * (-0.5 * size_input[0] * math.cos(theta) +
-                              0.5 * size_input[1] * math.sin(theta) + 0.5 * size_target[0])
+    matrix[0, 2] = scale_x * (
+        -0.5 * size_input[0] * math.cos(theta) + 0.5 * size_input[1] *
+        math.sin(theta) + 0.5 * size_target[0])
     matrix[1, 0] = math.sin(theta) * scale_y
     matrix[1, 1] = math.cos(theta) * scale_y
-    matrix[1, 2] = scale_y * (-0.5 * size_input[0] * math.sin(theta) -
-                              0.5 * size_input[1] * math.cos(theta) + 0.5 * size_target[1])
+    matrix[1, 2] = scale_y * (
+        -0.5 * size_input[0] * math.sin(theta) - 0.5 * size_input[1] *
+        math.cos(theta) + 0.5 * size_target[1])
     return matrix
 
-
-def warp_affine_joints(joints, mat):
-    """Apply affine transformation defined by the transform matrix on the
-    joints.
-
-    Args:
-        joints (np.ndarray[..., 2]): Origin coordinate of joints.
-        mat (np.ndarray[3, 2]): The affine matrix.
-
-    Returns:
-        matrix (np.ndarray[..., 2]): Result coordinate of joints.
-    """
-    joints = np.array(joints)
-    shape = joints.shape
-    joints = joints.reshape(-1, 2)
-    return np.dot(
-        np.concatenate((joints, joints[:, 0:1] * 0 + 1), axis=1),
-        mat.T).reshape(shape)
 
 @register_keypointop
 class RandomAffine(object):
@@ -251,7 +144,14 @@ class RandomAffine(object):
         records(dict): contain the image, mask and coords after tranformed
 
     """
-    def __init__(self, max_degree=30, scale=[0.75, 1.5], max_shift=0.2, hmsize=[128, 256], trainsize=512, scale_type='short'):
+
+    def __init__(self,
+                 max_degree=30,
+                 scale=[0.75, 1.5],
+                 max_shift=0.2,
+                 hmsize=[128, 256],
+                 trainsize=512,
+                 scale_type='short'):
         super(RandomAffine, self).__init__()
         self.max_degree = max_degree
         self.min_scale = scale[0]
@@ -291,12 +191,13 @@ class RandomAffine(object):
         image = records['image']
         keypoints = records['joints']
         heatmap_mask = records['mask']
-        
+
         degree = (np.random.random() * 2 - 1) * self.max_degree
         shape = np.array(image.shape[:2][::-1])
         center = center = np.array((np.array(shape) / 2))
-        
-        aug_scale = np.random.random() * (self.max_scale - self.min_scale) + self.min_scale
+
+        aug_scale = np.random.random() * (self.max_scale - self.min_scale
+                                          ) + self.min_scale
         if self.scale_type == 'long':
             scale = max(shape[0], shape[1]) / 1.0
         elif self.scale_type == 'short':
@@ -307,11 +208,11 @@ class RandomAffine(object):
         dx = int(0)
         dy = int(0)
         if self.max_shift > 0:
-            
-            dx = np.random.randint(-self.max_shift *
-                                   roi_size, self.max_shift * roi_size)
-            dy = np.random.randint(-self.max_shift *
-                                   roi_size, self.max_shift * roi_size)
+
+            dx = np.random.randint(-self.max_shift * roi_size,
+                                   self.max_shift * roi_size)
+            dy = np.random.randint(-self.max_shift * roi_size,
+                                   self.max_shift * roi_size)
 
         center += np.array([dx, dy])
         input_size = 2 * center
@@ -324,17 +225,19 @@ class RandomAffine(object):
         image_affine_mat = self._get_affine_matrix(
             center, roi_size, (self.trainsize, self.trainsize), degree)[:2]
         image = cv2.warpAffine(
-            image, image_affine_mat, (self.trainsize, self.trainsize), flags=cv2.INTER_LINEAR)
+            image,
+            image_affine_mat, (self.trainsize, self.trainsize),
+            flags=cv2.INTER_LINEAR)
         for hmsize in self.hmsize:
             kpts = copy.deepcopy(keypoints)
             mask_affine_mat = self._get_affine_matrix(
                 center, roi_size, (hmsize, hmsize), degree)[:2]
             if heatmap_mask is not None:
-                mask = cv2.warpAffine(
-                    heatmap_mask, mask_affine_mat, (hmsize, hmsize))
+                mask = cv2.warpAffine(heatmap_mask, mask_affine_mat,
+                                      (hmsize, hmsize))
                 mask = ((mask / 255) > 0.5).astype(np.float32)
-            kpts[..., 0:2] = warp_affine_joints(
-                kpts[..., 0:2].copy(), mask_affine_mat)
+            kpts[..., 0:2] = warp_affine_joints(kpts[..., 0:2].copy(),
+                                                mask_affine_mat)
             kpts[np.trunc(kpts[..., 0]) >= hmsize, 2] = 0
             kpts[np.trunc(kpts[..., 1]) >= hmsize, 2] = 0
             kpts[np.trunc(kpts[..., 0]) < 0, 2] = 0
@@ -345,6 +248,7 @@ class RandomAffine(object):
         records['joints'] = kpts_lst
         records['mask'] = mask_lst
         return records
+
 
 @register_keypointop
 class EvalAffine(object):
@@ -359,6 +263,7 @@ class EvalAffine(object):
         records(dict): contain the image, mask and coords after tranformed
 
     """
+
     def __init__(self, size, stride=64):
         super(EvalAffine, self).__init__()
         self.size = size
@@ -379,31 +284,6 @@ class EvalAffine(object):
         records['image'] = image_resized
         return records
 
-def get_affine_mat_kernel(h, w, s, inv=False):
-    if w < h:
-        w_ = s
-        h_ = int(np.ceil((s / w * h) / 64.) * 64)
-        scale_w = w
-        scale_h = h_ / w_ * w
-
-    else:
-        h_ = s
-        w_ = int(np.ceil((s / h * w) / 64.) * 64)
-        scale_h = h
-        scale_w = w_ / h_ * h
-
-    center = np.array([np.round(w / 2.), np.round(h / 2.)])
-
-    size_resized = (w_, h_)
-    trans = get_affine_transform(center, np.array(
-        [scale_w, scale_h]), 0, size_resized, inv=inv)
-
-    return trans, size_resized
-
-def transpred(kpts, h, w, s):
-    trans, _ = get_affine_mat_kernel(h, w, s, inv=True)
-
-    return warp_affine_joints(kpts[..., :2].copy(), trans)
 
 @register_keypointop
 class NormalizePermute(object):
@@ -430,6 +310,7 @@ class NormalizePermute(object):
         records['image'] = image
         return records
 
+
 @register_keypointop
 class TagGenerate(object):
     """record gt coords for aeloss to sample coords value in tagmaps
@@ -443,6 +324,7 @@ class TagGenerate(object):
         records(dict): contain the gt coords used in tagmap
 
     """
+
     def __init__(self, num_joints, max_people=30):
         super(TagGenerate, self).__init__()
         self.max_people = max_people
@@ -451,8 +333,7 @@ class TagGenerate(object):
     def __call__(self, records):
         kpts_lst = records['joints']
         kpts = kpts_lst[0]
-        tagmap = np.zeros((self.max_people, self.num_joints, 4),
-                          dtype=np.int64)
+        tagmap = np.zeros((self.max_people, self.num_joints, 4), dtype=np.int64)
         inds = np.where(kpts[..., 2] > 0)
         p, j = inds[0], inds[1]
         visible = kpts[inds]
@@ -464,6 +345,7 @@ class TagGenerate(object):
         records['tagmap'] = tagmap
         del records['joints']
         return records
+
 
 @register_keypointop
 class ToHeatmaps(object):
@@ -479,6 +361,7 @@ class ToHeatmaps(object):
         records(dict): contain the heatmaps used to heatmaploss
 
     """
+
     def __init__(self, num_joints, hmsize, sigma=None):
         super(ToHeatmaps, self).__init__()
         self.num_joints = num_joints
@@ -516,7 +399,7 @@ class ToHeatmaps(object):
                 heatmaps[inds[1][i], dy1:dy2, dx1:dx2] = np.maximum(
                     self.gaussian[sy1:sy2, sx1:sx2],
                     heatmaps[inds[1][i], dy1:dy2, dx1:dx2])
-            records['heatmap_gt{}x'.format(idx+1)] = heatmaps
-            records['mask_{}x'.format(idx+1)] = mask
+            records['heatmap_gt{}x'.format(idx + 1)] = heatmaps
+            records['mask_{}x'.format(idx + 1)] = mask
         del records['mask']
         return records

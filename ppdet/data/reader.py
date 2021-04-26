@@ -25,7 +25,7 @@ else:
 import numpy as np
 
 from paddle.io import DataLoader, DistributedBatchSampler
-from paddle.fluid.reader import default_collate_fn
+from paddle.fluid.dataloader.collate import default_collate_fn
 
 from ppdet.core.workspace import register, serializable, create
 from . import transform
