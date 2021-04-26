@@ -32,9 +32,6 @@ class SSDLoss(nn.Layer):
     SSDLoss
 
     Args:
-        match_low_quality (bool): Whether to allow low quality matches. This is
-            usually allowed for RPN and single stage detectors, but not allowed
-            in the second stage.
         overlap_threshold (float32, optional): IoU threshold for negative bboxes
             and positive bboxes, 0.5 by default.
         neg_pos_ratio (float): The ratio of negative samples / positive samples.
@@ -45,14 +42,12 @@ class SSDLoss(nn.Layer):
     """
 
     def __init__(self,
-                 match_low_quality=True,
                  overlap_threshold=0.5,
                  neg_pos_ratio=3.0,
                  loc_loss_weight=1.0,
                  conf_loss_weight=1.0,
                  prior_box_var=[0.1, 0.1, 0.2, 0.2]):
         super(SSDLoss, self).__init__()
-        self.match_low_quality = match_low_quality
         self.overlap_threshold = overlap_threshold
         self.neg_pos_ratio = neg_pos_ratio
         self.loc_loss_weight = loc_loss_weight
@@ -75,44 +70,34 @@ class SSDLoss(nn.Layer):
         # Calculate the number of object per sample.
         num_object = (ious.sum(axis=-1) > 0).astype('int64').sum(axis=-1)
 
-        # For each anchor, the max iou of all gts.
-        anchor_max_iou, anchor_argmax_iou = ious.max(axis=1), ious.argmax(
-            axis=1)
-        # For each gt, the max iou of all anchors.
+        # For each prior box, get the max IoU of all GTs.
+        prior_max_iou, prior_argmax_iou = ious.max(axis=1), ious.argmax(axis=1)
+        # For each GT, get the max IoU of all prior boxes.
         gt_max_iou, gt_argmax_iou = ious.max(axis=2), ious.argmax(axis=2)
 
-        # Gather target bbox and label according to 'anchor_argmax_iou' index.
+        # Gather target bbox and label according to 'prior_argmax_iou' index.
         batch_ind = paddle.arange(
             0, batch_size, dtype='int64').unsqueeze(-1).tile([1, num_priors])
-        anchor_argmax_iou = paddle.stack(
-            [batch_ind, anchor_argmax_iou], axis=-1)
-        targets_bbox = paddle.gather_nd(gt_bbox, anchor_argmax_iou)
-        targets_label = paddle.gather_nd(gt_label, anchor_argmax_iou)
-        # assign negative
+        prior_argmax_iou = paddle.stack([batch_ind, prior_argmax_iou], axis=-1)
+        targets_bbox = paddle.gather_nd(gt_bbox, prior_argmax_iou)
+        targets_label = paddle.gather_nd(gt_label, prior_argmax_iou)
+        # Assign negative
         mismatch_value_tensor = paddle.full([batch_size, num_priors, 1],
                                             mismatch_value, 'int64')
         targets_label = paddle.where(
-            anchor_max_iou.unsqueeze(-1) < self.overlap_threshold,
+            prior_max_iou.unsqueeze(-1) < self.overlap_threshold,
             mismatch_value_tensor, targets_label)
 
-        # Low-quality matching will overwrite the assigned_gt_inds assigned
-        # in last step. Thus, the assigned gt might not be the best one for
-        # prediction.
-        # For example, if bbox A has 0.9 and 0.8 iou with GT bbox 1 & 2,
-        # bbox 1 will be assigned as the best target for bbox A in last step.
-        # However, if GT bbox 2's gt_argmax_iou = A, bbox A's
-        # targets_label will be overwritten to be bbox B.
-        # This might be the reason that it is not used in ROI Heads.
-        if self.match_low_quality:
-            for i in range(batch_size):
-                targets_bbox[i] = paddle.scatter(
-                    targets_bbox[i], gt_argmax_iou[i, :int(num_object[i])],
-                    gt_bbox[i, :int(num_object[i])])
-                targets_label[i] = paddle.scatter(
-                    targets_label[i], gt_argmax_iou[i, :int(num_object[i])],
-                    gt_label[i, :int(num_object[i])])
+        # Ensure each GT can match the max IoU prior box.
+        for i in range(batch_size):
+            targets_bbox[i] = paddle.scatter(
+                targets_bbox[i], gt_argmax_iou[i, :int(num_object[i])],
+                gt_bbox[i, :int(num_object[i])])
+            targets_label[i] = paddle.scatter(
+                targets_label[i], gt_argmax_iou[i, :int(num_object[i])],
+                gt_label[i, :int(num_object[i])])
 
-        # encode box
+        # Encode box
         prior_boxes = prior_boxes.unsqueeze(0).tile([batch_size, 1, 1])
         targets_bbox = bbox2delta(
             prior_boxes.reshape([-1, 4]),
@@ -147,7 +132,7 @@ class SSDLoss(nn.Layer):
         prior_boxes = paddle.concat(prior_boxes, axis=0)
         num_classes = scores.shape[-1] - 1
 
-        # Match bbox.
+        # Match bbox and get targets.
         # Index 'num_classes' is background.
         targets_bbox, targets_label = \
             self._bipartite_match_for_batch(gt_bbox, gt_label, prior_boxes, num_classes)
@@ -164,7 +149,7 @@ class SSDLoss(nn.Layer):
 
         # Compute confidence loss.
         conf_loss = F.softmax_with_cross_entropy(scores, targets_label)
-        # Mining hard examples
+        # Mining hard examples.
         label_mask = self._mine_hard_example(
             conf_loss.squeeze(-1), targets_label.squeeze(-1), num_classes)
         conf_loss = paddle.masked_select(conf_loss, label_mask.unsqueeze(-1))
