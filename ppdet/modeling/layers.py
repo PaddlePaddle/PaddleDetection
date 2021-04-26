@@ -950,3 +950,101 @@ class MaskMatrixNMS(object):
         cate_scores = paddle.gather(cate_scores, index=sort_inds)
         cate_labels = paddle.gather(cate_labels, index=sort_inds)
         return seg_preds, cate_scores, cate_labels
+
+
+def Conv2d(in_channels,
+           out_channels,
+           kernel_size,
+           stride=1,
+           padding=0,
+           dilation=1,
+           groups=1,
+           bias=True,
+           weight_init=Normal(std=0.001),
+           bias_init=Constant(0.)):
+    weight_attr = paddle.framework.ParamAttr(initializer=weight_init)
+    if bias:
+        bias_attr = paddle.framework.ParamAttr(initializer=bias_init)
+    else:
+        bias_attr = False
+    conv = nn.Conv2D(
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        padding,
+        dilation,
+        groups,
+        weight_attr=weight_attr,
+        bias_attr=bias_attr)
+    return conv
+
+
+def ConvTranspose2d(in_channels,
+                    out_channels,
+                    kernel_size,
+                    stride=1,
+                    padding=0,
+                    output_padding=0,
+                    groups=1,
+                    bias=True,
+                    dilation=1,
+                    weight_init=Normal(std=0.001),
+                    bias_init=Constant(0.)):
+    weight_attr = paddle.framework.ParamAttr(initializer=weight_init)
+    if bias:
+        bias_attr = paddle.framework.ParamAttr(initializer=bias_init)
+    else:
+        bias_attr = False
+    conv = nn.Conv2DTranspose(
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride,
+        padding,
+        output_padding,
+        dilation,
+        groups,
+        weight_attr=weight_attr,
+        bias_attr=bias_attr)
+    return conv
+
+
+def BatchNorm2d(num_features, eps=1e-05, momentum=0.9, affine=True):
+    if not affine:
+        weight_attr = False
+        bias_attr = False
+    else:
+        weight_attr = None
+        bias_attr = None
+    batchnorm = nn.BatchNorm2D(
+        num_features,
+        momentum,
+        eps,
+        weight_attr=weight_attr,
+        bias_attr=bias_attr)
+    return batchnorm
+
+
+def ReLU():
+    return nn.ReLU()
+
+
+def Upsample(scale_factor=None, mode='nearest', align_corners=False):
+    return nn.Upsample(None, scale_factor, mode, align_corners)
+
+
+def MaxPool(kernel_size, stride, padding, ceil_mode=False):
+    return nn.MaxPool2D(kernel_size, stride, padding, ceil_mode=ceil_mode)
+
+
+class Concat(nn.Layer):
+    def __init__(self, dim=0):
+        super(Concat, self).__init__()
+        self.dim = dim
+
+    def forward(self, inputs):
+        return paddle.concat(inputs, axis=self.dim)
+
+    def extra_repr(self):
+        return 'dim={}'.format(self.dim)

@@ -23,6 +23,7 @@ from . import ttf_head
 from . import cascade_head
 from . import face_head
 from . import s2anet_head
+from . import keypoint_hrhrnet_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -35,3 +36,4 @@ from .ttf_head import *
 from .cascade_head import *
 from .face_head import *
 from .s2anet_head import *
+from .keypoint_hrhrnet_head import *
