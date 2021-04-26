@@ -2080,6 +2080,77 @@ class Rbox2Poly(BaseOperator):
 
 
 @register_op
+class Resize_LetterBox(BaseOperator):
+    def __init__(self, target_size):
+        """
+        Resize image to target size, convert Normalized xywh to pixel xyxy
+        format. Used in train reader.
+        Args:
+            target_size (int|list): image target size.
+        """
+        super(Resize_LetterBox, self).__init__()
+        if not isinstance(target_size, (Integral, Sequence)):
+            raise TypeError(
+                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
+                format(type(target_size)))
+        if isinstance(target_size, Integral):
+            target_size = [target_size, target_size]
+        self.target_size = target_size
+
+    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
+        # letterbox: resize a rectangular image to a padded rectangular
+        shape = img.shape[:2]  # [height, width]
+        ratio = min(float(height) / shape[0], float(width) / shape[1])
+        new_shape = (round(shape[1] * ratio),
+                     round(shape[0] * ratio))  # [width, height]
+        dw = (width - new_shape[0]) / 2  # width padding
+        dh = (height - new_shape[1]) / 2  # height padding
+        top, bottom = round(dh - 0.1), round(dh + 0.1)
+        left, right = round(dw - 0.1), round(dw + 0.1)
+
+        img = cv2.resize(
+            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+        img = cv2.copyMakeBorder(
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
+            value=color)  # padded rectangular
+        return img, ratio, dw, dh
+
+    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
+        bboxes = bbox0.copy()
+        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
+        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
+        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
+        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
+        return bboxes
+
+    def apply(self, sample, context=None):
+        """ Resize the image numpy.
+        """
+        im = sample['image']
+        h, w = sample['im_shape']
+        sample['img0_shape'] = sample['im_shape']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        height, width = self.target_size
+        img, ratio, padw, padh = self.apply_image(
+            im, height=height, width=width)
+
+        sample['image'] = img
+        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
+        sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32)
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
+                                                padw, padh)
+        return sample
+
+
+@register_op
 class AugmentHSV(BaseOperator):
     def __init__(self, fraction=0.50, is_bgr=True):
         """ 

@@ -62,13 +62,11 @@ def batch_norm(ch,
 
     norm_lr = 0. if freeze_norm else 1.
     weight_attr = ParamAttr(
-        name=bn_name + '.scale',
         initializer=initializer,
         learning_rate=norm_lr,
         regularizer=L2Decay(norm_decay),
         trainable=False if freeze_norm else True)
     bias_attr = ParamAttr(
-        name=bn_name + '.offset',
         learning_rate=norm_lr,
         regularizer=L2Decay(norm_decay),
         trainable=False if freeze_norm else True)

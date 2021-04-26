@@ -3,10 +3,7 @@ TrainReader:
   sample_transforms:
     - Decode: {}
     - AugmentHSV: {}
-    - BboxXYWH2XYXY: {}
-    - NormalizedBbox2PixelBbox: {}
-    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - RandomAffine: {}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}

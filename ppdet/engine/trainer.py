@@ -205,7 +205,10 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        if hasattr(self.model, 'detector'):
+            load_pretrain_weight(self.model.detector, weights)
+        else:
+            load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
