@@ -92,6 +92,11 @@ PP-YOLO在Pascal VOC数据集上训练模型如下:
 python -m paddle.distributed.launch --log_dir=./ppyolo_dygraph/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml &>ppyolo_dygraph.log 2>&1 &
 ```
 
+可选：在训练之前使用`tools/anchor_cluster.py`得到适用于你的数据集的anchor，并注意修改模型配置文件和Reader配置文件中的anchor设置，如`configs/ppyolo/_base_/ppyolo_tiny.yml`和`configs/ppyolo/_base_/ppyolo_tiny_reader.yml`中anchor设置
+```bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -n 9 -s 320 -m v2 -i 1000
+```
+
 ### 2. 评估
 
 使用单GPU通过如下命令一键式评估模型在COCO val2017数据集效果
