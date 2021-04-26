@@ -15,4 +15,4 @@
 from . import metrics
 from .metrics import *
 
-__all__ = metrics.__all__
+__all__ = metrics.__all__ + keypoint_metrics.__all__
