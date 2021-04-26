@@ -108,6 +108,12 @@ Training PP-YOLO on 8 GPUs with following command(all commands should be run und
 python -m paddle.distributed.launch --log_dir=./ppyolo_dygraph/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml &>ppyolo_dygraph.log 2>&1 &
 ```
 
+optional: Run `tools/anchor_cluster.py` to get anchors suitable for your dataset, and modify the anchor setting in model configuration file and reader configuration file, such as `configs/ppyolo/_base_/ppyolo_tiny.yml` and `configs/ppyolo/_base_/ppyolo_tiny_reader.yml`.
+
+``` bash
+python tools/anchor_cluster.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -n 9 -s 320 -m v2 -i 1000
+```
+
 ### 2. Evaluation
 
 Evaluating PP-YOLO on COCO val2017 dataset in single GPU with following commands:
