@@ -19,7 +19,6 @@ ResNet:
   norm_decay: 0.
 
 PPYOLOFPN:
-  feat_channels: [512, 512]
   drop_block: true
   block_size: 3
   keep_prob: 0.9
