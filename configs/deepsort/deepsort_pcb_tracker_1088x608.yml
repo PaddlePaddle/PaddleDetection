@@ -1,0 +1,29 @@
+_BASE_: [
+  '../datasets/mot.yml',
+  '../runtime.yml',
+  '_base_/deepsort_yolov3_darknet53_pcb_tracker.yml',
+  '_base_/deepsort_reader_1088x608.yml',
+]
+
+metric: MOT
+
+det_weights: None
+reid_weights: https://paddledet.bj.bcebos.com/models/PCB_plus_dropout_pyramid_resnet101.pdparams
+
+DeepSORT:
+  detector: None
+  reid: PCB_plus_dropout_pyramid
+  tracker: DeepSORTTracker
+
+PCB_plus_dropout_pyramid:
+  num_conv_out_channels: 128
+  num_classes: 751
+
+DeepSORTTracker:
+  metric_type: 'cosine'
+  matching_threshold: 0.2
+  budget: 100
+  max_iou_distance: 0.9
+  max_age: 70
+  n_init: 3
+  motion: 'KalmanFilter'

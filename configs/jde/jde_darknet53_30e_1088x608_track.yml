@@ -1,0 +1,32 @@
+_BASE_: [
+  'jde_darknet53_30e_1088x608.yml'
+]
+
+metric: MOT
+
+JDE:
+  detector: YOLOv3
+  reid: JEDEmbeddingHead
+  tracker: JDETracker
+  test_emb: False
+  test_track: True
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
+
+JDEBBoxPostProcess:
+  decode:
+    name: JDEBox
+    conf_thresh: 0.5
+    downsample_ratio: 32
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.4
+    nms_top_k: 2000
+    normalized: true
