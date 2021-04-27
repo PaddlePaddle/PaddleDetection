@@ -55,13 +55,13 @@ class SSDLoss(nn.Layer):
         self.prior_box_var = [1. / a for a in prior_box_var]
 
     def _bipartite_match_for_batch(self, gt_bbox, gt_label, prior_boxes,
-                                   mismatch_value):
+                                   bg_index):
         """
         Args:
             gt_bbox (Tensor): [B, N, 4]
             gt_label (Tensor): [B, N, 1]
             prior_boxes (Tensor): [A, 4]
-            mismatch_value (int): Background class
+            bg_index (int): Background class index
         """
         batch_size, num_priors = gt_bbox.shape[0], prior_boxes.shape[0]
         ious = iou_similarity(gt_bbox.reshape((-1, 4)), prior_boxes).reshape(
@@ -82,20 +82,21 @@ class SSDLoss(nn.Layer):
         targets_bbox = paddle.gather_nd(gt_bbox, prior_argmax_iou)
         targets_label = paddle.gather_nd(gt_label, prior_argmax_iou)
         # Assign negative
-        mismatch_value_tensor = paddle.full([batch_size, num_priors, 1],
-                                            mismatch_value, 'int64')
+        bg_index_tensor = paddle.full([batch_size, num_priors, 1], bg_index,
+                                      'int64')
         targets_label = paddle.where(
             prior_max_iou.unsqueeze(-1) < self.overlap_threshold,
-            mismatch_value_tensor, targets_label)
+            bg_index_tensor, targets_label)
 
         # Ensure each GT can match the max IoU prior box.
         for i in range(batch_size):
-            targets_bbox[i] = paddle.scatter(
-                targets_bbox[i], gt_argmax_iou[i, :int(num_object[i])],
-                gt_bbox[i, :int(num_object[i])])
-            targets_label[i] = paddle.scatter(
-                targets_label[i], gt_argmax_iou[i, :int(num_object[i])],
-                gt_label[i, :int(num_object[i])])
+            if num_object[i] > 0:
+                targets_bbox[i] = paddle.scatter(
+                    targets_bbox[i], gt_argmax_iou[i, :int(num_object[i])],
+                    gt_bbox[i, :int(num_object[i])])
+                targets_label[i] = paddle.scatter(
+                    targets_label[i], gt_argmax_iou[i, :int(num_object[i])],
+                    gt_label[i, :int(num_object[i])])
 
         # Encode box
         prior_boxes = prior_boxes.unsqueeze(0).tile([batch_size, 1, 1])
@@ -106,10 +107,10 @@ class SSDLoss(nn.Layer):
 
         return targets_bbox, targets_label
 
-    def _mine_hard_example(self, conf_loss, targets_label, mismatch_value):
-        pos = (targets_label != mismatch_value).astype(conf_loss.dtype)
+    def _mine_hard_example(self, conf_loss, targets_label, bg_index):
+        pos = (targets_label != bg_index).astype(conf_loss.dtype)
         num_pos = pos.sum(axis=1, keepdim=True)
-        neg = (targets_label == mismatch_value).astype(conf_loss.dtype)
+        neg = (targets_label == bg_index).astype(conf_loss.dtype)
 
         conf_loss = conf_loss.clone() * neg
         loss_idx = conf_loss.argsort(axis=1, descending=True)
@@ -130,33 +131,32 @@ class SSDLoss(nn.Layer):
         scores = paddle.concat(scores, axis=1)
         gt_label = gt_label.unsqueeze(-1).astype('int64')
         prior_boxes = paddle.concat(prior_boxes, axis=0)
-        num_classes = scores.shape[-1] - 1
+        bg_index = scores.shape[-1] - 1
 
         # Match bbox and get targets.
-        # Index 'num_classes' is background.
         targets_bbox, targets_label = \
-            self._bipartite_match_for_batch(gt_bbox, gt_label, prior_boxes, num_classes)
+            self._bipartite_match_for_batch(gt_bbox, gt_label, prior_boxes, bg_index)
         targets_bbox.stop_gradient = True
         targets_label.stop_gradient = True
 
         # Compute regression loss.
         # Select positive samples.
-        bbox_mask = paddle.tile(targets_label != num_classes, [1, 1, 4])
-        location = paddle.masked_select(boxes, bbox_mask)
-        targets_bbox = paddle.masked_select(targets_bbox, bbox_mask)
-        loc_loss = F.smooth_l1_loss(location, targets_bbox, reduction='sum')
-        loc_loss = loc_loss * self.loc_loss_weight
+        bbox_mask = (targets_label != bg_index).astype(boxes.dtype)
+        loc_loss = bbox_mask * F.smooth_l1_loss(
+            boxes, targets_bbox, reduction='none')
+        loc_loss = loc_loss.sum() * self.loc_loss_weight
 
         # Compute confidence loss.
         conf_loss = F.softmax_with_cross_entropy(scores, targets_label)
         # Mining hard examples.
         label_mask = self._mine_hard_example(
-            conf_loss.squeeze(-1), targets_label.squeeze(-1), num_classes)
-        conf_loss = paddle.masked_select(conf_loss, label_mask.unsqueeze(-1))
+            conf_loss.squeeze(-1), targets_label.squeeze(-1), bg_index)
+        conf_loss = conf_loss * label_mask.unsqueeze(-1).astype(conf_loss.dtype)
         conf_loss = conf_loss.sum() * self.conf_loss_weight
 
         # Compute overall weighted loss.
-        normalizer = (targets_label != num_classes).astype('float32').sum()
-        loss = (conf_loss + loc_loss) / normalizer
+        normalizer = (targets_label != bg_index).astype('float32').sum().clip(
+            min=1)
+        loss = (conf_loss + loc_loss) / (normalizer + 1e-9)
 
         return loss
