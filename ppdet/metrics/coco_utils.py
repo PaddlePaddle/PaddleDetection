@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res
+from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -60,6 +60,10 @@ def get_infer_results(outs, catid, bias=0):
     if 'segm' in outs:
         infer_res['segm'] = get_solov2_segm_res(outs, im_id, catid)
 
+    if 'keypoint' in outs:
+        infer_res['keypoint'] = get_keypoint_res(outs, im_id)
+        outs['bbox_num'] = [len(infer_res['keypoint'])]
+
     return infer_res
 
 
@@ -68,20 +72,25 @@ def cocoapi_eval(jsonfile,
                  coco_gt=None,
                  anno_file=None,
                  max_dets=(100, 300, 1000),
-                 classwise=False):
+                 classwise=False,
+                 sigmas=None,
+                 use_area=True):
     """
     Args:
         jsonfile (str): Evaluation json file, eg: bbox.json, mask.json.
-        style (str): COCOeval style, can be `bbox` , `segm` and `proposal`.
+        style (str): COCOeval style, can be `bbox` , `segm` , `proposal`, `keypoints` and `keypoints_crowd`.
         coco_gt (str): Whether to load COCOAPI through anno_file,
                  eg: coco_gt = COCO(anno_file)
         anno_file (str): COCO annotations file.
         max_dets (tuple): COCO evaluation maxDets.
         classwise (bool): Whether per-category AP and draw P-R Curve or not.
+        sigmas (nparray): keypoint labelling sigmas.
+        use_area (bool): If gt annotations (eg. CrowdPose, AIC)
+                         do not have 'area', please set use_area=False.
     """
     assert coco_gt != None or anno_file != None
-    from pycocotools.coco import COCO
-    from pycocotools.cocoeval import COCOeval
+    from xtcocotools.coco import COCO
+    from xtcocotools.cocoeval import COCOeval
 
     if coco_gt == None:
         coco_gt = COCO(anno_file)
@@ -92,7 +101,7 @@ def cocoapi_eval(jsonfile,
         coco_eval.params.useCats = 0
         coco_eval.params.maxDets = list(max_dets)
     else:
-        coco_eval = COCOeval(coco_gt, coco_dt, style)
+        coco_eval = COCOeval(coco_gt, coco_dt, style, sigmas, use_area)
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()
@@ -134,7 +143,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            *[results_flatten[i::num_columns] for i in range(num_columns)])
+            * [results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)

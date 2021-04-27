@@ -152,6 +152,8 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         self.id2name, self.name2id = self._get_mapping_id_name(self.coco.imgs)
         self.dataset_name = 'coco'
 
+        cat_ids = self.coco.getCatIds()
+        self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
         print(f'=> num_images: {self.num_images}')
 
     @staticmethod

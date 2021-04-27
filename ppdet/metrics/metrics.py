@@ -34,6 +34,14 @@ __all__ = [
     'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results'
 ]
 
+COCO_SIGMAS = np.array([
+    .26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07, .87, .87,
+    .89, .89
+]) / 10.0
+CROWD_SIGMAS = np.array(
+    [.79, .79, .72, .72, .62, .62, 1.07, 1.07, .87, .87, .89, .89, .79,
+     .79]) / 10.0
+
 
 class Metric(paddle.metric.Metric):
     def name(self):
@@ -74,7 +82,7 @@ class COCOMetric(Metric):
 
     def reset(self):
         # only bbox and mask evaluation support currently
-        self.results = {'bbox': [], 'mask': [], 'segm': []}
+        self.results = {'bbox': [], 'mask': [], 'segm': [], 'keypoint': []}
         self.eval_results = {}
 
     def update(self, inputs, outputs):
@@ -95,6 +103,8 @@ class COCOMetric(Metric):
             'mask'] if 'mask' in infer_results else []
         self.results['segm'] += infer_results[
             'segm'] if 'segm' in infer_results else []
+        self.results['keypoint'] += infer_results[
+            'keypoint'] if 'keypoint' in infer_results else []
 
     def accumulate(self):
         if len(self.results['bbox']) > 0:
@@ -155,6 +165,35 @@ class COCOMetric(Metric):
                     anno_file=self.anno_file,
                     classwise=self.classwise)
                 self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
+
+        if len(self.results['keypoint']) > 0:
+            output = "keypoint.json"
+            if self.output_eval:
+                output = os.path.join(self.output_eval, output)
+            with open(output, 'w') as f:
+                json.dump(self.results['keypoint'], f)
+                logger.info('The keypoint result is saved to keypoint.json.')
+
+            if self.save_prediction_only:
+                logger.info('The keypoint result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                style = 'keypoints'
+                use_area = True
+                sigmas = COCO_SIGMAS
+                if 'crowd' in self.anno_file:
+                    style = 'keypoints_crowd'
+                    use_area = False
+                    sigmas = CROWD_SIGMAS
+                seg_stats = cocoapi_eval(
+                    output,
+                    style,
+                    anno_file=self.anno_file,
+                    classwise=self.classwise,
+                    sigmas=sigmas,
+                    use_area=use_area)
+                self.eval_results['keypoint'] = seg_stats
                 sys.stdout.flush()
 
     def log(self):
