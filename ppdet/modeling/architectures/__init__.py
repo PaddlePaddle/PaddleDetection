@@ -16,6 +16,8 @@ from . import solov2
 from . import ttfnet
 from . import s2anet
 from . import keypoint_hrhrnet
+from . import jde
+from . import deepsort
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -28,3 +30,5 @@ from .solov2 import *
 from .ttfnet import *
 from .s2anet import *
 from .keypoint_hrhrnet import *
+from .jde import *
+from .deepsort import *

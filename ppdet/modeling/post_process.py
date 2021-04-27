@@ -24,7 +24,13 @@ try:
 except Exception:
     from collections import Sequence
 
-__all__ = ['BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess']
+__all__ = [
+    'BBoxPostProcess',
+    'MaskPostProcess',
+    'FCOSPostProcess',
+    'S2ANetBBoxPostProcess',
+    'JDEBBoxPostProcess',
+]
 
 
 @register
@@ -111,8 +117,6 @@ class BBoxPostProcess(object):
         pred_score = bboxes[:, 1:2]
         pred_bbox = bboxes[:, 2:]
         # rescale bbox to original image
-        print('pred_bbox', pred_bbox.shape, 'scale_factor_list',
-              scale_factor_list.shape)
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = self.origin_shape_list[:, 0]
         origin_w = self.origin_shape_list[:, 1]
@@ -332,3 +336,29 @@ class S2ANetBBoxPostProcess(object):
         pred_bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
         pred_result = paddle.concat([pred_label_score, pred_bbox], axis=1)
         return pred_result
+
+
+@register
+class JDEBBoxPostProcess(BBoxPostProcess):
+    def __call__(self, head_out, anchors):
+        """
+        Decode the bbox and do NMS. 
+
+        Returns:
+            boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'. 
+            bbox_pred (Tensor): The output is the prediction with shape [N, 6]
+                including labels, scores and bboxes.
+            bbox_num (Tensor): The number of prediction of each batch with shape [N].
+            nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
+        """
+        boxes_idx, bboxes, score = self.decode(head_out, anchors)
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
+                                                     self.num_classes)
+        if bbox_pred.shape[0] == 0:
+            bbox_pred = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+
+        return boxes_idx, bbox_pred, bbox_num, nms_keep_idx

@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import yolo_loss
-from . import iou_aware_loss
-from . import iou_loss
-from . import ssd_loss
-from . import fcos_loss
-from . import solov2_loss
-from . import ctfocal_loss
-from . import keypoint_loss
-from . import jde_loss
+from . import kalman_filter
 
-from .yolo_loss import *
-from .iou_aware_loss import *
-from .iou_loss import *
-from .ssd_loss import *
-from .fcos_loss import *
-from .solov2_loss import *
-from .ctfocal_loss import *
-from .keypoint_loss import *
-from .jde_loss import *
+from .kalman_filter import *
