@@ -36,6 +36,7 @@ SUPPORT_MODELS = {
     'FCOS',
     'SOLOv2',
     'TTFNet',
+    'JDE',
 }
 
 
