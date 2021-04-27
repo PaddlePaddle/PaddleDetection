@@ -139,10 +139,11 @@ class LinearWarmup(object):
         boundary = []
         value = []
         for i in range(self.steps + 1):
-            alpha = i / self.steps
-            factor = self.start_factor * (1 - alpha) + alpha
-            lr = base_lr * factor
-            value.append(lr)
+            if self.steps > 0:
+                alpha = i / self.steps
+                factor = self.start_factor * (1 - alpha) + alpha
+                lr = base_lr * factor
+                value.append(lr)
             if i > 0:
                 boundary.append(i)
         return boundary, value

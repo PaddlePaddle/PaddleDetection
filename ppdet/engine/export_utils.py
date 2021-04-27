@@ -37,6 +37,7 @@ TRT_MIN_SUBGRAPH = {
     'TTFNet': 3,
     'FCOS': 16,
     'SOLOv2': 60,
+    'Hrnet': 40,
 }
 
 
