@@ -107,10 +107,14 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
-        """ Transform the image data to numpy format following the rgb format
+    def __init__(self, keep_ori_img=False):
+        """ 
+        Transform the image data to numpy format following the rgb format
+        Args:
+            keep_ori_img (bool): whether to keep original image, 
         """
         super(Decode, self).__init__()
+        self.keep_ori_img = keep_ori_img
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -122,6 +126,9 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+        if self.keep_ori_img:
+            sample['img0_shape'] = np.array(im.shape[:2], dtype=np.float32)
+            sample['img0'] = im
 
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
@@ -485,15 +492,21 @@ class AutoAugment(BaseOperator):
 
 @register_op
 class RandomFlip(BaseOperator):
-    def __init__(self, prob=0.5):
+    def __init__(self, prob=0.5, normalize=False, cxcywh=False):
         """
         Args:
             prob (float): the probability of flipping image
+            normalize (bool): whether the bbox format is normalized by the 
+                width/height of the image, if so the bboxes are floating point
+                numbers ranging from 0 to 1
+            cxcywh (bool): whether the bbox format is [x_center, y_center, width, height]
         """
         super(RandomFlip, self).__init__()
         self.prob = prob
         if not (isinstance(self.prob, float)):
             raise TypeError("{}: input type is invalid.".format(self))
+        self.normalize = normalize
+        self.cxcywh = cxcywh
 
     def apply_segm(self, segms, height, width):
         def _flip_poly(poly, width):
@@ -533,8 +546,13 @@ class RandomFlip(BaseOperator):
     def apply_bbox(self, bbox, width):
         oldx1 = bbox[:, 0].copy()
         oldx2 = bbox[:, 2].copy()
-        bbox[:, 0] = width - oldx2
-        bbox[:, 2] = width - oldx1
+        if self.cxcywh:
+            # flip for [x_center, y_center, width, height] format, only change x_center
+            bbox[:, 0] = width - oldx1
+        else:
+            # flip for [x0, y0, x1, y1] format, need to change x0 and x1
+            bbox[:, 0] = width - oldx2
+            bbox[:, 2] = width - oldx1
         return bbox
 
     def apply_rbox(self, bbox, width):
@@ -565,6 +583,10 @@ class RandomFlip(BaseOperator):
             im = sample['image']
             height, width = im.shape[:2]
             im = self.apply_image(im)
+            # Flip in detection only used as horizontal flip, so only depend on
+            # width, for normalized bboxes the max width is 1
+            if self.normalize:
+                width = 1
             if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
                 sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], width)
             if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -591,7 +613,11 @@ class RandomFlip(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_LINEAR,
+                 by_hw=False):
         """
         Resize image to target size. if keep_ratio is True, 
         resize the image's long side to the maximum of target_size
@@ -600,10 +626,12 @@ class Resize(BaseOperator):
             target_size (int|list): image target size
             keep_ratio (bool): whether keep_ratio or not, default true
             interp (int): the interpolation method
+            by_hw (bool): whether use resize by height/width directly specified
         """
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
         self.interp = interp
+        self.by_hw = by_hw
         if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
@@ -614,14 +642,19 @@ class Resize(BaseOperator):
 
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
-
-        return cv2.resize(
-            image,
-            None,
-            None,
-            fx=im_scale_x,
-            fy=im_scale_y,
-            interpolation=self.interp)
+        if self.by_hw:
+            return cv2.resize(
+                image, (round(image.shape[1] * im_scale_x),
+                        round(image.shape[0] * im_scale_y)),
+                interpolation=self.interp)
+        else:
+            return cv2.resize(
+                image,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
 
     def apply_bbox(self, bbox, scale, size):
         im_scale_x, im_scale_y = scale
@@ -683,21 +716,28 @@ class Resize(BaseOperator):
         # apply image
         im_shape = im.shape
         if self.keep_ratio:
+            if self.by_hw:
+                im_scale = min(self.target_size[1] / im_shape[1],
+                               self.target_size[0] / im_shape[0])
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
+                im_scale_x = im_scale
+                im_scale_y = im_scale
+            else:
+                im_size_min = np.min(im_shape[0:2])
+                im_size_max = np.max(im_shape[0:2])
 
-            im_size_min = np.min(im_shape[0:2])
-            im_size_max = np.max(im_shape[0:2])
+                target_size_min = np.min(self.target_size)
+                target_size_max = np.max(self.target_size)
 
-            target_size_min = np.min(self.target_size)
-            target_size_max = np.max(self.target_size)
+                im_scale = min(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
 
-            im_scale = min(target_size_min / im_size_min,
-                           target_size_max / im_size_max)
+                resize_h = im_scale * float(im_shape[0])
+                resize_w = im_scale * float(im_shape[1])
 
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
+                im_scale_x = im_scale
+                im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
             im_scale_y = resize_h / im_shape[0]
@@ -1640,6 +1680,11 @@ class Mixup(BaseOperator):
                 (is_difficult1, is_difficult2), axis=0)
             result['difficult'] = is_difficult
 
+        if 'gt_ide' in sample[0]:
+            gt_ide1 = sample[0]['gt_ide']
+            gt_ide2 = sample[1]['gt_ide']
+            gt_ide = np.concatenate((gt_ide1, gt_ide2), axis=0)
+            result['gt_ide'] = gt_ide
         return result
 
 
@@ -1736,6 +1781,11 @@ class PadBox(BaseOperator):
             if gt_num > 0:
                 pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
             sample['is_crowd'] = pad_crowd
+        if 'gt_ide' in sample:
+            pad_ide = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_ide[:gt_num] = sample['gt_ide'][:gt_num, 0]
+            sample['gt_ide'] = pad_ide
         return sample
 
 
@@ -1834,7 +1884,8 @@ class Pad(BaseOperator):
         assert pad_mode in [
             -1, 0, 1, 2
         ], 'currently only supports four modes [-1, 0, 1, 2]'
-        assert pad_mode == -1 and offsets, 'if pad_mode is -1, offsets should not be None'
+        if pad_mode == -1 and offsets is None:
+            raise Exception('if pad_mode is -1, offsets should not be None')
 
         self.size = size
         self.size_divisor = size_divisor
@@ -1898,8 +1949,9 @@ class Pad(BaseOperator):
         if self.size:
             h, w = self.size
             assert (
-                im_h < h and im_w < w
-            ), '(h, w) of target size should be greater than (im_h, im_w)'
+                im_h <= h and im_w <= w
+            ), '(h, w):({}, {}) of target size should be greater or equal than (im_h, im_w):({}, {})'.format(
+                h, w, im_h, im_w)
         else:
             h = np.ceil(im_h // self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
@@ -1923,6 +1975,7 @@ class Pad(BaseOperator):
         if self.pad_mode == 0:
             return sample
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            offsets = [(w - im_w) / 2, (h - im_h) / 2]  # new add
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], offsets)
 
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
