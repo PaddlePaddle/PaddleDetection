@@ -2,6 +2,10 @@ English | [简体中文](README_cn.md)
 
 ### PaddleDetection 2.0 is ready! Dygraph mode is set by default and static graph code base is [here](static)
 
+### Highly effective PPYOLO v2 and ultra lightweight PPYOLO tiny are released! [link](configs/ppyolo/README.md)
+
+### SOTA Anchor Free model -- PAFNet is released! [link](configs/ttfnet/README.md)
+
 # Introduction
 
 PaddleDetection is an end-to-end object detection development kit based on PaddlePaddle, which aims to help developers in the whole development of constructing, training, optimizing and deploying detection models in a faster and better way.
@@ -16,7 +20,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 ### Product news
 
-- 2021.04.14: Release `release/2.0` version. Dygraph mode in PaddleDetection is fully supported. Cover all the algorithm of static graph and update the performance of mainstream detection models. Release `PP-YOLO v2` and `S2ANet` which is aimed at rotation object detection.Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0) for details.
+- 2021.04.14: Release `release/2.0` version. Dygraph mode in PaddleDetection is fully supported. Cover all the algorithm of static graph and update the performance of mainstream detection models. Release [`PP-YOLO v2` and `PP-YOLO tiny`](configs/ppyolo/README.md), enhanced anchor free model [PAFNet](configs/ttfnet/README.md) and [`S2ANet`](configs/dota/README.md) which is aimed at rotation object detection.Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0) for details.
 - 2020.02.07: Release `release/2.0-rc` version, Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc) for details.
 
 
@@ -228,11 +232,11 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 - Universal object detection
   - [Model library and baselines](docs/MODEL_ZOO_cn.md)
-  - [Mobile models](static/configs/mobile/README.md)
   - [PP-YOLO](configs/ppyolo/README.md)
+  - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README.md)
+  - [Mobile models](static/configs/mobile/README.md)
   - [676 classes of object detection](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
   - [Two-stage practical PSS-Det](configs/rcnn_enhance/README.md)
-  - [Enhanced Anchor Free model--TTFNet](configs/ttfnet/README.md)
   - [SSLD pretrained models](docs/feature_models/SSLD_PRETRAINED_MODEL_en.md)
 - Universal instance segmentation
   - [SOLOv2](configs/solov2/README.md)
