@@ -10,6 +10,12 @@ snapshot_epoch: 5
 pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV1_ssld_pretrained.pdparams
 weights: output/yolov3_mobilenet_v1_ssld_270e_voc/model_final
 
+# set collate_batch to false because ground-truth info is needed
+# on voc dataset and should not collate data in batch when batch size
+# is larger than 1.
+EvalReader:
+  collate_batch: false
+
 LearningRate:
   base_lr: 0.001
   schedulers:

@@ -95,10 +95,9 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
-
         return batch_data
 
 
@@ -118,6 +117,11 @@ class BaseDataLoader(object):
         drop_empty (bool): whether to drop samples with no ground
                            truth labels, default True
         num_classes (int): class number of dataset, default 80
+        collate_batch (bool): whether to collate batch in dataloader.
+            If set to True, the samples will collate into batch according
+            to the batch size. Otherwise, the ground-truth will not collate,
+            which is used when the number of ground-truch is different in 
+            samples.
         use_shared_memory (bool): whether to use shared memory to
                 accelerate data loading, enable this only if you
                 are sure that the shared memory size of your OS
