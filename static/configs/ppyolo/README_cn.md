@@ -85,9 +85,9 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 |:----------------------------:|:----------:|:-------------:| :---------: | :-----------------------: | :--------: | :----------:| :------------------: | :--------------------: | :------: | :----------: | :------: |
 | PP-YOLO_MobileNetV3_small    |     4      |       32      |     75%     | PP-YOLO_MobileNetV3_large |   4.2MB    |     320     |         16.2         |          39.8          | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.pdparams) | [下载链接](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_mobilenet_v3_small_prune75_distillby_mobilenet_v3_large.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_mobilenet_v3_small.yml)                   |
 
-- PP-YOLO 轻量级裁剪模型采用[蒸馏通道剪裁模型](../../slim/extentions/distill_pruned_model/README.md) 的方式训练得到，基于 PP-YOLO_MobileNetV3_small 模型对Head部分做卷积通道剪裁后使用 PP-YOLO_MobileNetV3_large 模型进行蒸馏训练
+- PP-YOLO 轻量级裁剪模型采用[蒸馏通道剪裁模型](../../slim/extensions/distill_pruned_model/README.md) 的方式训练得到，基于 PP-YOLO_MobileNetV3_small 模型对Head部分做卷积通道剪裁后使用 PP-YOLO_MobileNetV3_large 模型进行蒸馏训练
 - 卷积通道检测对Head部分剪裁掉75%的通道数，及剪裁参数为`--pruned_params="yolo_block.0.2.conv.weights,yolo_block.0.tip.conv.weights,yolo_block.1.2.conv.weights,yolo_block.1.tip.conv.weights" --pruned_ratios="0.75,0.75,0.75,0.75"`
-- PP-YOLO 轻量级裁剪模型的训练、评估、预测及模型导出方法见[蒸馏通道剪裁模型](../../slim/extentions/distill_pruned_model/README.md)
+- PP-YOLO 轻量级裁剪模型的训练、评估、预测及模型导出方法见[蒸馏通道剪裁模型](../../slim/extensions/distill_pruned_model/README.md)
 
 ### PP-YOLO tiny模型
 
