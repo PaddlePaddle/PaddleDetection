@@ -18,7 +18,7 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.ops import batch_norm, mish
+from ppdet.modeling.ops import mish
 from ..shape_spec import ShapeSpec
 
 __all__ = ['DarkNet', 'ConvBNLayer']
@@ -53,6 +53,7 @@ class ConvBNLayer(nn.Layer):
             data_format (str): data format, NCHW or NHWC
         """
         super(ConvBNLayer, self).__init__()
+        assert norm_type in ['bn', 'sync_bn']
 
         self.conv = nn.Conv2D(
             in_channels=ch_in,
@@ -63,11 +64,12 @@ class ConvBNLayer(nn.Layer):
             groups=groups,
             data_format=data_format,
             bias_attr=False)
-        self.batch_norm = batch_norm(
-            ch_out,
-            norm_type=norm_type,
-            norm_decay=norm_decay,
-            data_format=data_format)
+        if norm_type in ['bn', 'sync_bn']:
+            self.batch_norm = nn.BatchNorm2D(
+                ch_out,
+                weight_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
+                bias_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
+                data_format=data_format)
         self.act = act
 
     def forward(self, inputs):

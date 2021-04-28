@@ -17,12 +17,10 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Constant, Uniform, Normal, XavierUniform
-from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from ppdet.modeling.layers import DeformableConvV2, ConvNormLayer, LiteConv
 import math
-from ppdet.modeling.ops import batch_norm
 from ..shape_spec import ShapeSpec
 
 __all__ = ['TTFFPN']
@@ -45,8 +43,13 @@ class Upsample(nn.Layer):
             lr_scale=2.,
             regularizer=L2Decay(0.))
 
-        self.bn = batch_norm(
-            ch_out, norm_type=norm_type, initializer=Constant(1.))
+        assert norm_type in ['bn', 'sync_bn']
+        if norm_type in ['bn', 'sync_bn']:
+            self.bn = nn.BatchNorm2D(
+                ch_out,
+                weight_attr=ParamAttr(
+                    initializer=Constant(1.), regularizer=L2Decay(0.)),
+                bias_attr=ParamAttr(regularizer=L2Decay(0.)))
 
     def forward(self, feat):
         dcn = self.dcn(feat)
@@ -76,7 +79,14 @@ class DeConv(nn.Layer):
             groups=ch_out,
             weight_attr=ParamAttr(initializer=XavierUniform()),
             bias_attr=False)
-        bn = batch_norm(ch_out, norm_type=norm_type, norm_decay=0.)
+
+        assert norm_type in ['bn', 'sync_bn']
+        if norm_type in ['bn', 'sync_bn']:
+            bn = nn.BatchNorm2D(
+                ch_out,
+                weight_attr=ParamAttr(regularizer=L2Decay(0.)),
+                bias_attr=ParamAttr(regularizer=L2Decay(0.)))
+
         conv3 = ConvNormLayer(
             ch_in=ch_out,
             ch_out=ch_out,

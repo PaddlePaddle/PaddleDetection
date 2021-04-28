@@ -101,13 +101,10 @@ class ConvNormLayer(nn.Layer):
             trainable=False if freeze_norm else True)
 
         global_stats = True if freeze_norm else False
-        if norm_type == 'sync_bn':
-            self.norm = nn.SyncBatchNorm(
-                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
-        else:
+        if norm_type in ['bn', 'sync_bn']:
+            # TODO(wangxinxin08): use nn.BatchNorm2D to replace nn.BatchNorm
             self.norm = nn.BatchNorm(
                 ch_out,
-                act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
                 use_global_stats=global_stats)

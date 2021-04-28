@@ -50,8 +50,7 @@ class ConvBNLayer(nn.Layer):
                  conv_decay=0.,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=False,
-                 name=""):
+                 freeze_norm=False):
         super(ConvBNLayer, self).__init__()
         self.act = act
         self.conv = nn.Conv2D(
@@ -62,35 +61,28 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=num_groups,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult,
-                regularizer=L2Decay(conv_decay),
-                name=name + "_weights"),
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
             bias_attr=False)
 
         norm_lr = 0. if freeze_norm else lr_mult
         param_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=name + "_bn_scale",
             trainable=False if freeze_norm else True)
         bias_attr = ParamAttr(
             learning_rate=norm_lr,
             regularizer=L2Decay(norm_decay),
-            name=name + "_bn_offset",
             trainable=False if freeze_norm else True)
         global_stats = True if freeze_norm else False
-        if norm_type == 'sync_bn':
-            self.bn = nn.SyncBatchNorm(
-                out_c, weight_attr=param_attr, bias_attr=bias_attr)
-        else:
+        assert norm_type in ['bn', 'sync_bn']
+        if norm_type in ['bn', 'sync_bn']:
+            # TODO(wangxinxin08): use nn.BatchNorm2D to replace nn.BatchNorm
             self.bn = nn.BatchNorm(
                 out_c,
-                act=None,
                 param_attr=param_attr,
                 bias_attr=bias_attr,
-                use_global_stats=global_stats,
-                moving_mean_name=name + '_bn_mean',
-                moving_variance_name=name + '_bn_variance')
+                use_global_stats=global_stats)
+
         norm_params = self.bn.parameters()
         if freeze_norm:
             for param in norm_params:
@@ -126,8 +118,7 @@ class ResidualUnit(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=False,
                  act=None,
-                 return_list=False,
-                 name=''):
+                 return_list=False):
         super(ResidualUnit, self).__init__()
         self.if_shortcut = stride == 1 and in_c == out_c
         self.use_se = use_se
@@ -144,8 +135,7 @@ class ResidualUnit(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_expand")
+            freeze_norm=freeze_norm)
         self.bottleneck_conv = ConvBNLayer(
             in_c=mid_c,
             out_c=mid_c,
@@ -158,11 +148,9 @@ class ResidualUnit(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_depthwise")
+            freeze_norm=freeze_norm)
         if self.use_se:
-            self.mid_se = SEModule(
-                mid_c, lr_mult, conv_decay, name=name + "_se")
+            self.mid_se = SEModule(mid_c, lr_mult, conv_decay)
         self.linear_conv = ConvBNLayer(
             in_c=mid_c,
             out_c=out_c,
@@ -174,8 +162,7 @@ class ResidualUnit(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_linear")
+            freeze_norm=freeze_norm)
 
     def forward(self, inputs):
         y = self.expand_conv(inputs)
@@ -192,7 +179,7 @@ class ResidualUnit(nn.Layer):
 
 
 class SEModule(nn.Layer):
-    def __init__(self, channel, lr_mult, conv_decay, reduction=4, name=""):
+    def __init__(self, channel, lr_mult, conv_decay, reduction=4):
         super(SEModule, self).__init__()
         self.avg_pool = nn.AdaptiveAvgPool2D(1)
         mid_channels = int(channel // reduction)
@@ -203,13 +190,9 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult,
-                regularizer=L2Decay(conv_decay),
-                name=name + "_1_weights"),
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult,
-                regularizer=L2Decay(conv_decay),
-                name=name + "_1_offset"))
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)))
         self.conv2 = nn.Conv2D(
             in_channels=mid_channels,
             out_channels=channel,
@@ -217,13 +200,9 @@ class SEModule(nn.Layer):
             stride=1,
             padding=0,
             weight_attr=ParamAttr(
-                learning_rate=lr_mult,
-                regularizer=L2Decay(conv_decay),
-                name=name + "_2_weights"),
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)),
             bias_attr=ParamAttr(
-                learning_rate=lr_mult,
-                regularizer=L2Decay(conv_decay),
-                name=name + "_2_offset"))
+                learning_rate=lr_mult, regularizer=L2Decay(conv_decay)))
 
     def forward(self, inputs):
         outputs = self.avg_pool(inputs)
@@ -244,8 +223,7 @@ class ExtraBlockDW(nn.Layer):
                  conv_decay=0.,
                  norm_type='bn',
                  norm_decay=0.,
-                 freeze_norm=False,
-                 name=None):
+                 freeze_norm=False):
         super(ExtraBlockDW, self).__init__()
         self.pointwise_conv = ConvBNLayer(
             in_c=in_c,
@@ -258,8 +236,7 @@ class ExtraBlockDW(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_extra1")
+            freeze_norm=freeze_norm)
         self.depthwise_conv = ConvBNLayer(
             in_c=ch_1,
             out_c=ch_2,
@@ -272,8 +249,7 @@ class ExtraBlockDW(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_extra2_dw")
+            freeze_norm=freeze_norm)
         self.normal_conv = ConvBNLayer(
             in_c=ch_2,
             out_c=ch_2,
@@ -285,8 +261,7 @@ class ExtraBlockDW(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name=name + "_extra2_sep")
+            freeze_norm=freeze_norm)
 
     def forward(self, inputs):
         x = self.pointwise_conv(inputs)
@@ -381,8 +356,7 @@ class MobileNetV3(nn.Layer):
             conv_decay=conv_decay,
             norm_type=norm_type,
             norm_decay=norm_decay,
-            freeze_norm=freeze_norm,
-            name="conv1")
+            freeze_norm=freeze_norm)
 
         self._out_channels = []
         self.block_list = []
@@ -410,8 +384,7 @@ class MobileNetV3(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
-                    return_list=return_list,
-                    name="conv" + str(i + 2)))
+                    return_list=return_list))
             self.block_list.append(block)
             inplanes = make_divisible(scale * c)
             i += 1
@@ -439,8 +412,7 @@ class MobileNetV3(nn.Layer):
                     conv_decay=conv_decay,
                     norm_type=norm_type,
                     norm_decay=norm_decay,
-                    freeze_norm=freeze_norm,
-                    name="conv" + str(i + 2)))
+                    freeze_norm=freeze_norm))
             self.extra_block_list.append(conv_extra)
             i += 1
             self._update_out_channels(extra_out_c, i + 1, feature_maps)
@@ -459,8 +431,7 @@ class MobileNetV3(nn.Layer):
                         conv_decay=conv_decay,
                         norm_type=norm_type,
                         norm_decay=norm_decay,
-                        freeze_norm=freeze_norm,
-                        name='conv' + str(i + 2)))
+                        freeze_norm=freeze_norm))
                 self.extra_block_list.append(conv_extra)
                 i += 1
                 self._update_out_channels(block_filter[1], i + 1, feature_maps)

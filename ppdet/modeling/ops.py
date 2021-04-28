@@ -29,42 +29,14 @@ import numpy as np
 from functools import reduce
 
 __all__ = [
-    'roi_pool',
-    'roi_align',
-    'prior_box',
-    'generate_proposals',
-    'iou_similarity',
-    'box_coder',
-    'yolo_box',
-    'multiclass_nms',
-    'distribute_fpn_proposals',
-    'collect_fpn_proposals',
-    'matrix_nms',
-    'batch_norm',
-    'mish',
+    'roi_pool', 'roi_align', 'prior_box', 'generate_proposals',
+    'iou_similarity', 'box_coder', 'yolo_box', 'multiclass_nms',
+    'distribute_fpn_proposals', 'collect_fpn_proposals', 'matrix_nms', 'mish'
 ]
 
 
 def mish(x):
     return x * paddle.tanh(F.softplus(x))
-
-
-def batch_norm(ch,
-               norm_type='bn',
-               norm_decay=0.,
-               initializer=None,
-               data_format='NCHW'):
-    if norm_type == 'sync_bn':
-        batch_norm = nn.SyncBatchNorm
-    else:
-        batch_norm = nn.BatchNorm2D
-
-    return batch_norm(
-        ch,
-        weight_attr=ParamAttr(
-            initializer=initializer, regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
-        data_format=data_format)
 
 
 @paddle.jit.not_to_static

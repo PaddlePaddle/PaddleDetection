@@ -41,8 +41,7 @@ class ConvBNLayer(nn.Layer):
                  conv_lr=0.1,
                  conv_decay=0.,
                  norm_decay=0.,
-                 norm_type='bn',
-                 name=None):
+                 norm_type='bn'):
         super(ConvBNLayer, self).__init__()
         self.act = act
         self._conv = nn.Conv2D(
@@ -53,25 +52,12 @@ class ConvBNLayer(nn.Layer):
             padding=padding,
             groups=num_groups,
             weight_attr=ParamAttr(
-                learning_rate=conv_lr,
-                initializer=KaimingNormal(),
-                name=name + "_weights"),
+                learning_rate=conv_lr, initializer=KaimingNormal()),
             bias_attr=False)
 
-        param_attr = ParamAttr(name=name + "_bn_scale")
-        bias_attr = ParamAttr(name=name + "_bn_offset")
-        if norm_type == 'sync_bn':
-            self._batch_norm = nn.SyncBatchNorm(
-                out_channels, weight_attr=param_attr, bias_attr=bias_attr)
-        else:
-            self._batch_norm = nn.BatchNorm(
-                out_channels,
-                act=None,
-                param_attr=param_attr,
-                bias_attr=bias_attr,
-                use_global_stats=False,
-                moving_mean_name=name + '_bn_mean',
-                moving_variance_name=name + '_bn_variance')
+        assert norm_type in ['bn', 'sync_bn']
+        if norm_type in ['bn', 'sync_bn']:
+            self._batch_norm = nn.BatchNorm2D(out_channels)
 
     def forward(self, x):
         x = self._conv(x)
@@ -107,8 +93,7 @@ class BlazeBlock(nn.Layer):
                         kernel_size=5,
                         stride=stride,
                         padding=2,
-                        num_groups=out_channels1,
-                        name=name + "1_dw")))
+                        num_groups=out_channels1)))
         else:
             self.conv_dw.append(
                 self.add_sublayer(
@@ -119,8 +104,7 @@ class BlazeBlock(nn.Layer):
                         kernel_size=3,
                         stride=1,
                         padding=1,
-                        num_groups=out_channels1,
-                        name=name + "1_dw_1")))
+                        num_groups=out_channels1)))
             self.conv_dw.append(
                 self.add_sublayer(
                     name + "1_dw_2",
@@ -130,8 +114,7 @@ class BlazeBlock(nn.Layer):
                         kernel_size=3,
                         stride=stride,
                         padding=1,
-                        num_groups=out_channels1,
-                        name=name + "1_dw_2")))
+                        num_groups=out_channels1)))
         act = 'relu' if self.use_double_block else None
         self.conv_pw = ConvBNLayer(
             in_channels=out_channels1,
@@ -139,8 +122,7 @@ class BlazeBlock(nn.Layer):
             kernel_size=1,
             stride=1,
             padding=0,
-            act=act,
-            name=name + "1_sep")
+            act=act)
         if self.use_double_block:
             self.conv_dw2 = []
             if use_5x5kernel:
@@ -153,8 +135,7 @@ class BlazeBlock(nn.Layer):
                             kernel_size=5,
                             stride=1,
                             padding=2,
-                            num_groups=out_channels2,
-                            name=name + "2_dw")))
+                            num_groups=out_channels2)))
             else:
                 self.conv_dw2.append(
                     self.add_sublayer(
@@ -165,8 +146,7 @@ class BlazeBlock(nn.Layer):
                             kernel_size=3,
                             stride=1,
                             padding=1,
-                            num_groups=out_channels2,
-                            name=name + "1_dw_1")))
+                            num_groups=out_channels2)))
                 self.conv_dw2.append(
                     self.add_sublayer(
                         name + "2_dw_2",
@@ -176,15 +156,13 @@ class BlazeBlock(nn.Layer):
                             kernel_size=3,
                             stride=1,
                             padding=1,
-                            num_groups=out_channels2,
-                            name=name + "2_dw_2")))
+                            num_groups=out_channels2)))
             self.conv_pw2 = ConvBNLayer(
                 in_channels=out_channels2,
                 out_channels=double_channels,
                 kernel_size=1,
                 stride=1,
-                padding=0,
-                name=name + "2_sep")
+                padding=0)
         # shortcut
         if self.use_pool:
             shortcut_channel = double_channels or out_channels2
@@ -202,8 +180,7 @@ class BlazeBlock(nn.Layer):
                         out_channels=shortcut_channel,
                         kernel_size=1,
                         stride=1,
-                        padding=0,
-                        name="shortcut" + name)))
+                        padding=0)))
 
     def forward(self, x):
         y = x
@@ -245,8 +222,7 @@ class BlazeNet(nn.Layer):
             out_channels=conv1_num_filters,
             kernel_size=3,
             stride=2,
-            padding=1,
-            name="conv1")
+            padding=1)
         in_channels = conv1_num_filters
         self.blaze_block = []
         self._out_channels = []
