@@ -117,6 +117,11 @@ class BaseDataLoader(object):
         drop_empty (bool): whether to drop samples with no ground
                            truth labels, default True
         num_classes (int): class number of dataset, default 80
+        collate_batch (bool): whether to collate batch in dataloader.
+            If set to True, the samples will collate into batch according
+            to the batch size. Otherwise, the ground-truth will not collate,
+            which is used when the number of ground-truch is different in 
+            samples.
         use_shared_memory (bool): whether to use shared memory to
                 accelerate data loading, enable this only if you
                 are sure that the shared memory size of your OS
