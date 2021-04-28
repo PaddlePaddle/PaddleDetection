@@ -13,6 +13,12 @@ TrainReader:
   mixup_epoch: 350
   batch_size: 12
 
+# set collate_batch to false because ground-truth info is needed
+# on voc dataset and should not collate data in batch when batch size
+# is larger than 1.
+EvalReader:
+  collate_batch: false
+
 epoch: 583
 
 LearningRate:
