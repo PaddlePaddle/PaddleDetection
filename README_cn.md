@@ -3,6 +3,8 @@
 # PaddleDetection
 
 ### PaddleDetection 2.0全面升级！目前默认使用动态图版本，静态图版本位于[static](./static)中
+### 超高性价比PPYOLO v2和1.3M超轻量PPYOLO tiny全新出炉！[欢迎使用](configs/ppyolo/README_cn.md)
+### Anchor Free SOTA模型PAFNet发布！[欢迎使用](configs/ttfnet/README.md)
 
 
 # 简介
@@ -18,7 +20,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
-- 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布PP-YOLO v2模型，新增旋转框检测S2ANet模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
+- 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布[PP-YOLO v2, PPYOLO tiny](configs/ppyolo/README_cn.md)模型，增强版anchor free模型[PAFNet](configs/ttfnet/README.md)，新增旋转框检测[S2ANet](configs/dota/README.md)模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
 - 2021.02.07: 发布release/2.0-rc版本，PaddleDetection动态图试用版本，详情参考[PaddleDetection动态图](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc)。
 
 ### 特性
@@ -215,11 +217,11 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - 通用目标检测:
     - [模型库](docs/MODEL_ZOO_cn.md)
-    - [移动端模型](static/configs/mobile/README.md)
     - [PP-YOLO模型](configs/ppyolo/README_cn.md)
+    - [增强版Anchor Free模型TTFNet](configs/ttfnet/README.md)
+    - [移动端模型](static/configs/mobile/README.md)
     - [676类目标检测](static/docs/featured_model/LARGE_SCALE_DET_MODEL.md)
     - [两阶段实用模型PSS-Det](configs/rcnn_enhance/README.md)
-    - [增强版Anchor Free模型TTFNet](configs/ttfnet/README.md)
     - [半监督知识蒸馏预训练检测模型](docs/feature_models/SSLD_PRETRAINED_MODEL.md)
 - 通用实例分割
     - [SOLOv2](configs/solov2/README.md)
