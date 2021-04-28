@@ -28,6 +28,7 @@ import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle import amp
 from paddle.static import InputSpec
+from ppdet.optimizer import ModelEMA
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
@@ -60,6 +61,11 @@ class Trainer(object):
         else:
             self.model = self.cfg.model
             self.is_loaded_weights = True
+
+        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        if self.use_ema:
+            self.ema = ModelEMA(
+                cfg['ema_decay'], self.model, use_thres_step=True)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -281,7 +287,14 @@ class Trainer(object):
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
+                if self.use_ema:
+                    self.ema.update(self.model)
                 iter_tic = time.time()
+
+            # apply ema weight on model
+            if self.use_ema:
+                weight = self.model.state_dict()
+                self.model.set_dict(self.ema.apply())
 
             self._compose_callback.on_epoch_end(self.status)
 
@@ -302,6 +315,10 @@ class Trainer(object):
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
+
+            # restore origin weight on model
+            if self.use_ema:
+                self.model.set_dict(weight)
 
     def _eval_with_loader(self, loader):
         sample_num = 0

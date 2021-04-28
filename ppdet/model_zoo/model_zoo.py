@@ -68,11 +68,11 @@ def list_model(filters=[]):
 
 # models and configs save on bcebos under dygraph directory
 def get_config_file(model_name):
-    return get_config_path("ppdet://dygraph/configs/{}.yml".format(model_name))
+    return get_config_path("ppdet://configs/{}.yml".format(model_name))
 
 
 def get_weights_url(model_name):
-    return "ppdet://dygraph/{}.pdparams".format(model_name)
+    return "ppdet://models/{}.pdparams".format(osp.split(model_name)[-1])
 
 
 def get_model(model_name, pretrained=True):

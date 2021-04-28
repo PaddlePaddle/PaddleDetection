@@ -71,8 +71,8 @@ PaddleDetection can be installed in the following two ways:
 **Note:** Installing via pip only supports Python3
 
 ```
-# install paddledet via pip
-pip install paddledet==2.0.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# Install paddledet via pip
+pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
 
 # Download and use the configuration files and code examples in the source code
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -86,17 +86,18 @@ cd PaddleDetection
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
+# Compile and install paddledet
+cd PaddleDetection
+python setup.py install
+
 # Install other dependencies
 pip install -r requirements.txt
 
-# Install PaddleDetection
-cd PaddleDetection
-python setup.py install
 ```
 
 **Note**
 
-1. Because the origin version of cocoapi does not support windows, another version is used which only supports Python3:
+1. If you are working on Windows OS, `pycocotools` installing may failed because of the origin version of cocoapi does not support windows, another version can be used used which only supports Python3:
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
 
@@ -109,10 +110,10 @@ python ppdet/modeling/tests/test_architectures.py
 If the tests are passed, the following information will be prompted:
 
 ```
-..........
+.....
 ----------------------------------------------------------------------
-Ran 12 tests in 2.480s
-OK (skipped=2)
+Ran 5 tests in 4.280s
+OK
 ```
 
 ## Inference demo
@@ -122,7 +123,7 @@ OK (skipped=2)
 ```
 # Predict an image by GPU
 export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
+python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 An image of the same name with the predicted result will be generated under the `output` folder.

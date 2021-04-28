@@ -246,7 +246,8 @@ class S2ANetHead(nn.Layer):
                  align_conv_size=3,
                  use_sigmoid_cls=True,
                  anchor_assign=RBoxAssigner().__dict__,
-                 reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0]):
+                 reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0],
+                 cls_loss_weight=[1.0, 1.0]):
         super(S2ANetHead, self).__init__()
         self.stacked_convs = stacked_convs
         self.feat_in = feat_in
@@ -267,6 +268,7 @@ class S2ANetHead(nn.Layer):
         self.sampling = False
         self.anchor_assign = anchor_assign
         self.reg_loss_weight = reg_loss_weight
+        self.cls_loss_weight = cls_loss_weight
 
         self.s2anet_head_out = None
 
@@ -453,11 +455,19 @@ class S2ANetHead(nn.Layer):
             init_anchors = bbox_utils.rect2rbox(init_anchors)
             self.base_anchors[(i, featmap_size[0])] = init_anchors
 
-            #fam_reg1 = fam_reg
-            #fam_reg1.stop_gradient = True
+            fam_reg1 = fam_reg.clone()
+            fam_reg1.stop_gradient = True
+            pd_target_means = paddle.to_tensor(
+                np.array(
+                    self.target_means, dtype=np.float32), dtype='float32')
+            pd_target_stds = paddle.to_tensor(
+                np.array(
+                    self.target_stds, dtype=np.float32), dtype='float32')
+            pd_init_anchors = paddle.to_tensor(
+                np.array(
+                    init_anchors, dtype=np.float32), dtype='float32')
             refine_anchor = bbox_utils.bbox_decode(
-                fam_reg.detach(), init_anchors, self.target_means,
-                self.target_stds)
+                fam_reg1, pd_init_anchors, pd_target_means, pd_target_stds)
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -605,7 +615,9 @@ class S2ANetHead(nn.Layer):
             fam_bbox_losses.append(fam_bbox_total)
 
         fam_cls_loss = paddle.add_n(fam_cls_losses)
-        fam_cls_loss = fam_cls_loss * 2.0
+        fam_cls_loss_weight = paddle.to_tensor(
+            self.cls_loss_weight[0], dtype='float32', stop_gradient=True)
+        fam_cls_loss = fam_cls_loss * fam_cls_loss_weight
         fam_reg_loss = paddle.add_n(fam_bbox_losses)
         return fam_cls_loss, fam_reg_loss
 
@@ -686,7 +698,9 @@ class S2ANetHead(nn.Layer):
             odm_bbox_losses.append(odm_bbox_total)
 
         odm_cls_loss = paddle.add_n(odm_cls_losses)
-        odm_cls_loss = odm_cls_loss * 2.0
+        odm_cls_loss_weight = paddle.to_tensor(
+            self.cls_loss_weight[1], dtype='float32', stop_gradient=True)
+        odm_cls_loss = odm_cls_loss * odm_cls_loss_weight
         odm_reg_loss = paddle.add_n(odm_bbox_losses)
         return odm_cls_loss, odm_reg_loss
 
@@ -852,10 +866,14 @@ class S2ANetHead(nn.Layer):
                 bbox_pred = paddle.gather(bbox_pred, topk_inds)
                 scores = paddle.gather(scores, topk_inds)
 
-            target_means = (.0, .0, .0, .0, .0)
-            target_stds = (1.0, 1.0, 1.0, 1.0, 1.0)
-            bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, target_means,
-                                           target_stds)
+            pd_target_means = paddle.to_tensor(
+                np.array(
+                    self.target_means, dtype=np.float32), dtype='float32')
+            pd_target_stds = paddle.to_tensor(
+                np.array(
+                    self.target_stds, dtype=np.float32), dtype='float32')
+            bboxes = bbox_utils.delta2rbox(anchors, bbox_pred, pd_target_means,
+                                           pd_target_stds)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
 
