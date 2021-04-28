@@ -25,7 +25,7 @@ from PIL import Image
 
 import paddle
 import paddle.distributed as dist
-from paddle.distributed import fleet
+from paddle.distributed import fleet, ParallelEnv
 from paddle import amp
 from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
@@ -61,6 +61,12 @@ class Trainer(object):
         else:
             self.model = self.cfg.model
             self.is_loaded_weights = True
+
+        sync_bn = (getattr(cfg, 'norm_type', None) == 'sync_bn' and
+                   cfg.use_gpu and ParallelEnv().nranks > 1)
+        if sync_bn:
+            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
+                self.model)
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
