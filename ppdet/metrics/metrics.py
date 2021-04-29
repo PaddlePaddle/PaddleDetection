@@ -69,6 +69,7 @@ class COCOMetric(Metric):
         self.output_eval = kwargs.get('output_eval', None)
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
+        self.save_prediction_only = kwargs.get('save_prediction_only', False)
         self.reset()
 
     def reset(self):
@@ -104,13 +105,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['bbox'], f)
                 logger.info('The bbox result is saved to bbox.json.')
 
-            bbox_stats = cocoapi_eval(
-                output,
-                'bbox',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['bbox'] = bbox_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The bbox result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                bbox_stats = cocoapi_eval(
+                    output,
+                    'bbox',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['bbox'] = bbox_stats
+                sys.stdout.flush()
 
         if len(self.results['mask']) > 0:
             output = "mask.json"
@@ -120,13 +125,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['mask'], f)
                 logger.info('The mask result is saved to mask.json.')
 
-            seg_stats = cocoapi_eval(
-                output,
-                'segm',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The mask result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                seg_stats = cocoapi_eval(
+                    output,
+                    'segm',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
         if len(self.results['segm']) > 0:
             output = "segm.json"
@@ -136,13 +145,17 @@ class COCOMetric(Metric):
                 json.dump(self.results['segm'], f)
                 logger.info('The segm result is saved to segm.json.')
 
-            seg_stats = cocoapi_eval(
-                output,
-                'segm',
-                anno_file=self.anno_file,
-                classwise=self.classwise)
-            self.eval_results['mask'] = seg_stats
-            sys.stdout.flush()
+            if self.save_prediction_only:
+                logger.info('The segm result is saved to {} and do not '
+                            'evaluate the mAP.'.format(output))
+            else:
+                seg_stats = cocoapi_eval(
+                    output,
+                    'segm',
+                    anno_file=self.anno_file,
+                    classwise=self.classwise)
+                self.eval_results['mask'] = seg_stats
+                sys.stdout.flush()
 
     def log(self):
         pass
@@ -189,9 +202,9 @@ class VOCMetric(Metric):
 
         if bboxes.shape == (1, 1) or bboxes is None:
             return
-        gt_boxes = inputs['gt_bbox'].numpy()
-        gt_labels = inputs['gt_class'].numpy()
-        difficults = inputs['difficult'].numpy() if not self.evaluate_difficult \
+        gt_boxes = inputs['gt_bbox']
+        gt_labels = inputs['gt_class']
+        difficults = inputs['difficult'] if not self.evaluate_difficult \
                             else None
 
         scale_factor = inputs['scale_factor'].numpy(
@@ -199,13 +212,13 @@ class VOCMetric(Metric):
             (gt_boxes.shape[0], 2)).astype('float32')
 
         bbox_idx = 0
-        for i in range(gt_boxes.shape[0]):
-            gt_box = gt_boxes[i]
+        for i in range(len(gt_boxes)):
+            gt_box = gt_boxes[i].numpy()
             h, w = scale_factor[i]
             gt_box = gt_box / np.array([w, h, w, h])
-            gt_label = gt_labels[i]
+            gt_label = gt_labels[i].numpy()
             difficult = None if difficults is None \
-                            else difficults[i]
+                            else difficults[i].numpy()
             bbox_num = bbox_lengths[i]
             bbox = bboxes[bbox_idx:bbox_idx + bbox_num]
             score = scores[bbox_idx:bbox_idx + bbox_num]

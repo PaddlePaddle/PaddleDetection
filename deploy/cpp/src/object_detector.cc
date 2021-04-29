@@ -34,7 +34,6 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
     config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
-    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
@@ -45,7 +44,6 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
       else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
-        use_calib_mode = true;
       } else {
           printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
@@ -56,7 +54,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           this->min_subgraph_size_,
           precision,
           false,
-          use_calib_mode);
+          this->trt_calib_mode_);
 
       // set use dynamic shape
       if (this->use_dynamic_shape_) {

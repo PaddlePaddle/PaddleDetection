@@ -65,7 +65,8 @@ class ObjectDetector {
                           bool use_dynamic_shape=false,
                           const int trt_min_shape=1,
                           const int trt_max_shape=1280,
-                          const int trt_opt_shape=640) {
+                          const int trt_opt_shape=640,
+                          bool trt_calib_mode=false) {
     this->use_gpu_ = use_gpu;
     this->gpu_id_ = gpu_id;
     this->cpu_math_library_num_threads_ = cpu_threads;
@@ -75,7 +76,7 @@ class ObjectDetector {
     this->trt_min_shape_ = trt_min_shape;
     this->trt_max_shape_ = trt_max_shape;
     this->trt_opt_shape_ = trt_opt_shape;
-
+    this->trt_calib_mode_ = trt_calib_mode;
     config_.load_config(model_dir);
     this->min_subgraph_size_ = config_.min_subgraph_size_;
     threshold_ = config_.draw_threshold_;
@@ -113,6 +114,7 @@ class ObjectDetector {
   int trt_min_shape_ = 1;
   int trt_max_shape_ = 1280;
   int trt_opt_shape_ = 640;
+  bool trt_calib_mode_ = false;
   // Preprocess image and copy data to input buffer
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result

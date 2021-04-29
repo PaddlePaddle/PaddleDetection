@@ -54,11 +54,6 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 sudo nvidia-docker run -it --name paddle_s2anet -v $PWD:/paddle --network=host registry.baidubce.com/paddlepaddle/paddle:2.0.1-gpu-cuda10.1-cudnn7 /bin/bash
 ```
 
-进入容器后，安装必要的python包：
-```
-python3.7 -m pip install Cython wheel tqdm opencv-python==4.2.0.32 scipy  PyYAML shapely pycocotools
-```
-
 镜像中paddle2.0.1已安装好，进入python3.7，执行如下代码检查paddle安装是否正常：
 ```
 import paddle
@@ -66,10 +61,20 @@ print(paddle.__version__)
 paddle.utils.run_check()
 ```
 
-进入到`ext_op`文件夹，安装：
+进入到`ppdet/ext_op`文件夹，安装：
 ```
 python3.7 setup.py install
 ```
+
+Windows环境请按照如下步骤安装：
+
+（1）准备Visual Studio (版本需要>=Visual Studio 2015 update3)，这里以VS2017为例；
+
+（2）点击开始-->Visual Studio 2017-->适用于 VS 2017 的x64本机工具命令提示；
+
+（3）设置环境变量：`set DISTUTILS_USE_SDK=1`
+
+（4）进入`PaddleDetection/ppdet/ext_op`目录，通过`python3.7 setup.py install`命令进行安装。
 
 安装完成后，测试自定义op是否可以正常编译以及计算结果：
 ```
@@ -96,7 +101,7 @@ Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时�
 
 ```bash
 # 预测
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=model.pdparams --infer_img=demo/P0072__1.0__0___0.png --use_gpu=True
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=model.pdparams --infer_img=demo/P0072__1.0__0___0.png
 ```
 
 

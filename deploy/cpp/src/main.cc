@@ -51,6 +51,7 @@ DEFINE_bool(use_dynamic_shape, false, "Trt use dynamic shape or not");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
+DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Config info -----------------------";
@@ -72,12 +73,13 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "batch_size: " << 1;
   LOG(INFO) << "input_shape: " << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
-  LOG(INFO) << "Model_name: " << FLAGS_model_dir;
+  FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
+  LOG(INFO) << "model_name: " << FLAGS_model_dir.substr(FLAGS_model_dir.find_last_of('/') + 1);
   LOG(INFO) << "----------------------- Perf info ------------------------";
   LOG(INFO) << "Total number of predicted data: " << img_num
             << " and total time spent(s): "
             << std::accumulate(det_time.begin(), det_time.end(), 0);
-  LOG(INFO) << "preprocess_time(ms): " << det_time[0] / img_num
+  LOG(INFO) << "preproce_time(ms): " << det_time[0] / img_num
             << ", inference_time(ms): " << det_time[1] / img_num
             << ", postprocess_time(ms): " << det_time[2];
 }
@@ -254,7 +256,8 @@ void PredictImage(const std::vector<std::string> all_img_list,
       if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
         output_path += OS_PATH_SEP;
       }
-      output_path += "output.jpg";
+      ;
+      output_path += image_file.substr(image_file.find_last_of('/') + 1);
       cv::imwrite(output_path, vis_img, compression_params);
       printf("Visualized output saved as %s\n", output_path.c_str());
     }
@@ -282,7 +285,7 @@ int main(int argc, char** argv) {
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_use_mkldnn,
                         FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_gpu_id, FLAGS_use_dynamic_shape,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape);
+                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape, FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
     PredictVideo(FLAGS_video_file, &det);

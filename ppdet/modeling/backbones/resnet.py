@@ -590,8 +590,9 @@ class Res5Head(nn.Layer):
         if depth < 50:
             feat_in = 256
         na = NameAdapter(self)
+        block = BottleNeck if depth >= 50 else BasicBlock
         self.res5 = Blocks(
-            depth, feat_in, feat_out, count=3, name_adapter=na, stage_num=5)
+            block, feat_in, feat_out, count=3, name_adapter=na, stage_num=5)
         self.feat_out = feat_out if depth < 50 else feat_out * 4
 
     @property

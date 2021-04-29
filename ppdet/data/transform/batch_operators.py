@@ -27,6 +27,7 @@ from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from scipy import ndimage
 
+from ppdet.modeling import bbox_utils
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -533,6 +534,8 @@ class Gt2TTFTarget(BaseOperator):
             sample.pop('is_crowd')
             sample.pop('gt_class')
             sample.pop('gt_bbox')
+            if 'gt_score' in sample:
+                sample.pop('gt_score')
         return samples
 
     def draw_truncate_gaussian(self, heatmap, center, h_radius, w_radius):

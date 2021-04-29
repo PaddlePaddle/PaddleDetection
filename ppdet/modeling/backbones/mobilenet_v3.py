@@ -330,16 +330,16 @@ class MobileNetV3(nn.Layer):
                 [3, 16, 16, False, "relu", 1],
                 [3, 64, 24, False, "relu", 2],
                 [3, 72, 24, False, "relu", 1],
-                [5, 72, 40, True, "relu", 2],
+                [5, 72, 40, True, "relu", 2],  # RCNN output
                 [5, 120, 40, True, "relu", 1],
                 [5, 120, 40, True, "relu", 1],  # YOLOv3 output
-                [3, 240, 80, False, "hard_swish", 2],
+                [3, 240, 80, False, "hard_swish", 2],  # RCNN output
                 [3, 200, 80, False, "hard_swish", 1],
                 [3, 184, 80, False, "hard_swish", 1],
                 [3, 184, 80, False, "hard_swish", 1],
                 [3, 480, 112, True, "hard_swish", 1],
                 [3, 672, 112, True, "hard_swish", 1],  # YOLOv3 output
-                [5, 672, 160, True, "hard_swish", 2],  # SSD/SSDLite output
+                [5, 672, 160, True, "hard_swish", 2],  # SSD/SSDLite/RCNN output
                 [5, 960, 160, True, "hard_swish", 1],
                 [5, 960, 160, True, "hard_swish", 1],  # YOLOv3 output
             ]
@@ -347,14 +347,14 @@ class MobileNetV3(nn.Layer):
             self.cfg = [
                 # k, exp, c,  se,     nl,  s,
                 [3, 16, 16, True, "relu", 2],
-                [3, 72, 24, False, "relu", 2],
+                [3, 72, 24, False, "relu", 2],  # RCNN output
                 [3, 88, 24, False, "relu", 1],  # YOLOv3 output
-                [5, 96, 40, True, "hard_swish", 2],
+                [5, 96, 40, True, "hard_swish", 2],  # RCNN output
                 [5, 240, 40, True, "hard_swish", 1],
                 [5, 240, 40, True, "hard_swish", 1],
                 [5, 120, 48, True, "hard_swish", 1],
                 [5, 144, 48, True, "hard_swish", 1],  # YOLOv3 output
-                [5, 288, 96, True, "hard_swish", 2],  # SSD/SSDLite output
+                [5, 288, 96, True, "hard_swish", 2],  # SSD/SSDLite/RCNN output
                 [5, 576, 96, True, "hard_swish", 1],
                 [5, 576, 96, True, "hard_swish", 1],  # YOLOv3 output
             ]

@@ -157,63 +157,24 @@ def load_pretrain_weight(model, pretrain_weight):
 
     weights_path = path + '.pdparams'
     param_state_dict = paddle.load(weights_path)
-    lack_backbone_weights_cnt = 0
-    lack_modules = set()
-    for name, weight in model_dict.items():
-        if name in param_state_dict.keys():
-            if weight.shape != list(param_state_dict[name].shape):
+    ignore_weights = set()
+
+    for name, weight in param_state_dict.items():
+        if name in model_dict.keys():
+            if list(weight.shape) != list(model_dict[name].shape):
                 logger.info(
                     '{} not used, shape {} unmatched with {} in model.'.format(
-                        name, list(param_state_dict[name].shape), weight.shape))
-                param_state_dict.pop(name, None)
+                        name, weight.shape, list(model_dict[name].shape)))
+                ignore_weights.add(name)
         else:
-            lack_modules.add(name.split('.')[0])
-            if name.find('backbone') >= 0:
-                logger.info('Lack backbone weights: {}'.format(name))
-                lack_backbone_weights_cnt += 1
+            logger.info('Redundant weight {} and ignore it.'.format(name))
+            ignore_weights.add(name)
 
-    if lack_backbone_weights_cnt > 0:
-        logger.info('Lack {} weights in backbone.'.format(
-            lack_backbone_weights_cnt))
-
-    if len(lack_modules) > 0:
-        logger.info('Lack weights of modules: {}'.format(', '.join(
-            list(lack_modules))))
+    for weight in ignore_weights:
+        param_state_dict.pop(weight, None)
 
     model.set_dict(param_state_dict)
     logger.info('Finish loading model weights: {}'.format(weights_path))
-
-
-def load_static_pretrain_weight(model, pretrain_weight):
-
-    if is_url(pretrain_weight):
-        pretrain_weight = get_weights_path_dist(pretrain_weight)
-
-    path = _strip_postfix(pretrain_weight)
-    if not (os.path.isdir(path) or os.path.isfile(path) or
-            os.path.exists(path + '.pdparams')):
-        raise ValueError("Model pretrain path `{}` does not exists. "
-                         "If you don't want to load pretrain model, "
-                         "please delete `pretrain_weights` field in "
-                         "config file.".format(path))
-
-    model_dict = model.state_dict()
-
-    pre_state_dict = paddle.static.load_program_state(path)
-    param_state_dict = {}
-    for key in model_dict.keys():
-        weight_name = model_dict[key].name
-        if weight_name in pre_state_dict.keys():
-            logger.info('Load weight: {}, shape: {}'.format(
-                weight_name, pre_state_dict[weight_name].shape))
-            param_state_dict[key] = pre_state_dict[weight_name]
-        else:
-            if 'backbone' in key:
-                logger.info('Lack weight: {}, structure name: {}'.format(
-                    weight_name, key))
-            param_state_dict[key] = model_dict[key]
-    model.set_dict(param_state_dict)
-    return
 
 
 def save_model(model, optimizer, save_dir, save_name, last_epoch):

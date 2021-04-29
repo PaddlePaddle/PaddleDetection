@@ -64,7 +64,7 @@ class Detector(object):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 threshold=0.5):
+                 trt_calib_mode=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -74,7 +74,8 @@ class Detector(object):
             use_dynamic_shape=use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape)
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -180,7 +181,7 @@ class DetectorSOLOv2(Detector):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 threshold=0.5):
+                 trt_calib_mode=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -190,7 +191,8 @@ class DetectorSOLOv2(Detector):
             use_dynamic_shape=use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape)
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode)
         self.det_times = Timer()
 
     def predict(self, image, threshold=0.5, warmup=0, repeats=1):
@@ -305,7 +307,8 @@ def load_predictor(model_dir,
                    use_dynamic_shape=False,
                    trt_min_shape=1,
                    trt_max_shape=1280,
-                   trt_opt_shape=640):
+                   trt_opt_shape=640,
+                   trt_calib_mode=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -315,6 +318,8 @@ def load_predictor(model_dir,
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -324,12 +329,6 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    if run_mode == 'trt_int8' and not os.path.exists(
-            os.path.join(model_dir, '_opt_cache')):
-        raise ValueError(
-            "TensorRT int8 must calibration first, and model_dir must has _opt_cache dir"
-        )
-    use_calib_mode = True if run_mode == 'trt_int8' else False
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
         os.path.join(model_dir, 'model.pdiparams'))
@@ -347,9 +346,15 @@ def load_predictor(model_dir,
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(FLAGS.cpu_threads)
         if FLAGS.enable_mkldnn:
-            # cache 10 different shapes for mkldnn to avoid memory leak
-            config.set_mkldnn_cache_capacity(10)
-            config.enable_mkldnn()
+            try:
+                # cache 10 different shapes for mkldnn to avoid memory leak
+                config.set_mkldnn_cache_capacity(10)
+                config.enable_mkldnn()
+            except Exception as e:
+                print(
+                    "The current environment does not support `mkldnn`, so disable mkldnn."
+                )
+                pass
 
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
@@ -358,7 +363,7 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=use_calib_mode)
+            use_calib_mode=trt_calib_mode)
 
         if use_dynamic_shape:
             min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
@@ -495,7 +500,8 @@ def main():
         use_dynamic_shape=FLAGS.use_dynamic_shape,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape)
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
@@ -505,7 +511,8 @@ def main():
             use_dynamic_shape=FLAGS.use_dynamic_shape,
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
-            trt_opt_shape=FLAGS.trt_opt_shape)
+            trt_opt_shape=FLAGS.trt_opt_shape,
+            trt_calib_mode=FLAGS.trt_calib_mode)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

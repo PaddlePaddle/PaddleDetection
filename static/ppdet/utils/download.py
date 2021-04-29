@@ -37,7 +37,7 @@ __all__ = [
     'create_voc_list'
 ]
 
-WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights")
+WEIGHTS_HOME = osp.expanduser("~/.cache/paddle/weights/static")
 DATASET_HOME = osp.expanduser("~/.cache/paddle/dataset")
 
 # dict of {dataset_name: (download_info, sub_dirs)}

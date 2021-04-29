@@ -187,10 +187,9 @@ def get_current_memory_mb():
     cpu_mem = info.uss / 1024. / 1024.
     gpu_mem = 0
     gpu_percent = 0
-    if gpu_id is not None:
-        GPUs = GPUtil.getGPUs()
-        gpu_load = GPUs[gpu_id].load
-        gpu_percent = gpu_load
+    gpus = GPUtil.getGPUs()
+    if gpu_id is not None and len(gpus) > 0:
+        gpu_percent = gpus[gpu_id].load
         pynvml.nvmlInit()
         handle = pynvml.nvmlDeviceGetHandleByIndex(0)
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
