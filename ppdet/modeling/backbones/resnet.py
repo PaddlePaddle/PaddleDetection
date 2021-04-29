@@ -100,12 +100,11 @@ class ConvNormLayer(nn.Layer):
             regularizer=L2Decay(norm_decay),
             trainable=False if freeze_norm else True)
 
-        global_stats = True if freeze_norm else False
+        global_stats = True if freeze_norm else None
         if norm_type in ['bn', 'sync_bn']:
-            # TODO(wangxinxin08): use nn.BatchNorm2D to replace nn.BatchNorm
-            self.norm = nn.BatchNorm(
+            self.norm = nn.BatchNorm2D(
                 ch_out,
-                param_attr=param_attr,
+                weight_attr=param_attr,
                 bias_attr=bias_attr,
                 use_global_stats=global_stats)
         norm_params = self.norm.parameters()

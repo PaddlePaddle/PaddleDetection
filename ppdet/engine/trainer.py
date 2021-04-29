@@ -62,12 +62,6 @@ class Trainer(object):
             self.model = self.cfg.model
             self.is_loaded_weights = True
 
-        sync_bn = (getattr(cfg, 'norm_type', None) == 'sync_bn' and
-                   cfg.use_gpu and ParallelEnv().nranks > 1)
-        if sync_bn:
-            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
-                self.model)
-
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             self.ema = ModelEMA(
@@ -221,6 +215,12 @@ class Trainer(object):
 
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
+
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   self.cfg.use_gpu and ParallelEnv().nranks > 1)
+        if sync_bn:
+            self.model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(
+                self.model)
 
         # if validation in training is enabled, metrics should be re-init
         if validate:

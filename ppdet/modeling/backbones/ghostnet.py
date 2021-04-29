@@ -17,7 +17,7 @@ import paddle
 from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn import Conv2D, BatchNorm, AdaptiveAvgPool2D, Linear
+from paddle.nn import Conv2D, AdaptiveAvgPool2D, Linear
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import Uniform, KaimingNormal
 from ppdet.core.workspace import register, serializable
