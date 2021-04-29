@@ -186,14 +186,14 @@ class COCOMetric(Metric):
                     style = 'keypoints_crowd'
                     use_area = False
                     sigmas = CROWD_SIGMAS
-                seg_stats = cocoapi_eval(
+                keypoint_stats = cocoapi_eval(
                     output,
                     style,
                     anno_file=self.anno_file,
                     classwise=self.classwise,
                     sigmas=sigmas,
                     use_area=use_area)
-                self.eval_results['keypoint'] = seg_stats
+                self.eval_results['keypoint'] = keypoint_stats
                 sys.stdout.flush()
 
     def log(self):

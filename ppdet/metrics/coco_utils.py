@@ -89,8 +89,13 @@ def cocoapi_eval(jsonfile,
                          do not have 'area', please set use_area=False.
     """
     assert coco_gt != None or anno_file != None
-    from xtcocotools.coco import COCO
-    from xtcocotools.cocoeval import COCOeval
+    if style == 'keypoints_crowd':
+        #please install xtcocotools==1.6
+        from xtcocotools.coco import COCO
+        from xtcocotools.cocoeval import COCOeval
+    else:
+        from pycocotools.coco import COCO
+        from pycocotools.cocoeval import COCOeval
 
     if coco_gt == None:
         coco_gt = COCO(anno_file)
@@ -100,8 +105,11 @@ def cocoapi_eval(jsonfile,
         coco_eval = COCOeval(coco_gt, coco_dt, 'bbox')
         coco_eval.params.useCats = 0
         coco_eval.params.maxDets = list(max_dets)
-    else:
+    elif style == 'keypoints_crowd':
         coco_eval = COCOeval(coco_gt, coco_dt, style, sigmas, use_area)
+        coco_gt.anno_file.append("")
+    else:
+        coco_eval = COCOeval(coco_gt, coco_dt, style)
     coco_eval.evaluate()
     coco_eval.accumulate()
     coco_eval.summarize()

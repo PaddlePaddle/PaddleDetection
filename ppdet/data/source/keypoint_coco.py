@@ -17,8 +17,8 @@ import cv2
 import numpy as np
 import copy
 # TODO: unify xtococotools and pycocotools
-import xtcocotools
-from xtcocotools.coco import COCO
+import pycocotools
+from pycocotools.coco import COCO
 from .dataset import DetDataset
 from ppdet.core.workspace import register, serializable
 
@@ -237,16 +237,16 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         for obj in anno:
             if 'segmentation' in obj:
                 if obj['iscrowd']:
-                    rle = xtcocotools.mask.frPyObjects(obj['segmentation'],
+                    rle = pycocotools.mask.frPyObjects(obj['segmentation'],
                                                        img_info['height'],
                                                        img_info['width'])
-                    m += xtcocotools.mask.decode(rle)
+                    m += pycocotools.mask.decode(rle)
                 elif obj['num_keypoints'] == 0:
-                    rles = xtcocotools.mask.frPyObjects(obj['segmentation'],
+                    rles = pycocotools.mask.frPyObjects(obj['segmentation'],
                                                         img_info['height'],
                                                         img_info['width'])
                     for rle in rles:
-                        m += xtcocotools.mask.decode(rle)
+                        m += pycocotools.mask.decode(rle)
 
         return m < 0.5
 
