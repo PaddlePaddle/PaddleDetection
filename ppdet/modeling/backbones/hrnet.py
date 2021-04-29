@@ -38,8 +38,7 @@ class ConvNormLayer(nn.Layer):
                  use_dcn=False,
                  norm_decay=0.,
                  freeze_norm=False,
-                 act=None,
-                 name=None):
+                 act=None):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
@@ -51,14 +50,12 @@ class ConvNormLayer(nn.Layer):
             stride=stride,
             padding=(filter_size - 1) // 2,
             groups=1,
-            weight_attr=ParamAttr(
-                name=name + "_weights", initializer=Normal(
-                    mean=0., std=0.01)),
+            weight_attr=ParamAttr(initializer=Normal(
+                mean=0., std=0.01)),
             bias_attr=False)
 
         norm_lr = 0. if freeze_norm else 1.
 
-        norm_name = name + '_bn'
         param_attr = ParamAttr(
             learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
         bias_attr = ParamAttr(
@@ -147,8 +144,7 @@ class TransitionLayer(nn.Layer):
                             filter_size=3,
                             norm_decay=norm_decay,
                             freeze_norm=freeze_norm,
-                            act='relu',
-                            name=name + '_layer_' + str(i + 1)))
+                            act='relu'))
             else:
                 residual = self.add_sublayer(
                     "transition_{}_layer_{}".format(name, i + 1),
@@ -159,8 +155,7 @@ class TransitionLayer(nn.Layer):
                         stride=2,
                         norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
-                        act='relu',
-                        name=name + '_layer_' + str(i + 1)))
+                        act='relu'))
             self.conv_bn_func_list.append(residual)
 
     def forward(self, input):
@@ -236,8 +231,7 @@ class BottleneckBlock(nn.Layer):
             filter_size=1,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            act="relu",
-            name=name + "_conv1")
+            act="relu")
         self.conv2 = ConvNormLayer(
             ch_in=num_filters,
             ch_out=num_filters,
@@ -245,16 +239,14 @@ class BottleneckBlock(nn.Layer):
             stride=stride,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            act="relu",
-            name=name + "_conv2")
+            act="relu")
         self.conv3 = ConvNormLayer(
             ch_in=num_filters,
             ch_out=num_filters * 4,
             filter_size=1,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            act=None,
-            name=name + "_conv3")
+            act=None)
 
         if self.downsample:
             self.conv_down = ConvNormLayer(
@@ -263,8 +255,7 @@ class BottleneckBlock(nn.Layer):
                 filter_size=1,
                 norm_decay=norm_decay,
                 freeze_norm=freeze_norm,
-                act=None,
-                name=name + "_downsample")
+                act=None)
 
         if self.has_se:
             self.se = SELayer(
@@ -311,8 +302,7 @@ class BasicBlock(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             stride=stride,
-            act="relu",
-            name=name + "_conv1")
+            act="relu")
         self.conv2 = ConvNormLayer(
             ch_in=num_filters,
             ch_out=num_filters,
@@ -320,8 +310,7 @@ class BasicBlock(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             stride=1,
-            act=None,
-            name=name + "_conv2")
+            act=None)
 
         if self.downsample:
             self.conv_down = ConvNormLayer(
@@ -330,8 +319,7 @@ class BasicBlock(nn.Layer):
                 filter_size=1,
                 norm_decay=norm_decay,
                 freeze_norm=freeze_norm,
-                act=None,
-                name=name + "_downsample")
+                act=None)
 
         if self.has_se:
             self.se = SELayer(
@@ -499,9 +487,7 @@ class FuseLayers(nn.Layer):
                             stride=1,
                             act=None,
                             norm_decay=norm_decay,
-                            freeze_norm=freeze_norm,
-                            name=name + '_layer_' + str(i + 1) + '_' +
-                            str(j + 1)))
+                            freeze_norm=freeze_norm))
                     self.residual_func_list.append(residual_func)
                 elif j < i:
                     pre_num_filters = in_channels[j]
@@ -517,9 +503,7 @@ class FuseLayers(nn.Layer):
                                     stride=2,
                                     norm_decay=norm_decay,
                                     freeze_norm=freeze_norm,
-                                    act=None,
-                                    name=name + '_layer_' + str(i + 1) + '_' +
-                                    str(j + 1) + '_' + str(k + 1)))
+                                    act=None))
                             pre_num_filters = out_channels[i]
                         else:
                             residual_func = self.add_sublayer(
@@ -532,9 +516,7 @@ class FuseLayers(nn.Layer):
                                     stride=2,
                                     norm_decay=norm_decay,
                                     freeze_norm=freeze_norm,
-                                    act="relu",
-                                    name=name + '_layer_' + str(i + 1) + '_' +
-                                    str(j + 1) + '_' + str(k + 1)))
+                                    act="relu"))
                             pre_num_filters = out_channels[j]
                         self.residual_func_list.append(residual_func)
 
@@ -617,8 +599,7 @@ class HRNet(nn.Layer):
             stride=2,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            act='relu',
-            name="layer1_1")
+            act='relu')
 
         self.conv_layer1_2 = ConvNormLayer(
             ch_in=64,
@@ -627,8 +608,7 @@ class HRNet(nn.Layer):
             stride=2,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            act='relu',
-            name="layer1_2")
+            act='relu')
 
         self.la1 = Layer1(
             num_channels=64,
