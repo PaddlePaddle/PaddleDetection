@@ -113,9 +113,12 @@ def main():
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
     cfg['save_prediction_only'] = FLAGS.save_prediction_only
-    merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
+        FLAGS.opt['norm_type'] = 'bn'
+    merge_config(FLAGS.opt)
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
