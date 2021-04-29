@@ -64,7 +64,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 ```
 # pip安装paddledet
-pip install paddledet==2.0.0 -i https://pypi.tuna.tsinghua.edu.cn/simple
+pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
 
 # 下载使用源码中的配置文件和代码示例
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -78,17 +78,18 @@ cd PaddleDetection
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
+# 编译安装paddledet
+cd PaddleDetection
+python setup.py install
+
 # 安装其他依赖
 pip install -r requirements.txt
 
-# 安装PaddleDetection
-cd PaddleDetection
-python setup.py install
 ```
 
 **注意**
 
-1. 由于原版cocoapi不支持windows，采用第三方实现版本，该版本仅支持Python3
+1. 若您使用的是Windows系统，由于原版cocoapi不支持Windows，`pycocotools`依赖可能安装失败，可采用第三方实现版本，该版本仅支持Python3
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
 
@@ -102,10 +103,10 @@ python ppdet/modeling/tests/test_architectures.py
 测试通过后会提示如下信息：
 
 ```
-..........
+.....
 ----------------------------------------------------------------------
-Ran 12 tests in 2.480s
-OK (skipped=2)
+Ran 5 tests in 4.280s
+OK
 ```
 
 ## 快速体验
@@ -115,7 +116,7 @@ OK (skipped=2)
 ```
 # 在GPU上预测一张图片
 export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
+python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 会在`output`文件夹下生成一个画有预测结果的同名图像。

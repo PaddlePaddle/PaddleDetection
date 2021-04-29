@@ -688,6 +688,7 @@ class HRNet(nn.Layer):
             has_se=self.has_se,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
+            multi_scale_output=len(return_idx) > 1,
             name="st4")
 
     def forward(self, inputs):

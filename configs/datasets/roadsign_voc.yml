@@ -1,5 +1,5 @@
 metric: VOC
-map_type: 11point
+map_type: integral
 num_classes: 4
 
 TrainDataset:
