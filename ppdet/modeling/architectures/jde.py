@@ -26,6 +26,14 @@ __all__ = ['JDE']
 
 @register
 class JDE(BaseArch):
+    """
+    JDE network, see https://arxiv.org/abs/1909.12605v1
+
+    Args:
+        detector (object): detector model instance
+        reid (object): reid model instance
+        tracker (object): tracker instance
+    """
     __category__ = 'architecture'
 
     def __init__(self,
@@ -61,8 +69,8 @@ class JDE(BaseArch):
 
         if self.training:
             emb_feats = det_outs['emb_feats']
-            loss_confs = det_outs['yolo_losses']['loss_confs']
-            loss_boxes = det_outs['yolo_losses']['loss_boxes']
+            loss_confs = det_outs['det_losses']['loss_confs']
+            loss_boxes = det_outs['det_losses']['loss_boxes']
             jde_losses = self.reid(emb_feats, self.inputs, loss_confs,
                                    loss_boxes)
             return jde_losses

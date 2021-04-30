@@ -188,8 +188,7 @@ def get_dataset_path(path, annotation, image_dir):
                 else:
                     raise NotImplementedError(
                         "Dataset {} is not valid for download automatically. "
-                        "Please apply and download the dataset from "
-                        "https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/DATASET_ZOO.md".
+                        "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
                         format(name))
 
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007

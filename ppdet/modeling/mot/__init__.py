@@ -15,11 +15,11 @@
 from . import matching
 from . import tracker
 from . import motion
-from . import mot_visualization
-from . import mot_utils
+from . import visualization
+from . import utils
 
 from .matching import *
 from .tracker import *
 from .motion import *
-from .mot_visualization import *
-from .mot_utils import *
+from .visualization import *
+from .utils import *

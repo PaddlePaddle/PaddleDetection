@@ -40,25 +40,21 @@ logger = setup_logger('train')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        '--video_file',
-        type=str,
-        default='test.mp4',
-        help='Video name for tracking.')
+        '--video_file', type=str, default=None, help='Video name for tracking.')
     parser.add_argument(
         "--data_type",
-        default='mot',
         type=str,
+        default='mot',
         help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--model_type",
         default='jde',
         type=str,
-        help='Model type of tracking, should be in ["jde", "deepsort", "fairmot"]'
-    )
+        help='Model type of tracking, should be in ["jde", "deepsort"]')
     parser.add_argument(
         "--det_dir",
-        default='output/mot_results/',
         type=str,
+        default=None,
         help="Directory name for detection results.")
     parser.add_argument(
         '--output_dir',

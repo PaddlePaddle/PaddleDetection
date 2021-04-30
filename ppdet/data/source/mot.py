@@ -197,7 +197,7 @@ class MOTVideoDataset(DetDataset):
     """
     Load MOT dataset with MOT format from video for inference.
     Args:
-        video_file (str): name of the video file
+        video_file (str): path of the video file
         dataset_dir (str): root directory for dataset.
     """
 
@@ -212,11 +212,9 @@ class MOTVideoDataset(DetDataset):
             self.roidbs = self._load_video_images()
 
     def _load_video_images(self):
-        video_path = self.video_file
-        self.cap = cv2.VideoCapture(video_path)
-        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
+        self.cap = cv2.VideoCapture(self.video_file)
         self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        logger.info('Lenth of the video: {:d} frames'.format(self.vn))
+        logger.info('Length of the video: {:d} frames'.format(self.vn))
         res = True
         ct = 0
         records = []

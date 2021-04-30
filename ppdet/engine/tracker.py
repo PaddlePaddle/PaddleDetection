@@ -24,8 +24,8 @@ import glob
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 
-from ppdet.modeling.mot.mot_utils import Timer, load_det_results
-from ppdet.modeling.mot import mot_visualization as mot_vis
+from ppdet.modeling.mot.utils import Timer, load_det_results
+from ppdet.modeling.mot import visualization as mot_vis
 
 from ppdet.metrics import Metric, MOTMetric
 import ppdet.utils.stats as stats

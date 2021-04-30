@@ -20,13 +20,21 @@ import numpy as np
 import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-from ppdet.modeling.mot.mot_utils import Detection, get_crops, scale_coords, clip_box
+from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 
 __all__ = ['DeepSORT']
 
 
 @register
 class DeepSORT(BaseArch):
+    """
+    DeepSORT network, see https://arxiv.org/abs/1703.07402
+
+    Args:
+        detector (object): detector model instance
+        reid (object): reid model instance
+        tracker (object): tracker instance
+    """
     __category__ = 'architecture'
 
     def __init__(self,

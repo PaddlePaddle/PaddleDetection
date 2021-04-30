@@ -29,10 +29,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
-    - BboxXYWH2XYXY: {}
-    - NormalizedBbox2PixelBbox: {}
-    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
@@ -45,8 +42,8 @@ EvalReader:
                   [[6,16], [8,23], [11,32], [16,45]]]
         downsample_ratios: [32, 16, 8]
         max_iou_thresh: 0.60
-    - BboxXYWH2XYXY: {}
-    - NormalizedBbox2PixelBbox: {}
+    - BboxCXCYWH2XYXY: {}
+    - Norm2PixelBbox: {}
   batch_size: 1
   drop_empty: false
 
@@ -56,20 +53,16 @@ TestReader:
     image_shape: [3, 320, 576]
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
 
 
 EvalMOTReader:
-  inputs_def:
-    image_shape: [3, 320, 576]
   sample_transforms:
     - Decode: {keep_ori_img: true}
-    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -80,8 +73,7 @@ TestMOTReader:
     image_shape: [3, 320, 576]
   sample_transforms:
     - DecodeVideo: {}
-    - Resize: {target_size: [320, 576], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [320, 576], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
