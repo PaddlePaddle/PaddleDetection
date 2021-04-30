@@ -111,8 +111,6 @@ class BBoxPostProcess(object):
         pred_score = bboxes[:, 1:2]
         pred_bbox = bboxes[:, 2:]
         # rescale bbox to original image
-        print('pred_bbox', pred_bbox.shape, 'scale_factor_list',
-              scale_factor_list.shape)
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = self.origin_shape_list[:, 0]
         origin_w = self.origin_shape_list[:, 1]
@@ -279,7 +277,6 @@ class S2ANetBBoxPostProcess(object):
                                including labels, scores and bboxes. The size of
                                bboxes are corresponding to the original image.
         """
-        print('im_shape', im_shape, 'scale_factor', scale_factor)
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
@@ -301,25 +298,15 @@ class S2ANetBBoxPostProcess(object):
         scale_factor_list = paddle.concat(scale_factor_list)
 
         # bboxes: [N, 10], label, score, bbox
-        print('bboxes', bboxes.shape)
         pred_label_score = bboxes[:, 0:2]
-        print('pred_label_score', pred_label_score.shape)
         pred_bbox = bboxes[:, 2:10:1]
-        print('pred_bbox', pred_bbox.shape)
 
         # rescale bbox to original image
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = origin_shape_list[:, 0]
         origin_w = origin_shape_list[:, 1]
-        print('scaled_bbox', bboxes.shape)
 
         bboxes = scaled_bbox
-        #print('bboxes', bboxes.shape, 'scale_factor', scale_factor.shape)
-        #print('bboxes[:, 0::2]', bboxes[:, 0::2].shape)
-        #print('scale_factor[0]', scale_factor)
-        #bboxes[:, 0::2] = bboxes[:, 0::2] / scale_factor[:, 0]
-        #bboxes[:, 1::2] = bboxes[:, 1::2] / scale_factor[:, 1]
-
         zeros = paddle.zeros_like(origin_h)
         x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w - 1), zeros)
         y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h - 1), zeros)
