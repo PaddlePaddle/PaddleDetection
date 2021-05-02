@@ -18,8 +18,12 @@ from ..matching import jde_matching as matching
 from ppdet.core.workspace import register, serializable
 
 __all__ = [
-    'TrackState', 'BaseTrack', 'STrack', 
-    'joint_stracks', 'sub_stracks', 'remove_duplicate_stracks',
+    'TrackState',
+    'BaseTrack',
+    'STrack',
+    'joint_stracks',
+    'sub_stracks',
+    'remove_duplicate_stracks',
 ]
 
 
@@ -119,7 +123,6 @@ class STrack(BaseTrack):
             for i, st in enumerate(stracks):
                 if st.state != TrackState.Tracked:
                     multi_mean[i][7] = 0
-            # multi_mean, multi_covariance = STrack.kalman_filter.multi_predict(multi_mean, multi_covariance)
             multi_mean, multi_covariance = kalman_filter.multi_predict(
                 multi_mean, multi_covariance)
             for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
@@ -135,7 +138,6 @@ class STrack(BaseTrack):
 
         self.tracklet_len = 0
         self.state = TrackState.Tracked
-        #self.is_activated = True
         self.frame_id = frame_id
         self.start_frame = frame_id
 
@@ -152,13 +154,6 @@ class STrack(BaseTrack):
             self.track_id = self.next_id()
 
     def update(self, new_track, frame_id, update_feature=True):
-        """
-        Update a matched track
-        :type new_track: STrack
-        :type frame_id: int
-        :type update_feature: bool
-        :return:
-        """
         self.frame_id = frame_id
         self.tracklet_len += 1
 
@@ -186,7 +181,8 @@ class STrack(BaseTrack):
 
     @property
     def tlbr(self):
-        """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
+        """
+        Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
         `(top left, bottom right)`.
         """
         ret = self.tlwh.copy()
@@ -195,7 +191,8 @@ class STrack(BaseTrack):
 
     @staticmethod
     def tlwh_to_xyah(tlwh):
-        """Convert bounding box to format `(center x, center y, aspect ratio,
+        """
+        Convert bounding box to format `(center x, center y, aspect ratio,
         height)`, where the aspect ratio is `width / height`.
         """
         ret = np.asarray(tlwh).copy()

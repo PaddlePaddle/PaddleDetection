@@ -29,7 +29,7 @@ YOLOv3Head:
   loss: JDEDetectionLoss
 
 JDETracker:
-  img_size: [576, 320]
+  img_size: [320, 576]
   det_thresh: 0.3
   track_buffer: 30
   min_box_area: 200

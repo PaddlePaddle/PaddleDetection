@@ -108,8 +108,7 @@ class BaseOperator(object):
 @register_op
 class Decode(BaseOperator):
     def __init__(self):
-        """ 
-        Transform the image data to numpy format following the rgb format
+        """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
 
@@ -123,6 +122,8 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
+        if 'keep_ori_im' in sample and sample['keep_ori_im']:
+            sample['ori_image'] = im
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
@@ -535,6 +536,18 @@ class RandomFlip(BaseOperator):
         oldx2 = bbox[:, 2].copy()
         bbox[:, 0] = width - oldx2
         bbox[:, 2] = width - oldx1
+        return bbox
+
+    def apply_rbox(self, bbox, width):
+        oldx1 = bbox[:, 0].copy()
+        oldx2 = bbox[:, 2].copy()
+        oldx3 = bbox[:, 4].copy()
+        oldx4 = bbox[:, 6].copy()
+        bbox[:, 0] = width - oldx1
+        bbox[:, 2] = width - oldx2
+        bbox[:, 4] = width - oldx3
+        bbox[:, 6] = width - oldx4
+        bbox = [bbox_utils.get_best_begin_point_single(e) for e in bbox]
         return bbox
 
     def apply(self, sample, context=None):

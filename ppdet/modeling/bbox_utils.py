@@ -570,3 +570,52 @@ def pd_rbox2poly(rrects):
     polys[:, 5] += y_ctr
     polys[:, 7] += y_ctr
     return polys
+
+
+def bbox_iou_np_expand(box1, box2, x1y1x2y2=True, eps=1e-16):
+    """
+    Calculate the iou of box1 and box2 with numpy.
+
+    Args:
+        box1 (ndarray): [N, 4]
+        box2 (ndarray): [M, 4], usually N != M
+        x1y1x2y2 (bool): whether in x1y1x2y2 stype, default True
+        eps (float): epsilon to avoid divide by zero
+    Return:
+        iou (ndarray): iou of box1 and box2, [N, M]
+    """
+    N, M = len(box1), len(box2)  # usually N != M
+    if x1y1x2y2:
+        b1_x1, b1_y1 = box1[:, 0], box1[:, 1]
+        b1_x2, b1_y2 = box1[:, 2], box1[:, 3]
+        b2_x1, b2_y1 = box2[:, 0], box2[:, 1]
+        b2_x2, b2_y2 = box2[:, 2], box2[:, 3]
+    else:
+        # cxcywh style
+        # Transform from center and width to exact coordinates
+        b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:, 2] / 2
+        b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:, 3] / 2
+        b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:, 2] / 2
+        b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
+
+    # get the coordinates of the intersection rectangle
+    inter_rect_x1 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_y1 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_x2 = np.zeros((N, M), dtype=np.float32)
+    inter_rect_y2 = np.zeros((N, M), dtype=np.float32)
+    for i in range(len(box2)):
+        inter_rect_x1[:, i] = np.maximum(b1_x1, b2_x1[i])
+        inter_rect_y1[:, i] = np.maximum(b1_y1, b2_y1[i])
+        inter_rect_x2[:, i] = np.minimum(b1_x2, b2_x2[i])
+        inter_rect_y2[:, i] = np.minimum(b1_y2, b2_y2[i])
+    # Intersection area
+    inter_area = np.maximum(inter_rect_x2 - inter_rect_x1, 0) * np.maximum(
+        inter_rect_y2 - inter_rect_y1, 0)
+    # Union Area
+    b1_area = np.repeat(
+        ((b1_x2 - b1_x1) * (b1_y2 - b1_y1)).reshape(-1, 1), M, axis=-1)
+    b2_area = np.repeat(
+        ((b2_x2 - b2_x1) * (b2_y2 - b2_y1)).reshape(1, -1), N, axis=0)
+
+    ious = inter_area / (b1_area + b2_area - inter_area + eps)
+    return ious

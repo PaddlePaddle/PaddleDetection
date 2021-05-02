@@ -31,7 +31,6 @@ __all__ = [
     'jaccard_overlap',
     'prune_zero_padding',
     'DetectionMAP',
-    'bbox_iou_expand',
     'ap_per_class',
     'compute_ap',
 ]
@@ -310,41 +309,6 @@ class DetectionMAP(object):
             accum_fp += 1 - int(pos)
             accum_fp_list.append(accum_fp)
         return accum_tp_list, accum_fp_list
-
-
-def bbox_iou_expand(box1, box2, x1y1x2y2=True, eps=1e-16):
-    N, M = len(box1), len(box2)  # usually N != M
-    if x1y1x2y2:
-        b1_x1, b1_y1 = box1[:, 0], box1[:, 1]
-        b1_x2, b1_y2 = box1[:, 2], box1[:, 3]
-        b2_x1, b2_y1 = box2[:, 0], box2[:, 1]
-        b2_x2, b2_y2 = box2[:, 2], box2[:, 3]
-    else:
-        # Transform from center and width to exact coordinates
-        b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:, 2] / 2
-        b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:, 3] / 2
-        b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:, 2] / 2
-        b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:, 3] / 2
-    # get the coordinates of the intersection rectangle
-    inter_rect_x1 = np.zeros((N, M), dtype=np.float32)
-    inter_rect_y1 = np.zeros((N, M), dtype=np.float32)
-    inter_rect_x2 = np.zeros((N, M), dtype=np.float32)
-    inter_rect_y2 = np.zeros((N, M), dtype=np.float32)
-    for i in range(len(box2)):
-        inter_rect_x1[:, i] = np.maximum(b1_x1, b2_x1[i])
-        inter_rect_y1[:, i] = np.maximum(b1_y1, b2_y1[i])
-        inter_rect_x2[:, i] = np.minimum(b1_x2, b2_x2[i])
-        inter_rect_y2[:, i] = np.minimum(b1_y2, b2_y2[i])
-    # Intersection area
-    inter_area = np.maximum(inter_rect_x2 - inter_rect_x1, 0) * np.maximum(
-        inter_rect_y2 - inter_rect_y1, 0)
-    # Union Area
-    b1_area = np.repeat(
-        ((b1_x2 - b1_x1) * (b1_y2 - b1_y1)).reshape(-1, 1), M, axis=-1)
-    b2_area = np.repeat(
-        ((b2_x2 - b2_x1) * (b2_y2 - b2_y1)).reshape(1, -1), N, axis=0)
-
-    return inter_area / (b1_area + b2_area - inter_area + eps)
 
 
 def ap_per_class(tp, conf, pred_cls, target_cls):

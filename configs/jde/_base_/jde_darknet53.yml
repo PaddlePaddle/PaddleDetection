@@ -52,7 +52,7 @@ JEDEmbeddingHead:
   jde_loss: JDELoss
 
 JDETracker:
-  img_size: [1088, 608]
+  img_size: [608, 1088]
   det_thresh: 0.3
   track_buffer: 30
   min_box_area: 200

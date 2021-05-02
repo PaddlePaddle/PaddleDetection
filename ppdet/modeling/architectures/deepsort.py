@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
 import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
@@ -62,37 +61,40 @@ class DeepSORT(BaseArch):
         }
 
     def _forward(self):
-        load_dets = 'bbox_xyxy' in self.inputs and 'pred_scores' in self.inputs
+        assert 'ori_image' in self.inputs
+        load_dets = 'pred_bboxes' in self.inputs and 'pred_scores' in self.inputs
 
-        img0 = self.inputs['img0'].numpy()
-        img0_shape = self.inputs['img0_shape'].numpy()[0]
+        scale_factor = self.inputs['scale_factor']
+        ori_image = self.inputs['ori_image']
         img_size = self.tracker.img_size
 
         if self.detector and not load_dets:
             outs = self.detector(self.inputs)
-            bbox_num = outs['bbox_num']
-            if bbox_num > 0:
-                bbox_xyxy = outs['bbox'][:, 2:].numpy()
-                bbox_xyxy = scale_coords(img_size, bbox_xyxy,
-                                         img0_shape).round()
-                pred_scores = outs['bbox'][:, 1:2].numpy()
+            if outs['bbox_num'] > 0:
+                pred_bboxes = scale_coords(outs['bbox'][:, 2:], img_size,
+                                           scale_factor)
+                pred_scores = outs['bbox'][:, 1:2]
             else:
-                bbox_xyxy = []
+                pred_bboxes = []
                 pred_scores = []
         else:
-            bbox_xyxy = self.inputs['bbox_xyxy']
+            pred_bboxes = self.inputs['pred_bboxes']
             pred_scores = self.inputs['pred_scores']
 
-        if len(bbox_xyxy) > 0:
-            bbox_xyxy = clip_box(bbox_xyxy, img0_shape)
-            bbox_tlwh = np.hstack(
-                (bbox_xyxy[:, 0:2], bbox_xyxy[:, 2:4] - bbox_xyxy[:, 0:2] + 1))
+        if len(pred_bboxes) > 0:
+            pred_bboxes = clip_box(pred_bboxes, img_size, scale_factor)
+            bbox_tlwh = paddle.concat(
+                (pred_bboxes[:, 0:2],
+                 pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+                axis=1)
+
             crops, pred_scores = get_crops(
-                bbox_xyxy, img0, pred_scores, w=64, h=192)
+                pred_bboxes, ori_image, pred_scores, w=64, h=192)
+
             if len(crops) > 0:
                 features = self.reid(paddle.to_tensor(crops))
                 detections = [Detection(bbox_tlwh[i], conf, features[i])\
-                                        for i,conf in enumerate(pred_scores)]
+                                        for i, conf in enumerate(pred_scores)]
             else:
                 detections = []
         else:

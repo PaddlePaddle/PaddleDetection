@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import numpy as np
-from ..matching import iou_matching, linear_assignment
-from ..matching.nn_matching import NearestNeighborDistanceMetric
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['TrackState', 'Track']
@@ -33,50 +31,34 @@ class TrackState(object):
     Deleted = 3
 
 
+@register
+@serializable
 class Track(object):
     """
     A single target track with state space `(x, y, a, h)` and associated
     velocities, where `(x, y)` is the center of the bounding box, `a` is the
     aspect ratio and `h` is the height.
 
-    Parameters
-    ----------
-    mean : ndarray
-        Mean vector of the initial state distribution.
-    covariance : ndarray
-        Covariance matrix of the initial state distribution.
-    track_id : int
-        A unique track identifier.
-    n_init : int
-        Number of consecutive detections before the track is confirmed. The
-        track state is set to `Deleted` if a miss occurs within the first
-        `n_init` frames.
-    max_age : int
-        The maximum number of consecutive misses before the track state is
-        set to `Deleted`.
-    feature : Optional[ndarray]
-        Feature vector of the detection this track originates from. If not None,
-        this feature is added to the `features` cache.
+    Args:
+        mean (ndarray): Mean vector of the initial state distribution.
+        covariance (ndarray): Covariance matrix of the initial state distribution.
+        track_id (int): A unique track identifier.
+        n_init (int): Number of consecutive detections before the track is confirmed.
+            The track state is set to `Deleted` if a miss occurs within the first
+            `n_init` frames.
+        max_age (int): The maximum number of consecutive misses before the track
+            state is set to `Deleted`.
+        feature (Optional[ndarray]): Feature vector of the detection this track
+            originates from. If not None, this feature is added to the `features` cache.
 
-    Attributes
-    ----------
-    mean : ndarray
-        Mean vector of the initial state distribution.
-    covariance : ndarray
-        Covariance matrix of the initial state distribution.
-    track_id : int
-        A unique track identifier.
-    hits : int
-        Total number of measurement updates.
-    age : int
-        Total number of frames since first occurance.
-    time_since_update : int
-        Total number of frames since last measurement update.
-    state : TrackState
-        The current track state.
-    features : List[ndarray]
-        A cache of features. On each measurement update, the associated feature
-        vector is added to this list.
+    Attributes:
+        hits (int): Total number of measurement updates.
+        age (int): Total number of frames since first occurance.
+        time_since_update (int): Total number of frames since last measurement
+            update.
+        state (TrackState): The current track state.
+        features (List[ndarray]): A cache of features. On each measurement update,
+            the associated feature vector is added to this list.
     """
 
     def __init__(self,
@@ -115,8 +97,9 @@ class Track(object):
         return ret
 
     def predict(self, kalman_filter):
-        """Propagate the state distribution to the current time step using a
-        Kalman filter prediction step.
+        """
+        Propagate the state distribution to the current time step using a Kalman
+        filter prediction step.
         """
         self.mean, self.covariance = kalman_filter.predict(self.mean,
                                                            self.covariance)
@@ -124,7 +107,8 @@ class Track(object):
         self.time_since_update += 1
 
     def update(self, kalman_filter, detection):
-        """Perform Kalman filter measurement update step and update the associated
+        """
+        Perform Kalman filter measurement update step and update the associated
         detection feature cache.
         """
         self.mean, self.covariance = kalman_filter.update(self.mean,

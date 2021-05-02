@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-
+import paddle
 from ..utils import scale_coords
 from ..matching import jde_matching as matching
 from .base_jde_tracker import TrackState, BaseTrack, STrack
@@ -30,9 +29,19 @@ __all__ = ['JDETracker']
 @serializable
 class JDETracker(object):
     __inject__ = ['motion']
+    """
+    JDE tracker
+
+    Args:
+        img_size (list): input image size, [h, w]
+        det_thresh (float): threshold of detection score
+        track_buffer (int): buffer for tracker
+        min_box_area (int): min box area to filter out low quality boxes
+        motion (object): KalmanFilter instance
+    """
 
     def __init__(self,
-                 img_size=[1088, 608],
+                 img_size=[608, 1088],
                  det_thresh=0.3,
                  track_buffer=30,
                  min_box_area=200,
@@ -49,37 +58,40 @@ class JDETracker(object):
         self.removed_stracks = []
 
         self.max_time_lost = 0
-        # max_time_lost is calculated by int(frame_rate / 30.0 * track_buffer)
+        # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
 
-    def update(self, pred_dets, pred_embs, img0_shape):
+    def update(self, pred_dets, pred_embs, scale_factor):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
             lost, removed, refound and active tracklets.
         Args:
-            pred_dets(Tensor): Detection results of the image, shape is [N, 5].
-            pred_embs(Tensor): Embeding results of the image, shape is [N, 512].
-            img0_shape(list): shape of the original input image. [608, 1080].
+            pred_dets (Tensor): Detection results of the image, shape is [N, 5].
+            pred_embs (Tensor): Embedding results of the image, shape is [N, 512].
+            scale_factor (Tensor): scale_factor of the original input image.
         Return:
-            output_stracks(list): The list contains information regarding the
+            output_stracks (list): The list contains information regarding the
                 online_tracklets for the recieved image tensor.
         """
         self.frame_id += 1
-        activated_starcks = [
-        ]  # for storing active tracks, for the current frame
-        refind_stracks = [
-        ]  # Lost Tracks whose detections are obtained in the current frame
-        lost_stracks = [
-        ]  # The tracks which are not obtained in the current frame but are not removed.(Lost for some time lesser than the threshold for removing)
+        activated_starcks = []
+        # for storing active tracks, for the current frame
+        refind_stracks = []
+        # Lost Tracks whose detections are obtained in the current frame
+        lost_stracks = []
+        # The tracks which are not obtained in the current frame but are not 
+        # removed. (Lost for some time lesser than the threshold for removing)
         removed_stracks = []
 
-        #Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-        empty_pred = True if len(pred_dets) == 1 and np.sum(
-            np.array(pred_dets)) == 0.0 else False
+        # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
+        empty_pred = True if len(pred_dets) == 1 and paddle.sum(
+            pred_dets) == 0.0 else False
         ''' Step 1: Network forward, get detections & embeddings'''
         if len(pred_dets) > 0 and not empty_pred:
-            pred_dets[:, :4] = scale_coords(self.img_size, pred_dets[:, :4],
-                                            img0_shape).round()
+            pred_dets[:, :4] = scale_coords(pred_dets[:, :4], self.img_size,
+                                            scale_factor)
+            pred_dets = pred_dets.numpy()
+            pred_embs = pred_embs.numpy()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
                 for (tlbrs, f) in zip(pred_dets, pred_embs)

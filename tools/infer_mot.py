@@ -48,8 +48,8 @@ def parse_args():
         help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--model_type",
-        default='jde',
         type=str,
+        default='jde',
         help='Model type of tracking, should be in ["jde", "deepsort"]')
     parser.add_argument(
         "--det_dir",
@@ -76,8 +76,8 @@ def parse_args():
         help='Show tracking results (image).')
     parser.add_argument(
         "--slim_config",
-        default=None,
         type=str,
+        default=None,
         help="Configuration file of slim method.")
     args = parser.parse_args()
     return args

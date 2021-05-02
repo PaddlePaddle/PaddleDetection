@@ -14,13 +14,18 @@
 
 import lap
 import scipy
+import cython_bbox
 import numpy as np
 from scipy.spatial.distance import cdist
-from cython_bbox import bbox_overlaps as bbox_ious
 from ..motion import kalman_filter
 
 __all__ = [
-    'merge_matches', 'linear_assignment', 'ious', 'iou_distance', 'fuse_motion'
+    'merge_matches',
+    'linear_assignment',
+    'cython_bbox_ious',
+    'iou_distance',
+    'embedding_distance',
+    'fuse_motion',
 ]
 
 
@@ -59,36 +64,22 @@ def linear_assignment(cost_matrix, thresh):
     return matches, unmatched_a, unmatched_b
 
 
-def ious(atlbrs, btlbrs):
-    """
-    Compute cost based on IoU
-    :type atlbrs: list[tlbr] | np.ndarray
-    :type atlbrs: list[tlbr] | np.ndarray
-
-    :rtype ious np.ndarray
-    """
+def cython_bbox_ious(atlbrs, btlbrs):
     ious = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float)
     if ious.size == 0:
         return ious
-
-    ious = bbox_ious(
+    ious = cython_bbox.bbox_overlaps(
         np.ascontiguousarray(
             atlbrs, dtype=np.float),
         np.ascontiguousarray(
             btlbrs, dtype=np.float))
-
     return ious
 
 
 def iou_distance(atracks, btracks):
     """
-    Compute cost based on IoU
-    :type atracks: list[STrack]
-    :type btracks: list[STrack]
-
-    :rtype cost_matrix np.ndarray
+    Compute cost based on IoU between two list[STrack].
     """
-
     if (len(atracks) > 0 and isinstance(atracks[0], np.ndarray)) or (
             len(btracks) > 0 and isinstance(btracks[0], np.ndarray)):
         atlbrs = atracks
@@ -96,20 +87,16 @@ def iou_distance(atracks, btracks):
     else:
         atlbrs = [track.tlbr for track in atracks]
         btlbrs = [track.tlbr for track in btracks]
-    _ious = ious(atlbrs, btlbrs)
+    _ious = cython_bbox_ious(atlbrs, btlbrs)
     cost_matrix = 1 - _ious
 
     return cost_matrix
 
 
-def embedding_distance(tracks, detections, metric='cosine'):
+def embedding_distance(tracks, detections):
     """
-    :param tracks: list[STrack]
-    :param detections: list[BaseTrack]
-    :param metric:
-    :return: cost_matrix np.ndarray
+    Compute cost based on features between two list[STrack].
     """
-
     cost_matrix = np.zeros((len(tracks), len(detections)), dtype=np.float)
     if cost_matrix.size == 0:
         return cost_matrix

@@ -26,17 +26,92 @@ import cv2
 import copy
 import numpy as np
 
+from .operators import BaseOperator
+from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'DecodeVideo', 'Resize_LetterBox','Gt2JDETargetThres', 'Gt2JDETargetMax',
+    'Resize_LetterBox', 'DecodeVideo', 'Gt2JDETargetThres', 'Gt2JDETargetMax'
 ]
 
 
 def register_mot_op(cls):
     return serializable(cls)
+
+
+@register_mot_op
+class Resize_LetterBox(BaseOperator):
+    def __init__(self, target_size):
+        """
+        Resize image to target size, convert normalized xywh to pixel xyxy
+        format ([x_center, y_center, width, height] -> [x0, y0, x1, y1]).
+        Args:
+            target_size (int|list): image target size.
+        """
+        super(Resize_LetterBox, self).__init__()
+        if not isinstance(target_size, (Integral, Sequence)):
+            raise TypeError(
+                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
+                format(type(target_size)))
+        if isinstance(target_size, Integral):
+            target_size = [target_size, target_size]
+        self.target_size = target_size
+
+    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
+        # letterbox: resize a rectangular image to a padded rectangular
+        shape = img.shape[:2]  # [height, width]
+        ratio_h = float(height) / shape[0]
+        ratio_w = float(width) / shape[1]
+        ratio = min(ratio_h, ratio_w)
+        new_shape = (round(shape[1] * ratio),
+                     round(shape[0] * ratio))  # [width, height]
+        dw = (width - new_shape[0]) / 2  # width padding
+        dh = (height - new_shape[1]) / 2  # height padding
+        top, bottom = round(dh - 0.1), round(dh + 0.1)
+        left, right = round(dw - 0.1), round(dw + 0.1)
+
+        img = cv2.resize(
+            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
+        img = cv2.copyMakeBorder(
+            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
+            value=color)  # padded rectangular
+        return img, ratio, dw, dh, ratio_h, ratio_w
+
+    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
+        bboxes = bbox0.copy()
+        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
+        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
+        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
+        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
+        return bboxes
+
+    def apply(self, sample, context=None):
+        """ Resize the image numpy.
+        """
+        im = sample['image']
+        h, w = sample['im_shape']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        height, width = self.target_size
+        img, ratio, padw, padh, ratio_h, ratio_w = self.apply_image(
+            im, height=height, width=width)
+
+        sample['image'] = img
+        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
+        sample['scale_factor'] = np.asarray(
+            [ratio_h, ratio_w], dtype=np.float32)
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
+                                                padw, padh)
+        return sample
 
 
 @register_mot_op
@@ -70,78 +145,6 @@ class DecodeVideo(BaseOperator):
 
         sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
         sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
-        sample['img0_shape'] = sample['im_shape']
-        return sample
-
-
-@register_mot_op
-class Resize_LetterBox(BaseOperator):
-    def __init__(self, target_size):
-        """
-        Resize image to target size, convert normalized xywh to pixel xyxy
-        format ([x_center, y_center, width, height] -> [x0, y0, x1, y1]).
-        Args:
-            target_size (int|list): image target size.
-        """
-        super(Resize_LetterBox, self).__init__()
-        if not isinstance(target_size, (Integral, Sequence)):
-            raise TypeError(
-                "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
-                format(type(target_size)))
-        if isinstance(target_size, Integral):
-            target_size = [target_size, target_size]
-        self.target_size = target_size
-
-    def apply_image(self, img, height, width, color=(127.5, 127.5, 127.5)):
-        # letterbox: resize a rectangular image to a padded rectangular
-        shape = img.shape[:2]  # [height, width]
-        ratio = min(float(height) / shape[0], float(width) / shape[1])
-        new_shape = (round(shape[1] * ratio),
-                     round(shape[0] * ratio))  # [width, height]
-        dw = (width - new_shape[0]) / 2  # width padding
-        dh = (height - new_shape[1]) / 2  # height padding
-        top, bottom = round(dh - 0.1), round(dh + 0.1)
-        left, right = round(dw - 0.1), round(dw + 0.1)
-
-        img = cv2.resize(
-            img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
-        img = cv2.copyMakeBorder(
-            img, top, bottom, left, right, cv2.BORDER_CONSTANT,
-            value=color)  # padded rectangular
-        return img, ratio, dw, dh
-
-    def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
-        bboxes = bbox0.copy()
-        bboxes[:, 0] = ratio * w * (bbox0[:, 0] - bbox0[:, 2] / 2) + padw
-        bboxes[:, 1] = ratio * h * (bbox0[:, 1] - bbox0[:, 3] / 2) + padh
-        bboxes[:, 2] = ratio * w * (bbox0[:, 0] + bbox0[:, 2] / 2) + padw
-        bboxes[:, 3] = ratio * h * (bbox0[:, 1] + bbox0[:, 3] / 2) + padh
-        return bboxes
-
-    def apply(self, sample, context=None):
-        """ Resize the image numpy.
-        """
-        im = sample['image']
-        h, w = sample['im_shape']
-        sample['img0_shape'] = sample['im_shape']
-        if not isinstance(im, np.ndarray):
-            raise TypeError("{}: image type is not numpy.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
-
-        # apply image
-        height, width = self.target_size
-        img, ratio, padw, padh = self.apply_image(
-            im, height=height, width=width)
-
-        sample['image'] = img
-        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
-        sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32)
-
-        # apply bbox
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
-                                                padw, padh)
         return sample
 
 
@@ -191,46 +194,6 @@ class Gt2JDETargetThres(BaseOperator):
         anchor_mesh = np.concatenate(
             [mesh, anchor_offset_mesh], axis=1)  # [nA, 4, nGh, nGw]
         return anchor_mesh
-
-    def bbox_iou(self, box1, box2, x1y1x2y2=False, eps=1e-16):
-        # box1: anchor, box2: gt_bbox. N>>M
-        N, M = len(box1), len(box2)
-        if x1y1x2y2:
-            b1_x1, b1_y1 = box1[:, 0], box1[:, 1]
-            b1_x2, b1_y2 = box1[:, 2], box1[:, 3]
-            b2_x1, b2_y1 = box2[:, 0], box2[:, 1]
-            b2_x2, b2_y2 = box2[:, 2], box2[:, 3]
-        else:
-            # Transform from center and width to exact coordinates
-            b1_x1, b1_x2 = box1[:, 0] - box1[:, 2] / 2, box1[:, 0] + box1[:,
-                                                                          2] / 2
-            b1_y1, b1_y2 = box1[:, 1] - box1[:, 3] / 2, box1[:, 1] + box1[:,
-                                                                          3] / 2
-            b2_x1, b2_x2 = box2[:, 0] - box2[:, 2] / 2, box2[:, 0] + box2[:,
-                                                                          2] / 2
-            b2_y1, b2_y2 = box2[:, 1] - box2[:, 3] / 2, box2[:, 1] + box2[:,
-                                                                          3] / 2
-
-        # get the coordinates of the intersection rectangle
-        inter_rect_x1 = np.zeros((N, M), dtype=np.float32)
-        inter_rect_y1 = np.zeros((N, M), dtype=np.float32)
-        inter_rect_x2 = np.zeros((N, M), dtype=np.float32)
-        inter_rect_y2 = np.zeros((N, M), dtype=np.float32)
-        for i in range(len(box2)):
-            inter_rect_x1[:, i] = np.maximum(b1_x1, b2_x1[i])
-            inter_rect_y1[:, i] = np.maximum(b1_y1, b2_y1[i])
-            inter_rect_x2[:, i] = np.minimum(b1_x2, b2_x2[i])
-            inter_rect_y2[:, i] = np.minimum(b1_y2, b2_y2[i])
-        # Intersection area
-        inter_area = np.maximum(inter_rect_x2 - inter_rect_x1, 0) * np.maximum(
-            inter_rect_y2 - inter_rect_y1, 0)
-        # Union Area
-        b1_area = np.repeat(
-            ((b1_x2 - b1_x1) * (b1_y2 - b1_y1)).reshape(-1, 1), M, axis=-1)
-        b2_area = np.repeat(
-            ((b2_x2 - b2_x1) * (b2_y2 - b2_y1)).reshape(1, -1), N, axis=0)
-
-        return inter_area / (b1_area + b2_area - inter_area + eps)
 
     def encode_delta(self, gt_box_list, fg_anchor_list):
         px, py, pw, ph = fg_anchor_list[:, 0], fg_anchor_list[:,1], \
@@ -308,7 +271,8 @@ class Gt2JDETargetThres(BaseOperator):
 
                 anchor_list = np.transpose(anchor_mesh,
                                            (0, 2, 3, 1)).reshape(-1, 4)
-                iou_pdist = self.bbox_iou(anchor_list, tboxes)
+                iou_pdist = bbox_iou_np_expand(
+                    anchor_list, tboxes, x1y1x2y2=False)
 
                 iou_max = np.max(iou_pdist, axis=1)
                 max_gt_index = np.argmax(iou_pdist, axis=1)

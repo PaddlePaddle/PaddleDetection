@@ -61,7 +61,7 @@ TestReader:
 
 EvalMOTReader:
   sample_transforms:
-    - Decode: {keep_ori_img: true}
+    - Decode: {}
     - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}

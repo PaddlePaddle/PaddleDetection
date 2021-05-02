@@ -17,7 +17,6 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-import numpy as np
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -88,17 +87,14 @@ class JDE(BaseArch):
                 bbox = det_outs['bbox']
                 nms_keep_idx = det_outs['nms_keep_idx']
 
-                emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
-                embeddings = paddle.gather_nd(emb_valid, nms_keep_idx)
+                pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2]), axis=1)
 
-                pred_boxes = bbox[:, 2:].numpy()
-                pred_scores = bbox[:, 1:2].numpy()
-                pred_dets = np.concatenate((pred_boxes, pred_scores), axis=1)
-                pred_embs = embeddings.numpy()
-                img0_shape = self.inputs['img0_shape'].numpy()[0]
+                emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
+                pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
+                scale_factor = self.inputs['scale_factor']
 
                 online_targets = self.tracker.update(pred_dets, pred_embs,
-                                                     img0_shape)
+                                                     scale_factor)
                 return online_targets
 
             else:
