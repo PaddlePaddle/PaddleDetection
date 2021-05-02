@@ -2,10 +2,10 @@
 ## 目录
 - [目标检测数据说明](#目标检测数据说明)
 - [准备训练数据](#准备训练数据)
-    - [VOC数据数据](#VOC数据数据)
+    - [VOC数据](#VOC数据)
         - [VOC数据集下载](#VOC数据集下载)
         - [VOC数据标注文件介绍](#VOC数据标注文件介绍)
-    - [COCO数据数据](#COCO数据数据)
+    - [COCO数据](#COCO数据)
         - [COCO数据集下载](#COCO数据下载)
         - [COCO数据标注文件介绍](#COCO数据标注文件介绍)
     - [用户数据](#用户数据)
@@ -44,7 +44,7 @@ cd PaddleDetection/
 ppdet_root=$(pwd)
 ```
 
-#### VOC数据数据  
+#### VOC数据
 
 VOC数据是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛使用的数据。Pascal VOC比赛不仅包含图像分类分类任务，还包含图像目标检测、图像分割等任务，其标注文件中包含多个任务的标注内容。
 VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数据，xml文件中的非必须字段，请根据实际情况选择是否标注或是否使用默认值。
