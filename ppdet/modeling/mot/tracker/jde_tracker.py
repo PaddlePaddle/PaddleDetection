@@ -12,18 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import time
-import cv2
-import numpy as np
-from numba import jit
-from collections import deque, OrderedDict
-
 import paddle
-import paddle.nn.functional as F
-
-from ..mot_utils import scale_coords
+from ..utils import scale_coords
 from ..matching import jde_matching as matching
+from .base_jde_tracker import TrackState, BaseTrack, STrack
+from .base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
+
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -31,218 +25,23 @@ logger = setup_logger(__name__)
 __all__ = ['JDETracker']
 
 
-class TrackState(object):
-    New = 0
-    Tracked = 1
-    Lost = 2
-    Removed = 3
-
-
-@register
-@serializable
-class BaseTrack(object):
-    _count = 0
-
-    track_id = 0
-    is_activated = False
-    state = TrackState.New
-
-    history = OrderedDict()
-    features = []
-    curr_feature = None
-    score = 0
-    start_frame = 0
-    frame_id = 0
-    time_since_update = 0
-
-    # multi-camera
-    location = (np.inf, np.inf)
-
-    @property
-    def end_frame(self):
-        return self.frame_id
-
-    @staticmethod
-    def next_id():
-        BaseTrack._count += 1
-        return BaseTrack._count
-
-    def activate(self, *args):
-        raise NotImplementedError
-
-    def predict(self):
-        raise NotImplementedError
-
-    def update(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def mark_lost(self):
-        self.state = TrackState.Lost
-
-    def mark_removed(self):
-        self.state = TrackState.Removed
-
-
-@register
-@serializable
-class STrack(BaseTrack):
-    def __init__(self, tlwh, score, temp_feat, buffer_size=30):
-        # wait activate
-        self._tlwh = np.asarray(tlwh, dtype=np.float)
-        self.kalman_filter = None
-        self.mean, self.covariance = None, None
-        self.is_activated = False
-
-        self.score = score
-        self.tracklet_len = 0
-
-        self.smooth_feat = None
-        self.update_features(temp_feat)
-        self.features = deque([], maxlen=buffer_size)
-        self.alpha = 0.9
-
-    def update_features(self, feat):
-        feat /= np.linalg.norm(feat)
-        self.curr_feat = feat
-        if self.smooth_feat is None:
-            self.smooth_feat = feat
-        else:
-            self.smooth_feat = self.alpha * self.smooth_feat + (1 - self.alpha
-                                                                ) * feat
-        self.features.append(feat)
-        self.smooth_feat /= np.linalg.norm(self.smooth_feat)
-
-    def predict(self):
-        mean_state = self.mean.copy()
-        if self.state != TrackState.Tracked:
-            mean_state[7] = 0
-        self.mean, self.covariance = self.kalman_filter.predict(mean_state,
-                                                                self.covariance)
-
-    @staticmethod
-    def multi_predict(stracks, kalman_filter):
-        if len(stracks) > 0:
-            multi_mean = np.asarray([st.mean.copy() for st in stracks])
-            multi_covariance = np.asarray([st.covariance for st in stracks])
-            for i, st in enumerate(stracks):
-                if st.state != TrackState.Tracked:
-                    multi_mean[i][7] = 0
-            # multi_mean, multi_covariance = STrack.kalman_filter.multi_predict(multi_mean, multi_covariance)
-            multi_mean, multi_covariance = kalman_filter.multi_predict(
-                multi_mean, multi_covariance)
-            for i, (mean, cov) in enumerate(zip(multi_mean, multi_covariance)):
-                stracks[i].mean = mean
-                stracks[i].covariance = cov
-
-    def activate(self, kalman_filter, frame_id):
-        """Start a new tracklet"""
-        self.kalman_filter = kalman_filter
-        self.track_id = self.next_id()
-        self.mean, self.covariance = self.kalman_filter.initiate(
-            self.tlwh_to_xyah(self._tlwh))
-
-        self.tracklet_len = 0
-        self.state = TrackState.Tracked
-        #self.is_activated = True
-        self.frame_id = frame_id
-        self.start_frame = frame_id
-
-    def re_activate(self, new_track, frame_id, new_id=False):
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh))
-
-        self.update_features(new_track.curr_feat)
-        self.tracklet_len = 0
-        self.state = TrackState.Tracked
-        self.is_activated = True
-        self.frame_id = frame_id
-        if new_id:
-            self.track_id = self.next_id()
-
-    def update(self, new_track, frame_id, update_feature=True):
-        """
-        Update a matched track
-        :type new_track: STrack
-        :type frame_id: int
-        :type update_feature: bool
-        :return:
-        """
-        self.frame_id = frame_id
-        self.tracklet_len += 1
-
-        new_tlwh = new_track.tlwh
-        self.mean, self.covariance = self.kalman_filter.update(
-            self.mean, self.covariance, self.tlwh_to_xyah(new_tlwh))
-        self.state = TrackState.Tracked
-        self.is_activated = True
-
-        self.score = new_track.score
-        if update_feature:
-            self.update_features(new_track.curr_feat)
-
-    @property
-    @jit
-    def tlwh(self):
-        """Get current position in bounding box format `(top left x, top left y,
-                width, height)`.
-        """
-        if self.mean is None:
-            return self._tlwh.copy()
-        ret = self.mean[:4].copy()
-        ret[2] *= ret[3]
-        ret[:2] -= ret[2:] / 2
-        return ret
-
-    @property
-    @jit
-    def tlbr(self):
-        """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
-        `(top left, bottom right)`.
-        """
-        ret = self.tlwh.copy()
-        ret[2:] += ret[:2]
-        return ret
-
-    @staticmethod
-    @jit
-    def tlwh_to_xyah(tlwh):
-        """Convert bounding box to format `(center x, center y, aspect ratio,
-        height)`, where the aspect ratio is `width / height`.
-        """
-        ret = np.asarray(tlwh).copy()
-        ret[:2] += ret[2:] / 2
-        ret[2] /= ret[3]
-        return ret
-
-    def to_xyah(self):
-        return self.tlwh_to_xyah(self.tlwh)
-
-    @staticmethod
-    @jit
-    def tlbr_to_tlwh(tlbr):
-        ret = np.asarray(tlbr).copy()
-        ret[2:] -= ret[:2]
-        return ret
-
-    @staticmethod
-    @jit
-    def tlwh_to_tlbr(tlwh):
-        ret = np.asarray(tlwh).copy()
-        ret[2:] += ret[:2]
-        return ret
-
-    def __repr__(self):
-        return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame,
-                                      self.end_frame)
-
-
 @register
 @serializable
 class JDETracker(object):
     __inject__ = ['motion']
+    """
+    JDE tracker
+
+    Args:
+        img_size (list): input image size, [h, w]
+        det_thresh (float): threshold of detection score
+        track_buffer (int): buffer for tracker
+        min_box_area (int): min box area to filter out low quality boxes
+        motion (object): KalmanFilter instance
+    """
 
     def __init__(self,
-                 img_size=[1088, 608],
+                 img_size=[608, 1088],
                  det_thresh=0.3,
                  track_buffer=30,
                  min_box_area=200,
@@ -259,37 +58,40 @@ class JDETracker(object):
         self.removed_stracks = []
 
         self.max_time_lost = 0
-        # max_time_lost is calculated by int(frame_rate / 30.0 * track_buffer)
+        # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
 
-    def update(self, pred_dets, pred_embs, img0_shape):
+    def update(self, pred_dets, pred_embs, scale_factor):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
             lost, removed, refound and active tracklets.
         Args:
-            pred_dets(Tensor): Detection results of the image, shape is [N, 5].
-            pred_embs(Tensor): Embeding results of the image, shape is [N, 512].
-            img0_shape(list): shape of the original input image. [608, 1080].
+            pred_dets (Tensor): Detection results of the image, shape is [N, 5].
+            pred_embs (Tensor): Embedding results of the image, shape is [N, 512].
+            scale_factor (Tensor): scale_factor of the original input image.
         Return:
-            output_stracks(list): The list contains information regarding the
+            output_stracks (list): The list contains information regarding the
                 online_tracklets for the recieved image tensor.
         """
         self.frame_id += 1
-        activated_starcks = [
-        ]  # for storing active tracks, for the current frame
-        refind_stracks = [
-        ]  # Lost Tracks whose detections are obtained in the current frame
-        lost_stracks = [
-        ]  # The tracks which are not obtained in the current frame but are not removed.(Lost for some time lesser than the threshold for removing)
+        activated_starcks = []
+        # for storing active tracks, for the current frame
+        refind_stracks = []
+        # Lost Tracks whose detections are obtained in the current frame
+        lost_stracks = []
+        # The tracks which are not obtained in the current frame but are not 
+        # removed. (Lost for some time lesser than the threshold for removing)
         removed_stracks = []
 
-        #Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-        empty_pred = True if len(pred_dets) == 1 and np.sum(
-            np.array(pred_dets)) == 0.0 else False
+        # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
+        empty_pred = True if len(pred_dets) == 1 and paddle.sum(
+            pred_dets) == 0.0 else False
         ''' Step 1: Network forward, get detections & embeddings'''
         if len(pred_dets) > 0 and not empty_pred:
-            pred_dets[:, :4] = scale_coords(self.img_size, pred_dets[:, :4],
-                                            img0_shape).round()
+            pred_dets[:, :4] = scale_coords(pred_dets[:, :4], self.img_size,
+                                            scale_factor)
+            pred_dets = pred_dets.numpy()
+            pred_embs = pred_embs.numpy()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
                 for (tlbrs, f) in zip(pred_dets, pred_embs)
@@ -427,44 +229,3 @@ class JDETracker(object):
             [track.track_id for track in removed_stracks]))
 
         return output_stracks
-
-
-def joint_stracks(tlista, tlistb):
-    exists = {}
-    res = []
-    for t in tlista:
-        exists[t.track_id] = 1
-        res.append(t)
-    for t in tlistb:
-        tid = t.track_id
-        if not exists.get(tid, 0):
-            exists[tid] = 1
-            res.append(t)
-    return res
-
-
-def sub_stracks(tlista, tlistb):
-    stracks = {}
-    for t in tlista:
-        stracks[t.track_id] = t
-    for t in tlistb:
-        tid = t.track_id
-        if stracks.get(tid, 0):
-            del stracks[tid]
-    return list(stracks.values())
-
-
-def remove_duplicate_stracks(stracksa, stracksb):
-    pdist = matching.iou_distance(stracksa, stracksb)
-    pairs = np.where(pdist < 0.15)
-    dupa, dupb = list(), list()
-    for p, q in zip(*pairs):
-        timep = stracksa[p].frame_id - stracksa[p].start_frame
-        timeq = stracksb[q].frame_id - stracksb[q].start_frame
-        if timep > timeq:
-            dupb.append(q)
-        else:
-            dupa.append(p)
-    resa = [t for i, t in enumerate(stracksa) if not i in dupa]
-    resb = [t for i, t in enumerate(stracksb) if not i in dupb]
-    return resa, resb

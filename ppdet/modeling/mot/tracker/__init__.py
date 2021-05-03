@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from . import base_jde_tracker
+from . import base_sde_tracker
 from . import jde_tracker
 from . import deepsort_tracker
 
+from .base_jde_tracker import *
+from .base_sde_tracker import *
 from .jde_tracker import *
 from .deepsort_tracker import *

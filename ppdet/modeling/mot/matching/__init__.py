@@ -13,11 +13,7 @@
 # limitations under the License.
 
 from . import jde_matching
-from . import iou_matching
-from . import nn_matching
-from . import linear_assignment
+from . import deepsort_matching
 
 from .jde_matching import *
-from .iou_matching import *
-from .nn_matching import *
-from .linear_assignment import *
+from .deepsort_matching import *

@@ -18,6 +18,182 @@ from ..motion import kalman_filter
 
 INFTY_COST = 1e+5
 
+__all__ = [
+    'iou_1toN', 'iou_cost',
+    '_nn_euclidean_distance', '_nn_cosine_distance',
+    'NearestNeighborDistanceMetric',
+    'min_cost_matching', 'matching_cascade', 'gate_cost_matrix',
+]
+
+
+def iou_1toN(bbox, candidates):
+    """
+    Computer intersection over union (IoU) by one box to N candidates.
+
+    Args:
+        bbox (ndarray): A bounding box in format `(top left x, top left y, width, height)`.
+            candidates (ndarray): A matrix of candidate bounding boxes (one per row) in the
+            same format as `bbox`.
+
+    Returns:
+        ious (ndarray): The intersection over union in [0, 1] between the `bbox`
+            and each candidate. A higher score means a larger fraction of the
+            `bbox` is occluded by the candidate.
+    """
+    bbox_tl = bbox[:2]
+    bbox_br = bbox[:2] + bbox[2:]
+    candidates_tl = candidates[:, :2]
+    candidates_br = candidates[:, :2] + candidates[:, 2:]
+
+    tl = np.c_[np.maximum(bbox_tl[0], candidates_tl[:, 0])[:, np.newaxis],
+               np.maximum(bbox_tl[1], candidates_tl[:, 1])[:, np.newaxis]]
+    br = np.c_[np.minimum(bbox_br[0], candidates_br[:, 0])[:, np.newaxis],
+               np.minimum(bbox_br[1], candidates_br[:, 1])[:, np.newaxis]]
+    wh = np.maximum(0., br - tl)
+
+    area_intersection = wh.prod(axis=1)
+    area_bbox = bbox[2:].prod()
+    area_candidates = candidates[:, 2:].prod(axis=1)
+    ious =  area_intersection / (area_bbox + area_candidates - area_intersection)
+    return ious
+
+
+def iou_cost(tracks, detections, track_indices=None, detection_indices=None):
+    """
+    IoU distance metric.
+
+    Args:
+        tracks (list[Track]): A list of tracks.
+        detections (list[Detection]): A list of detections.
+        track_indices (Optional[list[int]]): A list of indices to tracks that
+            should be matched. Defaults to all `tracks`.
+        detection_indices (Optional[list[int]]): A list of indices to detections
+            that should be matched. Defaults to all `detections`.
+
+    Returns:
+        cost_matrix (ndarray): A cost matrix of shape len(track_indices), 
+            len(detection_indices) where entry (i, j) is 
+            `1 - iou(tracks[track_indices[i]], detections[detection_indices[j]])`.
+    """
+    if track_indices is None:
+        track_indices = np.arange(len(tracks))
+    if detection_indices is None:
+        detection_indices = np.arange(len(detections))
+
+    cost_matrix = np.zeros((len(track_indices), len(detection_indices)))
+    for row, track_idx in enumerate(track_indices):
+        if tracks[track_idx].time_since_update > 1:
+            cost_matrix[row, :] = 1e+5
+            continue
+
+        bbox = tracks[track_idx].to_tlwh()
+        candidates = np.asarray([detections[i].tlwh for i in detection_indices])
+        cost_matrix[row, :] = 1. - iou_1toN(bbox, candidates)
+    return cost_matrix
+
+
+def _nn_euclidean_distance(a, b):
+    """
+    Compute pair-wise squared (Euclidean) distance between points in `a` and `b`.
+
+    Args:
+        a (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
+        b (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+    Returns:
+        distances (ndarray): A vector of length M that contains for each entry in `b` the
+            smallest Euclidean distance to a sample in `a`.
+    """
+    a, b = np.asarray(a), np.asarray(b)
+    if len(a) == 0 or len(b) == 0:
+        return np.zeros((len(a), len(b)))
+    a2, b2 = np.square(a).sum(axis=1), np.square(b).sum(axis=1)
+    distances = -2. * np.dot(a, b.T) + a2[:, None] + b2[None, :]
+    distances = np.clip(distances, 0., float(np.inf))
+
+    return np.maximum(0.0, distances.min(axis=0))
+
+
+def _nn_cosine_distance(a, b):
+    """
+    Compute pair-wise cosine distance between points in `a` and `b`.
+
+    Args:
+        a (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
+        b (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+    Returns:
+        distances (ndarray): A vector of length M that contains for each entry in `b` the
+            smallest Euclidean distance to a sample in `a`.
+    """
+    a = np.asarray(a) / np.linalg.norm(a, axis=1, keepdims=True)
+    b = np.asarray(b) / np.linalg.norm(b, axis=1, keepdims=True)
+    distances = 1. - np.dot(a, b.T)
+
+    return distances.min(axis=0)
+
+
+class NearestNeighborDistanceMetric(object):
+    """
+    A nearest neighbor distance metric that, for each target, returns
+    the closest distance to any sample that has been observed so far.
+
+    Args:
+        metric (str): Either "euclidean" or "cosine".
+        matching_threshold (float): The matching threshold. Samples with larger
+            distance are considered an invalid match.
+        budget (Optional[int]): If not None, fix samples per class to at most
+            this number. Removes the oldest samples when the budget is reached.
+
+    Attributes: 
+        samples (Dict[int -> List[ndarray]]): A dictionary that maps from target
+            identities to the list of samples that have been observed so far.
+    """
+
+    def __init__(self, metric, matching_threshold, budget=None):
+        if metric == "euclidean":
+            self._metric = _nn_euclidean_distance
+        elif metric == "cosine":
+            self._metric = _nn_cosine_distance
+        else:
+            raise ValueError(
+                "Invalid metric; must be either 'euclidean' or 'cosine'")
+        self.matching_threshold = matching_threshold
+        self.budget = budget
+        self.samples = {}
+
+    def partial_fit(self, features, targets, active_targets):
+        """
+        Update the distance metric with new data.
+
+        Args:
+            features (ndarray): An NxM matrix of N features of dimensionality M.
+            targets (ndarray): An integer array of associated target identities.
+            active_targets (List[int]): A list of targets that are currently
+                present in the scene.
+        """
+        for feature, target in zip(features, targets):
+            self.samples.setdefault(target, []).append(feature)
+            if self.budget is not None:
+                self.samples[target] = self.samples[target][-self.budget:]
+        self.samples = {k: self.samples[k] for k in active_targets}
+
+    def distance(self, features, targets):
+        """
+        Compute distance between features and targets.
+
+        Args:
+            features (ndarray): An NxM matrix of N features of dimensionality M.
+            targets (list[int]): A list of targets to match the given `features` against.
+
+        Returns:
+            cost_matrix (ndarray): a cost matrix of shape len(targets), len(features),
+                where element (i, j) contains the closest squared distance between
+                `targets[i]` and `features[j]`.
+        """
+        cost_matrix = np.zeros((len(targets), len(features)))
+        for i, target in enumerate(targets):
+            cost_matrix[i, :] = self._metric(self.samples[target], features)
+        return cost_matrix
+
 
 def min_cost_matching(distance_metric,
                       max_distance,

@@ -34,7 +34,7 @@ class PCB_plus_dropout_pyramid(nn.Layer):
             input_ch=2048,
             num_stripes=6,  # number of sub-parts
             used_levels=(1, 1, 1, 1, 1, 1),
-            num_classes=0,
+            num_classes=751,
             last_conv_stride=1,
             last_conv_dilation=1,
             num_conv_out_channels=128):
