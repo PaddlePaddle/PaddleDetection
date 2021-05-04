@@ -14,5 +14,3 @@ sklearn
 cython_bbox
 motmetrics
 openpyxl
-numba==0.50.0
-llvmlite==0.33.0

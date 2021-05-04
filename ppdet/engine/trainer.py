@@ -63,7 +63,8 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JEDEmbeddingHead']['num_identifiers'] = self.dataset.nID
+            cfg['JEDEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
 
         # build model
         if 'model' not in self.cfg:

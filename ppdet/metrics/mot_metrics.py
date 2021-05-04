@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
 # See the License for the specific language governing permissions and   
 # limitations under the License.
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -23,7 +22,8 @@ from sklearn import metrics
 from scipy import interpolate
 import paddle.nn.functional as F
 import motmetrics as mm
-from .map_utils import ap_per_class, bbox_iou_expand
+from .map_utils import ap_per_class
+from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from .mot_eval_utils import MOTEvaluator
 from .metrics import Metric
 
@@ -61,7 +61,7 @@ class JDEDetMetric(Metric):
             obj_pred = 0
             pred_bbox = bboxes[i].reshape(1, 4)
             # Compute iou with target boxes
-            iou = bbox_iou_expand(pred_bbox, gt_boxes, x1y1x2y2=True)[0]
+            iou = bbox_iou_np_expand(pred_bbox, gt_boxes, x1y1x2y2=True)[0]
             # Extract index of largest overlap
             best_i = np.argmax(iou)
             # If overlap exceeds threshold and classification is correct mark as correct
@@ -148,8 +148,10 @@ class JDEReIDMetric(Metric):
 
 
 class MOTMetric(Metric):
-    def __init__(self, ):
+    def __init__(self, save_summary=False):
+        self.save_summary = save_summary
         self.MOTEvaluator = MOTEvaluator
+        self.result_root = None
         self.reset()
 
     def reset(self):
@@ -160,6 +162,7 @@ class MOTMetric(Metric):
         evaluator = self.MOTEvaluator(data_root, seq, data_type)
         self.accs.append(evaluator.eval_file(result_filename))
         self.seqs.append(seq)
+        self.result_root = result_root
 
     def accumulate(self):
         metrics = mm.metrics.motchallenge_metrics
@@ -169,11 +172,12 @@ class MOTMetric(Metric):
             summary,
             formatters=mh.formatters,
             namemap=mm.io.motchallenge_metric_names)
-        # self.MOTEvaluator.save_summary(summary, os.path.join(result_root, 'summary.xlsx'))
+        if self.save_summary:
+            self.MOTEvaluator.save_summary(
+                summary, os.path.join(self.result_root, 'summary.xlsx'))
 
     def log(self):
         print(self.strsummary)
 
     def get_results(self):
         return self.strsummary
-

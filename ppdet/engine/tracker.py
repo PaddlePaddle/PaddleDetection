@@ -17,15 +17,16 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import numpy as np
 import cv2
 import glob
+import paddle
+import numpy as np
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 
-from ppdet.modeling.mot.mot_utils import Timer, load_det_results
-from ppdet.modeling.mot import mot_visualization as mot_vis
+from ppdet.modeling.mot.utils import Timer, load_det_results
+from ppdet.modeling.mot import visualization as mot_vis
 
 from ppdet.metrics import Metric, MOTMetric
 import ppdet.utils.stats as stats
@@ -183,17 +184,18 @@ class Tracker(object):
             if not use_detector:
                 timer.tic()
                 dets = dets_list[frame_id]
-                bbox_tlwh = np.array(dets['bbox'])
-                pred_scores = np.array(dets['score'])
+                bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
+                pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
                 if bbox_tlwh.shape[0] > 0:
-                    bbox_xyxy = np.hstack(
+                    pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
-                         bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]))
+                         bbox_tlwh[:, 2:4] + bbox_tlwh[:, 0:2]),
+                        axis=1)
                 else:
-                    bbox_xyxy = []
+                    pred_bboxes = []
                     pred_scores = []
                 data.update({
-                    'bbox_xyxy': bbox_xyxy,
+                    'pred_bboxes': pred_bboxes,
                     'pred_scores': pred_scores
                 })
 
@@ -404,8 +406,8 @@ class Tracker(object):
     def save_results(self, data, frame_id, online_ids, online_tlwhs,
                      average_time, show_image, save_dir):
         if show_image or save_dir is not None:
-            assert 'img0' in data
-            img0 = data['img0'].numpy()[0]
+            assert 'ori_image' in data
+            img0 = data['ori_image'].numpy()[0]
             online_im = mot_vis.plot_tracking(
                 img0,
                 online_tlwhs,

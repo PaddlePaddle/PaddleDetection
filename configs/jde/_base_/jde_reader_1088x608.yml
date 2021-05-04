@@ -3,7 +3,7 @@ TrainReader:
   sample_transforms:
     - Decode: {}
     - AugmentHSV: {}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - RandomAffine: {}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}
@@ -13,9 +13,9 @@ TrainReader:
   batch_transforms:
     - Gt2JDETargetThres:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-        anchors: [[[128,384], [180,540], [256,640], [512,640]],
-                  [[32,96], [45,135], [64,192], [90,271]],
-                  [[8,24], [11,34], [16,48], [23,68]]]
+        anchors: [[[85,255], [120,320], [170,320], [340,320]],
+                  [[21,64], [30,90], [43,128], [60,180]],
+                  [[6,16], [8,23], [11,32], [16,45]]]
         downsample_ratios: [32, 16, 8]
         ide_thresh: 0.5
         fg_thresh: 0.5
@@ -29,10 +29,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
-    - BboxXYWH2XYXY: {}
-    - NormalizedBbox2PixelBbox: {}
-    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
@@ -40,36 +37,32 @@ EvalReader:
   batch_transforms:
     - Gt2JDETargetMax:
         anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
-        anchors: [[[128,384], [180,540], [256,640], [512,640]],
-                  [[32,96], [45,135], [64,192], [90,271]],
-                  [[8,24], [11,34], [16,48], [23,68]]]
+        anchors: [[[85,255], [120,320], [170,320], [340,320]],
+                  [[21,64], [30,90], [43,128], [60,180]],
+                  [[6,16], [8,23], [11,32], [16,45]]]
         downsample_ratios: [32, 16, 8]
         max_iou_thresh: 0.60
-    - BboxXYWH2XYXY: {}
-    - NormalizedBbox2PixelBbox: {}
+    - BboxCXCYWH2XYXY: {}
+    - Norm2PixelBbox: {}
   batch_size: 1
   drop_empty: false
 
 
 TestReader:
   inputs_def:
-    image_shape: [3, 608, 1088]
+    image_shape: [3, 320, 576]
   sample_transforms:
     - Decode: {}
-    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
 
 
 EvalMOTReader:
-  inputs_def:
-    image_shape: [3, 608, 1088]
   sample_transforms:
-    - Decode: {keep_ori_img: true}
-    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Decode: {}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -77,11 +70,10 @@ EvalMOTReader:
 
 TestMOTReader:
   inputs_def:
-    image_shape: [3, 608, 1088]
+    image_shape: [3, 320, 576]
   sample_transforms:
     - DecodeVideo: {}
-    - Resize: {target_size: [608, 1088], keep_ratio: True, interp: 3, by_hw: True}
-    - Pad: {size: [608, 1088], pad_mode: 1, fill_value: [128, 128, 128]}
+    - Resize_LetterBox: {target_size: [320, 576]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1

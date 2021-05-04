@@ -40,30 +40,24 @@ logger = setup_logger('eval')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        '--benchmark',
+        '--task',
+        type=str,
         default='MOT16_train',
-        type=str,
-        help='Benchmark name for tracking dataset.')
-    parser.add_argument(
-        '--data_root',
-        type=str,
-        default='./dataset/mot',
-        help='Directory for tracking dataset.')
+        help='Task name for tracking dataset.')
     parser.add_argument(
         "--data_type",
-        default='mot',
         type=str,
+        default='mot',
         help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
         "--model_type",
-        default='jde',
         type=str,
-        help='Model type of tracking, should be in ["jde", "deepsort", "fairmot"]'
-    )
+        default='jde',
+        help='Model type of tracking, should be in ["jde", "deepsort"]')
     parser.add_argument(
         "--det_dir",
-        default='output/mot_results/',
         type=str,
+        default=None,
         help="Directory name for detection results.")
     parser.add_argument(
         '--output_dir',
@@ -93,8 +87,9 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    if FLAGS.benchmark == 'MOT15_train':
-        data_root = '{}/MOT15/images/train'.format(FLAGS.data_root)
+    dataset_dir = cfg['EvalMOTDataset'].dataset_dir
+    if FLAGS.task == 'MOT15_train':
+        data_root = '{}/MOT15/images/train'.format(dataset_dir)
         seqs_str = '''Venice-2
                       KITTI-13
                       KITTI-17
@@ -106,8 +101,8 @@ def run(FLAGS, cfg):
                       ADL-Rundle-6
                       ADL-Rundle-8
                       ETH-Pedcross2'''
-    elif FLAGS.benchmark == 'MOT15_test':
-        data_root = '{}/MOT15/images/test'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT15_test':
+        data_root = '{}/MOT15/images/test'.format(dataset_dir)
         seqs_str = '''ADL-Rundle-1
                       ADL-Rundle-3
                       AVG-TownCentre
@@ -119,8 +114,8 @@ def run(FLAGS, cfg):
                       PETS09-S2L2
                       TUD-Crossing
                       Venice-1'''
-    elif FLAGS.benchmark == 'MOT16_train':
-        data_root = '{}/MOT16/images/train'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT16_train':
+        data_root = '{}/MOT16/images/train'.format(dataset_dir)
         seqs_str = '''MOT16-02
                       MOT16-04
                       MOT16-05
@@ -128,8 +123,8 @@ def run(FLAGS, cfg):
                       MOT16-10
                       MOT16-11
                       MOT16-13'''
-    elif FLAGS.benchmark == 'MOT16_test':
-        data_root = '{}/MOT16/images/test'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT16_test':
+        data_root = '{}/MOT16/images/test'.format(dataset_dir)
         seqs_str = '''MOT16-01
                       MOT16-03
                       MOT16-06
@@ -137,8 +132,8 @@ def run(FLAGS, cfg):
                       MOT16-08
                       MOT16-12
                       MOT16-14'''
-    elif FLAGS.benchmark == 'MOT17_train':
-        data_root = '{}/MOT17/images/train'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT17_train':
+        data_root = '{}/MOT17/images/train'.format(dataset_dir)
         seqs_str = '''MOT17-02-SDP
                       MOT17-04-SDP
                       MOT17-05-SDP
@@ -146,8 +141,8 @@ def run(FLAGS, cfg):
                       MOT17-10-SDP
                       MOT17-11-SDP
                       MOT17-13-SDP'''
-    elif FLAGS.benchmark == 'MOT17_test':
-        data_root = '{}/MOT17/images/test'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT17_test':
+        data_root = '{}/MOT17/images/test'.format(dataset_dir)
         seqs_str = '''MOT17-01-SDP
                       MOT17-03-SDP
                       MOT17-06-SDP
@@ -155,20 +150,20 @@ def run(FLAGS, cfg):
                       MOT17-08-SDP
                       MOT17-12-SDP
                       MOT17-14-SDP'''
-    elif FLAGS.benchmark == 'MOT20_train':
-        data_root = '{}/MOT20/images/train'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT20_train':
+        data_root = '{}/MOT20/images/train'.format(dataset_dir)
         seqs_str = '''MOT20-01
                       MOT20-02
                       MOT20-03
                       MOT20-05'''
-    elif FLAGS.benchmark == 'MOT20_test':
-        data_root = '{}/MOT20/images/test'.format(FLAGS.data_root)
+    elif FLAGS.task == 'MOT20_test':
+        data_root = '{}/MOT20/images/test'.format(dataset_dir)
         seqs_str = '''MOT20-04
                       MOT20-06
                       MOT20-07
                       MOT20-08'''
     else:
-        data_root = '{}/MOT16/images/train'.format(FLAGS.data_root)
+        data_root = '{}/MOT16/images/train'.format(dataset_dir)
         seqs_str = '''MOT16-02
                    '''
     seqs = [seq.strip() for seq in seqs_str.split()]
