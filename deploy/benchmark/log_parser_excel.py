@@ -197,22 +197,17 @@ def trt_perf_analysis(raw_df):
     new_df = filter_df_merge(gpu_df, "precision")
 
     # calculate qps diff percentail
-    new_df["fp32_fp16_diff"] = new_df[[
-        "inference_time(ms)_{}_fp32".format("precision"),
-        "inference_time(ms)_{}_fp16".format("precision")
-    ]].apply(
-        lambda x: (float(x["inference_time(ms)_{}_fp16".format("precision")]) - float(x["inference_time(ms)_{}_fp32".format("precision")])) / float(x["inference_time(ms)_{}_fp32".format("precision")]),
+    infer_fp32 = "inference_time(ms)_precision_fp32"
+    infer_fp16 = "inference_time(ms)_precision_fp16"
+    infer_int8 = "inference_time(ms)_precision_int8"
+    new_df["fp32_fp16_diff"] = new_df[[infer_fp32, infer_fp16]].apply(
+        lambda x: (float(x[infer_fp16]) - float(x[infer_fp32])) / float(x[infer_fp32]),
         axis=1)
-    new_df["fp32_gpu_diff"] = new_df[[
-        "inference_time(ms)", "inference_time(ms)_{}_fp32".format("precision")
-    ]].apply(
-        lambda x: (float(x["inference_time(ms)_{}_fp32".format("precision")]) - float(x["inference_time(ms)_{}_fp32".format("precision")])) / float(x["inference_time(ms)".format("precision")]),
+    new_df["fp32_gpu_diff"] = new_df[["inference_time(ms)", infer_fp32]].apply(
+        lambda x: (float(x[infer_fp32]) - float(x[infer_fp32])) / float(x["inference_time(ms)"]),
         axis=1)
-    new_df["fp16_int8_diff"] = new_df[[
-        "inference_time(ms)_{}_fp16".format("precision"),
-        "inference_time(ms)_{}_int8".format("precision")
-    ]].apply(
-        lambda x: (float(x["inference_time(ms)_{}_int8".format("precision")]) - float(x["inference_time(ms)_{}_fp16"])) / float(x["inference_time(ms)_{}_fp16".format("precision")]),
+    new_df["fp16_int8_diff"] = new_df[[infer_fp16, infer_int8]].apply(
+        lambda x: (float(x[infer_int8]) - float(x[infer_fp16])) / float(x[infer_fp16]),
         axis=1)
 
     return new_df
@@ -236,31 +231,35 @@ def mkl_perf_analysis(raw_df):
 
     # calculate performance diff percentail
     # compare mkl performance with cpu
+    enable_mkldnn = "inference_time(ms)_enable_mkldnn_True"
+    disable_mkldnn = "inference_time(ms)_enable_mkldnn_False"
     output_mkl_df["mkl_infer_diff"] = output_mkl_df[[
-        "inference_time(ms)_{}_True".format("enable_mkldnn"),
-        "inference_time(ms)_{}_False".format("enable_mkldnn")
+        enable_mkldnn, disable_mkldnn
     ]].apply(
-        lambda x: (float(x["inference_time(ms)_{}_True".format("enable_mkldnn")]) - float(x["inference_time(ms)_{}_False".format("enable_mkldnn")])) / float(x["inference_time(ms)_{}_False".format("enable_mkldnn")]),
+        lambda x: (float(x[enable_mkldnn]) - float(x[disable_mkldnn])) / float(x[disable_mkldnn]),
         axis=1)
+    cpu_enable_mkldnn = "cpu_rss(MB)_enable_mkldnn_True"
+    cpu_disable_mkldnn = "cpu_rss(MB)_enable_mkldnn_False"
     output_mkl_df["mkl_cpu_rss_diff"] = output_mkl_df[[
-        "cpu_rss(MB)_{}_True".format("enable_mkldnn"),
-        "cpu_rss(MB)_{}_False".format("enable_mkldnn")
+        cpu_enable_mkldnn, cpu_disable_mkldnn
     ]].apply(
-        lambda x: (float(x["cpu_rss(MB)_{}_True".format("enable_mkldnn")]) - float(x["cpu_rss(MB)_{}_False".format("enable_mkldnn")])) / float(x["cpu_rss(MB)_{}_False".format("enable_mkldnn")]),
+        lambda x: (float(x[cpu_enable_mkldnn]) - float(x[cpu_disable_mkldnn])) / float(x[cpu_disable_mkldnn]),
         axis=1)
 
     # compare cpu_multi_thread performance with cpu
+    num_threads_1 = "inference_time(ms)_cpu_math_library_num_threads_1"
+    num_threads_6 = "inference_time(ms)_cpu_math_library_num_threads_6"
     output_thread_df["mkl_infer_diff"] = output_thread_df[[
-        "inference_time(ms)_{}_6".format("cpu_math_library_num_threads"),
-        "inference_time(ms)_{}_1".format("cpu_math_library_num_threads")
+        num_threads_6, num_threads_1
     ]].apply(
-        lambda x: (float(x["inference_time(ms)_{}_6".format("cpu_math_library_num_threads")]) - float(x["inference_time(ms)_{}_1".format("cpu_math_library_num_threads")])) / float(x["inference_time(ms)_{}_1".format("cpu_math_library_num_threads")]),
+        lambda x: (float(x[num_threads_6]) - float(x[num_threads_1])) / float(x[num_threads_1]),
         axis=1)
+    cpu_num_threads_1 = "cpu_rss(MB)_cpu_math_library_num_threads_1"
+    cpu_num_threads_6 = "cpu_rss(MB)_cpu_math_library_num_threads_6"
     output_thread_df["mkl_cpu_rss_diff"] = output_thread_df[[
-        "cpu_rss(MB)_{}_6".format("cpu_math_library_num_threads"),
-        "cpu_rss(MB)_{}_1".format("cpu_math_library_num_threads")
+        cpu_num_threads_6, cpu_num_threads_1
     ]].apply(
-        lambda x: (float(x["cpu_rss(MB)_{}_6".format("cpu_math_library_num_threads")]) - float(x["cpu_rss(MB)_{}_1".format("cpu_math_library_num_threads")])) / float(x["cpu_rss(MB)_{}_1".format("cpu_math_library_num_threads")]),
+        lambda x: (float(x[cpu_num_threads_6]) - float(x[cpu_num_threads_1])) / float(x[cpu_num_threads_1]),
         axis=1)
 
     return output_mkl_df, output_thread_df

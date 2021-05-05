@@ -26,31 +26,21 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
-## 2.如何选择部署时依赖库的版本
+## 2.部署环境准备
 
-### （1）CUDA、cuDNN、TensorRT版本选择
-由于CUDA、cuDNN、TENSORRT不一定都是向前兼容的，需要使用与编译Paddle预测库使用的环境完全一致的环境进行部署。
+- python预测：在python环境下安装PaddlePaddle环境即可，如需TensorRT预测，在[Paddle Release版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release)中下载合适的wheel包即可。
 
-### （2）部署时预测库版本、预测引擎版本选择
-
-- Linux、Windows平台下C++部署，需要使用Paddle预测库进行部署。
-  （1）Paddle官网提供在不同平台、不同环境下编译好的预测库，您可以直接使用，请在这里[Paddle预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 选择。
-  （2）如果您将要部署的平台环境，Paddle官网上没有提供已编译好的预测库，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-
+- C++预测库：请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)，如果需要使用TensorRT，请下载带有TensorRT编译的预测库。您也可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 **注意:**  Paddle预测库版本需要>=2.0
 
-- Python语言部署，需要在对应平台上安装Paddle Python包。如果Paddle官网上没有提供该平台下的Paddle Python包，您可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-
 - PaddleServing部署
-  PaddleServing 0.4.0是基于Paddle 1.8.4开发，PaddleServing 0.5.0是基于Paddle2.0开发。
+  请选择PaddleServing>0.5.0以上版本，具体可参考[PaddleServing安装文档](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)。
 
 - Paddle-Lite部署
   Paddle-Lite支持OP列表请参考：[Paddle-Lite支持的OP列表](https://paddle-lite.readthedocs.io/zh/latest/source_compile/library.html) ，请跟进所部署模型中使用到的op选择Paddle-Lite版本。
 
 - NV Jetson部署
-  Paddle官网提供在NV Jetson平台上已经编译好的预测库，[Paddle NV Jetson预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html) 。
-  若列表中没有您需要的预测库，您可以在您的平台上自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-
+  Paddle官网提供在NV Jetson平台上已经编译好的预测库，[Paddle NV Jetson预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)。若列表中没有您需要的预测库，您可以在您的平台上自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 
 ## 3.部署预测
 - Python部署：使用`deploy/python/infer.py`进行预测，可具体参考[python部署文档](python/README.md)。
@@ -68,7 +58,7 @@ sh scripts/build.sh
 
 - 手机移动端部署，请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。
 
-## 5、BenchMark测试
+## 4.BenchMark测试
 - 使用导出的模型，运行BenchMark批量测试脚本：
 ```shell
 sh deploy/benchmark/benchmark_ppdet.sh {model_dir} {model_name}
@@ -79,7 +69,7 @@ sh deploy/benchmark/benchmark_ppdet.sh {model_dir} {model_name}
 python deploy/benchmark/log_parser_excel.py --log_path=./output_pipeline --output_name=benchmark_excel.xlsx
 ```
 
-## 6、常见问题QA
+## 5.常见问题QA
 - 1、`Paddle 1.8.4`训练的模型，可以用`Paddle2.0`部署吗？
   Paddle 2.0是兼容Paddle 1.8.4的，因此是可以的。但是部分模型(如SOLOv2)使用到了Paddle 2.0中新增OP，这类模型不可以。
 

@@ -1,8 +1,5 @@
+# All rights `PaddleDetection` reserved
 #!/bin/bash
-export RED='\033[0;31m' # red color
-export NC='\033[0m' # no color
-export YELLOW='\033[33m' # yellow color
-
 model_dir=$1
 model_name=$2
 
