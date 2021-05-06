@@ -60,14 +60,6 @@ class BBoxPostProcess(object):
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
-
-        # Prevent empty bbox_pred from decode or NMS.
-        # Bboxes and score before NMS may be empty due to the score threshold.
-        if bbox_pred.shape[0] == 0:
-            bbox_pred = paddle.to_tensor(
-                np.array(
-                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -155,10 +147,6 @@ class MaskPostProcess(object):
 
         gx = paddle.expand(img_x, [N, img_y.shape[1], img_x.shape[2]])
         gy = paddle.expand(img_y, [N, img_y.shape[1], img_x.shape[2]])
-        # TODO: Because paddle.expand transform error when dygraph
-        # to static, use reshape to avoid mistakes.
-        gx = paddle.reshape(gx, [N, img_y.shape[1], img_x.shape[2]])
-        gy = paddle.reshape(gy, [N, img_y.shape[1], img_x.shape[2]])
         grid = paddle.stack([gx, gy], axis=3)
         img_masks = F.grid_sample(masks, grid, align_corners=False)
         return img_masks[:, 0]
