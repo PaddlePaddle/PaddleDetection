@@ -38,9 +38,11 @@ class HigherHrnet(BaseArch):
                  hrhrnet_head='HigherHrnetHead',
                  post_process='HrHrnetPostProcess',
                  eval_flip=True,
-                 flip_perm=None):
+                 flip_perm=None,
+                 max_num_people=30):
         """
-        HigherHrnet network, see https://arxiv.org/abs/
+        HigherHrnet network, see https://arxiv.org/abs/1908.10357；
+        HigherHrnet+swahr, see https://arxiv.org/abs/2012.15175
 
         Args:
             backbone (nn.Layer): backbone instance
@@ -54,6 +56,9 @@ class HigherHrnet(BaseArch):
         self.flip = eval_flip
         self.flip_perm = paddle.to_tensor(flip_perm)
         self.deploy = False
+        self.interpolate = L.Upsample(2, mode='bilinear')
+        self.pool = L.MaxPool(5, 1, 2)
+        self.max_num_people = max_num_people
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -71,7 +76,6 @@ class HigherHrnet(BaseArch):
         }
 
     def _forward(self):
-        batchsize = self.inputs['image'].shape[0]
         if self.flip and not self.training and not self.deploy:
             self.inputs['image'] = paddle.concat(
                 (self.inputs['image'], paddle.flip(self.inputs['image'], [3])))
@@ -81,9 +85,7 @@ class HigherHrnet(BaseArch):
             return self.hrhrnet_head(body_feats, self.inputs)
         else:
             outputs = self.hrhrnet_head(body_feats)
-            if self.deploy:
-                return outputs, [1]
-            if self.flip:
+            if self.flip and not self.deploy:
                 outputs = [paddle.split(o, 2) for o in outputs]
                 output_rflip = [
                     paddle.flip(paddle.gather(o[1], self.flip_perm, 1), [3])
@@ -93,37 +95,69 @@ class HigherHrnet(BaseArch):
                 heatmap = (output1[0] + output_rflip[0]) / 2.
                 tagmaps = [output1[1], output_rflip[1]]
                 outputs = [heatmap] + tagmaps
+            outputs = self.get_topk(outputs)
+
+            if self.deploy:
+                return outputs
 
             res_lst = []
-            bboxnums = []
-            for idx in range(batchsize):
-                item = [o[idx:(idx + 1)] for o in outputs]
+            h = self.inputs['im_shape'][0, 0].numpy().item()
+            w = self.inputs['im_shape'][0, 1].numpy().item()
+            kpts, scores = self.post_process(*outputs, h, w)
+            res_lst.append([kpts, scores])
 
-                h = self.inputs['im_shape'][idx, 0].numpy().item()
-                w = self.inputs['im_shape'][idx, 1].numpy().item()
-                kpts, scores = self.post_process(item, h, w)
-                res_lst.append([kpts, scores])
-                bboxnums.append(1)
-
-            return res_lst, bboxnums
+            return res_lst
 
     def get_loss(self):
         return self._forward()
 
     def get_pred(self):
         outputs = {}
-        res_lst, bboxnums = self._forward()
+        res_lst = self._forward()
         outputs['keypoint'] = res_lst
-        outputs['bbox_num'] = bboxnums
+        return outputs
+
+    def get_topk(self, outputs):
+        # resize to image size
+        outputs = [self.interpolate(x) for x in outputs]
+        if len(outputs) == 3:
+            tagmap = paddle.concat(
+                (outputs[1].unsqueeze(4), outputs[2].unsqueeze(4)), axis=4)
+        else:
+            tagmap = outputs[1].unsqueeze(4)
+
+        heatmap = outputs[0]
+        N, J = 1, self.hrhrnet_head.num_joints
+        heatmap_maxpool = self.pool(heatmap)
+        # topk
+        maxmap = heatmap * (heatmap == heatmap_maxpool)
+        maxmap = maxmap.reshape([N, J, -1])
+        heat_k, inds_k = maxmap.topk(self.max_num_people, axis=2)
+
+        outputs = [heatmap, tagmap, heat_k, inds_k]
         return outputs
 
 
 @register
 @serializable
 class HrHrnetPostProcess(object):
+    '''
+    HrHrnet postprocess contain:
+        1) get topk keypoints in the output heatmap
+        2) sample the tagmap's value corresponding to each of the topk coordinate
+        3) match different joints to combine to some people with Hungary algorithm
+        4) adjust the coordinate by +-0.25 to decrease error std
+        5) salvage missing joints by check positivity of heatmap - tagdiff_norm
+    Args:
+        max_num_people (int): max number of people support in postprocess
+        heat_thresh (float): value of topk below this threshhold will be ignored
+        tag_thresh (float): coord's value sampled in tagmap below this threshold belong to same people for init
+
+        inputs(list[heatmap]): the output list of modle, [heatmap, heatmap_maxpool, tagmap], heatmap_maxpool used to get topk
+        original_height, original_width (float): the original image size
+    '''
+
     def __init__(self, max_num_people=30, heat_thresh=0.2, tag_thresh=1.):
-        self.interpolate = L.Upsample(2, mode='bilinear')
-        self.pool = L.MaxPool(5, 1, 2)
         self.max_num_people = max_num_people
         self.heat_thresh = heat_thresh
         self.tag_thresh = tag_thresh
@@ -140,25 +174,11 @@ class HrHrnetPostProcess(object):
                             -0.25)
         return offset_y + 0.5, offset_x + 0.5
 
-    def __call__(self, inputs, original_height, original_width):
-
-        # resize to image size
-        inputs = [self.interpolate(x) for x in inputs]
-        # aggregate
-        heatmap = inputs[0]
-        if len(inputs) == 3:
-            tagmap = paddle.concat(
-                (inputs[1].unsqueeze(4), inputs[2].unsqueeze(4)), axis=4)
-        else:
-            tagmap = inputs[1].unsqueeze(4)
+    def __call__(self, heatmap, tagmap, heat_k, inds_k, original_height,
+                 original_width):
 
         N, J, H, W = heatmap.shape
         assert N == 1, "only support batch size 1"
-        # topk
-        maximum = self.pool(heatmap)
-        maxmap = heatmap * (heatmap == maximum)
-        maxmap = maxmap.reshape([N, J, -1])
-        heat_k, inds_k = maxmap.topk(self.max_num_people, axis=2)
         heatmap = heatmap[0].cpu().detach().numpy()
         tagmap = tagmap[0].cpu().detach().numpy()
         heats = heat_k[0].cpu().detach().numpy()
@@ -240,18 +260,10 @@ class HrHrnetPostProcess(object):
         mean_score = pose_scores.mean(axis=1)
         pose_kpts[valid, 2] = pose_scores[valid]
 
-        # TODO can we remove the outermost loop altogether
         # salvage missing joints
-
         if True:
             for pid, coords in enumerate(pose_coords):
-                # vj = np.nonzero(valid[pid])[0]
-                # vyx = coords[valid[pid]].astype(np.int32)
-                # tag_mean = tagmap[vj, vyx[:, 0], vyx[:, 1]].mean(axis=0)
-
-                tag_mean = np.array(pose_tags[pid]).mean(
-                    axis=0)  #TODO: replace tagmap sample by history record
-
+                tag_mean = np.array(pose_tags[pid]).mean(axis=0)
                 norm = np.sum((tagmap - tag_mean)**2, axis=3)**0.5
                 score = heatmap - np.round(norm)  # (J, H, W)
                 flat_score = score.reshape(J, -1)

@@ -89,7 +89,7 @@ DATASETS = {
     'roadsign_coco': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
         '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
-    'objects365': (),
+    'objects365': ()
 }
 
 DOWNLOAD_RETRY_LIMIT = 3
