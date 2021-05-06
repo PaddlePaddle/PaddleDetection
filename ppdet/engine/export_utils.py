@@ -37,7 +37,10 @@ TRT_MIN_SUBGRAPH = {
     'TTFNet': 3,
     'FCOS': 16,
     'SOLOv2': 60,
+    'HigherHrnet': 40,
 }
+
+KEYPOINT_ARCH = ['HigherHrnet', 'Hrnet']
 
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
@@ -45,7 +48,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     anno_file = dataset_cfg.get_anno()
 
-    clsid2catid, catid2name = get_categories(metric, anno_file)
+    clsid2catid, catid2name = get_categories(metric, arch, anno_file)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
@@ -95,10 +98,13 @@ def _dump_infer_config(config, path, image_shape, model):
         os._exit(0)
     if 'Mask' in infer_arch:
         infer_cfg['mask'] = True
+    label_arch = 'detection_arch'
+    if infer_arch in KEYPOINT_ARCH:
+        label_arch = 'keypoint_arch'
     infer_cfg['Preprocess'], infer_cfg[
         'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],
-            infer_cfg['arch'], image_shape)
+            label_arch, image_shape)
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))

@@ -207,7 +207,6 @@ class OptimizerBuilder():
                 clip_norm=self.clip_grad_by_norm)
         else:
             grad_clip = None
-
         if self.regularizer:
             reg_type = self.regularizer['type'] + 'Decay'
             reg_factor = self.regularizer['factor']

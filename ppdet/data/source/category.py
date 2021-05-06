@@ -26,7 +26,7 @@ logger = setup_logger(__name__)
 __all__ = ['get_categories']
 
 
-def get_categories(metric_type, anno_file=None):
+def get_categories(metric_type, arch, anno_file=None):
     """
     Get class id to category id map and category id
     to category name map from annotation file.
@@ -36,6 +36,9 @@ def get_categories(metric_type, anno_file=None):
             and 'widerface'.
         anno_file (str): annotation file path
     """
+    if arch == 'keypoint_arch':
+        return (None, {'id': 'keypoint'})
+
     if metric_type.lower() == 'coco':
         if anno_file and os.path.isfile(anno_file):
             # lazy import pycocotools here
@@ -46,7 +49,6 @@ def get_categories(metric_type, anno_file=None):
 
             clsid2catid = {i: cat['id'] for i, cat in enumerate(cats)}
             catid2name = {cat['id']: cat['name'] for cat in cats}
-
             return clsid2catid, catid2name
 
         # anno file not exist, load default categories of COCO17
@@ -80,9 +82,6 @@ def get_categories(metric_type, anno_file=None):
 
     elif metric_type.lower() == 'widerface':
         return _widerface_category()
-
-    elif metric_type.lower().startswith('keypoint'):
-        return (None, {'id': 'keypoint'})
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
