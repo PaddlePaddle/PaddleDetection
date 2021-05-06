@@ -103,7 +103,7 @@ class HigherHrnet(BaseArch):
             res_lst = []
             h = self.inputs['im_shape'][0, 0].numpy().item()
             w = self.inputs['im_shape'][0, 1].numpy().item()
-            kpts, scores = self.post_process(outputs, h, w)
+            kpts, scores = self.post_process(*outputs, h, w)
             res_lst.append([kpts, scores])
 
             return res_lst
@@ -174,8 +174,8 @@ class HrHrnetPostProcess(object):
                             -0.25)
         return offset_y + 0.5, offset_x + 0.5
 
-    def __call__(self, inputs, original_height, original_width):
-        heatmap, tagmap, heat_k, inds_k = inputs
+    def __call__(self, heatmap, tagmap, heat_k, inds_k, original_height,
+                 original_width):
 
         N, J, H, W = heatmap.shape
         assert N == 1, "only support batch size 1"

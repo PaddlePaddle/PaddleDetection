@@ -78,6 +78,7 @@ class COCOMetric(Metric):
         # TODO: bias should be unified
         self.bias = kwargs.get('bias', 0)
         self.save_prediction_only = kwargs.get('save_prediction_only', False)
+        self.iou_type = kwargs.get('IouType', 'bbox')
         self.reset()
 
     def reset(self):
@@ -182,7 +183,7 @@ class COCOMetric(Metric):
                 style = 'keypoints'
                 use_area = True
                 sigmas = COCO_SIGMAS
-                if 'crowd' in self.anno_file:
+                if self.iou_type == 'keypoints_crowd':
                     style = 'keypoints_crowd'
                     use_area = False
                     sigmas = CROWD_SIGMAS
