@@ -248,6 +248,8 @@ class ModelEMA(object):
         self.step += 1
 
     def apply(self):
+        if self.step == 0:
+            return self.state_dict
         state_dict = dict()
         for k, v in self.state_dict.items():
             v = v / (1 - self._decay**self.step)
