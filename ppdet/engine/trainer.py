@@ -28,10 +28,11 @@ import paddle.distributed as dist
 from paddle.distributed import fleet
 from paddle import amp
 from paddle.static import InputSpec
+from ppdet.optimizer import ModelEMA
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-from ppdet.utils.visualizer import visualize_results
+from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -60,6 +61,11 @@ class Trainer(object):
         else:
             self.model = self.cfg.model
             self.is_loaded_weights = True
+
+        self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
+        if self.use_ema:
+            self.ema = ModelEMA(
+                cfg['ema_decay'], self.model, use_thres_step=True)
 
         # build data loader
         self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
@@ -125,6 +131,8 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
+            save_prediction_only = self.cfg['save_prediction_only'] \
+                if 'save_prediction_only' in self.cfg else False
 
             # pass clsid2catid info to metric instance to avoid multiple loading
             # annotation file
@@ -145,7 +153,8 @@ class Trainer(object):
                     clsid2catid=clsid2catid,
                     classwise=classwise,
                     output_eval=output_eval,
-                    bias=bias)
+                    bias=bias,
+                    save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
             self._metrics = [
@@ -278,7 +287,14 @@ class Trainer(object):
 
                 self.status['batch_time'].update(time.time() - iter_tic)
                 self._compose_callback.on_step_end(self.status)
+                if self.use_ema:
+                    self.ema.update(self.model)
                 iter_tic = time.time()
+
+            # apply ema weight on model
+            if self.use_ema:
+                weight = self.model.state_dict()
+                self.model.set_dict(self.ema.apply())
 
             self._compose_callback.on_epoch_end(self.status)
 
@@ -299,6 +315,10 @@ class Trainer(object):
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
+
+            # restore origin weight on model
+            if self.use_ema:
+                self.model.set_dict(weight)
 
     def _eval_with_loader(self, loader):
         sample_num = 0
@@ -331,9 +351,14 @@ class Trainer(object):
         self._reset_metrics()
 
     def evaluate(self):
-        self._eval_with_loader(self.loader)
+        with paddle.no_grad():
+            self._eval_with_loader(self.loader)
 
-    def predict(self, images, draw_threshold=0.5, output_dir='output'):
+    def predict(self,
+                images,
+                draw_threshold=0.5,
+                output_dir='output',
+                save_txt=False):
         self.dataset.set_images(images)
         loader = create('TestReader')(self.dataset, 0)
 
@@ -352,7 +377,8 @@ class Trainer(object):
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
             for key, value in outs.items():
-                outs[key] = value.numpy()
+                if hasattr(value, 'numpy'):
+                    outs[key] = value.numpy()
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
@@ -369,9 +395,12 @@ class Trainer(object):
                         if 'mask' in batch_res else None
                 segm_res = batch_res['segm'][start:end] \
                         if 'segm' in batch_res else None
-                image = visualize_results(image, bbox_res, mask_res, segm_res,
-                                          int(outs['im_id']), catid2name,
-                                          draw_threshold)
+                keypoint_res = batch_res['keypoint'][start:end] \
+                        if 'keypoint' in batch_res else None
+
+                image = visualize_results(
+                    image, bbox_res, mask_res, segm_res, keypoint_res,
+                    int(outs['im_id']), catid2name, draw_threshold)
                 self.status['result_image'] = np.array(image.copy())
                 if self._compose_callback:
                     self._compose_callback.on_step_end(self.status)
@@ -380,6 +409,15 @@ class Trainer(object):
                 logger.info("Detection bbox results save in {}".format(
                     save_name))
                 image.save(save_name, quality=95)
+                if save_txt:
+                    save_path = os.path.splitext(save_name)[0] + '.txt'
+                    results = {}
+                    results["im_id"] = im_id
+                    if bbox_res:
+                        results["bbox_res"] = bbox_res
+                    if keypoint_res:
+                        results["keypoint_res"] = keypoint_res
+                    save_result(save_path, results, catid2name, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):
@@ -407,6 +445,7 @@ class Trainer(object):
             image_shape = [3, -1, -1]
 
         self.model.eval()
+        if hasattr(self.model, 'deploy'): self.model.deploy = True
 
         # Save infer cfg
         _dump_infer_config(self.cfg,

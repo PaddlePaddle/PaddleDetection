@@ -34,6 +34,7 @@ TRT_MIN_SUBGRAPH = {
     'SSD': 3,
     'RCNN': 40,
     'RetinaNet': 40,
+    'S2ANet': 40,
     'EfficientDet': 40,
     'Face': 3,
     'TTFNet': 3,
@@ -43,6 +44,7 @@ TRT_MIN_SUBGRAPH = {
 RESIZE_SCALE_SET = {
     'RCNN',
     'RetinaNet',
+    'S2ANet',
     'FCOS',
     'SOLOv2',
 }

@@ -1,0 +1,8 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_3x.yml',
+  '_base_/faster_rcnn_enhance.yml',
+  '_base_/faster_rcnn_enhance_reader.yml',
+]
+weights: output/faster_rcnn_enhance_r50_3x_coco/model_final

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
+import numpy as np
+
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -50,11 +52,13 @@ class TwoFCHead(nn.Layer):
             out_channel,
             weight_attr=paddle.ParamAttr(
                 initializer=XavierUniform(fan_out=fan)))
+        self.fc6.skip_quant = True
 
         self.fc7 = nn.Linear(
             out_channel,
             out_channel,
             weight_attr=paddle.ParamAttr(initializer=XavierUniform()))
+        self.fc7.skip_quant = True
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -124,10 +128,8 @@ class XConvNormHead(nn.Layer):
                     filter_size=3,
                     stride=1,
                     norm_type=self.norm_type,
-                    norm_name=head_conv_name + '_norm',
                     freeze_norm=self.freeze_norm,
-                    initializer=initializer,
-                    name=head_conv_name))
+                    initializer=initializer))
             self.bbox_head_convs.append(head_conv)
 
         fan = conv_dim * resolution * resolution
@@ -160,7 +162,7 @@ class XConvNormHead(nn.Layer):
 @register
 class BBoxHead(nn.Layer):
     __shared__ = ['num_classes']
-    __inject__ = ['bbox_assigner']
+    __inject__ = ['bbox_assigner', 'bbox_loss']
     """
     RCNN bbox head
 
@@ -182,7 +184,8 @@ class BBoxHead(nn.Layer):
                  bbox_assigner='BboxAssigner',
                  with_pool=False,
                  num_classes=80,
-                 bbox_weight=[10., 10., 5., 5.]):
+                 bbox_weight=[10., 10., 5., 5.],
+                 bbox_loss=None):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -193,18 +196,21 @@ class BBoxHead(nn.Layer):
         self.with_pool = with_pool
         self.num_classes = num_classes
         self.bbox_weight = bbox_weight
+        self.bbox_loss = bbox_loss
 
         self.bbox_score = nn.Linear(
             in_channel,
             self.num_classes + 1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0.0, std=0.01)))
+        self.bbox_score.skip_quant = True
 
         self.bbox_delta = nn.Linear(
             in_channel,
             4 * self.num_classes,
             weight_attr=paddle.ParamAttr(initializer=Normal(
                 mean=0.0, std=0.001)))
+        self.bbox_delta.skip_quant = True
         self.assigned_label = None
         self.assigned_rois = None
 
@@ -314,12 +320,49 @@ class BBoxHead(nn.Layer):
         reg_target = paddle.gather(reg_target, fg_inds)
         reg_target.stop_gradient = True
 
-        loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
-        ) / tgt_labels.shape[0]
+        if self.bbox_loss is not None:
+            reg_delta = self.bbox_transform(reg_delta)
+            reg_target = self.bbox_transform(reg_target)
+            loss_bbox_reg = self.bbox_loss(
+                reg_delta, reg_target).sum() / tgt_labels.shape[0]
+            loss_bbox_reg *= self.num_classes
+        else:
+            loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
+            ) / tgt_labels.shape[0]
 
         loss_bbox[reg_name] = loss_bbox_reg
 
         return loss_bbox
+
+    def bbox_transform(self, deltas, weights=[0.1, 0.1, 0.2, 0.2]):
+        wx, wy, ww, wh = weights
+
+        deltas = paddle.reshape(deltas, shape=(0, -1, 4))
+
+        dx = paddle.slice(deltas, axes=[2], starts=[0], ends=[1]) * wx
+        dy = paddle.slice(deltas, axes=[2], starts=[1], ends=[2]) * wy
+        dw = paddle.slice(deltas, axes=[2], starts=[2], ends=[3]) * ww
+        dh = paddle.slice(deltas, axes=[2], starts=[3], ends=[4]) * wh
+
+        dw = paddle.clip(dw, -1.e10, np.log(1000. / 16))
+        dh = paddle.clip(dh, -1.e10, np.log(1000. / 16))
+
+        pred_ctr_x = dx
+        pred_ctr_y = dy
+        pred_w = paddle.exp(dw)
+        pred_h = paddle.exp(dh)
+
+        x1 = pred_ctr_x - 0.5 * pred_w
+        y1 = pred_ctr_y - 0.5 * pred_h
+        x2 = pred_ctr_x + 0.5 * pred_w
+        y2 = pred_ctr_y + 0.5 * pred_h
+
+        x1 = paddle.reshape(x1, shape=(-1, ))
+        y1 = paddle.reshape(y1, shape=(-1, ))
+        x2 = paddle.reshape(x2, shape=(-1, ))
+        y2 = paddle.reshape(y2, shape=(-1, ))
+
+        return paddle.concat([x1, y1, x2, y2])
 
     def get_prediction(self, score, delta):
         bbox_prob = F.softmax(score)

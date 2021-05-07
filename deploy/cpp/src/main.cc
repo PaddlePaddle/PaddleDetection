@@ -37,7 +37,7 @@ DEFINE_string(image_path, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_bool(use_camera, false, "Use camera or not");
-DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
+DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16/trt_int8)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");

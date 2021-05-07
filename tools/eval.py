@@ -22,6 +22,10 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
+
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
@@ -66,6 +70,12 @@ def parse_args():
         action="store_true",
         help="whether per-category AP and draw P-R Curve or not.")
 
+    parser.add_argument(
+        '--save_prediction_only',
+        action='store_true',
+        default=False,
+        help='Whether to save the evaluation results only')
+
     args = parser.parse_args()
     return args
 
@@ -85,7 +95,7 @@ def run(FLAGS, cfg):
     # init parallel environment if nranks > 1
     init_parallel_env()
 
-    # build trainer 
+    # build trainer
     trainer = Trainer(cfg, mode='eval')
 
     # load weights
@@ -102,9 +112,13 @@ def main():
     cfg['bias'] = 1 if FLAGS.bias else 0
     cfg['classwise'] = True if FLAGS.classwise else False
     cfg['output_eval'] = FLAGS.output_eval
+    cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
+        cfg['norm_type'] = 'bn'
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')

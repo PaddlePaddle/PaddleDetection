@@ -44,9 +44,11 @@ class Compose(object):
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
-                self.transforms_cls.append(op_cls(**v))
-                if hasattr(op_cls, 'num_classes'):
-                    op_cls.num_classes = num_classes
+                f = op_cls(**v)
+                if hasattr(f, 'num_classes'):
+                    f.num_classes = num_classes
+
+                self.transforms_cls.append(f)
 
     def __call__(self, data):
         for f in self.transforms_cls:
@@ -95,10 +97,9 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k:
+                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
-
         return batch_data
 
 
@@ -116,6 +117,11 @@ class BaseDataLoader(object):
         drop_last (bool): whether to drop the last incomplete,
                           default False
         num_classes (int): class number of dataset, default 80
+        collate_batch (bool): whether to collate batch in dataloader.
+            If set to True, the samples will collate into batch according
+            to the batch size. Otherwise, the ground-truth will not collate,
+            which is used when the number of ground-truch is different in 
+            samples.
         use_shared_memory (bool): whether to use shared memory to
                 accelerate data loading, enable this only if you
                 are sure that the shared memory size of your OS

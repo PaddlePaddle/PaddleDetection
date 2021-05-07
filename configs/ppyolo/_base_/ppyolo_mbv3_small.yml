@@ -18,7 +18,7 @@ MobileNetV3:
   feature_maps: [9, 12]
 
 PPYOLOFPN:
-  feat_channels: [96, 304]
+  in_channels: [96, 304]
   coord_conv: true
   conv_block_num: 0
   spp: true

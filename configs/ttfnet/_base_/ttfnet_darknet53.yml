@@ -14,8 +14,9 @@ DarkNet:
   norm_type: bn
   norm_decay: 0.0004
 
-# use default config
-# TTFFPN:
+TTFFPN:
+  planes: [256, 128, 64]
+  shortcut_num: [3, 2, 1]
 
 TTFHead:
   hm_loss:

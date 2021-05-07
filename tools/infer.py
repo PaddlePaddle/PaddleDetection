@@ -21,6 +21,9 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
 import glob
 
 import paddle
@@ -65,12 +68,17 @@ def parse_args():
         "--use_vdl",
         type=bool,
         default=False,
-        help="whether to record the data to VisualDL.")
+        help="Whether to record the data to VisualDL.")
     parser.add_argument(
         '--vdl_log_dir',
         type=str,
         default="vdl_log_dir/image",
         help='VisualDL logging directory for image.')
+    parser.add_argument(
+        "--save_txt",
+        type=bool,
+        default=False,
+        help="Whether to save inference result in txt.")
     args = parser.parse_args()
     return args
 
@@ -120,7 +128,8 @@ def run(FLAGS, cfg):
     trainer.predict(
         images,
         draw_threshold=FLAGS.draw_threshold,
-        output_dir=FLAGS.output_dir)
+        output_dir=FLAGS.output_dir,
+        save_txt=FLAGS.save_txt)
 
 
 def main():
@@ -131,6 +140,9 @@ def main():
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
+        cfg['norm_type'] = 'bn'
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='test')

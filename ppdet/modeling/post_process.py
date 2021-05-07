@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, pd_rbox2poly
 from . import ops
 try:
     from collections.abc import Sequence
@@ -60,14 +60,6 @@ class BBoxPostProcess(object):
         else:
             bbox_pred, bbox_num = self.decode(head_out, rois, im_shape,
                                               scale_factor)
-
-        # Prevent empty bbox_pred from decode or NMS.
-        # Bboxes and score before NMS may be empty due to the score threshold.
-        if bbox_pred.shape[0] == 0:
-            bbox_pred = paddle.to_tensor(
-                np.array(
-                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
         return bbox_pred, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -155,10 +147,6 @@ class MaskPostProcess(object):
 
         gx = paddle.expand(img_x, [N, img_y.shape[1], img_x.shape[2]])
         gy = paddle.expand(img_y, [N, img_y.shape[1], img_x.shape[2]])
-        # TODO: Because paddle.expand transform error when dygraph
-        # to static, use reshape to avoid mistakes.
-        gx = paddle.reshape(gx, [N, img_y.shape[1], img_x.shape[2]])
-        gy = paddle.reshape(gy, [N, img_y.shape[1], img_x.shape[2]])
         grid = paddle.stack([gx, gy], axis=3)
         img_masks = F.grid_sample(masks, grid, align_corners=False)
         return img_masks[:, 0]
@@ -218,3 +206,104 @@ class FCOSPostProcess(object):
                                     centerness, scale_factor)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num
+
+
+@register
+class S2ANetBBoxPostProcess(object):
+    __shared__ = ['num_classes']
+    __inject__ = ['nms']
+
+    def __init__(self, num_classes=15, nms_pre=2000, min_bbox_size=0, nms=None):
+        super(S2ANetBBoxPostProcess, self).__init__()
+        self.num_classes = num_classes
+        self.nms_pre = nms_pre
+        self.min_bbox_size = min_bbox_size
+        self.nms = nms
+        self.origin_shape_list = []
+
+    def __call__(self, pred_scores, pred_bboxes):
+        """
+        pred_scores : [N, M]  score
+        pred_bboxes : [N, 5]  xc, yc, w, h, a
+        im_shape : [N, 2]  im_shape
+        scale_factor : [N, 2]  scale_factor
+        """
+        pred_ploys = pd_rbox2poly(pred_bboxes)
+        pred_ploys = paddle.reshape(
+            pred_ploys, [1, pred_ploys.shape[0], pred_ploys.shape[1]])
+
+        pred_scores = paddle.to_tensor(pred_scores)
+        # pred_scores [NA, 16] --> [16, NA]
+        pred_scores = paddle.transpose(pred_scores, [1, 0])
+        pred_scores = paddle.reshape(
+            pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
+
+        pred_cls_score_bbox, bbox_num, _ = self.nms(pred_ploys, pred_scores,
+                                                    self.num_classes)
+
+        # Prevent empty bbox_pred from decode or NMS.
+        # Bboxes and score before NMS may be empty due to the score threshold.
+        if pred_cls_score_bbox.shape[0] == 0:
+            pred_cls_score_bbox = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        return pred_cls_score_bbox, bbox_num
+
+    def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
+        """
+        Rescale, clip and filter the bbox from the output of NMS to
+        get final prediction.
+
+        Args:
+            bboxes(Tensor): bboxes [N, 10]
+            bbox_num(Tensor): bbox_num
+            im_shape(Tensor): [1 2]
+            scale_factor(Tensor): [1 2]
+        Returns:
+            bbox_pred(Tensor): The output is the prediction with shape [N, 8]
+                               including labels, scores and bboxes. The size of
+                               bboxes are corresponding to the original image.
+        """
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
+
+        origin_shape_list = []
+        scale_factor_list = []
+        # scale_factor: scale_y, scale_x
+        for i in range(bbox_num.shape[0]):
+            expand_shape = paddle.expand(origin_shape[i:i + 1, :],
+                                         [bbox_num[i], 2])
+            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
+            scale = paddle.concat([
+                scale_x, scale_y, scale_x, scale_y, scale_x, scale_y, scale_x,
+                scale_y
+            ])
+            expand_scale = paddle.expand(scale, [bbox_num[i], 8])
+            origin_shape_list.append(expand_shape)
+            scale_factor_list.append(expand_scale)
+
+        origin_shape_list = paddle.concat(origin_shape_list)
+        scale_factor_list = paddle.concat(scale_factor_list)
+
+        # bboxes: [N, 10], label, score, bbox
+        pred_label_score = bboxes[:, 0:2]
+        pred_bbox = bboxes[:, 2:10:1]
+
+        # rescale bbox to original image
+        scaled_bbox = pred_bbox / scale_factor_list
+        origin_h = origin_shape_list[:, 0]
+        origin_w = origin_shape_list[:, 1]
+
+        bboxes = scaled_bbox
+        zeros = paddle.zeros_like(origin_h)
+        x1 = paddle.maximum(paddle.minimum(bboxes[:, 0], origin_w - 1), zeros)
+        y1 = paddle.maximum(paddle.minimum(bboxes[:, 1], origin_h - 1), zeros)
+        x2 = paddle.maximum(paddle.minimum(bboxes[:, 2], origin_w - 1), zeros)
+        y2 = paddle.maximum(paddle.minimum(bboxes[:, 3], origin_h - 1), zeros)
+        x3 = paddle.maximum(paddle.minimum(bboxes[:, 4], origin_w - 1), zeros)
+        y3 = paddle.maximum(paddle.minimum(bboxes[:, 5], origin_h - 1), zeros)
+        x4 = paddle.maximum(paddle.minimum(bboxes[:, 6], origin_w - 1), zeros)
+        y4 = paddle.maximum(paddle.minimum(bboxes[:, 7], origin_h - 1), zeros)
+        pred_bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
+        pred_result = paddle.concat([pred_label_score, pred_bbox], axis=1)
+        return pred_result

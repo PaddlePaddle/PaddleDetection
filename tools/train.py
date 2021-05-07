@@ -24,11 +24,14 @@ if parent_path not in sys.path:
 
 import random
 import numpy as np
+# ignore warning log
+import warnings
+warnings.filterwarnings('ignore')
 
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 
@@ -75,6 +78,11 @@ def parse_args():
         type=str,
         default="vdl_log_dir/scalar",
         help='VisualDL logging directory for scalar.')
+    parser.add_argument(
+        '--save_prediction_only',
+        action='store_true',
+        default=False,
+        help='Whether to save the evaluation results only')
     args = parser.parse_args()
     return args
 
@@ -110,9 +118,13 @@ def main():
     cfg['fleet'] = FLAGS.fleet
     cfg['use_vdl'] = FLAGS.use_vdl
     cfg['vdl_log_dir'] = FLAGS.vdl_log_dir
+    cfg['save_prediction_only'] = FLAGS.save_prediction_only
     merge_config(FLAGS.opt)
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
+
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
+        cfg['norm_type'] = 'bn'
 
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config)

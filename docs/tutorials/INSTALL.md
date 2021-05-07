@@ -18,38 +18,20 @@ For general information about PaddleDetection, please see [README.md](https://gi
 - cuDNN >= 7.6
 
 
+Dependency of PaddleDetection and PaddlePaddle:
+
+| PaddleDetection version | PaddlePaddle version  |    tips    |
+| :----------------: | :---------------: | :-------: |
+|    release/2.0       |       >= 2.0.1    |     Dygraph mode is set as default    |
+|    release/2.0-rc    |       >= 2.0.1    |     --    |
+|    release/0.5       |       >= 1.8.4    |  Cascade R-CNN and SOLOv2 depends on 2.0.0.rc |
+|    release/0.4       |       >= 1.8.4    |  PP-YOLO depends on 1.8.4 |
+|    release/0.3       |        >=1.7      |     --    |
+
+
 ## Instruction
 
-It is recommened to install PaddleDetection and begin your object detection journey via docker environment. Please follow the instruction below and if you want to use your local environment, you could skip step 1.
-
-
-### 1. (Recommended) Prepare docker environment
-
-For example, the environment is CUDA10.1 and CUDNN 7.6
-
-```bash
-# Firstly, pull the PaddlePaddle image
-sudo docker pull paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82
-
-# Switch to the working directory
-cd /home/work
-
-# Create a container called ppdet and
-# mount the current directory which may contains the dataset
-# to /paddle directory in the container
-sudo nvidia-docker run --name ppdet -v $PWD:/paddle --privileged --shm-size=4G --network=host -it paddlepaddle/paddle:latest-dev-cuda10.1-cudnn7-gcc82 /bin/bash
-```
-
-You can see [DockerHub](https://hub.docker.com/r/paddlepaddle/paddle/tags/) to get the image that matches your machine.
-
-```
-# ctrl+P+Q to exit docker, to re-enter docker using the following command:
-sudo docker exec -it ppdet /bin/bash
-```
-
-For more docker usage, please refer to the PaddlePaddle [document](https://www.paddlepaddle.org.cn/documentation/docs/en/install/docker/fromdocker_en.html).
-
-### 2. Install PaddlePaddle
+### 1. Install PaddlePaddle
 
 ```
 # CUDA9.0
@@ -80,25 +62,42 @@ python -c "import paddle; print(paddle.__version__)"
 1.  If you want to use PaddleDetection on multi-GPU, please install NCCL at first.
 
 
-### 3. Install PaddleDetection
+### 2. Install PaddleDetection
 
+PaddleDetection can be installed in the following two ways:
+
+#### 2.1 Install via pip
+
+**Note:** Installing via pip only supports Python3
+
+```
+# Install paddledet via pip
+pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
+
+# Download and use the configuration files and code examples in the source code
+git clone https://github.com/PaddlePaddle/PaddleDetection.git
+cd PaddleDetection
+```
+
+#### 2.2 Compile and install from Source code
 
 ```
 # Clone PaddleDetection repository
 cd <path/to/clone/PaddleDetection>
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
+# Compile and install paddledet
+cd PaddleDetection
+python setup.py install
+
 # Install other dependencies
 pip install -r requirements.txt
 
-# Install PaddleDetection
-cd PaddleDetection
-python setup.py install
 ```
 
 **Note**
 
-1. Because the origin version of cocoapi does not support windows, another version is used which only supports Python3:
+1. If you are working on Windows OS, `pycocotools` installing may failed because of the origin version of cocoapi does not support windows, another version can be used used which only supports Python3:
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
 
@@ -111,13 +110,11 @@ python ppdet/modeling/tests/test_architectures.py
 If the tests are passed, the following information will be prompted:
 
 ```
-..........
+.....
 ----------------------------------------------------------------------
-Ran 12 tests in 2.480s
-OK (skipped=2)
+Ran 5 tests in 4.280s
+OK
 ```
-
-
 
 ## Inference demo
 
@@ -126,7 +123,7 @@ OK (skipped=2)
 ```
 # Predict an image by GPU
 export CUDA_VISIBLE_DEVICES=0
-python tools/infer.py -c configs/ppyolo/ppyolo.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
+python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 An image of the same name with the predicted result will be generated under the `output` folder.
