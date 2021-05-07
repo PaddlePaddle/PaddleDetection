@@ -21,20 +21,20 @@ from ..backbones.hrnet import BasicBlock
 
 
 @register
-class HrHrnetHead(nn.Layer):
+class HrHRNetHead(nn.Layer):
     __inject__ = ['loss']
 
-    def __init__(self, num_joints, loss='HrHrnetLoss', swahr=False, width=32):
+    def __init__(self, num_joints, loss='HrHRNetLoss', swahr=False, width=32):
         """
-        Head for HigherHrnet network
+        Head for HigherHRNet network
 
         Args:
             num_joints (int): number of keypoints
-            hrloss (object): HrHrnetLoss instance
+            hrloss (object): HrHRNetLoss instance
             swahr (bool): whether to use swahr
             width (int): hrnet channel width
         """
-        super(HrHrnetHead, self).__init__()
+        super(HrHRNetHead, self).__init__()
         self.loss = loss
 
         self.num_joints = num_joints
@@ -53,7 +53,7 @@ class HrHrnetHead(nn.Layer):
             num_filters=width,
             has_se=False,
             freeze_norm=False,
-            name='HrHrnetHead_{}'.format(i)) for i in range(4)))
+            name='HrHRNetHead_{}'.format(i)) for i in range(4)))
 
         self.interpolate = L.Upsample(2, mode='bilinear')
         self.concat = L.Concat(dim=1)

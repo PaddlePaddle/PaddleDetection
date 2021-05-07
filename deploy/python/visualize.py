@@ -38,10 +38,10 @@ def visualize_box_mask(im, results, labels, threshold=0.5):
         im = Image.open(im).convert('RGB')
     else:
         im = Image.fromarray(im)
-    if 'masks' in results and 'boxes' in results:
+    if 'masks' in results and 'boxes' in results and len(results['boxes']) > 0:
         im = draw_mask(
             im, results['boxes'], results['masks'], labels, threshold=threshold)
-    if 'boxes' in results:
+    if 'boxes' in results and len(results['boxes']) > 0:
         im = draw_box(im, results['boxes'], labels, threshold=threshold)
     if 'segm' in results:
         im = draw_segm(

@@ -7,5 +7,5 @@ shapely
 scipy
 terminaltables
 pycocotools
-xtcocotools==1.6
+#xtcocotools==1.6 #only for crowdpose
 setuptools>=42.0.0
