@@ -33,7 +33,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -172,6 +172,15 @@ class Trainer(object):
                                            self.dataset.image_dir),
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
+            ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            self._metrics = [
+                KeyPointTopDownCOCOEval(anno_file,
+                                        len(eval_dataset), self.cfg.num_joints,
+                                        self.cfg.save_dir)
             ]
         else:
             logger.warn("Metric not support for metric type {}".format(
@@ -374,6 +383,7 @@ class Trainer(object):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
+
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
             for key, value in outs.items():
