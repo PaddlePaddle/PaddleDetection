@@ -109,6 +109,7 @@ class COCODataSet(DetDataset):
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
+                is_rbox_anno = False
                 for inst in instances:
                     # check gt bbox
                     if inst.get('ignore', False):
