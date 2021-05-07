@@ -98,7 +98,7 @@ class COCODataSet(DetDataset):
 
             if not self.load_image_only:
                 ins_anno_ids = coco.getAnnIds(
-                    imgIds=[img_id], iscrowd=self.load_crowd)
+                    imgIds=[img_id], iscrowd=None if self.load_crowd else False)
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
