@@ -221,6 +221,7 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [Python inference](deploy/python)
   - [C++ inference](deploy/cpp)
   - [Serving](deploy/serving)
+  - [Paddle-Lite](deploy/lite)
   - [Inference benchmark](deploy/BENCHMARK_INFER.md)
 
 - Advanced development
