@@ -20,6 +20,7 @@
 | ResNeXt101-vd-FPN    | Faster         |    1    |   2x    |     ----     |  44.0  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/faster_rcnn_x101_vd_64x4d_fpn_2x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   1x    |     ----     |  41.4  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/faster_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN | Faster       |    1    |   2x    |     ----     |  42.3  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_vd_ssld_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/faster_rcnn_r50_vd_ssld_fpn_2x_coco.yml) |
+| Res2Net50-FPN        | Faster         |    2    |   1x    |     ----     |  40.6  | [下载链接](https://paddledet.bj.bcebos.com/models/faster_rcnn_res2net50_vb_26w_4s_fpn_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/develop/configs/res2net/faster_rcnn_res2net50_vb_26w_4s_fpn_1x.yml) |
 
 
 ## Citations

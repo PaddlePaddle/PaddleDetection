@@ -18,9 +18,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
-from paddle.regularizer import L2Decay
-from ppdet.modeling.layers import DeformableConvV2
 from ..shape_spec import ShapeSpec
+from .resnet import ConvNormLayer
 
 __all__ = ['Res2Net', 'Res2NetC5']
 
@@ -30,81 +29,6 @@ Res2Net_cfg = {
     152: [3, 8, 36, 3],
     200: [3, 12, 48, 3]
 }
-
-
-class ConvNormLayer(nn.Layer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 filter_size,
-                 stride,
-                 groups=1,
-                 act=None,
-                 norm_type='bn',
-                 norm_decay=0.,
-                 freeze_norm=True,
-                 lr=1.0,
-                 dcn_v2=False):
-        super(ConvNormLayer, self).__init__()
-        assert norm_type in ['bn', 'sync_bn']
-        self.norm_type = norm_type
-        self.act = act
-
-        if not dcn_v2:
-            self.conv = nn.Conv2D(
-                in_channels=ch_in,
-                out_channels=ch_out,
-                kernel_size=filter_size,
-                stride=stride,
-                padding=(filter_size - 1) // 2,
-                groups=groups,
-                weight_attr=paddle.ParamAttr(learning_rate=lr),
-                bias_attr=False)
-        else:
-            self.conv = DeformableConvV2(
-                in_channels=ch_in,
-                out_channels=ch_out,
-                kernel_size=filter_size,
-                stride=stride,
-                padding=(filter_size - 1) // 2,
-                groups=groups,
-                weight_attr=paddle.ParamAttr(learning_rate=lr),
-                bias_attr=False)
-
-        norm_lr = 0. if freeze_norm else lr
-        param_attr = paddle.ParamAttr(
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay),
-            trainable=False if freeze_norm else True)
-        bias_attr = paddle.ParamAttr(
-            learning_rate=norm_lr,
-            regularizer=L2Decay(norm_decay),
-            trainable=False if freeze_norm else True)
-
-        global_stats = True if freeze_norm else False
-        if norm_type == 'sync_bn':
-            self.norm = nn.SyncBatchNorm(
-                ch_out, weight_attr=param_attr, bias_attr=bias_attr)
-        else:
-            self.norm = nn.BatchNorm(
-                ch_out,
-                act=None,
-                param_attr=param_attr,
-                bias_attr=bias_attr,
-                use_global_stats=global_stats)
-        norm_params = self.norm.parameters()
-
-        if freeze_norm:
-            for param in norm_params:
-                param.stop_gradient = True
-
-    def forward(self, inputs):
-        out = self.conv(inputs)
-        if self.norm_type in ['bn', 'sync_bn']:
-            out = self.norm(out)
-        if self.act:
-            out = getattr(F, self.act)(out)
-        return out
 
 
 class BottleNeck(nn.Layer):
