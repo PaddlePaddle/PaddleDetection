@@ -21,7 +21,7 @@ Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理
 ### 1.2 准备预测库
 
 预测库有两种获取方式：
-1. [建议]直接下载，预测库下载链接如下：
+1. [**建议**]直接下载，预测库下载链接如下：
       |平台|预测库下载链接|
       |-|-|
       |Android|[arm7](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.8/inference_lite_lib.android.armv7.gcc.c++_static.with_extra.with_cv.tar.gz) / [arm8](https://github.com/PaddlePaddle/Paddle-Lite/releases/download/v2.8/inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv.tar.gz)|
@@ -78,7 +78,7 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 
 #### 2.1.1 安装paddle_lite_opt工具
 安装paddle_lite_opt工具有如下两种方法：
-1. [建议]pip安装paddlelite并进行转换
+1. [**建议**]pip安装paddlelite并进行转换
     ```shell
     pip install paddlelite
     ```
@@ -103,13 +103,13 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 
     `opt`的使用方式与参数与上面的`paddle_lite_opt`完全一致。
 
-之后使用`paddle_lite_opt`工具可以进行inference模型的转换。`paddle_lite_opt`的部分参数如下
+之后使用`paddle_lite_opt`工具可以进行inference模型的转换。`paddle_lite_opt`的部分参数如下：
 
 |选项|说明|
 |-|-|
 |--model_file|待优化的PaddlePaddle模型（combined形式）的网络结构文件路径|
 |--param_file|待优化的PaddlePaddle模型（combined形式）的权重文件路径|
-|--optimize_out_type|输出模型类型，目前支持两种类型：protobuf和naive_buffer，其中naive_buffer是一种更轻量级的序列化/反序列化实现。若您需要在mobile端执行模型预测，请将此选项设置为naive_buffer。默认为protobuf|
+|--optimize_out_type|输出模型类型，目前支持两种类型：protobuf和naive_buffer，其中naive_buffer是一种更轻量级的序列化/反序列化实现，默认为naive_buffer|
 |--optimize_out|优化模型的输出路径|
 |--valid_targets|指定模型可执行的backend，默认为arm。目前可支持x86、arm、opencl、npu、xpu，可以同时指定多个backend(以空格分隔)，Model Optimize Tool将会自动选择最佳方式。如果需要支持华为NPU（Kirin 810/990 Soc搭载的达芬奇架构NPU），应当设置为npu, arm|
 

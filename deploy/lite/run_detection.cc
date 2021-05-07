@@ -44,17 +44,19 @@ struct ImageBlob {
   std::vector<float> scale_;
 };
 
-void PrintBenchmarkLog(std::vector<double> det_time, std::map<std::string, std::string> config, int img_num){
-  std::cout << "----------------------- Config info -----------------------" << std::endl;
+void PrintBenchmarkLog(std::vector<double> det_time,
+                       std::map<std::string, std::string> config,
+                       int img_num) {
+  std::cout << "----------------- Config info ------------------" << std::endl;
   std::cout << "runtime_device: armv8" << std::endl;
   std::cout << "precision: " << config.at("precision") << std::endl;
 
   std::cout << "num_threads: " << config.at("num_threads") << std::endl;
-  std::cout << "----------------------- Data info -----------------------" << std::endl;
+  std::cout << "---------------- Data info ---------------------" << std::endl;
   std::cout << "batch_size: " << 1 << std::endl;
-  std::cout << "----------------------- Model info -----------------------" << std::endl;
+  std::cout << "---------------- Model info --------------------" << std::endl;
   std::cout << "Model_name: " << config.at("model_file") << std::endl;
-  std::cout << "----------------------- Perf info ------------------------" << std::endl;
+  std::cout << "---------------- Perf info ---------------------" << std::endl;
   std::cout << "Total number of predicted data: " << img_num
             << " and total time spent(s): "
             << std::accumulate(det_time.begin(), det_time.end(), 0) << std::endl;
@@ -133,7 +135,7 @@ void PrintConfig(const std::map<std::string, std::string> &config) {
   for (auto iter = config.begin(); iter != config.end(); iter++) {
     std::cout << iter->first << " : " << iter->second << std::endl;
   }
-  std::cout << "=======End of PaddleDetection lite demo config======" << std::endl;
+  std::cout << "===End of PaddleDetection lite demo config===" << std::endl;
 }
 
 
@@ -181,11 +183,12 @@ void neon_mean_scale(const float* din,
   }
 }
 
-std::vector<Object> visualize_result(const float* data,
-                                  int count,
-                                  float thresh,
-                                  cv::Mat& image,
-                                  const std::vector<std::string> &class_names) {  // NOLINT
+std::vector<Object> visualize_result(
+                        const float* data,
+                        int count,
+                        float thresh,
+                        cv::Mat& image,
+                        const std::vector<std::string> &class_names) {
   if (data == nullptr) {
     std::cerr << "[ERROR] data can not be nullptr\n";
     exit(1);
@@ -245,7 +248,8 @@ std::vector<Object> visualize_result(const float* data,
 }
 
 // Load Model and create model predictor
-std::shared_ptr<PaddlePredictor> LoadModel(std::string model_file, int num_theads) {
+std::shared_ptr<PaddlePredictor> LoadModel(std::string model_file,
+                                           int num_theads) {
   MobileConfig config;
   config.set_threads(num_theads);
   config.set_model_from_file(model_file);
@@ -255,11 +259,14 @@ std::shared_ptr<PaddlePredictor> LoadModel(std::string model_file, int num_thead
   return predictor;
 }
 
-ImageBlob prepare_imgdata(const cv::Mat& img, std::map<std::string, std::string> config){
+ImageBlob prepare_imgdata(const cv::Mat& img,
+                          std::map<std::string,
+                          std::string> config) {
   ImageBlob img_data;
   std::vector<int> target_size_;
   std::vector<std::string> size_str = split(config.at("Resize"), ",");
-  transform(size_str.begin(),size_str.end(),back_inserter(target_size_),[](std::string const& s){return stoi(s);});
+  transform(size_str.begin(), size_str.end(), back_inserter(target_size_),
+            [](std::string const& s){return stoi(s);});
   int width = target_size_[0];
   int height = target_size_[1];
   img_data.im_shape_ = {
@@ -275,8 +282,10 @@ ImageBlob prepare_imgdata(const cv::Mat& img, std::map<std::string, std::string>
   std::vector<float> scale_;
   std::vector<std::string> mean_str = split(config.at("mean"), ",");
   std::vector<std::string> std_str = split(config.at("std"), ",");
-  transform(mean_str.begin(),mean_str.end(),back_inserter(mean_),[](std::string const& s){return stof(s);});
-  transform(std_str.begin(),std_str.end(),back_inserter(scale_),[](std::string const& s){return stof(s);});
+  transform(mean_str.begin(), mean_str.end(), back_inserter(mean_),
+            [](std::string const& s){return stof(s);});
+  transform(std_str.begin(), std_str.end(), back_inserter(scale_),
+            [](std::string const& s){return stof(s);});
   img_data.mean_ = mean_;
   img_data.scale_ = scale_;
   return img_data;
@@ -287,11 +296,14 @@ void preprocess(const cv::Mat& img, const ImageBlob img_data, float* data) {
   cv::Mat rgb_img;
   cv::cvtColor(img, rgb_img, cv::COLOR_BGR2RGB);
   cv::resize(
-      rgb_img, rgb_img, cv::Size(img_data.im_shape_[0], img_data.im_shape_[1]), 0.f, 0.f, cv::INTER_CUBIC);
+      rgb_img, rgb_img, cv::Size(img_data.im_shape_[0],img_data.im_shape_[1]),
+      0.f, 0.f, cv::INTER_CUBIC);
   cv::Mat imgf;
   rgb_img.convertTo(imgf, CV_32FC3, 1 / 255.f);
   const float* dimg = reinterpret_cast<const float*>(imgf.data);
-  neon_mean_scale(dimg, data, int(img_data.im_shape_[0] * img_data.im_shape_[1]), img_data.mean_, img_data.scale_);
+  neon_mean_scale(
+    dimg, data, int(img_data.im_shape_[0] * img_data.im_shape_[1]),
+    img_data.mean_, img_data.scale_);
 }
 
 
@@ -354,17 +366,18 @@ void RunModel(std::map<std::string, std::string> config,
   for (auto& i : shape_out) {
     cnt *= i;
   }
-  auto rec_out = visualize_result(outptr, static_cast<int>(cnt / 6), 0.5f, img, class_names);
+  auto rec_out = visualize_result(
+      outptr, static_cast<int>(cnt / 6), 0.5f, img, class_names);
   std::string result_name =
       img_path.substr(0, img_path.find(".")) + "_result.jpg";
   cv::imwrite(result_name, img);
   auto postprocess_end = std::chrono::steady_clock::now();
-  std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
-  times->push_back(double(preprocess_diff.count() * 1000));
-  std::chrono::duration<float> inference_diff = inference_end - inference_start;
-  times->push_back(double(inference_diff.count() / repeats * 1000));
-  std::chrono::duration<float> postprocess_diff = postprocess_end - postprocess_start;
-  times->push_back(double(postprocess_diff.count() * 1000));
+  std::chrono::duration<float> prep_diff = preprocess_end - preprocess_start;
+  times->push_back(double(prep_diff.count() * 1000));
+  std::chrono::duration<float> infer_diff = inference_end - inference_start;
+  times->push_back(double(infer_diff.count() / repeats * 1000));
+  std::chrono::duration<float> post_diff = postprocess_end - postprocess_start;
+  times->push_back(double(post_diff.count() * 1000));
 }
 
 int main(int argc, char** argv) {
