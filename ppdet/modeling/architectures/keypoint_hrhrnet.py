@@ -26,33 +26,33 @@ from .meta_arch import BaseArch
 from .. import layers as L
 from ..keypoint_utils import transpred
 
-__all__ = ['HigherHrnet']
+__all__ = ['HigherHRNet']
 
 
 @register
-class HigherHrnet(BaseArch):
+class HigherHRNet(BaseArch):
     __category__ = 'architecture'
 
     def __init__(self,
-                 backbone='Hrnet',
-                 hrhrnet_head='HigherHrnetHead',
-                 post_process='HrHrnetPostProcess',
+                 backbone='HRNet',
+                 hrhrnet_head='HigherHRNetHead',
+                 post_process='HrHRNetPostProcess',
                  eval_flip=True,
                  flip_perm=None,
                  max_num_people=30):
         """
-        HigherHrnet network, see https://arxiv.org/abs/1908.10357；
-        HigherHrnet+swahr, see https://arxiv.org/abs/2012.15175
+        HigherHRNet network, see https://arxiv.org/abs/1908.10357；
+        HigherHRNet+swahr, see https://arxiv.org/abs/2012.15175
 
         Args:
             backbone (nn.Layer): backbone instance
             hrhrnet_head (nn.Layer): keypoint_head instance
             bbox_post_process (object): `BBoxPostProcess` instance
         """
-        super(HigherHrnet, self).__init__()
+        super(HigherHRNet, self).__init__()
         self.backbone = backbone
         self.hrhrnet_head = hrhrnet_head
-        self.post_process = HrHrnetPostProcess()
+        self.post_process = HrHRNetPostProcess()
         self.flip = eval_flip
         self.flip_perm = paddle.to_tensor(flip_perm)
         self.deploy = False
@@ -140,9 +140,9 @@ class HigherHrnet(BaseArch):
 
 @register
 @serializable
-class HrHrnetPostProcess(object):
+class HrHRNetPostProcess(object):
     '''
-    HrHrnet postprocess contain:
+    HrHRNet postprocess contain:
         1) get topk keypoints in the output heatmap
         2) sample the tagmap's value corresponding to each of the topk coordinate
         3) match different joints to combine to some people with Hungary algorithm
