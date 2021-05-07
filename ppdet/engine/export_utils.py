@@ -37,10 +37,11 @@ TRT_MIN_SUBGRAPH = {
     'TTFNet': 3,
     'FCOS': 16,
     'SOLOv2': 60,
-    'HigherHrnet': 40,
+    'HigherHRNet': 3,
+    'HRNet': 3,
 }
 
-KEYPOINT_ARCH = ['HigherHrnet', 'Hrnet']
+KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
 
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
