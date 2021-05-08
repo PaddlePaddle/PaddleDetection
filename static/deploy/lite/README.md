@@ -1,6 +1,6 @@
 # Paddle-Lite端侧部署
 
-本教程将介绍基于[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在移动端部署PaddleDetection模型的详细步骤。
+本教程将介绍基于[Paddle Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在移动端部署PaddleDetection的**静态图**模型的详细步骤。
 
 Paddle Lite是飞桨轻量化推理引擎，为手机、IOT端提供高效推理能力，并广泛整合跨平台硬件，为端侧部署及应用落地问题提供轻量化的部署方案。
 
@@ -125,12 +125,14 @@ Paddle-Lite 提供了多种策略来自动优化原始的模型，其中包括�
 ```shell
 # 进入PaddleDetection根目录
 cd PaddleDetection_root_path
+# 进入静态图模型文件夹
+cd static
 
 # 将预训练模型导出为inference模型
-python tools/export_model.py -c configs/ppyolo/ppyolo_tiny_650e_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams
+python tools/export_model.py -c configs/ppyolo/ppyolo_tiny.yml -o weights=https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams
 
 # 将inference模型转化为Paddle-Lite优化模型
-paddle_lite_opt --model_file=output_inference/ppyolo_tiny_650e_coco/model.pdmodel --param_file=output_inference/ppyolo_tiny_650e_coco/model.pdiparams --optimize_out=ppyolo_tiny
+paddle_lite_opt --model_file=output/ppyolo_tiny/__model__ --param_file=output/ppyolo_tiny/__params__ --optimize_out=ppyolo_tiny
 ```
 
 最终在当前文件夹下生成`ppyolo_tiny.nb`的文件。
@@ -172,7 +174,7 @@ List of devices attached
 
 ```shell
 cd PaddleDetection_root_path
-cd deploy/lite/
+cd static/deploy/lite/
 
 # 将预测库文件、测试图像和使用的类别字典文件放置在预测库中的demo/cxx/detection文件夹下
 inference_lite_path=/{lite prediction library path}/inference_lite_lib.android.armv8.gcc.c++_static.with_extra.with_cv/
@@ -250,7 +252,7 @@ export LD_LIBRARY_PATH=/data/local/tmp/debug:$LD_LIBRARY_PATH
 运行效果如下：
 
 <div align="center">
-    <img src="../../docs/images/lite_demo.jpg" width="600">
+    <img src="../../../docs/images/lite_demo.jpg" width="600">
 </div>
 
 
