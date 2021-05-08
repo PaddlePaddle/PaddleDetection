@@ -67,6 +67,8 @@ class TTFHead(object):
         keep_prob(float): keep_prob parameter for drop_block. 0.9 by default.
         fusion_method (string): Method to fusion upsample and lateral branch.
             'add' and 'concat' are optional, add by default
+        ags_module(bool): whether use AGS module to reweight location feature.
+            false by default.
     """
 
     __inject__ = ['wh_loss']
@@ -93,7 +95,8 @@ class TTFHead(object):
                  drop_block=False,
                  block_size=3,
                  keep_prob=0.9,
-                 fusion_method='add'):
+                 fusion_method='add',
+                 ags_module=False):
         super(TTFHead, self).__init__()
         self.head_conv = head_conv
         self.num_classes = num_classes
@@ -119,6 +122,7 @@ class TTFHead(object):
         self.block_size = block_size
         self.keep_prob = keep_prob
         self.fusion_method = fusion_method
+        self.ags_module = ags_module
 
     def shortcut(self, x, out_c, layer_num, kernel_size=3, padding=1,
                  name=None):
@@ -359,6 +363,12 @@ class TTFHead(object):
         target = fluid.layers.gather_nd(target, index)
         return pred, target, weight
 
+    def filter_loc_by_weight(self, score, weight):
+        index = fluid.layers.where(weight > 0)
+        index.stop_gradient = True
+        score = fluid.layers.gather_nd(score, index)
+        return score
+
     def get_loss(self, pred_hm, pred_wh, target_hm, box_target, target_weight):
         try:
             pred_hm = paddle.clip(fluid.layers.sigmoid(pred_hm), 1e-4, 1 - 1e-4)
@@ -387,11 +397,25 @@ class TTFHead(object):
         boxes = fluid.layers.transpose(box_target, [0, 2, 3, 1])
         boxes.stop_gradient = True
 
+        if self.ags_module:
+            pred_hm_max = fluid.layers.reduce_max(pred_hm, dim=1, keep_dim=True)
+            pred_hm_max_softmax = fluid.layers.softmax(pred_hm_max, axis=1)
+            pred_hm_max_softmax = fluid.layers.transpose(pred_hm_max_softmax,
+                                                         [0, 2, 3, 1])
+            pred_hm_max_softmax = self.filter_loc_by_weight(pred_hm_max_softmax,
+                                                            mask)
+        else:
+            pred_hm_max_softmax = None
+
         pred_boxes, boxes, mask = self.filter_box_by_weight(pred_boxes, boxes,
                                                             mask)
         mask.stop_gradient = True
         wh_loss = self.wh_loss(
-            pred_boxes, boxes, outside_weight=mask, use_transform=False)
+            pred_boxes,
+            boxes,
+            loc_reweight=pred_hm_max_softmax,
+            outside_weight=mask,
+            use_transform=False)
         wh_loss = wh_loss / avg_factor
 
         ttf_loss = {'hm_loss': hm_loss, 'wh_loss': wh_loss}
