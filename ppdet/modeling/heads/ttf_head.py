@@ -200,6 +200,9 @@ class TTFHead(nn.Layer):
         lite_head(bool): whether use lite version. False by default.
         norm_type (string): norm type, 'sync_bn', 'bn', 'gn' are optional.
             bn by default
+        ags_module(bool): whether use AGS module to reweight location feature.
+            false by default.
+
     """
 
     __shared__ = ['num_classes', 'down_ratio', 'norm_type']
@@ -218,7 +221,8 @@ class TTFHead(nn.Layer):
                  down_ratio=4,
                  dcn_head=False,
                  lite_head=False,
-                 norm_type='bn'):
+                 norm_type='bn',
+                 ags_module=False):
         super(TTFHead, self).__init__()
         self.in_channels = in_channels
         self.hm_head = HMHead(in_channels, hm_head_planes, num_classes,
@@ -230,6 +234,7 @@ class TTFHead(nn.Layer):
 
         self.wh_offset_base = wh_offset_base
         self.down_ratio = down_ratio
+        self.ags_module = ags_module
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -253,6 +258,12 @@ class TTFHead(nn.Layer):
         target = paddle.gather_nd(target, index)
         return pred, target, weight
 
+    def filter_loc_by_weight(self, score, weight):
+        index = paddle.nonzero(weight > 0)
+        index.stop_gradient = True
+        score = paddle.gather_nd(score, index)
+        return score
+
     def get_loss(self, pred_hm, pred_wh, target_hm, box_target, target_weight):
         pred_hm = paddle.clip(F.sigmoid(pred_hm), 1e-4, 1 - 1e-4)
         hm_loss = self.hm_loss(pred_hm, target_hm)
@@ -274,10 +285,24 @@ class TTFHead(nn.Layer):
         boxes = paddle.transpose(box_target, [0, 2, 3, 1])
         boxes.stop_gradient = True
 
+        if self.ags_module:
+            pred_hm_max = paddle.max(pred_hm, axis=1, keepdim=True)
+            pred_hm_max_softmax = F.softmax(pred_hm_max, axis=1)
+            pred_hm_max_softmax = paddle.transpose(pred_hm_max_softmax,
+                                                   [0, 2, 3, 1])
+            pred_hm_max_softmax = self.filter_loc_by_weight(pred_hm_max_softmax,
+                                                            mask)
+        else:
+            pred_hm_max_softmax = None
+
         pred_boxes, boxes, mask = self.filter_box_by_weight(pred_boxes, boxes,
                                                             mask)
         mask.stop_gradient = True
-        wh_loss = self.wh_loss(pred_boxes, boxes, iou_weight=mask.unsqueeze(1))
+        wh_loss = self.wh_loss(
+            pred_boxes,
+            boxes,
+            iou_weight=mask.unsqueeze(1),
+            loc_reweight=pred_hm_max_softmax)
         wh_loss = wh_loss / avg_factor
 
         ttf_loss = {'hm_loss': hm_loss, 'wh_loss': wh_loss}

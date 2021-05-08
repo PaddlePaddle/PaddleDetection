@@ -20,6 +20,9 @@ from __future__ import unicode_literals
 import numpy as np
 from PIL import Image, ImageDraw
 import cv2
+import os
+import math
+
 from .colormap import colormap
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -31,6 +34,7 @@ def visualize_results(image,
                       bbox_res,
                       mask_res,
                       segm_res,
+                      keypoint_res,
                       im_id,
                       catid2name,
                       threshold=0.5):
@@ -43,6 +47,8 @@ def visualize_results(image,
         image = draw_mask(image, im_id, mask_res, threshold)
     if segm_res is not None:
         image = draw_segm(image, im_id, catid2name, segm_res, threshold)
+    if keypoint_res is not None:
+        image = draw_pose(image, keypoint_res, threshold)
     return image
 
 
@@ -124,21 +130,32 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     return image
 
 
-def save_result(save_path, bbox_res, catid2name, threshold):
+def save_result(save_path, results, catid2name, threshold):
     """
     save result as txt
     """
+    img_id = int(results["im_id"])
     with open(save_path, 'w') as f:
-        for dt in bbox_res:
-            catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
-            if score < threshold:
-                continue
-            # each bbox result as a line
-            # for rbox: classname score x1 y1 x2 y2 x3 y3 x4 y4
-            # for bbox: classname score x1 y1 w h
-            bbox_pred = '{} {} '.format(catid2name[catid], score) + ' '.join(
-                [str(e) for e in bbox])
-            f.write(bbox_pred + '\n')
+        if "bbox_res" in results:
+            for dt in results["bbox_res"]:
+                catid, bbox, score = dt['category_id'], dt['bbox'], dt['score']
+                if score < threshold:
+                    continue
+                # each bbox result as a line
+                # for rbox: classname score x1 y1 x2 y2 x3 y3 x4 y4
+                # for bbox: classname score x1 y1 w h
+                bbox_pred = '{} {} '.format(catid2name[catid],
+                                            score) + ' '.join(
+                                                [str(e) for e in bbox])
+                f.write(bbox_pred + '\n')
+        elif "keypoint_res" in results:
+            for dt in results["keypoint_res"]:
+                kpts = dt['keypoints']
+                scores = dt['score']
+                keypoint_pred = [img_id, scores, kpts]
+                print(keypoint_pred, file=f)
+        else:
+            print("No valid results found, skip txt save")
 
 
 def draw_segm(image,
@@ -200,3 +217,77 @@ def draw_segm(image,
                 lineType=cv2.LINE_AA)
 
     return Image.fromarray(img_array.astype('uint8'))
+
+
+def map_coco_to_personlab(keypoints):
+    permute = [0, 6, 8, 10, 5, 7, 9, 12, 14, 16, 11, 13, 15, 2, 1, 4, 3]
+    return keypoints[:, permute, :]
+
+
+def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib
+        plt.switch_backend('agg')
+    except Exception as e:
+        logger.error('Matplotlib not found, plaese install matplotlib.'
+                     'for example: `pip install matplotlib`.')
+        raise e
+    EDGES = [(0, 14), (0, 13), (0, 4), (0, 1), (14, 16), (13, 15), (4, 10),
+             (1, 7), (10, 11), (7, 8), (11, 12), (8, 9), (4, 5), (1, 2), (5, 6),
+             (2, 3)]
+    NUM_EDGES = len(EDGES)
+
+    colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
+            [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
+            [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
+    cmap = matplotlib.cm.get_cmap('hsv')
+    plt.figure()
+
+    skeletons = np.array([item['keypoints'] for item in results]).reshape(-1,
+                                                                          17, 3)
+    scores = [item['score'] for item in results]
+    img = np.array(image).astype('float32')
+    canvas = img.copy()
+
+    for i in range(17):
+        rgba = np.array(cmap(1 - i / 17. - 1. / 34))
+        rgba[0:3] *= 255
+        for j in range(len(skeletons)):
+            if skeletons[j][i, 2] < visual_thread:
+                continue
+            cv2.circle(
+                canvas,
+                tuple(skeletons[j][i, 0:2].astype('int32')),
+                2,
+                colors[i],
+                thickness=-1)
+
+    to_plot = cv2.addWeighted(img, 0.3, canvas, 0.7, 0)
+    fig = matplotlib.pyplot.gcf()
+
+    stickwidth = 2
+
+    skeletons = map_coco_to_personlab(skeletons)
+    for i in range(NUM_EDGES):
+        for j in range(len(skeletons)):
+            edge = EDGES[i]
+            if skeletons[j][edge[0], 2] < visual_thread or skeletons[j][edge[
+                    1], 2] < visual_thread:
+                continue
+
+            cur_canvas = canvas.copy()
+            X = [skeletons[j][edge[0], 1], skeletons[j][edge[1], 1]]
+            Y = [skeletons[j][edge[0], 0], skeletons[j][edge[1], 0]]
+            mX = np.mean(X)
+            mY = np.mean(Y)
+            length = ((X[0] - X[1])**2 + (Y[0] - Y[1])**2)**0.5
+            angle = math.degrees(math.atan2(X[0] - X[1], Y[0] - Y[1]))
+            polygon = cv2.ellipse2Poly((int(mY), int(mX)),
+                                       (int(length / 2), stickwidth),
+                                       int(angle), 0, 360, 1)
+            cv2.fillConvexPoly(cur_canvas, polygon, colors[i])
+            canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
+    image = Image.fromarray(canvas.astype('uint8'))
+    plt.close()
+    return image
