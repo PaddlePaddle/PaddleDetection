@@ -49,7 +49,6 @@ def get_categories(metric_type, arch, anno_file=None):
 
             clsid2catid = {i: cat['id'] for i, cat in enumerate(cats)}
             catid2name = {cat['id']: cat['name'] for cat in cats}
-
             return clsid2catid, catid2name
 
         # anno file not exist, load default categories of COCO17

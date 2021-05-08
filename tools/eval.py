@@ -117,6 +117,9 @@ def main():
 
     place = paddle.set_device('gpu' if cfg.use_gpu else 'cpu')
 
+    if 'norm_type' in cfg and cfg['norm_type'] == 'sync_bn' and not cfg.use_gpu:
+        cfg['norm_type'] = 'bn'
+
     if FLAGS.slim_config:
         cfg = build_slim_model(cfg, FLAGS.slim_config, mode='eval')
 

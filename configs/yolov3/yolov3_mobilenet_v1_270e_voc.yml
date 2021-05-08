@@ -9,6 +9,12 @@ _BASE_: [
 snapshot_epoch: 5
 weights: output/yolov3_mobilenet_v1_270e_voc/model_final
 
+# set collate_batch to false because ground-truth info is needed
+# on voc dataset and should not collate data in batch when batch size
+# is larger than 1.
+EvalReader:
+  collate_batch: false
+
 LearningRate:
   base_lr: 0.001
   schedulers:

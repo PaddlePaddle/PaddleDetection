@@ -446,9 +446,6 @@ class SOLOv2Head(nn.Layer):
         y = paddle.zeros(shape=paddle.shape(cate_preds), dtype='float32')
         inds = paddle.where(cate_preds > self.score_threshold, cate_preds, y)
         inds = paddle.nonzero(inds)
-        if paddle.shape(inds)[0] == 0:
-            out = paddle.full(shape=[1], fill_value=-1)
-            return out, out, out
         cate_preds = paddle.reshape(cate_preds, shape=[-1])
         # Prevent empty and increase fake data
         ind_a = paddle.cast(paddle.shape(kernel_preds)[0], 'int64')
@@ -530,6 +527,5 @@ class SOLOv2Head(nn.Layer):
                 align_corners=False,
                 align_mode=0),
             axis=[0])
-        # TODO: support bool type
-        seg_masks = paddle.cast(seg_masks > self.mask_threshold, 'int32')
+        seg_masks = paddle.cast(seg_masks > self.mask_threshold, 'uint8')
         return seg_masks, cate_labels, cate_scores
