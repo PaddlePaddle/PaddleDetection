@@ -44,9 +44,11 @@ class Compose(object):
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
-                self.transforms_cls.append(op_cls(**v))
-                if hasattr(op_cls, 'num_classes'):
-                    op_cls.num_classes = num_classes
+                f = op_cls(**v)
+                if hasattr(f, 'num_classes'):
+                    f.num_classes = num_classes
+
+                self.transforms_cls.append(f)
 
     def __call__(self, data):
         for f in self.transforms_cls:
