@@ -33,7 +33,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -172,6 +172,15 @@ class Trainer(object):
                                            self.dataset.image_dir),
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
+            ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            self._metrics = [
+                KeyPointTopDownCOCOEval(anno_file,
+                                        len(eval_dataset), self.cfg.num_joints,
+                                        self.cfg.save_dir)
             ]
         else:
             logger.warn("Metric not support for metric type {}".format(
@@ -351,7 +360,8 @@ class Trainer(object):
         self._reset_metrics()
 
     def evaluate(self):
-        self._eval_with_loader(self.loader)
+        with paddle.no_grad():
+            self._eval_with_loader(self.loader)
 
     def predict(self,
                 images,
@@ -373,10 +383,12 @@ class Trainer(object):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
+
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
             for key, value in outs.items():
-                outs[key] = value.numpy()
+                if hasattr(value, 'numpy'):
+                    outs[key] = value.numpy()
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
@@ -393,10 +405,12 @@ class Trainer(object):
                         if 'mask' in batch_res else None
                 segm_res = batch_res['segm'][start:end] \
                         if 'segm' in batch_res else None
+                keypoint_res = batch_res['keypoint'][start:end] \
+                        if 'keypoint' in batch_res else None
 
-                image = visualize_results(image, bbox_res, mask_res, segm_res,
-                                          int(outs['im_id']), catid2name,
-                                          draw_threshold)
+                image = visualize_results(
+                    image, bbox_res, mask_res, segm_res, keypoint_res,
+                    int(outs['im_id']), catid2name, draw_threshold)
                 self.status['result_image'] = np.array(image.copy())
                 if self._compose_callback:
                     self._compose_callback.on_step_end(self.status)
@@ -407,7 +421,13 @@ class Trainer(object):
                 image.save(save_name, quality=95)
                 if save_txt:
                     save_path = os.path.splitext(save_name)[0] + '.txt'
-                    save_result(save_path, bbox_res, catid2name, draw_threshold)
+                    results = {}
+                    results["im_id"] = im_id
+                    if bbox_res:
+                        results["bbox_res"] = bbox_res
+                    if keypoint_res:
+                        results["keypoint_res"] = keypoint_res
+                    save_result(save_path, results, catid2name, draw_threshold)
                 start = end
 
     def _get_save_image_name(self, output_dir, image_path):
@@ -435,6 +455,7 @@ class Trainer(object):
             image_shape = [3, -1, -1]
 
         self.model.eval()
+        if hasattr(self.model, 'deploy'): self.model.deploy = True
 
         # Save infer cfg
         _dump_infer_config(self.cfg,

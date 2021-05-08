@@ -24,11 +24,11 @@ from paddle import ParamAttr
 from .resnet import *
 from ppdet.core.workspace import register
 
-__all__ = ['PCB_plus_dropout_pyramid']
+__all__ = ['PCBPlusDropoutPyramid']
 
 
 @register
-class PCB_plus_dropout_pyramid(nn.Layer):
+class PCBPlusDropoutPyramid(nn.Layer):
     def __init__(
             self,
             input_ch=2048,
@@ -38,7 +38,7 @@ class PCB_plus_dropout_pyramid(nn.Layer):
             last_conv_stride=1,
             last_conv_dilation=1,
             num_conv_out_channels=128):
-        super(PCB_plus_dropout_pyramid, self).__init__()
+        super(PCBPlusDropoutPyramid, self).__init__()
         self.num_stripes = num_stripes
         self.used_levels = used_levels
         self.num_classes = num_classes
@@ -108,8 +108,14 @@ class PCB_plus_dropout_pyramid(nn.Layer):
             start = idx_in_each_level * each_stripe_size
             end = start + stripe_size_in_each_level
 
-            local_feat = F.avg_pool2d(feat[:,:,start:end, :], kernel_size=(stripe_size_in_each_level, feat.shape[-1])) + \
-                         F.max_pool2d(feat[:,:,start:end, :], kernel_size=(stripe_size_in_each_level, feat.shape[-1]))
+            k = feat.shape[-1]
+            local_feat_avgpool = F.avg_pool2d(
+                feat[:, :, start:end, :],
+                kernel_size=(stripe_size_in_each_level, k))
+            local_feat_maxpool = F.max_pool2d(
+                feat[:, :, start:end, :],
+                kernel_size=(stripe_size_in_each_level, k))
+            local_feat = local_feat_avgpool + local_feat_maxpool
 
             local_feat = self.pyramid_conv_list0[used_branches](local_feat)
             local_feat = paddle.reshape(

@@ -166,7 +166,12 @@ class Checkpointer(Callback):
                 if 'save_best_model' in status and status['save_best_model']:
                     for metric in self.model._metrics:
                         map_res = metric.get_results()
-                        key = 'bbox' if 'bbox' in map_res else 'mask'
+                        if 'bbox' in map_res:
+                            key = 'bbox'
+                        elif 'keypoint' in map_res:
+                            key = 'keypoint'
+                        else:
+                            key = 'mask'
                         if key not in map_res:
                             logger.warn("Evaluation results empty, this may be due to " \
                                         "training iterations being too few or not " \

@@ -38,7 +38,7 @@ class DeepSORT(BaseArch):
 
     def __init__(self,
                  detector='YOLOv3',
-                 reid='PCB_plus_dropout_pyramid',
+                 reid='PCBPlusDropoutPyramid',
                  tracker='DeepSORTTracker'):
         super(DeepSORT, self).__init__()
         self.detector = detector
@@ -66,7 +66,8 @@ class DeepSORT(BaseArch):
 
         scale_factor = self.inputs['scale_factor']
         ori_image = self.inputs['ori_image']
-        img_size = self.tracker.img_size
+        im_shape = self.inputs['im_shape'][0]
+        img_size = [int(im_shape[0]), int(im_shape[1])]
 
         if self.detector and not load_dets:
             outs = self.detector(self.inputs)

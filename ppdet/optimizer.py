@@ -139,10 +139,11 @@ class LinearWarmup(object):
         boundary = []
         value = []
         for i in range(self.steps + 1):
-            alpha = i / self.steps
-            factor = self.start_factor * (1 - alpha) + alpha
-            lr = base_lr * factor
-            value.append(lr)
+            if self.steps > 0:
+                alpha = i / self.steps
+                factor = self.start_factor * (1 - alpha) + alpha
+                lr = base_lr * factor
+                value.append(lr)
             if i > 0:
                 boundary.append(i)
         return boundary, value
@@ -207,7 +208,6 @@ class OptimizerBuilder():
                 clip_norm=self.clip_grad_by_norm)
         else:
             grad_clip = None
-
         if self.regularizer:
             reg_type = self.regularizer['type'] + 'Decay'
             reg_factor = self.regularizer['factor']
@@ -249,6 +249,8 @@ class ModelEMA(object):
         self.step += 1
 
     def apply(self):
+        if self.step == 0:
+            return self.state_dict
         state_dict = dict()
         for k, v in self.state_dict.items():
             v = v / (1 - self._decay**self.step)

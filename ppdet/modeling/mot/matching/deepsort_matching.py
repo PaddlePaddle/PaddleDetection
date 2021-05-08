@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This code is borrow from https://github.com/nwojke/deep_sort/tree/master/deep_sort
+"""
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -19,10 +22,14 @@ from ..motion import kalman_filter
 INFTY_COST = 1e+5
 
 __all__ = [
-    'iou_1toN', 'iou_cost',
-    '_nn_euclidean_distance', '_nn_cosine_distance',
+    'iou_1toN',
+    'iou_cost',
+    '_nn_euclidean_distance',
+    '_nn_cosine_distance',
     'NearestNeighborDistanceMetric',
-    'min_cost_matching', 'matching_cascade', 'gate_cost_matrix',
+    'min_cost_matching',
+    'matching_cascade',
+    'gate_cost_matrix',
 ]
 
 
@@ -54,7 +61,7 @@ def iou_1toN(bbox, candidates):
     area_intersection = wh.prod(axis=1)
     area_bbox = bbox[2:].prod()
     area_candidates = candidates[:, 2:].prod(axis=1)
-    ious =  area_intersection / (area_bbox + area_candidates - area_intersection)
+    ious = area_intersection / (area_bbox + area_candidates - area_intersection)
     return ious
 
 
