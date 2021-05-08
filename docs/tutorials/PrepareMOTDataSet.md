@@ -1,4 +1,4 @@
-# Dataset Zoo
+# MOT Dataset
 * **MIXMOT**
 We use the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT) in this part and we call it "MIXMOT". Please refer to their [DATA ZOO](https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/DATASET_ZOO.md) to download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16.
 
@@ -48,29 +48,29 @@ The field `[identity]` is an integer from `0` to `num_identities - 1`, or `-1` i
 
 ## Final Dataset root
 ```
-mot
- |——————image_lists
-          |——————caltech.10k.val  
-          |——————caltech.train  
-          |——————caltech.val  
-          |——————citypersons.train  
-          |——————citypersons.val  
-          |——————cuhksysu.train  
-          |——————cuhksysu.val  
-          |——————eth.train  
-          |——————mot16.train  
-          |——————mot17.train  
-          |——————prw.train  
-          |——————prw.val
- |——————Caltech
- |——————Cityscapes
- |——————CUHKSYSU
- |——————ETHZ
- |——————MOT15
- |——————MOT16
- |——————MOT17
- |——————MOT20
- |——————PRW
+dataset/mot
+  |——————image_lists
+            |——————caltech.10k.val  
+            |——————caltech.train  
+            |——————caltech.val  
+            |——————citypersons.train  
+            |——————citypersons.val  
+            |——————cuhksysu.train  
+            |——————cuhksysu.val  
+            |——————eth.train  
+            |——————mot16.train  
+            |——————mot17.train  
+            |——————prw.train  
+            |——————prw.val
+  |——————Caltech
+  |——————Cityscapes
+  |——————CUHKSYSU
+  |——————ETHZ
+  |——————MOT15
+  |——————MOT16
+  |——————MOT17
+  |——————MOT20
+  |——————PRW
 ```
 
 ## Download
