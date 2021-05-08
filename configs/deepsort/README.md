@@ -1,4 +1,4 @@
-# Deep SORT(Simple Online and Realtime Tracking with a Deep Association Metric)
+# DeepSORT(Simple Online and Realtime Tracking with a Deep Association Metric)
 
 ## Table of Contents
 - [Introduction](#Introduction)
@@ -7,24 +7,25 @@
 - [Appendix](#Appendix)
 
 ## Introduction
-[Deep SORT](https://arxiv.org/abs/2007.12099) is basicly the same with sort but added a CNN model to extract features in image of human part bounded by a detector. We use YOLOv3 which is trained on pedestrian dataset to generate boxes instead of FasterRCNN, and select 'PCB_plus_dropout_pyramid' as the ReID model. Meanwhile, we support to load the boxes from result files instead of the detector.
+[DeepSORT](https://arxiv.org/abs/2007.12099) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use YOLOv3 which is trained on pedestrian dataset to generate boxes instead of Faster R-CNN, and select 'PCBPlusDropoutPyramid' as the ReID model. Meanwhile, we support to load the boxes from result files instead of the detector.
 
 ## Model Zoo
 
-### Deep SORT on MOT-16 training set
+### DeepSORT on MOT-16 training set
 
-| 骨架网络   | 输入尺寸  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | detector |  ReID    | 配置文件 |
+| backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  50.1  |  52.3  | 393  |  3229  | 51334 |  3.13 |[下载链接]()| [下载链接]()|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/deepsort/deepsort_pcb_tracker_1088x608.yml) |
+| DarkNet53 | 1088x608 |  50.1  |  52.3  | 393  |  3229  | 51334 |  3.13 |[YOLOv3](https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams)| [download]()|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/deepsort/deepsort_pcb_tracker_1088x608.yml) |
+| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/jde_darknet53_30e_1088x608.pdparams)| [download]()|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/deepsort/deepsort_pcb_tracker_1088x608.yml) |
 
 ## Getting Start
 
 ### 1. Training of detector
 
-Training YOLOv3 on 8 GPUs with following command(all commands should be run under PaddleDetection dygraph directory as default)
+Training YOLOv3 on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./yolov3_dygraph/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml
+python -m paddle.distributed.launch --log_dir=log_dir/pedestrian_yolov3_darknet/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml
 ```
 
 ### 2. Evaluation of detector

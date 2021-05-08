@@ -32,9 +32,7 @@ from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = [
-    'Resize_LetterBox', 'DecodeVideo', 'Gt2JDETargetThres', 'Gt2JDETargetMax'
-]
+__all__ = ['LetterBoxResize', 'Gt2JDETargetThres', 'Gt2JDETargetMax']
 
 
 def register_mot_op(cls):
@@ -42,7 +40,7 @@ def register_mot_op(cls):
 
 
 @register_mot_op
-class Resize_LetterBox(BaseOperator):
+class LetterBoxResize(BaseOperator):
     def __init__(self, target_size):
         """
         Resize image to target size, convert normalized xywh to pixel xyxy
@@ -50,7 +48,7 @@ class Resize_LetterBox(BaseOperator):
         Args:
             target_size (int|list): image target size.
         """
-        super(Resize_LetterBox, self).__init__()
+        super(LetterBoxResize, self).__init__()
         if not isinstance(target_size, (Integral, Sequence)):
             raise TypeError(
                 "Type of target_size is invalid. Must be Integer or List or Tuple, now is {}".
@@ -111,40 +109,6 @@ class Resize_LetterBox(BaseOperator):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
                                                 padw, padh)
-        return sample
-
-
-@register_mot_op
-class DecodeVideo(BaseOperator):
-    def __init__(self):
-        """ 
-        Transform the video data to numpy format following the rgb format
-        """
-        super(DecodeVideo, self).__init__()
-
-    def apply(self, sample, context=None):
-        im = sample['image']
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-        sample['image'] = im
-        if 'h' not in sample:
-            sample['h'] = im.shape[0]
-        elif sample['h'] != im.shape[0]:
-            logger.warn(
-                "The actual image height: {} is not equal to the "
-                "height: {} in annotation, and update sample['h'] by actual "
-                "image height.".format(im.shape[0], sample['h']))
-            sample['h'] = im.shape[0]
-        if 'w' not in sample:
-            sample['w'] = im.shape[1]
-        elif sample['w'] != im.shape[1]:
-            logger.warn(
-                "The actual image width: {} is not equal to the "
-                "width: {} in annotation, and update sample['w'] by actual "
-                "image width.".format(im.shape[1], sample['w']))
-            sample['w'] = im.shape[1]
-
-        sample['im_shape'] = np.array(im.shape[:2], dtype=np.float32)
-        sample['scale_factor'] = np.array([1., 1.], dtype=np.float32)
         return sample
 
 

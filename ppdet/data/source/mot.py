@@ -37,9 +37,36 @@ class MOTDataSet(DetDataset):
         sample_num (int): number of samples to load, -1 means all.
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
-        keep_original_image (bool): whether to keep original image, default
-            False. Set True when used in infer while saving images or video,
-            or used in DeepSORT.
+    Notes:
+        MOT datasets root following this:
+            dataset/mot
+            |——————image_lists
+            |        |——————caltech.train  
+            |        |——————caltech.val   
+            |        |——————mot16.train  
+            |        |——————mot17.train  
+            |        ......
+            |——————Caltech
+            |——————MOT17
+            |——————......
+
+        All the MOT datasets have the following structure:
+            Caltech
+            |——————images
+            |        └——————00001.jpg
+            |        |—————— ...
+            |        └——————0000N.jpg
+            └——————labels_with_ids
+                        └——————00001.txt
+                        |—————— ...
+                        └——————0000N.txt
+            or
+            MOT17
+            |——————images
+            |        └——————train
+            |        └——————test
+            └——————labels_with_ids
+                        └——————train
     """
 
     def __init__(self,
@@ -241,9 +268,17 @@ class MOTVideoDataset(DetDataset):
         while res:
             res, img = self.cap.read()
             image = np.ascontiguousarray(img, dtype=np.float32)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            im_shape = image.shape
             rec = {
                 'im_id': np.array([ct]),
                 'image': image,
+                'h': im_shape[0],
+                'w': im_shape[1],
+                'im_shape': np.array(
+                    im_shape[:2], dtype=np.float32),
+                'scale_factor': np.array(
+                    [1., 1.], dtype=np.float32),
             }
             if self.keep_ori_im:
                 rec.update({'ori_image': image})

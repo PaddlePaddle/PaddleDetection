@@ -71,6 +71,17 @@ class JDEDetectionLoss(nn.Layer):
         return loss_conf, loss_box
 
     def forward(self, det_outs, targets, anchors):
+        """
+        Args:
+            det_outs (list[Tensor]): output from detection head, each one
+                is a 4-D Tensor with shape [N, C, H, W].
+            targets (dict): contains 'im_id', 'gt_bbox', 'gt_ide', 'image',
+                'im_shape', 'scale_factor' and 'tbox', 'tconf', 'tide' of
+                each FPN level.
+            anchors (list[list]): anchor setting of JDE model, N row M col, N is
+                the anchor levels(FPN levels), M is the anchor scales each
+                level.
+        """
         assert len(det_outs) == len(anchors)
         loss_confs = []
         loss_boxes = []
@@ -134,9 +145,8 @@ class JDEEmbeddingLoss(nn.Layer):
 
 @register
 class JDELoss(nn.Layer):
-    def __init__(self, use_uncertainy=True):
+    def __init__(self):
         super(JDELoss, self).__init__()
-        self.use_uncertainy = use_uncertainy
 
     def forward(self, loss_confs, loss_boxes, loss_ides, loss_params_cls,
                 loss_params_reg, loss_params_ide, targets):
@@ -157,15 +167,8 @@ class JDELoss(nn.Layer):
                     zip(loss_confs, loss_boxes, loss_ides, loss_params_cls,
                         loss_params_reg, loss_params_ide)):
 
-            if self.use_uncertainy:
-                jde_loss = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
-                    loss_ide)
-            else:
-                s_c, s_r, s_id = -4.15, -4.85, -2.3
-                jde_loss = paddle.exp(-s_c) * loss_conf + paddle.exp(
-                    -s_r) * loss_box + paddle.exp(-s_id) * loss_ide + (s_c + s_r
-                                                                       + s_id)
-                jde_loss *= 0.5
+            jde_loss = l_conf_p(loss_conf) + l_box_p(loss_box) + l_ide_p(
+                loss_ide)
             jde_losses.append(jde_loss)
 
         loss_all = {

@@ -3,7 +3,7 @@ TrainReader:
   sample_transforms:
     - Decode: {}
     - AugmentHSV: {}
-    - Resize_LetterBox: {target_size: [480, 864]}
+    - LetterBoxResize: {target_size: [480, 864]}
     - RandomAffine: {}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}
@@ -29,7 +29,7 @@ TrainReader:
 EvalReader:
   sample_transforms:
     - Decode: {}
-    - Resize_LetterBox: {target_size: [480, 864]}
+    - LetterBoxResize: {target_size: [480, 864]}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
@@ -53,7 +53,7 @@ TestReader:
     image_shape: [3, 480, 864]
   sample_transforms:
     - Decode: {}
-    - Resize_LetterBox: {target_size: [480, 864]}
+    - LetterBoxResize: {target_size: [480, 864]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -62,7 +62,7 @@ TestReader:
 EvalMOTReader:
   sample_transforms:
     - Decode: {}
-    - Resize_LetterBox: {target_size: [480, 864]}
+    - LetterBoxResize: {target_size: [480, 864]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -72,8 +72,8 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 480, 864]
   sample_transforms:
-    - DecodeVideo: {}
-    - Resize_LetterBox: {target_size: [480, 864]}
+    - Decode: {}
+    - LetterBoxResize: {target_size: [480, 864]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
