@@ -223,8 +223,8 @@ class Tracker(object):
         return results, frame_id, timer.average_time, timer.calls
 
     def mot_evaluate(self,
-                     data_root='./dataset/MOT/MOT16/train',
-                     seqs=('MOT16-02', ),
+                     data_root,
+                     seqs,
                      data_type='mot',
                      model_type='jde',
                      output_dir='output',

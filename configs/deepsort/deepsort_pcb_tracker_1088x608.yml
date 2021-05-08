@@ -17,5 +17,5 @@ reid_weights: https://paddledet.bj.bcebos.com/models/PCB_plus_dropout_pyramid_re
 
 DeepSORT:
   detector: None
-  reid: PCB_plus_dropout_pyramid
+  reid: PCBPlusDropoutPyramid
   tracker: DeepSORTTracker

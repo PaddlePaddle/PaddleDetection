@@ -7,7 +7,7 @@
 - [Appendix](#Appendix)
 
 ## Introduction
-[DeepSORT](https://arxiv.org/abs/2007.12099) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use YOLOv3 which is trained on pedestrian dataset to generate boxes instead of Faster R-CNN, and select 'PCB_plus_dropout_pyramid' as the ReID model. Meanwhile, we support to load the boxes from result files instead of the detector.
+[DeepSORT](https://arxiv.org/abs/2007.12099) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use YOLOv3 which is trained on pedestrian dataset to generate boxes instead of Faster R-CNN, and select 'PCBPlusDropoutPyramid' as the ReID model. Meanwhile, we support to load the boxes from result files instead of the detector.
 
 ## Model Zoo
 

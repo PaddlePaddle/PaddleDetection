@@ -3,7 +3,7 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pr
 
 DeepSORT:
   detector: YOLOv3
-  reid: PCB_plus_dropout_pyramid
+  reid: PCBPlusDropoutPyramid
   tracker: DeepSORTTracker
 
 YOLOv3:
@@ -44,7 +44,7 @@ BBoxPostProcess:
     nms_threshold: 0.45
     nms_top_k: 1000
 
-PCB_plus_dropout_pyramid:
+PCBPlusDropoutPyramid:
   num_conv_out_channels: 128
   num_classes: 751
 

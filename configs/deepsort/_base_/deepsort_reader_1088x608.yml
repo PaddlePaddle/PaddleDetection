@@ -3,7 +3,7 @@ TestReader:
     image_shape: [3, 608, 1088]
   sample_transforms:
     - Decode: {}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - LetterBoxResize: {target_size: [608, 1088]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -12,7 +12,7 @@ TestReader:
 EvalMOTReader:
   sample_transforms:
     - Decode: {}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - LetterBoxResize: {target_size: [608, 1088]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
@@ -22,8 +22,8 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 608, 1088]
   sample_transforms:
-    - DecodeVideo: {}
-    - Resize_LetterBox: {target_size: [608, 1088]}
+    - Decode: {}
+    - LetterBoxResize: {target_size: [608, 1088]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
   batch_size: 1
