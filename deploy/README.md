@@ -1,8 +1,8 @@
 # PaddleDetection 预测部署
 
 目前支持的部署方式有：
-- `Paddle-Inference预测库`部署:
-  - `python`语言部署，支持`CPU`、`GPU`和`XPU`环境，参考文档[python部署](python/README.md)。
+- `Paddle Inference预测库`部署:
+  - `Python`语言部署，支持`CPU`、`GPU`和`XPU`环境，参考文档[python部署](python/README.md)。
   - `C++`语言部署 ，支持`CPU`、`GPU`和`XPU`环境，支持在`Linux`、`Windows`系统下部署，支持`NV Jetson`嵌入式设备上部署。请参考文档[C++部署](cpp/README.md)。
   - `TensorRT`加速：请参考文档[TensorRT预测部署教程](TENSOR_RT.md)
 - 服务器端部署：使用[PaddleServing](./serving/README.md)部署。
@@ -28,7 +28,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 
 ## 2.部署环境准备
 
-- python预测：在python环境下安装PaddlePaddle环境即可，如需TensorRT预测，在[Paddle Release版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release)中下载合适的wheel包即可。
+- Python预测：在python环境下安装PaddlePaddle环境即可，如需TensorRT预测，在[Paddle Release版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release)中下载合适的wheel包即可。
 
 - C++预测库：请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)，如果需要使用TensorRT，请下载带有TensorRT编译的预测库。您也可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
 **注意:**  Paddle预测库版本需要>=2.0
@@ -48,7 +48,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image --use_gpu=(False/True)
 ```
 
-- C++部署，先使用跨平台编译工具`CMake`根据`CMakeLists.txt`生成`Makefile`，支持`Windows、Linux、NV Jetson`平台，然后进行编译产出可执行文件。可以直接使用`cpp/scripts/build.sh`脚本编译：
+- C++部署，先使用跨平台编译工具`CMake`根据`CMakeLists.txt`生成`Makefile`，支持[Windows](cpp/docs/windows_vs2019_build.md)、[Linux](cpp/docs/linux_build.md)、[NV Jetson](cpp/docs/Jetson_build.md)平台部署，然后进行编译产出可执行文件。可以直接使用`cpp/scripts/build.sh`脚本编译：
 ```buildoutcfg
 cd cpp
 sh scripts/build.sh

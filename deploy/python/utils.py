@@ -91,6 +91,12 @@ def argsparser():
         type=int,
         default=640,
         help="opt_shape for TensorRT.")
+    parser.add_argument(
+        "--trt_calib_mode",
+        type=bool,
+        default=False,
+        help="If the model is produced by TRT offline quantitative "
+        "calibration, trt_calib_mode need to set True.")
 
     return parser
 
