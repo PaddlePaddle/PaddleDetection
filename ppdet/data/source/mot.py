@@ -38,7 +38,7 @@ class MOTDataSet(DetDataset):
         label_list (str): if use_default_label is False, will load
             mapping between category and class index.
     Notes:
-        MOT datasets root following this:
+        MOT datasets root directory following this:
             dataset/mot
             |——————image_lists
             |        |——————caltech.train  
@@ -81,25 +81,34 @@ class MOTDataSet(DetDataset):
             dataset_dir=dataset_dir,
             data_fields=data_fields,
             sample_num=sample_num)
+        self.dataset_dir = dataset_dir
         self.image_lists = image_lists
         self.label_list = label_list
+        if isinstance(self.image_lists, str):
+            self.image_lists = [self.image_lists]
 
+    def get_anno(self):
+        if self.image_lists == []:
+            return
+        # only used to get categories and metric
+        return os.path.join(self.dataset_dir, 'image_lists',
+                            self.image_lists[0])
+
+    def parse_dataset(self):
         self.img_files = OrderedDict()
         self.img_start_index = OrderedDict()
         self.label_files = OrderedDict()
         self.tid_num = OrderedDict()
         self.tid_start_index = OrderedDict()
 
-        if isinstance(self.image_lists, str):
-            self.image_lists = [self.image_lists]
         img_index = 0
         for data_name in self.image_lists:
             with open(
-                    os.path.join(dataset_dir, 'image_lists', data_name),
+                    os.path.join(self.dataset_dir, 'image_lists', data_name),
                     'r') as file:
                 self.img_files[data_name] = file.readlines()
                 self.img_files[data_name] = [
-                    os.path.join(dataset_dir, x.strip())
+                    os.path.join(self.dataset_dir, x.strip())
                     for x in self.img_files[data_name]
                 ]
                 self.img_files[data_name] = list(
@@ -146,14 +155,6 @@ class MOTDataSet(DetDataset):
         logger.info('identity start index: {}'.format(self.tid_start_index))
         logger.info('=' * 80)
 
-    def get_anno(self):
-        if self.image_lists == []:
-            return
-        # only used to get categories and metric
-        return os.path.join(self.dataset_dir, 'image_lists',
-                            self.image_lists[0])
-
-    def parse_dataset(self):
         # mapping category name to class id
         #   first_class:0, second_class:1, ...
         records = []

@@ -35,11 +35,7 @@ logger = setup_logger(__name__)
 __all__ = ['LetterBoxResize', 'Gt2JDETargetThres', 'Gt2JDETargetMax']
 
 
-def register_mot_op(cls):
-    return serializable(cls)
-
-
-@register_mot_op
+@register_op
 class LetterBoxResize(BaseOperator):
     def __init__(self, target_size):
         """
@@ -65,17 +61,17 @@ class LetterBoxResize(BaseOperator):
         ratio = min(ratio_h, ratio_w)
         new_shape = (round(shape[1] * ratio),
                      round(shape[0] * ratio))  # [width, height]
-        dw = (width - new_shape[0]) / 2  # width padding
-        dh = (height - new_shape[1]) / 2  # height padding
-        top, bottom = round(dh - 0.1), round(dh + 0.1)
-        left, right = round(dw - 0.1), round(dw + 0.1)
+        padw = (width - new_shape[0]) / 2
+        padh = (height - new_shape[1]) / 2
+        top, bottom = round(padh - 0.1), round(padh + 0.1)
+        left, right = round(padw - 0.1), round(padw + 0.1)
 
         img = cv2.resize(
             img, new_shape, interpolation=cv2.INTER_AREA)  # resized, no border
         img = cv2.copyMakeBorder(
             img, top, bottom, left, right, cv2.BORDER_CONSTANT,
             value=color)  # padded rectangular
-        return img, ratio, dw, dh, ratio_h, ratio_w
+        return img, ratio, padw, padh, ratio_h, ratio_w
 
     def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
         bboxes = bbox0.copy()
@@ -112,7 +108,7 @@ class LetterBoxResize(BaseOperator):
         return sample
 
 
-@register_mot_op
+@register_op
 class Gt2JDETargetThres(BaseOperator):
     __shared__ = ['num_classes']
     """
@@ -274,7 +270,7 @@ class Gt2JDETargetThres(BaseOperator):
         return samples
 
 
-@register_mot_op
+@register_op
 class Gt2JDETargetMax(BaseOperator):
     __shared__ = ['num_classes']
     """
