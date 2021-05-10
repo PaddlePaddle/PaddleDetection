@@ -41,7 +41,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def find_all_logs(path_walk: str):
+def find_all_logs(path_walk):
     """
     find all .log files from target dir
     """
@@ -52,7 +52,7 @@ def find_all_logs(path_walk: str):
                 yield file_name, full_path
 
 
-def process_log(file_name: str) -> dict:
+def process_log(file_name):
     """
     process log to dict
     """

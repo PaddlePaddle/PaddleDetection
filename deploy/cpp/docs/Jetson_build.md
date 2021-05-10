@@ -167,7 +167,7 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |
 
-**注意**: 如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。
+**注意**: 优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 
 
 `样例一`：
