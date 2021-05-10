@@ -392,6 +392,7 @@ class Trainer(object):
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
+
             start = 0
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]

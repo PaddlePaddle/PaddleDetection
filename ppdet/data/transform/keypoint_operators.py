@@ -39,7 +39,7 @@ registered_ops = []
 __all__ = [
     'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
     'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
-    'TopDownAffine', 'ToHeatmapsTopDown'
+    'TopDownAffine', 'ToHeatmapsTopDown', 'TopDownEvalAffine'
 ]
 
 
@@ -560,6 +560,38 @@ class TopDownAffine(object):
                 joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
         records['image'] = image
         records['joints'] = joints
+
+        return records
+
+
+@register_keypointop
+class TopDownEvalAffine(object):
+    """apply affine transform to image and coords
+
+    Args:
+        trainsize (list): [w, h], the standard size used to train
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self, trainsize):
+        self.trainsize = trainsize
+
+    def __call__(self, records):
+        image = records['image']
+        rot = 0
+        imshape = records['im_shape'][::-1]
+        center = imshape / 2.
+        scale = imshape
+        trans = get_affine_transform(center, scale, rot, self.trainsize)
+        image = cv2.warpAffine(
+            image,
+            trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+            flags=cv2.INTER_LINEAR)
+        records['image'] = image
 
         return records
 
