@@ -2076,19 +2076,24 @@ class Norm2PixelBbox(BaseOperator):
 
 @register_op
 class RandomAffine(BaseOperator):
-    def __init__(self):
+    def __init__(self,
+                 degrees=(-5, 5),
+                 translate=(0.10, 0.10),
+                 scale=(0.50, 1.20),
+                 shear=(-2, 2),
+                 borderValue=(127.5, 127.5, 127.5)):
         """ 
         Transform the image data with random affine
         """
         super(RandomAffine, self).__init__()
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.borderValue = borderValue
 
     def apply(self, sample, context=None):
         # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
-        degrees = (-5, 5)
-        translate = (0.10, 0.10)
-        scale = (0.50, 1.20)
-        shear = (-2, 2)
-        borderValue = (127.5, 127.5, 127.5)
         border = 0  # width of added border (optional)
 
         img = sample['image']
@@ -2096,24 +2101,29 @@ class RandomAffine(BaseOperator):
 
         # Rotation and Scale
         R = np.eye(3)
-        a = random.random() * (degrees[1] - degrees[0]) + degrees[0]
-        s = random.random() * (scale[1] - scale[0]) + scale[0]
+        a = random.random() * (self.degrees[1] - self.degrees[0]
+                               ) + self.degrees[0]
+        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
         R[:2] = cv2.getRotationMatrix2D(
             angle=a, center=(width / 2, height / 2), scale=s)
 
         # Translation
         T = np.eye(3)
-        T[0, 2] = (random.random() * 2 - 1
-                   ) * translate[0] * height + border  # x translation (pixels)
-        T[1, 2] = (random.random() * 2 - 1
-                   ) * translate[1] * width + border  # y translation (pixels)
+        T[0, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[1] * width + border  # y translation (pixels)
 
         # Shear
         S = np.eye(3)
-        S[0, 1] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
-                           * math.pi / 180)  # x shear (deg)
-        S[1, 0] = math.tan((random.random() * (shear[1] - shear[0]) + shear[0])
-                           * math.pi / 180)  # y shear (deg)
+        S[0, 1] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # y shear (deg)
 
         M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
         imw = cv2.warpPerspective(
@@ -2121,7 +2131,7 @@ class RandomAffine(BaseOperator):
             M,
             dsize=(width, height),
             flags=cv2.INTER_LINEAR,
-            borderValue=borderValue)  # BGR order borderValue
+            borderValue=self.borderValue)  # BGR order borderValue
 
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
             targets = sample['gt_bbox']
@@ -2164,7 +2174,7 @@ class RandomAffine(BaseOperator):
             i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
 
             if sum(i) > 0:
-                sample['gt_bbox'] = xy[i]
+                sample['gt_bbox'] = xy[i].astype(sample['gt_bbox'].dtype)
                 sample['gt_class'] = sample['gt_class'][i]
                 if 'difficult' in sample:
                     sample['difficult'] = sample['difficult'][i]

@@ -71,7 +71,7 @@ class LetterBoxResize(BaseOperator):
         img = cv2.copyMakeBorder(
             img, top, bottom, left, right, cv2.BORDER_CONSTANT,
             value=color)  # padded rectangular
-        return img, ratio, padw, padh, ratio_h, ratio_w
+        return img, ratio, padw, padh
 
     def apply_bbox(self, bbox0, h, w, ratio, padw, padh):
         bboxes = bbox0.copy()
@@ -93,13 +93,13 @@ class LetterBoxResize(BaseOperator):
 
         # apply image
         height, width = self.target_size
-        img, ratio, padw, padh, ratio_h, ratio_w = self.apply_image(
+        img, ratio, padw, padh = self.apply_image(
             im, height=height, width=width)
 
         sample['image'] = img
-        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
-        sample['scale_factor'] = np.asarray(
-            [ratio_h, ratio_w], dtype=np.float32)
+        new_shape = (round(h * ratio), round(w * ratio))
+        sample['im_shape'] = np.asarray(new_shape, dtype=np.float32)
+        sample['scale_factor'] = np.asarray([ratio, ratio], dtype=np.float32)
 
         # apply bbox
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
