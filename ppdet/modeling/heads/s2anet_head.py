@@ -58,7 +58,6 @@ class S2ANetAnchorGenerator(nn.Layer):
             ws = (w * self.scales[:] * w_ratios[:]).reshape([-1])
             hs = (h * self.scales[:] * h_ratios[:]).reshape([-1])
 
-        # yapf: disable
         base_anchors = paddle.stack(
             [
                 x_ctr - 0.5 * (ws - 1), y_ctr - 0.5 * (hs - 1),
@@ -66,8 +65,6 @@ class S2ANetAnchorGenerator(nn.Layer):
             ],
             axis=-1)
         base_anchors = paddle.round(base_anchors)
-        # yapf: enable
-
         return base_anchors
 
     def _meshgrid(self, x, y, row_major=True):
@@ -90,15 +87,9 @@ class S2ANetAnchorGenerator(nn.Layer):
         shift_y = paddle.arange(0, feat_h, 1, 'int32') * stride
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
-        #shifts = shifts.type_as(base_anchors)
-        # first feat_w elements correspond to the first row of shifts
-        # add A anchors (1, A, 4) to K shifts (K, 1, 4) to get
-        # shifted anchors (K, A, 4), reshape to (K*A, 4)
 
         all_anchors = base_anchors[:, :] + shifts[:, :]
         all_anchors = all_anchors.reshape([feat_h * feat_w, 4])
-        # first A rows correspond to A anchors of (0, 0) in feature map,
-        # then (0, 1), (0, 2), ...
         return all_anchors
 
     def valid_flags(self, featmap_size, valid_size):
