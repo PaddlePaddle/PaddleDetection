@@ -350,8 +350,6 @@ def load_predictor(model_dir,
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
-
-        config.switch_ir_optim(False)
     else:
         config.disable_gpu()
 

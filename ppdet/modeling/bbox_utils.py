@@ -263,119 +263,6 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
         return iou
 
 
-def rect2rbox(bboxes):
-    """
-    :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
-    :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
-    """
-    num_boxes = paddle.shape(bboxes)[0]
-    x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
-    y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
-    edges1 = paddle.abs(bboxes[:, 2] - bboxes[:, 0])
-    edges2 = paddle.abs(bboxes[:, 3] - bboxes[:, 1])
-
-    rbox_w = paddle.maximum(edges1, edges2)
-    rbox_h = paddle.minimum(edges1, edges2)
-
-    # set angle
-    inds = edges1 < edges2
-    inds = paddle.cast(inds, 'int32')
-    inds1 = inds * paddle.arange(0, num_boxes)
-    rboxes_angle = inds1 * np.pi / 2.0
-
-    rboxes = paddle.stack((x_ctr, y_ctr, rbox_w, rbox_h, rboxes_angle), axis=1)
-    return rboxes
-
-
-def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
-    """
-
-    Args:
-        proposals:
-        gt:
-        means: 1x5
-        stds: 1x5
-
-    Returns:
-
-    """
-    proposals = proposals.astype(np.float64)
-
-    PI = np.pi
-
-    gt_widths = gt[..., 2]
-    gt_heights = gt[..., 3]
-    gt_angle = gt[..., 4]
-
-    proposals_widths = proposals[..., 2]
-    proposals_heights = proposals[..., 3]
-    proposals_angle = proposals[..., 4]
-
-    coord = gt[..., 0:2] - proposals[..., 0:2]
-    dx = (np.cos(proposals[..., 4]) * coord[..., 0] + np.sin(proposals[..., 4])
-          * coord[..., 1]) / proposals_widths
-    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] + np.cos(proposals[..., 4])
-          * coord[..., 1]) / proposals_heights
-    dw = np.log(gt_widths / proposals_widths)
-    dh = np.log(gt_heights / proposals_heights)
-    da = (gt_angle - proposals_angle)
-
-    da = (da + PI / 4) % PI - PI / 4
-    da /= PI
-
-    deltas = np.stack([dx, dy, dw, dh, da], axis=-1)
-    means = np.array(means, dtype=deltas.dtype)
-    stds = np.array(stds, dtype=deltas.dtype)
-    deltas = (deltas - means) / stds
-    deltas = deltas.astype(np.float32)
-    return deltas
-
-
-def poly_to_rbox(polys):
-    """
-    poly:[x0,y0,x1,y1,x2,y2,x3,y3]
-    to
-    rotated_boxes:[x_ctr,y_ctr,w,h,angle]
-    """
-    rotated_boxes = []
-    for poly in polys:
-        poly = np.array(poly[:8], dtype=np.float32)
-
-        pt1 = (poly[0], poly[1])
-        pt2 = (poly[2], poly[3])
-        pt3 = (poly[4], poly[5])
-        pt4 = (poly[6], poly[7])
-
-        edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) + (pt1[1] - pt2[
-            1]) * (pt1[1] - pt2[1]))
-        edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) + (pt2[1] - pt3[
-            1]) * (pt2[1] - pt3[1]))
-
-        width = max(edge1, edge2)
-        height = min(edge1, edge2)
-
-        rbox_angle = 0
-        if edge1 > edge2:
-            rbox_angle = np.arctan2(
-                np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
-        elif edge2 >= edge1:
-            rbox_angle = np.arctan2(
-                np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
-
-        def norm_angle(angle, range=[-np.pi / 4, np.pi]):
-            return (angle - range[0]) % range[1] + range[0]
-
-        rbox_angle = norm_angle(rbox_angle)
-
-        x_ctr = np.float(pt1[0] + pt3[0]) / 2
-        y_ctr = np.float(pt1[1] + pt3[1]) / 2
-        rotated_box = np.array([x_ctr, y_ctr, width, height, rbox_angle])
-        rotated_boxes.append(rotated_box)
-    ret_rotated_boxes = np.array(rotated_boxes)
-    assert ret_rotated_boxes.shape[1] == 5
-    return ret_rotated_boxes
-
-
 def cal_line_length(point1, point2):
     import math
     return math.sqrt(
@@ -408,28 +295,7 @@ def get_best_begin_point_single(coordinate):
     return np.array(combinate[force_flag]).reshape(8)
 
 
-def rbox2poly_single(rrect):
-    """
-    rrect:[x_ctr,y_ctr,w,h,angle]
-    to
-    poly:[x0,y0,x1,y1,x2,y2,x3,y3]
-    """
-    x_ctr, y_ctr, width, height, angle = rrect[:5]
-    tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
-    # rect 2x4
-    rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
-    R = np.array([[np.cos(angle), -np.sin(angle)],
-                  [np.sin(angle), np.cos(angle)]])
-    # poly
-    poly = R.dot(rect)
-    x0, x1, x2, x3 = poly[0, :4] + x_ctr
-    y0, y1, y2, y3 = poly[1, :4] + y_ctr
-    poly = np.array([x0, y0, x1, y1, x2, y2, x3, y3], dtype=np.float32)
-    poly = get_best_begin_point_single(poly)
-    return poly
-
-
-def rbox2poly(rrects):
+def rbox2poly_np(rrects):
     """
     rrect:[x_ctr,y_ctr,w,h,angle]
     to
@@ -458,7 +324,7 @@ def rbox2poly(rrects):
     return polys
 
 
-def pd_rbox2poly(rrects):
+def rbox2poly(rrects):
     """
     rrect:[x_ctr,y_ctr,w,h,angle]
     to

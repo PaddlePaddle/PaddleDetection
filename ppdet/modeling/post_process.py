@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, pd_rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly
 from . import ops
 try:
     from collections.abc import Sequence
@@ -220,8 +220,6 @@ class S2ANetBBoxPostProcess(nn.Layer):
         self.min_bbox_size = min_bbox_size
         self.nms = nms
         self.origin_shape_list = []
-        #self.fake_pred_cls_score_bbox = paddle.zeros([1, 10], dtype='float32')
-        #self.fake_bbox_num = paddle.ones([1], dtype='int32')
         self.fake_pred_cls_score_bbox = paddle.to_tensor(
             np.array(
                 [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
@@ -235,7 +233,7 @@ class S2ANetBBoxPostProcess(nn.Layer):
         im_shape : [N, 2]  im_shape
         scale_factor : [N, 2]  scale_factor
         """
-        pred_ploys0 = pd_rbox2poly(pred_bboxes)
+        pred_ploys0 = rbox2poly(pred_bboxes)
         pred_ploys = paddle.unsqueeze(pred_ploys0, axis=0)
 
         # pred_scores [NA, 16] --> [16, NA]
@@ -248,7 +246,6 @@ class S2ANetBBoxPostProcess(nn.Layer):
         # Bboxes and score before NMS may be empty due to the score threshold.
         if pred_cls_score_bbox.shape[0] <= 0 or pred_cls_score_bbox.shape[
                 1] <= 1:
-            print('create fake data')
             pred_cls_score_bbox = self.fake_pred_cls_score_bbox
             bbox_num = self.fake_bbox_num
 

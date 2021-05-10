@@ -17,7 +17,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 from ppdet.core.workspace import register
-from ppdet.modeling import ops
 from ppdet.modeling import bbox_utils
 from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 import numpy as np
@@ -439,7 +438,7 @@ class S2ANetHead(nn.Layer):
                 init_anchors, [featmap_size[0] * featmap_size[1], 4])
             self.init_anchors_list.append(init_anchors)
 
-            rbox_anchors = bbox_utils.rect2rbox(init_anchors)
+            rbox_anchors = self.rect2rbox(init_anchors)
             self.rbox_anchors_list.append(rbox_anchors)
 
             fam_cls_feat = self.fam_cls_convs(feat)
@@ -504,11 +503,34 @@ class S2ANetHead(nn.Layer):
                                 odm_cls_branch_list, odm_reg_branch_list)
         return self.s2anet_head_out
 
-    # Rrois anchor gengerate
-    # deltas
-    def delta2rbox(self, Rrois, deltas, means, stds, wh_ratio_clip=1e-6):
+    def rect2rbox(self, bboxes):
         """
-        :param Rrois: (cx, cy, w, h, theta)
+        :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
+        :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
+        """
+        num_boxes = paddle.shape(bboxes)[0]
+        x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
+        y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
+        edges1 = paddle.abs(bboxes[:, 2] - bboxes[:, 0])
+        edges2 = paddle.abs(bboxes[:, 3] - bboxes[:, 1])
+
+        rbox_w = paddle.maximum(edges1, edges2)
+        rbox_h = paddle.minimum(edges1, edges2)
+
+        # set angle
+        inds = edges1 < edges2
+        inds = paddle.cast(inds, 'int32')
+        inds1 = inds * paddle.arange(0, num_boxes)
+        rboxes_angle = inds1 * np.pi / 2.0
+
+        rboxes = paddle.stack(
+            (x_ctr, y_ctr, rbox_w, rbox_h, rboxes_angle), axis=1)
+        return rboxes
+
+    # deltas to rbox
+    def delta2rbox(self, rrois, deltas, means, stds, wh_ratio_clip=1e-6):
+        """
+        :param rrois: (cx, cy, w, h, theta)
         :param deltas: (dx, dy, dw, dh, dtheta)
         :param means:
         :param stds:
@@ -516,7 +538,7 @@ class S2ANetHead(nn.Layer):
         :return:
         """
         deltas = paddle.reshape(deltas, [-1, 5])
-        Rrois = paddle.reshape(Rrois, [-1, 5])
+        rrois = paddle.reshape(rrois, [-1, 5])
         pd_means = paddle.ones(shape=[5]) * means
         pd_stds = paddle.ones(shape=[5]) * stds
         denorm_deltas = deltas * pd_stds + pd_means
@@ -530,19 +552,19 @@ class S2ANetHead(nn.Layer):
         dw = paddle.clip(dw, min=-max_ratio, max=max_ratio)
         dh = paddle.clip(dh, min=-max_ratio, max=max_ratio)
 
-        Rroi_x = Rrois[:, 0]
-        Rroi_y = Rrois[:, 1]
-        Rroi_w = Rrois[:, 2]
-        Rroi_h = Rrois[:, 3]
-        Rroi_angle = Rrois[:, 4]
+        rroi_x = rrois[:, 0]
+        rroi_y = rrois[:, 1]
+        rroi_w = rrois[:, 2]
+        rroi_h = rrois[:, 3]
+        rroi_angle = rrois[:, 4]
 
-        gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(
-            Rroi_angle) + Rroi_x
-        gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(
-            Rroi_angle) + Rroi_y
-        gw = Rroi_w * dw.exp()
-        gh = Rroi_h * dh.exp()
-        ga = np.pi * dangle + Rroi_angle
+        gx = dx * rroi_w * paddle.cos(rroi_angle) - dy * rroi_h * paddle.sin(
+            rroi_angle) + rroi_x
+        gy = dx * rroi_w * paddle.sin(rroi_angle) + dy * rroi_h * paddle.cos(
+            rroi_angle) + rroi_y
+        gw = rroi_w * dw.exp()
+        gh = rroi_h * dh.exp()
+        ga = np.pi * dangle + rroi_angle
         ga = (ga + np.pi / 4) % np.pi - np.pi / 4
         bboxes = paddle.stack([gx, gy, gw, gh, ga], axis=-1)
         return bboxes
@@ -558,7 +580,7 @@ class S2ANetHead(nn.Layer):
 
         num_imgs, H, W, _ = bbox_preds.shape
         bbox_delta = paddle.reshape(bbox_preds, [-1, 5])
-        bboxes = self.delta2rbox(anchors, bbox_delta, stds, means,
+        bboxes = self.delta2rbox(anchors, bbox_delta, means, stds,
                                  wh_ratio_clip)
         return bboxes
 
@@ -607,11 +629,9 @@ class S2ANetHead(nn.Layer):
         fam_cls_score1 = fam_cls_score
 
         # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-        # for debug 0426
         feat_labels = feat_labels + 1
         feat_labels = paddle.to_tensor(feat_labels)
-        feat_labels_one_hot = paddle.nn.functional.one_hot(
-            feat_labels, self.cls_out_channels + 1)
+        feat_labels_one_hot = F.one_hot(feat_labels, self.cls_out_channels + 1)
         feat_labels_one_hot = feat_labels_one_hot[:, 1:]
         feat_labels_one_hot.stop_gradient = True
 
@@ -675,8 +695,7 @@ class S2ANetHead(nn.Layer):
         # for debug 0426
         feat_labels = feat_labels + 1
         feat_labels = paddle.to_tensor(feat_labels)
-        feat_labels_one_hot = paddle.nn.functional.one_hot(
-            feat_labels, self.cls_out_channels + 1)
+        feat_labels_one_hot = F.one_hot(feat_labels, self.cls_out_channels + 1)
         feat_labels_one_hot = feat_labels_one_hot[:, 1:]
         feat_labels_one_hot.stop_gradient = True
 
