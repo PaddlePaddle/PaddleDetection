@@ -16,8 +16,6 @@
 | ResNeXt101-vd-FPN        | Mask         |    1    |   2x    |     ----     |  44.6  |    39.8   | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_x101_vd_64x4d_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_x101_vd_64x4d_fpn_2x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN   | Mask       |    1    |   1x    |     ----     |  42.0  |    38.2    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_vd_fpn_ssld_1x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_r50_vd_fpn_ssld_1x_coco.yml) |
 | ResNet50-vd-SSLDv2-FPN   | Mask       |    1    |   2x    |     ----     |  42.7  |    38.9    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_vd_fpn_ssld_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_r50_vd_fpn_ssld_2x_coco.yml) |
-| Res2Net50-FPN         | Mask         |    2    |   2x    |     ----     |  42.4  |    38.1    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_res2net50_vb_26w_4s_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/develop/configs/res2net/mask_rcnn_res2net50_vb_26w_4s_fpn_2x_coco.yml) |
-| Res2Net50-vd-FPN         | Mask         |    2    |   2x    |     ----     |  42.6  |    38.1    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_res2net50_vd_26w_4s_fpn_2x_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/develop/configs/res2net/mask_rcnn_res2net50_vd_26w_4s_fpn_2x_coco.yml) |
 
 
 ## Citations
