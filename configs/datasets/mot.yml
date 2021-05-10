@@ -17,7 +17,6 @@ EvalDataset:
 TestDataset:
   !ImageFolder
     dataset_dir: dataset/mot
-    anno_path: mot16.train
 
 EvalMOTDataset:
   !ImageFolder

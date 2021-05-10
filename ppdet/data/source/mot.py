@@ -30,8 +30,6 @@ class MOTDataSet(DetDataset):
     Load dataset with MOT format.
     Args:
         dataset_dir (str): root directory for dataset.
-        image_dir (str): directory for images.
-        anno_path (str): annotation file path.
         image_lists (str|list): mot data image lists, muiti-source mot dataset.
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
@@ -61,6 +59,7 @@ class MOTDataSet(DetDataset):
                         |—————— ...
                         └——————0000N.txt
             or
+
             MOT17
             |——————images
             |        └——————train
@@ -71,8 +70,6 @@ class MOTDataSet(DetDataset):
 
     def __init__(self,
                  dataset_dir=None,
-                 image_dir=None,
-                 anno_path=None,
                  image_lists=[],
                  data_fields=['image'],
                  sample_num=-1,
@@ -103,9 +100,17 @@ class MOTDataSet(DetDataset):
 
         img_index = 0
         for data_name in self.image_lists:
-            with open(
-                    os.path.join(self.dataset_dir, 'image_lists', data_name),
-                    'r') as file:
+            # check every data image list
+            image_lists_dir = os.path.join(self.dataset_dir, 'image_lists')
+            assert os.path.isdir(image_lists_dir), \
+                "The {} is not a directory.".format(image_lists_dir)
+
+            list_path = os.path.join(image_lists_dir, data_name)
+            assert os.path.exists(list_path), \
+                "The list path {} does not exist.".format(list_path)
+
+            # record img_files, filter out empty ones
+            with open(list_path, 'r') as file:
                 self.img_files[data_name] = file.readlines()
                 self.img_files[data_name] = [
                     os.path.join(self.dataset_dir, x.strip())
@@ -117,6 +122,25 @@ class MOTDataSet(DetDataset):
                 self.img_start_index[data_name] = img_index
                 img_index += len(self.img_files[data_name])
 
+            # check data directory, images and labels_with_ids
+            if len(self.img_files[data_name]) == 0:
+                continue
+            else:
+                data_dir = self.img_files[data_name][0].split('/')[0]
+                data_dir = os.path.join(self.dataset_dir, data_dir)
+                assert os.path.exists(data_dir), \
+                    "The data directory {} does not exist.".format(data_dir)
+
+                data_dir_images = os.path.join(data_dir, 'images')
+                assert os.path.exists(data_dir), \
+                    "The data images directory {} does not exist.".format(data_dir_images)
+
+                data_dir_labels_with_ids = os.path.join(data_dir,
+                                                        'labels_with_ids')
+                assert os.path.exists(data_dir), \
+                    "The data labels directory {} does not exist.".format(data_dir_labels_with_ids)
+
+            # record label_files
             self.label_files[data_name] = [
                 x.replace('images', 'labels_with_ids').replace(
                     '.png', '.txt').replace('.jpg', '.txt')
