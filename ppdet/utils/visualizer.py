@@ -246,7 +246,6 @@ def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
 
     skeletons = np.array([item['keypoints'] for item in results]).reshape(-1,
                                                                           17, 3)
-    scores = [item['score'] for item in results]
     img = np.array(image).astype('float32')
     canvas = img.copy()
 

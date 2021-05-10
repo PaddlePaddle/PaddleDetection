@@ -49,7 +49,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     anno_file = dataset_cfg.get_anno()
 
-    clsid2catid, catid2name = get_categories(metric, arch, anno_file)
+    clsid2catid, catid2name = get_categories(metric, anno_file, arch)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
