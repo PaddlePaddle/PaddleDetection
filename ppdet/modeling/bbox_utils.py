@@ -263,6 +263,51 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
         return iou
 
 
+def poly2rbox(polys):
+    """
+    poly:[x0,y0,x1,y1,x2,y2,x3,y3]
+    to
+    rotated_boxes:[x_ctr,y_ctr,w,h,angle]
+    """
+    rotated_boxes = []
+    for poly in polys:
+        poly = np.array(poly[:8], dtype=np.float32)
+
+        pt1 = (poly[0], poly[1])
+        pt2 = (poly[2], poly[3])
+        pt3 = (poly[4], poly[5])
+        pt4 = (poly[6], poly[7])
+
+        edge1 = np.sqrt((pt1[0] - pt2[0]) * (pt1[0] - pt2[0]) + (pt1[1] - pt2[
+            1]) * (pt1[1] - pt2[1]))
+        edge2 = np.sqrt((pt2[0] - pt3[0]) * (pt2[0] - pt3[0]) + (pt2[1] - pt3[
+            1]) * (pt2[1] - pt3[1]))
+
+        width = max(edge1, edge2)
+        height = min(edge1, edge2)
+
+        rbox_angle = 0
+        if edge1 > edge2:
+            rbox_angle = np.arctan2(
+                np.float(pt2[1] - pt1[1]), np.float(pt2[0] - pt1[0]))
+        elif edge2 >= edge1:
+            rbox_angle = np.arctan2(
+                np.float(pt4[1] - pt1[1]), np.float(pt4[0] - pt1[0]))
+
+        def norm_angle(angle, range=[-np.pi / 4, np.pi]):
+            return (angle - range[0]) % range[1] + range[0]
+
+        rbox_angle = norm_angle(rbox_angle)
+
+        x_ctr = np.float(pt1[0] + pt3[0]) / 2
+        y_ctr = np.float(pt1[1] + pt3[1]) / 2
+        rotated_box = np.array([x_ctr, y_ctr, width, height, rbox_angle])
+        rotated_boxes.append(rotated_box)
+    ret_rotated_boxes = np.array(rotated_boxes)
+    assert ret_rotated_boxes.shape[1] == 5
+    return ret_rotated_boxes
+
+
 def cal_line_length(point1, point2):
     import math
     return math.sqrt(

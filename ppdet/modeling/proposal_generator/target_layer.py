@@ -289,15 +289,17 @@ class RBoxAssigner(object):
         anchor_inds = np.arange(anchor_num)
         return anchor_inds
 
-    def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
+    def rbox2delta(self,
+                   proposals,
+                   gt,
+                   means=[0, 0, 0, 0, 0],
+                   stds=[1, 1, 1, 1, 1]):
         """
-
         Args:
-            proposals:
-            gt:
-            means: 1x5
-            stds: 1x5
-
+            proposals: tensor [N, 5]
+            gt: gt [N, 5]
+            means: means [5]
+            stds: stds [5]
         Returns:
 
         """
@@ -314,10 +316,10 @@ class RBoxAssigner(object):
         proposals_angle = proposals[..., 4]
 
         coord = gt[..., 0:2] - proposals[..., 0:2]
-        dx = (np.cos(proposals[..., 4]) * coord[..., 0] + np.sin(proposals[..., 4])
-              * coord[..., 1]) / proposals_widths
-        dy = (-np.sin(proposals[..., 4]) * coord[..., 0] + np.cos(proposals[..., 4])
-              * coord[..., 1]) / proposals_heights
+        dx = (np.cos(proposals[..., 4]) * coord[..., 0] +
+              np.sin(proposals[..., 4]) * coord[..., 1]) / proposals_widths
+        dy = (-np.sin(proposals[..., 4]) * coord[..., 0] +
+              np.cos(proposals[..., 4]) * coord[..., 1]) / proposals_heights
         dw = np.log(gt_widths / proposals_widths)
         dh = np.log(gt_heights / proposals_heights)
         da = (gt_angle - proposals_angle)
@@ -448,7 +450,7 @@ class RBoxAssigner(object):
         pos_sampled_gt_boxes = gt_bboxes[anchor_gt_bbox_inds[pos_inds]]
         if len(pos_inds) > 0:
             pos_bbox_targets = self.rbox2delta(pos_sampled_anchors,
-                                                     pos_sampled_gt_boxes)
+                                               pos_sampled_gt_boxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 

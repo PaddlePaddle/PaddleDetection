@@ -90,7 +90,7 @@ class PadBatch(BaseOperator):
             if 'gt_rbox2poly' in data and data['gt_rbox2poly'] is not None:
                 # ploy to rbox
                 polys = data['gt_rbox2poly']
-                rbox = bbox_utils.poly_to_rbox(polys)
+                rbox = bbox_utils.poly2rbox(polys)
                 data['gt_rbox'] = rbox
 
         return samples
