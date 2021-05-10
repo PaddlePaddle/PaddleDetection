@@ -99,41 +99,43 @@ def iou_cost(tracks, detections, track_indices=None, detection_indices=None):
     return cost_matrix
 
 
-def _nn_euclidean_distance(a, b):
+def _nn_euclidean_distance(s, q):
     """
-    Compute pair-wise squared (Euclidean) distance between points in `a` and `b`.
+    Compute pair-wise squared (Euclidean) distance between points in `s` and `q`.
 
     Args:
-        a (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
-        b (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+        s (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
+        q (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+
     Returns:
-        distances (ndarray): A vector of length M that contains for each entry in `b` the
-            smallest Euclidean distance to a sample in `a`.
+        distances (ndarray): A vector of length M that contains for each entry in `q` the
+            smallest Euclidean distance to a sample in `s`.
     """
-    a, b = np.asarray(a), np.asarray(b)
-    if len(a) == 0 or len(b) == 0:
-        return np.zeros((len(a), len(b)))
-    a2, b2 = np.square(a).sum(axis=1), np.square(b).sum(axis=1)
-    distances = -2. * np.dot(a, b.T) + a2[:, None] + b2[None, :]
+    s, q = np.asarray(s), np.asarray(q)
+    if len(s) == 0 or len(q) == 0:
+        return np.zeros((len(s), len(q)))
+    s2, q2 = np.square(s).sum(axis=1), np.square(q).sum(axis=1)
+    distances = -2. * np.dot(s, q.T) + s2[:, None] + q2[None, :]
     distances = np.clip(distances, 0., float(np.inf))
 
     return np.maximum(0.0, distances.min(axis=0))
 
 
-def _nn_cosine_distance(a, b):
+def _nn_cosine_distance(s, q):
     """
-    Compute pair-wise cosine distance between points in `a` and `b`.
+    Compute pair-wise cosine distance between points in `s` and `q`.
 
     Args:
-        a (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
-        b (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+        s (ndarray): Sample points: an NxM matrix of N samples of dimensionality M.
+        q (ndarray): Query points: an LxM matrix of L samples of dimensionality M.
+
     Returns:
-        distances (ndarray): A vector of length M that contains for each entry in `b` the
-            smallest Euclidean distance to a sample in `a`.
+        distances (ndarray): A vector of length M that contains for each entry in `q` the
+            smallest Euclidean distance to a sample in `s`.
     """
-    a = np.asarray(a) / np.linalg.norm(a, axis=1, keepdims=True)
-    b = np.asarray(b) / np.linalg.norm(b, axis=1, keepdims=True)
-    distances = 1. - np.dot(a, b.T)
+    s = np.asarray(s) / np.linalg.norm(s, axis=1, keepdims=True)
+    q = np.asarray(q) / np.linalg.norm(q, axis=1, keepdims=True)
+    distances = 1. - np.dot(s, q.T)
 
     return distances.min(axis=0)
 
@@ -208,38 +210,34 @@ def min_cost_matching(distance_metric,
                       detections,
                       track_indices=None,
                       detection_indices=None):
-    """Solve linear assignment problem.
+    """
+    Solve linear assignment problem.
 
-    Parameters
-    ----------
-    distance_metric : Callable[List[Track], List[Detection], List[int], List[int]) -> ndarray
-        The distance metric is given a list of tracks and detections as well as
-        a list of N track indices and M detection indices. The metric should
-        return the NxM dimensional cost matrix, where element (i, j) is the
-        association cost between the i-th track in the given track indices and
-        the j-th detection in the given detection_indices.
-    max_distance : float
-        Gating threshold. Associations with cost larger than this value are
-        disregarded.
-    tracks : List[track.Track]
-        A list of predicted tracks at the current time step.
-    detections : List[detection.Detection]
-        A list of detections at the current time step.
-    track_indices : List[int]
-        List of track indices that maps rows in `cost_matrix` to tracks in
-        `tracks` (see description above).
-    detection_indices : List[int]
-        List of detection indices that maps columns in `cost_matrix` to
-        detections in `detections` (see description above).
+    Args:
+        distance_metric :
+            Callable[List[Track], List[Detection], List[int], List[int]) -> ndarray
+            The distance metric is given a list of tracks and detections as 
+            well as a list of N track indices and M detection indices. The 
+            metric should return the NxM dimensional cost matrix, where element
+            (i, j) is the association cost between the i-th track in the given
+            track indices and the j-th detection in the given detection_indices.
+        max_distance (float): Gating threshold. Associations with cost larger
+            than this value are disregarded.
+        tracks (list[Track]): A list of predicted tracks at the current time
+            step.
+        detections (list[Detection]): A list of detections at the current time
+            step.
+        track_indices (list[int]): List of track indices that maps rows in
+            `cost_matrix` to tracks in `tracks`.
+        detection_indices (List[int]): List of detection indices that maps
+            columns in `cost_matrix` to detections in `detections`.
 
-    Returns
-    -------
-    (List[(int, int)], List[int], List[int])
-        Returns a tuple with the following three entries:
-        * A list of matched track and detection indices.
-        * A list of unmatched track indices.
-        * A list of unmatched detection indices.
-
+    Returns:
+        A tuple (List[(int, int)], List[int], List[int]) with the following
+        three entries:
+            * A list of matched track and detection indices.
+            * A list of unmatched track indices.
+            * A list of unmatched detection indices.
     """
     if track_indices is None:
         track_indices = np.arange(len(tracks))
@@ -280,41 +278,36 @@ def matching_cascade(distance_metric,
                      detections,
                      track_indices=None,
                      detection_indices=None):
-    """Run matching cascade.
+    """
+    Run matching cascade.
 
-    Parameters
-    ----------
-    distance_metric : Callable[List[Track], List[Detection], List[int], List[int]) -> ndarray
-        The distance metric is given a list of tracks and detections as well as
-        a list of N track indices and M detection indices. The metric should
-        return the NxM dimensional cost matrix, where element (i, j) is the
-        association cost between the i-th track in the given track indices and
-        the j-th detection in the given detection indices.
-    max_distance : float
-        Gating threshold. Associations with cost larger than this value are
-        disregarded.
-    cascade_depth: int
-        The cascade depth, should be se to the maximum track age.
-    tracks : List[track.Track]
-        A list of predicted tracks at the current time step.
-    detections : List[detection.Detection]
-        A list of detections at the current time step.
-    track_indices : Optional[List[int]]
-        List of track indices that maps rows in `cost_matrix` to tracks in
-        `tracks` (see description above). Defaults to all tracks.
-    detection_indices : Optional[List[int]]
-        List of detection indices that maps columns in `cost_matrix` to
-        detections in `detections` (see description above). Defaults to all
-        detections.
+    Args:
+        distance_metric :
+            Callable[List[Track], List[Detection], List[int], List[int]) -> ndarray
+            The distance metric is given a list of tracks and detections as 
+            well as a list of N track indices and M detection indices. The 
+            metric should return the NxM dimensional cost matrix, where element
+            (i, j) is the association cost between the i-th track in the given
+            track indices and the j-th detection in the given detection_indices.
+        max_distance (float): Gating threshold. Associations with cost larger
+            than this value are disregarded.
+        cascade_depth (int): The cascade depth, should be se to the maximum
+            track age.
+        tracks (list[Track]): A list of predicted tracks at the current time
+            step.
+        detections (list[Detection]): A list of detections at the current time
+            step.
+        track_indices (list[int]): List of track indices that maps rows in
+            `cost_matrix` to tracks in `tracks`.
+        detection_indices (List[int]): List of detection indices that maps
+            columns in `cost_matrix` to detections in `detections`.
 
-    Returns
-    -------
-    (List[(int, int)], List[int], List[int])
-        Returns a tuple with the following three entries:
-        * A list of matched track and detection indices.
-        * A list of unmatched track indices.
-        * A list of unmatched detection indices.
-
+    Returns:
+        A tuple (List[(int, int)], List[int], List[int]) with the following
+        three entries:
+            * A list of matched track and detection indices.
+            * A list of unmatched track indices.
+            * A list of unmatched detection indices.
     """
     if track_indices is None:
         track_indices = list(range(len(tracks)))
@@ -350,39 +343,29 @@ def gate_cost_matrix(kf,
                      detection_indices,
                      gated_cost=INFTY_COST,
                      only_position=False):
-    """Invalidate infeasible entries in cost matrix based on the state
+    """
+    Invalidate infeasible entries in cost matrix based on the state
     distributions obtained by Kalman filtering.
 
-    Parameters
-    ----------
-    kf : The Kalman filter.
-    cost_matrix : ndarray
-        The NxM dimensional cost matrix, where N is the number of track indices
-        and M is the number of detection indices, such that entry (i, j) is the
-        association cost between `tracks[track_indices[i]]` and
-        `detections[detection_indices[j]]`.
-    tracks : List[track.Track]
-        A list of predicted tracks at the current time step.
-    detections : List[detection.Detection]
-        A list of detections at the current time step.
-    track_indices : List[int]
-        List of track indices that maps rows in `cost_matrix` to tracks in
-        `tracks` (see description above).
-    detection_indices : List[int]
-        List of detection indices that maps columns in `cost_matrix` to
-        detections in `detections` (see description above).
-    gated_cost : Optional[float]
-        Entries in the cost matrix corresponding to infeasible associations are
-        set this value. Defaults to a very large value.
-    only_position : Optional[bool]
-        If True, only the x, y position of the state distribution is considered
-        during gating. Defaults to False.
-
-    Returns
-    -------
-    ndarray
-        Returns the modified cost matrix.
-
+    Args:
+        kf (object): The Kalman filter.
+        cost_matrix (ndarray): The NxM dimensional cost matrix, where N is the
+            number of track indices and M is the number of detection indices,
+            such that entry (i, j) is the association cost between
+            `tracks[track_indices[i]]` and `detections[detection_indices[j]]`.
+        tracks (list[Track]): A list of predicted tracks at the current time
+            step.
+        detections (list[Detection]): A list of detections at the current time
+            step.
+        track_indices (List[int]): List of track indices that maps rows in
+            `cost_matrix` to tracks in `tracks`.
+        detection_indices (List[int]): List of detection indices that maps
+            columns in `cost_matrix` to detections in `detections`.
+        gated_cost (Optional[float]): Entries in the cost matrix corresponding
+            to infeasible associations are set this value. Defaults to a very
+            large value.
+        only_position (Optional[bool]): If True, only the x, y position of the
+            state distribution is considered during gating. Default False.
     """
     gating_dim = 2 if only_position else 4
     gating_threshold = kalman_filter.chi2inv95[gating_dim]

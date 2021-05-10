@@ -37,7 +37,7 @@ class JDE(BaseArch):
 
     def __init__(self,
                  detector='YOLOv3',
-                 reid='JEDEmbeddingHead',
+                 reid='JDEEmbeddingHead',
                  tracker='JDETracker',
                  test_emb=False,
                  test_track=False):

@@ -18,7 +18,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, pd_rbox2poly
-from . import ops
+from ppdet.modeling.mot.utils import scale_coords
 try:
     from collections.abc import Sequence
 except Exception:
@@ -317,9 +317,15 @@ class S2ANetBBoxPostProcess(object):
 
 @register
 class JDEBBoxPostProcess(BBoxPostProcess):
-    def __call__(self, head_out, anchors):
+    def __call__(self, head_out, anchors, im_shape, scale_factor):
         """
-        Decode the bbox and do NMS. 
+        Decode the bbox and do NMS for JDE model. 
+
+        Args:
+            head_out (list): Bbox_pred and cls_prob of bbox_head output.
+            anchors (list): Anchors of JDE model.
+            im_shape (Tensor): The shape of the input image.
+            scale_factor (Tensor): The scale factor of the input image.
 
         Returns:
             boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'. 
@@ -337,5 +343,7 @@ class JDEBBoxPostProcess(BBoxPostProcess):
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
             nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+
+        bbox_pred = scale_coords(bbox_pred, im_shape, scale_factor)
 
         return boxes_idx, bbox_pred, bbox_num, nms_keep_idx

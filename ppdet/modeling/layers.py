@@ -924,7 +924,7 @@ class JDEBox(object):
         yolo_boxes_pred = paddle.concat(bbox_pred_list, axis=1)
         boxes_idx = paddle.nonzero(yolo_boxes_pred[:, :, -1] > self.conf_thresh)
         boxes_idx.stop_gradient = True
-        if boxes_idx.shape[0] == 0:
+        if boxes_idx.shape[0] == 0:  # TODO: deploy
             boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
             yolo_boxes_out = paddle.to_tensor(
                 np.array(

@@ -172,8 +172,9 @@ class STrack(BaseTrack):
 
     @property
     def tlwh(self):
-        """Get current position in bounding box format `(top left x, top left y,
-                width, height)`.
+        """
+        Get current position in bounding box format `(top left x, top left y,
+        width, height)`.
         """
         if self.mean is None:
             return self._tlwh.copy()

@@ -85,7 +85,8 @@ class Detection(object):
         self.feature = feature.numpy()
 
     def to_tlbr(self):
-        """Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
+        """
+        Convert bounding box to format `(min x, min y, max x, max y)`, i.e.,
         `(top left, bottom right)`.
         """
         ret = self.tlwh.copy()
@@ -93,7 +94,8 @@ class Detection(object):
         return ret
 
     def to_xyah(self):
-        """Convert bounding box to format `(center x, center y, aspect ratio,
+        """
+        Convert bounding box to format `(center x, center y, aspect ratio,
         height)`, where the aspect ratio is `width / height`.
         """
         ret = self.tlwh.copy()
@@ -117,14 +119,14 @@ def load_det_results(det_file, num_frames):
     return results_list
 
 
-def scale_coords(coords, img_size, scale_factor):
+def scale_coords(coords, img_shape, scale_factor):
+    img_shape = scale_factor.numpy()[0]
     scale_factor = scale_factor.numpy()[0]
-    ratio_h, ratio_w = scale_factor[0], scale_factor[1]
-    img0_shape = [int(img_size[0] / ratio_h), int(img_size[1] / ratio_w)]
+    ratio = scale_factor[0]  #, scale_factor[1]
+    img0_shape = [int(img_shape[0] / ratio), int(img_shape[1] / ratio)]
 
-    ratio = min(ratio_h, ratio_w)
-    pad_w = (img_size[1] - img0_shape[1] * ratio) / 2
-    pad_h = (img_size[0] - img0_shape[0] * ratio) / 2
+    pad_w = (img_shape[1] - img0_shape[1] * ratio) / 2
+    pad_h = (img_shape[0] - img0_shape[0] * ratio) / 2
     coords[:, 0::2] -= pad_w
     coords[:, 1::2] -= pad_h
     coords[:, 0:4] /= paddle.to_tensor(ratio)
@@ -132,10 +134,11 @@ def scale_coords(coords, img_size, scale_factor):
     return coords.round()
 
 
-def clip_box(xyxy, img_size, scale_factor):
+def clip_box(xyxy, img_shape, scale_factor):
+    img_shape = scale_factor.numpy()[0]
     scale_factor = scale_factor.numpy()[0]
-    ratio_h, ratio_w = scale_factor[0], scale_factor[1]
-    img0_shape = [int(img_size[0] / ratio_h), int(img_size[1] / ratio_w)]
+    ratio = scale_factor[0]  #, scale_factor[1]
+    img0_shape = [int(img_shape[0] / ratio), int(img_shape[1] / ratio)]
 
     xyxy[:, 0::2] = paddle.clip(xyxy[:, 0::2], min=0, max=img0_shape[1])
     xyxy[:, 1::2] = paddle.clip(xyxy[:, 1::2], min=0, max=img0_shape[0])
