@@ -5,7 +5,7 @@ LearningRate:
   schedulers:
   - !PiecewiseDecay
     milestones: [40, 60, 80, 100]
-    values: [0.001, 0.0005, 0.00025, 0.0001, 0.00001]
+    gamma: [0.5, 0.5, 0.4, 0.1]
     use_warmup: false
 
 OptimizerBuilder:
