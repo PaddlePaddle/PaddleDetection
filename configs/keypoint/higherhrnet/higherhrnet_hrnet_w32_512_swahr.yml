@@ -2,7 +2,7 @@ use_gpu: true
 log_iter: 10
 save_dir: output
 snapshot_epoch: 10
-weights: output/higherhrnet_hrnet_v1_512/model_final
+weights: output/higherhrnet_hrnet_w32_512_swahr/model_final
 epoch: 300
 num_joints: &num_joints 17
 flip_perm: &flip_perm [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
