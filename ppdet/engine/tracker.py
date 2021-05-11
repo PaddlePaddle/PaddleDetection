@@ -48,7 +48,7 @@ class Tracker(object):
         self.mode = mode.lower()
         self.optimizer = None
 
-        # build data loader
+        # build MOT data loader
         self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
 
         # build model
@@ -56,7 +56,6 @@ class Tracker(object):
 
         self.status = {}
         self.start_epoch = 0
-        self._weights_loaded = False
 
         # initial default callbacks
         self._init_callbacks()
@@ -77,7 +76,7 @@ class Tracker(object):
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
         else:
-            logger.warn("MOT Metric not support for metric type {}".format(
+            logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 
@@ -100,21 +99,19 @@ class Tracker(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights):
+    def load_weights_jde(self, weights):
         load_weight(self.model, weights, self.optimizer)
-        self._weights_loaded = True
 
-    def load_weights_deepsort(self, det_weights, reid_weights):
+    def load_weights_sde(self, det_weights, reid_weights):
         if self.model.detector:
             load_weight(self.model.detector, det_weights, self.optimizer)
         load_weight(self.model.reid, reid_weights, self.optimizer)
-        self._weights_loaded = True
 
-    def eval_seq_jde(self,
-                     dataloader,
-                     save_dir=None,
-                     show_image=False,
-                     frame_rate=30):
+    def _eval_seq_jde(self,
+                      dataloader,
+                      save_dir=None,
+                      show_image=False,
+                      frame_rate=30):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -153,12 +150,12 @@ class Tracker(object):
 
         return results, frame_id, timer.average_time, timer.calls
 
-    def eval_seq_deepsort(self,
-                          dataloader,
-                          save_dir=None,
-                          show_image=False,
-                          frame_rate=30,
-                          det_file=''):
+    def _eval_seq_sde(self,
+                      dataloader,
+                      save_dir=None,
+                      show_image=False,
+                      frame_rate=30,
+                      det_file=''):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -172,7 +169,8 @@ class Tracker(object):
         self.model.reid.eval()
         if not use_detector:
             dets_list = load_det_results(det_file, len(dataloader))
-            logger.info('Finish loading det results file {}.'.format(det_file))
+            logger.info('Finish loading detection results file {}.'.format(
+                det_file))
 
         for step_id, data in enumerate(dataloader):
             self.status['step_id'] = step_id
@@ -225,20 +223,20 @@ class Tracker(object):
     def mot_evaluate(self,
                      data_root,
                      seqs,
+                     output_dir,
                      data_type='mot',
-                     model_type='jde',
-                     output_dir='output',
+                     model_type='JDE',
                      save_images=False,
                      save_videos=False,
                      show_image=False,
-                     det_dir='output/mot_results/'):
+                     det_results_dir=''):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
         assert data_type in ['mot', 'kitti'], \
             "data_type should be 'mot' or 'kitti'"
-        assert model_type in ['jde', 'deepsort'], \
-            "model_type should be 'jde' or 'deepsort'"
+        assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
+            "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
         # run tracking
         n_frame = 0
@@ -259,19 +257,20 @@ class Tracker(object):
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
 
-            if model_type == 'jde':
-                results, nf, ta, tc = self.eval_seq_jde(
+            if model_type in ['JDE', 'FairMOT']:
+                results, nf, ta, tc = self._eval_seq_jde(
                     dataloader,
                     save_dir=save_dir,
                     show_image=show_image,
                     frame_rate=frame_rate)
-            elif model_type == 'deepsort':
-                results, nf, ta, tc = self.eval_seq_deepsort(
+            elif model_type in ['DeepSORT']:
+                results, nf, ta, tc = self._eval_seq_sde(
                     dataloader,
                     save_dir=save_dir,
                     show_image=show_image,
                     frame_rate=frame_rate,
-                    det_file=os.path.join(det_dir, '{}.txt'.format(seq)))
+                    det_file=os.path.join(det_results_dir,
+                                          '{}.txt'.format(seq)))
             else:
                 raise ValueError(model_type)
 
@@ -325,20 +324,20 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
-                    output_dir='output',
+                    output_dir,
                     data_type='mot',
-                    model_type='jde',
+                    model_type='JDE',
                     save_images=False,
                     save_videos=True,
                     show_image=False,
-                    det_dir='output/mot_results/'):
+                    det_results_dir=''):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
         assert data_type in ['mot', 'kitti'], \
             "data_type should be 'mot' or 'kitti'"
-        assert model_type in ['jde', 'deepsort'], \
-            "model_type should be 'jde' or 'deepsort'"
+        assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
+            "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
         # run tracking
         seq = video_file.split('/')[-1].split('.')[0]
@@ -351,19 +350,19 @@ class Tracker(object):
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         frame_rate = self.dataset.frame_rate
 
-        if model_type == 'jde':
-            results, nf, ta, tc = self.eval_seq_jde(
+        if model_type in ['JDE', 'FairMOT']:
+            results, nf, ta, tc = self._eval_seq_jde(
                 dataloader,
                 save_dir=save_dir,
                 show_image=show_image,
                 frame_rate=frame_rate)
-        elif model_type == 'deepsort':
-            results, nf, ta, tc = self.eval_seq_deepsort(
+        elif model_type in ['DeepSORT']:
+            results, nf, ta, tc = self._eval_seq_sde(
                 dataloader,
                 save_dir=save_dir,
                 show_image=show_image,
                 frame_rate=frame_rate,
-                det_file=os.path.join(det_dir, '{}.txt'.format(seq)))
+                det_file=os.path.join(det_results_dir, '{}.txt'.format(seq)))
         else:
             raise ValueError(model_type)
 

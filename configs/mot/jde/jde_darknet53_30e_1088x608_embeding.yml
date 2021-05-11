@@ -8,5 +8,4 @@ JDE:
   detector: YOLOv3
   reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_emb: True
-  test_track: False
+  test_mode: 'embedding'

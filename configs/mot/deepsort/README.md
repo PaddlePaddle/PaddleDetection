@@ -43,19 +43,19 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/pedestrian/pedestrian_yol
 Tracking the multiple objdect in the images or video.
 ```bash
 # detect and track the objects
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true
 
 # track the objects by loading detected result file
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --det_dir ./result_txts
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --det_results_dir ./det_results_dir
 
 # detect and track the objects, then save the result as images
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_images
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --save_images
 
 # detect and track the objects, then save the result as a video
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --save_videos
 
 # detect and track the objects by loading video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_darknet53_pcb_tracker_1088x608.yml -o use_gpu=true --video_file {your video name}.mp4 --model_type deepsort
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_darknet53_pcb_tracker_1088x608.yml -o use_gpu=true --video_file {your video name}.mp4
 ```
 
 ## Citations

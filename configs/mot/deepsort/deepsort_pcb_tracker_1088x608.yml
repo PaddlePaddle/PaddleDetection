@@ -8,9 +8,11 @@ _BASE_: [
 metric: MOT
 
 EvalMOTDataset:
-  !ImageFolder
+  !MOTImageFolder
+    task: MOT16_train
     dataset_dir: dataset/mot
-    keep_ori_im: True
+    data_root: MOT16/images/train
+    keep_ori_im: True # set True if used in DeepSORT
 
 det_weights: None
 reid_weights: https://paddledet.bj.bcebos.com/models/PCB_plus_dropout_pyramid_resnet101.pdparams

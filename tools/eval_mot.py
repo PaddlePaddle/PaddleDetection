@@ -40,22 +40,12 @@ logger = setup_logger('eval')
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
-        '--task',
-        type=str,
-        default='MOT16_train',
-        help='Task name for tracking dataset.')
-    parser.add_argument(
         "--data_type",
         type=str,
         default='mot',
         help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
-        "--model_type",
-        type=str,
-        default='jde',
-        help='Model type of tracking, should be in ["jde", "deepsort"]')
-    parser.add_argument(
-        "--det_dir",
+        "--det_results_dir",
         type=str,
         default=None,
         help="Directory name for detection results.")
@@ -64,7 +54,6 @@ def parse_args():
         type=str,
         default='output',
         help='Directory name for output tracking results.')
-
     parser.add_argument(
         '--save_images',
         action='store_true',
@@ -82,115 +71,39 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    task = cfg['EvalMOTDataset'].task
     dataset_dir = cfg['EvalMOTDataset'].dataset_dir
-    if FLAGS.task == 'MOT15_train':
-        data_root = '{}/MOT15/images/train'.format(dataset_dir)
-        seqs_str = '''Venice-2
-                      KITTI-13
-                      KITTI-17
-                      ETH-Bahnhof
-                      ETH-Sunnyday
-                      PETS09-S2L1
-                      TUD-Campus
-                      TUD-Stadtmitte
-                      ADL-Rundle-6
-                      ADL-Rundle-8
-                      ETH-Pedcross2'''
-    elif FLAGS.task == 'MOT15_test':
-        data_root = '{}/MOT15/images/test'.format(dataset_dir)
-        seqs_str = '''ADL-Rundle-1
-                      ADL-Rundle-3
-                      AVG-TownCentre
-                      ETH-Crossing
-                      ETH-Jelmoli
-                      ETH-Linthescher
-                      KITTI-16
-                      KITTI-19
-                      PETS09-S2L2
-                      TUD-Crossing
-                      Venice-1'''
-    elif FLAGS.task == 'MOT16_train':
-        data_root = '{}/MOT16/images/train'.format(dataset_dir)
-        seqs_str = '''MOT16-02
-                      MOT16-04
-                      MOT16-05
-                      MOT16-09
-                      MOT16-10
-                      MOT16-11
-                      MOT16-13'''
-    elif FLAGS.task == 'MOT16_test':
-        data_root = '{}/MOT16/images/test'.format(dataset_dir)
-        seqs_str = '''MOT16-01
-                      MOT16-03
-                      MOT16-06
-                      MOT16-07
-                      MOT16-08
-                      MOT16-12
-                      MOT16-14'''
-    elif FLAGS.task == 'MOT17_train':
-        data_root = '{}/MOT17/images/train'.format(dataset_dir)
-        seqs_str = '''MOT17-02-SDP
-                      MOT17-04-SDP
-                      MOT17-05-SDP
-                      MOT17-09-SDP
-                      MOT17-10-SDP
-                      MOT17-11-SDP
-                      MOT17-13-SDP'''
-    elif FLAGS.task == 'MOT17_test':
-        data_root = '{}/MOT17/images/test'.format(dataset_dir)
-        seqs_str = '''MOT17-01-SDP
-                      MOT17-03-SDP
-                      MOT17-06-SDP
-                      MOT17-07-SDP
-                      MOT17-08-SDP
-                      MOT17-12-SDP
-                      MOT17-14-SDP'''
-    elif FLAGS.task == 'MOT20_train':
-        data_root = '{}/MOT20/images/train'.format(dataset_dir)
-        seqs_str = '''MOT20-01
-                      MOT20-02
-                      MOT20-03
-                      MOT20-05'''
-    elif FLAGS.task == 'MOT20_test':
-        data_root = '{}/MOT20/images/test'.format(dataset_dir)
-        seqs_str = '''MOT20-04
-                      MOT20-06
-                      MOT20-07
-                      MOT20-08'''
-    else:
-        data_root = '{}/MOT16/images/train'.format(dataset_dir)
-        seqs_str = '''MOT16-02
-                   '''
-    seqs = [seq.strip() for seq in seqs_str.split()]
+    data_root = cfg['EvalMOTDataset'].data_root
+    data_root = '{}/{}'.format(dataset_dir, data_root)
+    seqs = cfg['MOTDataZoo'][task]
 
     # build Tracker
     tracker = Tracker(cfg, mode='eval')
 
     # load weights
-    if FLAGS.model_type == 'deepsort':
+    if cfg.architecture in ['DeepSORT']:
         if cfg.det_weights != 'None':
-            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights)
+            tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
         else:
-            tracker.load_weights_deepsort(None, cfg.reid_weights)
+            tracker.load_weights_sde(None, cfg.reid_weights)
     else:
-        tracker.load_weights(cfg.weights)
+        tracker.load_weights_jde(cfg.weights)
 
     # inference
     tracker.mot_evaluate(
         data_root=data_root,
         seqs=seqs,
         data_type=FLAGS.data_type,
-        model_type=FLAGS.model_type,
+        model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        det_dir=FLAGS.det_dir)
+        det_results_dir=FLAGS.det_results_dir)
 
 
 def main():
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
 

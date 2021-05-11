@@ -8,8 +8,7 @@ JDE:
   detector: YOLOv3
   reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_emb: False
-  test_track: True
+  test_mode: 'tracking'
 
 YOLOv3:
   backbone: DarkNet

@@ -47,12 +47,7 @@ def parse_args():
         default='mot',
         help='Data type of tracking dataset, should be in ["mot", "kitti"]')
     parser.add_argument(
-        "--model_type",
-        type=str,
-        default='jde',
-        help='Model type of tracking, should be in ["jde", "deepsort"]')
-    parser.add_argument(
-        "--det_dir",
+        "--det_results_dir",
         type=str,
         default=None,
         help="Directory name for detection results.")
@@ -61,7 +56,6 @@ def parse_args():
         type=str,
         default='output',
         help='Directory name for output tracking results.')
-
     parser.add_argument(
         '--save_images',
         action='store_true',
@@ -83,29 +77,28 @@ def run(FLAGS, cfg):
     tracker = Tracker(cfg, mode='test')
 
     # load weights
-    if FLAGS.model_type == 'deepsort':
-        if cfg.det_weights != None:
-            tracker.load_weights_deepsort(cfg.det_weights, cfg.reid_weights)
+    if cfg.architecture in ['DeepSORT']:
+        if cfg.det_weights != 'None':
+            tracker.load_weights_sde(cfg.det_weights, cfg.reid_weights)
         else:
-            tracker.load_weights_deepsort(None, cfg.reid_weights)
+            tracker.load_weights_sde(None, cfg.reid_weights)
     else:
-        tracker.load_weights(cfg.weights)
+        tracker.load_weights_jde(cfg.weights)
 
     # inference
     tracker.mot_predict(
         video_file=FLAGS.video_file,
         data_type=FLAGS.data_type,
-        model_type=FLAGS.model_type,
+        model_type=cfg.architecture,
         output_dir=FLAGS.output_dir,
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        det_dir=FLAGS.det_dir)
+        det_results_dir=FLAGS.det_results_dir)
 
 
 def main():
     FLAGS = parse_args()
-
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
 
