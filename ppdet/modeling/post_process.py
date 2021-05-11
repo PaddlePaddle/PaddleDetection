@@ -18,13 +18,18 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, pd_rbox2poly
-from . import ops
 try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
 
-__all__ = ['BBoxPostProcess', 'MaskPostProcess', 'FCOSPostProcess']
+__all__ = [
+    'BBoxPostProcess',
+    'MaskPostProcess',
+    'FCOSPostProcess',
+    'S2ANetBBoxPostProcess',
+    'JDEBBoxPostProcess',
+]
 
 
 @register
@@ -307,3 +312,33 @@ class S2ANetBBoxPostProcess(object):
         pred_bbox = paddle.stack([x1, y1, x2, y2, x3, y3, x4, y4], axis=-1)
         pred_result = paddle.concat([pred_label_score, pred_bbox], axis=1)
         return pred_result
+
+
+@register
+class JDEBBoxPostProcess(BBoxPostProcess):
+    def __call__(self, head_out, anchors):
+        """
+        Decode the bbox and do NMS for JDE model. 
+
+        Args:
+            head_out (list): Bbox_pred and cls_prob of bbox_head output.
+            anchors (list): Anchors of JDE model.
+
+        Returns:
+            boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'. 
+            bbox_pred (Tensor): The output is the prediction with shape [N, 6]
+                including labels, scores and bboxes.
+            bbox_num (Tensor): The number of prediction of each batch with shape [N].
+            nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
+        """
+        boxes_idx, bboxes, score = self.decode(head_out, anchors)
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
+                                                     self.num_classes)
+        if bbox_pred.shape[0] == 0:
+            bbox_pred = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+
+        return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
