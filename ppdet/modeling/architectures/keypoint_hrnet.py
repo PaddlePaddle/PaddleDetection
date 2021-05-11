@@ -39,7 +39,7 @@ class TopDownHRNet(BaseArch):
                  loss='KeyPointMSELoss',
                  post_process='HRNetPostProcess',
                  flip_perm=None,
-                 flip=False,
+                 flip=True,
                  shift_heatmap=True):
         """
         HRNnet network, see https://arxiv.org/abs/1902.09212
@@ -57,6 +57,7 @@ class TopDownHRNet(BaseArch):
         self.flip = flip
         self.final_conv = L.Conv2d(width, num_joints, 1, 1, 0, bias=True)
         self.shift_heatmap = shift_heatmap
+        self.deploy = False
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -71,31 +72,37 @@ class TopDownHRNet(BaseArch):
 
         if self.training:
             return self.loss(hrnet_outputs, self.inputs)
+        elif self.deploy:
+            return hrnet_outputs
         else:
             if self.flip:
                 self.inputs['image'] = self.inputs['image'].flip([3])
-                feats = backbone(inputs)
-                output_flipped = self.final_conv(feats)
+                feats = self.backbone(self.inputs)
+                output_flipped = self.final_conv(feats[0])
                 output_flipped = self.flip_back(output_flipped.numpy(),
-                                                flip_perm)
+                                                self.flip_perm)
                 output_flipped = paddle.to_tensor(output_flipped.copy())
                 if self.shift_heatmap:
                     output_flipped[:, :, :, 1:] = output_flipped.clone(
                     )[:, :, :, 0:-1]
-                output = (output + output_flipped) * 0.5
-            preds, maxvals = self.post_process(hrnet_outputs, self.inputs)
-            return preds, maxvals
+                hrnet_outputs = (hrnet_outputs + output_flipped) * 0.5
+            imshape = (self.inputs['im_shape'].numpy()
+                       )[:, ::-1] if 'im_shape' in self.inputs else None
+            center = self.inputs['center'].numpy(
+            ) if 'center' in self.inputs else np.round(imshape / 2.)
+            scale = self.inputs['scale'].numpy(
+            ) if 'scale' in self.inputs else imshape / 200.
+            outputs = self.post_process(hrnet_outputs, center, scale)
+            return outputs
 
     def get_loss(self):
         return self._forward()
 
     def get_pred(self):
-        preds, maxvals = self._forward()
-        output = {'kpt_coord': preds, 'kpt_score': maxvals}
-        return output
+        res_lst = self._forward()
+        outputs = {'keypoint': res_lst}
+        return outputs
 
-
-class HRNetPostProcess(object):
     def flip_back(self, output_flipped, matched_parts):
         assert output_flipped.ndim == 4,\
                 'output_flipped should be [batch_size, num_joints, height, width]'
@@ -109,6 +116,8 @@ class HRNetPostProcess(object):
 
         return output_flipped
 
+
+class HRNetPostProcess(object):
     def get_max_preds(self, heatmaps):
         '''get predictions from score maps
 
@@ -156,7 +165,7 @@ class HRNetPostProcess(object):
 
         Returns:
             preds: numpy.ndarray([batch_size, num_joints, 2]), keypoints coords
-            maxvals: numpy.ndarray([batch_size, num_joints, 2]), the maximum confidence of the keypoints
+            maxvals: numpy.ndarray([batch_size, num_joints, 1]), the maximum confidence of the keypoints
         """
 
         coords, maxvals = self.get_max_preds(heatmaps)
@@ -184,8 +193,11 @@ class HRNetPostProcess(object):
 
         return preds, maxvals
 
-    def __call__(self, output, inputs):
-        preds, maxvals = self.get_final_preds(
-            output.numpy(), inputs['center'].numpy(), inputs['scale'].numpy())
-
-        return preds, maxvals
+    def __call__(self, output, center, scale):
+        preds, maxvals = self.get_final_preds(output.numpy(), center, scale)
+        outputs = [[
+            np.concatenate(
+                (preds, maxvals), axis=-1), np.mean(
+                    maxvals, axis=1)
+        ]]
+        return outputs

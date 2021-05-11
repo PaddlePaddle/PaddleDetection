@@ -634,7 +634,7 @@ class Resize(BaseOperator):
 
     def apply_segm(self, segms, im_size, scale):
         def _resize_poly(poly, im_scale_x, im_scale_y):
-            resized_poly = np.array(poly)
+            resized_poly = np.array(poly).astype('float32')
             resized_poly[0::2] *= im_scale_x
             resized_poly[1::2] *= im_scale_y
             return resized_poly.tolist()

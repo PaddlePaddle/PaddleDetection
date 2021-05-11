@@ -56,13 +56,11 @@ class KeyPointTopDownCOCOEval(object):
         self.idx = 0
 
     def update(self, inputs, outputs):
-        kpt_coord = outputs['kpt_coord']
-        kpt_score = outputs['kpt_score']
+        kpts, _ = outputs['keypoint'][0]
+
         num_images = inputs['image'].shape[0]
         self.results['all_preds'][self.idx:self.idx + num_images, :, 0:
-                                  2] = kpt_coord[:, :, 0:2]
-        self.results['all_preds'][self.idx:self.idx + num_images, :, 2:
-                                  3] = kpt_score
+                                  3] = kpts[:, :, 0:3]
         self.results['all_boxes'][self.idx:self.idx + num_images, 0:2] = inputs[
             'center'].numpy()[:, 0:2]
         self.results['all_boxes'][self.idx:self.idx + num_images, 2:4] = inputs[
@@ -115,7 +113,7 @@ class KeyPointTopDownCOCOEval(object):
             result = [{
                 'image_id': img_kpts[k]['image'],
                 'category_id': cat_id,
-                'keypoints': list(_key_points[k]),
+                'keypoints': _key_points[k].tolist(),
                 'score': img_kpts[k]['score'],
                 'center': list(img_kpts[k]['center']),
                 'scale': list(img_kpts[k]['scale'])

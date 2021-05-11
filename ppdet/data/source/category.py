@@ -83,6 +83,9 @@ def get_categories(metric_type, anno_file=None, arch=None):
     elif metric_type.lower() == 'widerface':
         return _widerface_category()
 
+    elif metric_type.lower() == 'keypointtopdowncocoeval':
+        return (None, {'id': 'keypoint'})
+
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
 
