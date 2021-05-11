@@ -2,11 +2,11 @@
 
 `PaddleDetection`训练出来的模型可以使用[Serving](https://github.com/PaddlePaddle/Serving) 部署在服务端。  
 本教程以在COCO数据集上用`configs/yolov3/yolov3_darknet53_270e_coco.yml`算法训练的模型进行部署。  
-预训练模型权重文件为[yolov3_darknet53_270e_coco.pdparams](https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams) 。
+预训练模型权重文件为[yolov3_darknet53_270e_coco.pdparams](https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams) 。
 
 ## 1. 首先验证模型
 ```
-python tools/infer.py -c  --infer_img=demo/000000014439.jpg -o use_gpu=True weights=https://paddlemodels.bj.bcebos.com/object_detection/dygraph/yolov3_darknet53_270e_coco.pdparams --infer_img=demo/000000014439.jpg
+python tools/infer.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml --infer_img=demo/000000014439.jpg -o use_gpu=True weights=https://paddledet.bj.bcebos.com/models/yolov3_darknet53_270e_coco.pdparams --infer_img=demo/000000014439.jpg
 ```
 
 ## 2. 安装 paddle serving
