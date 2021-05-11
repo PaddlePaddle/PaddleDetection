@@ -5,6 +5,44 @@ English | [简体中文](README_cn.md)
 ### Highly effective PPYOLO v2 and ultra lightweight PPYOLO tiny are released! [link](configs/ppyolo/README.md)
 
 ### SOTA Anchor Free model -- PAFNet is released! [link](configs/ttfnet/README.md)
+# Recent Activity
+
+A series of live lectures on detailed explanation of industrial-level object detection technology is about to be launched，to see how powerful PP-YOLOv2 surpasses YOLOv5.
+
+Welcome to the PPYLOv2 &Tiny Tech Seminar Group
+
+
+<div align="left">
+  <img src="https://z3.ax1x.com/2021/05/11/gUDw0e.png" width='150'/>
+</div>
+
+
+### Course Schedule
+[Live Link](http://live.bilibili.com/21689802)
+* May 13rd 19:00-20:00
+  -  Topic: Detailed Interpretation of Industrial-level Object Detection Algorithms
+* May 14th 19:00-20:00
+   - Topic: Analysis and Application of 1.3M Ultra-lightweight Object Detection Algorithm 
+* May 21st 20:00-21:00
+   - Topic: The Model Development Exercise of Small Target Detection Under Complex Background
+
+### Course Link
+
+[0【PaddleDetection2.0 Special】Quick Experience of New Version](https://aistudio.baidu.com/aistudio/projectdetail/1885319)
+
+ [1【PaddleDetection2.0 Special】How to Customize Dataset](https://aistudio.baidu.com/aistudio/projectdetail/1917140)
+
+ [2【PaddleDetection2.0 Special】Quick Start PP-YOLOv2](https://aistudio.baidu.com/aistudio/projectdetail/1922155)
+
+ [3【PaddleDetection2.0 Special】Quick Start PP-YOLO tiny](https://aistudio.baidu.com/aistudio/projectdetail/1918450)
+
+ [4【PaddleDetection2.0 Special】Quick Start S2ANet](https://aistudio.baidu.com/aistudio/projectdetail/1923957)
+
+ [5【PaddleDetection2.0 Special】Fast Implementation of Pedestrian Detection](https://aistudio.baidu.com/aistudio/projectdetail/1918451)
+
+ [6【PaddleDetection2.0 Special】Fast Implementation of Face Detection](https://aistudio.baidu.com/aistudio/projectdetail/1918453)
+ 
+
 
 # Introduction
 
