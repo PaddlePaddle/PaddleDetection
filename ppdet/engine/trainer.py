@@ -33,12 +33,8 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-<<<<<<< HEAD
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
 from ppdet.metrics import JDEDetMetric, JDEReIDMetric
-=======
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
->>>>>>> upstream/develop
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -67,7 +63,7 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JEDEmbeddingHead'][
+            cfg['JDEEmbeddingHead'][
                 'num_identifiers'] = self.dataset.total_identities
 
         # build model
@@ -253,7 +249,7 @@ class Trainer(object):
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model)
+            model = paddle.DataParallel(self.model, find_unused_parameters=True)
 
         # initial fp16
         if self.cfg.fp16:

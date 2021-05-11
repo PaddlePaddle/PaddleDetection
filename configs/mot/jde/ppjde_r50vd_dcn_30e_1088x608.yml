@@ -1,6 +1,6 @@
 _BASE_: [
-  '../datasets/mot.yml',
-  '../runtime.yml',
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
   '_base_/optimizer_30e.yml',
   '_base_/ppjde_r50vd_dcn.yml',
   '_base_/jde_reader_1088x608.yml',
@@ -9,10 +9,9 @@ weights: output/ppjde_r50vd_dcn_30e_1088x608/model_final
 
 JDE:
   detector: YOLOv3
-  reid: JEDEmbeddingHead
+  reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_emb: False
-  test_track: False
+  test_mode: 'detection'
 
 YOLOv3:
   backbone: ResNet
@@ -46,7 +45,6 @@ YOLOv3Head:
   loss: JDEDetectionLoss
 
 JDETracker:
-  img_size: [608, 1088]
   det_thresh: 0.3
   track_buffer: 30
   min_box_area: 200

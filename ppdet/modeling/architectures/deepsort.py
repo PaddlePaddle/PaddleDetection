@@ -64,16 +64,16 @@ class DeepSORT(BaseArch):
         assert 'ori_image' in self.inputs
         load_dets = 'pred_bboxes' in self.inputs and 'pred_scores' in self.inputs
 
-        scale_factor = self.inputs['scale_factor']
         ori_image = self.inputs['ori_image']
-        im_shape = self.inputs['im_shape'][0]
-        img_size = [int(im_shape[0]), int(im_shape[1])]
+        input_shape = self.inputs['image'].shape[2:]
+        im_shape = self.inputs['im_shape']
+        scale_factor = self.inputs['scale_factor']
 
         if self.detector and not load_dets:
             outs = self.detector(self.inputs)
             if outs['bbox_num'] > 0:
-                pred_bboxes = scale_coords(outs['bbox'][:, 2:], img_size,
-                                           scale_factor)
+                pred_bboxes = scale_coords(outs['bbox'][:, 2:], input_shape,
+                                           im_shape, scale_factor)
                 pred_scores = outs['bbox'][:, 1:2]
             else:
                 pred_bboxes = []
@@ -83,7 +83,8 @@ class DeepSORT(BaseArch):
             pred_scores = self.inputs['pred_scores']
 
         if len(pred_bboxes) > 0:
-            pred_bboxes = clip_box(pred_bboxes, img_size, scale_factor)
+            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
+                                   scale_factor)
             bbox_tlwh = paddle.concat(
                 (pred_bboxes[:, 0:2],
                  pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),

@@ -139,7 +139,6 @@ class ImageFolder(DetDataset):
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
-                 anno_path=None,
                  sample_num=-1,
                  use_default_label=None,
                  keep_ori_im=False,
@@ -147,10 +146,8 @@ class ImageFolder(DetDataset):
         super(ImageFolder, self).__init__(
             dataset_dir,
             image_dir,
-            anno_path,
             sample_num=sample_num,
             use_default_label=use_default_label)
-        self.sample_num = sample_num
         self.keep_ori_im = keep_ori_im
         self._imid2path = {}
         self.roidbs = None

@@ -16,7 +16,7 @@ This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/m
 """
 
 import paddle
-from ..utils import scale_coords
+
 from ..matching import jde_matching as matching
 from .base_jde_tracker import TrackState, BaseTrack, STrack
 from .base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
@@ -36,23 +36,32 @@ class JDETracker(object):
     JDE tracker
 
     Args:
-        img_size (list): input image size, [h, w]
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
+        tracked_thresh (float): linear assignment threshold of tracked 
+            stracks and detections
+        r_tracked_thresh (float): linear assignment threshold of 
+            tracked stracks and unmatched detections
+        unconfirmed_thresh (float): linear assignment threshold of 
+            unconfirmed stracks and unmatched detections
         motion (object): KalmanFilter instance
     """
 
     def __init__(self,
-                 img_size=[608, 1088],
                  det_thresh=0.3,
                  track_buffer=30,
                  min_box_area=200,
+                 tracked_thresh=0.7,
+                 r_tracked_thresh=0.5,
+                 unconfirmed_thresh=0.7,
                  motion='KalmanFilter'):
-        self.img_size = img_size
         self.det_thresh = det_thresh
         self.track_buffer = track_buffer
         self.min_box_area = min_box_area
+        self.tracked_thresh = tracked_thresh
+        self.r_tracked_thresh = r_tracked_thresh
+        self.unconfirmed_thresh = unconfirmed_thresh
         self.motion = motion
 
         self.frame_id = 0
@@ -63,15 +72,16 @@ class JDETracker(object):
         self.max_time_lost = 0
         # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
 
-    def update(self, pred_dets, pred_embs, scale_factor):
+    def update(self, pred_dets, pred_embs):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
             lost, removed, refound and active tracklets.
+
         Args:
             pred_dets (Tensor): Detection results of the image, shape is [N, 5].
             pred_embs (Tensor): Embedding results of the image, shape is [N, 512].
-            scale_factor (Tensor): scale_factor of the original input image.
+
         Return:
             output_stracks (list): The list contains information regarding the
                 online_tracklets for the recieved image tensor.
@@ -89,10 +99,8 @@ class JDETracker(object):
         # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
         empty_pred = True if len(pred_dets) == 1 and paddle.sum(
             pred_dets) == 0.0 else False
-        ''' Step 1: Network forward, get detections & embeddings'''
+        """ Step 1: Network forward, get detections & embeddings"""
         if len(pred_dets) > 0 and not empty_pred:
-            pred_dets[:, :4] = scale_coords(pred_dets[:, :4], self.img_size,
-                                            scale_factor)
             pred_dets = pred_dets.numpy()
             pred_embs = pred_embs.numpy()
             detections = [
@@ -111,7 +119,7 @@ class JDETracker(object):
             else:
                 # Active tracks are added to the local list 'tracked_stracks'
                 tracked_stracks.append(track)
-        ''' Step 2: First association, with embedding'''
+        """ Step 2: First association, with embedding"""
         # Combining currently tracked_stracks and lost_stracks
         strack_pool = joint_stracks(tracked_stracks, self.lost_stracks)
         # Predict the current location with KF
@@ -122,7 +130,7 @@ class JDETracker(object):
                                      detections)
         # The dists is the list of distances of the detection with the tracks in strack_pool
         matches, u_track, u_detection = matching.linear_assignment(
-            dists, thresh=0.7)
+            dists, thresh=self.tracked_thresh)
         # The matches is the array for corresponding matches of the detection with the corresponding strack_pool
 
         for itracked, idet in matches:
@@ -140,19 +148,21 @@ class JDETracker(object):
                 refind_stracks.append(track)
 
         # None of the steps below happen if there are no undetected tracks.
-        ''' Step 3: Second association, with IOU'''
+        """ Step 3: Second association, with IOU"""
         detections = [detections[i] for i in u_detection]
         # detections is now a list of the unmatched detections
         r_tracked_stracks = []
-        # This is container for stracks which were tracked till the previous frame but no detection was found for it in the current frame
+        # This is container for stracks which were tracked till the previous
+        # frame but no detection was found for it in the current frame.
 
         for i in u_track:
             if strack_pool[i].state == TrackState.Tracked:
                 r_tracked_stracks.append(strack_pool[i])
         dists = matching.iou_distance(r_tracked_stracks, detections)
         matches, u_track, u_detection = matching.linear_assignment(
-            dists, thresh=0.5)
-        # matches is the list of detections which matched with corresponding tracks by IOU distance method
+            dists, thresh=self.r_tracked_thresh)
+        # matches is the list of detections which matched with corresponding
+        # tracks by IOU distance method.
 
         for itracked, idet in matches:
             track = r_tracked_stracks[itracked]
@@ -175,7 +185,7 @@ class JDETracker(object):
         detections = [detections[i] for i in u_detection]
         dists = matching.iou_distance(unconfirmed, detections)
         matches, u_unconfirmed, u_detection = matching.linear_assignment(
-            dists, thresh=0.7)
+            dists, thresh=self.unconfirmed_thresh)
         for itracked, idet in matches:
             unconfirmed[itracked].update(detections[idet], self.frame_id)
             activated_starcks.append(unconfirmed[itracked])

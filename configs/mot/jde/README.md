@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 [Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network。
 JDE reached 64.4 MOTA on MOT16-tesing datatset.
 <div align="center">
-  <img src="../../../docs/images/mot16_jde.gif" width=500 />
+  <img src="../../../../docs/images/mot16_jde.gif" width=500 />
 </div>
 
 ## Model Zoo

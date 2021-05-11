@@ -141,6 +141,8 @@ class STrack(BaseTrack):
 
         self.tracklet_len = 0
         self.state = TrackState.Tracked
+        if frame_id == 1:
+            self.is_activated = True
         self.frame_id = frame_id
         self.start_frame = frame_id
 
@@ -172,8 +174,9 @@ class STrack(BaseTrack):
 
     @property
     def tlwh(self):
-        """Get current position in bounding box format `(top left x, top left y,
-                width, height)`.
+        """
+        Get current position in bounding box format `(top left x, top left y,
+        width, height)`.
         """
         if self.mean is None:
             return self._tlwh.copy()

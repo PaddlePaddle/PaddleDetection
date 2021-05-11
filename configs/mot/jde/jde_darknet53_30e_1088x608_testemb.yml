@@ -6,7 +6,6 @@ metric: ReID
 
 JDE:
   detector: YOLOv3
-  reid: JEDEmbeddingHead
+  reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_emb: True
-  test_track: False
+  test_mode: 'embedding'

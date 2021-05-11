@@ -99,6 +99,7 @@ class JDEDetectionLoss(nn.Layer):
 class JDEEmbeddingLoss(nn.Layer):
     def __init__(self, ):
         super(JDEEmbeddingLoss, self).__init__()
+        self.phony = self.create_parameter(shape=[1], dtype="float32")
 
     def emb_loss(self, p_ide, t_conf, t_ide, emb_scale, classifier):
         emb_dim = p_ide.shape[1]
@@ -117,7 +118,7 @@ class JDEEmbeddingLoss(nn.Layer):
 
         if emb_mask_inds.numel() == 0 or valid_inds.numel() == 0:
             # loss_ide = paddle.to_tensor([0]) # will be error in gradient backward
-            loss_ide = paddle.sum(mask) * 0  # todo
+            loss_ide = self.phony * 0  # todo
         else:
             embedding = paddle.gather(p_ide_flatten, emb_mask_inds)
             embedding = emb_scale * F.normalize(embedding)

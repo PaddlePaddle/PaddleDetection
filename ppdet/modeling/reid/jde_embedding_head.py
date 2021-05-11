@@ -25,7 +25,7 @@ from paddle.regularizer import L2Decay
 from ppdet.core.workspace import register
 from paddle.nn.initializer import Normal, Constant
 
-__all__ = ['JEDEmbeddingHead']
+__all__ = ['JDEEmbeddingHead']
 
 
 class LossParam(nn.Layer):
@@ -42,11 +42,11 @@ class LossParam(nn.Layer):
 
 
 @register
-class JEDEmbeddingHead(nn.Layer):
+class JDEEmbeddingHead(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['emb_loss', 'jde_loss']
     """
-    JEDEmbeddingHead
+    JDEEmbeddingHead
     Args:
         num_classes(int): Number of classes. Only support one class tracking.
         num_identifiers(int): Number of identifiers.
@@ -66,7 +66,7 @@ class JEDEmbeddingHead(nn.Layer):
             embedding_dim=512,
             emb_loss='JDEEmbeddingLoss',
             jde_loss='JDELoss'):
-        super(JEDEmbeddingHead, self).__init__()
+        super(JDEEmbeddingHead, self).__init__()
         self.num_classes = num_classes
         self.num_identifiers = num_identifiers
         self.anchor_levels = anchor_levels

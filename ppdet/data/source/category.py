@@ -26,7 +26,7 @@ logger = setup_logger(__name__)
 __all__ = ['get_categories']
 
 
-def get_categories(metric_type, arch, anno_file=None):
+def get_categories(metric_type, anno_file=None, arch=None):
     """
     Get class id to category id map and category id
     to category name map from annotation file.
@@ -80,13 +80,14 @@ def get_categories(metric_type, arch, anno_file=None):
             logger.warn("only default categories support for OID19")
         return _oid19_category()
 
-    elif metric_type.lower() in ['mot', 'motdet', 'reid']:
-        if anno_file and os.path.isfile(anno_file):
-            logger.warn("only default categories support for MOT")
-        return _mot_category()
-
     elif metric_type.lower() == 'widerface':
         return _widerface_category()
+
+    elif metric_type.lower() == 'keypointtopdowncocoeval':
+        return (None, {'id': 'keypoint'})
+
+    elif metric_type.lower() in ['mot', 'motdet', 'reid']:
+        return _mot_category()
 
     else:
         raise ValueError("unknown metric type {}".format(metric_type))
