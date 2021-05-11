@@ -147,6 +147,7 @@ class Trainer(object):
                 eval_dataset.check_or_download_dataset()
                 anno_file = eval_dataset.get_anno()
 
+            IouType = self.cfg['IouType'] if 'IouType' in self.cfg else 'bbox'
             self._metrics = [
                 COCOMetric(
                     anno_file=anno_file,
@@ -154,6 +155,7 @@ class Trainer(object):
                     classwise=classwise,
                     output_eval=output_eval,
                     bias=bias,
+                    IouType=IouType,
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':

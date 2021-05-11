@@ -60,7 +60,6 @@ class KeypointBottomUpBaseDataset(DetDataset):
         self.test_mode = test_mode
 
         self.ann_info['num_joints'] = num_joints
-
         self.img_ids = []
 
     def __len__(self):
