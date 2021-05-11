@@ -57,6 +57,11 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
+            if key == 'Resize':
+                if value.get('keep_ratio', False) and int(image_shape[1]) != -1:
+                    max_size = max(image_shape[1:])
+                    image_shape = [3, max_size, max_size]
+                    value['target_size'] = image_shape[1:]
             p.update(value)
             preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)

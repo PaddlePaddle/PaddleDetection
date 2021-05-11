@@ -24,24 +24,16 @@ namespace PaddleDetection {
 
 // Load Model and create model predictor
 void ObjectDetector::LoadModel(const std::string& model_dir,
-                               bool use_gpu,
-                               const int min_subgraph_size,
                                const int batch_size,
-                               const std::string& run_mode,
-                               const int gpu_id,
-                               bool use_dynamic_shape,
-                               const int trt_min_shape,
-                               const int trt_max_shape,
-                               const int trt_opt_shape) {
+                               const std::string& run_mode) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
   config.SetModel(prog_file, params_file);
-  if (use_gpu) {
-    config.EnableUseGpu(200, gpu_id);
+  if (this->use_gpu_) {
+    config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
-    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
@@ -52,7 +44,6 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
       else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
-        use_calib_mode = true;
       } else {
           printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
@@ -60,17 +51,17 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       config.EnableTensorRtEngine(
           1 << 30,
           batch_size,
-          min_subgraph_size,
+          this->min_subgraph_size_,
           precision,
           false,
-          use_calib_mode);
+          this->trt_calib_mode_);
 
       // set use dynamic shape
-      if (use_dynamic_shape) {
+      if (this->use_dynamic_shape_) {
         // set DynamicShsape for image tensor
-        const std::vector<int> min_input_shape = {1, 3, trt_min_shape, trt_min_shape};
-        const std::vector<int> max_input_shape = {1, 3, trt_max_shape, trt_max_shape};
-        const std::vector<int> opt_input_shape = {1, 3, trt_opt_shape, trt_opt_shape};
+        const std::vector<int> min_input_shape = {1, 3, this->trt_min_shape_, this->trt_min_shape_};
+        const std::vector<int> max_input_shape = {1, 3, this->trt_max_shape_, this->trt_max_shape_};
+        const std::vector<int> opt_input_shape = {1, 3, this->trt_opt_shape_, this->trt_opt_shape_};
         const std::map<std::string, std::vector<int>> map_min_input_shape = {{"image", min_input_shape}};
         const std::map<std::string, std::vector<int>> map_max_input_shape = {{"image", max_input_shape}};
         const std::map<std::string, std::vector<int>> map_opt_input_shape = {{"image", opt_input_shape}};
@@ -84,8 +75,15 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 
   } else {
     config.DisableGpu();
+    if (this->use_mkldnn_) {
+      config.EnableMKLDNN();
+      // cache 10 different shapes for mkldnn to avoid memory leak
+      config.SetMkldnnCacheCapacity(10);
+    }
+    config.SetCpuMathLibraryNumThreads(this->cpu_math_library_num_threads_);
   }
   config.SwitchUseFeedFetchOps(false);
+  config.SwitchIrOptim(true);
   config.DisableGlogInfo();
   // Memory optimization
   config.EnableMemoryOptim();
@@ -189,8 +187,9 @@ void ObjectDetector::Predict(const cv::Mat& im,
       const double threshold,
       const int warmup,
       const int repeats,
-      const bool run_benchmark,
-      std::vector<ObjectResult>* result) {
+      std::vector<ObjectResult>* result,
+      std::vector<double>* times) {
+  auto preprocess_start = std::chrono::steady_clock::now();
   // Preprocess image
   Preprocess(im);
   // Prepare input tensor
@@ -210,6 +209,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
       in_tensor->CopyFromCpu(inputs_.scale_factor_.data());
     }
   }
+  auto preprocess_end = std::chrono::steady_clock::now();
   // Run predictor
   for (int i = 0; i < warmup; i++)
   {
@@ -231,7 +231,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
     out_tensor->CopyToCpu(output_data_.data()); 
   }
 
-  auto start = std::chrono::steady_clock::now();
+  auto inference_start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeats; i++)
   {
     predictor_->Run();
@@ -251,14 +251,18 @@ void ObjectDetector::Predict(const cv::Mat& im,
     output_data_.resize(output_size);
     out_tensor->CopyToCpu(output_data_.data()); 
   }
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<float> diff = end - start;
-  float ms = diff.count() / repeats * 1000;
-  printf("Inference: %f ms per batch image\n", ms);
+  auto inference_end = std::chrono::steady_clock::now();
+  auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
-  if(!run_benchmark) {
-    Postprocess(im,  result);
-  }
+  Postprocess(im,  result);
+  auto postprocess_end = std::chrono::steady_clock::now();
+
+  std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
+  times->push_back(double(preprocess_diff.count() * 1000));
+  std::chrono::duration<float> inference_diff = inference_end - inference_start;
+  times->push_back(double(inference_diff.count() / repeats * 1000));
+  std::chrono::duration<float> postprocess_diff = postprocess_end - postprocess_start;
+  times->push_back(double(postprocess_diff.count() * 1000));
 }
 
 std::vector<int> GenerateColorMap(int num_class) {
