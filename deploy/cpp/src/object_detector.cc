@@ -125,8 +125,10 @@ cv::Mat VisualizeResult(const cv::Mat& img,
         // Draw object, text, and background
         for (int k=0; k<4; k++)
         {
-            cv::Point pt1 = cv::Point(results[i].rect[(k*2)%8], results[i].rect[(k*2+1)%8]);
-            cv::Point pt2 = cv::Point(results[i].rect[(k*2+2)%8], results[i].rect[(k*2+3)%8]);
+            cv::Point pt1 = cv::Point(results[i].rect[(k*2)%8], 
+                                      results[i].rect[(k*2+1)%8]);
+            cv::Point pt2 = cv::Point(results[i].rect[(k*2+2)%8], 
+                                      results[i].rect[(k*2+3)%8]);
             cv::line(vis_img, pt1, pt2, roi_color, 2);
         }
     }

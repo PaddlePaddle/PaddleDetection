@@ -80,7 +80,6 @@ class S2ANetAnchorGenerator(nn.Layer):
         # featmap_size*stride project it to original area
         base_anchors = self.base_anchors
 
-        # feat_h, feat_w = featmap_size
         feat_h = featmap_size[0]
         feat_w = featmap_size[1]
         shift_x = paddle.arange(0, feat_w, 1, 'int32') * stride
@@ -523,9 +522,9 @@ class S2ANetHead(nn.Layer):
         """
         :param rrois: (cx, cy, w, h, theta)
         :param deltas: (dx, dy, dw, dh, dtheta)
-        :param means:
-        :param stds:
-        :param wh_ratio_clip:
+        :param means: means of anchor
+        :param stds: stds of anchor
+        :param wh_ratio_clip: clip threshold of wh_ratio
         :return:
         """
         deltas = paddle.reshape(deltas, [-1, 5])
@@ -563,10 +562,10 @@ class S2ANetHead(nn.Layer):
     def bbox_decode(self, bbox_preds, anchors, stds, means, wh_ratio_clip=1e-6):
         """decode bbox from deltas
         Args:
-            bbox_preds: [N,H,W,5]
-            anchors: [H*W,5]
+            bbox_preds: bbox_preds, shape=[N,H,W,5]
+            anchors: anchors, shape=[H,W,5]
         return:
-            bboxes: [N,H,W,5]
+            bboxes: return decoded bboxes, shape=[N*H*W,5]
         """
 
         num_imgs, H, W, _ = bbox_preds.shape
