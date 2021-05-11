@@ -330,7 +330,7 @@ dataset/xxx/
 
 以[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据为例，说明如何准备自定义数据。
 Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。
-可从Kaggle上下载，也可以从[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign.zip) 下载。
+可从Kaggle上下载，也可以从[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign.tar) 下载。
 路标数据集示例图：
 ![](../images/road554.png)
 
@@ -404,7 +404,7 @@ trafficlight
 ./images/road681.png ./annotations/road681.xml
 ```
 
-也可以下载准备好的数据[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip) ，解压到`dataset/roadsign_voc/`文件夹下即可。  
+也可以下载准备好的数据[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar) ，解压到`dataset/roadsign_voc/`文件夹下即可。  
 准备好数据后，一般的我们要对数据有所了解，比如图像量，图像尺寸，每一类目标区域个数，目标区域大小等。如有必要，还要对数据进行清洗。  
 roadsign数据集统计:
 

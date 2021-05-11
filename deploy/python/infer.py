@@ -13,20 +13,21 @@
 # limitations under the License.
 
 import os
-import argparse
 import time
 import yaml
-import ast
+import glob
 from functools import reduce
 
 from PIL import Image
 import cv2
 import numpy as np
 import paddle
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
-from visualize import visualize_box_mask
 from paddle.inference import Config
 from paddle.inference import create_predictor
+
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
+from visualize import visualize_box_mask
+from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -63,7 +64,7 @@ class Detector(object):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 threshold=0.5):
+                 trt_calib_mode=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -73,7 +74,10 @@ class Detector(object):
             use_dynamic_shape=use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape)
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode)
+        self.det_times = Timer()
+        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
     def preprocess(self, im):
         preprocess_ops = []
@@ -102,12 +106,7 @@ class Detector(object):
             results['masks'] = np_masks
         return results
 
-    def predict(self,
-                image,
-                threshold=0.5,
-                warmup=0,
-                repeats=1,
-                run_benchmark=False):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
@@ -118,13 +117,14 @@ class Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
+        self.det_times.preprocess_time.start()
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-
+        self.det_times.preprocess_time.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -134,7 +134,7 @@ class Detector(object):
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
 
-        t1 = time.time()
+        self.det_times.inference_time.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -143,20 +143,18 @@ class Detector(object):
             if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
-        t2 = time.time()
-        ms = (t2 - t1) * 1000.0 / repeats
-        print("Inference: {} ms per batch image".format(ms))
+        self.det_times.inference_time.end(repeats=repeats)
 
-        # do not perform postprocess in benchmark mode
+        self.det_times.postprocess_time.start()
         results = []
-        if not run_benchmark:
-            if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
-                print('[WARNNING] No object detected.')
-                results = {'boxes': np.array([])}
-            else:
-                results = self.postprocess(
-                    np_boxes, np_masks, inputs, threshold=threshold)
-
+        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
+            print('[WARNNING] No object detected.')
+            results = {'boxes': np.array([])}
+        else:
+            results = self.postprocess(
+                np_boxes, np_masks, inputs, threshold=threshold)
+        self.det_times.postprocess_time.end()
+        self.det_times.img_num += 1
         return results
 
 
@@ -183,7 +181,7 @@ class DetectorSOLOv2(Detector):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 threshold=0.5):
+                 trt_calib_mode=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -193,14 +191,11 @@ class DetectorSOLOv2(Detector):
             use_dynamic_shape=use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape)
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode)
+        self.det_times = Timer()
 
-    def predict(self,
-                image,
-                threshold=0.5,
-                warmup=0,
-                repeats=1,
-                run_benchmark=False):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (str/np.ndarray): path of image/ np.ndarray read by cv2
@@ -210,13 +205,14 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
+        self.det_times.preprocess_time.start()
         inputs = self.preprocess(image)
         np_label, np_score, np_segms = None, None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-
+        self.det_times.preprocess_time.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -227,7 +223,7 @@ class DetectorSOLOv2(Detector):
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
 
-        t1 = time.time()
+        self.det_times.inference_time.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -237,15 +233,10 @@ class DetectorSOLOv2(Detector):
                 2]).copy_to_cpu()
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
-        t2 = time.time()
-        ms = (t2 - t1) * 1000.0 / repeats
-        print("Inference: {} ms per batch image".format(ms))
+        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.img_num += 1
 
-        # do not perform postprocess in benchmark mode
-        results = []
-        if not run_benchmark:
-            return dict(segm=np_segms, label=np_label, score=np_score)
-        return results
+        return dict(segm=np_segms, label=np_label, score=np_score)
 
 
 def create_inputs(im, im_info):
@@ -316,7 +307,8 @@ def load_predictor(model_dir,
                    use_dynamic_shape=False,
                    trt_min_shape=1,
                    trt_max_shape=1280,
-                   trt_opt_shape=640):
+                   trt_opt_shape=640,
+                   trt_calib_mode=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -326,6 +318,8 @@ def load_predictor(model_dir,
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -335,7 +329,6 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    use_calib_mode = True if run_mode == 'trt_int8' else False
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
         os.path.join(model_dir, 'model.pdiparams'))
@@ -351,6 +344,17 @@ def load_predictor(model_dir,
         config.switch_ir_optim(True)
     else:
         config.disable_gpu()
+        config.set_cpu_math_library_num_threads(FLAGS.cpu_threads)
+        if FLAGS.enable_mkldnn:
+            try:
+                # cache 10 different shapes for mkldnn to avoid memory leak
+                config.set_mkldnn_cache_capacity(10)
+                config.enable_mkldnn()
+            except Exception as e:
+                print(
+                    "The current environment does not support `mkldnn`, so disable mkldnn."
+                )
+                pass
 
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
@@ -359,10 +363,9 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=use_calib_mode)
+            use_calib_mode=trt_calib_mode)
 
         if use_dynamic_shape:
-            print('use_dynamic_shape')
             min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
             max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
             opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
@@ -378,6 +381,37 @@ def load_predictor(model_dir,
     config.switch_use_feed_fetch_ops(False)
     predictor = create_predictor(config)
     return predictor
+
+
+def get_test_images(infer_dir, infer_img):
+    """
+    Get image path list in TEST mode
+    """
+    assert infer_img is not None or infer_dir is not None, \
+        "--infer_img or --infer_dir should be set"
+    assert infer_img is None or os.path.isfile(infer_img), \
+            "{} is not a file".format(infer_img)
+    assert infer_dir is None or os.path.isdir(infer_dir), \
+            "{} is not a directory".format(infer_dir)
+
+    # infer_img has a higher priority
+    if infer_img and os.path.isfile(infer_img):
+        return [infer_img]
+
+    images = set()
+    infer_dir = os.path.abspath(infer_dir)
+    assert os.path.isdir(infer_dir), \
+        "infer_dir {} is not a directory".format(infer_dir)
+    exts = ['jpg', 'jpeg', 'png', 'bmp']
+    exts += [ext.upper() for ext in exts]
+    for ext in exts:
+        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+    images = list(images)
+
+    assert len(images) > 0, "no image found in {}".format(infer_dir)
+    print("Found {} inference images in total.".format(len(images)))
+
+    return images
 
 
 def visualize(image_file, results, labels, output_dir='output/', threshold=0.5):
@@ -398,22 +432,23 @@ def print_arguments(args):
     print('------------------------------------------')
 
 
-def predict_image(detector):
-    if FLAGS.run_benchmark:
-        detector.predict(
-            FLAGS.image_file,
-            FLAGS.threshold,
-            warmup=100,
-            repeats=100,
-            run_benchmark=True)
-    else:
-        results = detector.predict(FLAGS.image_file, FLAGS.threshold)
-        visualize(
-            FLAGS.image_file,
-            results,
-            detector.pred_config.labels,
-            output_dir=FLAGS.output_dir,
-            threshold=FLAGS.threshold)
+def predict_image(detector, image_list):
+    for i, img_file in enumerate(image_list):
+        if FLAGS.run_benchmark:
+            detector.predict(img_file, FLAGS.threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+            print('Test iter {}, file name:{}'.format(i, img_file))
+        else:
+            results = detector.predict(img_file, FLAGS.threshold)
+            visualize(
+                img_file,
+                results,
+                detector.pred_config.labels,
+                output_dir=FLAGS.output_dir,
+                threshold=FLAGS.threshold)
 
 
 def predict_video(detector, camera_id):
@@ -465,7 +500,8 @@ def main():
         use_dynamic_shape=FLAGS.use_dynamic_shape,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
-        trt_opt_shape=FLAGS.trt_opt_shape)
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
@@ -475,77 +511,33 @@ def main():
             use_dynamic_shape=FLAGS.use_dynamic_shape,
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
-            trt_opt_shape=FLAGS.trt_opt_shape)
-    # predict from image
-    if FLAGS.image_file != '':
-        predict_image(detector)
+            trt_opt_shape=FLAGS.trt_opt_shape,
+            trt_calib_mode=FLAGS.trt_calib_mode)
+
     # predict from video file or camera video stream
-    if FLAGS.video_file != '' or FLAGS.camera_id != -1:
+    if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, FLAGS.camera_id)
+    else:
+        # predict from image
+        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
+        predict_image(detector, img_list)
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+        else:
+            mems = {
+                'cpu_rss': detector.cpu_mem / len(img_list),
+                'gpu_rss': detector.gpu_mem / len(img_list),
+                'gpu_util': detector.gpu_util * 100 / len(img_list)
+            }
+            det_logger = LoggerHelper(
+                FLAGS, detector.det_times.report(average=True), mems)
+            det_logger.report()
 
 
 if __name__ == '__main__':
     paddle.enable_static()
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--model_dir",
-        type=str,
-        default=None,
-        help=("Directory include:'model.pdiparams', 'model.pdmodel', "
-              "'infer_cfg.yml', created by tools/export_model.py."),
-        required=True)
-    parser.add_argument(
-        "--image_file", type=str, default='', help="Path of image file.")
-    parser.add_argument(
-        "--video_file", type=str, default='', help="Path of video file.")
-    parser.add_argument(
-        "--camera_id",
-        type=int,
-        default=-1,
-        help="device id of camera to predict.")
-    parser.add_argument(
-        "--run_mode",
-        type=str,
-        default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
-    parser.add_argument(
-        "--use_gpu",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether to predict with GPU.")
-    parser.add_argument(
-        "--run_benchmark",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether to predict a image_file repeatedly for benchmark")
-    parser.add_argument(
-        "--threshold", type=float, default=0.5, help="Threshold of score.")
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="output",
-        help="Directory of output visualization files.")
-    parser.add_argument(
-        "--use_dynamic_shape",
-        type=ast.literal_eval,
-        default=False,
-        help="Dynamic_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_max_shape",
-        type=int,
-        default=1280,
-        help="max_shape for TensorRT.")
-    parser.add_argument(
-        "--trt_opt_shape",
-        type=int,
-        default=640,
-        help="opt_shape for TensorRT.")
-
+    parser = argsparser()
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
-    if FLAGS.image_file != '' and FLAGS.video_file != '':
-        assert "Cannot predict image and video at the same time"
 
     main()

@@ -195,18 +195,19 @@ cp ../../../cxx/lib/libpaddle_light_api_shared.so ./debug/
 执行完成后，detection文件夹下将有如下文件格式：
 
 ```
-demo/cxx/clas/
+demo/cxx/detection/
 |-- debug/
-|   |--ppyolo_tiny.nb                优化后的检测器模型文件
-|   |--000000014439.jpg                    	待测试图像
-|   |--coco_label_list.txt                类别映射文件
+|   |--ppyolo_tiny.nb                   优化后的检测器模型文件
+|   |--000000014439.jpg                 待测试图像
+|   |--coco_label_list.txt              类别映射文件
 |   |--libpaddle_light_api_shared.so    C++预测库文件
-|   |--config_ppyolo_tiny.txt                       分类预测超参数配置
-|-- image_classfication.cpp            	图像分类代码文件
-|-- Makefile                    				编译文件
+|   |--config_ppyolo_tiny.txt           检测模型预测超参数配置
+|-- run_detection.cc                    目标检测代码文件
+|-- Makefile                            编译文件
 ```
 
-#### 注意：
+**注意：**
+
 * 上述文件中，`coco_label_list.txt` 是COCO数据集的类别映射文件，如果使用自定义的类别，需要更换该类别映射文件。
 
 *  `config_ppyolo_tiny.txt` 包含了检测器的超参数，如下：
