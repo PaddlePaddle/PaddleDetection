@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-# OP docs may contains math formula which may cause
-# DeprecationWarning in string parsing
 import warnings
 warnings.filterwarnings(
     action='ignore', category=DeprecationWarning, module='ops')

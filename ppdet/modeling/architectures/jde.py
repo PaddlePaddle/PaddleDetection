@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
+from ppdet.modeling.mot.utils import scale_coords
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 
@@ -32,6 +33,7 @@ class JDE(BaseArch):
         detector (object): detector model instance
         reid (object): reid model instance
         tracker (object): tracker instance
+        test_mode (str): 'detection', 'embedding' or 'tracking'
     """
     __category__ = 'architecture'
 
@@ -39,14 +41,12 @@ class JDE(BaseArch):
                  detector='YOLOv3',
                  reid='JDEEmbeddingHead',
                  tracker='JDETracker',
-                 test_emb=False,
-                 test_track=False):
+                 test_mode='detection'):
         super(JDE, self).__init__()
         self.detector = detector
         self.reid = reid
         self.tracker = tracker
-        self.test_emb = test_emb
-        self.test_track = test_track
+        self.test_mode = test_mode
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -74,35 +74,42 @@ class JDE(BaseArch):
                                    loss_boxes)
             return jde_losses
         else:
-            if self.test_emb:
+            if self.test_mode == 'detection':
+                det_results = {
+                    'bbox': det_outs['bbox'],
+                    'bbox_num': det_outs['bbox_num'],
+                }
+                return det_results
+
+            elif self.test_mode == 'embedding':
                 emb_feats = det_outs['emb_feats']
                 embs_and_gts = self.reid(emb_feats, self.inputs, test_emb=True)
                 return embs_and_gts
 
-            elif self.test_track:
+            elif self.test_mode == 'tracking':
                 emb_feats = det_outs['emb_feats']
                 emb_outs = self.reid(emb_feats, self.inputs)
 
                 boxes_idx = det_outs['boxes_idx']
                 bbox = det_outs['bbox']
+
+                input_shape = self.inputs['image'].shape[2:]
+                scale_factor = self.inputs['scale_factor']
+                bbox[:, 2:] = scale_coords(bbox[:, 2:], input_shape,
+                                           scale_factor)
+
                 nms_keep_idx = det_outs['nms_keep_idx']
 
                 pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2]), axis=1)
 
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
-                scale_factor = self.inputs['scale_factor']
 
-                online_targets = self.tracker.update(pred_dets, pred_embs,
-                                                     scale_factor)
+                online_targets = self.tracker.update(pred_dets, pred_embs)
                 return online_targets
 
             else:
-                det_results = {
-                    'bbox': det_outs['bbox'],
-                    'bbox_num': det_outs['bbox_num'],
-                }
-                return det_results
+                raise ValueError("Unknown test_mode {}.".format(self.test_mode))
 
     def get_loss(self):
         return self._forward()

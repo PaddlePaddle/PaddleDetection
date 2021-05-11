@@ -39,9 +39,12 @@ class JDETracker(object):
         det_thresh (float): threshold of detection score
         track_buffer (int): buffer for tracker
         min_box_area (int): min box area to filter out low quality boxes
-        tracked_thresh (float): threshold of detection score
-        r_tracked_thresh (float): threshold of detection score
-        unconfirmed_thresh (float): threshold of detection score
+        tracked_thresh (float): linear assignment threshold of tracked 
+            stracks and detections
+        r_tracked_thresh (float): linear assignment threshold of 
+            tracked stracks and unmatched detections
+        unconfirmed_thresh (float): linear assignment threshold of 
+            unconfirmed stracks and unmatched detections
         motion (object): KalmanFilter instance
     """
 
@@ -69,7 +72,7 @@ class JDETracker(object):
         self.max_time_lost = 0
         # max_time_lost will be calculated: int(frame_rate / 30.0 * track_buffer)
 
-    def update(self, pred_dets, pred_embs, scale_factor):
+    def update(self, pred_dets, pred_embs):
         """
         Processes the image frame and finds bounding box(detections).
         Associates the detection with corresponding tracklets and also handles
@@ -78,7 +81,6 @@ class JDETracker(object):
         Args:
             pred_dets (Tensor): Detection results of the image, shape is [N, 5].
             pred_embs (Tensor): Embedding results of the image, shape is [N, 512].
-            scale_factor (Tensor): scale_factor of the original input image.
 
         Return:
             output_stracks (list): The list contains information regarding the

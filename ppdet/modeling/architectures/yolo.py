@@ -80,8 +80,7 @@ class YOLOv3(BaseArch):
 
             if self.for_mot:
                 boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
-                    yolo_head_outs, self.yolo_head.mask_anchors,
-                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                    yolo_head_outs, self.yolo_head.mask_anchors)
                 output = {
                     'bbox': bbox,
                     'bbox_num': bbox_num,

@@ -119,14 +119,12 @@ def load_det_results(det_file, num_frames):
     return results_list
 
 
-def scale_coords(coords, img_shape, scale_factor):
-    img_shape = scale_factor.numpy()[0]
-    scale_factor = scale_factor.numpy()[0]
-    ratio = scale_factor[0]  #, scale_factor[1]
-    img0_shape = [int(img_shape[0] / ratio), int(img_shape[1] / ratio)]
+def scale_coords(coords, input_shape, scale_factor):
+    ratio = scale_factor.numpy()[0][0]
+    img0_shape = [int(input_shape[0] / ratio), int(input_shape[1] / ratio)]
 
-    pad_w = (img_shape[1] - img0_shape[1] * ratio) / 2
-    pad_h = (img_shape[0] - img0_shape[0] * ratio) / 2
+    pad_w = (input_shape[1] - img0_shape[1] * ratio) / 2
+    pad_h = (input_shape[0] - img0_shape[0] * ratio) / 2
     coords[:, 0::2] -= pad_w
     coords[:, 1::2] -= pad_h
     coords[:, 0:4] /= paddle.to_tensor(ratio)
@@ -134,11 +132,9 @@ def scale_coords(coords, img_shape, scale_factor):
     return coords.round()
 
 
-def clip_box(xyxy, img_shape, scale_factor):
-    img_shape = scale_factor.numpy()[0]
-    scale_factor = scale_factor.numpy()[0]
-    ratio = scale_factor[0]  #, scale_factor[1]
-    img0_shape = [int(img_shape[0] / ratio), int(img_shape[1] / ratio)]
+def clip_box(xyxy, input_shape, scale_factor):
+    ratio = scale_factor.numpy()[0][0]
+    img0_shape = [int(input_shape[0] / ratio), int(input_shape[1] / ratio)]
 
     xyxy[:, 0::2] = paddle.clip(xyxy[:, 0::2], min=0, max=img0_shape[1])
     xyxy[:, 1::2] = paddle.clip(xyxy[:, 1::2], min=0, max=img0_shape[0])
@@ -164,11 +160,13 @@ def get_crops(xyxy, ori_img, pred_scores, w, h):
     return crops, keep_scores
 
 
-def preprocess_reid(imgs, w, h):
+def preprocess_reid(imgs,
+                    w=64,
+                    h=192,
+                    mean=[0.485, 0.456, 0.406],
+                    std=[0.229, 0.224, 0.225]):
     im_batch = []
     for img in imgs:
-        mean = [0.485, 0.456, 0.406]
-        std = [0.229, 0.224, 0.225]
         img = cv2.resize(img, (w, h))
         img = img[:, :, ::-1].astype('float32').transpose((2, 0, 1)) / 255
         img_mean = np.array(mean).reshape((3, 1, 1))
