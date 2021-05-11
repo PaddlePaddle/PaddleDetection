@@ -122,7 +122,8 @@ class Decode(BaseOperator):
         im = sample['image']
         data = np.frombuffer(im, dtype='uint8')
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
-
+        if 'keep_ori_im' in sample and sample['keep_ori_im']:
+            sample['ori_image'] = im
         im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
@@ -1640,6 +1641,11 @@ class Mixup(BaseOperator):
                 (is_difficult1, is_difficult2), axis=0)
             result['difficult'] = is_difficult
 
+        if 'gt_ide' in sample[0]:
+            gt_ide1 = sample[0]['gt_ide']
+            gt_ide2 = sample[1]['gt_ide']
+            gt_ide = np.concatenate((gt_ide1, gt_ide2), axis=0)
+            result['gt_ide'] = gt_ide
         return result
 
 
@@ -1736,6 +1742,11 @@ class PadBox(BaseOperator):
             if gt_num > 0:
                 pad_crowd[:gt_num] = sample['is_crowd'][:gt_num, 0]
             sample['is_crowd'] = pad_crowd
+        if 'gt_ide' in sample:
+            pad_ide = np.zeros((num_max, ), dtype=np.int32)
+            if gt_num > 0:
+                pad_ide[:gt_num] = sample['gt_ide'][:gt_num, 0]
+            sample['gt_ide'] = pad_ide
         return sample
 
 
@@ -1998,4 +2009,201 @@ class Rbox2Poly(BaseOperator):
         sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
         polys = bbox_utils.rbox2poly(rrects)
         sample['gt_rbox2poly'] = polys
+        return sample
+
+
+@register_op
+class AugmentHSV(BaseOperator):
+    def __init__(self, fraction=0.50, is_bgr=True):
+        """ 
+        Augment the SV channel of image data.
+        Args:
+            fraction (float): the fraction for augment 
+            is_bgr (bool): whether the image is BGR mode
+        """
+        super(AugmentHSV, self).__init__()
+        self.fraction = fraction
+        self.is_bgr = is_bgr
+
+    def apply(self, sample, context=None):
+        img = sample['image']
+        if self.is_bgr:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        else:
+            img_hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+        S = img_hsv[:, :, 1].astype(np.float32)
+        V = img_hsv[:, :, 2].astype(np.float32)
+
+        a = (random.random() * 2 - 1) * self.fraction + 1
+        S *= a
+        if a > 1:
+            np.clip(S, a_min=0, a_max=255, out=S)
+
+        a = (random.random() * 2 - 1) * self.fraction + 1
+        V *= a
+        if a > 1:
+            np.clip(V, a_min=0, a_max=255, out=V)
+
+        img_hsv[:, :, 1] = S.astype(np.uint8)
+        img_hsv[:, :, 2] = V.astype(np.uint8)
+        if self.is_bgr:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)
+        else:
+            cv2.cvtColor(img_hsv, cv2.COLOR_HSV2RGB, dst=img)
+
+        sample['image'] = img
+        return sample
+
+
+@register_op
+class Norm2PixelBbox(BaseOperator):
+    """
+    Transform the bounding box's coornidates which is in [0,1] to pixels.
+    """
+
+    def __init__(self):
+        super(Norm2PixelBbox, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox = sample['gt_bbox']
+        height, width = sample['image'].shape[:2]
+        bbox[:, 0::2] = bbox[:, 0::2] * width
+        bbox[:, 1::2] = bbox[:, 1::2] * height
+        sample['gt_bbox'] = bbox
+        return sample
+
+
+@register_op
+class RandomAffine(BaseOperator):
+    def __init__(self,
+                 degrees=(-5, 5),
+                 translate=(0.10, 0.10),
+                 scale=(0.50, 1.20),
+                 shear=(-2, 2),
+                 borderValue=(127.5, 127.5, 127.5)):
+        """ 
+        Transform the image data with random affine
+        """
+        super(RandomAffine, self).__init__()
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.borderValue = borderValue
+
+    def apply(self, sample, context=None):
+        # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+        border = 0  # width of added border (optional)
+
+        img = sample['image']
+        height, width = img.shape[0], img.shape[1]
+
+        # Rotation and Scale
+        R = np.eye(3)
+        a = random.random() * (self.degrees[1] - self.degrees[0]
+                               ) + self.degrees[0]
+        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
+        R[:2] = cv2.getRotationMatrix2D(
+            angle=a, center=(width / 2, height / 2), scale=s)
+
+        # Translation
+        T = np.eye(3)
+        T[0, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[1] * width + border  # y translation (pixels)
+
+        # Shear
+        S = np.eye(3)
+        S[0, 1] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # y shear (deg)
+
+        M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
+        imw = cv2.warpPerspective(
+            img,
+            M,
+            dsize=(width, height),
+            flags=cv2.INTER_LINEAR,
+            borderValue=self.borderValue)  # BGR order borderValue
+
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            targets = sample['gt_bbox']
+            n = targets.shape[0]
+            points = targets.copy()
+            area0 = (points[:, 2] - points[:, 0]) * (
+                points[:, 3] - points[:, 1])
+
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = (xy @M.T)[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate(
+                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # apply angle-based reduction
+            radians = a * math.pi / 180
+            reduction = max(abs(math.sin(radians)), abs(math.cos(radians)))**0.5
+            x = (xy[:, 2] + xy[:, 0]) / 2
+            y = (xy[:, 3] + xy[:, 1]) / 2
+            w = (xy[:, 2] - xy[:, 0]) * reduction
+            h = (xy[:, 3] - xy[:, 1]) * reduction
+            xy = np.concatenate(
+                (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+            # reject warped points outside of image
+            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            w = xy[:, 2] - xy[:, 0]
+            h = xy[:, 3] - xy[:, 1]
+            area = w * h
+            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
+            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
+
+            if sum(i) > 0:
+                sample['gt_bbox'] = xy[i].astype(sample['gt_bbox'].dtype)
+                sample['gt_class'] = sample['gt_class'][i]
+                if 'difficult' in sample:
+                    sample['difficult'] = sample['difficult'][i]
+                if 'gt_ide' in sample:
+                    sample['gt_ide'] = sample['gt_ide'][i]
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = sample['is_crowd'][i]
+                sample['image'] = imw
+                return sample
+            else:
+                return sample
+
+
+@register_op
+class BboxCXCYWH2XYXY(BaseOperator):
+    """
+    Convert bbox CXCYWH format to XYXY format.
+    [center_x, center_y, width, height] -> [x0, y0, x1, y1]
+    """
+
+    def __init__(self):
+        super(BboxCXCYWH2XYXY, self).__init__()
+
+    def apply(self, sample, context=None):
+        assert 'gt_bbox' in sample
+        bbox0 = sample['gt_bbox']
+        bbox = bbox0.copy()
+
+        bbox[:, :2] = bbox0[:, :2] - bbox0[:, 2:4] / 2.
+        bbox[:, 2:4] = bbox0[:, :2] + bbox0[:, 2:4] / 2.
+        sample['gt_bbox'] = bbox
         return sample
