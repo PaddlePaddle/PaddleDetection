@@ -1,5 +1,42 @@
 简体中文 | [English](README_en.md)
 
+# 近期活动
+
+百度飞桨产业级目标检测技术详解系列直播课，看超越YOLOv5的PP-YOLOv2到底多强大
+
+欢迎大家加入PPYOLOv2&Tiny技术交流群
+
+
+<div align="left">
+  <img src="https://z3.ax1x.com/2021/05/11/gUDw0e.png" width='150'/>
+</div>
+
+
+### 课程安排     
+ [直播链接](http://live.bilibili.com/21689802)
+* 5月13日19:00-20:00
+  -  主题: 产业级目标检测算法全解读
+* 5月14日19:00-20:00
+   - 主题: 1.3M超轻量目标检测算法解读及应用
+* 5月21日20:00-21:00
+   - 主题: 复杂背景下小目标检测模型开发实战
+
+### 学习链接
+
+ [0【PaddleDetection2.0专项】新版本快速体验](https://aistudio.baidu.com/aistudio/projectdetail/1885319)
+ 
+ [1【PaddleDetection2.0专项】如何自定义数据集](https://aistudio.baidu.com/aistudio/projectdetail/1917140)
+ 
+ [2【PaddleDetection2.0专项】快速上手PP-YOLOv2](https://aistudio.baidu.com/aistudio/projectdetail/1922155)
+ 
+ [3【PaddleDetection2.0专项】快速上手PP-YOLO tiny](https://aistudio.baidu.com/aistudio/projectdetail/1918450)
+ 
+ [4【PaddleDetection2.0专项】快速上手S2ANet](https://aistudio.baidu.com/aistudio/projectdetail/1923957)
+
+ [5【PaddleDetection2.0专项】快速实现行人检测](https://aistudio.baidu.com/aistudio/projectdetail/1918451)
+ 
+ [6【PaddleDetection2.0专项】快速实现人脸检测](https://aistudio.baidu.com/aistudio/projectdetail/1918453)
+
 # PaddleDetection
 
 ### PaddleDetection 2.0全面升级！目前默认使用动态图版本，静态图版本位于[static](./static)中
@@ -15,9 +52,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 经过长时间产业实践打磨，PaddleDetection已拥有顺畅、卓越的使用体验，被工业质检、遥感图像检测、无人巡检、新零售、互联网、科研等十多个行业的开发者广泛应用。
 
-<div align="center">
-  <img src="static/docs/images/football.gif" width='800'/>
-</div>
+
 
 ### 产品动态
 - 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布[PP-YOLO v2, PPYOLO tiny](configs/ppyolo/README_cn.md)模型，增强版anchor free模型[PAFNet](configs/ttfnet/README.md)，新增旋转框检测[S2ANet](configs/dota/README.md)模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
