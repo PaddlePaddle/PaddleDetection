@@ -94,8 +94,10 @@ class JDE(BaseArch):
                 bbox = det_outs['bbox']
 
                 input_shape = self.inputs['image'].shape[2:]
+                im_shape = self.inputs['im_shape']
                 scale_factor = self.inputs['scale_factor']
-                bbox[:, 2:] = scale_coords(bbox[:, 2:], input_shape,
+
+                bbox[:, 2:] = scale_coords(bbox[:, 2:], input_shape, im_shape,
                                            scale_factor)
 
                 nms_keep_idx = det_outs['nms_keep_idx']

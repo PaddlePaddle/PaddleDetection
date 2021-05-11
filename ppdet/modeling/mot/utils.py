@@ -119,9 +119,10 @@ def load_det_results(det_file, num_frames):
     return results_list
 
 
-def scale_coords(coords, input_shape, scale_factor):
+def scale_coords(coords, input_shape, im_shape, scale_factor):
+    im_shape = im_shape.numpy()[0]
     ratio = scale_factor.numpy()[0][0]
-    img0_shape = [int(input_shape[0] / ratio), int(input_shape[1] / ratio)]
+    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
 
     pad_w = (input_shape[1] - img0_shape[1] * ratio) / 2
     pad_h = (input_shape[0] - img0_shape[0] * ratio) / 2
@@ -132,9 +133,10 @@ def scale_coords(coords, input_shape, scale_factor):
     return coords.round()
 
 
-def clip_box(xyxy, input_shape, scale_factor):
+def clip_box(xyxy, input_shape, im_shape, scale_factor):
+    im_shape = im_shape.numpy()[0]
     ratio = scale_factor.numpy()[0][0]
-    img0_shape = [int(input_shape[0] / ratio), int(input_shape[1] / ratio)]
+    img0_shape = [int(im_shape[0] / ratio), int(im_shape[1] / ratio)]
 
     xyxy[:, 0::2] = paddle.clip(xyxy[:, 0::2], min=0, max=img0_shape[1])
     xyxy[:, 1::2] = paddle.clip(xyxy[:, 1::2], min=0, max=img0_shape[0])
