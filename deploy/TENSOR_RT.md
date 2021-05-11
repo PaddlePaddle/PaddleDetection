@@ -38,7 +38,7 @@ TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。
 `TestReader.inputs_def.image_shape`设置的是输入TensorRT引擎的数据尺寸（在像FasterRCNN中，`TestReader.inputs_def.image_shape`指定的是在`Pad`操作之前的图像数据尺寸）。
 
 可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
-![img](imgs/input_shape.png)
+![img](../docs/images/input_shape.png)
 
 同时需要将图像预处理后的尺寸与设置车模型输入尺寸保持一致，需要设置`infer_cfg.yml`配置文件中`Resize OP`的`target_size`参数和`keep_ratio`参数。
 
