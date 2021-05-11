@@ -26,7 +26,7 @@ import cv2
 import copy
 import numpy as np
 
-from .operators import BaseOperator
+from .operators import BaseOperator, register_op
 from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger

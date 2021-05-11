@@ -126,7 +126,11 @@ class MOTDataSet(DetDataset):
             if len(self.img_files[data_name]) == 0:
                 continue
             else:
-                data_dir = self.img_files[data_name][0].split('/')[0]
+                # self.img_files[data_name] each line following this: 
+                # {self.dataset_dir}/MOT17/images/..
+                first_path = self.img_files[data_name][0]
+                data_dir = first_path.replace(self.dataset_dir,
+                                              '').split('/')[1]
                 data_dir = os.path.join(self.dataset_dir, data_dir)
                 assert os.path.exists(data_dir), \
                     "The data directory {} does not exist.".format(data_dir)
