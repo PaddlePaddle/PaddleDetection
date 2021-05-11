@@ -25,7 +25,7 @@
 Training YOLOv3 on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=log_dir/pedestrian_yolov3_darknet/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml
+python -m paddle.distributed.launch --log_dir=./pedestrian_yolov3_darknet/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/pedestrian/pedestrian_yolov3_darknet.yml
 ```
 
 ### 2. Evaluation of detector
@@ -43,19 +43,19 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/pedestrian/pedestrian_yol
 Tracking the multiple objdect in the images or video.
 ```bash
 # detect and track the objects
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval_mot.py -c configs/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort
 
 # track the objects by loading detected result file
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval_mot.py -c configs/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --det_dir ./result_txts
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --det_dir ./result_txts
 
 # detect and track the objects, then save the result as images
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval_mot.py -c configs/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_images
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_images
 
 # detect and track the objects, then save the result as a video
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/eval_mot.py -c configs/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_videos
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_tracker_1088x608.yml -o use_gpu=true --model_type deepsort --save_videos
 
 # detect and track the objects by loading video
-CUDA_VISIBLE_DEVICES=0 python3.7 tools/infer_mot.py -c configs/deepsort/deepsort_yolov3_darknet53_pcb_tracker_1088x608.yml -o use_gpu=true --video_file ./MOT16-05.mp4 --model_type deepsort
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_darknet53_pcb_tracker_1088x608.yml -o use_gpu=true --video_file {your video name}.mp4 --model_type deepsort
 ```
 
 ## Citations
