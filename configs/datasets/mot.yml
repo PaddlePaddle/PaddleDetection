@@ -1,0 +1,29 @@
+metric: MOTDet
+num_classes: 1
+
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.train', 'caltech.train', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['citypersons.val', 'caltech.val'] # for detection
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot
+
+EvalMOTDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot
+    keep_ori_im: False # set True if save visualization images or video
+
+TestMOTDataset:
+  !MOTVideoDataset
+    dataset_dir: dataset/mot
+    keep_ori_im: False
