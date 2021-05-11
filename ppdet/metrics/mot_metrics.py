@@ -18,10 +18,8 @@ from __future__ import print_function
 import os
 import paddle
 import numpy as np
-from sklearn import metrics
 from scipy import interpolate
 import paddle.nn.functional as F
-import motmetrics as mm
 from .map_utils import ap_per_class
 from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from .mot_eval_utils import MOTEvaluator
@@ -98,7 +96,6 @@ class JDEDetMetric(Metric):
 class JDEReIDMetric(Metric):
     def __init__(self, far_levels=[1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]):
         self.far_levels = far_levels
-        self.metrics = metrics
         self.reset()
 
     def reset(self):
@@ -131,7 +128,9 @@ class JDEReIDMetric(Metric):
         pdist = pdist[up_triangle]
         gt = gt[up_triangle]
 
-        far, tar, threshold = self.metrics.roc_curve(gt, pdist)
+        # lazy import metrics here
+        from sklearn import metrics
+        far, tar, threshold = metrics.roc_curve(gt, pdist)
         interp = interpolate.interp1d(far, tar)
         tar_at_far = [interp(x) for x in self.far_levels]
 
@@ -165,6 +164,8 @@ class MOTMetric(Metric):
         self.result_root = result_root
 
     def accumulate(self):
+        import motmetrics as mm
+        import openpyxl
         metrics = mm.metrics.motchallenge_metrics
         mh = mm.metrics.create()
         summary = self.MOTEvaluator.get_summary(self.accs, self.seqs, metrics)

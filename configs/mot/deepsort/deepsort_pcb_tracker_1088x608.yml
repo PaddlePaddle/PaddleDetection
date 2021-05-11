@@ -1,6 +1,6 @@
 _BASE_: [
-  '../datasets/mot.yml',
-  '../runtime.yml',
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
   '_base_/deepsort_yolov3_darknet53_pcb_tracker.yml',
   '_base_/deepsort_reader_1088x608.yml',
 ]
@@ -12,10 +12,10 @@ EvalMOTDataset:
     dataset_dir: dataset/mot
     keep_ori_im: True
 
-det_weights: https://paddledet.bj.bcebos.com/models/pedestrian_yolov3_darknet.pdparams
+det_weights: None
 reid_weights: https://paddledet.bj.bcebos.com/models/PCB_plus_dropout_pyramid_resnet101.pdparams
 
 DeepSORT:
-  detector: YOLOv3
+  detector: None
   reid: PCBPlusDropoutPyramid
   tracker: DeepSORTTracker

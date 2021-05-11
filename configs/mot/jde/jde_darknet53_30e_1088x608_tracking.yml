@@ -6,7 +6,7 @@ metric: MOT
 
 JDE:
   detector: YOLOv3
-  reid: JEDEmbeddingHead
+  reid: JDEEmbeddingHead
   tracker: JDETracker
   test_emb: False
   test_track: True

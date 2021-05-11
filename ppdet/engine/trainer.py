@@ -63,7 +63,7 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JEDEmbeddingHead'][
+            cfg['JDEEmbeddingHead'][
                 'num_identifiers'] = self.dataset.total_identities
 
         # build model
@@ -249,7 +249,7 @@ class Trainer(object):
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model)
+            model = paddle.DataParallel(self.model, find_unused_parameters=True)
 
         # initial fp16
         if self.cfg.fp16:

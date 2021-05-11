@@ -15,8 +15,6 @@
 import os
 import numpy as np
 import copy
-import motmetrics as mm
-mm.lap.default_solver = 'lap'
 
 __all__ = [
     'read_mot_results',
@@ -100,6 +98,9 @@ class MOTEvaluator(object):
         self.data_root = data_root
         self.seq_name = seq_name
         self.data_type = data_type
+
+        import motmetrics as mm
+        mm.lap.default_solver = 'lap'
 
         self.load_annotations()
         self.reset_accumulator()

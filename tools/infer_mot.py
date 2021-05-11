@@ -74,11 +74,6 @@ def parse_args():
         '--show_image',
         action='store_true',
         help='Show tracking results (image).')
-    parser.add_argument(
-        "--slim_config",
-        type=str,
-        default=None,
-        help="Configuration file of slim method.")
     args = parser.parse_args()
     return args
 
@@ -113,9 +108,7 @@ def main():
 
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
-    if FLAGS.slim_config:
-        slim_cfg = load_config(FLAGS.slim_config)
-        merge_config(slim_cfg)
+
     check_config(cfg)
     check_gpu(cfg.use_gpu)
     check_version()
