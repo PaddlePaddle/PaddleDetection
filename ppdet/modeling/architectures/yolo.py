@@ -19,7 +19,8 @@ class YOLOv3(BaseArch):
                  neck='YOLOv3FPN',
                  yolo_head='YOLOv3Head',
                  post_process='BBoxPostProcess',
-                 data_format='NCHW'):
+                 data_format='NCHW',
+                 for_mot=False):
         """
         YOLOv3 network, see https://arxiv.org/abs/1804.02767
 
@@ -29,12 +30,14 @@ class YOLOv3(BaseArch):
             yolo_head (nn.Layer): anchor_head instance
             bbox_post_process (object): `BBoxPostProcess` instance
             data_format (str): data format, NCHW or NHWC
+            for_mot (bool): whether return other features used in tracking model 
         """
         super(YOLOv3, self).__init__(data_format=data_format)
         self.backbone = backbone
         self.neck = neck
         self.yolo_head = yolo_head
         self.post_process = post_process
+        self.for_mot = for_mot
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -57,21 +60,44 @@ class YOLOv3(BaseArch):
 
     def _forward(self):
         body_feats = self.backbone(self.inputs)
-        body_feats = self.neck(body_feats)
+        neck_feats = self.neck(body_feats, self.for_mot)
+
+        if isinstance(neck_feats, dict):
+            assert self.for_mot == True
+            emb_feats = neck_feats['emb_feats']
+            neck_feats = neck_feats['yolo_feats']
 
         if self.training:
-            return self.yolo_head(body_feats, self.inputs)
+            yolo_losses = self.yolo_head(neck_feats, self.inputs)
+
+            if self.for_mot:
+                return {'det_losses': yolo_losses, 'emb_feats': emb_feats}
+            else:
+                return yolo_losses
+
         else:
-            yolo_head_outs = self.yolo_head(body_feats)
-            bbox, bbox_num = self.post_process(
-                yolo_head_outs, self.yolo_head.mask_anchors,
-                self.inputs['im_shape'], self.inputs['scale_factor'])
-            return bbox, bbox_num
+            yolo_head_outs = self.yolo_head(neck_feats)
+
+            if self.for_mot:
+                boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
+                    yolo_head_outs, self.yolo_head.mask_anchors)
+                output = {
+                    'bbox': bbox,
+                    'bbox_num': bbox_num,
+                    'boxes_idx': boxes_idx,
+                    'nms_keep_idx': nms_keep_idx,
+                    'emb_feats': emb_feats,
+                }
+            else:
+                bbox, bbox_num = self.post_process(
+                    yolo_head_outs, self.yolo_head.mask_anchors,
+                    self.inputs['im_shape'], self.inputs['scale_factor'])
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
+
+            return output
 
     def get_loss(self):
         return self._forward()
 
     def get_pred(self):
-        bbox_pred, bbox_num = self._forward()
-        output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
-        return output
+        return self._forward()

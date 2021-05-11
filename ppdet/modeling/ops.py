@@ -52,6 +52,7 @@ def mish(x):
 def batch_norm(ch,
                norm_type='bn',
                norm_decay=0.,
+               freeze_norm=False,
                initializer=None,
                data_format='NCHW'):
     if norm_type == 'sync_bn':
@@ -59,12 +60,29 @@ def batch_norm(ch,
     else:
         batch_norm = nn.BatchNorm2D
 
-    return batch_norm(
+    norm_lr = 0. if freeze_norm else 1.
+    weight_attr = ParamAttr(
+        initializer=initializer,
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay),
+        trainable=False if freeze_norm else True)
+    bias_attr = ParamAttr(
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay),
+        trainable=False if freeze_norm else True)
+
+    norm_layer = batch_norm(
         ch,
-        weight_attr=ParamAttr(
-            initializer=initializer, regularizer=L2Decay(norm_decay)),
-        bias_attr=ParamAttr(regularizer=L2Decay(norm_decay)),
+        weight_attr=weight_attr,
+        bias_attr=bias_attr,
         data_format=data_format)
+
+    norm_params = norm_layer.parameters()
+    if freeze_norm:
+        for param in norm_params:
+            param.stop_gradient = True
+
+    return norm_layer
 
 
 @paddle.jit.not_to_static
