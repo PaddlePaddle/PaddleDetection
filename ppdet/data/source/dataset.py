@@ -87,8 +87,13 @@ class DetDataset(Dataset):
         return self.transform(roidb)
 
     def check_or_download_dataset(self):
-        self.dataset_dir = get_dataset_path(self.dataset_dir, self.anno_path,
-                                            self.image_dir)
+        if isinstance(self.anno_path, list):
+            for path in self.anno_path:
+                self.dataset_dir = get_dataset_path(self.dataset_dir, path,
+                                                    self.image_dir)
+        else:
+            self.dataset_dir = get_dataset_path(self.dataset_dir,
+                                                self.anno_path, self.image_dir)
 
     def set_kwargs(self, **kwargs):
         self.mixup_epoch = kwargs.get('mixup_epoch', -1)
@@ -134,19 +139,18 @@ class ImageFolder(DetDataset):
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
-                 anno_path=None,
                  sample_num=-1,
                  use_default_label=None,
+                 keep_ori_im=False,
                  **kwargs):
         super(ImageFolder, self).__init__(
             dataset_dir,
             image_dir,
-            anno_path,
             sample_num=sample_num,
             use_default_label=use_default_label)
+        self.keep_ori_im = keep_ori_im
         self._imid2path = {}
         self.roidbs = None
-        self.sample_num = sample_num
 
     def check_or_download_dataset(self):
         return
@@ -178,6 +182,8 @@ class ImageFolder(DetDataset):
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
             rec = {'im_id': np.array([ct]), 'im_file': image}
+            if self.keep_ori_im:
+                rec.update({'keep_ori_im': 1})
             self._imid2path[ct] = image
             ct += 1
             records.append(rec)
