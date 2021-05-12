@@ -52,7 +52,7 @@ class HigherHRNet(BaseArch):
         super(HigherHRNet, self).__init__()
         self.backbone = backbone
         self.hrhrnet_head = hrhrnet_head
-        self.post_process = HrHRNetPostProcess()
+        self.post_process = post_process
         self.flip = eval_flip
         self.flip_perm = paddle.to_tensor(flip_perm)
         self.deploy = False
@@ -85,6 +85,7 @@ class HigherHRNet(BaseArch):
             return self.hrhrnet_head(body_feats, self.inputs)
         else:
             outputs = self.hrhrnet_head(body_feats)
+
             if self.flip and not self.deploy:
                 outputs = [paddle.split(o, 2) for o in outputs]
                 output_rflip = [
@@ -105,7 +106,6 @@ class HigherHRNet(BaseArch):
             w = self.inputs['im_shape'][0, 1].numpy().item()
             kpts, scores = self.post_process(*outputs, h, w)
             res_lst.append([kpts, scores])
-
             return res_lst
 
     def get_loss(self):
@@ -157,7 +157,7 @@ class HrHRNetPostProcess(object):
         original_height, original_width (float): the original image size
     '''
 
-    def __init__(self, max_num_people=30, heat_thresh=0.2, tag_thresh=1.):
+    def __init__(self, max_num_people=30, heat_thresh=0.1, tag_thresh=1.):
         self.max_num_people = max_num_people
         self.heat_thresh = heat_thresh
         self.tag_thresh = tag_thresh

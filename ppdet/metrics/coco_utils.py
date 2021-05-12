@@ -107,7 +107,6 @@ def cocoapi_eval(jsonfile,
         coco_eval.params.maxDets = list(max_dets)
     elif style == 'keypoints_crowd':
         coco_eval = COCOeval(coco_gt, coco_dt, style, sigmas, use_area)
-        coco_gt.anno_file.append("")
     else:
         coco_eval = COCOeval(coco_gt, coco_dt, style)
     coco_eval.evaluate()
