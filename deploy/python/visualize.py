@@ -130,22 +130,29 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
     for dt in np_boxes:
         clsid, bbox, score = int(dt[0]), dt[2:], dt[1]
-        xmin, ymin, xmax, ymax = bbox
-        print('class_id:{:d}, confidence:{:.4f}, left_top:[{:.2f},{:.2f}],'
-              'right_bottom:[{:.2f},{:.2f}]'.format(
-                  int(clsid), score, xmin, ymin, xmax, ymax))
-        w = xmax - xmin
-        h = ymax - ymin
         if clsid not in clsid2color:
             clsid2color[clsid] = color_list[clsid]
         color = tuple(clsid2color[clsid])
 
-        # draw bbox
-        draw.line(
-            [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
-             (xmin, ymin)],
-            width=draw_thickness,
-            fill=color)
+        if len(bbox) == 4:
+            xmin, ymin, xmax, ymax = bbox
+            print('class_id:{:d}, confidence:{:.4f}, left_top:[{:.2f},{:.2f}],'
+                  'right_bottom:[{:.2f},{:.2f}]'.format(
+                      int(clsid), score, xmin, ymin, xmax, ymax))
+            # draw bbox
+            draw.line(
+                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                 (xmin, ymin)],
+                width=draw_thickness,
+                fill=color)
+        elif len(bbox) == 8:
+            x1, y1, x2, y2, x3, y3, x4, y4 = bbox
+            draw.line(
+                [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)],
+                width=2,
+                fill=color)
+            xmin = min(x1, x2, x3, x4)
+            ymin = min(y1, y2, y3, y4)
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)

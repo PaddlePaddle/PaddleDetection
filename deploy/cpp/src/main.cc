@@ -195,23 +195,42 @@ void PredictVideo(const std::string& video_path,
   // Capture all frames and do inference
   cv::Mat frame;
   int frame_id = 0;
+  bool is_rbox = false;
   while (capture.read(frame)) {
     if (frame.empty()) {
       break;
     }
+
     det->Predict(frame, 0.5, 0, 1, &result, &det_times);
-    cv::Mat out_im = PaddleDetection::VisualizeResult(
-        frame, result, labels, colormap);
     for (const auto& item : result) {
-      printf("In frame id %d, we detect: class=%d confidence=%.2f rect=[%d %d %d %d]\n",
-        frame_id,
-        item.class_id,
-        item.confidence,
-        item.rect[0],
-        item.rect[1],
-        item.rect[2],
-        item.rect[3]);
-   }   
+      if (item.rect.size() > 6){
+      is_rbox = true;
+      printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
+          item.class_id,
+          item.confidence,
+          item.rect[0],
+          item.rect[1],
+          item.rect[2],
+          item.rect[3],
+          item.rect[4],
+          item.rect[5],
+          item.rect[6],
+          item.rect[7]);
+      }
+      else{
+        printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
+          item.class_id,
+          item.confidence,
+          item.rect[0],
+          item.rect[1],
+          item.rect[2],
+          item.rect[3]);
+      }
+   }
+
+   cv::Mat out_im = PaddleDetection::VisualizeResult(
+        frame, result, labels, colormap, is_rbox);
+
     video_out.write(out_im);
     frame_id += 1;
   }
@@ -231,24 +250,41 @@ void PredictImage(const std::vector<std::string> all_img_list,
     // Store all detected result
     std::vector<PaddleDetection::ObjectResult> result;
     std::vector<double> det_times;
+    bool is_rbox = false;
     if (run_benchmark) {
       det->Predict(im, threshold, 10, 10, &result, &det_times);
     } else {
       det->Predict(im, 0.5, 0, 1, &result, &det_times);
       for (const auto& item : result) {
-        printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
+        if (item.rect.size() > 6){
+        is_rbox = true;
+        printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
+            item.class_id,
+            item.confidence,
+            item.rect[0],
+            item.rect[1],
+            item.rect[2],
+            item.rect[3],
+            item.rect[4],
+            item.rect[5],
+            item.rect[6],
+            item.rect[7]);
+        }
+        else{
+          printf("class=%d confidence=%.4f rect=[%d %d %d %d]\n",
             item.class_id,
             item.confidence,
             item.rect[0],
             item.rect[1],
             item.rect[2],
             item.rect[3]);
+        }
       }
       // Visualization result
       auto labels = det->GetLabelList();
       auto colormap = PaddleDetection::GenerateColorMap(labels.size());
       cv::Mat vis_img = PaddleDetection::VisualizeResult(
-          im, result, labels, colormap);
+          im, result, labels, colormap, is_rbox);
       std::vector<int> compression_params;
       compression_params.push_back(CV_IMWRITE_JPEG_QUALITY);
       compression_params.push_back(95);

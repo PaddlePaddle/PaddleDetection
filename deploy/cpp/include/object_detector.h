@@ -51,7 +51,8 @@ std::vector<int> GenerateColorMap(int num_class);
 cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
                      const std::vector<std::string>& lable_list,
-                     const std::vector<int>& colormap);
+                     const std::vector<int>& colormap,
+                     const bool is_rbox);
 
 
 class ObjectDetector {
@@ -120,7 +121,8 @@ class ObjectDetector {
   // Postprocess result
   void Postprocess(
       const cv::Mat& raw_mat,
-      std::vector<ObjectResult>* result);
+      std::vector<ObjectResult>* result,
+      bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;

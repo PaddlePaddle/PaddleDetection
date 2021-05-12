@@ -17,7 +17,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, pd_rbox2poly
+from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, rbox2poly
 try:
     from collections.abc import Sequence
 except Exception:
@@ -214,7 +214,7 @@ class FCOSPostProcess(object):
 
 
 @register
-class S2ANetBBoxPostProcess(object):
+class S2ANetBBoxPostProcess(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['nms']
 
@@ -225,41 +225,43 @@ class S2ANetBBoxPostProcess(object):
         self.min_bbox_size = min_bbox_size
         self.nms = nms
         self.origin_shape_list = []
+        self.fake_pred_cls_score_bbox = paddle.to_tensor(
+            np.array(
+                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+                dtype='float32'))
+        self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
-    def __call__(self, pred_scores, pred_bboxes):
+    def forward(self, pred_scores, pred_bboxes):
         """
         pred_scores : [N, M]  score
         pred_bboxes : [N, 5]  xc, yc, w, h, a
         im_shape : [N, 2]  im_shape
         scale_factor : [N, 2]  scale_factor
         """
-        pred_ploys = pd_rbox2poly(pred_bboxes)
-        pred_ploys = paddle.reshape(
-            pred_ploys, [1, pred_ploys.shape[0], pred_ploys.shape[1]])
+        pred_ploys0 = rbox2poly(pred_bboxes)
+        pred_ploys = paddle.unsqueeze(pred_ploys0, axis=0)
 
-        pred_scores = paddle.to_tensor(pred_scores)
         # pred_scores [NA, 16] --> [16, NA]
-        pred_scores = paddle.transpose(pred_scores, [1, 0])
-        pred_scores = paddle.reshape(
-            pred_scores, [1, pred_scores.shape[0], pred_scores.shape[1]])
+        pred_scores0 = paddle.transpose(pred_scores, [1, 0])
+        pred_scores = paddle.unsqueeze(pred_scores0, axis=0)
 
         pred_cls_score_bbox, bbox_num, _ = self.nms(pred_ploys, pred_scores,
                                                     self.num_classes)
-
         # Prevent empty bbox_pred from decode or NMS.
         # Bboxes and score before NMS may be empty due to the score threshold.
-        if pred_cls_score_bbox.shape[0] == 0:
-            pred_cls_score_bbox = paddle.to_tensor(
-                np.array(
-                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        if pred_cls_score_bbox.shape[0] <= 0 or pred_cls_score_bbox.shape[
+                1] <= 1:
+            pred_cls_score_bbox = self.fake_pred_cls_score_bbox
+            bbox_num = self.fake_bbox_num
+
+        pred_cls_score_bbox = paddle.reshape(pred_cls_score_bbox, [-1, 10])
+        assert pred_cls_score_bbox.shape[1] == 10
         return pred_cls_score_bbox, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """
         Rescale, clip and filter the bbox from the output of NMS to
         get final prediction.
-
         Args:
             bboxes(Tensor): bboxes [N, 10]
             bbox_num(Tensor): bbox_num
@@ -270,6 +272,7 @@ class S2ANetBBoxPostProcess(object):
                                including labels, scores and bboxes. The size of
                                bboxes are corresponding to the original image.
         """
+        assert bboxes.shape[1] == 10
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
@@ -292,7 +295,7 @@ class S2ANetBBoxPostProcess(object):
 
         # bboxes: [N, 10], label, score, bbox
         pred_label_score = bboxes[:, 0:2]
-        pred_bbox = bboxes[:, 2:10:1]
+        pred_bbox = bboxes[:, 2:]
 
         # rescale bbox to original image
         scaled_bbox = pred_bbox / scale_factor_list

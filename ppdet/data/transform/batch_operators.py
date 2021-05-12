@@ -33,7 +33,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'RboxPadBatch'
+    'Gt2TTFTarget', 'Gt2Solov2Target'
 ]
 
 
@@ -86,6 +86,12 @@ class PadBatch(BaseOperator):
                     dtype=np.uint8)
                 padding_segm[:, :im_h, :im_w] = gt_segm
                 data['gt_segm'] = padding_segm
+
+            if 'gt_rbox2poly' in data and data['gt_rbox2poly'] is not None:
+                # ploy to rbox
+                polys = data['gt_rbox2poly']
+                rbox = bbox_utils.poly2rbox(polys)
+                data['gt_rbox'] = rbox
 
         return samples
 
@@ -737,113 +743,5 @@ class Gt2Solov2Target(BaseOperator):
                     0]] = data['grid_order{}'.format(idx)]
                 data['ins_label{}'.format(idx)] = gt_ins_data
                 data['grid_order{}'.format(idx)] = gt_grid_order
-
-        return samples
-
-
-@register_op
-class RboxPadBatch(BaseOperator):
-    """
-    Pad a batch of samples so they can be divisible by a stride.
-    The layout of each image should be 'CHW'. And convert poly to rbox.
-    Args:
-        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
-            height and width is divisible by `pad_to_stride`.
-    """
-
-    def __init__(self, pad_to_stride=0, pad_gt=False):
-        super(RboxPadBatch, self).__init__()
-        self.pad_to_stride = pad_to_stride
-        self.pad_gt = pad_gt
-
-    def __call__(self, samples, context=None):
-        """
-        Args:
-            samples (list): a batch of sample, each is dict.
-        """
-        coarsest_stride = self.pad_to_stride
-
-        max_shape = np.array([data['image'].shape for data in samples]).max(
-            axis=0)
-        if coarsest_stride > 0:
-            max_shape[1] = int(
-                np.ceil(max_shape[1] / coarsest_stride) * coarsest_stride)
-            max_shape[2] = int(
-                np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
-
-        for data in samples:
-            im = data['image']
-            im_c, im_h, im_w = im.shape[:]
-            padding_im = np.zeros(
-                (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
-            padding_im[:, :im_h, :im_w] = im
-            data['image'] = padding_im
-            if 'semantic' in data and data['semantic'] is not None:
-                semantic = data['semantic']
-                padding_sem = np.zeros(
-                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
-                padding_sem[:, :im_h, :im_w] = semantic
-                data['semantic'] = padding_sem
-            if 'gt_segm' in data and data['gt_segm'] is not None:
-                gt_segm = data['gt_segm']
-                padding_segm = np.zeros(
-                    (gt_segm.shape[0], max_shape[1], max_shape[2]),
-                    dtype=np.uint8)
-                padding_segm[:, :im_h, :im_w] = gt_segm
-                data['gt_segm'] = padding_segm
-        if self.pad_gt:
-            gt_num = []
-            if 'gt_poly' in data and data['gt_poly'] is not None and len(data[
-                    'gt_poly']) > 0:
-                pad_mask = True
-            else:
-                pad_mask = False
-
-            if pad_mask:
-                poly_num = []
-                poly_part_num = []
-                point_num = []
-            for data in samples:
-                gt_num.append(data['gt_bbox'].shape[0])
-                if pad_mask:
-                    poly_num.append(len(data['gt_poly']))
-                    for poly in data['gt_poly']:
-                        poly_part_num.append(int(len(poly)))
-                        for p_p in poly:
-                            point_num.append(int(len(p_p) / 2))
-            gt_num_max = max(gt_num)
-
-            for i, sample in enumerate(samples):
-                assert 'gt_rbox' in sample
-                assert 'gt_rbox2poly' in sample
-                gt_box_data = -np.ones([gt_num_max, 4], dtype=np.float32)
-                gt_class_data = -np.ones([gt_num_max], dtype=np.int32)
-                is_crowd_data = np.ones([gt_num_max], dtype=np.int32)
-
-                if pad_mask:
-                    poly_num_max = max(poly_num)
-                    poly_part_num_max = max(poly_part_num)
-                    point_num_max = max(point_num)
-                    gt_masks_data = -np.ones(
-                        [poly_num_max, poly_part_num_max, point_num_max, 2],
-                        dtype=np.float32)
-
-                gt_num = sample['gt_bbox'].shape[0]
-                gt_box_data[0:gt_num, :] = sample['gt_bbox']
-                gt_class_data[0:gt_num] = np.squeeze(sample['gt_class'])
-                is_crowd_data[0:gt_num] = np.squeeze(sample['is_crowd'])
-                if pad_mask:
-                    for j, poly in enumerate(sample['gt_poly']):
-                        for k, p_p in enumerate(poly):
-                            pp_np = np.array(p_p).reshape(-1, 2)
-                            gt_masks_data[j, k, :pp_np.shape[0], :] = pp_np
-                    sample['gt_poly'] = gt_masks_data
-                sample['gt_bbox'] = gt_box_data
-                sample['gt_class'] = gt_class_data
-                sample['is_crowd'] = is_crowd_data
-                # ploy to rbox
-                polys = sample['gt_rbox2poly']
-                rbox = bbox_utils.poly_to_rbox(polys)
-                sample['gt_rbox'] = rbox
 
         return samples

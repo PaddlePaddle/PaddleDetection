@@ -263,146 +263,7 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
         return iou
 
 
-def rect2rbox(bboxes):
-    """
-    :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
-    :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
-    """
-    bboxes = bboxes.reshape(-1, 4)
-    num_boxes = bboxes.shape[0]
-
-    x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
-    y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
-    edges1 = np.abs(bboxes[:, 2] - bboxes[:, 0])
-    edges2 = np.abs(bboxes[:, 3] - bboxes[:, 1])
-    angles = np.zeros([num_boxes], dtype=bboxes.dtype)
-
-    inds = edges1 < edges2
-
-    rboxes = np.stack((x_ctr, y_ctr, edges1, edges2, angles), axis=1)
-    rboxes[inds, 2] = edges2[inds]
-    rboxes[inds, 3] = edges1[inds]
-    rboxes[inds, 4] = np.pi / 2.0
-    return rboxes
-
-
-def delta2rbox(Rrois,
-               deltas,
-               means=[0, 0, 0, 0, 0],
-               stds=[1, 1, 1, 1, 1],
-               wh_ratio_clip=1e-6):
-    """
-    :param Rrois: (cx, cy, w, h, theta)
-    :param deltas: (dx, dy, dw, dh, dtheta)
-    :param means:
-    :param stds:
-    :param wh_ratio_clip:
-    :return:
-    """
-    deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
-    denorm_deltas = deltas * stds + means
-
-    dx = denorm_deltas[:, 0]
-    dy = denorm_deltas[:, 1]
-    dw = denorm_deltas[:, 2]
-    dh = denorm_deltas[:, 3]
-    dangle = denorm_deltas[:, 4]
-
-    max_ratio = np.abs(np.log(wh_ratio_clip))
-    dw = paddle.clip(dw, min=-max_ratio, max=max_ratio)
-    dh = paddle.clip(dh, min=-max_ratio, max=max_ratio)
-
-    Rroi_x = Rrois[:, 0]
-    Rroi_y = Rrois[:, 1]
-    Rroi_w = Rrois[:, 2]
-    Rroi_h = Rrois[:, 3]
-    Rroi_angle = Rrois[:, 4]
-
-    gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(
-        Rroi_angle) + Rroi_x
-    gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(
-        Rroi_angle) + Rroi_y
-    gw = Rroi_w * dw.exp()
-    gh = Rroi_h * dh.exp()
-    ga = np.pi * dangle + Rroi_angle
-    ga = (ga + np.pi / 4) % np.pi - np.pi / 4
-    ga = paddle.to_tensor(ga)
-
-    gw = paddle.to_tensor(gw, dtype='float32')
-    gh = paddle.to_tensor(gh, dtype='float32')
-    bboxes = paddle.stack([gx, gy, gw, gh, ga], axis=-1)
-    return bboxes
-
-
-def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
-    """
-
-    Args:
-        proposals:
-        gt:
-        means: 1x5
-        stds: 1x5
-
-    Returns:
-
-    """
-    proposals = proposals.astype(np.float64)
-
-    PI = np.pi
-
-    gt_widths = gt[..., 2]
-    gt_heights = gt[..., 3]
-    gt_angle = gt[..., 4]
-
-    proposals_widths = proposals[..., 2]
-    proposals_heights = proposals[..., 3]
-    proposals_angle = proposals[..., 4]
-
-    coord = gt[..., 0:2] - proposals[..., 0:2]
-    dx = (np.cos(proposals[..., 4]) * coord[..., 0] + np.sin(proposals[..., 4])
-          * coord[..., 1]) / proposals_widths
-    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] + np.cos(proposals[..., 4])
-          * coord[..., 1]) / proposals_heights
-    dw = np.log(gt_widths / proposals_widths)
-    dh = np.log(gt_heights / proposals_heights)
-    da = (gt_angle - proposals_angle)
-
-    da = (da + PI / 4) % PI - PI / 4
-    da /= PI
-
-    deltas = np.stack([dx, dy, dw, dh, da], axis=-1)
-    means = np.array(means, dtype=deltas.dtype)
-    stds = np.array(stds, dtype=deltas.dtype)
-    deltas = (deltas - means) / stds
-    deltas = deltas.astype(np.float32)
-    return deltas
-
-
-def bbox_decode(bbox_preds,
-                anchors,
-                means=[0, 0, 0, 0, 0],
-                stds=[1, 1, 1, 1, 1]):
-    """decode bbox from deltas
-    Args:
-        bbox_preds: [N,H,W,5]
-        anchors: [H*W,5]
-    return:
-        bboxes: [N,H,W,5]
-    """
-    num_imgs, H, W, _ = bbox_preds.shape
-    bboxes_list = []
-    for img_id in range(num_imgs):
-        bbox_pred = bbox_preds[img_id]
-        # bbox_pred.shape=[5,H,W]
-        bbox_delta = bbox_pred
-        bboxes = delta2rbox(
-            anchors, bbox_delta, means, stds, wh_ratio_clip=1e-6)
-        bboxes = paddle.reshape(bboxes, [H, W, 5])
-        bboxes_list.append(bboxes)
-    return paddle.stack(bboxes_list, axis=0)
-
-
-def poly_to_rbox(polys):
+def poly2rbox(polys):
     """
     poly:[x0,y0,x1,y1,x2,y2,x3,y3]
     to
@@ -479,37 +340,16 @@ def get_best_begin_point_single(coordinate):
     return np.array(combinate[force_flag]).reshape(8)
 
 
-def rbox2poly_single(rrect):
-    """
-    rrect:[x_ctr,y_ctr,w,h,angle]
-    to
-    poly:[x0,y0,x1,y1,x2,y2,x3,y3]
-    """
-    x_ctr, y_ctr, width, height, angle = rrect[:5]
-    tl_x, tl_y, br_x, br_y = -width / 2, -height / 2, width / 2, height / 2
-    # rect 2x4
-    rect = np.array([[tl_x, br_x, br_x, tl_x], [tl_y, tl_y, br_y, br_y]])
-    R = np.array([[np.cos(angle), -np.sin(angle)],
-                  [np.sin(angle), np.cos(angle)]])
-    # poly
-    poly = R.dot(rect)
-    x0, x1, x2, x3 = poly[0, :4] + x_ctr
-    y0, y1, y2, y3 = poly[1, :4] + y_ctr
-    poly = np.array([x0, y0, x1, y1, x2, y2, x3, y3], dtype=np.float32)
-    poly = get_best_begin_point_single(poly)
-    return poly
-
-
-def rbox2poly(rrects):
+def rbox2poly_np(rrects):
     """
     rrect:[x_ctr,y_ctr,w,h,angle]
     to
     poly:[x0,y0,x1,y1,x2,y2,x3,y3]
     """
     polys = []
-    rrects = rrects.numpy()
     for i in range(rrects.shape[0]):
         rrect = rrects[i]
+        # x_ctr, y_ctr, width, height, angle = rrect[:5]
         x_ctr = rrect[0]
         y_ctr = rrect[1]
         width = rrect[2]
@@ -529,13 +369,13 @@ def rbox2poly(rrects):
     return polys
 
 
-def pd_rbox2poly(rrects):
+def rbox2poly(rrects):
     """
     rrect:[x_ctr,y_ctr,w,h,angle]
     to
     poly:[x0,y0,x1,y1,x2,y2,x3,y3]
     """
-    N = rrects.shape[0]
+    N = paddle.shape(rrects)[0]
 
     x_ctr = rrects[:, 0]
     y_ctr = rrects[:, 1]
@@ -561,14 +401,10 @@ def pd_rbox2poly(rrects):
     polys = paddle.transpose(polys, [2, 1, 0])
     polys = paddle.reshape(polys, [-1, N])
     polys = paddle.transpose(polys, [1, 0])
-    polys[:, 0] += x_ctr
-    polys[:, 2] += x_ctr
-    polys[:, 4] += x_ctr
-    polys[:, 6] += x_ctr
-    polys[:, 1] += y_ctr
-    polys[:, 3] += y_ctr
-    polys[:, 5] += y_ctr
-    polys[:, 7] += y_ctr
+
+    tmp = paddle.stack(
+        [x_ctr, y_ctr, x_ctr, y_ctr, x_ctr, y_ctr, x_ctr, y_ctr], axis=1)
+    polys = polys + tmp
     return polys
 
 

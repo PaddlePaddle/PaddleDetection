@@ -376,7 +376,8 @@ class Trainer(object):
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
-        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file)
+        clsid2catid, catid2name = get_categories(
+            self.cfg.metric, anno_file=anno_file)
 
         # Run Infer 
         self.status['mode'] = 'test'
