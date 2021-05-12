@@ -11,7 +11,7 @@ JDE:
   detector: YOLOv3
   reid: JDEEmbeddingHead
   tracker: JDETracker
-  metric: 'MOTDet'
+  metric: 'MOT'
 
 YOLOv3:
   backbone: DarkNet
