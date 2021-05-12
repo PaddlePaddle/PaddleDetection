@@ -10,7 +10,7 @@ English | [简体中文](README_cn.md)
 
 ## Introduction
 
-[Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network。
+[Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network.
 JDE reached 64.4 MOTA on MOT16-tesing datatset.
 <div align="center">
   <img src="../../../../docs/images/mot16_jde.gif" width=500 />
@@ -20,14 +20,15 @@ JDE reached 64.4 MOTA on MOT16-tesing datatset.
 
 ### JDE on MOT-16 training set
 
-| backbone      | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | download  | config |
-| :-----------------| :------- | :----: | :----: | :---: | :----: | :---: | :---: |:---: | :---: |
-| DarkNet53(paper)  | 1088x608 |  74.8  |  67.3  | 1189  |  5558  | 21505 |  22.2 | ---- | ---- |
-| DarkNet53         | 1088x608 |  73.2  |  69.4  | 1320  |  6613  | 21629 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
+| backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
+| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
+| DarkNet53(github)  | 1088x608 |  74.8  |  67.3  | 1189  |  5558  | 21505 |  22.2 | ---- | ---- |
+| DarkNet53(practice)| 1088x608 |  73.1  |  68.9  | 1312  |  6593  | 21788 |  22.2 | ---- | ---- |
+| DarkNet53          | 1088x608 |  73.2  |  69.4  | 1320  |  6613  | 21629 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
 
 
 **Notes:**
- JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
+ JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. The models of first two lines are given by the author by training with PyTorch, showing 74.8 MOTA on github but only get 73.1 through practical operation.
 
 ## Getting Start
 
@@ -39,37 +40,16 @@ Training JDE on 8 GPUs with following command
 python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml &>jde_darknet53_30e_1088x608.log 2>&1 &
 ```
 
-
 ### 2. Evaluation
-
-Evaluating the detector module of JDE on val dataset in single GPU with following commands:
-
-```bash
-# use weights released in PaddleDetection model zoo
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
-
-# use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final
-```
-
-Evaluating the ReID module of JDE on val dataset in single GPU with following commands:
-
-```bash
-# use weights released in PaddleDetection model zoo
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o metric='MOTDet' weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
-
-# use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o metric='MOT' weights=output/jde_darknet53_30e_1088x608/model_final
-```
 
 Evaluating the track performance of JDE on val dataset in single GPU with following commands:
 
 ```bash
 # use weights released in PaddleDetection model zoo
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric='MOT' weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
 
 # use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric='MOT' weights=output/jde_darknet53_30e_1088x608/model_final
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final
 ```
 
 ### 3. Inference
@@ -78,17 +58,17 @@ Inference images in single GPU with following commands, use `--infer_img` to inf
 
 ```bash
 # inference single image
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric='MOT' weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --infer_img=./demo/000000014439.jpg
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --infer_img=./demo/000000014439.jpg
 
 # inference all images in the directory
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric='MOT' weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --infer_dir=./demo
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --infer_dir=./demo
 ```
 
 Inference vidoe in single GPU with following commands.
 
 ```bash
 # inference on video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric='MOT' weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4
 
 ```
 ## Citations
