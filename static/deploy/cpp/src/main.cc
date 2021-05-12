@@ -33,7 +33,7 @@
 
 
 DEFINE_string(model_dir, "", "Path of inference model");
-DEFINE_string(image_path, "", "Path of input image");
+DEFINE_string(image_file, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
 DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
 DEFINE_bool(use_camera, false, "Use camera or not");
@@ -193,9 +193,9 @@ int main(int argc, char** argv) {
   // Parsing command-line
   google::ParseCommandLineFlags(&argc, &argv, true);
   if (FLAGS_model_dir.empty()
-      || (FLAGS_image_path.empty() && FLAGS_video_path.empty())) {
+      || (FLAGS_image_file.empty() && FLAGS_video_path.empty())) {
     std::cout << "Usage: ./main --model_dir=/PATH/TO/INFERENCE_MODEL/ "
-                << "--image_path=/PATH/TO/INPUT/IMAGE/" << std::endl;
+                << "--image_file=/PATH/TO/INPUT/IMAGE/" << std::endl;
     return -1;
   }
   if (!(FLAGS_run_mode == "fluid" || FLAGS_run_mode == "trt_fp32"
@@ -210,11 +210,11 @@ int main(int argc, char** argv) {
   // Do inference on input video or image
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);
-  } else if (!FLAGS_image_path.empty()) {
+  } else if (!FLAGS_image_file.empty()) {
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
-    PredictImage(FLAGS_image_path, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
+    PredictImage(FLAGS_image_file, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
 }
