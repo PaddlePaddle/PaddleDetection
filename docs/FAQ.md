@@ -2,24 +2,15 @@
 
 **Q:**  为什么我使用单GPU训练loss会出`NaN`? </br>
 **A:**  默认学习率是适配多GPU训练(8x GPU)，若使用单GPU训练，须对应调整学习率（例如，除以8）。
-计算规则表如下所示，它们是等价的，表中变化节点即为`piecewise decay`里的`boundaries`: </br>
+计算规则表如下所示: </br>
+
+设`base_lr`为配置文件中默认学习率
+
+设`base_batch_size`为配置文件中默认batch_size
+
+您需要设置的学习率=`训练时使用GPU卡数/8 * 训练时设置的batch_size/base_batch_size * base_lr`
 
 
-| GPU数  | 学习率  | 最大轮数 | 变化节点       |
-| :---------: | :------------: | :-------: | :--------------: |
-| 2           | 0.0025         | 720000    | [480000, 640000] |
-| 4           | 0.005          | 360000    | [240000, 320000] |
-| 8           | 0.01           | 180000    | [120000, 160000] |
+**Q:**  内存溢出怎么办? </br>
+**A:**  会影响内存使用量的参数有：`batch_size、worker_num`等。可以先将`worker_num=0, batch_size=1`，学习率按照上面公式进行设置，然后看内存是否还溢出。在内存不溢出前提下，尝试增大`batch_size`或者增大`worker_num`来加速训练。
 
-
-**Q:**  如何减少GPU显存使用率? </br>
-**A:**  可通过设置环境变量`FLAGS_conv_workspace_size_limit`为较小的值来减少显存消耗，并且不
-会影响训练速度。以Mask-RCNN（R50）为例，设置`export FLAGS_conv_workspace_size_limit = 512`，
-batch size可以达到每GPU 4 (Tesla V100 16GB)。
-
-
-**Q:**  哪些参数会影响内存使用量? </br>
-**A:**  会影响内存使用量的参数有：`是否使用多进程use_process、 batch_size、reader中的bufsize、reader中的memsize、数据预处理中的RandomExpand ratio参数、以及图像本身大小`等。
-
-**Q:** 在配置文件中设置use_process=True，并且运行报错：`not enough space for reason[failed to malloc 601 pages...` </br>
-**A:** 当前Reader的共享存储队列空间不足，请增大配置文件`xxx.yml`中的`memsize`,如`memsize: 3G`->`memsize: 6G`。或者配置文件中设置`use_process=False`。
