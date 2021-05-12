@@ -2007,7 +2007,7 @@ class Rbox2Poly(BaseOperator):
         x2 = x_ctr + width / 2.0
         y2 = y_ctr + height / 2.0
         sample['gt_bbox'] = np.stack([x1, y1, x2, y2], axis=1)
-        polys = bbox_utils.rbox2poly(rrects)
+        polys = bbox_utils.rbox2poly_np(rrects)
         sample['gt_rbox2poly'] = polys
         return sample
 
