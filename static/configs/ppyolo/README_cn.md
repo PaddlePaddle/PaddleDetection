@@ -91,7 +91,7 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 
 ### PP-YOLO tiny模型
 
-|            模型              |  GPU 个数  | 每GPU图片个数 |  模型体积  | 后量化模型体积 |   输入尺寸  | Box AP<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 配置文件 | 后量化模型 |
+|            模型              |  GPU 个数  | 每GPU图片个数 |  模型体积  | 后量化模型体积 |   输入尺寸  | Box AP<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 配置文件 | 量化后模型 |
 |:----------------------------:|:----------:|:-------------:| :--------: | :------------: | :----------:| :------------------: | :--------------------: | :------: | :------: | :--------: |
 | PP-YOLO tiny                 |     8      |      32       |   4.2MB    |   **1.3M**     |     320     |         20.6         |          92.3         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_tiny.yml) | [预测模型](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
 | PP-YOLO tiny                 |     8      |      32       |   4.2MB    |   **1.3M**     |     416     |         22.7         |          65.4         | [model](https://paddlemodels.bj.bcebos.com/object_detection/ppyolo_tiny.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/ppyolo/ppyolo_tiny.yml) | [预测模型](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
