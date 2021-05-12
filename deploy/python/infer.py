@@ -21,6 +21,7 @@ from functools import reduce
 from PIL import Image
 import cv2
 import numpy as np
+import math
 import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
@@ -80,18 +81,29 @@ class Detector(object):
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
-    def preprocess(self, im):
+    def preprocess(self, image_list):
         preprocess_ops = []
         for op_info in self.pred_config.preprocess_infos:
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
             preprocess_ops.append(eval(op_type)(**new_op_info))
-        im, im_info = preprocess(im, preprocess_ops,
-                                 self.pred_config.input_shape)
-        inputs = create_inputs(im, im_info)
+
+        input_im_lst = []
+        input_im_info_lst = []
+        for im_path in image_list:
+            im, im_info = preprocess(im_path, preprocess_ops,
+                                     self.pred_config.input_shape)
+            input_im_lst.append(im)
+            input_im_info_lst.append(im_info)
+        inputs = create_inputs(input_im_lst, input_im_info_lst)
         return inputs
 
-    def postprocess(self, np_boxes, np_masks, inputs, threshold=0.5):
+    def postprocess(self,
+                    np_boxes,
+                    np_masks,
+                    inputs,
+                    np_boxes_num,
+                    threshold=0.5):
         # postprocess output of predictor
         results = {}
         if self.pred_config.arch in ['Face']:
@@ -103,14 +115,15 @@ class Detector(object):
             np_boxes[:, 4] *= h
             np_boxes[:, 5] *= w
         results['boxes'] = np_boxes
+        results['boxes_num'] = np_boxes_num
         if np_masks is not None:
             results['masks'] = np_masks
         return results
 
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (str/np.ndarray): path of image/ np.ndarray read by cv2
+            image_list (list): ,list of image
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
@@ -119,7 +132,7 @@ class Detector(object):
                             shape: [N, im_h, im_w]
         '''
         self.det_times.preprocess_time.start()
-        inputs = self.preprocess(image)
+        inputs = self.preprocess(image_list)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
@@ -141,6 +154,8 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
+            boxes_num = self.predictor.get_output_handle(output_names[1])
+            np_boxes_num = boxes_num.copy_to_cpu()
             if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
@@ -150,10 +165,10 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([])}
+            results = {'boxes': np.array([]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
-                np_boxes, np_masks, inputs, threshold=threshold)
+                np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
         self.det_times.postprocess_time.end()
         self.det_times.img_num += 1
         return results
@@ -245,16 +260,20 @@ def create_inputs(im, im_info):
     Args:
         im (np.ndarray): image (np.ndarray)
         im_info (dict): info of image
-        model_arch (str): model type
     Returns:
         inputs (dict): input of model
     """
     inputs = {}
-    inputs['image'] = np.array((im, )).astype('float32')
-    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-    inputs['scale_factor'] = np.array(
-        (im_info['scale_factor'], )).astype('float32')
+    inputs['image'] = np.stack(im, axis=0)
+    np_im_shape = []
+    np_scale_factor = []
+    for e in im_info:
+        np_im_shape.append(np.array((e['im_shape'], )).astype('float32'))
+        np_scale_factor.append(
+            np.array((e['scale_factor'], )).astype('float32'))
 
+    inputs['im_shape'] = np.concatenate(np_im_shape, axis=0)
+    inputs['scale_factor'] = np.concatenate(np_scale_factor, axis=0)
     return inputs
 
 
@@ -415,15 +434,30 @@ def get_test_images(infer_dir, infer_img):
     return images
 
 
-def visualize(image_file, results, labels, output_dir='output/', threshold=0.5):
+def visualize(image_list, results, labels, output_dir='output/', threshold=0.5):
     # visualize the predict result
-    im = visualize_box_mask(image_file, results, labels, threshold=threshold)
-    img_name = os.path.split(image_file)[-1]
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    out_path = os.path.join(output_dir, img_name)
-    im.save(out_path, quality=95)
-    print("save result to: " + out_path)
+    start_idx = 0
+    for idx, image_file in enumerate(image_list):
+        im_bboxes_num = results['boxes_num'][idx]
+        im_results = {}
+        if 'boxes' in results:
+            im_results['boxes'] = results['boxes'][start_idx:start_idx +
+                                                   im_bboxes_num, :]
+        if 'masks' in results:
+            im_results['masks'] = results['masks'][start_idx:start_idx +
+                                                   im_bboxes_num, :]
+        if 'segm' in results:
+            im_results['segm'] = results['segm'][start_idx:start_idx +
+                                                 im_bboxes_num, :]
+        start_idx += im_bboxes_num
+        im = visualize_box_mask(
+            image_file, im_results, labels, threshold=threshold)
+        img_name = os.path.split(image_file)[-1]
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        out_path = os.path.join(output_dir, img_name)
+        im.save(out_path, quality=95)
+        print("save result to: " + out_path)
 
 
 def print_arguments(args):
@@ -433,19 +467,22 @@ def print_arguments(args):
     print('------------------------------------------')
 
 
-def predict_image(detector, image_list):
-    for i, img_file in enumerate(image_list):
+def predict_image(detector, image_list, batch_size=1):
+    batch_loop_cnt = math.ceil(float(len(image_list)) / batch_size)
+    for i in range(batch_loop_cnt):
+        batch_image_list = image_list[i * batch_size:(i + 1) * batch_size]
         if FLAGS.run_benchmark:
-            detector.predict(img_file, FLAGS.threshold, warmup=10, repeats=10)
+            detector.predict(
+                batch_image_list, FLAGS.threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            results = detector.predict(img_file, FLAGS.threshold)
+            results = detector.predict(batch_image_list, FLAGS.threshold)
             visualize(
-                img_file,
+                batch_image_list,
                 results,
                 detector.pred_config.labels,
                 output_dir=FLAGS.output_dir,
@@ -521,7 +558,7 @@ def main():
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(detector, img_list)
+        predict_image(detector, img_list, FLAGS.batch_size)
         if not FLAGS.run_benchmark:
             detector.det_times.info(average=True)
         else:
