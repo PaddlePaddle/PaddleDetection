@@ -26,6 +26,7 @@ __all__ = ['JDE']
 
 @register
 class JDE(BaseArch):
+    __shared__ = ['metric']
     """
     JDE network, see https://arxiv.org/abs/1909.12605v1
 
@@ -33,7 +34,9 @@ class JDE(BaseArch):
         detector (object): detector model instance
         reid (object): reid model instance
         tracker (object): tracker instance
-        test_mode (str): 'detection', 'embedding' or 'tracking'
+        metric (str): 'MOTDet' for training and detection evaluation, 'ReID'
+            for ReID embedding evaluation, or 'MOT' for multi object tracking
+            evaluation。
     """
     __category__ = 'architecture'
 
@@ -41,12 +44,12 @@ class JDE(BaseArch):
                  detector='YOLOv3',
                  reid='JDEEmbeddingHead',
                  tracker='JDETracker',
-                 test_mode='detection'):
+                 metric='MOTDet'):
         super(JDE, self).__init__()
         self.detector = detector
         self.reid = reid
         self.tracker = tracker
-        self.test_mode = test_mode
+        self.metric = metric
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -74,19 +77,19 @@ class JDE(BaseArch):
                                    loss_boxes)
             return jde_losses
         else:
-            if self.test_mode == 'detection':
+            if self.metric == 'MOTDet':
                 det_results = {
                     'bbox': det_outs['bbox'],
                     'bbox_num': det_outs['bbox_num'],
                 }
                 return det_results
 
-            elif self.test_mode == 'embedding':
+            elif self.metric == 'ReID':
                 emb_feats = det_outs['emb_feats']
                 embs_and_gts = self.reid(emb_feats, self.inputs, test_emb=True)
                 return embs_and_gts
 
-            elif self.test_mode == 'tracking':
+            elif self.metric == 'MOT':
                 emb_feats = det_outs['emb_feats']
                 emb_outs = self.reid(emb_feats, self.inputs)
 
@@ -111,7 +114,8 @@ class JDE(BaseArch):
                 return online_targets
 
             else:
-                raise ValueError("Unknown test_mode {}.".format(self.test_mode))
+                raise ValueError("Unknown metric {} for multi object tracking.".
+                                 format(self.metric))
 
     def get_loss(self):
         return self._forward()

@@ -16,8 +16,11 @@ import os
 import cv2
 import numpy as np
 from collections import OrderedDict
-
-from .dataset import DetDataset
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
+from .dataset import DetDataset, _make_dataset, _is_valid_file
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -33,8 +36,7 @@ class MOTDataSet(DetDataset):
         image_lists (str|list): mot data image lists, muiti-source mot dataset.
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
-        label_list (str): if use_default_label is False, will load
-            mapping between category and class index.
+
     Notes:
         MOT datasets root directory following this:
             dataset/mot
@@ -72,17 +74,17 @@ class MOTDataSet(DetDataset):
                  dataset_dir=None,
                  image_lists=[],
                  data_fields=['image'],
-                 sample_num=-1,
-                 label_list=None):
+                 sample_num=-1):
         super(MOTDataSet, self).__init__(
             dataset_dir=dataset_dir,
             data_fields=data_fields,
             sample_num=sample_num)
         self.dataset_dir = dataset_dir
         self.image_lists = image_lists
-        self.label_list = label_list
         if isinstance(self.image_lists, str):
             self.image_lists = [self.image_lists]
+        self.roidbs = None
+        self.cname2cid = None
 
     def get_anno(self):
         if self.image_lists == []:
@@ -127,7 +129,7 @@ class MOTDataSet(DetDataset):
                 continue
             else:
                 # self.img_files[data_name] each line following this: 
-                # {self.dataset_dir}/MOT17/images/..
+                # {self.dataset_dir}/MOT17/images/...
                 first_path = self.img_files[data_name][0]
                 data_dir = first_path.replace(self.dataset_dir,
                                               '').split('/')[1]
@@ -183,21 +185,8 @@ class MOTDataSet(DetDataset):
         logger.info('identity start index: {}'.format(self.tid_start_index))
         logger.info('=' * 80)
 
-        # mapping category name to class id
-        #   first_class:0, second_class:1, ...
         records = []
-        if self.label_list:
-            label_list_path = os.path.join(self.dataset_dir, self.label_list)
-            if not os.path.exists(label_list_path):
-                raise ValueError("label_list {} does not exists".format(
-                    label_list_path))
-            with open(label_list_path, 'r') as fr:
-                label_id = 0
-                for line in fr.readlines():
-                    cname2cid[line.strip()] = label_id
-                    label_id += 1
-        else:
-            cname2cid = mot_label()
+        cname2cid = mot_label()
 
         for img_index in range(self.total_imgs):
             for i, (k, v) in enumerate(self.img_start_index.items()):
@@ -253,6 +242,71 @@ class MOTDataSet(DetDataset):
 def mot_label():
     labels_map = {'person': 0}
     return labels_map
+
+
+@register
+@serializable
+class MOTImageFolder(DetDataset):
+    def __init__(self,
+                 task,
+                 dataset_dir=None,
+                 data_root=None,
+                 image_dir=None,
+                 sample_num=-1,
+                 keep_ori_im=False,
+                 **kwargs):
+        super(MOTImageFolder, self).__init__(
+            dataset_dir, image_dir, sample_num=sample_num)
+        self.task = task
+        self.data_root = data_root
+        self.keep_ori_im = keep_ori_im
+        self._imid2path = {}
+        self.roidbs = None
+
+    def check_or_download_dataset(self):
+        return
+
+    def parse_dataset(self, ):
+        if not self.roidbs:
+            self.roidbs = self._load_images()
+
+    def _parse(self):
+        image_dir = self.image_dir
+        if not isinstance(image_dir, Sequence):
+            image_dir = [image_dir]
+        images = []
+        for im_dir in image_dir:
+            if os.path.isdir(im_dir):
+                im_dir = os.path.join(self.dataset_dir, im_dir)
+                images.extend(_make_dataset(im_dir))
+            elif os.path.isfile(im_dir) and _is_valid_file(im_dir):
+                images.append(im_dir)
+        return images
+
+    def _load_images(self):
+        images = self._parse()
+        ct = 0
+        records = []
+        for image in images:
+            assert image != '' and os.path.isfile(image), \
+                    "Image {} not found".format(image)
+            if self.sample_num > 0 and ct >= self.sample_num:
+                break
+            rec = {'im_id': np.array([ct]), 'im_file': image}
+            if self.keep_ori_im:
+                rec.update({'keep_ori_im': 1})
+            self._imid2path[ct] = image
+            ct += 1
+            records.append(rec)
+        assert len(records) > 0, "No image file found"
+        return records
+
+    def get_imid2path(self):
+        return self._imid2path
+
+    def set_images(self, images):
+        self.image_dir = images
+        self.roidbs = self._load_images()
 
 
 def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):

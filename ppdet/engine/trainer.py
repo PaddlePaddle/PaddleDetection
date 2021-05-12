@@ -33,6 +33,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
+from ppdet.metrics import JDEDetMetric, JDEReIDMetric
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -55,6 +56,16 @@ class Trainer(object):
         self.optimizer = None
         self.is_loaded_weights = False
 
+        # build data loader
+        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        if self.mode == 'train':
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num)
+
+        if cfg.architecture == 'JDE' and self.mode == 'train':
+            cfg['JDEEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
+
         # build model
         if 'model' not in self.cfg:
             self.model = create(cfg.architecture)
@@ -67,11 +78,6 @@ class Trainer(object):
             self.ema = ModelEMA(
                 cfg['ema_decay'], self.model, use_thres_step=True)
 
-        # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, cfg.worker_num)
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -184,6 +190,10 @@ class Trainer(object):
                                         len(eval_dataset), self.cfg.num_joints,
                                         self.cfg.save_dir)
             ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'ReID':
+            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -212,7 +222,10 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        if hasattr(self.model, 'detector'):
+            load_pretrain_weight(self.model.detector, weights)
+        else:
+            load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
@@ -238,7 +251,10 @@ class Trainer(object):
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model)
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
 
         # initial fp16
         if self.cfg.fp16:

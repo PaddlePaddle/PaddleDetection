@@ -15,6 +15,7 @@
 This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/matching.py
 """
 
+import lap
 import scipy
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -55,7 +56,6 @@ def linear_assignment(cost_matrix, thresh):
             (0, 2), dtype=int), tuple(range(cost_matrix.shape[0])), tuple(
                 range(cost_matrix.shape[1]))
     matches, unmatched_a, unmatched_b = [], [], []
-    import lap
     cost, x, y = lap.lapjv(cost_matrix, extend_cost=True, cost_limit=thresh)
     for ix, mx in enumerate(x):
         if mx >= 0:
