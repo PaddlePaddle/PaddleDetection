@@ -38,7 +38,7 @@ class DeepSORT(BaseArch):
 
     def __init__(self,
                  detector='YOLOv3',
-                 reid='PCBPlusDropoutPyramid',
+                 reid='PCBPyramid',
                  tracker='DeepSORTTracker'):
         super(DeepSORT, self).__init__()
         self.detector = detector
