@@ -33,7 +33,8 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results
+from ppdet.metrics import JDEDetMetric, JDEReIDMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -55,6 +56,16 @@ class Trainer(object):
         self.optimizer = None
         self.is_loaded_weights = False
 
+        # build data loader
+        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        if self.mode == 'train':
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num)
+
+        if cfg.architecture == 'JDE' and self.mode == 'train':
+            cfg['JDEEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
+
         # build model
         if 'model' not in self.cfg:
             self.model = create(cfg.architecture)
@@ -67,11 +78,6 @@ class Trainer(object):
             self.ema = ModelEMA(
                 cfg['ema_decay'], self.model, use_thres_step=True)
 
-        # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, cfg.worker_num)
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -147,6 +153,7 @@ class Trainer(object):
                 eval_dataset.check_or_download_dataset()
                 anno_file = eval_dataset.get_anno()
 
+            IouType = self.cfg['IouType'] if 'IouType' in self.cfg else 'bbox'
             self._metrics = [
                 COCOMetric(
                     anno_file=anno_file,
@@ -154,6 +161,7 @@ class Trainer(object):
                     classwise=classwise,
                     output_eval=output_eval,
                     bias=bias,
+                    IouType=IouType,
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
@@ -173,6 +181,19 @@ class Trainer(object):
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
             ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            self._metrics = [
+                KeyPointTopDownCOCOEval(anno_file,
+                                        len(eval_dataset), self.cfg.num_joints,
+                                        self.cfg.save_dir)
+            ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'ReID':
+            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -201,7 +222,10 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        if hasattr(self.model, 'detector'):
+            load_pretrain_weight(self.model.detector, weights)
+        else:
+            load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
@@ -227,7 +251,10 @@ class Trainer(object):
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model)
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
 
         # initial fp16
         if self.cfg.fp16:
@@ -365,7 +392,8 @@ class Trainer(object):
         imid2path = self.dataset.get_imid2path()
 
         anno_file = self.dataset.get_anno()
-        clsid2catid, catid2name = get_categories(self.cfg.metric, anno_file)
+        clsid2catid, catid2name = get_categories(
+            self.cfg.metric, anno_file=anno_file)
 
         # Run Infer 
         self.status['mode'] = 'test'
@@ -374,6 +402,7 @@ class Trainer(object):
             self.status['step_id'] = step_id
             # forward
             outs = self.model(data)
+
             for key in ['im_shape', 'scale_factor', 'im_id']:
                 outs[key] = data[key]
             for key, value in outs.items():
@@ -382,6 +411,7 @@ class Trainer(object):
 
             batch_res = get_infer_results(outs, clsid2catid)
             bbox_num = outs['bbox_num']
+
             start = 0
             for i, im_id in enumerate(outs['im_id']):
                 image_path = imid2path[int(im_id)]

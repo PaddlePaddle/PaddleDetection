@@ -26,9 +26,9 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
 # GPU评估
 export CUDA_VISIBLE_DEVICES=0
-python tools/eval.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml
+python tools/eval.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_1x_coco.pdparams
 # 预测
-python tools/infer.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --infer_img=demo/000000570688.jpg
+python tools/infer.py -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml --infer_img=demo/000000570688.jpg -o weights=https://paddledet.bj.bcebos.com/models/faster_rcnn_r50_fpn_1x_coco.pdparams
 ```
 
 

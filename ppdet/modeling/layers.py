@@ -838,6 +838,111 @@ class TTFBox(object):
 
 @register
 @serializable
+class JDEBox(object):
+    __shared__ = ['num_classes']
+
+    def __init__(self, num_classes=1, conf_thresh=0.3, downsample_ratio=32):
+        self.num_classes = num_classes
+        self.conf_thresh = conf_thresh
+        self.downsample_ratio = downsample_ratio
+
+    def generate_anchor(self, nGh, nGw, anchor_wh):
+        nA = len(anchor_wh)
+        yv, xv = paddle.meshgrid([paddle.arange(nGh), paddle.arange(nGw)])
+        mesh = paddle.stack(
+            (xv, yv), axis=0).cast(dtype='float32')  # 2 x nGh x nGw
+        meshs = paddle.tile(mesh, [nA, 1, 1, 1])
+
+        anchor_offset_mesh = anchor_wh[:, :, None][:, :, :, None].repeat(
+            int(nGh), axis=-2).repeat(
+                int(nGw), axis=-1)
+        anchor_offset_mesh = paddle.to_tensor(
+            anchor_offset_mesh.astype(np.float32))
+        # nA x 2 x nGh x nGw
+
+        anchor_mesh = paddle.concat([meshs, anchor_offset_mesh], axis=1)
+        anchor_mesh = paddle.transpose(anchor_mesh,
+                                       [0, 2, 3, 1])  # (nA x nGh x nGw) x 4
+        return anchor_mesh
+
+    def decode_delta(self, delta, fg_anchor_list):
+        px, py, pw, ph = fg_anchor_list[:, 0], fg_anchor_list[:,1], \
+                        fg_anchor_list[:, 2], fg_anchor_list[:,3]
+        dx, dy, dw, dh = delta[:, 0], delta[:, 1], delta[:, 2], delta[:, 3]
+        gx = pw * dx + px
+        gy = ph * dy + py
+        gw = pw * paddle.exp(dw)
+        gh = ph * paddle.exp(dh)
+        gx1 = gx - gw * 0.5
+        gy1 = gy - gh * 0.5
+        gx2 = gx + gw * 0.5
+        gy2 = gy + gh * 0.5
+        return paddle.stack([gx1, gy1, gx2, gy2], axis=1)
+
+    def decode_delta_map(self, delta_map, anchors):
+        delta_map_shape = paddle.shape(delta_map)
+        delta_map_shape.stop_gradient = True
+        nB, nA, nGh, nGw, _ = delta_map_shape[:]
+        anchor_mesh = self.generate_anchor(nGh, nGw, anchors)
+        # only support bs=1
+        anchor_mesh = paddle.unsqueeze(anchor_mesh, 0)
+
+        pred_list = self.decode_delta(
+            paddle.reshape(
+                delta_map, shape=[-1, 4]),
+            paddle.reshape(
+                anchor_mesh, shape=[-1, 4]))
+        pred_map = paddle.reshape(pred_list, shape=[nB, -1, 4])
+        return pred_map
+
+    def __call__(self, yolo_head_out, anchors):
+        bbox_pred_list = []
+        for i, head_out in enumerate(yolo_head_out):
+            stride = self.downsample_ratio // 2**i
+            anc_w, anc_h = anchors[i][0::2], anchors[i][1::2]
+            anchor_vec = np.stack((anc_w, anc_h), axis=1) / stride
+            nA = len(anc_w)
+            boxes_shape = paddle.shape(head_out)
+            boxes_shape.stop_gradient = True
+            nB, nGh, nGw = boxes_shape[0], boxes_shape[-2], boxes_shape[-1]
+
+            p = head_out.reshape((nB, nA, self.num_classes + 5, nGh, nGw))
+            p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, 19, 34, 6]
+            p_box = p[:, :, :, :, :4]  # [nB, 4, 19, 34, 4]
+            boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*19*34, 4]
+            boxes = boxes * stride
+
+            p_conf = paddle.transpose(
+                p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
+            p_conf = F.softmax(
+                p_conf,
+                axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
+            scores = paddle.reshape(p_conf, shape=[nB, -1, 1])
+
+            bbox_pred_list.append(paddle.concat([boxes, scores], axis=-1))
+
+        yolo_boxes_pred = paddle.concat(bbox_pred_list, axis=1)
+        boxes_idx = paddle.nonzero(yolo_boxes_pred[:, :, -1] > self.conf_thresh)
+        boxes_idx.stop_gradient = True
+        if boxes_idx.shape[0] == 0:  # TODO: deploy
+            boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
+            yolo_boxes_out = paddle.to_tensor(
+                np.array(
+                    [[[0.0, 0.0, 0.0, 0.0]]], dtype='float32'))
+            yolo_scores_out = paddle.to_tensor(
+                np.array(
+                    [[[0.0]]], dtype='float32'))
+            return boxes_idx, yolo_boxes_out, yolo_scores_out
+
+        yolo_boxes = paddle.gather_nd(yolo_boxes_pred, boxes_idx)
+        yolo_boxes_out = paddle.reshape(yolo_boxes[:, :4], shape=[nB, -1, 4])
+        yolo_scores_out = paddle.reshape(yolo_boxes[:, 4:5], shape=[nB, 1, -1])
+        boxes_idx = boxes_idx[:, 1:]
+        return boxes_idx, yolo_boxes_out, yolo_scores_out  # [163], [1, 163, 4], [1, 1, 163]
+
+
+@register
+@serializable
 class MaskMatrixNMS(object):
     """
     Matrix NMS for multi-class masks.

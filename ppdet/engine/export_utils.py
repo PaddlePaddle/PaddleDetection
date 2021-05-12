@@ -37,10 +37,11 @@ TRT_MIN_SUBGRAPH = {
     'TTFNet': 3,
     'FCOS': 16,
     'SOLOv2': 60,
-    'HigherHrnet': 40,
+    'HigherHRNet': 3,
+    'HRNet': 3,
 }
 
-KEYPOINT_ARCH = ['HigherHrnet', 'Hrnet']
+KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
 
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
@@ -48,7 +49,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     anno_file = dataset_cfg.get_anno()
 
-    clsid2catid, catid2name = get_categories(metric, arch, anno_file)
+    clsid2catid, catid2name = get_categories(metric, anno_file, arch)
 
     label_list = [str(cat) for cat in catid2name.values()]
 
@@ -56,6 +57,11 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
+            if key == 'Resize':
+                if value.get('keep_ratio', False) and int(image_shape[1]) != -1:
+                    max_size = max(image_shape[1:])
+                    image_shape = [3, max_size, max_size]
+                    value['target_size'] = image_shape[1:]
             p.update(value)
             preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)

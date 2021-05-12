@@ -20,6 +20,7 @@ from . import fcos_loss
 from . import solov2_loss
 from . import ctfocal_loss
 from . import keypoint_loss
+from . import jde_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
@@ -29,3 +30,4 @@ from .fcos_loss import *
 from .solov2_loss import *
 from .ctfocal_loss import *
 from .keypoint_loss import *
+from .jde_loss import *

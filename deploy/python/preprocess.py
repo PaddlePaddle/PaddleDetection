@@ -71,9 +71,6 @@ class Resize(object):
         assert self.target_size[0] > 0 and self.target_size[1] > 0
         im_channel = im.shape[2]
         im_scale_y, im_scale_x = self.generate_scale(im)
-        # set image_shape
-        im_info['input_shape'][1] = int(im_scale_y * im.shape[0])
-        im_info['input_shape'][2] = int(im_scale_x * im.shape[1])
         im = cv2.resize(
             im,
             None,
@@ -84,6 +81,14 @@ class Resize(object):
         im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
         im_info['scale_factor'] = np.array(
             [im_scale_y, im_scale_x]).astype('float32')
+        # padding im when image_shape fixed by infer_cfg.yml
+        if self.keep_ratio and im_info['input_shape'][1] != -1:
+            max_size = im_info['input_shape'][1]
+            padding_im = np.zeros(
+                (max_size, max_size, im_channel), dtype=np.float32)
+            im_h, im_w = im.shape[:2]
+            padding_im[:im_h, :im_w, :] = im
+            im = padding_im
         return im, im_info
 
     def generate_scale(self, im):

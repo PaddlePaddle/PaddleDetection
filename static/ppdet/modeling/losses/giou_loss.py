@@ -89,6 +89,7 @@ class GiouLoss(object):
                  inside_weight=None,
                  outside_weight=None,
                  bbox_reg_weight=[0.1, 0.1, 0.2, 0.2],
+                 loc_reweight=None,
                  use_transform=True):
         eps = 1.e-10
         if use_transform:
@@ -134,11 +135,19 @@ class GiouLoss(object):
         elif outside_weight is not None:
             iou_weights = outside_weight
 
+        if loc_reweight is not None:
+            loc_reweight = fluid.layers.reshape(loc_reweight, shape=(-1, 1))
+            loc_thresh = 0.9
+            giou = 1 - (1 - loc_thresh
+                        ) * miouk - loc_thresh * miouk * loc_reweight
+        else:
+            giou = 1 - miouk
+
         if self.do_average:
-            miouk = fluid.layers.reduce_mean((1 - miouk) * iou_weights)
+            miouk = fluid.layers.reduce_mean(giou * iou_weights)
         else:
             iou_distance = fluid.layers.elementwise_mul(
-                1 - miouk, iou_weights, axis=0)
+                giou, iou_weights, axis=0)
             miouk = fluid.layers.reduce_sum(iou_distance)
 
         if self.use_class_weight:

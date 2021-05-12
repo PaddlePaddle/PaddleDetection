@@ -92,7 +92,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 |  参数   | 说明  |
 |  ----  | ----  |
 | --model_dir  | 导出的预测模型所在路径 |
-| --image_path  | 要预测的图片文件路径 |
+| --image_file  | 要预测的图片文件路径 |
 | --video_path  | 要预测的视频文件路径 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1（表示不使用摄像头预测）|
 | --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
@@ -102,7 +102,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | --output_dir | 输出图片所在的文件夹, 默认为output |
 
 **注意**：  
-（1）如果同时设置了`video_path`和`image_path`，程序仅预测`video_path`。  
+（1）如果同时设置了`video_path`和`image_file`，程序仅预测`video_path`。  
 （2）如果提示找不到`opencv_world346.dll`，把`D:\projects\packages\opencv3_4_6\build\x64\vc14\bin`文件夹下的`opencv_world346.dll`拷贝到`main.exe`文件夹下即可。
 
 

@@ -106,6 +106,7 @@ class PiecewiseDecay(object):
         else:
             # do not use LinearWarmup
             boundary = [int(step_per_epoch) * i for i in self.milestones]
+            value = [base_lr]  # during step[0, boundary[0]] is base_lr
 
         # self.values is setted directly in config 
         if self.values is not None:
@@ -113,9 +114,9 @@ class PiecewiseDecay(object):
             return optimizer.lr.PiecewiseDecay(boundary, self.values)
 
         # value is computed by self.gamma
-        if value is not None:
-            for i in self.gamma:
-                value.append(base_lr * i)
+        value = value if value is not None else [base_lr]
+        for i in self.gamma:
+            value.append(base_lr * i)
 
         return optimizer.lr.PiecewiseDecay(boundary, value)
 
@@ -135,12 +136,38 @@ class LinearWarmup(object):
         self.steps = steps
         self.start_factor = start_factor
 
-    def __call__(self, base_lr):
+    def __call__(self, base_lr, step_per_epoch):
         boundary = []
         value = []
         for i in range(self.steps + 1):
-            alpha = i / self.steps
-            factor = self.start_factor * (1 - alpha) + alpha
+            if self.steps > 0:
+                alpha = i / self.steps
+                factor = self.start_factor * (1 - alpha) + alpha
+                lr = base_lr * factor
+                value.append(lr)
+            if i > 0:
+                boundary.append(i)
+        return boundary, value
+
+
+@serializable
+class BurninWarmup(object):
+    """
+    Warm up learning rate in burnin mode
+    Args:
+        steps (int): warm up steps
+    """
+
+    def __init__(self, steps=1000):
+        super(BurninWarmup, self).__init__()
+        self.steps = steps
+
+    def __call__(self, base_lr, step_per_epoch):
+        boundary = []
+        value = []
+        burnin = min(self.steps, step_per_epoch)
+        for i in range(burnin + 1):
+            factor = (i * 1.0 / burnin)**4
             lr = base_lr * factor
             value.append(lr)
             if i > 0:
@@ -174,7 +201,7 @@ class LearningRate(object):
 
         # TODO: split warmup & decay 
         # warmup
-        boundary, value = self.schedulers[1](self.base_lr)
+        boundary, value = self.schedulers[1](self.base_lr, step_per_epoch)
         # decay
         decay_lr = self.schedulers[0](self.base_lr, boundary, value,
                                       step_per_epoch)

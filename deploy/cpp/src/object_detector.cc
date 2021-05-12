@@ -24,24 +24,16 @@ namespace PaddleDetection {
 
 // Load Model and create model predictor
 void ObjectDetector::LoadModel(const std::string& model_dir,
-                               bool use_gpu,
-                               const int min_subgraph_size,
                                const int batch_size,
-                               const std::string& run_mode,
-                               const int gpu_id,
-                               bool use_dynamic_shape,
-                               const int trt_min_shape,
-                               const int trt_max_shape,
-                               const int trt_opt_shape) {
+                               const std::string& run_mode) {
   paddle_infer::Config config;
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
   config.SetModel(prog_file, params_file);
-  if (use_gpu) {
-    config.EnableUseGpu(200, gpu_id);
+  if (this->use_gpu_) {
+    config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
-    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle_infer::Config::Precision::kFloat32;
       if (run_mode == "trt_fp32") {
@@ -52,7 +44,6 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
       else if (run_mode == "trt_int8") {
         precision = paddle_infer::Config::Precision::kInt8;
-        use_calib_mode = true;
       } else {
           printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
@@ -60,17 +51,17 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       config.EnableTensorRtEngine(
           1 << 30,
           batch_size,
-          min_subgraph_size,
+          this->min_subgraph_size_,
           precision,
           false,
-          use_calib_mode);
+          this->trt_calib_mode_);
 
       // set use dynamic shape
-      if (use_dynamic_shape) {
+      if (this->use_dynamic_shape_) {
         // set DynamicShsape for image tensor
-        const std::vector<int> min_input_shape = {1, 3, trt_min_shape, trt_min_shape};
-        const std::vector<int> max_input_shape = {1, 3, trt_max_shape, trt_max_shape};
-        const std::vector<int> opt_input_shape = {1, 3, trt_opt_shape, trt_opt_shape};
+        const std::vector<int> min_input_shape = {1, 3, this->trt_min_shape_, this->trt_min_shape_};
+        const std::vector<int> max_input_shape = {1, 3, this->trt_max_shape_, this->trt_max_shape_};
+        const std::vector<int> opt_input_shape = {1, 3, this->trt_opt_shape_, this->trt_opt_shape_};
         const std::map<std::string, std::vector<int>> map_min_input_shape = {{"image", min_input_shape}};
         const std::map<std::string, std::vector<int>> map_max_input_shape = {{"image", max_input_shape}};
         const std::map<std::string, std::vector<int>> map_opt_input_shape = {{"image", opt_input_shape}};
@@ -84,8 +75,15 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 
   } else {
     config.DisableGpu();
+    if (this->use_mkldnn_) {
+      config.EnableMKLDNN();
+      // cache 10 different shapes for mkldnn to avoid memory leak
+      config.SetMkldnnCacheCapacity(10);
+    }
+    config.SetCpuMathLibraryNumThreads(this->cpu_math_library_num_threads_);
   }
   config.SwitchUseFeedFetchOps(false);
+  config.SwitchIrOptim(true);
   config.DisableGlogInfo();
   // Memory optimization
   config.EnableMemoryOptim();
@@ -96,13 +94,10 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 cv::Mat VisualizeResult(const cv::Mat& img,
                         const std::vector<ObjectResult>& results,
                         const std::vector<std::string>& lable_list,
-                        const std::vector<int>& colormap) {
+                        const std::vector<int>& colormap,
+                        const bool is_rbox=false) {
   cv::Mat vis_img = img.clone();
   for (int i = 0; i < results.size(); ++i) {
-    int w = results[i].rect[1] - results[i].rect[0];
-    int h = results[i].rect[3] - results[i].rect[2];
-    cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[2], w, h);
-
     // Configure color and text size
     std::ostringstream oss;
     oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
@@ -122,17 +117,37 @@ cv::Mat VisualizeResult(const cv::Mat& img,
                                          thickness,
                                          nullptr);
     cv::Point origin;
-    origin.x = roi.x;
-    origin.y = roi.y;
+
+    if (is_rbox)
+    {
+        // Draw object, text, and background
+        for (int k=0; k<4; k++)
+        {
+            cv::Point pt1 = cv::Point(results[i].rect[(k*2)%8], 
+                                      results[i].rect[(k*2+1)%8]);
+            cv::Point pt2 = cv::Point(results[i].rect[(k*2+2)%8], 
+                                      results[i].rect[(k*2+3)%8]);
+            cv::line(vis_img, pt1, pt2, roi_color, 2);
+        }
+    }
+    else
+    {
+        int w = results[i].rect[1] - results[i].rect[0];
+        int h = results[i].rect[3] - results[i].rect[2];
+        cv::Rect roi = cv::Rect(results[i].rect[0], results[i].rect[2], w, h);
+        // Draw roi object, text, and background
+        cv::rectangle(vis_img, roi, roi_color, 2);
+    }
+
+    origin.x = results[i].rect[0];
+    origin.y = results[i].rect[1];
 
     // Configure text background
     cv::Rect text_back = cv::Rect(results[i].rect[0],
                                   results[i].rect[2] - text_size.height,
                                   text_size.width,
                                   text_size.height);
-
-    // Draw roi object, text, and background
-    cv::rectangle(vis_img, roi, roi_color, 2);
+    // Draw text, and background
     cv::rectangle(vis_img, text_back, roi_color, -1);
     cv::putText(vis_img,
                 text,
@@ -154,7 +169,8 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 
 void ObjectDetector::Postprocess(
     const cv::Mat& raw_mat,
-    std::vector<ObjectResult>* result) {
+    std::vector<ObjectResult>* result,
+    bool is_rbox=false) {
   result->clear();
   int rh = 1;
   int rw = 1;
@@ -163,24 +179,52 @@ void ObjectDetector::Postprocess(
     rw = raw_mat.cols;
   }
 
-  int total_size = output_data_.size() / 6;
-  for (int j = 0; j < total_size; ++j) {
-    // Class id
-    int class_id = static_cast<int>(round(output_data_[0 + j * 6]));
-    // Confidence score
-    float score = output_data_[1 + j * 6];
-    int xmin = (output_data_[2 + j * 6] * rw);
-    int ymin = (output_data_[3 + j * 6] * rh);
-    int xmax = (output_data_[4 + j * 6] * rw);
-    int ymax = (output_data_[5 + j * 6] * rh);
-    int wd = xmax - xmin;
-    int hd = ymax - ymin;
-    if (score > threshold_ && class_id > -1) {
-      ObjectResult result_item;
-      result_item.rect = {xmin, xmax, ymin, ymax};
-      result_item.class_id = class_id;
-      result_item.confidence = score;
-      result->push_back(result_item);
+  if (is_rbox)
+  {
+    int total_size = output_data_.size() / 10;
+    for (int j = 0; j < total_size; ++j) {
+      // Class id
+      int class_id = static_cast<int>(round(output_data_[0 + j * 10]));
+      // Confidence score
+      float score = output_data_[1 + j * 10];
+      int x1 = (output_data_[2 + j * 10] * rw);
+      int y1 = (output_data_[3 + j * 10] * rh);
+      int x2 = (output_data_[4 + j * 10] * rw);
+      int y2 = (output_data_[5 + j * 10] * rh);
+      int x3 = (output_data_[6 + j * 10] * rw);
+      int y3 = (output_data_[7 + j * 10] * rh);
+      int x4 = (output_data_[8 + j * 10] * rw);
+      int y4 = (output_data_[9 + j * 10] * rh);
+      if (score > threshold_ && class_id > -1) {
+        ObjectResult result_item;
+        result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
+        result_item.class_id = class_id;
+        result_item.confidence = score;
+        result->push_back(result_item);
+      }
+    }
+  }
+  else
+  {
+    int total_size = output_data_.size() / 6;
+    for (int j = 0; j < total_size; ++j) {
+      // Class id
+      int class_id = static_cast<int>(round(output_data_[0 + j * 6]));
+      // Confidence score
+      float score = output_data_[1 + j * 6];
+      int xmin = (output_data_[2 + j * 6] * rw);
+      int ymin = (output_data_[3 + j * 6] * rh);
+      int xmax = (output_data_[4 + j * 6] * rw);
+      int ymax = (output_data_[5 + j * 6] * rh);
+      int wd = xmax - xmin;
+      int hd = ymax - ymin;
+      if (score > threshold_ && class_id > -1) {
+        ObjectResult result_item;
+        result_item.rect = {xmin, xmax, ymin, ymax};
+        result_item.class_id = class_id;
+        result_item.confidence = score;
+        result->push_back(result_item);
+      }
     }
   }
 }
@@ -189,8 +233,9 @@ void ObjectDetector::Predict(const cv::Mat& im,
       const double threshold,
       const int warmup,
       const int repeats,
-      const bool run_benchmark,
-      std::vector<ObjectResult>* result) {
+      std::vector<ObjectResult>* result,
+      std::vector<double>* times) {
+  auto preprocess_start = std::chrono::steady_clock::now();
   // Preprocess image
   Preprocess(im);
   // Prepare input tensor
@@ -210,6 +255,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
       in_tensor->CopyFromCpu(inputs_.scale_factor_.data());
     }
   }
+  auto preprocess_end = std::chrono::steady_clock::now();
   // Run predictor
   for (int i = 0; i < warmup; i++)
   {
@@ -231,7 +277,8 @@ void ObjectDetector::Predict(const cv::Mat& im,
     out_tensor->CopyToCpu(output_data_.data()); 
   }
 
-  auto start = std::chrono::steady_clock::now();
+  bool is_rbox = false;
+  auto inference_start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeats; i++)
   {
     predictor_->Run();
@@ -244,6 +291,7 @@ void ObjectDetector::Predict(const cv::Mat& im,
     for (int j = 0; j < output_shape.size(); ++j) {
       output_size *= output_shape[j];
     }
+    is_rbox = output_shape[output_shape.size()-1] % 10 == 0;
 
     if (output_size < 6) {
       std::cerr << "[WARNING] No object detected." << std::endl;
@@ -251,14 +299,19 @@ void ObjectDetector::Predict(const cv::Mat& im,
     output_data_.resize(output_size);
     out_tensor->CopyToCpu(output_data_.data()); 
   }
-  auto end = std::chrono::steady_clock::now();
-  std::chrono::duration<float> diff = end - start;
-  float ms = diff.count() / repeats * 1000;
-  printf("Inference: %f ms per batch image\n", ms);
+  auto inference_end = std::chrono::steady_clock::now();
+  auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
-  if(!run_benchmark) {
-    Postprocess(im,  result);
-  }
+  Postprocess(im,  result, is_rbox);
+  auto postprocess_end = std::chrono::steady_clock::now();
+
+  std::chrono::duration<float> preprocess_diff = preprocess_end - preprocess_start;
+  times->push_back(double(preprocess_diff.count() * 1000));
+  std::chrono::duration<float> inference_diff = inference_end - inference_start;
+  times->push_back(double(inference_diff.count() / repeats * 1000));
+  std::chrono::duration<float> postprocess_diff = postprocess_end - postprocess_start;
+  times->push_back(double(postprocess_diff.count() * 1000));
+  
 }
 
 std::vector<int> GenerateColorMap(int num_class) {

@@ -89,6 +89,7 @@ DATASETS = {
     'roadsign_coco': ([(
         'https://paddlemodels.bj.bcebos.com/object_detection/roadsign_coco.tar',
         '49ce5a9b5ad0d6266163cd01de4b018e', ), ], ['annotations', 'images']),
+    'mot': (),
     'objects365': ()
 }
 
@@ -180,6 +181,16 @@ def get_dataset_path(path, annotation, image_dir):
                     "Please apply and download the dataset from "
                     "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
+
+            if name == 'mot':
+                if osp.exists(path) or osp.exists(data_dir):
+                    return data_dir
+                else:
+                    raise NotImplementedError(
+                        "Dataset {} is not valid for download automatically. "
+                        "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
+                        format(name))
+
             # For voc, only check dir VOCdevkit/VOC2012, VOCdevkit/VOC2007
             if name in ['voc', 'fruit', 'roadsign_voc']:
                 exists = True
@@ -206,7 +217,7 @@ def get_dataset_path(path, annotation, image_dir):
     raise ValueError(
         "Dataset {} is not valid and cannot parse dataset type "
         "'{}' for automaticly downloading, which only supports "
-        "'voc' , 'coco', 'wider_face', 'fruit' and 'roadsign_voc' currently".
+        "'voc' , 'coco', 'wider_face', 'fruit', 'roadsign_voc' and 'mot' currently".
         format(path, osp.split(path)[-1]))
 
 
@@ -293,16 +304,16 @@ def _dataset_exists(path, annotation, image_dir):
     Check if user define dataset exists
     """
     if not osp.exists(path):
-        logger.debug("Config dataset_dir {} is not exits, "
-                     "dataset config is not valid".format(path))
+        logger.warning("Config dataset_dir {} is not exits, "
+                       "dataset config is not valid".format(path))
         return False
 
     if annotation:
         annotation_path = osp.join(path, annotation)
         if not osp.isfile(annotation_path):
-            logger.debug("Config annotation {} is not a "
-                         "file, dataset config is not "
-                         "valid".format(annotation_path))
+            logger.warning("Config annotation {} is not a "
+                           "file, dataset config is not "
+                           "valid".format(annotation_path))
             return False
     if image_dir:
         image_path = osp.join(path, image_dir)
