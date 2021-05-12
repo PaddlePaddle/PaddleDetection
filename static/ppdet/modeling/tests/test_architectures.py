@@ -28,9 +28,22 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-from ppdet.modeling.tests.decorator_helper import prog_scope
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.check import enable_static_mode
+try:
+    from ppdet.modeling.tests.decorator_helper import prog_scope
+    from ppdet.core.workspace import load_config, merge_config, create
+    from ppdet.utils.check import enable_static_mode
+except ImportError as e:
+    if sys.argv[0].find('static') >= 0:
+        logger.error("Importing ppdet failed when running static model "
+                     "with error: {}\n"
+                     "please try:\n"
+                     "\t1. run static model under PaddleDetection/static "
+                     "directory\n"
+                     "\t2. run 'pip uninstall ppdet' to uninstall ppdet "
+                     "dynamic version firstly.".format(e))
+        sys.exit(-1)
+    else:
+        raise e
 
 
 class TestFasterRCNN(unittest.TestCase):
