@@ -249,7 +249,10 @@ class Trainer(object):
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model, find_unused_parameters=True)
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
 
         # initial fp16
         if self.cfg.fp16:

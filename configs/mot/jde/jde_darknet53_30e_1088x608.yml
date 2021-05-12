@@ -11,7 +11,7 @@ JDE:
   detector: YOLOv3
   reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_mode: 'detection'
+  metric: 'MOTDet'
 
 YOLOv3:
   backbone: DarkNet
@@ -36,12 +36,12 @@ JDETracker:
 JDEBBoxPostProcess:
   decode:
     name: JDEBox
-    conf_thresh: 0.3
+    conf_thresh: 0.5
     downsample_ratio: 32
   nms:
     name: MultiClassNMS
     keep_top_k: 500
     score_threshold: 0.01
-    nms_threshold: 0.5
+    nms_threshold: 0.4
     nms_top_k: 2000
     normalized: true

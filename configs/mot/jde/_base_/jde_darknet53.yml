@@ -1,12 +1,12 @@
 architecture: JDE
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
-norm_type: sync_bn
+find_unused_parameters: True
 
 JDE:
   detector: YOLOv3
   reid: JDEEmbeddingHead
   tracker: JDETracker
-  test_mode: 'detection'
+  metric: 'MOTDet'
 
 YOLOv3:
   backbone: DarkNet

@@ -312,17 +312,16 @@ class DetectionMAP(object):
 
 
 def ap_per_class(tp, conf, pred_cls, target_cls):
-    """ Computes the average precision, given the recall and precision curves.
-    Method originally from https://github.com/rafaelpadilla/Object-Detection-Metrics.
-    # Arguments
-        tp:    True positives (list).
-        conf:  Objectness value from 0-1 (list).
-        pred_cls: Predicted object classes (list).
-        target_cls: True object classes (list).
-    # Returns
-        The average precision as computed in py-faster-rcnn.
     """
-    # lists/pytorch to numpy
+    Computes the average precision, given the recall and precision curves.
+    Method originally from https://github.com/rafaelpadilla/Object-Detection-Metrics.
+    
+    Args:
+        tp (list): True positives.
+        conf (list): Objectness value from 0-1.
+        pred_cls (list): Predicted object classes.
+        target_cls (list): Target object classes.
+    """
     tp, conf, pred_cls, target_cls = np.array(tp), np.array(conf), np.array(
         pred_cls), np.array(target_cls)
 
@@ -367,12 +366,15 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
 
 
 def compute_ap(recall, precision):
-    """ Computes the average precision, given the recall and precision curves.
+    """
+    Computes the average precision, given the recall and precision curves.
     Code originally from https://github.com/rbgirshick/py-faster-rcnn.
-    # Arguments
-        recall:    The recall curve (list).
-        precision: The precision curve (list).
-    # Returns
+    
+    Args:
+        recall (list): The recall curve.
+        precision (list): The precision curve.
+
+    Returns:
         The average precision as computed in py-faster-rcnn.
     """
     # correct AP calculation
