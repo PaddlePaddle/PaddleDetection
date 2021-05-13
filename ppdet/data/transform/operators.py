@@ -2014,7 +2014,7 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self, fraction=0.50, is_bgr=True):
+    def __init__(self, fraction=0.50, is_bgr=False):
         """ 
         Augment the SV channel of image data.
         Args:
@@ -2075,7 +2075,7 @@ class Norm2PixelBbox(BaseOperator):
 
 
 @register_op
-class RandomAffine(BaseOperator):
+class MOTRandomAffine(BaseOperator):
     def __init__(self,
                  degrees=(-5, 5),
                  translate=(0.10, 0.10),
@@ -2083,9 +2083,17 @@ class RandomAffine(BaseOperator):
                  shear=(-2, 2),
                  borderValue=(127.5, 127.5, 127.5)):
         """ 
-        Transform the image data with random affine
+        Affine transform to image and coords to achieve the rotate, scale and
+        shift effect for training image.
+
+        Args:
+            degrees (tuple): rotation value
+            translate (tuple): xy coords translation value
+            scale (tuple): scale value
+            shear (tuple): shear value
+            borderValue (tuple): border color value
         """
-        super(RandomAffine, self).__init__()
+        super(MOTRandomAffine, self).__init__()
         self.degrees = degrees
         self.translate = translate
         self.scale = scale
