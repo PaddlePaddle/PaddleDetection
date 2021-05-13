@@ -326,7 +326,7 @@ class Trainer(object):
             self._compose_callback.on_epoch_end(self.status)
 
             if validate and (self._nranks < 2 or self._local_rank == 0) \
-                    and (epoch_id % self.cfg.snapshot_epoch == 0 \
+                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
                              or epoch_id == self.end_epoch - 1):
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader

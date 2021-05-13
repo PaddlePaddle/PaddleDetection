@@ -987,7 +987,7 @@ def multiclass_nms(bboxes,
                  'normalized', normalized)
         output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
                                                                rois_num, *attrs)
-        if return_index:
+        if not return_index:
             index = None
         return output, nms_rois_num, index
 
