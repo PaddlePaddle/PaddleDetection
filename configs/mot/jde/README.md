@@ -11,7 +11,6 @@ English | [简体中文](README_cn.md)
 ## Introduction
 
 [Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network.
-JDE reached 64.4 MOTA on MOT16-tesing datatset.
 <div align="center">
   <img src="../../../../docs/images/mot16_jde.gif" width=500 />
 </div>
@@ -22,13 +21,10 @@ JDE reached 64.4 MOTA on MOT16-tesing datatset.
 
 | backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53(github)  | 1088x608 |  74.8  |  67.3  | 1189  |  5558  | 21505 |  22.2 | ---- | ---- |
-| DarkNet53(practice)| 1088x608 |  73.1  |  68.9  | 1312  |  6593  | 21788 |  22.2 | ---- | ---- |
 | DarkNet53          | 1088x608 |  73.2  |  69.4  | 1320  |  6613  | 21629 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
 
-
 **Notes:**
- JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches. The models of first two lines are given by the author by training with PyTorch, showing 74.8 MOTA on github but only get 73.1 through practical operation.
+ JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
 
 ## Getting Start
 
