@@ -17,7 +17,9 @@ import os
 import numpy as np
 
 MOT_data = 'MOT16'
+
 # choose a data in ['MOT15', 'MOT16', 'MOT17', 'MOT20']
+
 
 def mkdirs(d):
     if not osp.exists(d):
@@ -33,8 +35,10 @@ tid_curr = 0
 tid_last = -1
 for seq in seqs:
     seq_info = open(osp.join(seq_root, seq, 'seqinfo.ini')).read()
-    seq_width = int(seq_info[seq_info.find('imWidth=') + 8:seq_info.find('\nimHeight')])
-    seq_height = int(seq_info[seq_info.find('imHeight=') + 9:seq_info.find('\nimExt')])
+    seq_width = int(seq_info[seq_info.find('imWidth=') + 8:seq_info.find(
+        '\nimHeight')])
+    seq_height = int(seq_info[seq_info.find('imHeight=') + 9:seq_info.find(
+        '\nimExt')])
 
     gt_txt = osp.join(seq_root, seq, 'gt', 'gt.txt')
     gt = np.loadtxt(gt_txt, dtype=np.float64, delimiter=',')
@@ -54,6 +58,7 @@ for seq in seqs:
         y += h / 2
         label_fpath = osp.join(seq_label_root, '{:06d}.txt'.format(fid))
         label_str = '0 {:d} {:.6f} {:.6f} {:.6f} {:.6f}\n'.format(
-            tid_curr, x / seq_width, y / seq_height, w / seq_width, h / seq_height)
+            tid_curr, x / seq_width, y / seq_height, w / seq_width,
+            h / seq_height)
         with open(label_fpath, 'a') as f:
             f.write(label_str)
