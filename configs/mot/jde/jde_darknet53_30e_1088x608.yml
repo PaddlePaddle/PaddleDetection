@@ -44,3 +44,4 @@ JDEBBoxPostProcess:
     nms_threshold: 0.4
     nms_top_k: 2000
     normalized: true
+    return_index: true
