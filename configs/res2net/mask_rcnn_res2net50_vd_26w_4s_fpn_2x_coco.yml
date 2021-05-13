@@ -1,0 +1,47 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '../mask_rcnn/_base_/optimizer_1x.yml',
+  '../mask_rcnn/_base_/mask_rcnn_r50_fpn.yml',
+  '../mask_rcnn/_base_/mask_fpn_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/Res2Net50_vd_26w_4s_pretrained.pdparams
+weights: output/mask_rcnn_res2net50_vd_26w_4s_fpn_2x_coco/model_final
+
+MaskRCNN:
+  backbone: Res2Net
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
+
+
+Res2Net:
+  # index 0 stands for res2
+  depth: 50
+  width: 26
+  scales: 4
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  variant: d
+
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+
+TrainReader:
+  batch_size: 2
