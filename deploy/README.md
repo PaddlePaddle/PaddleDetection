@@ -61,9 +61,9 @@ sh scripts/build.sh
 ## 4.BenchMark测试
 - 使用导出的模型，运行BenchMark批量测试脚本：
 ```shell
-sh deploy/benchmark/benchmark_ppdet.sh {model_dir} {model_name}
+sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
 ```
-**注意** 如果是量化模型，请使用`deploy/benchmark/benchmark_ppdet_quant.sh`脚本。
+**注意** 如果是量化模型，请使用`deploy/benchmark/benchmark_quant.sh`脚本。
 - 将测试结果log导出至Excel中：
 ```
 python deploy/benchmark/log_parser_excel.py --log_path=./output_pipeline --output_name=benchmark_excel.xlsx
