@@ -1,25 +1,25 @@
-English | [简体中文](README_cn.md)
+简体中文 | [English](README.md)
 
 # DeepSORT (Simple Online and Realtime Tracking with a Deep Association Metric)
 
-## Table of Contents
-- [Introduction](#Introduction)
-- [Model Zoo](#Model_Zoo)
-- [Getting Start](#Getting_Start)
+## 内容
+- [简介](#简介)
+- [模型库与基线](#模型库与基线)
+- [快速开始](#快速开始)
 
-## Introduction
-[DeepSORT](https://arxiv.org/abs/1812.00442) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use JDE as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files.
+## 简介
+[DeepSORT](https://arxiv.org/abs/1812.00442) 与SORT基本类似，但增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征。我们使用JDE作为检测模型来生成检测框，并选择`PCBPyramid`作为ReID模型。我们还支持加载保存的检测结果文件来进行预测跟踪。
 
-## Model Zoo
+## 模型库与基线
 
 ### DeepSORT on MOT-16 training set
 
-| backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
+| 骨干网络   | 输入尺寸       | MOTA |  IDF1  |  IDS | FP  |   FN  |   FPS  | 检测模型 | ReID模型 | 配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
- DeepSORT does not need to train, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, here we use JDE, and then prepare them like this:
+  DeepSORT此处不需要训练，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，这里我们使用JDE，然后像这样准备好结果:
 ```
 det_results_dir
    |——————MOT16-02.txt
@@ -31,26 +31,26 @@ det_results_dir
    |——————MOT16-13.txt
 ```
 
-## Getting Start
+## 快速开始
 
-### 1. Evaluate a detector to get detection results
+### 1. 验证检测模型得到检测结果文件
 
 ```bash
-# use weights released in PaddleDetection model zoo
+# 使用PaddleDetection发布的权重
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric=MOT weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --output ./det_results_dir
 
-# use saved checkpoint after training
+# 使用训练保存的checkpoint
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric=MOT weights=output/jde_darknet53_30e_1088x608/model_final --output ./det_results_dir
 ```
 
-### 2. Tracking
+### 2. 跟踪预测
 
 ```bash
-# track the objects by loading detected result files
+# 加载检测结果文件得到跟踪结果
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir ./det_results_dir/mot_results
 ```
 
-## Citations
+## 引用
 ```
 @inproceedings{Wojke2017simple,
   title={Simple Online and Realtime Tracking with a Deep Association Metric},
