@@ -14,12 +14,12 @@
 
 ### DeepSORT on MOT-16 training set
 
-| 骨干网络   | 输入尺寸       | MOTA |  IDF1  |  IDS | FP  |   FN  |   FPS  | 检测模型 | ReID模型 | 配置文件 |
+|  骨干网络  | 输入尺寸 | MOTA |  IDF1  |  IDS | FP  |   FN  |   FPS  | 检测模型 | ReID模型 | 配置文件 |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
-  DeepSORT此处不需要训练，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，这里我们使用JDE，然后像这样准备好结果:
+  DeepSORT此处不需要训练，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，这里我们使用JDE，然后像这样准备好结果文件:
 ```
 det_results_dir
    |——————MOT16-02.txt
