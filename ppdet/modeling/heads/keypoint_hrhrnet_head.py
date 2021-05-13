@@ -92,15 +92,14 @@ class HrHRNetHead(nn.Layer):
         xo2 = self.conv2(x2)
         num_joints = self.num_joints
         if self.training:
+            heatmap1, tagmap = paddle.split(xo1, 2, axis=1)
             if self.swahr:
                 so1 = self.scalelayer0(x1)
                 so2 = self.scalelayer1(x2)
-                hrhrnet_outputs = ([xo1[:, :num_joints], so1], [xo2, so2],
-                                   xo1[:, num_joints:])
+                hrhrnet_outputs = ([heatmap1, so1], [xo2, so2], tagmap)
                 return self.loss(hrhrnet_outputs, targets)
             else:
-                hrhrnet_outputs = (xo1[:, :num_joints], xo2,
-                                   xo1[:, num_joints:])
+                hrhrnet_outputs = (heatmap1, xo2, tagmap)
                 return self.loss(hrhrnet_outputs, targets)
 
         # averaged heatmap, upsampled tagmap
