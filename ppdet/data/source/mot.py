@@ -214,6 +214,9 @@ class MOTDataSet(DetDataset):
             gt_class = labels[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels), 1)).astype('float32')
             gt_ide = labels[:, 1:2].astype('int32')
+            for i, _ in enumerate(gt_ide):
+                if gt_ide[i] > -1:
+                    gt_ide[i] += self.tid_start_index[data_name]
 
             mot_rec = {
                 'im_file': img_file,
