@@ -66,6 +66,10 @@ class Trainer(object):
             cfg['JDEEmbeddingHead'][
                 'num_identifiers'] = self.dataset.total_identities
 
+        if cfg.architecture == 'FairMOT' and self.mode == 'train':
+            cfg['FairMOTEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
+
         # build model
         if 'model' not in self.cfg:
             self.model = create(cfg.architecture)
@@ -223,7 +227,10 @@ class Trainer(object):
             return
         self.start_epoch = 0
         if hasattr(self.model, 'detector'):
-            load_pretrain_weight(self.model.detector, weights)
+            if self.model.__class__.__name__ == 'FairMOT':
+                load_pretrain_weight(self.model, weights)
+            else:
+                load_pretrain_weight(self.model.detector, weights)
         else:
             load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))

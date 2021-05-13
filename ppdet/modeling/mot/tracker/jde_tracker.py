@@ -46,6 +46,9 @@ class JDETracker(object):
         unconfirmed_thresh (float): linear assignment threshold of 
             unconfirmed stracks and unmatched detections
         motion (object): KalmanFilter instance
+        conf_thres (float): confidence threshold for tracking
+        metric_type (str): either "euclidean" or "cosine", the distance metric 
+            used for measurement to track association.
     """
 
     def __init__(self,
@@ -55,7 +58,9 @@ class JDETracker(object):
                  tracked_thresh=0.7,
                  r_tracked_thresh=0.5,
                  unconfirmed_thresh=0.7,
-                 motion='KalmanFilter'):
+                 motion='KalmanFilter',
+                 conf_thres=0,
+                 metric_type='euclidean'):
         self.det_thresh = det_thresh
         self.track_buffer = track_buffer
         self.min_box_area = min_box_area
@@ -63,6 +68,8 @@ class JDETracker(object):
         self.r_tracked_thresh = r_tracked_thresh
         self.unconfirmed_thresh = unconfirmed_thresh
         self.motion = motion
+        self.conf_thres = conf_thres
+        self.metric_type = metric_type
 
         self.frame_id = 0
         self.tracked_stracks = []
@@ -96,13 +103,17 @@ class JDETracker(object):
         # removed. (Lost for some time lesser than the threshold for removing)
         removed_stracks = []
 
+        pred_dets = pred_dets.numpy()
+        pred_embs = pred_embs.numpy()
+        remain_inds = pred_dets[:, 4] > self.conf_thres
+        pred_dets = pred_dets[remain_inds]
+        pred_embs = pred_embs[remain_inds]
+
         # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-        empty_pred = True if len(pred_dets) == 1 and paddle.sum(
-            pred_dets) == 0.0 else False
+        empty_pred = True if len(pred_dets) == 1 and pred_dets.sum(
+        ) == 0.0 else False
         """ Step 1: Network forward, get detections & embeddings"""
         if len(pred_dets) > 0 and not empty_pred:
-            pred_dets = pred_dets.numpy()
-            pred_embs = pred_embs.numpy()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
                 for (tlbrs, f) in zip(pred_dets, pred_embs)
@@ -125,7 +136,8 @@ class JDETracker(object):
         # Predict the current location with KF
         STrack.multi_predict(strack_pool, self.motion)
 
-        dists = matching.embedding_distance(strack_pool, detections)
+        dists = matching.embedding_distance(
+            strack_pool, detections, metric=self.metric_type)
         dists = matching.fuse_motion(self.motion, dists, strack_pool,
                                      detections)
         # The dists is the list of distances of the detection with the tracks in strack_pool
