@@ -27,7 +27,7 @@ parent_path = osp.abspath(osp.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-from ppdet.modeling.bbox_utils import poly_to_rbox
+from ppdet.modeling.bbox_utils import poly2rbox
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
@@ -118,7 +118,7 @@ def dota_2_coco(image_dir,
             # rbox or bbox
             if is_obb:
                 polys = [single_obj_poly]
-                rboxs = poly_to_rbox(polys)
+                rboxs = poly2rbox(polys)
                 rbox = rboxs[0].tolist()
                 single_obj['bbox'] = rbox
                 single_obj['area'] = rbox[2] * rbox[3]

@@ -37,6 +37,7 @@ SUPPORT_MODELS = {
     'FCOS',
     'SOLOv2',
     'TTFNet',
+    'S2ANet',
 }
 
 

@@ -16,7 +16,6 @@ import paddle
 from ppdet.core.workspace import register, serializable
 
 from .target import rpn_anchor_target, generate_proposal_target, generate_mask_target, libra_generate_proposal_target
-from ppdet.modeling import bbox_utils
 import numpy as np
 
 
@@ -283,12 +282,57 @@ class RBoxAssigner(object):
 
         """
         if anchors.ndim == 3:
-            anchors = anchors.reshape(-1, anchor.shape[-1])
+            anchors = anchors.reshape(-1, anchors.shape[-1])
         assert anchors.ndim == 2
         anchor_num = anchors.shape[0]
         anchor_valid = np.ones((anchor_num), np.uint8)
         anchor_inds = np.arange(anchor_num)
         return anchor_inds
+
+    def rbox2delta(self,
+                   proposals,
+                   gt,
+                   means=[0, 0, 0, 0, 0],
+                   stds=[1, 1, 1, 1, 1]):
+        """
+        Args:
+            proposals: tensor [N, 5]
+            gt: gt [N, 5]
+            means: means [5]
+            stds: stds [5]
+        Returns:
+
+        """
+        proposals = proposals.astype(np.float64)
+
+        PI = np.pi
+
+        gt_widths = gt[..., 2]
+        gt_heights = gt[..., 3]
+        gt_angle = gt[..., 4]
+
+        proposals_widths = proposals[..., 2]
+        proposals_heights = proposals[..., 3]
+        proposals_angle = proposals[..., 4]
+
+        coord = gt[..., 0:2] - proposals[..., 0:2]
+        dx = (np.cos(proposals[..., 4]) * coord[..., 0] +
+              np.sin(proposals[..., 4]) * coord[..., 1]) / proposals_widths
+        dy = (-np.sin(proposals[..., 4]) * coord[..., 0] +
+              np.cos(proposals[..., 4]) * coord[..., 1]) / proposals_heights
+        dw = np.log(gt_widths / proposals_widths)
+        dh = np.log(gt_heights / proposals_heights)
+        da = (gt_angle - proposals_angle)
+
+        da = (da + PI / 4) % PI - PI / 4
+        da /= PI
+
+        deltas = np.stack([dx, dy, dw, dh, da], axis=-1)
+        means = np.array(means, dtype=deltas.dtype)
+        stds = np.array(stds, dtype=deltas.dtype)
+        deltas = (deltas - means) / stds
+        deltas = deltas.astype(np.float32)
+        return deltas
 
     def assign_anchor(self,
                       anchors,
@@ -405,8 +449,8 @@ class RBoxAssigner(object):
         #print('ancho target pos_inds', pos_inds, len(pos_inds))
         pos_sampled_gt_boxes = gt_bboxes[anchor_gt_bbox_inds[pos_inds]]
         if len(pos_inds) > 0:
-            pos_bbox_targets = bbox_utils.rbox2delta(pos_sampled_anchors,
-                                                     pos_sampled_gt_boxes)
+            pos_bbox_targets = self.rbox2delta(pos_sampled_anchors,
+                                               pos_sampled_gt_boxes)
             bbox_targets[pos_inds, :] = pos_bbox_targets
             bbox_weights[pos_inds, :] = 1.0
 
