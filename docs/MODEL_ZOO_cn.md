@@ -63,3 +63,23 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 ### TTFNet
 
 请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/)
+
+### Group Normalization
+
+请参考[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gn/)
+
+### Deformable ConvNets v2
+
+请参考[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dcn/)
+
+### HRNets
+
+请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/hrnet/)
+
+### S2ANet
+
+请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+
+### Res2Net
+
+请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
