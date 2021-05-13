@@ -26,6 +26,7 @@ __all__ = ['JDE']
 
 @register
 class JDE(BaseArch):
+    __category__ = 'architecture'
     __shared__ = ['metric']
     """
     JDE network, see https://arxiv.org/abs/1909.12605v1
@@ -38,13 +39,12 @@ class JDE(BaseArch):
             for ReID embedding evaluation, or 'MOT' for multi object tracking
             evaluation。
     """
-    __category__ = 'architecture'
 
     def __init__(self,
                  detector='YOLOv3',
                  reid='JDEEmbeddingHead',
                  tracker='JDETracker',
-                 metric='MOTDet'):
+                 metric='MOT'):
         super(JDE, self).__init__()
         self.detector = detector
         self.reid = reid
