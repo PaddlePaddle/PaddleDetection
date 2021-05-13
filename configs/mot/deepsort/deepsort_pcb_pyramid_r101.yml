@@ -1,0 +1,23 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml',
+  '_base_/deepsort_reader_1088x608.yml',
+]
+
+metric: MOT
+
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT16_train
+    dataset_dir: dataset/mot
+    data_root: MOT16/images/train
+    keep_ori_im: True # set True if used in DeepSORT
+
+det_weights: None
+reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
+
+DeepSORT:
+  detector: None
+  reid: PCBPyramid
+  tracker: DeepSORTTracker
