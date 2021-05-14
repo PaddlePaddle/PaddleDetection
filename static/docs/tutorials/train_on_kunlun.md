@@ -8,8 +8,8 @@
 ### Prepare data
 Prepare data roadsign:
 ```shell
-cd PaddleDetection/dataset/roadsign_voc/
-python download_roadsign_voc.py
+cd PaddleDetection/static/dataset/roadsign_voc/
+python3.7 download_roadsign_voc.py
 ```
 
 ### Train
@@ -25,13 +25,15 @@ python3.7 -u tools/eval.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o weight
 
 ### Train on Darknet
 ```shell
-python3.7 -u tools/train.py -c configs/yolov3_datknet_roadsign.yml -o use_gpu=False use_xpu=True
+cd static/
+python3.7 -u tools/train.py -c configs/yolov3_datknet_roadsign_kunlun.yml -o use_gpu=False use_xpu=True
 ```
 
 
 ### Eval on Darknet
 ```shell
-python3.7 -u tools/eval.py -c configs/yolov3_darknet_roadsign.yml -o weights=output/yolov3_darknet_roadsign/model_final.pdparams use_gpu=False use_xpu=True
+cd static/
+python3.7 -u tools/eval.py -c configs/yolov3_darknet_roadsign_kunlun.yml -o weights=output/yolov3_darknet_roadsign_kunlun/model_final.pdparams use_gpu=False use_xpu=True
 ```
 
 
