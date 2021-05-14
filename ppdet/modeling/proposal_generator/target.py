@@ -70,16 +70,16 @@ def rpn_anchor_target(anchors,
 def label_box(anchors, gt_boxes, is_crowd, positive_overlap, negative_overlap,
               allow_low_quality, ignore_thresh):
     iou = bbox_overlaps(gt_boxes, anchors)
-    N_gt = gt_boxes.shape[0]
-    N_gt_crowd = paddle.nonzero(is_crowd).shape[0]
-    if iou.numel() == 0 or N_gt_crowd == N_gt:
+    n_gt = gt_boxes.shape[0]
+    n_gt_crowd = paddle.nonzero(is_crowd).shape[0]
+    if iou.numel() == 0 or n_gt_crowd == n_gt:
         # No truth, assign everything to background
         default_matches = paddle.full((iou.shape[1], ), 0, dtype='int64')
         default_match_labels = paddle.full((iou.shape[1], ), 0, dtype='int32')
         return default_matches, default_match_labels
     # if ignore_thresh > 0, remove anchor if it is closed to 
     # one of the crowded ground-truth
-    if N_gt_crowd > 0:
+    if n_gt_crowd > 0:
         N_a = anchors.shape[0]
         ones = paddle.ones([N_a])
         mask = is_crowd * ones
@@ -233,8 +233,8 @@ def sample_bbox(matches,
                 use_random=True,
                 is_cascade=False):
 
-    N_gt = gt_classes.shape[0]
-    if N_gt == 0:
+    n_gt = gt_classes.shape[0]
+    if n_gt == 0:
         # No truth, assign everything to background
         gt_classes = paddle.ones(matches.shape, dtype='int32') * num_classes
         #return matches, match_labels + num_classes

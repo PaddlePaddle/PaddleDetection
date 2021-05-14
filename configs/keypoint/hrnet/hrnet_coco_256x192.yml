@@ -128,7 +128,6 @@ EvalReader:
         is_scale: true
     - Permute: {}
   batch_size: 16
-  drop_empty: false
 
 TestReader:
   sample_transforms:
