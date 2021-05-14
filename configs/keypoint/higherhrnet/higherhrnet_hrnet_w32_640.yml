@@ -2,13 +2,13 @@ use_gpu: true
 log_iter: 10
 save_dir: output
 snapshot_epoch: 10
-weights: output/higherhrnet_hrnet_w32_512_swahr/model_final
+weights: output/higherhrnet_hrnet_w32_640/model_final
 epoch: 300
 num_joints: &num_joints 17
 flip_perm: &flip_perm [0, 2, 1, 4, 3, 6, 5, 8, 7, 10, 9, 12, 11, 14, 13, 16, 15]
-input_size: &input_size 512
-hm_size: &hm_size 128
-hm_size_2x: &hm_size_2x 256
+input_size: &input_size 640
+hm_size: &hm_size 160
+hm_size_2x: &hm_size_2x 320
 max_people: &max_people 30
 metric: COCO
 IouType: keypoints
@@ -36,11 +36,11 @@ HrHRNetHead:
   num_joints: *num_joints
   width: *width
   loss: HrHRNetLoss
-  swahr: true
+  swahr: false
 
 HrHRNetLoss:
   num_joints: *num_joints
-  swahr: true
+  swahr: false
 
 
 #####optimizer
@@ -58,7 +58,6 @@ OptimizerBuilder:
   optimizer:
     type: Adam
   regularizer: None
-
 
 #####data
 TrainDataset:
@@ -80,7 +79,7 @@ TestDataset:
   !ImageFolder
     anno_path: dataset/coco/keypoint_imagelist.txt
 
-worker_num: 8
+worker_num: 0
 global_mean: &global_mean [0.485, 0.456, 0.406]
 global_std: &global_std [0.229, 0.224, 0.225]
 TrainReader:
@@ -105,7 +104,7 @@ TrainReader:
     - NormalizePermute:
         mean: *global_mean
         std: *global_std
-  batch_size: 16
+  batch_size: 20
   shuffle: true
   drop_last: true
   use_shared_memory: true

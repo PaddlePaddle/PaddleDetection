@@ -22,26 +22,23 @@ from PIL import Image
 import cv2
 import numpy as np
 import paddle
+from preprocess import preprocess, NormalizeImage, Permute
+from keypoint_preprocess import EvalAffine, TopDownEvalAffine
+from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
+from keypoint_visualize import draw_pose
 from paddle.inference import Config
 from paddle.inference import create_predictor
-
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
-from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
+from infer import get_test_images, print_arguments
 
 # Global dictionary
-SUPPORT_MODELS = {
-    'YOLO',
-    'RCNN',
-    'SSD',
-    'FCOS',
-    'SOLOv2',
-    'TTFNet',
-    'S2ANet',
+KEYPOINT_SUPPORT_MODELS = {
+    'HigherHRNet': 'keypoint_bottomup',
+    'HRNet': 'keypoint_topdown'
 }
 
 
-class Detector(object):
+class KeyPoint_Detector(object):
     """
     Args:
         config (object): config of model, defined by `Config(model_dir)`
@@ -97,19 +94,29 @@ class Detector(object):
 
     def postprocess(self, np_boxes, np_masks, inputs, threshold=0.5):
         # postprocess output of predictor
-        results = {}
-        if self.pred_config.arch in ['Face']:
-            h, w = inputs['im_shape']
-            scale_y, scale_x = inputs['scale_factor']
-            w, h = float(h) / scale_y, float(w) / scale_x
-            np_boxes[:, 2] *= h
-            np_boxes[:, 3] *= w
-            np_boxes[:, 4] *= h
-            np_boxes[:, 5] *= w
-        results['boxes'] = np_boxes
-        if np_masks is not None:
-            results['masks'] = np_masks
-        return results
+        if KEYPOINT_SUPPORT_MODELS[
+                self.pred_config.arch] == 'keypoint_bottomup':
+            results = {}
+            h, w = inputs['im_shape'][0]
+            preds = [np_boxes]
+            if np_masks is not None:
+                preds += np_masks
+            preds += [h, w]
+            keypoint_postprocess = HrHRNetPostProcess()
+            results['keypoint'] = keypoint_postprocess(*preds)
+            return results
+        elif KEYPOINT_SUPPORT_MODELS[
+                self.pred_config.arch] == 'keypoint_topdown':
+            results = {}
+            imshape = inputs['im_shape'][:, ::-1]
+            center = np.round(imshape / 2.)
+            scale = imshape / 200.
+            keypoint_postprocess = HRNetPostProcess()
+            results['keypoint'] = keypoint_postprocess(np_boxes, center, scale)
+            return results
+        else:
+            raise ValueError("Unsupported arch: {}, expect {}".format(
+                self.pred_config.arch, KEYPOINT_SUPPORT_MODELS))
 
     def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
@@ -126,6 +133,7 @@ class Detector(object):
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
+
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
@@ -135,9 +143,14 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
-            if self.pred_config.mask:
-                masks_tensor = self.predictor.get_output_handle(output_names[2])
-                np_masks = masks_tensor.copy_to_cpu()
+            if self.pred_config.tagmap:
+                masks_tensor = self.predictor.get_output_handle(output_names[1])
+                heat_k = self.predictor.get_output_handle(output_names[2])
+                inds_k = self.predictor.get_output_handle(output_names[3])
+                np_masks = [
+                    masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
+                    inds_k.copy_to_cpu()
+                ]
 
         self.det_times.inference_time.start()
         for i in range(repeats):
@@ -145,107 +158,22 @@ class Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
-            if self.pred_config.mask:
-                masks_tensor = self.predictor.get_output_handle(output_names[2])
-                np_masks = masks_tensor.copy_to_cpu()
+            if self.pred_config.tagmap:
+                masks_tensor = self.predictor.get_output_handle(output_names[1])
+                heat_k = self.predictor.get_output_handle(output_names[2])
+                inds_k = self.predictor.get_output_handle(output_names[3])
+                np_masks = [
+                    masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
+                    inds_k.copy_to_cpu()
+                ]
         self.det_times.inference_time.end(repeats=repeats)
 
         self.det_times.postprocess_time.start()
-        results = []
-        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
-            print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([])}
-        else:
-            results = self.postprocess(
-                np_boxes, np_masks, inputs, threshold=threshold)
+        results = self.postprocess(
+            np_boxes, np_masks, inputs, threshold=threshold)
         self.det_times.postprocess_time.end()
         self.det_times.img_num += 1
         return results
-
-
-class DetectorSOLOv2(Detector):
-    """
-    Args:
-        config (object): config of model, defined by `Config(model_dir)`
-        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        use_gpu (bool): whether use gpu
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        use_dynamic_shape (bool): use dynamic shape or not
-        trt_min_shape (int): min shape for dynamic shape in trt
-        trt_max_shape (int): max shape for dynamic shape in trt
-        trt_opt_shape (int): opt shape for dynamic shape in trt
-        threshold (float): threshold to reserve the result for output.
-    """
-
-    def __init__(self,
-                 pred_config,
-                 model_dir,
-                 use_gpu=False,
-                 run_mode='fluid',
-                 use_dynamic_shape=False,
-                 trt_min_shape=1,
-                 trt_max_shape=1280,
-                 trt_opt_shape=640,
-                 trt_calib_mode=False,
-                 cpu_threads=1,
-                 enable_mkldnn=False):
-        self.pred_config = pred_config
-        self.predictor = load_predictor(
-            model_dir,
-            run_mode=run_mode,
-            min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu,
-            use_dynamic_shape=use_dynamic_shape,
-            trt_min_shape=trt_min_shape,
-            trt_max_shape=trt_max_shape,
-            trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode,
-            cpu_threads=cpu_threads,
-            enable_mkldnn=enable_mkldnn)
-        self.det_times = Timer()
-
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
-        '''
-        Args:
-            image (str/np.ndarray): path of image/ np.ndarray read by cv2
-            threshold (float): threshold of predicted box' score
-        Returns:
-            results (dict): 'segm': np.ndarray,shape:[N, im_h, im_w]
-                            'cate_label': label of segm, shape:[N]
-                            'cate_score': confidence score of segm, shape:[N]
-        '''
-        self.det_times.preprocess_time.start()
-        inputs = self.preprocess(image)
-        np_label, np_score, np_segms = None, None, None
-        input_names = self.predictor.get_input_names()
-        for i in range(len(input_names)):
-            input_tensor = self.predictor.get_input_handle(input_names[i])
-            input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
-        for i in range(warmup):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            np_label = self.predictor.get_output_handle(output_names[
-                1]).copy_to_cpu()
-            np_score = self.predictor.get_output_handle(output_names[
-                2]).copy_to_cpu()
-            np_segms = self.predictor.get_output_handle(output_names[
-                3]).copy_to_cpu()
-
-        self.det_times.inference_time.start()
-        for i in range(repeats):
-            self.predictor.run()
-            output_names = self.predictor.get_output_names()
-            np_label = self.predictor.get_output_handle(output_names[
-                1]).copy_to_cpu()
-            np_score = self.predictor.get_output_handle(output_names[
-                2]).copy_to_cpu()
-            np_segms = self.predictor.get_output_handle(output_names[
-                3]).copy_to_cpu()
-        self.det_times.inference_time.end(repeats=repeats)
-        self.det_times.img_num += 1
-
-        return dict(segm=np_segms, label=np_label, score=np_score)
 
 
 def create_inputs(im, im_info):
@@ -260,13 +188,11 @@ def create_inputs(im, im_info):
     inputs = {}
     inputs['image'] = np.array((im, )).astype('float32')
     inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-    inputs['scale_factor'] = np.array(
-        (im_info['scale_factor'], )).astype('float32')
 
     return inputs
 
 
-class PredictConfig():
+class PredictConfig_KeyPoint():
     """set config of preprocess, postprocess and visualize
     Args:
         model_dir (str): root path of model.yml
@@ -279,12 +205,13 @@ class PredictConfig():
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
         self.arch = yml_conf['arch']
+        self.archcls = KEYPOINT_SUPPORT_MODELS[yml_conf['arch']]
         self.preprocess_infos = yml_conf['Preprocess']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        self.mask = False
-        if 'mask' in yml_conf:
-            self.mask = yml_conf['mask']
+        self.tagmap = False
+        if 'keypoint_bottomup' == self.archcls:
+            self.tagmap = True
         self.input_shape = yml_conf['image_shape']
         self.print_config()
 
@@ -293,11 +220,11 @@ class PredictConfig():
         Raises:
             ValueError: loaded model not in supported model type 
         """
-        for support_model in SUPPORT_MODELS:
+        for support_model in KEYPOINT_SUPPORT_MODELS:
             if support_model in yml_conf['arch']:
                 return True
         raise ValueError("Unsupported arch: {}, expect {}".format(yml_conf[
-            'arch'], SUPPORT_MODELS))
+            'arch'], KEYPOINT_SUPPORT_MODELS))
 
     def print_config(self):
         print('-----------  Model Configuration -----------')
@@ -394,55 +321,6 @@ def load_predictor(model_dir,
     return predictor
 
 
-def get_test_images(infer_dir, infer_img):
-    """
-    Get image path list in TEST mode
-    """
-    assert infer_img is not None or infer_dir is not None, \
-        "--infer_img or --infer_dir should be set"
-    assert infer_img is None or os.path.isfile(infer_img), \
-            "{} is not a file".format(infer_img)
-    assert infer_dir is None or os.path.isdir(infer_dir), \
-            "{} is not a directory".format(infer_dir)
-
-    # infer_img has a higher priority
-    if infer_img and os.path.isfile(infer_img):
-        return [infer_img]
-
-    images = set()
-    infer_dir = os.path.abspath(infer_dir)
-    assert os.path.isdir(infer_dir), \
-        "infer_dir {} is not a directory".format(infer_dir)
-    exts = ['jpg', 'jpeg', 'png', 'bmp']
-    exts += [ext.upper() for ext in exts]
-    for ext in exts:
-        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
-    images = list(images)
-
-    assert len(images) > 0, "no image found in {}".format(infer_dir)
-    print("Found {} inference images in total.".format(len(images)))
-
-    return images
-
-
-def visualize(image_file, results, labels, output_dir='output/', threshold=0.5):
-    # visualize the predict result
-    im = visualize_box_mask(image_file, results, labels, threshold=threshold)
-    img_name = os.path.split(image_file)[-1]
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    out_path = os.path.join(output_dir, img_name)
-    im.save(out_path, quality=95)
-    print("save result to: " + out_path)
-
-
-def print_arguments(args):
-    print('-----------  Running Arguments -----------')
-    for arg, value in sorted(vars(args).items()):
-        print('%s: %s' % (arg, value))
-    print('------------------------------------------')
-
-
 def predict_image(detector, image_list):
     for i, img_file in enumerate(image_list):
         if FLAGS.run_benchmark:
@@ -454,12 +332,7 @@ def predict_image(detector, image_list):
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
             results = detector.predict(img_file, FLAGS.threshold)
-            visualize(
-                img_file,
-                results,
-                detector.pred_config.labels,
-                output_dir=FLAGS.output_dir,
-                threshold=FLAGS.threshold)
+            draw_pose(img_file, results, visual_thread=FLAGS.threshold)
 
 
 def predict_video(detector, camera_id):
@@ -468,7 +341,7 @@ def predict_video(detector, camera_id):
         video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.split(FLAGS.video_file)[-1]
+        video_name = os.path.basename(os.path.split(FLAGS.video_file)[-1])
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -477,22 +350,19 @@ def predict_video(detector, camera_id):
     # yapf: enable
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
-    out_path = os.path.join(FLAGS.output_dir, video_name)
+    out_path = os.path.join(FLAGS.output_dir, video_name + '.mp4')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     index = 1
     while (1):
         ret, frame = capture.read()
         if not ret:
             break
+
         print('detect frame:%d' % (index))
         index += 1
         results = detector.predict(frame, FLAGS.threshold)
-        im = visualize_box_mask(
-            frame,
-            results,
-            detector.pred_config.labels,
-            threshold=FLAGS.threshold)
-        im = np.array(im)
+        im = draw_pose(
+            frame, results, visual_thread=FLAGS.threshold, returnimg=True)
         writer.write(im)
         if camera_id != -1:
             cv2.imshow('Mask Detection', im)
@@ -502,8 +372,8 @@ def predict_video(detector, camera_id):
 
 
 def main():
-    pred_config = PredictConfig(FLAGS.model_dir)
-    detector = Detector(
+    pred_config = PredictConfig_KeyPoint(FLAGS.model_dir)
+    detector = KeyPoint_Detector(
         pred_config,
         FLAGS.model_dir,
         use_gpu=FLAGS.use_gpu,
@@ -515,19 +385,6 @@ def main():
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
         enable_mkldnn=FLAGS.enable_mkldnn)
-    if pred_config.arch == 'SOLOv2':
-        detector = DetectorSOLOv2(
-            pred_config,
-            FLAGS.model_dir,
-            use_gpu=FLAGS.use_gpu,
-            run_mode=FLAGS.run_mode,
-            use_dynamic_shape=FLAGS.use_dynamic_shape,
-            trt_min_shape=FLAGS.trt_min_shape,
-            trt_max_shape=FLAGS.trt_max_shape,
-            trt_opt_shape=FLAGS.trt_opt_shape,
-            trt_calib_mode=FLAGS.trt_calib_mode,
-            cpu_threads=FLAGS.cpu_threads,
-            enable_mkldnn=FLAGS.enable_mkldnn)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
