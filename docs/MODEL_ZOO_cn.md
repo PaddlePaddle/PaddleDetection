@@ -4,15 +4,14 @@
 
 - Python 3.7
 - PaddlePaddle 每日版本
-- CUDA 9.0
-- cuDNN >=7.4
-- NCCL 2.1.2
+- CUDA 10.1
+- cuDNN 7.5
+- NCCL 2.4.8
 
 ## 通用设置
 
 - 所有模型均在COCO17数据集中训练和测试。
 - 除非特殊说明，所有ResNet骨干网络采用[ResNet-B](https://arxiv.org/pdf/1812.01187)结构。
-- 对于RCNN和RetinaNet系列模型，训练阶段仅使用水平翻转作为数据增强，测试阶段不使用数据增强。
 - **推理时间(fps)**: 推理时间是在一张Tesla V100的GPU上通过'tools/eval.py'测试所有验证集得到，单位是fps(图片数/秒), cuDNN版本是7.5，包括数据加载、网络前向执行和后处理, batch size是1。
 
 ## 训练策略
@@ -38,7 +37,7 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### Cascade R-CNN
 
-请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/developh/configs/cascade_rcnn/)
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/cascade_rcnn)
 
 ### YOLOv3
 
@@ -76,10 +75,13 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/hrnet/)
 
-### S2ANet
-
-请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
-
 ### Res2Net
 
 请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
+
+
+## 旋转框检测
+
+### S2ANet
+
+请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
