@@ -33,3 +33,4 @@ from .blazenet import *
 from .ghostnet import *
 from .senet import *
 from .res2net import *
+from .swin_transformer import *
