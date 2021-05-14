@@ -1,4 +1,4 @@
-metric: MOTDet
+metric: MOT
 num_classes: 1
 
 MOTDataZoo: {

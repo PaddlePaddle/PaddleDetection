@@ -24,21 +24,34 @@ from paddle import ParamAttr
 from .resnet import *
 from ppdet.core.workspace import register
 
-__all__ = ['PCBPlusDropoutPyramid']
+__all__ = ['PCBPyramid']
 
 
 @register
-class PCBPlusDropoutPyramid(nn.Layer):
-    def __init__(
-            self,
-            input_ch=2048,
-            num_stripes=6,  # number of sub-parts
-            used_levels=(1, 1, 1, 1, 1, 1),
-            num_classes=751,
-            last_conv_stride=1,
-            last_conv_dilation=1,
-            num_conv_out_channels=128):
-        super(PCBPlusDropoutPyramid, self).__init__()
+class PCBPyramid(nn.Layer):
+    """
+    PCB (Part-based Convolutional Baseline), see https://arxiv.org/abs/1711.09349,
+    Pyramidal Person Re-IDentification, see https://arxiv.org/abs/1810.12193
+
+    Args:
+        input_ch (int): Number of channels of the input feature.
+        num_stripes (int): Number of sub-parts.
+        used_levels (tuple): Whether the level is used, 1 means used.
+        num_classes (int): Number of classes for identities.
+        last_conv_stride (int): Stride of the last conv.
+        last_conv_dilation (int): Dilation of the last conv.
+        num_conv_out_channels (int): Number of channels of conv feature.
+    """
+
+    def __init__(self,
+                 input_ch=2048,
+                 num_stripes=6,
+                 used_levels=(1, 1, 1, 1, 1, 1),
+                 num_classes=751,
+                 last_conv_stride=1,
+                 last_conv_dilation=1,
+                 num_conv_out_channels=128):
+        super(PCBPyramid, self).__init__()
         self.num_stripes = num_stripes
         self.used_levels = used_levels
         self.num_classes = num_classes

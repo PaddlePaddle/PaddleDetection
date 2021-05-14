@@ -194,7 +194,10 @@ class AELoss(object):
 
     def __call__(self, preds, tagmaps):
         bs = preds.shape[0]
-        losses = [self.apply_single(preds[i], tagmaps[i]) for i in range(bs)]
+        losses = [
+            self.apply_single(preds[i:i + 1].squeeze(),
+                              tagmaps[i:i + 1].squeeze()) for i in range(bs)
+        ]
         pull = self.pull_factor * sum(loss[0] for loss in losses) / len(losses)
         push = self.push_factor * sum(loss[1] for loss in losses) / len(losses)
         return pull, push

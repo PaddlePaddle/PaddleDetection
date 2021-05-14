@@ -410,6 +410,7 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=True,
                  nms_eta=1.0,
+                 return_index=False,
                  return_rois_num=True):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
@@ -418,6 +419,7 @@ class MultiClassNMS(object):
         self.nms_threshold = nms_threshold
         self.normalized = normalized
         self.nms_eta = nms_eta
+        self.return_index = return_index
         self.return_rois_num = return_rois_num
 
     def __call__(self, bboxes, score, background_label=-1):
