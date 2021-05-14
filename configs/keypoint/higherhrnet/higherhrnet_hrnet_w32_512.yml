@@ -57,8 +57,7 @@ LearningRate:
 OptimizerBuilder:
   optimizer:
     type: Adam
-  regularizer:
-
+  regularizer: None
 
 #####data
 TrainDataset:
