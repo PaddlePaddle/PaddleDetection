@@ -170,7 +170,7 @@ class Detector(object):
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
         self.det_times.postprocess_time.end()
-        self.det_times.img_num += 1
+        self.det_times.img_num += len(image_list)
         return results
 
 
@@ -478,7 +478,7 @@ def predict_image(detector, image_list, batch_size=1):
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
-            print('Test iter {}, file name:{}'.format(i, img_file))
+            print('Test iter {}'.format(i))
         else:
             results = detector.predict(batch_image_list, FLAGS.threshold)
             visualize(

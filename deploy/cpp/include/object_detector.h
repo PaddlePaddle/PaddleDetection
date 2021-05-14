@@ -93,11 +93,12 @@ class ObjectDetector {
     const std::string& run_mode = "fluid");
 
   // Run predictor
-  void Predict(const cv::Mat& im,
+  void Predict(const std::vector<cv::Mat> img_lst,
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
       std::vector<ObjectResult>* result = nullptr,
+      std::vector<int>* bbox_num = nullptr,
       std::vector<double>* times = nullptr);
 
   // Get Model Label list
@@ -120,14 +121,16 @@ class ObjectDetector {
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(
-      const cv::Mat& raw_mat,
+      const std::vector<cv::Mat> mat_lst,
       std::vector<ObjectResult>* result,
+      std::vector<int> bbox_num,
       bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
+  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
   std::vector<int> image_shape_;
