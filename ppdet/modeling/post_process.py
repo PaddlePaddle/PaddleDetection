@@ -86,6 +86,13 @@ class BBoxPostProcess(object):
             pred_result (Tensor): The final prediction results with shape [N, 6]
                 including labels, scores and bboxes.
         """
+
+        if bboxes.shape[0] == 0:
+            bbox_pred = paddle.to_tensor(
+                np.array(
+                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
