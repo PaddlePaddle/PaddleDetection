@@ -58,3 +58,13 @@
 | SSD              | Mobilenet\_v1 | 是      | 300x300  | 16.47            | 13.87    | 13.76    |
 | TTFNet              | Darknet53    | 是      | 512x512  | 21.83            | 17.14    | 17.09    |
 | FCOS              | ResNet50     | 是      | 640x640  | 71.88            | 69.93    | 69.52    |
+
+### 3、PaddleServing
+#### （1）PaddleServing On P4 GPU
+**在P4机器上测试，具体测试流程请参考[PaddleServing](https://github.com/PaddlePaddle/Serving)**
+
+| 模型                            | backbone     | 是否固定尺寸 | 入网尺寸     | QPS |
+|-------------------------------|--------------|--------|----------|------------------|
+| Faster RCNN FPN           | ResNet50     | 是      | 640x640  | 6.83            |
+| YOLOv3             | Darknet53    | 是      | 640x640  | 8.46            |
+| PPYOLO              | Mobilenet\_v3     | 是      | 320x320  | 15.23            |
