@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved. 
 #   
 # Licensed under the Apache License, Version 2.0 (the "License");   
 # you may not use this file except in compliance with the License.  
@@ -20,13 +20,22 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import KaimingUniform, Uniform
 from ppdet.core.workspace import register
-from ppdet.modeling.backbones.dla import ConvLayer
+from ppdet.modeling.heads.centernet_head import ConvLayer
 
 __all__ = ['FairMOTEmbeddingHead']
 
 
 @register
 class FairMOTEmbeddingHead(nn.Layer):
+    """
+    Args:
+        in_channels (int): the channel number of input to FairMOTEmbeddingHead.
+        ch_head (int): the channel of features before fed into embedding, 256 by default.
+        ch_emb (int): the channel of the embedding feature, 128 by default.
+        num_identifiers (int): the number of identifiers, 14455 by default.
+
+    """
+
     def __init__(self,
                  in_channels,
                  ch_head=256,
@@ -35,26 +44,13 @@ class FairMOTEmbeddingHead(nn.Layer):
         super(FairMOTEmbeddingHead, self).__init__()
         self.reid = nn.Sequential(
             ConvLayer(
-                in_channels,
-                ch_head,
-                kernel_size=3,
-                padding=1,
-                bias=True,
-                name="id.0"),
+                in_channels, ch_head, kernel_size=3, padding=1, bias=True),
             nn.ReLU(),
             ConvLayer(
-                ch_head,
-                ch_emb,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True,
-                name="id.2"))
-        param_attr = paddle.ParamAttr(
-            initializer=KaimingUniform(), name="classifier.weight")
+                ch_head, ch_emb, kernel_size=1, stride=1, padding=0, bias=True))
+        param_attr = paddle.ParamAttr(initializer=KaimingUniform())
         bound = 1 / math.sqrt(ch_emb)
-        bias_attr = paddle.ParamAttr(
-            initializer=Uniform(-bound, bound), name="classifier.bias")
+        bias_attr = paddle.ParamAttr(initializer=Uniform(-bound, bound))
         self.classifier = nn.Linear(
             ch_emb,
             num_identifiers,

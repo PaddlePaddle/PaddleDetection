@@ -111,6 +111,7 @@ class Decode(BaseOperator):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        # TODO: remove this parameter
         self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
@@ -158,6 +159,7 @@ class Permute(BaseOperator):
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
+        # TODO: remove this parameter
         self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
@@ -2081,6 +2083,24 @@ class Norm2PixelBbox(BaseOperator):
 
 @register_op
 class MOTRandomAffine(BaseOperator):
+    """ 
+    Affine transform to image and coords to achieve the rotate, scale and
+    shift effect for training image.
+
+    Args:
+        degrees (list[2]): the rotate range to apply, transform range is [min, max]
+        translate (list[2]): the translate range to apply, ransform range is [min, max]
+        scale (list[2]): the scale range to apply, transform range is [min, max]
+        shear (list[2]): the shear range to apply, transform range is [min, max]
+        borderValue (list[3]): value used in case of a constant border when appling
+            the perspective transformation
+        reject_outside (bool): reject warped bounding bboxes outside of image
+
+    Returns:
+        records(dict): contain the image and coords after tranformed
+
+    """
+
     def __init__(self,
                  degrees=(-5, 5),
                  translate=(0.10, 0.10),
@@ -2088,17 +2108,7 @@ class MOTRandomAffine(BaseOperator):
                  shear=(-2, 2),
                  borderValue=(127.5, 127.5, 127.5),
                  reject_outside=True):
-        """ 
-        Affine transform to image and coords to achieve the rotate, scale and
-        shift effect for training image.
 
-        Args:
-            degrees (tuple): rotation value
-            translate (tuple): xy coords translation value
-            scale (tuple): scale value
-            shear (tuple): shear value
-            borderValue (tuple): border color value
-        """
         super(MOTRandomAffine, self).__init__()
         self.degrees = degrees
         self.translate = translate

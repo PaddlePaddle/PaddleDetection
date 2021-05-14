@@ -26,20 +26,24 @@ __all__ = ['FairMOT']
 @register
 class FairMOT(BaseArch):
     """
-    CenterNet network, see http://arxiv.org/abs/1904.07850
+    FairMOT network, see http://arxiv.org/abs/2004.01888
 
     Args:
-        backbone (object): backbone instance
-        neck (object): 'CenterDLAFPN' instance
-        head (object): 'CenterHead' instance
-        post_process (object): 'BBoxPostProcess' instance
+        detector (object): 'CenterNet' instance
+        reid (object): 'FairMOTEmbeddingHead' instance
+        tracker (object): 'JDETracker' instance
+        loss (object): 'FairMOTLoss' instance
 
     """
 
     __category__ = 'architecture'
     __inject__ = ['loss']
 
-    def __init__(self, detector, reid, tracker, loss):
+    def __init__(self,
+                 detector='CenterNet',
+                 reid='FairMOTEmbeddingHead',
+                 tracker='JDETracker',
+                 loss='FairMOTLoss'):
         super(FairMOT, self).__init__()
         self.detector = detector
         self.reid = reid

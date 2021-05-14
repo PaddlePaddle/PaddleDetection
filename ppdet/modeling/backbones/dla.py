@@ -12,191 +12,42 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-import math
-
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
-from paddle.nn.initializer import Constant, KaimingUniform
-from paddle.vision.ops import DeformConv2D
+from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 DLA_cfg = {34: ([1, 1, 1, 2, 2, 1], [16, 32, 64, 128, 256, 512])}
 
 
-class DeformableConvV2(nn.Layer):
-    def __init__(self,
-                 in_channels,
-                 out_channels,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 weight_attr=None,
-                 bias_attr=None,
-                 lr_scale=1,
-                 regularizer=None,
-                 name=None):
-        super(DeformableConvV2, self).__init__()
-        self.offset_channel = 2 * kernel_size**2
-        self.mask_channel = kernel_size**2
-
-        if lr_scale == 1 and regularizer is None:
-            offset_bias_attr = paddle.ParamAttr(
-                initializer=Constant(0.),
-                name='{}.conv_offset_mask.bias'.format(name))
-        else:
-            offset_bias_attr = paddle.ParamAttr(
-                initializer=Constant(0.),
-                learning_rate=lr_scale,
-                regularizer=regularizer,
-                name='{}.conv_offset_mask.bias'.format(name))
-        self.conv_offset = nn.Conv2D(
-            in_channels,
-            3 * kernel_size**2,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2,
-            weight_attr=paddle.ParamAttr(
-                initializer=Constant(0.0),
-                name='{}.conv_offset_mask.weight'.format(name)),
-            bias_attr=offset_bias_attr)
-
-        self.conv_dcn = DeformConv2D(
-            in_channels,
-            out_channels,
-            kernel_size,
-            stride=stride,
-            padding=(kernel_size - 1) // 2 * dilation,
-            dilation=dilation,
-            groups=groups,
-            weight_attr=weight_attr,
-            bias_attr=bias_attr)
-
-    def forward(self, x):
-        offset_mask = self.conv_offset(x)
-        offset, mask = paddle.split(
-            offset_mask,
-            num_or_sections=[self.offset_channel, self.mask_channel],
-            axis=1)
-        mask = F.sigmoid(mask)
-        y = self.conv_dcn(x, offset, mask=mask)
-        return y
-
-
-class ConvLayer(nn.Layer):
-    def __init__(self,
-                 ch_in,
-                 ch_out,
-                 kernel_size,
-                 stride=1,
-                 padding=0,
-                 dilation=1,
-                 groups=1,
-                 dcn_v2=False,
-                 bias=False,
-                 name=None):
-        super(ConvLayer, self).__init__()
-        bias_attr = False
-        fan_in = ch_in * kernel_size**2
-        bound = 1 / math.sqrt(fan_in)
-        if not dcn_v2:
-            param_attr = paddle.ParamAttr(
-                initializer=KaimingUniform(), name=name + ".weight")
-            if bias:
-                bias_attr = paddle.ParamAttr(
-                    initializer=nn.initializer.Uniform(-bound, bound),
-                    name=name + ".bias")
-            self.conv = nn.Conv2D(
-                in_channels=ch_in,
-                out_channels=ch_out,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                dilation=dilation,
-                groups=groups,
-                weight_attr=param_attr,
-                bias_attr=bias_attr)
-        else:
-            param_attr = paddle.ParamAttr(
-                initializer=nn.initializer.Uniform(-bound, bound),
-                name=name + ".weight")
-            if bias:
-                bias_attr = paddle.ParamAttr(
-                    initializer=Constant(0), name=name + ".bias")
-            self.conv = DeformableConvV2(
-                in_channels=ch_in,
-                out_channels=ch_out,
-                kernel_size=kernel_size,
-                stride=stride,
-                padding=padding,
-                dilation=dilation,
-                groups=groups,
-                weight_attr=param_attr,
-                bias_attr=bias_attr,
-                name=name)
-
-    def forward(self, inputs):
-        out = self.conv(inputs)
-
-        return out
-
-
-class NormLayer(nn.Layer):
-    def __init__(self, ch_out, name=None):
-        super(NormLayer, self).__init__()
-        param_attr = paddle.ParamAttr(name=name + ".weight")
-        bias_attr = paddle.ParamAttr(name=name + ".bias")
-
-        self.norm = nn.BatchNorm(
-            ch_out,
-            param_attr=param_attr,
-            bias_attr=bias_attr,
-            moving_mean_name=name + '.running_mean',
-            moving_variance_name=name + '.running_var')
-
-    def forward(self, inputs):
-        out = self.norm(inputs)
-
-        return out
-
-
 class BasicBlock(nn.Layer):
-    def __init__(self, ch_in, ch_out, stride=1, dilation=1, name=None):
+    def __init__(self, ch_in, ch_out, stride=1):
         super(BasicBlock, self).__init__()
-        self.conv1 = ConvLayer(
+        self.conv1 = ConvNormLayer(
             ch_in,
             ch_out,
-            kernel_size=3,
+            filter_size=3,
             stride=stride,
-            bias=False,
-            padding=dilation,
-            dilation=dilation,
-            name=name + ".conv1")
-        self.bn1 = NormLayer(ch_out, name=name + ".bn1")
-        self.conv2 = ConvLayer(
+            bias_on=False,
+            norm_decay=None)
+        self.conv2 = ConvNormLayer(
             ch_out,
             ch_out,
-            kernel_size=3,
+            filter_size=3,
             stride=1,
-            bias=False,
-            padding=dilation,
-            dilation=dilation,
-            name=name + ".conv2")
-        self.bn2 = NormLayer(ch_out, name + ".bn2")
+            bias_on=False,
+            norm_decay=None)
 
     def forward(self, inputs, residual=None):
         if residual is None:
             residual = inputs
 
         out = self.conv1(inputs)
-        out = self.bn1(out)
         out = F.relu(out)
 
         out = self.conv2(out)
-        out = self.bn2(out)
 
         out = paddle.add(x=out, y=residual)
         out = F.relu(out)
@@ -205,23 +56,20 @@ class BasicBlock(nn.Layer):
 
 
 class Root(nn.Layer):
-    def __init__(self, ch_in, ch_out, kernel_size, residual, name=None):
+    def __init__(self, ch_in, ch_out, kernel_size, residual):
         super(Root, self).__init__()
-        self.conv = ConvLayer(
+        self.conv = ConvNormLayer(
             ch_in,
             ch_out,
-            kernel_size=1,
+            filter_size=1,
             stride=1,
-            bias=False,
-            padding=(kernel_size - 1) // 2,
-            name=name + ".conv")
-        self.bn = NormLayer(ch_out, name=name + ".bn")
+            bias_on=False,
+            norm_decay=None)
         self.residual = residual
 
     def forward(self, inputs):
         children = inputs
         out = self.conv(paddle.concat(inputs, axis=1))
-        out = self.bn(out)
         if self.residual:
             out = paddle.add(x=out, y=children[0])
         out = F.relu(out)
@@ -239,19 +87,15 @@ class Tree(nn.Layer):
                  level_root=False,
                  root_dim=0,
                  root_kernel_size=1,
-                 dilation=1,
-                 root_residual=False,
-                 name=None):
+                 root_residual=False):
         super(Tree, self).__init__()
         if root_dim == 0:
             root_dim = 2 * ch_out
         if level_root:
             root_dim += ch_in
         if level == 1:
-            self.tree1 = block(
-                ch_in, ch_out, stride, dilation, name=name + ".tree1")
-            self.tree2 = block(
-                ch_out, ch_out, 1, dilation, name=name + ".tree2")
+            self.tree1 = block(ch_in, ch_out, stride)
+            self.tree2 = block(ch_out, ch_out, 1)
         else:
             self.tree1 = Tree(
                 level - 1,
@@ -261,9 +105,7 @@ class Tree(nn.Layer):
                 stride,
                 root_dim=0,
                 root_kernel_size=root_kernel_size,
-                dilation=dilation,
-                root_residual=root_residual,
-                name=name + ".tree1")
+                root_residual=root_residual)
             self.tree2 = Tree(
                 level - 1,
                 block,
@@ -272,17 +114,10 @@ class Tree(nn.Layer):
                 1,
                 root_dim=root_dim + ch_out,
                 root_kernel_size=root_kernel_size,
-                dilation=dilation,
-                root_residual=root_residual,
-                name=name + ".tree2")
+                root_residual=root_residual)
 
         if level == 1:
-            self.root = Root(
-                root_dim,
-                ch_out,
-                root_kernel_size,
-                root_residual,
-                name=name + ".root")
+            self.root = Root(root_dim, ch_out, root_kernel_size, root_residual)
         self.level_root = level_root
         self.root_dim = root_dim
         self.downsample = None
@@ -291,16 +126,13 @@ class Tree(nn.Layer):
         if stride > 1:
             self.downsample = nn.MaxPool2D(stride, stride=stride)
         if ch_in != ch_out:
-            self.project = nn.Sequential(
-                ConvLayer(
-                    ch_in,
-                    ch_out,
-                    kernel_size=1,
-                    stride=1,
-                    bias=False,
-                    name=name + ".project.0"),
-                NormLayer(
-                    ch_out, name=name + ".project.1"))
+            self.project = ConvNormLayer(
+                ch_in,
+                ch_out,
+                filter_size=1,
+                stride=1,
+                bias_on=False,
+                norm_decay=None)
 
     def forward(self, x, residual=None, children=None):
         children = [] if children is None else children
@@ -321,32 +153,33 @@ class Tree(nn.Layer):
 @register
 @serializable
 class DLA(nn.Layer):
-    def __init__(self, depth=34, residual_root=False, name='base'):
+    """
+    DLA, see https://arxiv.org/pdf/1707.06484.pdf
+
+    Args:
+        depth (int): DLA depth, should be 34.
+        residual_root (bool): whether use a reidual layer in the root block
+
+    """
+
+    def __init__(self, depth=34, residual_root=False):
         super(DLA, self).__init__()
         levels, channels = DLA_cfg[depth]
         if depth == 34:
             block = BasicBlock
         self.channels = channels
         self.base_layer = nn.Sequential(
-            ConvLayer(
+            ConvNormLayer(
                 3,
                 channels[0],
-                kernel_size=7,
+                filter_size=7,
                 stride=1,
-                padding=3,
-                bias=False,
-                name=name + ".base_layer.0"),
-            NormLayer(
-                channels[0], name=name + ".base_layer.1"),
+                bias_on=False,
+                norm_decay=None),
             nn.ReLU())
-        self.level0 = self._make_conv_level(
-            channels[0], channels[0], levels[0], name=name + ".level0")
+        self.level0 = self._make_conv_level(channels[0], channels[0], levels[0])
         self.level1 = self._make_conv_level(
-            channels[0],
-            channels[1],
-            levels[1],
-            stride=2,
-            name=name + ".level1")
+            channels[0], channels[1], levels[1], stride=2)
         self.level2 = Tree(
             levels[2],
             block,
@@ -354,8 +187,7 @@ class DLA(nn.Layer):
             channels[2],
             2,
             level_root=False,
-            root_residual=residual_root,
-            name=name + ".level2")
+            root_residual=residual_root)
         self.level3 = Tree(
             levels[3],
             block,
@@ -363,8 +195,7 @@ class DLA(nn.Layer):
             channels[3],
             2,
             level_root=True,
-            root_residual=residual_root,
-            name=name + ".level3")
+            root_residual=residual_root)
         self.level4 = Tree(
             levels[4],
             block,
@@ -372,8 +203,7 @@ class DLA(nn.Layer):
             channels[4],
             2,
             level_root=True,
-            root_residual=residual_root,
-            name=name + ".level4")
+            root_residual=residual_root)
         self.level5 = Tree(
             levels[5],
             block,
@@ -381,29 +211,19 @@ class DLA(nn.Layer):
             channels[5],
             2,
             level_root=True,
-            root_residual=residual_root,
-            name=name + ".level5")
+            root_residual=residual_root)
 
-    def _make_conv_level(self,
-                         ch_in,
-                         ch_out,
-                         conv_num,
-                         stride=1,
-                         dilation=1,
-                         name=None):
+    def _make_conv_level(self, ch_in, ch_out, conv_num, stride=1):
         modules = []
         for i in range(conv_num):
             modules.extend([
-                ConvLayer(
+                ConvNormLayer(
                     ch_in,
                     ch_out,
-                    kernel_size=3,
+                    filter_size=3,
                     stride=stride if i == 0 else 1,
-                    padding=dilation,
-                    bias=False,
-                    dilation=dilation,
-                    name=name + ".0"), NormLayer(
-                        ch_out, name=name + ".1"), nn.ReLU()
+                    bias_on=False,
+                    norm_decay=None), nn.ReLU()
             ])
             ch_in = ch_out
         return nn.Sequential(*modules)

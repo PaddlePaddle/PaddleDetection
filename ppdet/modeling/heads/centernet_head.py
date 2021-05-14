@@ -13,44 +13,66 @@
 # limitations under the License.
 
 import numpy as np
+import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
+from paddle.nn.initializer import KaimingUniform
 from ppdet.core.workspace import register
-from ppdet.modeling.backbones.dla import ConvLayer
+from ppdet.modeling.losses import CTFocalLoss
 
 
-def focal_loss(pred, gt):
-    pos_mask = gt == 1
-    num_pos = paddle.sum(paddle.cast(pos_mask, dtype=np.int32))
-    pos_mask = paddle.cast(pos_mask, pred.dtype)
-    neg_mask = gt < 1
-    neg_mask = paddle.cast(neg_mask, pred.dtype)
+class ConvLayer(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 kernel_size,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 bias=False):
+        super(ConvLayer, self).__init__()
+        bias_attr = False
+        fan_in = ch_in * kernel_size**2
+        bound = 1 / math.sqrt(fan_in)
+        param_attr = paddle.ParamAttr(initializer=KaimingUniform())
+        if bias:
+            bias_attr = paddle.ParamAttr(
+                initializer=nn.initializer.Uniform(-bound, bound))
+        self.conv = nn.Conv2D(
+            in_channels=ch_in,
+            out_channels=ch_out,
+            kernel_size=kernel_size,
+            stride=stride,
+            padding=padding,
+            dilation=dilation,
+            groups=groups,
+            weight_attr=param_attr,
+            bias_attr=bias_attr)
 
-    neg_weights = paddle.pow(1 - gt, 4)
+    def forward(self, inputs):
+        out = self.conv(inputs)
 
-    loss = 0
-
-    pos_mask.stop_gradient = True
-    neg_weights.stop_gradient = True
-    neg_mask.stop_gradient = True
-    pos_loss = paddle.log(pred) * paddle.pow(1 - pred, 2) * pos_mask
-    neg_loss = paddle.log(1 - pred) * paddle.pow(pred,
-                                                 2) * neg_weights * neg_mask
-
-    pos_loss = pos_loss.sum()
-    neg_loss = neg_loss.sum()
-
-    if num_pos == 0:
-        loss = loss - neg_loss
-    else:
-        loss = loss - (pos_loss + neg_loss) / num_pos
-    return loss
+        return out
 
 
 @register
 class CenterNetHead(nn.Layer):
+    """
+    Args:
+        in_channels (int): the channel number of input to CenterNetHead.
+        num_classes (int): the number of classes, 80 by default.
+        head_planes (int): the channel number in all head, 256 by default.
+        heatmap_weight (float): the weight of heatmap loss, 1 by default.
+        regress_ltrb (bool): whether to regress left/top/right/bottom or
+            width/height for a box, true by default
+        size_weight (float): the weight of box size loss, 0.1 by default.
+        offset_weight (float): the weight of center offset loss, 1 by default.
+
+    """
+
     __shared__ = ['num_classes']
 
     def __init__(self,
@@ -69,12 +91,7 @@ class CenterNetHead(nn.Layer):
         }
         self.heatmap = nn.Sequential(
             ConvLayer(
-                in_channels,
-                head_planes,
-                kernel_size=3,
-                padding=1,
-                bias=True,
-                name="hm.0"),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
             nn.ReLU(),
             ConvLayer(
                 head_planes,
@@ -82,17 +99,11 @@ class CenterNetHead(nn.Layer):
                 kernel_size=1,
                 stride=1,
                 padding=0,
-                bias=True,
-                name="hm.2"))
+                bias=True))
         self.heatmap[2].conv.bias[:] = -2.19
         self.size = nn.Sequential(
             ConvLayer(
-                in_channels,
-                head_planes,
-                kernel_size=3,
-                padding=1,
-                bias=True,
-                name="wh.0"),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
             nn.ReLU(),
             ConvLayer(
                 head_planes,
@@ -100,25 +111,14 @@ class CenterNetHead(nn.Layer):
                 kernel_size=1,
                 stride=1,
                 padding=0,
-                bias=True,
-                name="wh.2"))
+                bias=True))
         self.offset = nn.Sequential(
             ConvLayer(
-                in_channels,
-                head_planes,
-                kernel_size=3,
-                padding=1,
-                bias=True,
-                name="reg.0"),
+                in_channels, head_planes, kernel_size=3, padding=1, bias=True),
             nn.ReLU(),
             ConvLayer(
-                head_planes,
-                2,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                bias=True,
-                name="reg.2"))
+                head_planes, 2, kernel_size=1, stride=1, padding=0, bias=True))
+        self.focal_loss = CTFocalLoss()
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -144,7 +144,7 @@ class CenterNetHead(nn.Layer):
         index = inputs['index']
         mask = inputs['index_mask']
         heatmap = paddle.clip(F.sigmoid(heatmap), 1e-4, 1 - 1e-4)
-        heatmap_loss = focal_loss(heatmap, heatmap_target)
+        heatmap_loss = self.focal_loss(heatmap, heatmap_target)
 
         size = paddle.transpose(size, perm=[0, 2, 3, 1])
         size_n, size_h, size_w, size_c = size.shape

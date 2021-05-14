@@ -1,5 +1,5 @@
 architecture: FairMOT
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/fairmot_dla34_crowdhuman.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/fairmot_dla34_crowdhuman_pretrained.pdparams
 
 FairMOT:
   detector: CenterNet

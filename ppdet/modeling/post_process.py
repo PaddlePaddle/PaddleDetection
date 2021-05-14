@@ -351,6 +351,19 @@ class JDEBBoxPostProcess(BBoxPostProcess):
 
 @register
 class CenterNetPostProcess(TTFBox):
+    """
+    Decode the bbox and do NMS if needed.
+
+    Args:
+        max_per_img(int): the maximum number of predicted objects in a image,
+            500 by default.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        regress_ltrb (bool): whether to regress left/top/right/bottom or
+            width/height for a box, true by default.
+        for_mot (bool): whether return other features used in tracking model.
+
+    """
+
     __shared__ = ['down_ratio']
 
     def __init__(self,

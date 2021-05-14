@@ -376,6 +376,15 @@ class Gt2JDETargetMax(BaseOperator):
 
 class Gt2FairMOTTarget(Gt2TTFTarget):
     __shared__ = ['num_classes']
+    """
+    Gt2TTFTarget
+    Generate TTFNet targets by ground truth data
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        max_objs(int): the maximum number of ground truth objects in a image, 500 by default.
+    """
 
     def __init__(self, num_classes=1, down_ratio=4, max_objs=500):
         super(Gt2TTFTarget, self).__init__()

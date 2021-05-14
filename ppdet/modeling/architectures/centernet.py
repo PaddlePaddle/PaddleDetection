@@ -33,6 +33,7 @@ class CenterNet(BaseArch):
         neck (object): 'CenterDLAFPN' instance
         head (object): 'CenterHead' instance
         post_process (object): 'CenterNetPostProcess' instance
+        for_mot (bool): whether return other features used in tracking model
 
     """
     __category__ = 'architecture'

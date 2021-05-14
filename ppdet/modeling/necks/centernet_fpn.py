@@ -1,4 +1,4 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from paddle import ParamAttr
 import paddle.nn as nn
 from paddle.nn.initializer import KaimingUniform
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.backbones.dla import ConvLayer, NormLayer
+from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 
@@ -43,28 +43,28 @@ class IDAUp(nn.Layer):
             ch_in = ch_ins[i]
             up_s = int(up_strides[i])
             proj = nn.Sequential(
-                ConvLayer(
+                ConvNormLayer(
                     ch_in,
                     ch_out,
-                    kernel_size=3,
-                    padding=1,
-                    dcn_v2=dcn_v2,
-                    bias=dcn_v2,
-                    name=name + ".proj_{}.conv".format(i)),
-                NormLayer(
-                    ch_out, name=name + ".proj_{}.actf.0".format(i)),
+                    filter_size=3,
+                    stride=1,
+                    use_dcn=dcn_v2,
+                    bias_on=dcn_v2,
+                    norm_decay=None,
+                    dcn_lr_scale=1.,
+                    dcn_regularizer=None),
                 nn.ReLU())
             node = nn.Sequential(
-                ConvLayer(
+                ConvNormLayer(
                     ch_out,
                     ch_out,
-                    kernel_size=3,
-                    padding=1,
-                    dcn_v2=dcn_v2,
-                    bias=dcn_v2,
-                    name=name + ".node_{}.conv".format(i)),
-                NormLayer(
-                    ch_out, name=name + ".node_{}.actf.0".format(i)),
+                    filter_size=3,
+                    stride=1,
+                    use_dcn=dcn_v2,
+                    bias_on=dcn_v2,
+                    norm_decay=None,
+                    dcn_lr_scale=1.,
+                    dcn_regularizer=None),
                 nn.ReLU())
 
             param_attr = paddle.ParamAttr(
@@ -136,6 +136,17 @@ class DLAUp(nn.Layer):
 @register
 @serializable
 class CenterNetDLAFPN(nn.Layer):
+    """
+    Args:
+        in_channels (list): number of input feature channels from backbone.
+            [16, 32, 64, 128, 256, 512] by default, means the channels of DLA-34
+        down_ratio (int): the down ratio from images to heatmap, 4 by default
+        out_channel (int): the channel of the output feature, 0 by default means
+            the channel of the input feature whose down ratio is `down_ratio`
+        dcn_v2 (bool): whether use the DCNv2, true by default
+        
+    """
+
     def __init__(self,
                  in_channels,
                  down_ratio=4,
