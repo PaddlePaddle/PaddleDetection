@@ -398,7 +398,6 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
 
             gt_bbox = sample['gt_bbox']
-            np.save('gt_bbox.npy', gt_bbox)
             gt_class = sample['gt_class']
             gt_ide = sample['gt_ide']
 
