@@ -6,6 +6,7 @@ English | [简体中文](README_cn.md)
 - [Introduction](#Introduction)
 - [Model Zoo](#Model_Zoo)
 - [Getting Start](#Getting_Start)
+- [Citations](#Citations)
 
 ## Introduction
 
@@ -59,6 +60,7 @@ Inference a vidoe in single GPU with following commands.
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4
 
 ```
+
 ## Citations
 ```
 @article{wang2019towards,

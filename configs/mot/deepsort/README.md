@@ -6,6 +6,7 @@ English | [简体中文](README_cn.md)
 - [Introduction](#Introduction)
 - [Model Zoo](#Model_Zoo)
 - [Getting Start](#Getting_Start)
+- [Citations](#Citations)
 
 ## Introduction
 [DeepSORT](https://arxiv.org/abs/1812.00442) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use JDE as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files.

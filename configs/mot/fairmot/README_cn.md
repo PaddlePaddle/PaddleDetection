@@ -1,68 +1,66 @@
-English | [简体中文](README_cn.md)
+简体中文 | [English](README.md)
 
 # FairMOT (FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking)
 
-## Table of Contents
-- [Introduction](#Introduction)
-- [Model Zoo](#Model_Zoo)
-- [Getting Start](#Getting_Start)
-- [Citations](#Citations)
+## 内容
+- [简介](#简介)
+- [模型库与基线](#模型库与基线)
+- [快速开始](#快速开始)
+- [引用](#引用)
 
-## Introduction
+## 内容
 
-[FairMOT](https://arxiv.org/abs/2004.01888) focuses on accomplishing the detection and re-identification in a single network to improve the inference speed, presents a simple baseline which consists of two homogeneous branches to predict pixel-wise objectness scores and re-ID features. The achieved fairness between the two tasks allows FairMOT to obtain high levels of detection and tracking accuracy.
+[FairMOT](https://arxiv.org/abs/2004.01888)着重研究在单个网络中实现检测和ReID以提高推理速度，提出了一种由两个同质分支组成的简单基线来预测像素级目标得分和ReID特征。FairMOT实现了两个任务之间的公平性，并获得高水平的检测和跟踪精度。
 
+## 模型库与基线
 
-## Model Zoo
+### FairMOT在MOT-16 train集上结果
 
-### FairMOT Results on MOT-16 train set
-
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    MT   |   ML  | download | config |
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP   |  FN   | 检测模型  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :---: | :----: | :---: |:-------: | :----: |
 | DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 | -------- | ------ |
 | DLA-34         | 1088x608 |  83.4  |  82.7  |  517  |  4077  | 13761 | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 
-### FairMOT Results on MOT-16 test set
+### FairMOT在MOT-16 test集上结果
 
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    MT   |    ML   | download | config |
+|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   | 检测模型  | 配置文件 |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: |
 | DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |  44.7% |  15.9% | -------- | ------ |
 | DLA-34         | 1088x608 |  74.7  |  72.8  |  1044  |  41.9% |  19.1% |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
+ FairMOT使用2个GPU进行训练，每个GPU上batch size为6，训练了30个epoches。
 
-FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
-## Getting Start
+## 快速开始
 
-### 1. Training
+### 1. 训练
 
-Training FairMOT on 2 GPUs with following command
+使用2GPU通过如下命令一键式启动训练
 
 ```bash
 python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
 ```
 
+### 2. 评估
 
-### 2. Evaluation
-
-Evaluating the track performance of FairMOT on val dataset in single GPU with following commands:
+使用单张GPU通过如下命令一键式启动评估
 
 ```bash
-# use weights released in PaddleDetection model zoo
+# 使用PaddleDetection发布的权重
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
 
-# use saved checkpoint in training
+# 使用训练保存的checkpoint
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final
 ```
 
-## Citations
+## 引用
 ```
-@article{zhang2020fair,
-  title={FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking},
-  author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
-  journal={arXiv preprint arXiv:2004.01888},
-  year={2020}
+@article{wang2019towards,
+  title={Towards Real-Time Multi-Object Tracking},
+  author={Wang, Zhongdao and Zheng, Liang and Liu, Yixuan and Wang, Shengjin},
+  journal={arXiv preprint arXiv:1909.12605},
+  year={2019}
 }
 ```

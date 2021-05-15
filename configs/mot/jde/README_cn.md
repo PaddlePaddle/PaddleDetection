@@ -6,7 +6,7 @@
 - [简介](#简介)
 - [模型库与基线](#模型库与基线)
 - [快速开始](#快速开始)
-
+- [引用](#引用)
 
 ## 内容
 
@@ -17,7 +17,7 @@
 
 ## 模型库与基线
 
-### JDE on MOT-16 training set
+### JDE在MOT-16 train集上结果
 
 | 骨干网络            |  输入尺寸  |  MOTA  |  IDF1 |  IDS  |  FP  |  FN  |  FPS  |  检测模型  | 配置文件 |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
@@ -59,6 +59,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4
 
 ```
+
 ## 引用
 ```
 @article{wang2019towards,
