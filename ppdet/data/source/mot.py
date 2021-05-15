@@ -347,6 +347,7 @@ class MOTVideoDataset(DetDataset):
     def _load_video_images(self):
         self.cap = cv2.VideoCapture(self.video_file)
         self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
         logger.info('Length of the video: {:d} frames'.format(self.vn))
         res = True
         ct = 0
