@@ -377,8 +377,10 @@ class Gt2JDETargetMax(BaseOperator):
 class Gt2FairMOTTarget(Gt2TTFTarget):
     __shared__ = ['num_classes']
     """
-    Gt2TTFTarget
-    Generate TTFNet targets by ground truth data
+    Generate FairMOT targets by ground truth data.
+    Difference between Gt2FairMOTTarget and Gt2TTFTarget are:
+        1. the gaussian kernal radius to generate a heatmap.
+        2. the targets needed during traing.
     
     Args:
         num_classes(int): the number of classes.
@@ -455,9 +457,12 @@ class Gt2FairMOTTarget(Gt2TTFTarget):
             sample['index_mask'] = index_mask
             sample['reid'] = reid
             sample['bbox_xys'] = bbox_xys
-            del sample['gt_bbox']
-            del sample['gt_class']
-            del sample['gt_ide']
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
+            sample.pop('gt_ide', None)
         return samples
 
     def gaussian_radius(self, det_size, min_overlap=0.7):

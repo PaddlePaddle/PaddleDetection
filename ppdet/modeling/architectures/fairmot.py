@@ -68,28 +68,30 @@ class FairMOT(BaseArch):
 
     def _forward(self):
         loss = dict()
+        # det_outs keys:
+        # train: det_loss, heatmap_loss, size_loss, offset_loss, neck_feat
+        # eval/infer: bbox, bbox_inds, neck_feat
         det_outs = self.detector(self.inputs)
         neck_feat = det_outs['neck_feat']
-        reid_outs = self.reid(neck_feat, self.inputs)
         if self.training:
+            reid_loss = self.reid(neck_feat, self.inputs)
+
             det_loss = det_outs['det_loss']
-            reid_loss = reid_outs['reid_loss']
             loss = self.loss(det_loss, reid_loss)
             loss.update({
                 'heatmap_loss': det_outs['heatmap_loss'],
                 'size_loss': det_outs['size_loss'],
                 'offset_loss': det_outs['offset_loss'],
-                'reid_loss': reid_outs['reid_loss']
+                'reid_loss': reid_loss
             })
             return loss
         else:
-            embedding = reid_outs['embedding']
+            embedding = self.reid(neck_feat, self.inputs)
             bbox_inds = det_outs['bbox_inds']
             embedding = paddle.transpose(embedding, [0, 2, 3, 1])
             embedding = paddle.reshape(embedding,
                                        [-1, paddle.shape(embedding)[-1]])
             id_feature = paddle.gather(embedding, bbox_inds)
-            #output = {'dets': det_outs['bbox'], 'id_feature': id_feature}
             dets = det_outs['bbox']
             id_feature = id_feature
             # Note: the tracker only considers batch_size=1 and num_classses=1

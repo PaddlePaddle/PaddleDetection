@@ -352,7 +352,10 @@ class JDEBBoxPostProcess(BBoxPostProcess):
 @register
 class CenterNetPostProcess(TTFBox):
     """
-    Decode the bbox and do NMS if needed.
+    Postprocess the model outputs to get final prediction:
+        1. Do NMS for heatmap to get top `max_per_img` bboxes.
+        2. Decode bboxes using center offset and box size.
+        3. Rescale decoded bboxes reference to the origin image shape.
 
     Args:
         max_per_img(int): the maximum number of predicted objects in a image,

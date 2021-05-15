@@ -103,17 +103,21 @@ class JDETracker(object):
         # removed. (Lost for some time lesser than the threshold for removing)
         removed_stracks = []
 
-        pred_dets = pred_dets.numpy()
-        pred_embs = pred_embs.numpy()
-        remain_inds = pred_dets[:, 4] > self.conf_thres
-        pred_dets = pred_dets[remain_inds]
-        pred_embs = pred_embs[remain_inds]
+        remain_inds = paddle.nonzero(pred_dets[:, 4] > self.conf_thres)
+        if remain_inds.shape[0] == 0:
+            pred_dets = paddle.zeros([0, 1])
+            pred_embs = paddle.zeros([0, 1])
+        else:
+            pred_dets = paddle.gather(pred_dets, remain_inds)
+            pred_embs = paddle.gather(pred_embs, remain_inds)
 
         # Filter out the image with box_num = 0. pred_dets = [[0.0, 0.0, 0.0 ,0.0]]
-        empty_pred = True if len(pred_dets) == 1 and pred_dets.sum(
-        ) == 0.0 else False
+        empty_pred = True if len(pred_dets) == 1 and paddle.sum(
+            pred_dets) == 0.0 else False
         """ Step 1: Network forward, get detections & embeddings"""
         if len(pred_dets) > 0 and not empty_pred:
+            pred_dets = pred_dets.numpy()
+            pred_embs = pred_embs.numpy()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
                 for (tlbrs, f) in zip(pred_dets, pred_embs)

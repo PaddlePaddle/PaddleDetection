@@ -37,7 +37,7 @@ def fill_up_weights(up):
 
 
 class IDAUp(nn.Layer):
-    def __init__(self, ch_ins, ch_out, up_strides, dcn_v2=True, name=None):
+    def __init__(self, ch_ins, ch_out, up_strides, dcn_v2=True):
         super(IDAUp, self).__init__()
         for i in range(1, len(ch_ins)):
             ch_in = ch_ins[i]
@@ -67,9 +67,7 @@ class IDAUp(nn.Layer):
                     dcn_regularizer=None),
                 nn.ReLU())
 
-            param_attr = paddle.ParamAttr(
-                initializer=KaimingUniform(),
-                name=name + ".up_{}.weight".format(i))
+            param_attr = paddle.ParamAttr(initializer=KaimingUniform())
             up = nn.Conv2DTranspose(
                 ch_out,
                 ch_out,
@@ -79,7 +77,8 @@ class IDAUp(nn.Layer):
                 padding=up_s // 2,
                 groups=ch_out,
                 bias_attr=False)
-            fill_up_weights(up)
+            # TODO: uncomment fill_up_weights
+            #fill_up_weights(up)
             setattr(self, 'proj_' + str(i), proj)
             setattr(self, 'up_' + str(i), up)
             setattr(self, 'node_' + str(i), node)
@@ -96,13 +95,7 @@ class IDAUp(nn.Layer):
 
 
 class DLAUp(nn.Layer):
-    def __init__(self,
-                 start_level,
-                 channels,
-                 scales,
-                 ch_in=None,
-                 dcn_v2=True,
-                 name=None):
+    def __init__(self, start_level, channels, scales, ch_in=None, dcn_v2=True):
         super(DLAUp, self).__init__()
         self.start_level = start_level
         if ch_in is None:
@@ -119,8 +112,7 @@ class DLAUp(nn.Layer):
                     ch_in[j:],
                     channels[j],
                     scales[j:] // scales[j],
-                    dcn_v2=dcn_v2,
-                    name=name + '.ida_{}'.format(i)))
+                    dcn_v2=dcn_v2))
             scales[j + 1:] = scales[j]
             ch_in[j + 1:] = [channels[j] for _ in channels[j + 1:]]
 
@@ -141,6 +133,7 @@ class CenterNetDLAFPN(nn.Layer):
         in_channels (list): number of input feature channels from backbone.
             [16, 32, 64, 128, 256, 512] by default, means the channels of DLA-34
         down_ratio (int): the down ratio from images to heatmap, 4 by default
+        last_level (int): the last level of input feature fed into the upsamplng block
         out_channel (int): the channel of the output feature, 0 by default means
             the channel of the input feature whose down ratio is `down_ratio`
         dcn_v2 (bool): whether use the DCNv2, true by default
@@ -162,8 +155,7 @@ class CenterNetDLAFPN(nn.Layer):
             self.first_level,
             in_channels[self.first_level:],
             scales,
-            dcn_v2=dcn_v2,
-            name="dla_up")
+            dcn_v2=dcn_v2)
         self.out_channel = out_channel
         if out_channel == 0:
             self.out_channel = in_channels[self.first_level]
@@ -171,8 +163,7 @@ class CenterNetDLAFPN(nn.Layer):
             in_channels[self.first_level:self.last_level],
             self.out_channel,
             [2**i for i in range(self.last_level - self.first_level)],
-            dcn_v2=dcn_v2,
-            name="ida_up")
+            dcn_v2=dcn_v2)
 
     @classmethod
     def from_config(cls, cfg, input_shape):

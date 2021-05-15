@@ -68,15 +68,13 @@ class FairMOTEmbeddingHead(nn.Layer):
         return {'in_channels': input_shape.channels}
 
     def forward(self, feat, inputs):
-        output = dict()
         reid_feat = self.reid(feat)
         if self.training:
             loss = self.get_loss(reid_feat, inputs)
-            output.update(loss)
+            return loss
         else:
             reid_feat = F.normalize(reid_feat)
-            output['embedding'] = reid_feat
-        return output
+            return reid_feat
 
     def get_loss(self, feat, inputs):
         index = inputs['index']
@@ -115,4 +113,4 @@ class FairMOTEmbeddingHead(nn.Layer):
         if count > 0:
             loss = loss / count
 
-        return {'reid_loss': loss}
+        return loss
