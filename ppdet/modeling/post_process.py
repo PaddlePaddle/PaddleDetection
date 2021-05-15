@@ -18,6 +18,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ppdet.modeling.bbox_utils import nonempty_bbox, rbox2poly, rbox2poly
+from ppdet.modeling.layers import TTFBox
 try:
     from collections.abc import Sequence
 except Exception:
@@ -29,6 +30,7 @@ __all__ = [
     'FCOSPostProcess',
     'S2ANetBBoxPostProcess',
     'JDEBBoxPostProcess',
+    'CenterNetPostProcess',
 ]
 
 
@@ -352,3 +354,95 @@ class JDEBBoxPostProcess(BBoxPostProcess):
             nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
 
         return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
+
+
+@register
+class CenterNetPostProcess(TTFBox):
+    """
+    Postprocess the model outputs to get final prediction:
+        1. Do NMS for heatmap to get top `max_per_img` bboxes.
+        2. Decode bboxes using center offset and box size.
+        3. Rescale decoded bboxes reference to the origin image shape.
+
+    Args:
+        max_per_img(int): the maximum number of predicted objects in a image,
+            500 by default.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        regress_ltrb (bool): whether to regress left/top/right/bottom or
+            width/height for a box, true by default.
+        for_mot (bool): whether return other features used in tracking model.
+
+    """
+
+    __shared__ = ['down_ratio']
+
+    def __init__(self,
+                 max_per_img=500,
+                 down_ratio=4,
+                 regress_ltrb=True,
+                 for_mot=False):
+        super(TTFBox, self).__init__()
+        self.max_per_img = max_per_img
+        self.down_ratio = down_ratio
+        self.regress_ltrb = regress_ltrb
+        self.for_mot = for_mot
+
+    def __call__(self, hm, wh, reg, im_shape, scale_factor):
+        heat = self._simple_nms(hm)
+        scores, inds, clses, ys, xs = self._topk(heat)
+        scores = paddle.tensor.unsqueeze(scores, [1])
+        clses = paddle.tensor.unsqueeze(clses, [1])
+
+        reg_t = paddle.transpose(reg, [0, 2, 3, 1])
+        # Like TTFBox, batch size is 1.
+        # TODO: support batch size > 1
+        reg = paddle.reshape(reg_t, [-1, paddle.shape(reg_t)[-1]])
+        reg = paddle.gather(reg, inds)
+        xs = paddle.cast(xs, 'float32')
+        ys = paddle.cast(ys, 'float32')
+        xs = xs + reg[:, 0:1]
+        ys = ys + reg[:, 1:2]
+
+        wh_t = paddle.transpose(wh, [0, 2, 3, 1])
+        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.gather(wh, inds)
+
+        if self.regress_ltrb:
+            x1 = xs - wh[:, 0:1]
+            y1 = ys - wh[:, 1:2]
+            x2 = xs + wh[:, 2:3]
+            y2 = ys + wh[:, 3:4]
+        else:
+            x1 = xs - wh[:, 0:1] / 2
+            y1 = ys - wh[:, 1:2] / 2
+            x2 = xs + wh[:, 0:1] / 2
+            y2 = ys + wh[:, 1:2] / 2
+
+        n, c, feat_h, feat_w = paddle.shape(hm)
+        padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
+        padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
+        x1 = x1 * self.down_ratio
+        y1 = y1 * self.down_ratio
+        x2 = x2 * self.down_ratio
+        y2 = y2 * self.down_ratio
+
+        x1 = x1 - padw
+        y1 = y1 - padh
+        x2 = x2 - padw
+        y2 = y2 - padh
+
+        bboxes = paddle.concat([x1, y1, x2, y2], axis=1)
+        scale_y = scale_factor[:, 0:1]
+        scale_x = scale_factor[:, 1:2]
+        scale_expand = paddle.concat(
+            [scale_x, scale_y, scale_x, scale_y], axis=1)
+        boxes_shape = paddle.shape(bboxes)
+        boxes_shape.stop_gradient = True
+        scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
+        bboxes = paddle.divide(bboxes, scale_expand)
+        if self.for_mot:
+            results = paddle.concat([bboxes, scores, clses], axis=1)
+            return results, inds
+        else:
+            results = paddle.concat([clses, scores, bboxes], axis=1)
+            return results, paddle.shape(results)[0:1]

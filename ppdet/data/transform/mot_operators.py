@@ -25,14 +25,19 @@ from numbers import Integral
 import cv2
 import copy
 import numpy as np
+import math
 
 from .operators import BaseOperator, register_op
+from .batch_operators import Gt2TTFTarget
 from ppdet.modeling.bbox_utils import bbox_iou_np_expand
 from ppdet.core.workspace import serializable
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['LetterBoxResize', 'Gt2JDETargetThres', 'Gt2JDETargetMax']
+__all__ = [
+    'LetterBoxResize', 'Gt2JDETargetThres', 'Gt2JDETargetMax',
+    'Gt2FairMOTTarget'
+]
 
 
 @register_op
@@ -367,3 +372,117 @@ class Gt2JDETargetMax(BaseOperator):
                 sample['tbox{}'.format(i)] = tbox
                 sample['tconf{}'.format(i)] = tconf
                 sample['tide{}'.format(i)] = tid
+
+
+class Gt2FairMOTTarget(Gt2TTFTarget):
+    __shared__ = ['num_classes']
+    """
+    Generate FairMOT targets by ground truth data.
+    Difference between Gt2FairMOTTarget and Gt2TTFTarget are:
+        1. the gaussian kernal radius to generate a heatmap.
+        2. the targets needed during traing.
+    
+    Args:
+        num_classes(int): the number of classes.
+        down_ratio(int): the down ratio from images to heatmap, 4 by default.
+        max_objs(int): the maximum number of ground truth objects in a image, 500 by default.
+    """
+
+    def __init__(self, num_classes=1, down_ratio=4, max_objs=500):
+        super(Gt2TTFTarget, self).__init__()
+        self.down_ratio = down_ratio
+        self.num_classes = num_classes
+        self.max_objs = max_objs
+
+    def __call__(self, samples, context=None):
+        for b_id, sample in enumerate(samples):
+            output_h = sample['image'].shape[1] // self.down_ratio
+            output_w = sample['image'].shape[2] // self.down_ratio
+
+            heatmap = np.zeros(
+                (self.num_classes, output_h, output_w), dtype='float32')
+            bbox_size = np.zeros((self.max_objs, 4), dtype=np.float32)
+            center_offset = np.zeros((self.max_objs, 2), dtype=np.float32)
+            index = np.zeros((self.max_objs, ), dtype=np.int64)
+            index_mask = np.zeros((self.max_objs, ), dtype=np.int32)
+            reid = np.zeros((self.max_objs, ), dtype=np.int64)
+            bbox_xys = np.zeros((self.max_objs, 4), dtype=np.float32)
+
+            gt_bbox = sample['gt_bbox']
+            gt_class = sample['gt_class']
+            gt_ide = sample['gt_ide']
+
+            for k in range(len(gt_bbox)):
+                cls_id = gt_class[k][0]
+                bbox = gt_bbox[k]
+                ide = gt_ide[k][0]
+                bbox[[0, 2]] = bbox[[0, 2]] * output_w
+                bbox[[1, 3]] = bbox[[1, 3]] * output_h
+                bbox_amodal = copy.deepcopy(bbox)
+                bbox_amodal[0] = bbox_amodal[0] - bbox_amodal[2] / 2.
+                bbox_amodal[1] = bbox_amodal[1] - bbox_amodal[3] / 2.
+                bbox_amodal[2] = bbox_amodal[0] + bbox_amodal[2]
+                bbox_amodal[3] = bbox_amodal[1] + bbox_amodal[3]
+                bbox[0] = np.clip(bbox[0], 0, output_w - 1)
+                bbox[1] = np.clip(bbox[1], 0, output_h - 1)
+                h = bbox[3]
+                w = bbox[2]
+
+                bbox_xy = copy.deepcopy(bbox)
+                bbox_xy[0] = bbox_xy[0] - bbox_xy[2] / 2
+                bbox_xy[1] = bbox_xy[1] - bbox_xy[3] / 2
+                bbox_xy[2] = bbox_xy[0] + bbox_xy[2]
+                bbox_xy[3] = bbox_xy[1] + bbox_xy[3]
+
+                if h > 0 and w > 0:
+                    radius = self.gaussian_radius((math.ceil(h), math.ceil(w)))
+                    radius = max(0, int(radius))
+                    ct = np.array([bbox[0], bbox[1]], dtype=np.float32)
+                    ct_int = ct.astype(np.int32)
+                    self.draw_truncate_gaussian(heatmap[cls_id], ct_int, radius,
+                                                radius)
+                    bbox_size[k] = ct[0] - bbox_amodal[0], ct[1] - bbox_amodal[1], \
+                            bbox_amodal[2] - ct[0], bbox_amodal[3] - ct[1]
+
+                    index[k] = ct_int[1] * output_w + ct_int[0]
+                    center_offset[k] = ct - ct_int
+                    index_mask[k] = 1
+                    reid[k] = ide
+                    bbox_xys[k] = bbox_xy
+
+            sample['heatmap'] = heatmap
+            sample['index'] = index
+            sample['offset'] = center_offset
+            sample['size'] = bbox_size
+            sample['index_mask'] = index_mask
+            sample['reid'] = reid
+            sample['bbox_xys'] = bbox_xys
+            sample.pop('is_crowd', None)
+            sample.pop('difficult', None)
+            sample.pop('gt_class', None)
+            sample.pop('gt_bbox', None)
+            sample.pop('gt_score', None)
+            sample.pop('gt_ide', None)
+        return samples
+
+    def gaussian_radius(self, det_size, min_overlap=0.7):
+        height, width = det_size
+
+        a1 = 1
+        b1 = (height + width)
+        c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+        sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+        r1 = (b1 + sq1) / 2
+
+        a2 = 4
+        b2 = 2 * (height + width)
+        c2 = (1 - min_overlap) * width * height
+        sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+        r2 = (b2 + sq2) / 2
+
+        a3 = 4 * min_overlap
+        b3 = -2 * min_overlap * (height + width)
+        c3 = (min_overlap - 1) * width * height
+        sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+        r3 = (b3 + sq3) / 2
+        return min(r1, r2, r3)

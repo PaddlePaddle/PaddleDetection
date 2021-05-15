@@ -52,7 +52,9 @@ class DeformableConvV2(nn.Layer):
                  bias_attr=None,
                  lr_scale=1,
                  regularizer=None,
-                 skip_quant=False):
+                 skip_quant=False,
+                 dcn_bias_regularizer=L2Decay(0.),
+                 dcn_bias_lr_scale=2.):
         super(DeformableConvV2, self).__init__()
         self.offset_channel = 2 * kernel_size**2
         self.mask_channel = kernel_size**2
@@ -79,8 +81,8 @@ class DeformableConvV2(nn.Layer):
             # in FCOS-DCN head, specifically need learning_rate and regularizer
             dcn_bias_attr = ParamAttr(
                 initializer=Constant(value=0),
-                regularizer=L2Decay(0.),
-                learning_rate=2.)
+                regularizer=dcn_bias_regularizer,
+                learning_rate=dcn_bias_lr_scale)
         else:
             # in ResNet backbone, do not need bias
             dcn_bias_attr = False
@@ -122,7 +124,9 @@ class ConvNormLayer(nn.Layer):
                  freeze_norm=False,
                  initializer=Normal(
                      mean=0., std=0.01),
-                 skip_quant=False):
+                 skip_quant=False,
+                 dcn_lr_scale=2.,
+                 dcn_regularizer=L2Decay(0.)):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
@@ -157,15 +161,17 @@ class ConvNormLayer(nn.Layer):
                 weight_attr=ParamAttr(
                     initializer=initializer, learning_rate=1.),
                 bias_attr=True,
-                lr_scale=2.,
-                regularizer=L2Decay(norm_decay),
+                lr_scale=dcn_lr_scale,
+                regularizer=dcn_regularizer,
                 skip_quant=skip_quant)
 
         norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
-            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay) if norm_decay is not None else None)
         bias_attr = ParamAttr(
-            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay) if norm_decay is not None else None)
         if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)

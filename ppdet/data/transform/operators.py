@@ -107,10 +107,12 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=True):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        # TODO: remove this parameter
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -124,7 +126,8 @@ class Decode(BaseOperator):
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
         if 'keep_ori_im' in sample and sample['keep_ori_im']:
             sample['ori_image'] = im
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        if self.to_rgb:
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
         if 'h' not in sample:
@@ -151,14 +154,18 @@ class Decode(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=False):
         """
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
+        # TODO: remove this parameter
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         im = sample['image']
+        if self.to_rgb:
+            im = np.ascontiguousarray(im[:, :, ::-1])
         im = im.transpose((2, 0, 1))
         sample['image'] = im
         return sample
@@ -2076,29 +2083,39 @@ class Norm2PixelBbox(BaseOperator):
 
 @register_op
 class MOTRandomAffine(BaseOperator):
+    """ 
+    Affine transform to image and coords to achieve the rotate, scale and
+    shift effect for training image.
+
+    Args:
+        degrees (list[2]): the rotate range to apply, transform range is [min, max]
+        translate (list[2]): the translate range to apply, ransform range is [min, max]
+        scale (list[2]): the scale range to apply, transform range is [min, max]
+        shear (list[2]): the shear range to apply, transform range is [min, max]
+        borderValue (list[3]): value used in case of a constant border when appling
+            the perspective transformation
+        reject_outside (bool): reject warped bounding bboxes outside of image
+
+    Returns:
+        records(dict): contain the image and coords after tranformed
+
+    """
+
     def __init__(self,
                  degrees=(-5, 5),
                  translate=(0.10, 0.10),
                  scale=(0.50, 1.20),
                  shear=(-2, 2),
-                 borderValue=(127.5, 127.5, 127.5)):
-        """ 
-        Affine transform to image and coords to achieve the rotate, scale and
-        shift effect for training image.
+                 borderValue=(127.5, 127.5, 127.5),
+                 reject_outside=True):
 
-        Args:
-            degrees (tuple): rotation value
-            translate (tuple): xy coords translation value
-            scale (tuple): scale value
-            shear (tuple): shear value
-            borderValue (tuple): border color value
-        """
         super(MOTRandomAffine, self).__init__()
         self.degrees = degrees
         self.translate = translate
         self.scale = scale
         self.shear = shear
         self.borderValue = borderValue
+        self.reject_outside = reject_outside
 
     def apply(self, sample, context=None):
         # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
@@ -2171,10 +2188,11 @@ class MOTRandomAffine(BaseOperator):
                 (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
 
             # reject warped points outside of image
-            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
-            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
-            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
-            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            if self.reject_outside:
+                np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+                np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+                np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+                np.clip(xy[:, 3], 0, height, out=xy[:, 3])
             w = xy[:, 2] - xy[:, 0]
             h = xy[:, 3] - xy[:, 1]
             area = w * h
