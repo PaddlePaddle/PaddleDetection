@@ -1,0 +1,58 @@
+architecture: DeepSORT
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+
+DeepSORT:
+  detector: YOLOv3
+  reid: PCBPyramid
+  tracker: DeepSORTTracker
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
+
+# use default config
+# YOLOv3FPN:
+
+YOLOv3Head:
+  anchors: [[10, 13], [16, 30], [33, 23],
+            [30, 61], [62, 45], [59, 119],
+            [116, 90], [156, 198], [373, 326]]
+  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
+  loss: YOLOv3Loss
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  downsample: [32, 16, 8]
+  label_smooth: false
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.2
+    downsample_ratio: 32
+    clip_bbox: true
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 1000
+
+PCBPyramid:
+  num_conv_out_channels: 128
+  num_classes: 751
+
+DeepSORTTracker:
+  budget: 100
+  max_age: 70
+  n_init: 3
+  metric_type: 'cosine'
+  matching_threshold: 0.2
+  max_iou_distance: 0.9
+  motion: 'KalmanFilter'

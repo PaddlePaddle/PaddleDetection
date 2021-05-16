@@ -4,7 +4,7 @@ TrainReader:
     - Decode: {}
     - AugmentHSV: {}
     - LetterBoxResize: {target_size: [608, 1088]}
-    - RandomAffine: {}
+    - MOTRandomAffine: {}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}

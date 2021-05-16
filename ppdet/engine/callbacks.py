@@ -158,7 +158,9 @@ class Checkpointer(Callback):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'train':
                 end_epoch = self.model.cfg.epoch
-                if epoch_id % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
+                if (
+                        epoch_id + 1
+                ) % self.model.cfg.snapshot_epoch == 0 or epoch_id == end_epoch - 1:
                     save_name = str(
                         epoch_id) if epoch_id != end_epoch - 1 else "model_final"
                     weight = self.weight
