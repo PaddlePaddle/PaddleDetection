@@ -11,12 +11,12 @@
 
 ## 简介
 
-[PP-YOLO](https://arxiv.org/abs/2007.12099)是PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 2.0.0rc1(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release)。
+[PP-YOLO](https://arxiv.org/abs/2007.12099)是PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 2.0.2(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-develop)。
 
 PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.9%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
-  <img src="../../../docs/images/ppyolo_map_fps.png" width=500 />
+  <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
 PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
@@ -207,7 +207,7 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 - 精度与推理速度数据均为使用输入图像尺寸为608的测试结果
 - Box AP为在COCO train2017数据集训练，val2017和test-dev2017数据集上评估`mAP(IoU=0.5:0.95)`数据
 - 推理速度为单卡V100上，batch size=1, 使用上述benchmark测试方法的测试结果，测试环境配置为CUDA 10.2，CUDNN 7.5.1
-- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO.md)
+- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/README.md)
 
 ## 引用
 
