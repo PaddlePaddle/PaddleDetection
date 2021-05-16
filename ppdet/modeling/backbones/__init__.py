@@ -21,6 +21,8 @@ from . import hrnet
 from . import blazenet
 from . import ghostnet
 from . import senet
+from . import res2net
+from . import dla
 
 from .vgg import *
 from .resnet import *
@@ -31,3 +33,5 @@ from .hrnet import *
 from .blazenet import *
 from .ghostnet import *
 from .senet import *
+from .res2net import *
+from .dla import *

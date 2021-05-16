@@ -15,7 +15,9 @@
 from . import jde_embedding_head
 from . import pyramidal_embedding
 from . import resnet
+from . import fairmot_embedding_head
 
 from .jde_embedding_head import *
 from .pyramidal_embedding import *
 from .resnet import *
+from .fairmot_embedding_head import *

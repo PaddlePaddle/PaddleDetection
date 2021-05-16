@@ -214,6 +214,9 @@ class MOTDataSet(DetDataset):
             gt_class = labels[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels), 1)).astype('float32')
             gt_ide = labels[:, 1:2].astype('int32')
+            for i, _ in enumerate(gt_ide):
+                if gt_ide[i] > -1:
+                    gt_ide[i] += self.tid_start_index[data_name]
 
             mot_rec = {
                 'im_file': img_file,
@@ -344,6 +347,7 @@ class MOTVideoDataset(DetDataset):
     def _load_video_images(self):
         self.cap = cv2.VideoCapture(self.video_file)
         self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
         logger.info('Length of the video: {:d} frames'.format(self.vn))
         res = True
         ct = 0
