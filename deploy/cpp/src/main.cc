@@ -203,9 +203,9 @@ void PredictVideo(const std::string& video_path,
     if (frame.empty()) {
       break;
     }
-    std::vector<cv::Mat> img_lst;
-    img_lst.push_back(frame);
-    det->Predict(img_lst, 0.5, 0, 1, &result, &bbox_num, &det_times);
+    std::vector<cv::Mat> imgs;
+    imgs.push_back(frame);
+    det->Predict(imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
     for (const auto& item : result) {
       if (item.rect.size() > 6){
       is_rbox = true;
@@ -242,25 +242,26 @@ void PredictVideo(const std::string& video_path,
   video_out.release();
 }
 
-void PredictImage(const std::vector<std::string> all_img_path_list,
+void PredictImage(const std::vector<std::string> all_img_paths,
                   const int batch_size,
                   const double threshold,
                   const bool run_benchmark,
                   PaddleDetection::ObjectDetector* det,
                   const std::string& output_dir = "output") {
   std::vector<double> det_t = {0, 0, 0};
-  int loop_cnt = ceil(float(all_img_path_list.size()) / batch_size);
-  printf("loop_cnt=%d PredictImage batch_size=%d\n", loop_cnt, batch_size);
-  for (int loop_idx=0; loop_idx<loop_cnt; loop_idx++) {
-    std::vector<cv::Mat> batch_img_lst;
-    int cur_bs = all_img_path_list.size() - loop_idx*batch_size;
-    if (cur_bs > batch_size) {
-      cur_bs = batch_size;
+  int steps = ceil(float(all_img_paths.size()) / batch_size);
+  printf("total images = %d, batch_size = %d, total steps = %d\n",
+                all_img_paths.size(), batch_size, steps);
+  for (int loop_idx = 0; loop_idx < steps; loop_idx++) {
+    std::vector<cv::Mat> batch_imgs;
+    int left_image_cnt = all_img_paths.size() - loop_idx * batch_size;
+    if (left_image_cnt > batch_size) {
+      left_image_cnt = batch_size;
     }
-    for (int bs=0; bs<cur_bs; bs++) {
-      std::string image_file_path = all_img_path_list.at(loop_idx*batch_size+bs);
+    for (int bs = 0; bs < left_image_cnt; bs++) {
+      std::string image_file_path = all_img_paths.at(loop_idx * batch_size+bs);
       cv::Mat im = cv::imread(image_file_path, 1);
-      batch_img_lst.insert(batch_img_lst.end(), im);
+      batch_imgs.insert(batch_imgs.end(), im);
     }
     
     // Store all detected result
@@ -269,16 +270,19 @@ void PredictImage(const std::vector<std::string> all_img_path_list,
     std::vector<double> det_times;
     bool is_rbox = false;
     if (run_benchmark) {
-      det->Predict(batch_img_lst, threshold, 10, 10, &result, &bbox_num,  &det_times);
+      det->Predict(batch_imgs, threshold, 10, 10, &result, &bbox_num,  &det_times);
     } else {
-      det->Predict(batch_img_lst, 0.5, 0, 1, &result, &bbox_num, &det_times);
-      for (int i=0; i<cur_bs; i++) {
-        for (int j=0; j<bbox_num[i]; j++) {
-          std::cout << "cur_bs: "<< cur_bs << "i= " << i << " j = " << j << std::endl;
-          PaddleDetection::ObjectResult item = result[i*batch_size+j];
+      det->Predict(batch_imgs, 0.5, 0, 1, &result, &bbox_num, &det_times);
+      // get labels and colormap
+      auto labels = det->GetLabelList();
+      auto colormap = PaddleDetection::GenerateColorMap(labels.size());
+
+      for (int i = 0; i < left_image_cnt; i++) {
+        for (int j = 0; j < bbox_num[i]; j++) {
+          PaddleDetection::ObjectResult item = result[i * batch_size+j];
           if (item.rect.size() > 6){
-          is_rbox = true;
-          printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
+            is_rbox = true;
+            printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
               item.class_id,
               item.confidence,
               item.rect[0],
@@ -302,14 +306,11 @@ void PredictImage(const std::vector<std::string> all_img_path_list,
         }
       }
       // Visualization result
-      auto labels = det->GetLabelList();
-      auto colormap = PaddleDetection::GenerateColorMap(labels.size());
-
       int bbox_idx = 0;
-      for (int bs=0; bs<batch_img_lst.size(); bs++) {
-        cv::Mat im = batch_img_lst[bs];
+      for (int bs = 0; bs < batch_imgs.size(); bs++) {
+        cv::Mat im = batch_imgs[bs];
         std::vector<PaddleDetection::ObjectResult> im_result;
-        for (int k=0; k<bbox_num[bs]; k++) {
+        for (int k = 0; k < bbox_num[bs]; k++) {
           im_result.push_back(result[bbox_idx+k]);
         }
         bbox_idx += bbox_num[bs];
@@ -322,7 +323,7 @@ void PredictImage(const std::vector<std::string> all_img_path_list,
         if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
           output_path += OS_PATH_SEP;
         }
-        std::string image_file_path = all_img_path_list.at(loop_idx*batch_size+bs);
+        std::string image_file_path = all_img_paths.at(loop_idx * batch_size+bs);
         output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
         printf("Visualized output saved as %s\n", output_path.c_str());
@@ -332,7 +333,7 @@ void PredictImage(const std::vector<std::string> all_img_path_list,
     det_t[1] += det_times[1];
     det_t[2] += det_times[2];
   }
-  PrintBenchmarkLog(det_t, all_img_path_list.size());
+  PrintBenchmarkLog(det_t, all_img_paths.size());
 }
 
 int main(int argc, char** argv) {
@@ -360,13 +361,13 @@ int main(int argc, char** argv) {
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
-    std::vector<std::string> all_img_list;
+    std::vector<std::string> all_imgs;
     if (!FLAGS_image_file.empty()) {
-      all_img_list.push_back(FLAGS_image_file);
+      all_imgs.push_back(FLAGS_image_file);
     } else {
-      GetAllFiles((char *)FLAGS_image_dir.c_str(), all_img_list);
+      GetAllFiles((char *)FLAGS_image_dir.c_str(), all_imgs);
     }
-    PredictImage(all_img_list, FLAGS_batch_size, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
+    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
 }

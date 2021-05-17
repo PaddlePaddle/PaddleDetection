@@ -93,7 +93,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
 // Visualiztion MaskDetector results
 cv::Mat VisualizeResult(const cv::Mat& img,
                         const std::vector<ObjectResult>& results,
-                        const std::vector<std::string>& lable_list,
+                        const std::vector<std::string>& lables,
                         const std::vector<int>& colormap,
                         const bool is_rbox=false) {
   cv::Mat vis_img = img.clone();
@@ -101,7 +101,7 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     // Configure color and text size
     std::ostringstream oss;
     oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
-    oss << lable_list[results[i].class_id] << " ";
+    oss << lables[results[i].class_id] << " ";
     oss << results[i].confidence;
     std::string text = oss.str();
     int c1 = colormap[3 * results[i].class_id + 0];
@@ -121,12 +121,12 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     if (is_rbox)
     {
         // Draw object, text, and background
-        for (int k=0; k<4; k++)
+        for (int k = 0; k < 4; k++)
         {
-            cv::Point pt1 = cv::Point(results[i].rect[(k*2)%8], 
-                                      results[i].rect[(k*2+1)%8]);
-            cv::Point pt2 = cv::Point(results[i].rect[(k*2+2)%8], 
-                                      results[i].rect[(k*2+3)%8]);
+            cv::Point pt1 = cv::Point(results[i].rect[(k * 2) % 8],
+                                      results[i].rect[(k * 2 + 1) % 8]);
+            cv::Point pt2 = cv::Point(results[i].rect[(k * 2 + 2) % 8],
+                                      results[i].rect[(k * 2 + 3) % 8]);
             cv::line(vis_img, pt1, pt2, roi_color, 2);
         }
     }
@@ -168,15 +168,15 @@ void ObjectDetector::Preprocess(const cv::Mat& ori_im) {
 }
 
 void ObjectDetector::Postprocess(
-    const std::vector<cv::Mat> mat_lst,
+    const std::vector<cv::Mat> mats,
     std::vector<ObjectResult>* result,
     std::vector<int> bbox_num,
     bool is_rbox=false) {
   result->clear();
   int start_idx = 0;
-  for (int im_id=0; im_id<bbox_num.size(); im_id++) {
-    cv::Mat raw_mat = mat_lst[im_id];
-    for (int j=start_idx; j<start_idx+bbox_num[im_id]; j++) {
+  for (int im_id = 0; im_id < bbox_num.size(); im_id++) {
+    cv::Mat raw_mat = mats[im_id];
+    for (int j = start_idx; j < start_idx+bbox_num[im_id]; j++) {
       int rh = 1;
       int rw = 1;
       if (config_.arch_ == "Face") {
@@ -187,17 +187,17 @@ void ObjectDetector::Postprocess(
       if (is_rbox) {
         for (int j = 0; j < bbox_num[im_id]; ++j) {
           // Class id
-          int class_id = static_cast<int>(round(output_data_[ 0 + j * 10]));
+          int class_id = static_cast<int>(round(output_data_[0 + j * 10]));
           // Confidence score
-          float score = output_data_[ 1 + j * 10];
-          int x1 = (output_data_[ 2 + j * 10] * rw);
-          int y1 = (output_data_[ 3 + j * 10] * rh);
-          int x2 = (output_data_[ 4 + j * 10] * rw);
-          int y2 = (output_data_[ 5 + j * 10] * rh);
-          int x3 = (output_data_[ 6 + j * 10] * rw);
-          int y3 = (output_data_[ 7 + j * 10] * rh);
-          int x4 = (output_data_[ 8 + j * 10] * rw);
-          int y4 = (output_data_[ 9 + j * 10] * rh);
+          float score = output_data_[1 + j * 10];
+          int x1 = (output_data_[2 + j * 10] * rw);
+          int y1 = (output_data_[3 + j * 10] * rh);
+          int x2 = (output_data_[4 + j * 10] * rw);
+          int y2 = (output_data_[5 + j * 10] * rh);
+          int x3 = (output_data_[6 + j * 10] * rw);
+          int y3 = (output_data_[7 + j * 10] * rh);
+          int x4 = (output_data_[8 + j * 10] * rw);
+          int y4 = (output_data_[9 + j * 10] * rh);
           if (score > threshold_ && class_id > -1) {
             ObjectResult result_item;
             result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
@@ -210,13 +210,13 @@ void ObjectDetector::Postprocess(
       else {
         for (int j = 0; j < bbox_num[im_id]; ++j) {
           // Class id
-          int class_id = static_cast<int>(round(output_data_[ 0 + j * 6]));
+          int class_id = static_cast<int>(round(output_data_[0 + j * 6]));
           // Confidence score
-          float score = output_data_[ 1 + j * 6];
-          int xmin = (output_data_[ 2 + j * 6] * rw);
-          int ymin = (output_data_[ 3 + j * 6] * rh);
-          int xmax = (output_data_[ 4 + j * 6] * rw);
-          int ymax = (output_data_[ 5 + j * 6] * rh);
+          float score = output_data_[1 + j * 6];
+          int xmin = (output_data_[2 + j * 6] * rw);
+          int ymin = (output_data_[3 + j * 6] * rh);
+          int xmax = (output_data_[4 + j * 6] * rw);
+          int ymax = (output_data_[5 + j * 6] * rh);
           int wd = xmax - xmin;
           int hd = ymax - ymin;
           if (score > threshold_ && class_id > -1) {
@@ -233,7 +233,7 @@ void ObjectDetector::Postprocess(
   }
 }
 
-void ObjectDetector::Predict(const std::vector<cv::Mat> img_lst,
+void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       const double threshold,
       const int warmup,
       const int repeats,
@@ -241,7 +241,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> img_lst,
       std::vector<int>* bbox_num,
       std::vector<double>* times) {
   auto preprocess_start = std::chrono::steady_clock::now();
-  int batch_size = img_lst.size();
+  int batch_size = imgs.size();
 
   // in_data_batch
   std::vector<float> in_data_all;
@@ -249,8 +249,8 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> img_lst,
   std::vector<float> scale_factor_all(batch_size * 2);
   
   // Preprocess image
-  for (int bs_idx=0; bs_idx<batch_size; bs_idx++) {
-    cv::Mat im = img_lst.at(bs_idx);
+  for (int bs_idx = 0; bs_idx < batch_size; bs_idx++) {
+    cv::Mat im = imgs.at(bs_idx);
     Preprocess(im);
     im_shape_all[bs_idx * 2] = inputs_.im_shape_[0];
     im_shape_all[bs_idx * 2 + 1] = inputs_.im_shape_[1];
@@ -312,9 +312,6 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> img_lst,
     for (int j = 0; j < output_shape.size(); ++j) {
       output_size *= output_shape[j];
     }
-    for (int j = 0; j < output_shape.size(); ++j) {
-      output_size *= output_shape[j];
-    }
     is_rbox = output_shape[output_shape.size()-1] % 10 == 0;
 
     if (output_size < 6) {
@@ -333,7 +330,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> img_lst,
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
-  Postprocess(img_lst, result, out_bbox_num_data_, is_rbox);
+  Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
   bbox_num->clear();
   for (int k=0; k<out_bbox_num_data_.size(); k++) {
     int tmp = out_bbox_num_data_[k];

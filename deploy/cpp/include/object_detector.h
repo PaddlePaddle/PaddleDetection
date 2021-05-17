@@ -50,7 +50,7 @@ std::vector<int> GenerateColorMap(int num_class);
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
-                     const std::vector<std::string>& lable_list,
+                     const std::vector<std::string>& lables,
                      const std::vector<int>& colormap,
                      const bool is_rbox);
 
@@ -93,7 +93,7 @@ class ObjectDetector {
     const std::string& run_mode = "fluid");
 
   // Run predictor
-  void Predict(const std::vector<cv::Mat> img_lst,
+  void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
@@ -121,7 +121,7 @@ class ObjectDetector {
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(
-      const std::vector<cv::Mat> mat_lst,
+      const std::vector<cv::Mat> mats,
       std::vector<ObjectResult>* result,
       std::vector<int> bbox_num,
       bool is_rbox);
