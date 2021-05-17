@@ -19,6 +19,7 @@
 #=================================================
 
 
+# directory config
 DIST_DIR="dist"
 BUILD_DIR="build"
 EGG_DIR="paddledet.egg-info"
@@ -26,43 +27,49 @@ EGG_DIR="paddledet.egg-info"
 CFG_DIR="configs"
 TEST_DIR=".tests"
 
+# command line log config
+RED='\033[0;31m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NONE='\033[0m'
+
 function python_version_check() {
   PY_MAIN_VERSION=`python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1}'`
   PY_SUB_VERSION=`python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $2}'`
   echo -e "find python version ${PY_MAIN_VERSION}.${PY_SUB_VERSION}"
   if [ $PY_MAIN_VERSION -ne "3" -o $PY_SUB_VERSION -lt "5" ]; then
-    echo -e "please use Python >= 3.5 !"
+    echo -e "${RED}FAIL:${NONE} please use Python >= 3.5 !"
     exit 1
   fi
 }
 
 function init() {
-    echo -e "removing building directory..."
+    echo -e "${BLUE}init:${NONE} removing building directory..."
     rm -rf $DIST_DIR $BUILD_DIR $EGG_DIR $TEST_DIR
     if [ `pip list | grep paddledet | wc -l` -gt 0  ]; then
-      echo -e "uninstalling paddledet..."
+      echo -e "${BLUE}init:${NONE} uninstalling paddledet..."
       pip uninstall -y paddledet
     fi
 }
 
 function build_and_install() {
-  echo -e "building paddledet wheel..."
+  echo -e "${BLUE}build:${NONE} building paddledet wheel..."
   python setup.py sdist bdist_wheel
-  if [$? -ne 0]; then
-    echo -e "build paddledet wheel failed!"
+  if [ $? -ne 0 ]; then
+    echo -e "${RED}FAIL:${NONE} build paddledet wheel failed!"
     exit 1
   fi
+  echo -e "${BLUE}build:${NONE} build paddldet wheel success"
 
-  echo -e "build paddldet wheel success, installing paddledet..."
+  echo -e "${BLUE}install:${NONE} installing paddledet..."
   cd $DIST_DIR
-  echo -e "find wheel `find . -name 'paddledet*.whl'`"
   find . -name "paddledet*.whl" | xargs pip install
   if [ $? -ne 0 ]; then
     cd ..
-    echo -e "install paddledet wheel failed!"
+    echo -e "${RED}FAIL:${NONE} install paddledet wheel failed!"
     exit 1
   fi
-  echo -e "paddledet compile and install success"
+  echo -e "${BLUE}install:${NONE} paddledet install success"
   cd ..
 }
 
@@ -70,6 +77,8 @@ function unittest() {
   if [ -d $TEST_DIR ]; then
     rm -rf $TEST_DIR
   fi;
+
+  echo -e "${BLUE}unittest:${NONE} run unittests..."
 
   # NOTE: perform unittests under TEST_DIR to
   #       make sure installed paddledet is used
@@ -87,6 +96,7 @@ function unittest() {
   # clean TEST_DIR
   cd ..
   rm -rf $TEST_DIR
+  echo -e "${BLUE}unittest:${NONE} unittests success"
 }
 
 function cleanup() {
@@ -99,7 +109,8 @@ function cleanup() {
 }
 
 function abort() {
-  echo "build wheel and unittest failed! please check your code" 1>&2
+  echo -e "${RED}FAIL:${NONE} build wheel and unittest failed!
+              please check your code" 1>&2
 
   cur_dir=`basename "$pwd"`
   if [ cur_dir==$TEST_DIR -o cur_dir==$DIST_DIR ]; then
@@ -120,7 +131,7 @@ build_and_install
 unittest
 cleanup
 
-echo -e "paddledet wheel compiled and check success!"
-echo -e "wheel saved under ./dist"
+echo -e "${BLUE}paddledet wheel compiled and checked success!"
+echo -e "${BLUE}wheel saved under${NONE} ${RED}${BOLD}./dist"
 
 trap : 0
