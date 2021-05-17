@@ -48,6 +48,6 @@ python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
 
 Some inference results are visualized below:
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_001.jpeg)
+![](../../docs/images/VehicleDetection_001.jpeg)
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_005.png)
+![](../../docs/images/VehicleDetection_005.png)
