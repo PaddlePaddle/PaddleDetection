@@ -332,7 +332,13 @@ def predict_image(detector, image_list):
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
             results = detector.predict(img_file, FLAGS.threshold)
-            draw_pose(img_file, results, visual_thread=FLAGS.threshold)
+            if not os.path.exists(FLAGS.output_dir):
+                os.makedirs(FLAGS.output_dir)
+            draw_pose(
+                img_file,
+                results,
+                visual_thread=FLAGS.threshold,
+                save_dir=FLAGS.output_dir)
 
 
 def predict_video(detector, camera_id):
