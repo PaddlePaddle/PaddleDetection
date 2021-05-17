@@ -30,6 +30,7 @@ TEST_DIR=".tests"
 # command line log config
 RED='\033[0;31m'
 BLUE='\033[0;34m'
+GREEN='\033[1;32m'
 BOLD='\033[1m'
 NONE='\033[0m'
 
@@ -44,32 +45,33 @@ function python_version_check() {
 }
 
 function init() {
-    echo -e "${BLUE}init:${NONE} removing building directory..."
+    echo -e "${BLUE}[init]${NONE} removing building directory..."
     rm -rf $DIST_DIR $BUILD_DIR $EGG_DIR $TEST_DIR
     if [ `pip list | grep paddledet | wc -l` -gt 0  ]; then
-      echo -e "${BLUE}init:${NONE} uninstalling paddledet..."
+      echo -e "${BLUE}[init]${NONE} uninstalling paddledet..."
       pip uninstall -y paddledet
     fi
+    echo -e "${BLUE}[init]${NONE} ${GREEN}init success\n"
 }
 
 function build_and_install() {
-  echo -e "${BLUE}build:${NONE} building paddledet wheel..."
+  echo -e "${BLUE}[build]${NONE} building paddledet wheel..."
   python setup.py sdist bdist_wheel
   if [ $? -ne 0 ]; then
-    echo -e "${RED}FAIL:${NONE} build paddledet wheel failed!"
+    echo -e "${RED}[FAIL]${NONE} build paddledet wheel failed !"
     exit 1
   fi
-  echo -e "${BLUE}build:${NONE} build paddldet wheel success"
+  echo -e "${BLUE}[build]${NONE} ${GREEN}build paddldet wheel success\n"
 
-  echo -e "${BLUE}install:${NONE} installing paddledet..."
+  echo -e "${BLUE}[install]${NONE} installing paddledet..."
   cd $DIST_DIR
   find . -name "paddledet*.whl" | xargs pip install
   if [ $? -ne 0 ]; then
     cd ..
-    echo -e "${RED}FAIL:${NONE} install paddledet wheel failed!"
+    echo -e "${RED}[FAIL]${NONE} install paddledet wheel failed !"
     exit 1
   fi
-  echo -e "${BLUE}install:${NONE} paddledet install success"
+  echo -e "${BLUE}[install]${NONE} ${GREEN}paddledet install success\n"
   cd ..
 }
 
@@ -78,7 +80,7 @@ function unittest() {
     rm -rf $TEST_DIR
   fi;
 
-  echo -e "${BLUE}unittest:${NONE} run unittests..."
+  echo -e "${BLUE}[unittest]${NONE} run unittests..."
 
   # NOTE: perform unittests under TEST_DIR to
   #       make sure installed paddledet is used
@@ -96,7 +98,7 @@ function unittest() {
   # clean TEST_DIR
   cd ..
   rm -rf $TEST_DIR
-  echo -e "${BLUE}unittest:${NONE} unittests success"
+  echo -e "${BLUE}[unittest]${NONE} ${GREEN}unittests success\n${NONE}"
 }
 
 function cleanup() {
@@ -109,8 +111,8 @@ function cleanup() {
 }
 
 function abort() {
-  echo -e "${RED}FAIL:${NONE} build wheel and unittest failed!
-              please check your code" 1>&2
+  echo -e "${RED}[FAIL]${NONE} build wheel and unittest failed !
+          please check your code" 1>&2
 
   cur_dir=`basename "$pwd"`
   if [ cur_dir==$TEST_DIR -o cur_dir==$DIST_DIR ]; then
@@ -131,7 +133,11 @@ build_and_install
 unittest
 cleanup
 
-echo -e "${BLUE}paddledet wheel compiled and checked success!"
-echo -e "${BLUE}wheel saved under${NONE} ${RED}${BOLD}./dist"
+PADDLE_VERSION=`python -c "import paddle; print(paddle.version.full_version)"`
+PADDLE_COMMIT=`python -c "import paddle; print(paddle.version.commit)"`
+echo -e "\n${GREEN}paddledet wheel compiled and checked success !${NONE}
+        ${BLUE}paddle version:${NONE} $PADDLE_VERSION
+        ${BLUE}paddle commit:${NONE} $PADDLE_COMMIT\n"
+echo -e "${GREEN}wheel saved under${NONE} ${RED}${BOLD}./dist"
 
 trap : 0
