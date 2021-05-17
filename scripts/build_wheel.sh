@@ -27,8 +27,8 @@ CFG_DIR="configs"
 TEST_DIR=".tests"
 
 function python_version_check() {
-  PY_MAIN_VERSION=`python3.7 -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1}'`
-  PY_SUB_VERSION=`python3.7 -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $2}'`
+  PY_MAIN_VERSION=`python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $1}'`
+  PY_SUB_VERSION=`python -V 2>&1 | awk '{print $2}' | awk -F '.' '{print $2}'`
   echo -e "find python version ${PY_MAIN_VERSION}.${PY_SUB_VERSION}"
   if [ $PY_MAIN_VERSION -ne "3" -o $PY_SUB_VERSION -lt "5" ]; then
     echo -e "please use Python >= 3.5 !"
@@ -39,15 +39,15 @@ function python_version_check() {
 function init() {
     echo -e "removing building directory..."
     rm -rf $DIST_DIR $BUILD_DIR $EGG_DIR $TEST_DIR
-    if [ `pip3.7 list | grep paddledet | wc -l` -gt 0  ]; then
+    if [ `pip list | grep paddledet | wc -l` -gt 0  ]; then
       echo -e "uninstalling paddledet..."
-      pip3.7 uninstall -y paddledet
+      pip uninstall -y paddledet
     fi
 }
 
 function build_and_install() {
   echo -e "building paddledet wheel..."
-  python3.7 setup.py sdist bdist_wheel
+  python setup.py sdist bdist_wheel
   if [$? -ne 0]; then
     echo -e "build paddledet wheel failed!"
     exit 1
@@ -56,7 +56,7 @@ function build_and_install() {
   echo -e "build paddldet wheel success, installing paddledet..."
   cd $DIST_DIR
   echo -e "find wheel `find . -name 'paddledet*.whl'`"
-  find . -name "paddledet*.whl" | xargs pip3.7 install
+  find . -name "paddledet*.whl" | xargs pip install
   if [ $? -ne 0 ]; then
     cd ..
     echo -e "install paddledet wheel failed!"
@@ -82,7 +82,7 @@ function unittest() {
   fi
   find "../ppdet" -name 'tests' -type d -print0 | \
       xargs -0 -I{} -n1 bash -c \
-      'python3.7 -m unittest discover -v -s {}'
+      'python -m unittest discover -v -s {}'
 
   # clean TEST_DIR
   cd ..
@@ -95,7 +95,7 @@ function cleanup() {
   fi
 
   rm -rf $BUILD_DIR $EGG_DIR
-  pip3.7 uninstall -y paddledet
+  pip uninstall -y paddledet
 }
 
 function abort() {
@@ -107,7 +107,7 @@ function abort() {
   fi
 
   rm -rf $BUILD_DIR $EGG_DIR $DIST_DIR $TEST_DIR
-  pip3.7 uninstall -y paddledet
+  pip uninstall -y paddledet
 }
 
 python_version_check
