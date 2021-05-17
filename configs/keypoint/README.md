@@ -6,17 +6,21 @@
 
 -    PaddleDetection KeyPoint部分紧跟业内最新最优算法方案，包含Top-Down、BottomUp两套方案，以满足用户的不同需求。
 
+<div align="center">
+  <img src="./football_keypoint.gif" width='800'/>
+</div>
+
 
 
 ####   Model Zoo
 
-| 模型              | 输入尺寸 | 通道数 | AP(coco val) |                           模型下载                           | 配置文件                                                     |
-| :---------------- | -------- | ------ | :----------: | :----------------------------------------------------------: | ------------------------------------------------------------ |
-| HigherHRNet       | 512      | 32     |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml) |
-| HigherHRNet       | 640      | 32     |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_640.yml) |
-| HigherHRNet+SWAHR | 512      | 32     |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
-| HRNet             | 256x192  | 32     |     76.9     | [hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/hrnet/hrnet_w32_256x192.yml) |
-| HRNet             | 384x288  | 32     |     77.8     | [hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/keypoint/hrnet/hrnet_w32_384x288.yml) |
+| 模型              | 输入尺寸 | 通道数 | AP(coco val) |                           模型下载                           | 配置文件                                                    |
+| :---------------- | -------- | ------ | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
+| HigherHRNet       | 512      | 32     |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
+| HigherHRNet       | 640      | 32     |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
+| HigherHRNet+SWAHR | 512      | 32     |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
+| HRNet             | 256x192  | 32     |     76.9     | [hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x192.pdparams) | [config](./hrnet/hrnet_w32_256x192.yml)                     |
+| HRNet             | 384x288  | 32     |     77.8     | [hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_384x288.pdparams) | [config](./hrnet/hrnet_w32_384x288.yml)                     |
 
 
 
@@ -54,6 +58,8 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/hig
 
 ​    **模型预测：**
 
+​    注意：top-down模型只支持单人截图预测，如需使用多人图，请使用[联合部署推理]方式。或者使用bottom-up模型。
+
 ```shell
 CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=./output/higherhrnet_hrnet_w32_512/model_final.pdparams --infer_dir=../images/ --draw_threshold=0.5 --save_txt=True
 ```
@@ -65,10 +71,10 @@ CUDA_VISIBLE_DEVICES=0 python3 tools/infer.py -c configs/keypoint/higherhrnet/hi
 python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml -o weights=output/higherhrnet_hrnet_w32_512/model_final.pdparams
 
 #部署推理
-#keypoint top-down/bottom-up 单独推理，图片
-python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=../images/xxx.jpeg --use_gpu=True --threshold=0.5
-python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=../images/xxx.jpeg --use_gpu=True --threshold=0.5
+#keypoint top-down/bottom-up 单独推理，该模式下top-down模型只支持单人截图预测。
+python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --use_gpu=True --threshold=0.5
+python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --use_gpu=True --threshold=0.5
 
-#keypoint top-down + detector 与检测联合部署推理
+#keypoint top-down模型 + detector 检测联合部署推理（联合推理只支持top-down方式）
 python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4
 ```

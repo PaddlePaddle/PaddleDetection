@@ -26,19 +26,22 @@ from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
 from keypoint_visualize import draw_pose
 
 
-def expand_crop(images, rect, expand_ratio=0.5):
+def expand_crop(images, rect, expand_ratio=0.3):
     imgh, imgw, c = images.shape
-    label, _, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
+    label, conf, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
     if label != 0:
-        return None, None
+        return None, None, None
+    org_rect = [xmin, ymin, xmax, ymax]
     h_half = (ymax - ymin) * (1 + expand_ratio) / 2.
     w_half = (xmax - xmin) * (1 + expand_ratio) / 2.
+    if h_half > w_half * 4 / 3:
+        w_half = h_half * 0.75
     center = [(ymin + ymax) / 2., (xmin + xmax) / 2.]
     ymin = max(0, int(center[0] - h_half))
     ymax = min(imgh - 1, int(center[0] + h_half))
     xmin = max(0, int(center[1] - w_half))
     xmax = min(imgw - 1, int(center[1] + w_half))
-    return images[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax]
+    return images[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax], org_rect
 
 
 def get_person_from_rect(images, results):
@@ -46,12 +49,14 @@ def get_person_from_rect(images, results):
     mask = det_results[:, 1] > FLAGS.det_threshold
     valid_rects = det_results[mask]
     image_buff = []
+    org_rects = []
     for rect in valid_rects:
-        rect_image, new_rect = expand_crop(images, rect)
+        rect_image, new_rect, org_rect = expand_crop(images, rect)
         if rect_image is None:
             continue
         image_buff.append([rect_image, new_rect])
-    return image_buff
+        org_rects.append(org_rect)
+    return image_buff, org_rects
 
 
 def affine_backto_orgimages(keypoint_result, batch_records):
@@ -65,10 +70,10 @@ def topdown_unite_predict(detector, topdown_keypoint_detector, image_list):
     for i, img_file in enumerate(image_list):
         image, _ = decode_image(img_file, {})
         results = detector.predict(image, FLAGS.det_threshold)
-        batchs_images = get_person_from_rect(image, results)
+        batchs_images, det_rects = get_person_from_rect(image, results)
         keypoint_vector = []
         score_vector = []
-        rect_vecotr = []
+        rect_vecotr = det_rects
         for batch_images, batch_records in batchs_images:
             keypoint_result = topdown_keypoint_detector.predict(
                 batch_images, FLAGS.keypoint_threshold)
@@ -76,14 +81,18 @@ def topdown_unite_predict(detector, topdown_keypoint_detector, image_list):
                                                            batch_records)
             keypoint_vector.append(orgkeypoints)
             score_vector.append(scores)
-            rect_vecotr.append(batch_records)
         keypoint_res = {}
         keypoint_res['keypoint'] = [
             np.vstack(keypoint_vector), np.vstack(score_vector)
         ]
         keypoint_res['bbox'] = rect_vecotr
+        if not os.path.exists(FLAGS.output_dir):
+            os.makedirs(FLAGS.output_dir)
         draw_pose(
-            img_file, keypoint_res, visual_thread=FLAGS.keypoint_threshold)
+            img_file,
+            keypoint_res,
+            visual_thread=FLAGS.keypoint_threshold,
+            save_dir=FLAGS.output_dir)
 
 
 def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
@@ -92,8 +101,8 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.basename(
-            os.path.split(FLAGS.video_file + '.mp4')[-1])
+        video_name = os.path.splitext(os.path.basename(FLAGS.video_file))[
+            0] + '.mp4'
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -114,10 +123,9 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict(frame2, FLAGS.det_threshold)
-        batchs_images = get_person_from_rect(frame, results)
+        batchs_images, rect_vecotr = get_person_from_rect(frame2, results)
         keypoint_vector = []
         score_vector = []
-        rect_vecotr = []
         for batch_images, batch_records in batchs_images:
             keypoint_result = topdown_keypoint_detector.predict(
                 batch_images, FLAGS.keypoint_threshold)
@@ -125,7 +133,6 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
                                                            batch_records)
             keypoint_vector.append(orgkeypoints)
             score_vector.append(scores)
-            rect_vecotr.append(batch_records)
         keypoint_res = {}
         keypoint_res['keypoint'] = [
             np.vstack(keypoint_vector), np.vstack(score_vector)
