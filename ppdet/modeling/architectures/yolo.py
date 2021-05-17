@@ -30,7 +30,8 @@ class YOLOv3(BaseArch):
             yolo_head (nn.Layer): anchor_head instance
             bbox_post_process (object): `BBoxPostProcess` instance
             data_format (str): data format, NCHW or NHWC
-            for_mot (bool): whether return other features used in tracking model 
+            for_mot (bool): whether return other features for multi-object tracking
+                models, default False in pure object detection models.
         """
         super(YOLOv3, self).__init__(data_format=data_format)
         self.backbone = backbone
