@@ -10,11 +10,11 @@ For general information about PaddleDetection, please see [README.md](https://gi
 
 ## Requirements:
 
-- PaddlePaddle 2.0.1
+- PaddlePaddle 2.1
 - OS 64 bit
-- Python 3(3.5.1+/3.6/3.7)，64 bit
+- Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64 bit
 - pip/pip3(9.0.1+), 64 bit
-- CUDA >= 9.0
+- CUDA >= 10.1
 - cuDNN >= 7.6
 
 
@@ -22,6 +22,7 @@ Dependency of PaddleDetection and PaddlePaddle:
 
 | PaddleDetection version | PaddlePaddle version  |    tips    |
 | :----------------: | :---------------: | :-------: |
+|    release/2.1       |       >= 2.1.0   |     Dygraph mode is set as default    |
 |    release/2.0       |       >= 2.0.1    |     Dygraph mode is set as default    |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |
 |    release/0.5       |       >= 1.8.4    |  Cascade R-CNN and SOLOv2 depends on 2.0.0.rc |
@@ -34,17 +35,16 @@ Dependency of PaddleDetection and PaddlePaddle:
 ### 1. Install PaddlePaddle
 
 ```
-# CUDA9.0
-python -m pip install paddlepaddle-gpu==2.0.1.post90 -i https://mirror.baidu.com/pypi/simple
 
 # CUDA10.1
-python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.1.0.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
 
 # CPU
 python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 ```
 
-For more installation methods such as conda or compile with source code, please refer to the [installation document](https://www.paddlepaddle.org.cn/documentation/docs/en/install/index_en.html)
+- For more CUDA version or environment to quick install, please refer to the [PaddlePaddle Quick Installation document](https://www.paddlepaddle.org.cn/install/quick)
+- For more installation methods such as conda or compile with source code, please refer to the [installation document](https://www.paddlepaddle.org.cn/documentation/docs/en/install/index_en.html)
 
 Please make sure that your PaddlePaddle is installed successfully and the version is not lower than the required version. Use the following command to verify.
 
