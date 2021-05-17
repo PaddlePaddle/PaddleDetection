@@ -58,8 +58,8 @@ sh scripts/build.sh
 
 - 手机移动端部署，请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。
 
-## 4.BenchMark测试
-- 使用导出的模型，运行BenchMark批量测试脚本：
+## 4.Benchmark测试
+- 使用导出的模型，运行Benchmark批量测试脚本：
 ```shell
 sh deploy/benchmark/benchmark.sh {model_dir} {model_name}
 ```
