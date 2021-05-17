@@ -250,38 +250,6 @@ class LiteConv(nn.Layer):
 
 @register
 @serializable
-class AnchorGeneratorRPN(object):
-    def __init__(self,
-                 anchor_sizes=[32, 64, 128, 256, 512],
-                 aspect_ratios=[0.5, 1.0, 2.0],
-                 stride=[16.0, 16.0],
-                 variance=[1.0, 1.0, 1.0, 1.0],
-                 anchor_start_size=None):
-        super(AnchorGeneratorRPN, self).__init__()
-        self.anchor_sizes = anchor_sizes
-        self.aspect_ratios = aspect_ratios
-        self.stride = stride
-        self.variance = variance
-        self.anchor_start_size = anchor_start_size
-
-    def __call__(self, input, level=None):
-        anchor_sizes = self.anchor_sizes if (
-            level is None or self.anchor_start_size is None) else (
-                self.anchor_start_size * 2**level)
-        stride = self.stride if (
-            level is None or self.anchor_start_size is None) else (
-                self.stride[0] * (2.**level), self.stride[1] * (2.**level))
-        anchor, var = ops.anchor_generator(
-            input=input,
-            anchor_sizes=anchor_sizes,
-            aspect_ratios=self.aspect_ratios,
-            stride=stride,
-            variance=self.variance)
-        return anchor, var
-
-
-@register
-@serializable
 class AnchorGeneratorSSD(object):
     def __init__(self,
                  steps=[8, 16, 32, 64, 100, 300],

@@ -29,7 +29,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 4)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-from ppdet.modeling.loss import YOLOv3Loss
+from ppdet.modeling.losses import YOLOv3Loss
 from ppdet.data.transform.op_helper import jaccard_overlap
 import random
 import numpy as np

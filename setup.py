@@ -17,7 +17,6 @@ import os.path as osp
 import glob
 import shutil
 from setuptools import find_packages, setup
-from paddle.utils import cpp_extension
 
 
 def readme():
