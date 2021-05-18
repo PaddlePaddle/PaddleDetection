@@ -25,6 +25,7 @@ from numbers import Integral
 import cv2
 import copy
 import numpy as np
+import random
 import math
 
 from .operators import BaseOperator, register_op
