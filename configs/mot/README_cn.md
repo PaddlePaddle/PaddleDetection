@@ -53,6 +53,12 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
+其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
+```
+[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+```
+**注意**: `frame_id`是图片帧的序号，`identity`是目标id采用默认值为`-1`，`bb_left`是目标框的左边界的x坐标，`bb_top`是目标框的上边界的y坐标，`width，height`是真实的像素宽高，`conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)，`x,y,z`是3D中用到的，在2D中默认为`-1`即可。
+
 
 ### FairMOT在MOT-16 train集上结果
 
@@ -102,7 +108,8 @@ MOT17
 ```
 字段`[class]`应为`0`，仅支持单类别多目标跟踪。
 字段`[identity]`是从`0`到`num_identifies-1`的整数，如果此框没有标识注释，则为`-1`。
-**请注意**，`[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+**注意**:
+ `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
 
@@ -147,7 +154,7 @@ dataset/mot
 FairMOT使用8GPU通过如下命令一键式启动训练
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 ### 2. 评估

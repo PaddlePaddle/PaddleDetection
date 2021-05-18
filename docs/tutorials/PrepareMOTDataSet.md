@@ -10,7 +10,7 @@ English | [简体中文](PrepareMOTDataSet_cn.md)
 - [Citations](#Citations)
 
 ### MOT Dataset
-PaddleDetection use the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16. MOT15 and MOT20 can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
+PaddleDetection uses the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16. MOT15 and MOT20 can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
 
 ### Data Format
 These several relevant datasets have the following structure:
@@ -200,7 +200,6 @@ Baidu NetDisk:
 Google Drive:
 [[0]](https://drive.google.com/file/d/116_mIdjgB-WJXGe8RYJDWxlFnc_4sqS8/view?usp=sharing)
 
-Original dataset webpage: [Person Search in the Wild datset](http://www.liangzheng.com.cn/Project/project_prw.html)
 
 #### ETHZ (overlapping videos with MOT-16 removed):
 Baidu NetDisk:

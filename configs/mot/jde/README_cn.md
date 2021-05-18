@@ -26,11 +26,7 @@
 | DarkNet53          | 576x320 |  63.1  |  64.6  | 1357  |  7083  | 32312 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
 
 **注意:**
-<<<<<<< HEAD
- JDE使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch。
-=======
- JDE使用8个GPU进行训练，每个GPU上batch size为4，训练了30个epoches。
->>>>>>> upstream/develop
+ JDE使用8个GPU进行训练，每个GPU上batch size为4，训练了30个epoch。
 
 ## 快速开始
 
@@ -39,7 +35,7 @@
 使用8GPU通过如下命令一键式启动训练
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml &>jde_darknet53_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml
 ```
 
 ### 2. 评估

@@ -31,8 +31,7 @@ English | [简体中文](README_cn.md)
 | DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
-
-FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
 ## Getting Start
 
@@ -41,7 +40,7 @@ FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and train
 Training FairMOT on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 

@@ -31,6 +31,12 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
+Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
+```
+[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+```
+**Notes:**
+`frame_id` is the frame number of the image, `identity` is the object id using default value `-1`, `bb_left` is the X coordinate of the left bound of the object box, `bb_top` is the Y coordinate of the upper boundary of the object box, `width, height` is the pixel width and height, `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold), `x,y,z` are used in 3D, default to `-1` in 2D.
 
 ## Getting Start
 

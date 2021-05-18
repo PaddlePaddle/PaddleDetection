@@ -52,6 +52,12 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
+Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
+```
+[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+```
+**Notes:**
+`frame_id` is the frame number of the image, `identity` is the object id using default value `-1`, `bb_left` is the X coordinate of the left bound of the object box, `bb_top` is the Y coordinate of the upper boundary of the object box, `width, height` is the pixel width and height, `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold), `x,y,z` are used in 3D, default to `-1` in 2D.
 
 ### FairMOT Results on MOT-16 train set
 
@@ -69,8 +75,7 @@ det_results_dir
 | DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
-
-FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+ FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
 
 ## Dataset Preparation
 
@@ -106,13 +111,14 @@ The field `[class]` should be `0`. Only single-class multi-object tracking is su
 
 The field `[identity]` is an integer from `0` to `num_identities - 1`, or `-1` if this box has no identity annotation.
 
-***Note** that the values of `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
+**Notes:**
+The values of `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
 
 First, follow the command below to download the `image_list.zip` and unzip it in the `dataset/mot` directory:
 ```
-wget https://dataset.bj.bcebos.com/mot/image_ lists.zip
+wget https://dataset.bj.bcebos.com/mot/image_lists.zip
 ```
 Then download and unzip each dataset, and the final directory is as follows:
 ```
@@ -151,7 +157,7 @@ dataset/mot
 Training FairMOT on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml
 ```
 
 ### 2. Evaluation
