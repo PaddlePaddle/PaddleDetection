@@ -6,6 +6,7 @@ English | [简体中文](README_cn.md)
 - [Introduction](#Introduction)
 - [Model Zoo](#Model_Zoo)
 - [Dataset Preparation](#Dataset_Preparation)
+- [Installation](#Installation)
 - [Getting Start](#Getting_Start)
 - [Citations](#Citations)
 
@@ -57,7 +58,13 @@ Each txt is the detection result of all the pictures extracted from each video, 
 [frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
 ```
 **Notes:**
-`frame_id` is the frame number of the image, `identity` is the object id using default value `-1`, `bb_left` is the X coordinate of the left bound of the object box, `bb_top` is the Y coordinate of the upper boundary of the object box, `width, height` is the pixel width and height, `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold), `x,y,z` are used in 3D, default to `-1` in 2D.
+- `frame_id` is the frame number of the image
+- `identity` is the object id using default value `-1`
+- `bb_left` is the X coordinate of the left bound of the object box
+- `bb_top` is the Y coordinate of the upper bound of the object box
+- `width, height` is the pixel width and height
+- `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
+- `x,y,z` are used in 3D, default to `-1` in 2D.
 
 ### FairMOT Results on MOT-16 train set
 
@@ -80,7 +87,7 @@ Each txt is the detection result of all the pictures extracted from each video, 
 ## Dataset Preparation
 
 ### MOT Dataset
-PaddleDetection use the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please refer to PrepareMOTDataSet[../../docs/tutorials/PrepareMOTDataSet_cn.md] to download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16. MOT15 and MOT20 can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
+PaddleDetection use the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please refer to [PrepareMOTDataSet](../../docs/tutorials/PrepareMOTDataSet.md) to download and prepare all the training data including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. **MOT15 and MOT20** can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
 
 ### Data Format
 These several relevant datasets have the following structure:
@@ -107,12 +114,10 @@ In the annotation text, each line is describing a bounding box and has the follo
 ```
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
-The field `[class]` should be `0`. Only single-class multi-object tracking is supported in this version.
-
-The field `[identity]` is an integer from `0` to `num_identities - 1`, or `-1` if this box has no identity annotation.
-
 **Notes:**
-The values of `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
+- `class` should be `0`. Only single-class multi-object tracking is supported now.
+- `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
 
@@ -149,6 +154,18 @@ dataset/mot
   |——————MOT20
   |——————PRW
 ```
+
+## Installation
+
+Install all the related dependencies for MOT:
+```
+pip install lap sklearn motmetrics openpyxl cython_bbox
+or
+pip install -r requirements.txt
+```
+**Notes:**
+ Install `cython_bbox` for windows, please refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
+
 
 ## Getting Start
 

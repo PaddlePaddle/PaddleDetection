@@ -31,13 +31,14 @@ MOT17
    └——————labels_with_ids
             └——————train
 ```
-所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串“images”替换为“labels_with_ids”并将“.jpg”替换为“.txt”来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
+所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
 [class][identity][x_center][y_center][width][height]
 ```
-字段`[class]`应为`0`，仅支持单类别多目标跟踪。
-字段`[identity]`是从`0`到`num_identifies-1`的整数，如果此框没有标识注释，则为`-1`。
-**请注意**，`[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+**注意**:
+- `class`为`0`，目前仅支持单类别多目标跟踪。
+- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
 
@@ -189,13 +190,9 @@ custom_data
 ```
 
 #### images文件夹
-其中`gt.txt`里是视频中所有图片的原始标注文件，每行都描述一个边界框，格式如下：
-```
-[frame_id][identity][bb_left][bb_top][width][height][x][y][z]
-```
-**注意**: `bb_left`是目标框的左边界的x坐标，`bb_top`是目标框的上边界的y坐标，`width，height`是真实的像素宽高，`x,y,z`是3D中用到的，在2D中默认为`-1`即可，或者不写即可。`gt.txt`是原始标注文件，训练所用标注是`labels_with_ids`文件夹。
-`img1`文件夹里是按照一定帧率抽好的图片。
-`seqinfo.ini`文件是视频信息描述文件，需要如下格式的信息：
+- `gt.txt`是原始标注文件，而训练所用标注是`labels_with_ids`文件夹。
+- `img1`文件夹里是按照一定帧率抽好的图片。
+- `seqinfo.ini`文件是视频信息描述文件，需要如下格式的信息：
 ```
 [Sequence]
 name=MOT16-02
@@ -207,14 +204,28 @@ imHeight=1080
 imExt=.jpg
 ```
 
+`gt.txt`里是当前视频中所有图片的原始标注文件，每行都描述一个边界框，格式如下：
+```
+[frame_id][identity][bb_left][bb_top][width][height][x][y][z]
+```
+**注意**:
+- `frame_id`为当前图片帧序号
+- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`
+- `bb_left`是目标框的左边界的x坐标
+- `bb_top`是目标框的上边界的y坐标
+- `width，height`是真实的像素宽高
+- `x,y,z`是3D中用到的，在2D中默认为`-1`
+
+
 #### labels_with_ids文件夹
-每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
+所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
 [class][identity][x_center][y_center][width][height]
 ```
-字段`[class]`应为`0`，仅支持单类别多目标跟踪。
-字段`[identity]`是从`0`到`num_identifies-1`的整数，如果此框没有标识注释，则为`-1`。
-**注意**，`labels_with_ids`是新生成的标注文件夹，`[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+**注意**:
+- `class`为`0`，目前仅支持单类别多目标跟踪。
+- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 可采用如下脚本生成相应的`labels_with_ids`:
 ```

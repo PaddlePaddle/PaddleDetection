@@ -6,6 +6,7 @@
 - [简介](#简介)
 - [模型库](#模型库)
 - [数据集准备](#数据集准备)
+- [安装依赖](#安装依赖)
 - [快速开始](#快速开始)
 - [引用](#引用)
 
@@ -57,8 +58,14 @@ det_results_dir
 ```
 [frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
 ```
-**注意**: `frame_id`是图片帧的序号，`identity`是目标id采用默认值为`-1`，`bb_left`是目标框的左边界的x坐标，`bb_top`是目标框的上边界的y坐标，`width，height`是真实的像素宽高，`conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)，`x,y,z`是3D中用到的，在2D中默认为`-1`即可。
-
+**注意**:
+- `frame_id`是图片帧的序号
+- `identity`是目标id采用默认值为`-1`
+- `bb_left`是目标框的左边界的x坐标
+- `bb_top`是目标框的上边界的y坐标
+- `width，height`是真实的像素宽高
+- `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
+- `x,y,z`是3D中用到的，在2D中默认为`-1`
 
 ### FairMOT在MOT-16 train集上结果
 
@@ -81,7 +88,7 @@ det_results_dir
 ## 数据集准备
 
 ### MOT数据集
-PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集。请参照PrepareMOTDataSet[../../docs/tutorials/PrepareMOTDataSet_cn.md]去下载并准备好所有的数据集包括Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16。此外还可以下载MOT15和MOT20数据集，如果您想使用这些数据集，请**遵循他们的License**。
+PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集。请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去下载并准备好所有的数据集包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。此外还可以下载**MOT15和MOT20**数据集，如果您想使用这些数据集，请**遵循他们的License**。
 
 ### 数据格式
 这几个相关数据集都遵循以下结构：
@@ -102,14 +109,14 @@ MOT17
    └——————labels_with_ids
             └——————train
 ```
-所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串“images”替换为“labels_with_ids”并将“.jpg”替换为“.txt”来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
+所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
 [class][identity][x_center][y_center][width][height]
 ```
-字段`[class]`应为`0`，仅支持单类别多目标跟踪。
-字段`[identity]`是从`0`到`num_identifies-1`的整数，如果此框没有标识注释，则为`-1`。
 **注意**:
- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+- `class`为`0`，目前仅支持单类别多目标跟踪。
+- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
 
@@ -146,6 +153,17 @@ dataset/mot
   |——————MOT20
   |——————PRW
 ```
+
+## 安装依赖
+
+一键安装MOT相关的依赖：
+```
+pip install lap sklearn motmetrics openpyxl cython_bbox
+或者
+pip install -r requirements.txt
+```
+**注意：**
+ `cython_bbox`在windows上安装可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
 
 ## 快速开始
 
