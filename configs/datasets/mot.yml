@@ -19,13 +19,15 @@ TrainDataset:
     image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
+# for detection or reid evaluation, no use in MOT evaluation
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['citypersons.val', 'caltech.val'] # for detection
-    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid
+    image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
+# for detection inference, no use in MOT inference
 TestDataset:
   !ImageFolder
     dataset_dir: dataset/mot
