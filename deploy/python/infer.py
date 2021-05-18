@@ -28,7 +28,7 @@ from paddle.inference import create_predictor
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
+from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
