@@ -258,6 +258,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     scale_factor_all[bs_idx * 2] = inputs_.scale_factor_[0];
     scale_factor_all[bs_idx * 2 + 1] = inputs_.scale_factor_[1];
 
+    // TODO: reduce cost time
     in_data_all.insert(in_data_all.end(), inputs_.im_data_.begin(), inputs_.im_data_.end());
   }
 

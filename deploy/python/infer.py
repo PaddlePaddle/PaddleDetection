@@ -265,15 +265,14 @@ def create_inputs(im, im_info):
     """
     inputs = {}
     inputs['image'] = np.stack(im, axis=0)
-    np_im_shape = []
-    np_scale_factor = []
+    im_shape = []
+    scale_factor = []
     for e in im_info:
-        np_im_shape.append(np.array((e['im_shape'], )).astype('float32'))
-        np_scale_factor.append(
-            np.array((e['scale_factor'], )).astype('float32'))
+        im_shape.append(np.array((e['im_shape'], )).astype('float32'))
+        scale_factor.append(np.array((e['scale_factor'], )).astype('float32'))
 
-    inputs['im_shape'] = np.concatenate(np_im_shape, axis=0)
-    inputs['scale_factor'] = np.concatenate(np_scale_factor, axis=0)
+    inputs['im_shape'] = np.concatenate(im_shape, axis=0)
+    inputs['scale_factor'] = np.concatenate(scale_factor, axis=0)
     return inputs
 
 
