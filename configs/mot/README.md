@@ -117,7 +117,7 @@ In the annotation text, each line is describing a bounding box and has the follo
 **Notes:**
 - `class` should be `0`. Only single-class multi-object tracking is supported now.
 - `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
-- `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
+- `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
 

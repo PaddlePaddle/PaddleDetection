@@ -10,7 +10,7 @@ English | [简体中文](PrepareMOTDataSet_cn.md)
 - [Citations](#Citations)
 
 ### MOT Dataset
-PaddleDetection uses the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16. MOT15 and MOT20 can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
+PaddleDetection uses the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please download and prepare all the training data including **Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16**. **MOT15 and MOT20** can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
 
 ### Data Format
 These several relevant datasets have the following structure:
@@ -37,11 +37,11 @@ In the annotation text, each line is describing a bounding box and has the follo
 ```
 [class] [identity] [x_center] [y_center] [width] [height]
 ```
-The field `[class]` should be `0`. Only single-class multi-object tracking is supported in this version.
+**Notes:**
+- `class` should be `0`. Only single-class multi-object tracking is supported now.
+- `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
-The field `[identity]` is an integer from `0` to `num_identities - 1`, or `-1` if this box has no identity annotation.
-
-***Note** that the values of `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
 
@@ -81,7 +81,7 @@ dataset/mot
 
 ### Custom Dataset Preparation
 
-In order to standardize training and evaluation, custom data needs to be converted into the same directory and format as MOT-17 dataset:
+In order to standardize training and evaluation, custom data needs to be converted into the same directory and format as MOT-16 dataset:
 ```
 custom_data
    |——————images
@@ -124,14 +124,15 @@ imExt=.jpg
 
 Each line in `gt.txt`  describes a bounding box, with the format as follows:
 ```
-[frame_id][identity][bb_left][bb_top][width][height][x][y][z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[x],[y],[z]
 ```
 **Notes:**:
 - `frame_id` is the current frame id.
 - `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
 - `bb_left` is the x coordinate of the left boundary of the target box
 - `bb_top` is the Y coordinate of the upper boundary of the target box
-- `width, height` are the pixel width and height, and `x,y,z` are only used in 3D.
+- `width, height` are the pixel width and height
+- `x,y,z` are only used in 3D, default to `-1` in 2D.
 
 
 #### labels_with_ids
@@ -144,7 +145,7 @@ In the annotation text, each line is describing a bounding box and has the follo
 **Notes:**
 - `class` should be `0`. Only single-class multi-object tracking is supported now.
 - `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
-- `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
+- `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 Generate the corresponding `labels_with_ids` with following command:
 ```

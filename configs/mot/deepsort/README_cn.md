@@ -33,14 +33,14 @@ det_results_dir
 ```
 其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
-[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf],[x],[y],[z]
 ```
 **注意**:
 - `frame_id`是图片帧的序号
 - `identity`是目标id采用默认值为`-1`
 - `bb_left`是目标框的左边界的x坐标
 - `bb_top`是目标框的上边界的y坐标
-- `width，height`是真实的像素宽高
+- `width,height`是真实的像素宽高
 - `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
 - `x,y,z`是3D中用到的，在2D中默认为`-1`
 
