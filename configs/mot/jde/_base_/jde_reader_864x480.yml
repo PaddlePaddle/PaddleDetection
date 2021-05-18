@@ -72,7 +72,6 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 480, 864]
   sample_transforms:
-    - Decode: {}
     - LetterBoxResize: {target_size: [480, 864]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
