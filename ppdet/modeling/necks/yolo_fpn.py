@@ -18,8 +18,6 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from ..backbones.darknet import ConvBNLayer
-import numpy as np
-
 from ..shape_spec import ShapeSpec
 
 __all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN']
