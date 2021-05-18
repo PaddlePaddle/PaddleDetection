@@ -469,7 +469,9 @@ def print_arguments(args):
 def predict_image(detector, image_list, batch_size=1):
     batch_loop_cnt = math.ceil(float(len(image_list)) / batch_size)
     for i in range(batch_loop_cnt):
-        batch_image_list = image_list[i * batch_size:(i + 1) * batch_size]
+        start_index = i * batch_size
+        end_index = min((i + 1) * batch_size, len(image_list))
+        batch_image_list = image_list[start_index:end_index]
         if FLAGS.run_benchmark:
             detector.predict(
                 batch_image_list, FLAGS.threshold, warmup=10, repeats=10)
