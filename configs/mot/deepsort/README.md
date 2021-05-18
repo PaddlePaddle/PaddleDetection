@@ -9,18 +9,18 @@ English | [简体中文](README_cn.md)
 - [Citations](#Citations)
 
 ## Introduction
-[DeepSORT](https://arxiv.org/abs/1812.00442) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use JDE as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files.
+[DeepSORT](https://arxiv.org/abs/1812.00442) (Deep Cosine Metric Learning SORT) extends the original [SORT](https://arxiv.org/abs/1703.07402) (Simple Online and Realtime Tracking) algorithm to integrate appearance information based on a deep appearance descriptor. It adds a CNN model to extract features in image of human part bounded by a detector. Here we use `JDE` as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files.
 
 ## Model Zoo
 
 ### DeepSORT on MOT-16 training set
 
-| backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-------: | :---: | :---: |
+| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
- DeepSORT does not need to train, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, here we use JDE, and then prepare them like this:
+ DeepSORT does not need to train on MOT dataset, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, here we use JDE, and then prepare them like this:
 ```
 det_results_dir
    |——————MOT16-02.txt

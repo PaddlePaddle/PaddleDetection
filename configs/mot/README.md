@@ -5,11 +5,18 @@ English | [简体中文](README_cn.md)
 ## Table of Contents
 - [Introduction](#Introduction)
 - [Model Zoo](#Model_Zoo)
+- [Dataset Preparation](#Dataset_Preparation)
 - [Getting Start](#Getting_Start)
 - [Citations](#Citations)
 
 ## Introduction
-[DeepSORT](https://arxiv.org/abs/1812.00442) is basicly the same with SORT but added a CNN model to extract features in image of human part bounded by a detector. We use JDE as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files. [JDE](https://arxiv.org/abs/1909.12605) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network. [FairMOT](https://arxiv.org/abs/2004.01888) focuses on accomplishing the detection and re-identification in a single network to improve the inference speed, presents a simple baseline which consists of two homogeneous branches to predict pixel-wise objectness scores and re-ID features. The achieved fairness between the two tasks allows FairMOT to obtain high levels of detection and tracking accuracy.
+PaddleDetection implements three multi-object tracking methods.
+* [DeepSORT](https://arxiv.org/abs/1812.00442) (Deep Cosine Metric Learning SORT) extends the original [SORT](https://arxiv.org/abs/1703.07402) (Simple Online and Realtime Tracking) algorithm to integrate appearance information based on a deep appearance descriptor. It adds a CNN model to extract features in image of human part bounded by a detector. Here we use `JDE` as detection model to generate boxes, and select `PCBPyramid` as the ReID model. We also support loading the boxes from saved detection result files.
+
+* [JDE](https://arxiv.org/abs/1909.12605) (Joint Detection and Embedding) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network.
+
+* [FairMOT](https://arxiv.org/abs/2004.01888) focuses on accomplishing the detection and re-identification in a single network to improve the inference speed, presents a simple baseline which consists of two homogeneous branches to predict pixel-wise objectness scores and re-ID features. The achieved fairness between the two tasks allows FairMOT to obtain high levels of detection and tracking accuracy.
+
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
 </div>
@@ -30,8 +37,8 @@ English | [简体中文](README_cn.md)
 ### DeepSORT on MOT-16 training set
 
 | backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
+| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
  DeepSORT does not need to train, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, here we use JDE, and then prepare them like this:
@@ -48,30 +55,103 @@ det_results_dir
 
 ### FairMOT Results on MOT-16 train set
 
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    MT   |   ML  | download | config |
-| :--------------| :------- | :----: | :----: | :---: | :----: | :---: |:-------: | :----: |
-| DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 | -------- | ------ |
-| DLA-34         | 1088x608 |  83.4  |  82.7  |  517  |  4077  | 13761 | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |   544  |  3822  |  14095  |     -   |    -   |   -    |
+| DLA-34         | 1088x608 |  83.7  |  83.3  |   435  |  3829  |  13764  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+
 
 ### FairMOT Results on MOT-16 test set
 
-| backbone       | input shape | MOTA | IDF1 |  IDS  |    MT   |    ML   | download | config |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: |
-| DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |  44.7% |  15.9% | -------- | ------ |
-| DLA-34         | 1088x608 |  74.7  |  72.8  |  1044  |  41.9% |  19.1% |[model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+| backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
+| :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
+| DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
+| DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **Notes:**
 
-FairMOT used 2 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+FairMOT used 8 GPUs for training and mini-batch size as 6 on each GPU, and trained for 30 epoches.
+
+## Dataset Preparation
+
+### MOT Dataset
+PaddleDetection use the same training data as [JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) and [FairMOT](https://github.com/ifzhang/FairMOT). Please refer to PrepareMOTDataSet[../../docs/tutorials/PrepareMOTDataSet_cn.md] to download and prepare all the training data including Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17 and MOT16. MOT15 and MOT20 can also be downloaded from the official webpage of MOT challenge. If you want to use these datasets, please **follow their licenses**.
+
+### Data Format
+These several relevant datasets have the following structure:
+```
+Caltech
+   |——————images
+   |        └——————00001.jpg
+   |        |—————— ...
+   |        └——————0000N.jpg
+   └——————labels_with_ids
+            └——————00001.txt
+            |—————— ...
+            └——————0000N.txt
+MOT17
+   |——————images
+   |        └——————train
+   |        └——————test
+   └——————labels_with_ids
+            └——————train
+```
+Annotations of these datasets are provided in a unified format. Every image has a corresponding annotation text. Given an image path, the annotation text path can be generated by replacing the string `images` with `labels_with_ids` and replacing `.jpg` with `.txt`.
+
+In the annotation text, each line is describing a bounding box and has the following format:
+```
+[class] [identity] [x_center] [y_center] [width] [height]
+```
+The field `[class]` should be `0`. Only single-class multi-object tracking is supported in this version.
+
+The field `[identity]` is an integer from `0` to `num_identities - 1`, or `-1` if this box has no identity annotation.
+
+***Note** that the values of `[x_center] [y_center] [width] [height]` are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
+
+### Dataset Directory
+
+First, follow the command below to download the `image_list.zip` and unzip it in the `dataset/mot` directory:
+```
+wget https://dataset.bj.bcebos.com/mot/image_ lists.zip
+```
+Then download and unzip each dataset, and the final directory is as follows:
+```
+dataset/mot
+  |——————image_lists
+            |——————caltech.10k.val  
+            |——————caltech.all  
+            |——————caltech.train  
+            |——————caltech.val  
+            |——————citypersons.train  
+            |——————citypersons.val  
+            |——————cuhksysu.train  
+            |——————cuhksysu.val  
+            |——————eth.train  
+            |——————mot15.train  
+            |——————mot16.train  
+            |——————mot17.train  
+            |——————mot20.train  
+            |——————prw.train  
+            |——————prw.val
+  |——————Caltech
+  |——————Cityscapes
+  |——————CUHKSYSU
+  |——————ETHZ
+  |——————MOT15
+  |——————MOT16
+  |——————MOT17
+  |——————MOT20
+  |——————PRW
+```
 
 ## Getting Start
 
 ### 1. Training
 
-Training FairMOT on 2 GPUs with following command
+Training FairMOT on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./fairmot_dla34_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml &>fairmot_dla34_30e_1088x608.log 2>&1 &
 ```
 
 ### 2. Evaluation

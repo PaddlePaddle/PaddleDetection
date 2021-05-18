@@ -1,26 +1,26 @@
 简体中文 | [English](README.md)
 
-# DeepSORT (Simple Online and Realtime Tracking with a Deep Association Metric)
+# DeepSORT
 
 ## 内容
 - [简介](#简介)
-- [模型库与基线](#模型库与基线)
+- [模型库](#模型库)
 - [快速开始](#快速开始)
 - [引用](#引用)
 
 ## 简介
-[DeepSORT](https://arxiv.org/abs/1812.00442)与SORT基本类似，但增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征。我们使用JDE作为检测模型来生成检测框，并选择`PCBPyramid`作为ReID模型。我们还支持加载保存的检测结果文件来进行预测跟踪。
+[DeepSORT](https://arxiv.org/abs/1812.00442) (Deep Cosine Metric Learning SORT) 扩展了原有的[SORT](https://arxiv.org/abs/1703.07402) (Simple Online and Realtime Tracking)算法，增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征，在深度外观描述的基础上整合外观信息。我们使用`JDE`作为检测模型来生成检测框，并选择`PCBPyramid`作为ReID模型。我们还支持加载保存的检测结果文件来进行预测跟踪。
 
-## 模型库与基线
+## 模型库
 
 ### DeepSORT在MOT-16 train集上结果
 
-|  骨干网络  | 输入尺寸 | MOTA |  IDF1  |  IDS | FP  |   FN  |   FPS  | 检测模型 | ReID模型 | 配置文件 |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:---: | :---: | :---: |
-| DarkNet53 | 1088x608 |  72.2  |  60.3  | 998  |  8055  | 21631 |  3.28 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测模型 | ReID模型 | 配置文件 |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
+| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
-**Notes:**
-  DeepSORT此处不需要训练，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，这里我们使用JDE，然后像这样准备好结果文件:
+**注意:**
+  DeepSORT此处不需要训练MOT数据集，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，此处使用JDE，然后像这样准备好结果文件:
 ```
 det_results_dir
    |——————MOT16-02.txt
