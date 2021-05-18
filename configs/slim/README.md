@@ -12,12 +12,17 @@
 ## 实验环境
 
 - Python 3.7+
-- PaddlePaddle >= 2.0.1
+- PaddlePaddle >= 2.1.0
 - PaddleSlim >= 2.0.0
-- CUDA 9.0+
-- cuDNN >=7.5
+- CUDA 10.1+
+- cuDNN >=7.6.5
 
-**注意：** 量化训练需要依赖Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装合适的PaddlePaddle版本。
+**PaddleDetection、 PaddlePaddle与PaddleSlim 版本关系:**
+|  PaddleDetection版本  | PaddlePaddle版本  | PaddleSlim版本 |  备注    |
+| :------------------: | :---------------: | :-------: |:---------------: |
+| release/2.1       |       >= 2.1.0       | 2.1      |  --  |
+| release/2.0       |       >= 2.0.1       | 2.0      | 量化依赖Paddle 2.1及PaddleSlim 2.1 |
+
 
 #### 安装PaddleSlim
 - 方法一：直接安装：

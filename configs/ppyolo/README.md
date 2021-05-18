@@ -11,12 +11,12 @@ English | [简体中文](README_cn.md)
 
 ## Introduction
 
-[PP-YOLO](https://arxiv.org/abs/2007.12099) is a optimized model based on YOLOv3 in PaddleDetection，whose performance(mAP on COCO) and inference spped are better than [YOLOv4](https://arxiv.org/abs/2004.10934)，PaddlePaddle 2.0.0rc1(available on pip now) or [Daily Version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release) is required to run this PP-YOLO。
+[PP-YOLO](https://arxiv.org/abs/2007.12099) is a optimized model based on YOLOv3 in PaddleDetection，whose performance(mAP on COCO) and inference spped are better than [YOLOv4](https://arxiv.org/abs/2004.10934)，PaddlePaddle 2.0.2(available on pip now) or [Daily Version](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-develop) is required to run this PP-YOLO。
 
 PP-YOLO reached mmAP(IoU=0.5:0.95) as 45.9% on COCO test-dev2017 dataset, and inference speed of FP32 on single V100 is 72.9 FPS, inference speed of FP16 with TensorRT on single V100 is 155.6 FPS.
 
 <div align="center">
-  <img src="../../../docs/images/ppyolo_map_fps.png" width=500 />
+  <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
 PP-YOLO improved performance and speed of YOLOv3 with following methods:
@@ -213,7 +213,7 @@ Optimizing method and ablation experiments of PP-YOLO compared with YOLOv3.
 - Performance and inference spedd are measure with input shape as 608
 - All models are trained on COCO train2017 datast and evaluated on val2017 & test-dev2017 dataset，`Box AP` is evaluation results as `mAP(IoU=0.5:0.95)`.
 - Inference speed is tested on single Tesla V100 with batch size as 1 following test method and environment configuration in benchmark above.
-- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) with mAP as 39.0 is optimized YOLOv3 model in PaddleDetection，see [Model Zoo](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/MODEL_ZOO.md) for details.
+- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml) with mAP as 39.0 is optimized YOLOv3 model in PaddleDetection，see [YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/README.md) for details.
 
 ## Citation
 
