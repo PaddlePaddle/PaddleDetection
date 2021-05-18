@@ -558,6 +558,8 @@ def main():
         predict_video(detector, FLAGS.camera_id)
     else:
         # predict from image
+        if FLAGS.image_dir is None and FLAGS.image_file is not None:
+            assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
         predict_image(detector, img_list, FLAGS.batch_size)
         if not FLAGS.run_benchmark:

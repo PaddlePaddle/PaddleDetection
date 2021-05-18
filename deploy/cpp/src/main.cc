@@ -364,6 +364,10 @@ int main(int argc, char** argv) {
     std::vector<std::string> all_imgs;
     if (!FLAGS_image_file.empty()) {
       all_imgs.push_back(FLAGS_image_file);
+      if (FLAGS_batch_size > 1) {
+        std::cout << "batch_size should be 1, when image_file is not None" << std::endl;
+        FLAGS_batch_size = 1;
+      }
     } else {
       GetAllFiles((char *)FLAGS_image_dir.c_str(), all_imgs);
     }
