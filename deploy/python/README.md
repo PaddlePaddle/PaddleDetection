@@ -16,15 +16,13 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 
 ## 2. 基于python的预测
 
-### 2.1 安装依赖
-- `PaddlePaddle`的安装: 请点击[官方安装文档](https://paddlepaddle.org.cn/install/quick) 选择适合的版本进行安装，要求PaddlePaddle>=2.0.1以上。
-- 切换到`PaddleDetection`代码库根目录，执行`pip install -r requirements.txt`安装其它依赖。
+
 
 ### 2.2 执行预测程序
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image --use_gpu=(False/True)
+python deploy/python/infer.py --model_dir=./inference/ppyolov2_r50_dcn_365e_coco --image_file=./demo/000000014439_640x640.jpg --use_gpu=True
 ```
 
 参数说明如下:
