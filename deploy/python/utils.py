@@ -137,17 +137,18 @@ class Timer(Times):
         self.img_num = 0
 
     def info(self, average=False):
-        total_time = self.preprocess_time_s.value() + self.inference_time_s.value(
-        ) + self.postprocess_time_s.value()
+        total_time = self.preprocess_time_s.value(
+        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
         total_time = round(total_time, 4)
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
-        preprocess_time = round(self.preprocess_time_s.value() / self.img_num,
-                                4) if average else self.preprocess_time_s.value()
+        preprocess_time = round(
+            self.preprocess_time_s.value() / self.img_num,
+            4) if average else self.preprocess_time_s.value()
         postprocess_time = round(
-            self.postprocess_time.value() / self.img_num,
-            4) if average else self.postprocess_time.value()
+            self.postprocess_time_s.value() / self.img_num,
+            4) if average else self.postprocess_time_s.value()
         inference_time = round(self.inference_time_s.value() / self.img_num,
                                4) if average else self.inference_time_s.value()
 
@@ -171,8 +172,8 @@ class Timer(Times):
             self.inference_time_s.value() / self.img_num,
             4) if average else self.inference_time_s.value()
         dic['img_num'] = self.img_num
-        total_time = self.preprocess_time_s.value() + self.inference_time_s.value(
-        ) + self.postprocess_time_s.value()
+        total_time = self.preprocess_time_s.value(
+        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
         dic['total_time_s'] = round(total_time, 4)
         return dic
 
