@@ -23,7 +23,7 @@ import paddle.inference as paddle_infer
 from pathlib import Path
 
 CUR_DIR = os.path.dirname(os.path.abspath(__file__))
-LOG_PATH_ROOT = f"{CUR_DIR}/../../tools/output"
+LOG_PATH_ROOT = f"{CUR_DIR}/../../output"
 
 
 class PaddleInferBenchmark(object):
@@ -172,8 +172,7 @@ class PaddleInferBenchmark(object):
         elif isinstance(config, dict):
             config_status['runtime_device'] = config.get('runtime_device', "")
             config_status['ir_optim'] = config.get('ir_optim', "")
-            config_status['enable_tensorrt'] = config.get('enable_tensorrt',
-                                                          "")
+            config_status['enable_tensorrt'] = config.get('enable_tensorrt', "")
             config_status['precision'] = config.get('precision', "")
             config_status['enable_mkldnn'] = config.get('enable_mkldnn', "")
             config_status['cpu_math_library_num_threads'] = config.get(
@@ -215,8 +214,7 @@ class PaddleInferBenchmark(object):
             f"{identifier} enable_tensorrt: {self.config_status['enable_tensorrt']}"
         )
         self.logger.info(
-            f"{identifier} enable_mkldnn: {self.config_status['enable_mkldnn']}"
-        )
+            f"{identifier} enable_mkldnn: {self.config_status['enable_mkldnn']}")
         self.logger.info(
             f"{identifier} cpu_math_library_num_threads: {self.config_status['cpu_math_library_num_threads']}"
         )
