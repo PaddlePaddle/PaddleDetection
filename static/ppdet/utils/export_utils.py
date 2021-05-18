@@ -67,6 +67,8 @@ def parse_reader(reader_cfg, metric, arch):
         from ppdet.utils.voc_eval import get_category_info
     elif metric == "WIDERFACE":
         from ppdet.utils.widerface_eval_utils import get_category_info
+    elif cfg.metric == 'OID':
+        from ppdet.utils.oid_eval import get_category_info
     else:
         raise ValueError(
             "metric only supports COCO, VOC, WIDERFACE, but received {}".format(

@@ -398,7 +398,7 @@ OptimizerBuilder:
     type: L2
 ```
 **几点说明：**
-- 可以通过OptimizerBuilder.optimizer指定优化器的类型及参数，目前支持的优化可以参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
+- 可以通过OptimizerBuilder.optimizer指定优化器的类型及参数，目前支持的优化器可以参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)
 - 可以设置LearningRate.schedulers设置不同学习率调整策略的组合，PaddlePaddle目前支持多种学习率调整策略，具体也可参考[PaddlePaddle官方文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/api/paddle/optimizer/Overview_cn.html)。需要注意的是，你需要对于PaddlePaddle中的学习率调整策略进行简单的封装，具体可参考源码`ppdet/optimizer.py`。
 
 ##### 2.2.3Reader配置文件

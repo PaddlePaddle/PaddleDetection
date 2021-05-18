@@ -35,8 +35,8 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'LetterBoxResize', 'Gt2JDETargetThres', 'Gt2JDETargetMax',
-    'Gt2FairMOTTarget'
+    'LetterBoxResize', 'MOTRandomAffine', 'Gt2JDETargetThres',
+    'Gt2JDETargetMax', 'Gt2FairMOTTarget'
 ]
 
 
@@ -111,6 +111,138 @@ class LetterBoxResize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], h, w, ratio,
                                                 padw, padh)
         return sample
+
+
+@register_op
+class MOTRandomAffine(BaseOperator):
+    """ 
+    Affine transform to image and coords to achieve the rotate, scale and
+    shift effect for training image.
+
+    Args:
+        degrees (list[2]): the rotate range to apply, transform range is [min, max]
+        translate (list[2]): the translate range to apply, ransform range is [min, max]
+        scale (list[2]): the scale range to apply, transform range is [min, max]
+        shear (list[2]): the shear range to apply, transform range is [min, max]
+        borderValue (list[3]): value used in case of a constant border when appling
+            the perspective transformation
+        reject_outside (bool): reject warped bounding bboxes outside of image
+
+    Returns:
+        records(dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self,
+                 degrees=(-5, 5),
+                 translate=(0.10, 0.10),
+                 scale=(0.50, 1.20),
+                 shear=(-2, 2),
+                 borderValue=(127.5, 127.5, 127.5),
+                 reject_outside=True):
+        super(MOTRandomAffine, self).__init__()
+        self.degrees = degrees
+        self.translate = translate
+        self.scale = scale
+        self.shear = shear
+        self.borderValue = borderValue
+        self.reject_outside = reject_outside
+
+    def apply(self, sample, context=None):
+        # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+        border = 0  # width of added border (optional)
+
+        img = sample['image']
+        height, width = img.shape[0], img.shape[1]
+
+        # Rotation and Scale
+        R = np.eye(3)
+        a = random.random() * (self.degrees[1] - self.degrees[0]
+                               ) + self.degrees[0]
+        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
+        R[:2] = cv2.getRotationMatrix2D(
+            angle=a, center=(width / 2, height / 2), scale=s)
+
+        # Translation
+        T = np.eye(3)
+        T[0, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[0] * height + border  # x translation (pixels)
+        T[1, 2] = (
+            random.random() * 2 - 1
+        ) * self.translate[1] * width + border  # y translation (pixels)
+
+        # Shear
+        S = np.eye(3)
+        S[0, 1] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # x shear (deg)
+        S[1, 0] = math.tan((random.random() *
+                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
+                           math.pi / 180)  # y shear (deg)
+
+        M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
+        imw = cv2.warpPerspective(
+            img,
+            M,
+            dsize=(width, height),
+            flags=cv2.INTER_LINEAR,
+            borderValue=self.borderValue)  # BGR order borderValue
+
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            targets = sample['gt_bbox']
+            n = targets.shape[0]
+            points = targets.copy()
+            area0 = (points[:, 2] - points[:, 0]) * (
+                points[:, 3] - points[:, 1])
+
+            # warp points
+            xy = np.ones((n * 4, 3))
+            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+            xy = (xy @M.T)[:, :2].reshape(n, 8)
+
+            # create new boxes
+            x = xy[:, [0, 2, 4, 6]]
+            y = xy[:, [1, 3, 5, 7]]
+            xy = np.concatenate(
+                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+            # apply angle-based reduction
+            radians = a * math.pi / 180
+            reduction = max(abs(math.sin(radians)), abs(math.cos(radians)))**0.5
+            x = (xy[:, 2] + xy[:, 0]) / 2
+            y = (xy[:, 3] + xy[:, 1]) / 2
+            w = (xy[:, 2] - xy[:, 0]) * reduction
+            h = (xy[:, 3] - xy[:, 1]) * reduction
+            xy = np.concatenate(
+                (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+            # reject warped points outside of image
+            if self.reject_outside:
+                np.clip(xy[:, 0], 0, width, out=xy[:, 0])
+                np.clip(xy[:, 2], 0, width, out=xy[:, 2])
+                np.clip(xy[:, 1], 0, height, out=xy[:, 1])
+                np.clip(xy[:, 3], 0, height, out=xy[:, 3])
+            w = xy[:, 2] - xy[:, 0]
+            h = xy[:, 3] - xy[:, 1]
+            area = w * h
+            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
+            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
+
+            if sum(i) > 0:
+                sample['gt_bbox'] = xy[i].astype(sample['gt_bbox'].dtype)
+                sample['gt_class'] = sample['gt_class'][i]
+                if 'difficult' in sample:
+                    sample['difficult'] = sample['difficult'][i]
+                if 'gt_ide' in sample:
+                    sample['gt_ide'] = sample['gt_ide'][i]
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = sample['is_crowd'][i]
+                sample['image'] = imw
+                return sample
+            else:
+                return sample
 
 
 @register_op

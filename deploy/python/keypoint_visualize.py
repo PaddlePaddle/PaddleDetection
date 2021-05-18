@@ -28,6 +28,7 @@ def draw_pose(imgfile,
               results,
               visual_thread=0.6,
               save_name='pose.jpg',
+              save_dir='output',
               returnimg=False):
     try:
         import matplotlib.pyplot as plt
@@ -56,8 +57,7 @@ def draw_pose(imgfile,
         bboxs = results['bbox']
         for idx, rect in enumerate(bboxs):
             xmin, ymin, xmax, ymax = rect
-            cv2.rectangle(img, (xmin, ymin), (xmax, ymax),
-                          colors[idx % len(colors)], 2)
+            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), colors[0], 1)
 
     canvas = img.copy()
     for i in range(17):
@@ -100,7 +100,8 @@ def draw_pose(imgfile,
             canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
     if returnimg:
         return canvas
-    save_name = 'output/' + os.path.basename(imgfile)[:-4] + '_vis.jpg'
+    save_name = os.path.join(
+        save_dir, os.path.splitext(os.path.basename(imgfile))[0] + '_vis.jpg')
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()
