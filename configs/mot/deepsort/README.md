@@ -33,10 +33,16 @@ det_results_dir
 ```
 Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
 ```
-[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf],[x],[y],[z]
 ```
 **Notes:**
-`frame_id` is the frame number of the image, `identity` is the object id using default value `-1`, `bb_left` is the X coordinate of the left bound of the object box, `bb_top` is the Y coordinate of the upper boundary of the object box, `width, height` is the pixel width and height, `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold), `x,y,z` are used in 3D, default to `-1` in 2D.
+- `frame_id` is the frame number of the image
+- `identity` is the object id using default value `-1`
+- `bb_left` is the X coordinate of the left bound of the object box
+- `bb_top` is the Y coordinate of the upper bound of the object box
+- `width,height` is the pixel width and height
+- `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
+- `x,y,z` are used in 3D, default to `-1` in 2D.
 
 ## Getting Start
 
@@ -44,10 +50,10 @@ Each txt is the detection result of all the pictures extracted from each video, 
 
 ```bash
 # use weights released in PaddleDetection model zoo
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric=MOT weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
 
 # use saved checkpoint after training
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o metric=MOT weights=output/jde_darknet53_30e_1088x608/model_final
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o weights=output/jde_darknet53_30e_1088x608/model_final
 ```
 
 ### 2. Tracking

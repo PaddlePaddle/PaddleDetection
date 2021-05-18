@@ -10,7 +10,7 @@
 - [引用](#引用)
 
 ### MOT数据集
-PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集，请先下载并准备好所有的数据集包括Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16。此外还可以下载MOT15和MOT20数据集，如果您想使用这些数据集，请**遵循他们的License**。
+PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集，请先下载并准备好所有的数据集包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。此外还可以下载**MOT15和MOT20**数据集，如果您想使用这些数据集，请**遵循他们的License**。
 
 ### 数据格式
 这几个相关数据集都遵循以下结构：
@@ -33,12 +33,12 @@ MOT17
 ```
 所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
-[class][identity][x_center][y_center][width][height]
+[class] [identity] [x_center] [y_center] [width] [height]
 ```
 **注意**:
 - `class`为`0`，目前仅支持单类别多目标跟踪。
 - `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
-- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+- `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意它们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
 
@@ -163,7 +163,7 @@ Google Drive:
 
 ### 用户数据准备
 
-为了规范地进行训练和评测，用户数据需要转成和MOT-17数据集相同的目录和格式：
+为了规范地进行训练和评测，用户数据需要转成和MOT-16数据集相同的目录和格式：
 ```
 custom_data
    |——————images
@@ -206,7 +206,7 @@ imExt=.jpg
 
 `gt.txt`里是当前视频中所有图片的原始标注文件，每行都描述一个边界框，格式如下：
 ```
-[frame_id][identity][bb_left][bb_top][width][height][x][y][z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[x],[y],[z]
 ```
 **注意**:
 - `frame_id`为当前图片帧序号
@@ -220,12 +220,12 @@ imExt=.jpg
 #### labels_with_ids文件夹
 所有数据集的标注是以统一数据格式提供的。各个数据集中每张图片都有相应的标注文本。给定一个图像路径，可以通过将字符串`images`替换为`labels_with_ids`并将`.jpg`替换为`.txt`来生成标注文本路径。在标注文本中，每行都描述一个边界框，格式如下：
 ```
-[class][identity][x_center][y_center][width][height]
+[class] [identity] [x_center] [y_center] [width] [height]
 ```
 **注意**:
 - `class`为`0`，目前仅支持单类别多目标跟踪。
 - `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
-- `[x_center][y_center][width][height]`的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
+- `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 可采用如下脚本生成相应的`labels_with_ids`:
 ```
