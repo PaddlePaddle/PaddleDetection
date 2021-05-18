@@ -18,11 +18,9 @@ import paddle.nn.functional as F
 from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from ..backbones.darknet import ConvBNLayer
-import numpy as np
-
 from ..shape_spec import ShapeSpec
 
-__all__ = ['YOLOv3FPN', 'PPYOLOFPN']
+__all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN']
 
 
 def add_coord(x, data_format):
@@ -492,8 +490,11 @@ class YOLOv3FPN(nn.Layer):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
         yolo_feats = []
+
+        # add embedding features output for multi-object tracking model
         if for_mot:
             emb_feats = []
+
         for i, block in enumerate(blocks):
             if i > 0:
                 if self.data_format == 'NCHW':
@@ -504,7 +505,7 @@ class YOLOv3FPN(nn.Layer):
             yolo_feats.append(tip)
 
             if for_mot:
-                # add emb_feats output
+                # add embedding features output
                 emb_feats.append(route)
 
             if i < self.num_blocks - 1:
@@ -668,8 +669,11 @@ class PPYOLOFPN(nn.Layer):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
         yolo_feats = []
+
+        # add embedding features output for multi-object tracking model
         if for_mot:
             emb_feats = []
+
         for i, block in enumerate(blocks):
             if i > 0:
                 if self.data_format == 'NCHW':
@@ -680,7 +684,7 @@ class PPYOLOFPN(nn.Layer):
             yolo_feats.append(tip)
 
             if for_mot:
-                # add emb_feats output
+                # add embedding features output
                 emb_feats.append(route)
 
             if i < self.num_blocks - 1:
@@ -780,11 +784,15 @@ class PPYOLOTinyFPN(nn.Layer):
                         name=name))
                 self.routes.append(route)
 
-    def forward(self, blocks):
+    def forward(self, blocks, for_mot=False):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
-
         yolo_feats = []
+
+        # add embedding features output for multi-object tracking model
+        if for_mot:
+            emb_feats = []
+
         for i, block in enumerate(blocks):
             if i == 0 and self.spp_:
                 block = self.spp(block)
@@ -797,12 +805,19 @@ class PPYOLOTinyFPN(nn.Layer):
             route, tip = self.yolo_blocks[i](block)
             yolo_feats.append(tip)
 
+            if for_mot:
+                # add embedding features output
+                emb_feats.append(route)
+
             if i < self.num_blocks - 1:
                 route = self.routes[i](route)
                 route = F.interpolate(
                     route, scale_factor=2., data_format=self.data_format)
 
-        return yolo_feats
+        if for_mot:
+            return {'yolo_feats': yolo_feats, 'emb_feats': emb_feats}
+        else:
+            return yolo_feats
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -964,11 +979,15 @@ class PPYOLOPAN(nn.Layer):
 
         self._out_channels = self._out_channels[::-1]
 
-    def forward(self, blocks):
+    def forward(self, blocks, for_mot=False):
         assert len(blocks) == self.num_blocks
         blocks = blocks[::-1]
-        # fpn
         fpn_feats = []
+
+        # add embedding features output for multi-object tracking model
+        if for_mot:
+            emb_feats = []
+
         for i, block in enumerate(blocks):
             if i > 0:
                 if self.data_format == 'NCHW':
@@ -977,6 +996,10 @@ class PPYOLOPAN(nn.Layer):
                     block = paddle.concat([route, block], axis=-1)
             route, tip = self.fpn_blocks[i](block)
             fpn_feats.append(tip)
+
+            if for_mot:
+                # add embedding features output
+                emb_feats.append(route)
 
             if i < self.num_blocks - 1:
                 route = self.fpn_routes[i](route)
@@ -996,7 +1019,10 @@ class PPYOLOPAN(nn.Layer):
             route, tip = self.pan_blocks[i](block)
             pan_feats.append(tip)
 
-        return pan_feats[::-1]
+        if for_mot:
+            return {'yolo_feats': pan_feats[::-1], 'emb_feats': emb_feats}
+        else:
+            return pan_feats[::-1]
 
     @classmethod
     def from_config(cls, cfg, input_shape):
