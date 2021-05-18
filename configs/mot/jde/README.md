@@ -1,15 +1,16 @@
 English | [简体中文](README_cn.md)
 
-# JDE (Towards-Realtime-MOT)
+# JDE (Joint Detection and Embedding)
 
 ## Table of Contents
 - [Introduction](#Introduction)
 - [Model Zoo](#Model_Zoo)
 - [Getting Start](#Getting_Start)
+- [Citations](#Citations)
 
 ## Introduction
 
-[Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network.
+[JDE](https://arxiv.org/abs/1909.12605) (Joint Detection and Embedding) is a fast and high-performance multiple-object tracker that learns the object detection task and appearance embedding task simutaneously in a shared neural network.
 <div align="center">
   <img src="../../../docs/images/mot16_jde.gif" width=500 />
 </div>
@@ -35,7 +36,7 @@ English | [简体中文](README_cn.md)
 Training JDE on 8 GPUs with following command
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml &>jde_darknet53_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml
 ```
 
 ### 2. Evaluation
@@ -59,7 +60,7 @@ Inference a vidoe in single GPU with following commands.
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4 --save_videos
 ```
 **Notes:**
- Please make sure that `ffmpeg` is installed first.
+ Please make sure that [ffmpeg](https://www.ffmpeg.org) is installed first.
 
 ## Citations
 ```

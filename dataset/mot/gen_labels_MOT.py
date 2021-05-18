@@ -19,6 +19,7 @@ import numpy as np
 MOT_data = 'MOT16'
 
 # choose a data in ['MOT15', 'MOT16', 'MOT17', 'MOT20']
+# or your custom data (prepare it following the 'docs/tutorials/PrepareMOTDataSet.md')
 
 
 def mkdirs(d):

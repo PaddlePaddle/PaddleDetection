@@ -1,23 +1,23 @@
 简体中文 | [English](README.md)
 
-# JDE (Towards-Realtime-MOT)
+# JDE (Joint Detection and Embedding)
 
 ## 内容
 - [简介](#简介)
-- [模型库与基线](#模型库与基线)
+- [模型库](#模型库)
 - [快速开始](#快速开始)
-
+- [引用](#引用)
 
 ## 内容
 
-[Joint Detection and Embedding](https://arxiv.org/abs/1909.12605)(JDE) 是一个快速高性能多目标跟踪器，它是在共享神经网络中同时学习目标检测任务和外观嵌入任务的。
+[JDE](https://arxiv.org/abs/1909.12605) (Joint Detection and Embedding)是一个快速高性能多目标跟踪器，它是在共享神经网络中同时学习目标检测任务和外观嵌入任务的。
 <div align="center">
   <img src="../../../docs/images/mot16_jde.gif" width=500 />
 </div>
 
-## 模型库与基线
+## 模型库
 
-### JDE on MOT-16 training set
+### JDE在MOT-16 train集上结果
 
 | 骨干网络            |  输入尺寸  |  MOTA  |  IDF1 |  IDS  |  FP  |  FN  |  FPS  |  检测模型  | 配置文件 |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
@@ -26,7 +26,7 @@
 | DarkNet53          | 576x320 |  63.1  |  64.6  | 1357  |  7083  | 32312 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
 
 **注意:**
- JDE使用8个GPU进行训练，每个GPU上batch size为4，训练了30个epoches。
+ JDE使用8个GPU进行训练，每个GPU上batch size为4，训练了30个epoch。
 
 ## 快速开始
 
@@ -35,7 +35,7 @@
 使用8GPU通过如下命令一键式启动训练
 
 ```bash
-python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml &>jde_darknet53_30e_1088x608.log 2>&1 &
+python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml
 ```
 
 ### 2. 评估
@@ -59,7 +59,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4  --save_videos
 ```
 **注意:**
- 请先确保已经安装了`ffmpeg`。
+ 请先确保已经安装了[ffmpeg](https://www.ffmpeg.org)。
 
 ## 引用
 ```
