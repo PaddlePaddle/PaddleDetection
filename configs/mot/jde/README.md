@@ -21,9 +21,9 @@ English | [简体中文](README_cn.md)
 
 | backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53          | 1088x608 |  73.2  |  69.4  | 1320  |  6613  | 21629 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53          | 864x480 |  70.1  |  65.4  | 1341  |  6454  | 25208 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |  63.1  |  64.6  | 1357  |  7083  | 32312 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
+| DarkNet53          | 1088x608 |  73.2  |  69.3  | 1351  |  6591  | 21625 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
+| DarkNet53          | 864x480 |  70.1  |  65.2  | 1328  |  6441  | 25187 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_864x480.yml) |
+| DarkNet53          | 576x320 |  63.2  |  64.5  | 1308  |  7011  | 32252 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
 
 
 **Notes:**
