@@ -13,11 +13,11 @@
 ## 简介
 
 PaddleDetection实现了3种多目标跟踪方法。
-* [DeepSORT](https://arxiv.org/abs/1812.00442)(Deep Cosine Metric Learning SORT) 扩展了原有的[SORT](https://arxiv.org/abs/1703.07402)(Simple Online and Realtime Tracking)算法，增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征，在深度外观描述的基础上整合外观信息。
+- [DeepSORT](https://arxiv.org/abs/1812.00442)(Deep Cosine Metric Learning SORT) 扩展了原有的[SORT](https://arxiv.org/abs/1703.07402)(Simple Online and Realtime Tracking)算法，增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征，在深度外观描述的基础上整合外观信息。
 
-* [JDE](https://arxiv.org/abs/1909.12605)(Joint Detection and Embedding)是一个快速高性能多目标跟踪器，它是在共享神经网络中同时学习目标检测任务和外观嵌入任务的。
+- [JDE](https://arxiv.org/abs/1909.12605)(Joint Detection and Embedding)是一个快速高性能多目标跟踪器，它是在共享神经网络中同时学习目标检测任务和外观嵌入任务的。
 
-* [FairMOT](https://arxiv.org/abs/2004.01888)着重研究在单个网络中实现检测和ReID以提高推理速度，提出了一种由两个同质分支组成的简单基线来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了高水平的检测和跟踪精度。
+- [FairMOT](https://arxiv.org/abs/2004.01888)着重研究在单个网络中实现检测和ReID以提高推理速度，提出了一种由两个同质分支组成的简单基线来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了高水平的检测和跟踪精度。
 
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
