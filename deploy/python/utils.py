@@ -185,7 +185,7 @@ def get_current_memory_mb():
     import pynvml
     import psutil
     import GPUtil
-    gpu_id = os.environ.get('CUDA_VISIBLE_DEVICES', 0)
+    gpu_id = int(os.environ.get('CUDA_VISIBLE_DEVICES', 0))
 
     pid = os.getpid()
     p = psutil.Process(pid)
