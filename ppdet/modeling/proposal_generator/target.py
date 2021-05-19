@@ -71,8 +71,11 @@ def label_box(anchors, gt_boxes, is_crowd, positive_overlap, negative_overlap,
               allow_low_quality, ignore_thresh):
     iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
-    n_gt_crowd = paddle.nonzero(is_crowd).shape[0]
-    if iou.numel() == 0 or n_gt_crowd == n_gt:
+    if n_gt == 0:
+        n_gt_crowd = 0
+    else:
+        n_gt_crowd = paddle.nonzero(is_crowd).shape[0]
+    if iou.shape[0] == 0 or n_gt_crowd == n_gt:
         # No truth, assign everything to background
         default_matches = paddle.full((iou.shape[1], ), 0, dtype='int64')
         default_match_labels = paddle.full((iou.shape[1], ), 0, dtype='int32')
@@ -329,20 +332,29 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
         # to generate mask target with ground-truth
         boxes = fg_rois.numpy()
         gt_segms_per_im = gt_segms[k]
+
         new_segm = []
         inds_per_im = inds_per_im.numpy()
-        for i in inds_per_im:
-            new_segm.append(gt_segms_per_im[i])
+        if len(gt_segms_per_im) > 0:
+            for i in inds_per_im:
+                new_segm.append(gt_segms_per_im[i])
         fg_inds_new = fg_inds.reshape([-1]).numpy()
         results = []
-        for j in fg_inds_new:
-            results.append(
-                rasterize_polygons_within_box(new_segm[j], boxes[j],
-                                              resolution))
+        if len(gt_segms_per_im) > 0:
+            for j in fg_inds_new:
+                results.append(
+                    rasterize_polygons_within_box(new_segm[j], boxes[j],
+                                                  resolution))
+        else:
+            results.append(paddle.ones([resolution, resolution], dtype='int32'))
 
         fg_classes = paddle.gather(labels_per_im, fg_inds)
         weight = paddle.ones([fg_rois.shape[0]], dtype='float32')
         if not has_fg:
+            # now all sampled classes are background
+            # which will cause error in loss calculation,
+            # make fake classes with weight of 0.
+            fg_classes = paddle.zeros([1], dtype='int32')
             weight = weight - 1
         tgt_mask = paddle.stack(results)
         tgt_mask.stop_gradient = True

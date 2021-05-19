@@ -194,7 +194,8 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
-                if has_segmentation and not any(gt_poly):
+                if has_segmentation and not any(
+                        gt_poly) and not self.allow_empty:
                     continue
 
                 if is_rbox_anno:
@@ -232,7 +233,7 @@ class COCODataSet(DetDataset):
             ct += 1
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
-        assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
+        assert ct > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
         if len(empty_records) > 0:
             empty_records = self._sample_empty(empty_records, len(records))
