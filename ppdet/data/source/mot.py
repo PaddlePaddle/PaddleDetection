@@ -124,28 +124,6 @@ class MOTDataSet(DetDataset):
                 self.img_start_index[data_name] = img_index
                 img_index += len(self.img_files[data_name])
 
-            # check data directory, images and labels_with_ids
-            if len(self.img_files[data_name]) == 0:
-                continue
-            else:
-                # self.img_files[data_name] each line following this: 
-                # {self.dataset_dir}/MOT17/images/...
-                first_path = self.img_files[data_name][0]
-                data_dir = first_path.replace(self.dataset_dir,
-                                              '').split('/')[1]
-                data_dir = os.path.join(self.dataset_dir, data_dir)
-                assert os.path.exists(data_dir), \
-                    "The data directory {} does not exist.".format(data_dir)
-
-                data_dir_images = os.path.join(data_dir, 'images')
-                assert os.path.exists(data_dir), \
-                    "The data images directory {} does not exist.".format(data_dir_images)
-
-                data_dir_labels_with_ids = os.path.join(data_dir,
-                                                        'labels_with_ids')
-                assert os.path.exists(data_dir), \
-                    "The data labels directory {} does not exist.".format(data_dir_labels_with_ids)
-
             # record label_files
             self.label_files[data_name] = [
                 x.replace('images', 'labels_with_ids').replace(
@@ -214,6 +192,9 @@ class MOTDataSet(DetDataset):
             gt_class = labels[:, 0:1].astype('int32')
             gt_score = np.ones((len(labels), 1)).astype('float32')
             gt_ide = labels[:, 1:2].astype('int32')
+            for i, _ in enumerate(gt_ide):
+                if gt_ide[i] > -1:
+                    gt_ide[i] += self.tid_start_index[data_name]
 
             mot_rec = {
                 'im_file': img_file,
@@ -344,6 +325,7 @@ class MOTVideoDataset(DetDataset):
     def _load_video_images(self):
         self.cap = cv2.VideoCapture(self.video_file)
         self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
         logger.info('Length of the video: {:d} frames'.format(self.vn))
         res = True
         ct = 0

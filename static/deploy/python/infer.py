@@ -65,7 +65,8 @@ class Detector(object):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
-                 threshold=0.5):
+                 threshold=0.5,
+                 trt_calib_mode=False):
         self.config = config
         if self.config.use_python_inference:
             self.executor, self.program, self.fecth_targets = load_executor(
@@ -75,7 +76,8 @@ class Detector(object):
                 model_dir,
                 run_mode=run_mode,
                 min_subgraph_size=self.config.min_subgraph_size,
-                use_gpu=use_gpu)
+                use_gpu=use_gpu,
+                trt_calib_mode=trt_calib_mode)
 
     def preprocess(self, im):
         preprocess_ops = []
@@ -221,13 +223,15 @@ class DetectorSOLOv2(Detector):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
-                 threshold=0.5):
+                 threshold=0.5,
+                 trt_calib_mode=False):
         super(DetectorSOLOv2, self).__init__(
             config=config,
             model_dir=model_dir,
             use_gpu=use_gpu,
             run_mode=run_mode,
-            threshold=threshold)
+            threshold=threshold,
+            trt_calib_mode=trt_calib_mode)
 
     def predict(self,
                 image,
@@ -379,11 +383,14 @@ def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
                    use_gpu=False,
-                   min_subgraph_size=3):
+                   min_subgraph_size=3,
+                   trt_calib_mode=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -393,7 +400,6 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    use_calib_mode = True if run_mode == 'trt_int8' else False
     precision_map = {
         'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
@@ -417,7 +423,7 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=use_calib_mode)
+            use_calib_mode=trt_calib_mode)
 
     # disable print log when predict
     config.disable_glog_info()
@@ -500,7 +506,7 @@ def predict_video(detector, camera_id):
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
@@ -531,13 +537,18 @@ def predict_video(detector, camera_id):
 def main():
     config = Config(FLAGS.model_dir)
     detector = Detector(
-        config, FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
+        config,
+        FLAGS.model_dir,
+        use_gpu=FLAGS.use_gpu,
+        run_mode=FLAGS.run_mode,
+        trt_calib_mode=FLAGS.trt_calib_mode)
     if config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             config,
             FLAGS.model_dir,
             use_gpu=FLAGS.use_gpu,
-            run_mode=FLAGS.run_mode)
+            run_mode=FLAGS.run_mode,
+            trt_calib_mode=FLAGS.trt_calib_mode)
     # predict from image
     if FLAGS.image_file != '':
         predict_image(detector)
@@ -590,6 +601,12 @@ if __name__ == '__main__':
         type=str,
         default="output",
         help="Directory of output visualization files.")
+    parser.add_argument(
+        "--trt_calib_mode",
+        type=bool,
+        default=False,
+        help="If the model is produced by TRT offline quantitative "
+        "calibration, trt_calib_mode need to set True.")
 
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)

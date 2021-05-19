@@ -58,11 +58,12 @@ class ObjectDetector {
   explicit ObjectDetector(const std::string& model_dir, 
                           bool use_gpu=false,
                           const std::string& run_mode="fluid",
-                          const int gpu_id=0) {
+                          const int gpu_id=0,
+                          bool trt_calib_mode=false) {
     config_.load_config(model_dir);
     threshold_ = config_.draw_threshold_;
     preprocessor_.Init(config_.preprocess_info_, config_.arch_);
-    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id);
+    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id, trt_calib_mode);
   }
 
   // Load Paddle inference model
@@ -72,7 +73,8 @@ class ObjectDetector {
     const int min_subgraph_size,
     const int batch_size = 1,
     const std::string& run_mode = "fluid",
-    const int gpu_id=0);
+    const int gpu_id=0,
+    bool trt_calib_mode=false);
 
   // Run predictor
   void Predict(const cv::Mat& im,

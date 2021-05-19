@@ -2,7 +2,7 @@ use_gpu: true
 log_iter: 5
 save_dir: output
 snapshot_epoch: 10
-weights: output/hrnet_coco_256x192/model_final
+weights: output/hrnet_w32_256x192/model_final
 epoch: 210
 num_joints: &num_joints 17
 pixel_std: &pixel_std 200

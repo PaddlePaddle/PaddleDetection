@@ -1,6 +1,7 @@
 _BASE_: [
   '../datasets/roadsign_voc.yml',
   '../runtime.yml',
+  '_base_/optimizer_40e.yml',
   '_base_/yolov3_mobilenet_v1.yml',
   '_base_/yolov3_reader.yml',
 ]
@@ -10,24 +11,3 @@ weights: output/yolov3_mobilenet_v1_roadsign/model_final
 YOLOv3Loss:
   ignore_thresh: 0.7
   label_smooth: true
-
-snapshot_epoch: 2
-epoch: 40
-
-LearningRate:
-  base_lr: 0.0001
-  schedulers:
-  - !PiecewiseDecay
-    gamma: 0.1
-    milestones: [32, 36]
-  - !LinearWarmup
-    start_factor: 0.3333333333333333
-    steps: 100
-
-OptimizerBuilder:
-  optimizer:
-    momentum: 0.9
-    type: Momentum
-  regularizer:
-    factor: 0.0005
-    type: L2

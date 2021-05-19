@@ -107,10 +107,12 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=True):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        # TODO: remove this parameter
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -124,7 +126,8 @@ class Decode(BaseOperator):
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
         if 'keep_ori_im' in sample and sample['keep_ori_im']:
             sample['ori_image'] = im
-        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        if self.to_rgb:
+            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
         if 'h' not in sample:
@@ -151,14 +154,18 @@ class Decode(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self):
+    def __init__(self, to_rgb=False):
         """
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
+        # TODO: remove this parameter
+        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         im = sample['image']
+        if self.to_rgb:
+            im = np.ascontiguousarray(im[:, :, ::-1])
         im = im.transpose((2, 0, 1))
         sample['image'] = im
         return sample
@@ -2014,7 +2021,7 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self, fraction=0.50, is_bgr=True):
+    def __init__(self, fraction=0.50, is_bgr=False):
         """ 
         Augment the SV channel of image data.
         Args:
@@ -2072,120 +2079,6 @@ class Norm2PixelBbox(BaseOperator):
         bbox[:, 1::2] = bbox[:, 1::2] * height
         sample['gt_bbox'] = bbox
         return sample
-
-
-@register_op
-class RandomAffine(BaseOperator):
-    def __init__(self,
-                 degrees=(-5, 5),
-                 translate=(0.10, 0.10),
-                 scale=(0.50, 1.20),
-                 shear=(-2, 2),
-                 borderValue=(127.5, 127.5, 127.5)):
-        """ 
-        Transform the image data with random affine
-        """
-        super(RandomAffine, self).__init__()
-        self.degrees = degrees
-        self.translate = translate
-        self.scale = scale
-        self.shear = shear
-        self.borderValue = borderValue
-
-    def apply(self, sample, context=None):
-        # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
-        border = 0  # width of added border (optional)
-
-        img = sample['image']
-        height, width = img.shape[0], img.shape[1]
-
-        # Rotation and Scale
-        R = np.eye(3)
-        a = random.random() * (self.degrees[1] - self.degrees[0]
-                               ) + self.degrees[0]
-        s = random.random() * (self.scale[1] - self.scale[0]) + self.scale[0]
-        R[:2] = cv2.getRotationMatrix2D(
-            angle=a, center=(width / 2, height / 2), scale=s)
-
-        # Translation
-        T = np.eye(3)
-        T[0, 2] = (
-            random.random() * 2 - 1
-        ) * self.translate[0] * height + border  # x translation (pixels)
-        T[1, 2] = (
-            random.random() * 2 - 1
-        ) * self.translate[1] * width + border  # y translation (pixels)
-
-        # Shear
-        S = np.eye(3)
-        S[0, 1] = math.tan((random.random() *
-                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
-                           math.pi / 180)  # x shear (deg)
-        S[1, 0] = math.tan((random.random() *
-                            (self.shear[1] - self.shear[0]) + self.shear[0]) *
-                           math.pi / 180)  # y shear (deg)
-
-        M = S @T @R  # Combined rotation matrix. ORDER IS IMPORTANT HERE!!
-        imw = cv2.warpPerspective(
-            img,
-            M,
-            dsize=(width, height),
-            flags=cv2.INTER_LINEAR,
-            borderValue=self.borderValue)  # BGR order borderValue
-
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            targets = sample['gt_bbox']
-            n = targets.shape[0]
-            points = targets.copy()
-            area0 = (points[:, 2] - points[:, 0]) * (
-                points[:, 3] - points[:, 1])
-
-            # warp points
-            xy = np.ones((n * 4, 3))
-            xy[:, :2] = points[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
-                n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
-            xy = (xy @M.T)[:, :2].reshape(n, 8)
-
-            # create new boxes
-            x = xy[:, [0, 2, 4, 6]]
-            y = xy[:, [1, 3, 5, 7]]
-            xy = np.concatenate(
-                (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
-
-            # apply angle-based reduction
-            radians = a * math.pi / 180
-            reduction = max(abs(math.sin(radians)), abs(math.cos(radians)))**0.5
-            x = (xy[:, 2] + xy[:, 0]) / 2
-            y = (xy[:, 3] + xy[:, 1]) / 2
-            w = (xy[:, 2] - xy[:, 0]) * reduction
-            h = (xy[:, 3] - xy[:, 1]) * reduction
-            xy = np.concatenate(
-                (x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
-
-            # reject warped points outside of image
-            np.clip(xy[:, 0], 0, width, out=xy[:, 0])
-            np.clip(xy[:, 2], 0, width, out=xy[:, 2])
-            np.clip(xy[:, 1], 0, height, out=xy[:, 1])
-            np.clip(xy[:, 3], 0, height, out=xy[:, 3])
-            w = xy[:, 2] - xy[:, 0]
-            h = xy[:, 3] - xy[:, 1]
-            area = w * h
-            ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))
-            i = (w > 4) & (h > 4) & (area / (area0 + 1e-16) > 0.1) & (ar < 10)
-
-            if sum(i) > 0:
-                sample['gt_bbox'] = xy[i].astype(sample['gt_bbox'].dtype)
-                sample['gt_class'] = sample['gt_class'][i]
-                if 'difficult' in sample:
-                    sample['difficult'] = sample['difficult'][i]
-                if 'gt_ide' in sample:
-                    sample['gt_ide'] = sample['gt_ide'][i]
-                if 'is_crowd' in sample:
-                    sample['is_crowd'] = sample['is_crowd'][i]
-                sample['image'] = imw
-                return sample
-            else:
-                return sample
 
 
 @register_op

@@ -65,7 +65,9 @@ class Detector(object):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 trt_calib_mode=False):
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -76,7 +78,9 @@ class Detector(object):
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode)
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -182,7 +186,9 @@ class DetectorSOLOv2(Detector):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 trt_calib_mode=False):
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
         self.pred_config = pred_config
         self.predictor = load_predictor(
             model_dir,
@@ -193,7 +199,9 @@ class DetectorSOLOv2(Detector):
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode)
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
 
     def predict(self, image, threshold=0.5, warmup=0, repeats=1):
@@ -309,7 +317,9 @@ def load_predictor(model_dir,
                    trt_min_shape=1,
                    trt_max_shape=1280,
                    trt_opt_shape=640,
-                   trt_calib_mode=False):
+                   trt_calib_mode=False,
+                   cpu_threads=1,
+                   enable_mkldnn=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -345,8 +355,8 @@ def load_predictor(model_dir,
         config.switch_ir_optim(True)
     else:
         config.disable_gpu()
-        config.set_cpu_math_library_num_threads(FLAGS.cpu_threads)
-        if FLAGS.enable_mkldnn:
+        config.set_cpu_math_library_num_threads(cpu_threads)
+        if enable_mkldnn:
             try:
                 # cache 10 different shapes for mkldnn to avoid memory leak
                 config.set_mkldnn_cache_capacity(10)
@@ -502,7 +512,9 @@ def main():
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode)
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
@@ -513,7 +525,9 @@ def main():
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
             trt_opt_shape=FLAGS.trt_opt_shape,
-            trt_calib_mode=FLAGS.trt_calib_mode)
+            trt_calib_mode=FLAGS.trt_calib_mode,
+            cpu_threads=FLAGS.cpu_threads,
+            enable_mkldnn=FLAGS.enable_mkldnn)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

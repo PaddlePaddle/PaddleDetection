@@ -4,7 +4,7 @@ TrainReader:
     - Decode: {}
     - AugmentHSV: {}
     - LetterBoxResize: {target_size: [608, 1088]}
-    - RandomAffine: {}
+    - MOTRandomAffine: {}
     - RandomFlip: {}
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
@@ -71,7 +71,6 @@ TestMOTReader:
   inputs_def:
     image_shape: [3, 608, 1088]
   sample_transforms:
-    - Decode: {}
     - LetterBoxResize: {target_size: [608, 1088]}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
     - Permute: {}
