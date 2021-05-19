@@ -42,6 +42,9 @@ def _parse_size_in_M(size_str):
 
 
 def _get_shared_memory_size_in_M():
+    if os.name != "posix":
+        # windows is not supported for now
+        return None
     try:
         df_infos = os.popen(SHM_QUERY_CMD).readlines()
     except:
