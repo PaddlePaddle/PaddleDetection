@@ -133,8 +133,7 @@ class RPNHead(nn.Layer):
 
         anchors = self.anchor_generator(rpn_feats)
 
-        rois, rois_num = self._gen_proposal(
-            scores, deltas, anchors, inputs)
+        rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs)
         if self.training:
             loss = self.get_loss(scores, deltas, anchors, inputs)
             return rois, rois_num, loss
@@ -153,7 +152,8 @@ class RPNHead(nn.Layer):
 
         # Collect multi-level proposals for each batch
         # Get 'topk' of them as final output
-        batch_size = paddle.slice(paddle.shape(inputs['im_shape']), [0], [0], [1])
+        batch_size = paddle.slice(
+            paddle.shape(inputs['im_shape']), [0], [0], [1])
         bs_rois_collect = []
         bs_rois_num_collect = []
 
@@ -164,7 +164,8 @@ class RPNHead(nn.Layer):
             rpn_prob_list = []
             rpn_rois_num_list = []
 
-            for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas, anchors):
+            for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas,
+                                                    anchors):
                 rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = prop_gen(
                     scores=rpn_score[i:i + 1],
                     bbox_deltas=rpn_delta[i:i + 1],

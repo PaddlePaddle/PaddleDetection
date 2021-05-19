@@ -82,14 +82,16 @@ class S2ANet(BaseArch):
             scale_factor = self.inputs['scale_factor']
             nms_pre = self.s2anet_bbox_post_process.nms_pre
             nms_pre = int(nms_pre)
-            out_pred_scores, out_pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
+            out_pred_scores, out_pred_bboxes = self.s2anet_head.get_prediction(
+                nms_pre)
             out_pred_bboxes_list = []
             out_bbox_num_list = []
 
-            batch_size = paddle.slice(paddle.shape(self.inputs['im_shape']), [0], [0], [1])
+            batch_size = paddle.slice(
+                paddle.shape(self.inputs['im_shape']), [0], [0], [1])
             for im_id in range(batch_size):
-                pred_bboxes, bbox_num = self.s2anet_bbox_post_process(out_pred_scores[im_id],
-                                                                      out_pred_bboxes[im_id])
+                pred_bboxes, bbox_num = self.s2anet_bbox_post_process(
+                    out_pred_scores[im_id], out_pred_bboxes[im_id])
 
                 # rescale the prediction back to origin image
                 pred_bboxes = self.s2anet_bbox_post_process.get_pred(

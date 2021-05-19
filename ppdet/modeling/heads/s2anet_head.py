@@ -597,8 +597,6 @@ class S2ANetHead(nn.Layer):
             pred_scores_list.append(pred_scores)
             pred_bboxes_list.append(pred_bboxes)
 
-        #out_pred_scores = paddle.stack(pred_scores_list, axis=0)
-        #out_pred_bboxes = paddle.stack(pred_bboxes_list, axis=0)
         return pred_scores_list, pred_bboxes_list
 
     def smooth_l1_loss(self, pred, label, delta=1.0 / 9.0):
