@@ -1,6 +1,6 @@
 tqdm
 typeguard ; python_version >= '3.4'
-visualdl>=2.1.0
+visualdl>=2.1.0 ; python_version <= '3.7'
 opencv-python
 PyYAML
 shapely
@@ -10,5 +10,7 @@ Cython
 pycocotools
 #xtcocotools==1.6 #only for crowdpose
 setuptools>=42.0.0
-#lap #for mot
-#motmetrics #for mot
+lap
+sklearn
+motmetrics
+openpyxl

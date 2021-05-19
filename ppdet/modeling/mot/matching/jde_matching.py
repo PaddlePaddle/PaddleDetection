@@ -15,10 +15,14 @@
 This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/matching.py
 """
 
+import lap
 import scipy
 import numpy as np
 from scipy.spatial.distance import cdist
 from ..motion import kalman_filter
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 __all__ = [
     'merge_matches',
@@ -55,7 +59,6 @@ def linear_assignment(cost_matrix, thresh):
             (0, 2), dtype=int), tuple(range(cost_matrix.shape[0])), tuple(
                 range(cost_matrix.shape[1]))
     matches, unmatched_a, unmatched_b = [], [], []
-    import lap
     cost, x, y = lap.lapjv(cost_matrix, extend_cost=True, cost_limit=thresh)
     for ix, mx in enumerate(x):
         if mx >= 0:
@@ -70,7 +73,13 @@ def cython_bbox_ious(atlbrs, btlbrs):
     ious = np.zeros((len(atlbrs), len(btlbrs)), dtype=np.float)
     if ious.size == 0:
         return ious
-    import cython_bbox
+    try:
+        import cython_bbox
+    except Exception as e:
+        logger.error('cython_bbox not found, please install cython_bbox.'
+                     'for example: `pip install cython_bbox`.')
+        raise e
+
     ious = cython_bbox.bbox_overlaps(
         np.ascontiguousarray(
             atlbrs, dtype=np.float),

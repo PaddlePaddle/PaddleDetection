@@ -7,17 +7,18 @@
 
 ## 环境要求
 
-- PaddlePaddle 2.0.1
+- PaddlePaddle 2.1
 - OS 64位操作系统
-- Python 3(3.5.1+/3.6/3.7)，64位版本
+- Python 3(3.5.1+/3.6/3.7/3.8/3.9)，64位版本
 - pip/pip3(9.0.1+)，64位版本
-- CUDA >= 9.0
+- CUDA >= 10.1
 - cuDNN >= 7.6
 
 PaddleDetection 依赖 PaddlePaddle 版本关系：
 
 |  PaddleDetection版本  | PaddlePaddle版本  |    备注    |
 | :------------------: | :---------------: | :-------: |
+|    release/2.1       |       >= 2.1.0    |     默认使用动态图模式    |
 |    release/2.0       |       >= 2.0.1    |     默认使用动态图模式    |
 |    release/2.0-rc    |       >= 2.0.1    |     --    |
 |    release/0.5       |       >= 1.8.4    |  大部分模型>=1.8.4即可运行，Cascade R-CNN系列模型与SOLOv2依赖2.0.0.rc版本 |
@@ -29,17 +30,14 @@ PaddleDetection 依赖 PaddlePaddle 版本关系：
 ### 1. 安装PaddlePaddle
 
 ```
-# CUDA9.0
-python -m pip install paddlepaddle-gpu==2.0.1.post90 -i https://mirror.baidu.com/pypi/simple
-
 # CUDA10.1
-python -m pip install paddlepaddle-gpu==2.0.1.post101 -f https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.1.0.post101 -f https://paddlepaddle.org.cn/whl/mkl/stable.html
 
 # CPU
 python -m pip install paddlepaddle -i https://mirror.baidu.com/pypi/simple
 ```
-
-更多安装方式例如conda或源码编译安装方法，请参考PaddlePaddle[安装文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/index_cn.html)
+- 更多CUDA版本或环境快速安装，请参考[PaddlePaddle快速安装文档](https://www.paddlepaddle.org.cn/install/quick)
+- 更多安装方式例如conda或源码编译安装方法，请参考[PaddlePaddle安装文档](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/index_cn.html)
 
 请确保您的PaddlePaddle安装成功并且版本不低于需求版本。使用以下命令进行验证。
 

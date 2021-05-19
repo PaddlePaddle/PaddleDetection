@@ -49,6 +49,6 @@ python -u tools/infer.py -c configs/vehicle/vehicle_yolov3_darknet.yml \
 
 预测结果示例：
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_001.jpeg)
+![](../../docs/images/VehicleDetection_001.jpeg)
 
-![](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/docs/images/VehicleDetection_005.png)
+![](../../docs/images/VehicleDetection_005.png)

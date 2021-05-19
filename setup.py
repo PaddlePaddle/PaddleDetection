@@ -17,7 +17,6 @@ import os.path as osp
 import glob
 import shutil
 from setuptools import find_packages, setup
-from paddle.utils import cpp_extension
 
 
 def readme():
@@ -87,6 +86,8 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7', 'Topic :: Utilities'
+            'Programming Language :: Python :: 3.8', 'Topic :: Utilities'
+            'Programming Language :: Python :: 3.9', 'Topic :: Utilities'
         ],
         license='Apache License 2.0',
         ext_modules=[])

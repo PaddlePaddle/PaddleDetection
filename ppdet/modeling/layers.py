@@ -52,7 +52,9 @@ class DeformableConvV2(nn.Layer):
                  bias_attr=None,
                  lr_scale=1,
                  regularizer=None,
-                 skip_quant=False):
+                 skip_quant=False,
+                 dcn_bias_regularizer=L2Decay(0.),
+                 dcn_bias_lr_scale=2.):
         super(DeformableConvV2, self).__init__()
         self.offset_channel = 2 * kernel_size**2
         self.mask_channel = kernel_size**2
@@ -79,8 +81,8 @@ class DeformableConvV2(nn.Layer):
             # in FCOS-DCN head, specifically need learning_rate and regularizer
             dcn_bias_attr = ParamAttr(
                 initializer=Constant(value=0),
-                regularizer=L2Decay(0.),
-                learning_rate=2.)
+                regularizer=dcn_bias_regularizer,
+                learning_rate=dcn_bias_lr_scale)
         else:
             # in ResNet backbone, do not need bias
             dcn_bias_attr = False
@@ -122,7 +124,9 @@ class ConvNormLayer(nn.Layer):
                  freeze_norm=False,
                  initializer=Normal(
                      mean=0., std=0.01),
-                 skip_quant=False):
+                 skip_quant=False,
+                 dcn_lr_scale=2.,
+                 dcn_regularizer=L2Decay(0.)):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn']
 
@@ -157,15 +161,17 @@ class ConvNormLayer(nn.Layer):
                 weight_attr=ParamAttr(
                     initializer=initializer, learning_rate=1.),
                 bias_attr=True,
-                lr_scale=2.,
-                regularizer=L2Decay(norm_decay),
+                lr_scale=dcn_lr_scale,
+                regularizer=dcn_regularizer,
                 skip_quant=skip_quant)
 
         norm_lr = 0. if freeze_norm else 1.
         param_attr = ParamAttr(
-            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay) if norm_decay is not None else None)
         bias_attr = ParamAttr(
-            learning_rate=norm_lr, regularizer=L2Decay(norm_decay))
+            learning_rate=norm_lr,
+            regularizer=L2Decay(norm_decay) if norm_decay is not None else None)
         if norm_type == 'bn':
             self.norm = nn.BatchNorm2D(
                 ch_out, weight_attr=param_attr, bias_attr=bias_attr)
@@ -240,38 +246,6 @@ class LiteConv(nn.Layer):
     def forward(self, inputs):
         out = self.lite_conv(inputs)
         return out
-
-
-@register
-@serializable
-class AnchorGeneratorRPN(object):
-    def __init__(self,
-                 anchor_sizes=[32, 64, 128, 256, 512],
-                 aspect_ratios=[0.5, 1.0, 2.0],
-                 stride=[16.0, 16.0],
-                 variance=[1.0, 1.0, 1.0, 1.0],
-                 anchor_start_size=None):
-        super(AnchorGeneratorRPN, self).__init__()
-        self.anchor_sizes = anchor_sizes
-        self.aspect_ratios = aspect_ratios
-        self.stride = stride
-        self.variance = variance
-        self.anchor_start_size = anchor_start_size
-
-    def __call__(self, input, level=None):
-        anchor_sizes = self.anchor_sizes if (
-            level is None or self.anchor_start_size is None) else (
-                self.anchor_start_size * 2**level)
-        stride = self.stride if (
-            level is None or self.anchor_start_size is None) else (
-                self.stride[0] * (2.**level), self.stride[1] * (2.**level))
-        anchor, var = ops.anchor_generator(
-            input=input,
-            anchor_sizes=anchor_sizes,
-            aspect_ratios=self.aspect_ratios,
-            stride=stride,
-            variance=self.variance)
-        return anchor, var
 
 
 @register
@@ -415,6 +389,7 @@ class MultiClassNMS(object):
                  nms_threshold=.5,
                  normalized=True,
                  nms_eta=1.0,
+                 return_index=False,
                  return_rois_num=True):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
@@ -423,6 +398,7 @@ class MultiClassNMS(object):
         self.nms_threshold = nms_threshold
         self.normalized = normalized
         self.nms_eta = nms_eta
+        self.return_index = return_index
         self.return_rois_num = return_rois_num
 
     def __call__(self, bboxes, score, background_label=-1):

@@ -65,7 +65,7 @@ PaddleDetection的数据处理模块的所有代码逻辑在`ppdet/data/`中，�
   }
   ```
 
-xxx_rec中的内容也可以通过`DetDataSet`的data_fields参数来控制，即可以过滤掉一些不需要的字段，但大多数情况下不需要修改，按照`configs/dataset`中的默认配置即可。
+xxx_rec中的内容也可以通过`DetDataSet`的data_fields参数来控制，即可以过滤掉一些不需要的字段，但大多数情况下不需要修改，按照`configs/datasets`中的默认配置即可。
 
 此外，在parse_dataset函数中，保存了类别名到id的映射的一个字典`cname2cid`。在coco数据集中，会利用[COCO API](https://github.com/cocodataset/cocoapi)从标注文件中加载数据集的类别名，并设置此字典。在voc数据集中，如果设置`use_default_label=False`，将从`label_list.txt`中读取类别列表，反之将使用voc默认的类别列表。
 
@@ -153,7 +153,7 @@ COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件
   from . import xxx
   from .xxx import *
   ```
-完成以上两步就将新的数据源`XXXDataSet`添加好了，你可以参考[配置及运行](#配置及运行)实现自定义数据集的使用。
+完成以上两步就将新的数据源`XXXDataSet`添加好了，你可以参考[配置及运行](#5.配置及运行)实现自定义数据集的使用。
 
 ### 3.数据预处理
 

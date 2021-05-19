@@ -11,12 +11,12 @@
 
 ## 简介
 
-[PP-YOLO](https://arxiv.org/abs/2007.12099)是PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 2.0.0rc1(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-release)。
+[PP-YOLO](https://arxiv.org/abs/2007.12099)是PaddleDetection优化和改进的YOLOv3的模型，其精度(COCO数据集mAP)和推理速度均优于[YOLOv4](https://arxiv.org/abs/2004.10934)模型，要求使用PaddlePaddle 2.0.2(可使用pip安装) 或适当的[develop版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/install/Tables.html#whl-develop)。
 
 PP-YOLO在[COCO](http://cocodataset.org) test-dev2017数据集上精度达到45.9%，在单卡V100上FP32推理速度为72.9 FPS, V100上开启TensorRT下FP16推理速度为155.6 FPS。
 
 <div align="center">
-  <img src="../../../docs/images/ppyolo_map_fps.png" width=500 />
+  <img src="../../docs/images/ppyolo_map_fps.png" width=500 />
 </div>
 
 PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
@@ -70,6 +70,18 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 - PP-YOLO_MobileNetV3 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果, Box AP50<sup>val</sup>为`mAP(IoU=0.5)`评估结果。
 - PP-YOLO_MobileNetV3 模型训练过程中使用4GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/FAQ.md)调整学习率和迭代次数。
 - PP-YOLO_MobileNetV3 模型推理速度测试环境配置为麒麟990芯片单线程。
+
+### PP-YOLO tiny模型
+
+|            模型              |  GPU 个数  | 每GPU图片个数 |  模型体积  | 后量化模型体积 |   输入尺寸  | Box AP<sup>val</sup> | Kirin 990 1xCore (FPS) | 模型下载 | 配置文件 | 量化后模型 |
+|:----------------------------:|:----------:|:-------------:| :--------: | :------------: | :----------:| :------------------: | :--------------------: | :------: | :------: | :--------: |
+| PP-YOLO tiny                 |     8      |      32       |   4.2MB    |   **1.3M**     |     320     |         20.6         |          92.3         | [model](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_tiny_650e_coco.yml) | [预测模型](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
+| PP-YOLO tiny                 |     8      |      32       |   4.2MB    |   **1.3M**     |     416     |         22.7         |          65.4         | [model](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_tiny_650e_coco.yml) | [预测模型](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
+
+- PP-YOLO-tiny 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果, Box AP50<sup>val</sup>为`mAP(IoU=0.5)`评估结果。
+- PP-YOLO-tiny 模型训练过程中使用8GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
+- PP-YOLO-tiny 模型推理速度测试环境配置为麒麟990芯片4线程，arm8架构。
+- 我们也提供的PP-YOLO-tiny的后量化压缩模型，将模型体积压缩到**1.3M**，对精度和预测速度基本无影响
 
 ### Pascal VOC数据集上的PP-YOLO
 
@@ -195,7 +207,7 @@ PP-YOLO模型相对于YOLOv3模型优化项消融实验数据如下表所示。
 - 精度与推理速度数据均为使用输入图像尺寸为608的测试结果
 - Box AP为在COCO train2017数据集训练，val2017和test-dev2017数据集上评估`mAP(IoU=0.5:0.95)`数据
 - 推理速度为单卡V100上，batch size=1, 使用上述benchmark测试方法的测试结果，测试环境配置为CUDA 10.2，CUDNN 7.5.1
-- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO.md)
+- [YOLOv3-DarkNet53](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)精度38.9为PaddleDetection优化后的YOLOv3模型，可参见[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/yolov3/README.md)
 
 ## 引用
 

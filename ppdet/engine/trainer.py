@@ -33,6 +33,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
+from ppdet.metrics import JDEDetMetric, JDEReIDMetric
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -55,6 +56,20 @@ class Trainer(object):
         self.optimizer = None
         self.is_loaded_weights = False
 
+        # build data loader
+        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        if self.mode == 'train':
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num)
+
+        if cfg.architecture == 'JDE' and self.mode == 'train':
+            cfg['JDEEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
+
+        if cfg.architecture == 'FairMOT' and self.mode == 'train':
+            cfg['FairMOTEmbeddingHead'][
+                'num_identifiers'] = self.dataset.total_identities
+
         # build model
         if 'model' not in self.cfg:
             self.model = create(cfg.architecture)
@@ -67,11 +82,6 @@ class Trainer(object):
             self.ema = ModelEMA(
                 cfg['ema_decay'], self.model, use_thres_step=True)
 
-        # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        if self.mode == 'train':
-            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, cfg.worker_num)
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
@@ -106,7 +116,7 @@ class Trainer(object):
     def _init_callbacks(self):
         if self.mode == 'train':
             self._callbacks = [LogPrinter(self), Checkpointer(self)]
-            if 'use_vdl' in self.cfg and self.cfg.use_vdl:
+            if self.cfg.get('use_vdl', False):
                 self._callbacks.append(VisualDLWriter(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
@@ -114,7 +124,7 @@ class Trainer(object):
             if self.cfg.metric == 'WiderFace':
                 self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
-        elif self.mode == 'test' and 'use_vdl' in self.cfg and self.cfg.use_vdl:
+        elif self.mode == 'test' and self.cfg.get('use_vdl', False):
             self._callbacks = [VisualDLWriter(self)]
             self._compose_callback = ComposeCallback(self._callbacks)
         else:
@@ -131,8 +141,7 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             output_eval = self.cfg['output_eval'] \
                 if 'output_eval' in self.cfg else None
-            save_prediction_only = self.cfg['save_prediction_only'] \
-                if 'save_prediction_only' in self.cfg else False
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
 
             # pass clsid2catid info to metric instance to avoid multiple loading
             # annotation file
@@ -184,6 +193,10 @@ class Trainer(object):
                                         len(eval_dataset), self.cfg.num_joints,
                                         self.cfg.save_dir)
             ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'ReID':
+            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -212,7 +225,13 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        if hasattr(self.model, 'detector'):
+            if self.model.__class__.__name__ == 'FairMOT':
+                load_pretrain_weight(self.model, weights)
+            else:
+                load_pretrain_weight(self.model.detector, weights)
+        else:
+            load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
@@ -233,15 +252,18 @@ class Trainer(object):
             self._reset_metrics()
 
         model = self.model
-        if self.cfg.fleet:
+        if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
             self.optimizer = fleet.distributed_optimizer(
                 self.optimizer).user_defined_optimizer
         elif self._nranks > 1:
-            model = paddle.DataParallel(self.model)
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            model = paddle.DataParallel(
+                self.model, find_unused_parameters=find_unused_parameters)
 
         # initial fp16
-        if self.cfg.fp16:
+        if self.cfg.get('fp16', False):
             scaler = amp.GradScaler(
                 enable=self.cfg.use_gpu, init_loss_scaling=1024)
 
@@ -269,7 +291,7 @@ class Trainer(object):
                 self.status['step_id'] = step_id
                 self._compose_callback.on_step_begin(self.status)
 
-                if self.cfg.fp16:
+                if self.cfg.get('fp16', False):
                     with amp.auto_cast(enable=self.cfg.use_gpu):
                         # model forward
                         outputs = model(data)
@@ -310,7 +332,7 @@ class Trainer(object):
             self._compose_callback.on_epoch_end(self.status)
 
             if validate and (self._nranks < 2 or self._local_rank == 0) \
-                    and (epoch_id % self.cfg.snapshot_epoch == 0 \
+                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
                              or epoch_id == self.end_epoch - 1):
                 if not hasattr(self, '_eval_loader'):
                     # build evaluation dataset and loader

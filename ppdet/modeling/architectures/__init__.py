@@ -19,6 +19,8 @@ from . import keypoint_hrhrnet
 from . import keypoint_hrnet
 from . import jde
 from . import deepsort
+from . import fairmot
+from . import centernet
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -34,3 +36,5 @@ from .keypoint_hrhrnet import *
 from .keypoint_hrnet import *
 from .jde import *
 from .deepsort import *
+from .fairmot import *
+from .centernet import *

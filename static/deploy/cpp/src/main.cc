@@ -43,6 +43,7 @@ DEFINE_int32(camera_id, -1, "Device id of camera to predict");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
+DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quantitative calibration, trt_calib_mode need to set True");
 
 static std::string DirName(const std::string &filepath) {
   auto pos = filepath.rfind(OS_PATH_SEP);
@@ -206,7 +207,7 @@ int main(int argc, char** argv) {
 
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
-    FLAGS_run_mode, FLAGS_gpu_id);
+    FLAGS_run_mode, FLAGS_gpu_id, FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {
     PredictVideo(FLAGS_video_path, &det);

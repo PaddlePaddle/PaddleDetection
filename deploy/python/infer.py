@@ -26,9 +26,10 @@ import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
+from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
+from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -66,9 +67,11 @@ class Detector(object):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 trt_calib_mode=False):
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -77,7 +80,9 @@ class Detector(object):
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode)
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
@@ -131,14 +136,14 @@ class Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.preprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         inputs = self.preprocess(image_list)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -148,7 +153,7 @@ class Detector(object):
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
 
-        self.det_times.inference_time.start()
+        self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -159,9 +164,9 @@ class Detector(object):
             if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
-        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.inference_time_s.end(repeats=repeats)
 
-        self.det_times.postprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
@@ -169,7 +174,7 @@ class Detector(object):
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
-        self.det_times.postprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         self.det_times.img_num += len(image_list)
         return results
 
@@ -197,9 +202,11 @@ class DetectorSOLOv2(Detector):
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
-                 trt_calib_mode=False):
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor = load_predictor(
+        self.predictor, self.config  = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -208,7 +215,9 @@ class DetectorSOLOv2(Detector):
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
-            trt_calib_mode=trt_calib_mode)
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
 
     def predict(self, image, threshold=0.5, warmup=0, repeats=1):
@@ -221,14 +230,14 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
-        self.det_times.preprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         inputs = self.preprocess(image)
         np_label, np_score, np_segms = None, None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -239,7 +248,7 @@ class DetectorSOLOv2(Detector):
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
 
-        self.det_times.inference_time.start()
+        self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -249,7 +258,7 @@ class DetectorSOLOv2(Detector):
                 2]).copy_to_cpu()
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
-        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.inference_time_s.end(repeats=repeats)
         self.det_times.img_num += 1
 
         return dict(segm=np_segms, label=np_label, score=np_score)
@@ -348,7 +357,9 @@ def load_predictor(model_dir,
                    trt_min_shape=1,
                    trt_max_shape=1280,
                    trt_opt_shape=640,
-                   trt_calib_mode=False):
+                   trt_calib_mode=False,
+                   cpu_threads=1,
+                   enable_mkldnn=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -384,8 +395,8 @@ def load_predictor(model_dir,
         config.switch_ir_optim(True)
     else:
         config.disable_gpu()
-        config.set_cpu_math_library_num_threads(FLAGS.cpu_threads)
-        if FLAGS.enable_mkldnn:
+        config.set_cpu_math_library_num_threads(cpu_threads)
+        if enable_mkldnn:
             try:
                 # cache 10 different shapes for mkldnn to avoid memory leak
                 config.set_mkldnn_cache_capacity(10)
@@ -420,7 +431,7 @@ def load_predictor(model_dir,
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = create_predictor(config)
-    return predictor
+    return predictor, config
 
 
 def get_test_images(infer_dir, infer_img):
@@ -561,7 +572,9 @@ def main():
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
-        trt_calib_mode=FLAGS.trt_calib_mode)
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn)
     if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             pred_config,
@@ -572,7 +585,9 @@ def main():
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
             trt_opt_shape=FLAGS.trt_opt_shape,
-            trt_calib_mode=FLAGS.trt_calib_mode)
+            trt_calib_mode=FLAGS.trt_calib_mode,
+            cpu_threads=FLAGS.cpu_threads,
+            enable_mkldnn=FLAGS.enable_mkldnn)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
@@ -591,9 +606,22 @@ def main():
                 'gpu_rss': detector.gpu_mem / len(img_list),
                 'gpu_util': detector.gpu_util * 100 / len(img_list)
             }
-            det_logger = LoggerHelper(
-                FLAGS, detector.det_times.report(average=True), mems)
-            det_logger.report()
+
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+            'model_name': model_dir.strip('/').split('/')[-1],
+            'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': 1,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(
+                detector.config, model_info, data_info, perf_info, mems)
+            det_log('Det')
 
 
 if __name__ == '__main__':

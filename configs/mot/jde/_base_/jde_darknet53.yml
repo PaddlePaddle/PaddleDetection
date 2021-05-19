@@ -1,0 +1,56 @@
+architecture: JDE
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+find_unused_parameters: True
+
+JDE:
+  detector: YOLOv3
+  reid: JDEEmbeddingHead
+  tracker: JDETracker
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
+
+DarkNet:
+  depth: 53
+  return_idx: [2, 3, 4]
+  freeze_norm: True
+
+YOLOv3FPN:
+  freeze_norm: True
+
+YOLOv3Head:
+  anchors: [[128,384], [180,540], [256,640], [512,640],
+            [32,96], [45,135], [64,192], [90,271],
+            [8,24], [11,34], [16,48], [23,68]]
+  anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+  loss: JDEDetectionLoss
+
+JDEBBoxPostProcess:
+  decode:
+    name: JDEBox
+    conf_thresh: 0.3
+    downsample_ratio: 32
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.5
+    nms_top_k: 2000
+    normalized: true
+
+JDEEmbeddingHead:
+  anchor_levels: 3
+  anchor_scales: 4
+  embedding_dim: 512
+  emb_loss: JDEEmbeddingLoss
+  jde_loss: JDELoss
+
+JDETracker:
+  det_thresh: 0.3
+  track_buffer: 30
+  min_box_area: 200
+  motion: KalmanFilter

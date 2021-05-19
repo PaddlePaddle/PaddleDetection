@@ -25,7 +25,8 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
                                const int min_subgraph_size,
                                const int batch_size,
                                const std::string& run_mode,
-                               const int gpu_id) {
+                               const int gpu_id,
+                               bool trt_calib_mode) {
   paddle::AnalysisConfig config;
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
@@ -33,14 +34,12 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   if (use_gpu) {
     config.EnableUseGpu(100, gpu_id);
     config.SwitchIrOptim(true);
-    bool use_calib_mode = false;
     if (run_mode != "fluid") {
       auto precision = paddle::AnalysisConfig::Precision::kFloat32;
       if (run_mode == "trt_fp16") {
         precision = paddle::AnalysisConfig::Precision::kHalf;
       } else if (run_mode == "trt_int8") {
         precision = paddle::AnalysisConfig::Precision::kInt8;
-        use_calib_mode = true;
       } else {
         printf("run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'");
       }
@@ -50,7 +49,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           min_subgraph_size,
           precision,
           false,
-          use_calib_mode);
+          trt_calib_mode);
    }
   } else {
     config.DisableGpu();
