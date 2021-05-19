@@ -169,6 +169,8 @@ class TestCollectFpnProposals(LayerTest):
                 max_level=5,
                 post_nms_top_n=2000)
 
+        paddle.disable_static()
+
 
 class TestDistributeFpnProposals(LayerTest):
     def test_distribute_fpn_proposals(self):
@@ -231,6 +233,8 @@ class TestDistributeFpnProposals(LayerTest):
                 refer_level=4,
                 refer_scale=224)
 
+        paddle.disable_static()
+
 
 class TestROIAlign(LayerTest):
     def test_roi_align(self):
@@ -289,6 +293,8 @@ class TestROIAlign(LayerTest):
                 rois=rois,
                 output_size=(7, 7))
 
+        paddle.disable_static()
+
 
 class TestROIPool(LayerTest):
     def test_roi_pool(self):
@@ -346,6 +352,8 @@ class TestROIPool(LayerTest):
                 input=inputs,
                 rois=rois,
                 output_size=(7, 7))
+
+        paddle.disable_static()
 
 
 class TestIoUSimilarity(LayerTest):
@@ -473,6 +481,8 @@ class TestYoloBox(LayerTest):
                 32,
                 scale_x_y=1.2)
 
+        paddle.disable_static()
+
 
 class TestPriorBox(LayerTest):
     def test_prior_box(self):
@@ -530,42 +540,7 @@ class TestPriorBox(LayerTest):
                 clip=True,
                 flip=True)
 
-
-class TestAnchorGenerator(LayerTest):
-    def test_anchor_generator(self):
-        b, c, h, w = 2, 48, 16, 16
-        input_np = np.random.rand(2, 48, 16, 16).astype('float32')
-        with self.static_graph():
-            input = paddle.static.data(
-                name='input', shape=[b, c, h, w], dtype='float32')
-
-            anchor, var = ops.anchor_generator(
-                input=input,
-                anchor_sizes=[64, 128, 256, 512],
-                aspect_ratios=[0.5, 1.0, 2.0],
-                variance=[0.1, 0.1, 0.2, 0.2],
-                stride=[16.0, 16.0],
-                offset=0.5)
-            anchor_np, var_np = self.get_static_graph_result(
-                feed={'input': input_np, },
-                fetch_list=[anchor, var],
-                with_lod=False)
-
-        with self.dynamic_graph():
-            inputs_dy = base.to_variable(input_np)
-
-            anchor_dy, var_dy = ops.anchor_generator(
-                input=inputs_dy,
-                anchor_sizes=[64, 128, 256, 512],
-                aspect_ratios=[0.5, 1.0, 2.0],
-                variance=[0.1, 0.1, 0.2, 0.2],
-                stride=[16.0, 16.0],
-                offset=0.5)
-            anchor_dy_np = anchor_dy.numpy()
-            var_dy_np = var_dy.numpy()
-
-        self.assertTrue(np.array_equal(anchor_np, anchor_dy_np))
-        self.assertTrue(np.array_equal(var_np, var_dy_np))
+        paddle.disable_static()
 
 
 class TestMulticlassNms(LayerTest):
@@ -726,6 +701,8 @@ class TestMatrixNMS(LayerTest):
                 keep_top_k=200,
                 return_index=True)
 
+        paddle.disable_static()
+
 
 class TestBoxCoder(LayerTest):
     def test_box_coder(self):
@@ -787,6 +764,8 @@ class TestBoxCoder(LayerTest):
 
             self.assertRaises(TypeError, ops.box_coder, prior_box,
                               prior_box_var, target_box)
+
+        paddle.disable_static()
 
 
 class TestGenerateProposals(LayerTest):
