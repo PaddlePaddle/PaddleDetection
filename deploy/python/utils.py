@@ -131,25 +131,26 @@ class Times(object):
 class Timer(Times):
     def __init__(self):
         super(Timer, self).__init__()
-        self.preprocess_time = Times()
-        self.inference_time = Times()
-        self.postprocess_time = Times()
+        self.preprocess_time_s = Times()
+        self.inference_time_s = Times()
+        self.postprocess_time_s = Times()
         self.img_num = 0
 
     def info(self, average=False):
-        total_time = self.preprocess_time.value() + self.inference_time.value(
-        ) + self.postprocess_time.value()
+        total_time = self.preprocess_time_s.value(
+        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
         total_time = round(total_time, 4)
         print("------------------ Inference Time Info ----------------------")
         print("total_time(ms): {}, img_num: {}".format(total_time * 1000,
                                                        self.img_num))
-        preprocess_time = round(self.preprocess_time.value() / self.img_num,
-                                4) if average else self.preprocess_time.value()
+        preprocess_time = round(
+            self.preprocess_time_s.value() / self.img_num,
+            4) if average else self.preprocess_time_s.value()
         postprocess_time = round(
-            self.postprocess_time.value() / self.img_num,
-            4) if average else self.postprocess_time.value()
-        inference_time = round(self.inference_time.value() / self.img_num,
-                               4) if average else self.inference_time.value()
+            self.postprocess_time_s.value() / self.img_num,
+            4) if average else self.postprocess_time_s.value()
+        inference_time = round(self.inference_time_s.value() / self.img_num,
+                               4) if average else self.inference_time_s.value()
 
         average_latency = total_time / self.img_num
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
@@ -161,19 +162,19 @@ class Timer(Times):
 
     def report(self, average=False):
         dic = {}
-        dic['preprocess_time'] = round(
-            self.preprocess_time.value() / self.img_num,
-            4) if average else self.preprocess_time.value()
-        dic['postprocess_time'] = round(
-            self.postprocess_time.value() / self.img_num,
-            4) if average else self.postprocess_time.value()
-        dic['inference_time'] = round(
-            self.inference_time.value() / self.img_num,
-            4) if average else self.inference_time.value()
+        dic['preprocess_time_s'] = round(
+            self.preprocess_time_s.value() / self.img_num,
+            4) if average else self.preprocess_time_s.value()
+        dic['postprocess_time_s'] = round(
+            self.postprocess_time_s.value() / self.img_num,
+            4) if average else self.postprocess_time_s.value()
+        dic['inference_time_s'] = round(
+            self.inference_time_s.value() / self.img_num,
+            4) if average else self.inference_time_s.value()
         dic['img_num'] = self.img_num
-        total_time = self.preprocess_time.value() + self.inference_time.value(
-        ) + self.postprocess_time.value()
-        dic['total_time'] = round(total_time, 4)
+        total_time = self.preprocess_time_s.value(
+        ) + self.inference_time_s.value() + self.postprocess_time_s.value()
+        dic['total_time_s'] = round(total_time, 4)
         return dic
 
 
@@ -185,7 +186,7 @@ def get_current_memory_mb():
     import pynvml
     import psutil
     import GPUtil
-    gpu_id = os.environ.get('CUDA_VISIBLE_DEVICES', 0)
+    gpu_id = int(os.environ.get('CUDA_VISIBLE_DEVICES', 0))
 
     pid = os.getpid()
     p = psutil.Process(pid)
@@ -201,62 +202,3 @@ def get_current_memory_mb():
         meminfo = pynvml.nvmlDeviceGetMemoryInfo(handle)
         gpu_mem = meminfo.used / 1024. / 1024.
     return round(cpu_mem, 4), round(gpu_mem, 4), round(gpu_percent, 4)
-
-
-class LoggerHelper(object):
-    def __init__(self, args, times, mem_info=None):
-        """
-        args: utility.parse_args()
-        times: The Timer class
-        """
-        self.args = args
-        self.times = times
-        self.model_name = args.model_dir.strip('/').split('/')[-1]
-        self.batch_size = 1
-        self.shape = "dynamic shape"
-        if args.run_mode == 'fluid':
-            self.precision = "fp32"
-            self.use_tensorrt = False
-        else:
-            self.precision = args.run_mode.split('_')[-1]
-            self.use_tensorrt = True
-
-        self.device = "gpu" if args.use_gpu else "cpu"
-        self.preprocess_time = round(times['preprocess_time'], 4)
-        self.inference_time = round(times['inference_time'], 4)
-        self.postprocess_time = round(times['postprocess_time'], 4)
-        self.data_num = times['img_num']
-        self.total_time = round(times['total_time'], 4)
-        self.mem_info = {"cpu_rss": 0, "gpu_rss": 0, "gpu_util": 0}
-        if mem_info is not None:
-            self.mem_info = mem_info
-
-    def report(self):
-        print("\n")
-        print("----------------------- Config info -----------------------")
-        print("runtime_device:", self.device)
-        print("ir_optim:", True)
-        print("enable_memory_optim:", True)
-        print("enable_tensorrt:", self.use_tensorrt)
-        print("precision:", self.precision)
-        print("enable_mkldnn:", self.args.enable_mkldnn)
-        print("cpu_math_library_num_threads:", self.args.cpu_threads)
-
-        print("----------------------- Model info ----------------------")
-        print("model_name:", self.model_name)
-
-        print("------------------------ Data info ----------------------")
-        print("batch_size:", self.batch_size)
-        print("input_shape:", self.shape)
-
-        print("----------------------- Perf info -----------------------")
-        print("[cpu_rss(MB): {} gpu_rss(MB): {}, gpu_util: {}%".format(
-            round(self.mem_info['cpu_rss'], 4),
-            round(self.mem_info['gpu_rss'], 4),
-            round(self.mem_info['gpu_util'], 2)))
-        print("total number of predicted data: {} and total time spent(s): {}".
-              format(self.data_num, self.total_time))
-        print(
-            "preproce_time(ms): {}, inference_time(ms): {}, postprocess_time(ms): {}".
-            format(self.preprocess_time * 1000, self.inference_time * 1000,
-                   self.postprocess_time * 1000))
