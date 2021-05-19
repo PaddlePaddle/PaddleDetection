@@ -17,7 +17,7 @@ PaddleDetection模型支持保存为ONNX格式，目前测试支持的列表如�
 ## 导出教程
 
 ### 步骤一、导出PaddlePaddle部署模型
-导出步骤参考文档[PaddleDetection部署模型导出教程](../EXPORT_MODEL.md), 以COCO数据集训练的YOLOv3为例，导出示例如下
+导出步骤参考文档[PaddleDetection部署模型导出教程](./EXPORT_MODEL.md), 以COCO数据集训练的YOLOv3为例，导出示例如下
 ```
 cd PaddleDetection
 python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml \
