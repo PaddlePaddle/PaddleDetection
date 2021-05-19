@@ -45,7 +45,6 @@ EvalReader:
     - BboxCXCYWH2XYXY: {}
     - Norm2PixelBbox: {}
   batch_size: 1
-  drop_empty: false
 
 
 TestReader:
