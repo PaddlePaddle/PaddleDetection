@@ -81,14 +81,25 @@ class S2ANet(BaseArch):
             im_shape = self.inputs['im_shape']
             scale_factor = self.inputs['scale_factor']
             nms_pre = self.s2anet_bbox_post_process.nms_pre
-            pred_scores, pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
+            nms_pre = int(nms_pre)
+            out_pred_scores, out_pred_bboxes = self.s2anet_head.get_prediction(nms_pre)
+            out_pred_bboxes_list = []
+            out_bbox_num_list = []
 
-            pred_bboxes, bbox_num = self.s2anet_bbox_post_process(pred_scores,
-                                                                  pred_bboxes)
-            # rescale the prediction back to origin image
-            pred_bboxes = self.s2anet_bbox_post_process.get_pred(
-                pred_bboxes, bbox_num, im_shape, scale_factor)
+            batch_size = paddle.slice(paddle.shape(self.inputs['im_shape']), [0], [0], [1])
+            for im_id in range(batch_size):
+                pred_bboxes, bbox_num = self.s2anet_bbox_post_process(out_pred_scores[im_id],
+                                                                      out_pred_bboxes[im_id])
+
+                # rescale the prediction back to origin image
+                pred_bboxes = self.s2anet_bbox_post_process.get_pred(
+                    pred_bboxes, bbox_num, im_shape, scale_factor)
+                out_pred_bboxes_list.append(pred_bboxes)
+                out_bbox_num_list.append(bbox_num)
+
             # output
+            pred_bboxes = paddle.concat(out_pred_bboxes_list, axis=0)
+            bbox_num = paddle.concat(out_bbox_num_list, axis=0)
             output = {'bbox': pred_bboxes, 'bbox_num': bbox_num}
             return output
 

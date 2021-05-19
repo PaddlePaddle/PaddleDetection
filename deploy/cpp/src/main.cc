@@ -252,14 +252,14 @@ void PredictImage(const std::vector<std::string> all_img_paths,
   int steps = ceil(float(all_img_paths.size()) / batch_size);
   printf("total images = %d, batch_size = %d, total steps = %d\n",
                 all_img_paths.size(), batch_size, steps);
-  for (int loop_idx = 0; loop_idx < steps; loop_idx++) {
+  for (int idx = 0; idx < steps; idx++) {
     std::vector<cv::Mat> batch_imgs;
-    int left_image_cnt = all_img_paths.size() - loop_idx * batch_size;
+    int left_image_cnt = all_img_paths.size() - idx * batch_size;
     if (left_image_cnt > batch_size) {
       left_image_cnt = batch_size;
     }
     for (int bs = 0; bs < left_image_cnt; bs++) {
-      std::string image_file_path = all_img_paths.at(loop_idx * batch_size+bs);
+      std::string image_file_path = all_img_paths.at(idx * batch_size+bs);
       cv::Mat im = cv::imread(image_file_path, 1);
       batch_imgs.insert(batch_imgs.end(), im);
     }
@@ -278,6 +278,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       auto colormap = PaddleDetection::GenerateColorMap(labels.size());
 
       for (int i = 0; i < left_image_cnt; i++) {
+        std::cout << all_img_paths.at(idx * batch_size+bs) << "result" << std::endl;
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[i * batch_size+j];
           if (item.rect.size() > 6){
@@ -323,7 +324,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
           output_path += OS_PATH_SEP;
         }
-        std::string image_file_path = all_img_paths.at(loop_idx * batch_size+bs);
+        std::string image_file_path = all_img_paths.at(idx * batch_size+bs);
         output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
         printf("Visualized output saved as %s\n", output_path.c_str());
