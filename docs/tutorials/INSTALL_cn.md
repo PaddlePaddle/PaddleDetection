@@ -62,7 +62,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 ```
 # pip安装paddledet
-pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
+pip install paddledet==2.1.0 -i https://mirror.baidu.com/pypi/simple
 
 # 下载使用源码中的配置文件和代码示例
 git clone https://github.com/PaddlePaddle/PaddleDetection.git

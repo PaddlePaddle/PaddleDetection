@@ -41,7 +41,9 @@ def package_model_zoo():
         # exclude dataset base config
         if osp.split(osp.split(cfg)[0])[1] not in ['datasets']:
             valid_cfgs.append(cfg)
-    model_names = [osp.relpath(cfg, cfg_dir).replace(".yml", "") for cfg in valid_cfgs]
+    model_names = [
+        osp.relpath(cfg, cfg_dir).replace(".yml", "") for cfg in valid_cfgs
+    ]
 
     model_zoo_file = osp.join(cur_dir, 'ppdet', 'model_zoo', 'MODEL_ZOO')
     with open(model_zoo_file, 'w') as wf:
@@ -69,7 +71,7 @@ if __name__ == "__main__":
         packages=find_packages(exclude=("configs", "tools", "deploy")),
         package_data={'ppdet.model_zoo': package_model_zoo()},
         author='PaddlePaddle',
-        version='2.0.1',
+        version='2.1.0',
         install_requires=parse_requirements('./requirements.txt'),
         description='Object detection and instance segmentation toolkit based on PaddlePaddle',
         long_description=readme(),
@@ -85,9 +87,8 @@ if __name__ == "__main__":
             'Programming Language :: Python :: 3',
             'Programming Language :: Python :: 3.5',
             'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7', 'Topic :: Utilities'
+            'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8', 'Topic :: Utilities'
-            'Programming Language :: Python :: 3.9', 'Topic :: Utilities'
         ],
         license='Apache License 2.0',
         ext_modules=[])
