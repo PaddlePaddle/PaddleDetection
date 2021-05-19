@@ -12,6 +12,5 @@ pycocotools
 setuptools>=42.0.0
 lap
 sklearn
-cython_bbox
 motmetrics
 openpyxl
