@@ -31,7 +31,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 - Python预测：在python环境下安装PaddlePaddle环境即可，如需TensorRT预测，在[Paddle Release版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release)中下载合适的wheel包即可。
 
 - C++预测库：请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)，如果需要使用TensorRT，请下载带有TensorRT编译的预测库。您也可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-**注意:**  Paddle预测库版本需要>=2.0
+**注意:**  Paddle预测库版本需要>=2.1，batch_size>1仅支持YOLOv3和PP-YOLO。
 
 - PaddleServing部署
   请选择PaddleServing>0.5.0以上版本，具体可参考[PaddleServing安装文档](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)。
