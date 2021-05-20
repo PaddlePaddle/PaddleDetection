@@ -1,14 +1,14 @@
 # PaddleDetection 预测部署
 
-PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署形式，支持服务端、移动端、嵌入式等多种平台，提供了完善的Python和C++部署方案。
+PaddleDetection提供了Paddle Inference、Paddle Serving、Paddle-Lite多种部署形式，支持服务端、移动端、嵌入式等多种平台，提供了完善的Python和C++部署方案。
 
 ## PaddleDetection支持的部署形式说明
 |形式|语言|教程|设备/平台|
 |-|-|-|-|
-|PaddleInference|Python|已完善|Linux(ARM\X86)、Windows
-|PaddleInference|C++|已完善|Linux(ARM\X86)、Windows|
-|PaddleServing|Python|已完善|Linux(ARM\X86)、Windows|
-|PaddleLite|C++|已完善|Android、IOS、FPGA、RK...
+|Paddle Inference|Python|已完善|Linux(ARM\X86)、Windows
+|Paddle Inference|C++|已完善|Linux(ARM\X86)、Windows|
+|Paddle Serving|Python|已完善|Linux(ARM\X86)、Windows|
+|Paddle-Lite|C++|已完善|Android、IOS、FPGA、RK...
 
 
 ## 1.Paddle Inference部署

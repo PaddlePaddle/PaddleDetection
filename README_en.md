@@ -2,6 +2,8 @@ English | [简体中文](README_cn.md)
 
 ### PaddleDetection 2.0 is ready! Dygraph mode is set by default and static graph code base is [here](static)
 
+### [Keypoint detection](configs/keypoint) and [Multi-Object Tracking](configs/mot) are released!
+
 ### Highly effective PPYOLO v2 and ultra lightweight PPYOLO tiny are released! [link](configs/ppyolo/README.md)
 
 ### SOTA Anchor Free model -- PAFNet is released! [link](configs/ttfnet/README.md)
@@ -20,6 +22,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 ### Product news
 
+- 2021.05.20: Release `release/2.1` version. Release [Keypoint Detection](configs/keypoint), including HigherHRNet and HRNet, [Multi-Object Tracking](configs/mot), including DeepSORT，JDE and FairMOT. Release model compression for PPYOLO series models.Update documents such as [EXPORT ONNX MODEL](deploy/EXPORT_ONNX_MODEL.md). Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1) for details.
 - 2021.04.14: Release `release/2.0` version. Dygraph mode in PaddleDetection is fully supported. Cover all the algorithm of static graph and update the performance of mainstream detection models. Release [`PP-YOLO v2` and `PP-YOLO tiny`](configs/ppyolo/README.md), enhanced anchor free model [PAFNet](configs/ttfnet/README.md) and [`S2ANet`](configs/dota/README.md) which is aimed at rotation object detection.Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0) for details.
 - 2020.02.07: Release `release/2.0-rc` version, Please refer to [PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc) for details.
 
@@ -202,9 +205,8 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 ### Get Started
 
 - [Installation guide](docs/tutorials/INSTALL_en.md)
-- [Quick start on small dataset](docs/tutorials/QUICK_STARTED_en.md)
 - [Prepare dataset](docs/tutorials/PrepareDataSet.md)
-- [Train/Evaluation/Inference/Deploy](docs/tutorials/GETTING_STARTED_en.md)
+- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
 
 
 ### Advanced Tutorials
@@ -218,10 +220,12 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 - Inference and deployment
   - [Export model for inference](deploy/EXPORT_MODEL.md)
-  - [Python inference](deploy/python)
-  - [C++ inference](deploy/cpp)
-  - [Serving](deploy/serving)
+  - [Paddle Inference](deploy/README.md)
+      - [Python inference](deploy/python)
+      - [C++ inference](deploy/cpp)
   - [Paddle-Lite](deploy/lite)
+  - [Paddle Serving](deploy/serving)
+  - [Export ONNX model](deploy/EXPORT_ONNX_MODEL.md)
   - [Inference benchmark](deploy/BENCHMARK_INFER.md)
 
 - Advanced development
@@ -256,6 +260,8 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 - [Christmas portrait automatic generation tool](static/application/christmas)
 
 ## Updates
+
+v2.1 was released at `05/2021`, Release Keypoint Detection and Multi-Object Tracking. Release model compression for PPYOLO series. Update documents such as export ONNX model. Please refer to [change log](docs/CHANGELOG.md) for details.
 
 v2.0 was released at `04/2021`, fully support dygraph version, which add BlazeFace, PSS-Det and plenty backbones, release `PP-YOLOv2`, `PP-YOLO tiny` and `S2ANet`, support model distillation and VisualDL, add inference benchmark, etc. Please refer to [change log](docs/CHANGELOG.md) for details.
 

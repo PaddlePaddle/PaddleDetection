@@ -3,6 +3,7 @@
 # PaddleDetection
 
 ### PaddleDetection 2.0全面升级！目前默认使用动态图版本，静态图版本位于[static](./static)中
+### 全新发布[关键点检测](configs/keypoint)和[多目标跟踪](configs/mot)能力！欢迎使用
 ### 超高性价比PPYOLO v2和1.3M超轻量PPYOLO tiny全新出炉！[欢迎使用](configs/ppyolo/README_cn.md)
 ### Anchor Free SOTA模型PAFNet发布！[欢迎使用](configs/ttfnet/README.md)
 
@@ -20,6 +21,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 </div>
 
 ### 产品动态
+- 2021.05.20: 发布release/2.1版本，新增[关键点检测](configs/keypoint)，模型包括HigherHRNet，HRNet。新增[多目标跟踪](configs/mot)能力，模型包括DeepSORT，JDE，FairMOT。发布PPYOLO系列模型压缩模型，新增[ONNX模型导出教程](deploy/EXPORT_ONNX_MODEL.md)，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1)
 - 2021.04.14: 发布release/2.0版本，PaddleDetection全面支持动态图，覆盖静态图模型算法，全面升级模型效果，同时发布[PP-YOLO v2, PPYOLO tiny](configs/ppyolo/README_cn.md)模型，增强版anchor free模型[PAFNet](configs/ttfnet/README.md)，新增旋转框检测[S2ANet](configs/dota/README.md)模型，详情参考[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0)
 - 2021.02.07: 发布release/2.0-rc版本，PaddleDetection动态图试用版本，详情参考[PaddleDetection动态图](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.0-rc)。
 
@@ -204,11 +206,12 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 - [推理部署](deploy/README.md)
     - [模型导出教程](deploy/EXPORT_MODEL.md)
-    - [PaddleInference部署](deploy/README.md)
+    - [Paddle Inference部署](deploy/README.md)
          - [Python端推理部署](deploy/python)
          - [C++端推理部署](deploy/cpp)
-    - [PaddleLite部署](deploy/serving)
-    - [PaddleServing部署](deploy/lite)
+    - [Paddle-Lite部署](deploy/serving)
+    - [Paddle Serving部署](deploy/lite)
+    - [ONNX模型导出](deploy/EXPORT_ONNX_MODEL.md)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
 - 进阶开发
     - [数据处理模块](docs/advanced_tutorials/READER.md)
@@ -228,6 +231,13 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [SOLOv2](configs/solov2/README.md)
 - 旋转框检测
     - [S2ANet](configs/dota/README.md)
+- [关键点检测](configs/keypoint)
+    - HigherHRNet
+    - HRNeet
+- [多目标跟踪](configs/mot/README_cn.md)
+    - [DeepSORT](configs/mot/deepsort/README_cn.md)
+    - [JDE](configs/mot/jde/README_cn.md)
+    - [FairMOT](configs/mot/fairmot/README_cn.md)
 - 垂类领域
     - [行人检测](configs/pedestrian/README.md)
     - [车辆检测](configs/vehicle/README.md)
@@ -249,6 +259,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [使用SSD-MobileNetv1完成一个项目--准备数据集到完成树莓派部署](https://github.com/PaddleCV-FAQ/PaddleDetection-FAQ/blob/main/Lite%E9%83%A8%E7%BD%B2/ssd_mobilenet_v1_for_raspi.md)
 
 ## 版本更新
+
+v2.1版本已经在`05/2021`发布，全新发布关键点检测和多目标跟踪能力，支持无标注框检测，发布PPYOLO系列模型压缩模型，新增ONNX模型导出教程，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
 v2.0版本已经在`04/2021`发布，全面支持动态图版本，新增支持BlazeFace, PSSDet等系列模型和大量骨干网络，发布PP-YOLO v2, PP-YOLO tiny和旋转框检测S2ANet模型。支持模型蒸馏、VisualDL，新增动态图预测部署benchmark，详细内容请参考[版本更新文档](docs/CHANGELOG.md)。
 
