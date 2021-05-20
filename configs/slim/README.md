@@ -141,7 +141,8 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 | Mask-ResNet50-FPN     |    baseline      |    (800, 1333)   | 174.1 | 359.5ms | -- |  39.2/35.6    | [下载链接](https://paddledet.bj.bcebos.com/models/mask_rcnn_r50_fpn_1x_coco.pdparams) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/mask_rcnn_r50_fpn_1x_coco.tar) |[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml) |  -  |
 | Mask-ResNet50-FPN     |    普通在线量化    |    (800, 1333) | -- | -- | -- |  39.7(+0.5)/35.9(+0.3)    | [下载链接](https://paddledet.bj.bcebos.com/models/slim/mask_rcnn_r50_fpn_1x_qat.pdparams) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/mask_rcnn_r50_fpn_1x_qat.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/mask_rcnn_r50_fpn_1x_coco.yml) |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/quant/mask_rcnn_r50_fpn_1x_qat.yml)  |
 
-- 上述V100预测时延非量化模型均是使用TensorRT-FP32测试，量化模型均使用TensorRT-INT8测试。
+说明：
+- 上述V100预测时延非量化模型均是使用TensorRT-FP32测试，量化模型均使用TensorRT-INT8测试，并且都包含NMS耗时。
 - SD855预测时延为使用PaddleLite部署，使用arm8架构并使用4线程(4 Threads)推理时延。
 
 ### 蒸馏
