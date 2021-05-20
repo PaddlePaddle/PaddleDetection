@@ -197,7 +197,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_
 ```
 
 **注意:**
- 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html)。
+ 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ## 引用
 ```
