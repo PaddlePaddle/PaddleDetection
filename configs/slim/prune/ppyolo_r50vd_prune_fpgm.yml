@@ -1,0 +1,13 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolo_r50vd_dcn_1x_coco.pdparams
+slim: Pruner
+
+Pruner:
+  criterion: fpgm
+  pruned_params: ['conv2d_56.w_0', 'conv2d_57.w_0', 'conv2d_58.w_0',
+                  'conv2d_59.w_0', 'conv2d_60.w_0', 'conv2d_61.w_0',
+                  'conv2d_63.w_0', 'conv2d_64.w_0', 'conv2d_65.w_0',
+                  'conv2d_66.w_0', 'conv2d_67.w_0', 'conv2d_68.w_0',
+                  'conv2d_70.w_0', 'conv2d_71.w_0', 'conv2d_72.w_0',
+                  'conv2d_73.w_0', 'conv2d_74.w_0', 'conv2d_75.w_0']
+  pruned_ratios: [0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.75,0.875,0.875,0.875,0.875,0.875,0.875]
+  print_params: False

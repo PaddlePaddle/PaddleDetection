@@ -25,9 +25,10 @@ import paddle
 from paddle.inference import Config
 from paddle.inference import create_predictor
 
+from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
 from visualize import visualize_box_mask
-from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
+from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
@@ -69,7 +70,7 @@ class Detector(object):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -122,14 +123,14 @@ class Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.preprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -139,7 +140,7 @@ class Detector(object):
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
 
-        self.det_times.inference_time.start()
+        self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -148,9 +149,9 @@ class Detector(object):
             if self.pred_config.mask:
                 masks_tensor = self.predictor.get_output_handle(output_names[2])
                 np_masks = masks_tensor.copy_to_cpu()
-        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.inference_time_s.end(repeats=repeats)
 
-        self.det_times.postprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
@@ -158,7 +159,7 @@ class Detector(object):
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, threshold=threshold)
-        self.det_times.postprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return results
 
@@ -190,7 +191,7 @@ class DetectorSOLOv2(Detector):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor = load_predictor(
+        self.predictor, self.config  = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -214,14 +215,14 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
-        self.det_times.preprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         inputs = self.preprocess(image)
         np_label, np_score, np_segms = None, None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -232,7 +233,7 @@ class DetectorSOLOv2(Detector):
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
 
-        self.det_times.inference_time.start()
+        self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -242,7 +243,7 @@ class DetectorSOLOv2(Detector):
                 2]).copy_to_cpu()
             np_segms = self.predictor.get_output_handle(output_names[
                 3]).copy_to_cpu()
-        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.inference_time_s.end(repeats=repeats)
         self.det_times.img_num += 1
 
         return dict(segm=np_segms, label=np_label, score=np_score)
@@ -391,7 +392,7 @@ def load_predictor(model_dir,
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = create_predictor(config)
-    return predictor
+    return predictor, config
 
 
 def get_test_images(infer_dir, infer_img):
@@ -544,9 +545,22 @@ def main():
                 'gpu_rss': detector.gpu_mem / len(img_list),
                 'gpu_util': detector.gpu_util * 100 / len(img_list)
             }
-            det_logger = LoggerHelper(
-                FLAGS, detector.det_times.report(average=True), mems)
-            det_logger.report()
+
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+            'model_name': model_dir.strip('/').split('/')[-1],
+            'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': 1,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(
+                detector.config, model_info, data_info, perf_info, mems)
+            det_log('Det')
 
 
 if __name__ == '__main__':

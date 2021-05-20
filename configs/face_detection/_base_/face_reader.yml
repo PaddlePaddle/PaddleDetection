@@ -34,7 +34,6 @@ EvalReader:
     - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
     - Permute: {}
   batch_size: 1
-  drop_empty: false
 
 
 TestReader:

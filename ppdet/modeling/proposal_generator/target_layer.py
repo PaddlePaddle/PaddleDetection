@@ -44,6 +44,8 @@ class RPNTargetAssign(object):
         negative_overlap (float): Maximum overlap allowed between an anchor
             and ground-truth box for the (anchor, gt box) pair to be 
             a background sample. default 0.3
+        ignore_thresh(float): Threshold for ignoring the is_crowd ground-truth
+            if the value is larger than zero.
         use_random (bool): Use random sampling to choose foreground and 
             background boxes, default true.
     """
@@ -53,12 +55,14 @@ class RPNTargetAssign(object):
                  fg_fraction=0.5,
                  positive_overlap=0.7,
                  negative_overlap=0.3,
+                 ignore_thresh=-1.,
                  use_random=True):
         super(RPNTargetAssign, self).__init__()
         self.batch_size_per_im = batch_size_per_im
         self.fg_fraction = fg_fraction
         self.positive_overlap = positive_overlap
         self.negative_overlap = negative_overlap
+        self.ignore_thresh = ignore_thresh
         self.use_random = use_random
 
     def __call__(self, inputs, anchors):
@@ -67,11 +71,12 @@ class RPNTargetAssign(object):
         anchor_box (Tensor): [num_anchors, 4], num_anchors are all anchors in all feature maps.
         """
         gt_boxes = inputs['gt_bbox']
+        is_crowd = inputs.get('is_crowd', None)
         batch_size = len(gt_boxes)
         tgt_labels, tgt_bboxes, tgt_deltas = rpn_anchor_target(
             anchors, gt_boxes, self.batch_size_per_im, self.positive_overlap,
             self.negative_overlap, self.fg_fraction, self.use_random,
-            batch_size)
+            batch_size, self.ignore_thresh, is_crowd)
         norm = self.batch_size_per_im * batch_size
 
         return tgt_labels, tgt_bboxes, tgt_deltas, norm
@@ -101,7 +106,9 @@ class BBoxAssigner(object):
         bg_thresh (float): Maximum overlap allowed between a RoI
             and ground-truth box for the (roi, gt box) pair to be
             a background sample. default 0.5
-        use_random (bool): Use random sampling to choose foreground and
+        ignore_thresh(float): Threshold for ignoring the is_crowd ground-truth
+            if the value is larger than zero.
+        use_random (bool): Use random sampling to choose foreground and 
             background boxes, default true
         cascade_iou (list[iou]): The list of overlap to select foreground and
             background of each stage, which is only used In Cascade RCNN.
@@ -113,6 +120,7 @@ class BBoxAssigner(object):
                  fg_fraction=.25,
                  fg_thresh=.5,
                  bg_thresh=.5,
+                 ignore_thresh=-1.,
                  use_random=True,
                  cascade_iou=[0.5, 0.6, 0.7],
                  num_classes=80):
@@ -121,6 +129,7 @@ class BBoxAssigner(object):
         self.fg_fraction = fg_fraction
         self.fg_thresh = fg_thresh
         self.bg_thresh = bg_thresh
+        self.ignore_thresh = ignore_thresh
         self.use_random = use_random
         self.cascade_iou = cascade_iou
         self.num_classes = num_classes
@@ -133,12 +142,14 @@ class BBoxAssigner(object):
                  is_cascade=False):
         gt_classes = inputs['gt_class']
         gt_boxes = inputs['gt_bbox']
+        is_crowd = inputs.get('is_crowd', None)
         # rois, tgt_labels, tgt_bboxes, tgt_gt_inds
         # new_rois_num
         outs = generate_proposal_target(
             rpn_rois, gt_classes, gt_boxes, self.batch_size_per_im,
             self.fg_fraction, self.fg_thresh, self.bg_thresh, self.num_classes,
-            self.use_random, is_cascade, self.cascade_iou[stage])
+            self.ignore_thresh, is_crowd, self.use_random, is_cascade,
+            self.cascade_iou[stage])
         rois = outs[0]
         rois_num = outs[-1]
         # tgt_labels, tgt_bboxes, tgt_gt_inds
