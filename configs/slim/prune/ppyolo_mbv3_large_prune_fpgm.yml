@@ -1,0 +1,9 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams
+slim: Pruner
+
+Pruner:
+  criterion: fpgm
+  pruned_params: ['conv2d_62.w_0', 'conv2d_63.w_0', 'conv2d_64.w_0',
+                  'conv2d_65.w_0', 'conv2d_66.w_0', 'conv2d_67.w_0']
+  pruned_ratios: [0.75, 0.75, 0.75, 0.75, 0.75, 0.75]
+  print_params: True

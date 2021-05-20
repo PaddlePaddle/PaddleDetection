@@ -1,0 +1,16 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams
+slim: QAT
+
+QAT:
+  quant_config: {
+    'weight_quantize_type': 'channel_wise_abs_max', 'activation_quantize_type': 'moving_average_abs_max',
+    'weight_bits': 8, 'activation_bits': 8, 'dtype': 'int8', 'window_size': 10000, 'moving_rate': 0.99,
+    'quantizable_layer_type': ['Conv2D', 'Linear']}
+  print_model: True
+
+PPYOLOFPN:
+  in_channels: [160, 368]
+  coord_conv: true
+  conv_block_num: 0
+  spp: true
+  drop_block: false

@@ -6,7 +6,7 @@
   - `C++`语言部署 ，支持`CPU`、`GPU`和`XPU`环境，支持在`Linux`、`Windows`系统下部署，支持`NV Jetson`嵌入式设备上部署。请参考文档[C++部署](cpp/README.md)。
   - `TensorRT`加速：请参考文档[TensorRT预测部署教程](TENSOR_RT.md)
 - 服务器端部署：使用[PaddleServing](./serving/README.md)部署。
-- 手机移动端部署：使用[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在手机移动端部署。
+- 手机移动端部署：使用[Paddle-Lite](./lite/README.md) 在手机移动端部署。
 
 
 ## 1.模型导出
