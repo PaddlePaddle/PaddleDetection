@@ -278,7 +278,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       auto colormap = PaddleDetection::GenerateColorMap(labels.size());
 
       for (int i = 0; i < left_image_cnt; i++) {
-        std::cout << all_img_paths.at(idx * batch_size+bs) << "result" << std::endl;
+        std::cout << all_img_paths.at(idx * batch_size + i) << "result" << std::endl;
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[i * batch_size+j];
           if (item.rect.size() > 6){

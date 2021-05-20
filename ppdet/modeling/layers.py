@@ -338,8 +338,6 @@ class RCNNBox(object):
         cls_prob = bbox_head_out[1]
         roi = rois[0]
         rois_num = rois[1]
-        # to solve dy2st problem
-        roi = paddle.to_tensor(roi)
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         scale_list = []
