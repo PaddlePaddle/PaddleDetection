@@ -525,7 +525,7 @@ class S2ANetHead(nn.Layer):
         :param means: means of anchor
         :param stds: stds of anchor
         :param wh_ratio_clip: clip threshold of wh_ratio
-        :return: decoded bboxes
+        :return:
         """
         deltas = paddle.reshape(deltas, [-1, 5])
         rrois = paddle.reshape(rrois, [-1, 5])
@@ -748,69 +748,35 @@ class S2ANetHead(nn.Layer):
             is_crowd = inputs['is_crowd'][im_id].numpy()
             gt_labels = gt_labels + 1
 
-            rbox_anchors_all = paddle.concat(self.rbox_anchors_list)
-            np_rbox_anchors_all = rbox_anchors_all.numpy()
-            np_rbox_anchors_all = np_rbox_anchors_all.reshape(-1, 5)
-            im_fam_target = self.anchor_assign(np_rbox_anchors_all, gt_bboxes,
-                                               gt_labels, is_crowd)
-            (feat_labels, feat_label_weights, feat_bbox_targets,
-             feat_bbox_weights, pos_inds, neg_inds) = im_fam_target
             # FAM
-            start_idx = 0
-            for idx in range(len(self.rbox_anchors_list)):
+            for idx, rbox_anchors in enumerate(self.rbox_anchors_list):
+                rbox_anchors = rbox_anchors.numpy()
+                rbox_anchors = rbox_anchors.reshape(-1, 5)
+                im_fam_target = self.anchor_assign(rbox_anchors, gt_bboxes,
+                                                   gt_labels, is_crowd)
                 # feat
                 fam_cls_feat = self.s2anet_head_out[0][idx][im_id]
                 fam_reg_feat = self.s2anet_head_out[1][idx][im_id]
 
                 im_s2anet_fam_feat = (fam_cls_feat, fam_reg_feat)
-                im_fam_target_feat = []
-                anchor_num = fam_reg_feat.shape[0]
-                im_fam_target_feat.append(feat_labels[start_idx:start_idx +
-                                                      anchor_num])
-                im_fam_target_feat.append(feat_label_weights[start_idx:start_idx
-                                                             + anchor_num])
-                im_fam_target_feat.append(feat_bbox_targets[start_idx:start_idx
-                                                            + anchor_num])
-                im_fam_target_feat.append(feat_bbox_weights[start_idx:start_idx
-                                                            + anchor_num])
-                im_fam_target_feat.append(pos_inds)
-                im_fam_target_feat.append(neg_inds)
-                start_idx += anchor_num
-                feat_labels, feat_label_weights, feat_bbox_targets, feat_bbox_weights
                 im_fam_cls_loss, im_fam_reg_loss = self.get_fam_loss(
-                    im_fam_target_feat, im_s2anet_fam_feat)
+                    im_fam_target, im_s2anet_fam_feat)
                 fam_cls_loss_lst.append(im_fam_cls_loss)
                 fam_reg_loss_lst.append(im_fam_reg_loss)
 
-            refine_anchors_all = paddle.concat(self.refine_anchor_list)
-            np_refine_anchors_all = refine_anchors_all.numpy()
-            np_refine_anchors_all = np_refine_anchors_all.reshape(-1, 5)
-            im_odm_target = self.anchor_assign(np_refine_anchors_all, gt_bboxes,
-                                               gt_labels, is_crowd)
-            (feat_labels, feat_label_weights, feat_bbox_targets,
-             feat_bbox_weights, pos_inds, neg_inds) = im_odm_target
             # ODM
-            start_idx = 0
-            for idx in range(len(self.refine_anchor_list)):
+            for idx, refine_anchors in enumerate(self.refine_anchor_list):
+                refine_anchors = refine_anchors.numpy()
+                refine_anchors = refine_anchors.reshape(-1, 5)
+                im_odm_target = self.anchor_assign(refine_anchors, gt_bboxes,
+                                                   gt_labels, is_crowd)
+
                 odm_cls_feat = self.s2anet_head_out[2][idx][im_id]
                 odm_reg_feat = self.s2anet_head_out[3][idx][im_id]
 
                 im_s2anet_odm_feat = (odm_cls_feat, odm_reg_feat)
-                im_odm_target_feat = []
-                anchor_num = odm_reg_feat.shape[0]
-                im_odm_target_feat.append(feat_labels[start_idx:start_idx +
-                                                      anchor_num])
-                im_odm_target_feat.append(feat_label_weights[start_idx:start_idx
-                                                             + anchor_num])
-                im_odm_target_feat.append(feat_bbox_targets[start_idx:start_idx
-                                                            + anchor_num])
-                im_odm_target_feat.append(feat_bbox_weights[start_idx:start_idx
-                                                            + anchor_num])
-                im_odm_target_feat.append(pos_inds)
-                im_odm_target_feat.append(neg_inds)
-                start_idx += anchor_num
                 im_odm_cls_loss, im_odm_reg_loss = self.get_odm_loss(
-                    im_odm_target_feat, im_s2anet_odm_feat)
+                    im_odm_target, im_s2anet_odm_feat)
                 odm_cls_loss_lst.append(im_odm_cls_loss)
                 odm_reg_loss_lst.append(im_odm_reg_loss)
 
