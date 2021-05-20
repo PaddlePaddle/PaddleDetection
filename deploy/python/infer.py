@@ -191,7 +191,7 @@ class DetectorSOLOv2(Detector):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor, self.config  = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -283,10 +283,6 @@ class PredictConfig():
         self.preprocess_infos = yml_conf['Preprocess']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        if self.arch == 'S2ANet':
-            # TODO: move background to num_classes
-            if self.labels[0] != 'background':
-                self.labels.insert(0, 'background')
         self.mask = False
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
@@ -554,16 +550,16 @@ def main():
             model_dir = FLAGS.model_dir
             mode = FLAGS.run_mode
             model_info = {
-            'model_name': model_dir.strip('/').split('/')[-1],
-            'precision': mode.split('_')[-1]
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
             }
             data_info = {
                 'batch_size': 1,
                 'shape': "dynamic_shape",
                 'data_num': perf_info['img_num']
             }
-            det_log = PaddleInferBenchmark(
-                detector.config, model_info, data_info, perf_info, mems)
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
             det_log('Det')
 
 
