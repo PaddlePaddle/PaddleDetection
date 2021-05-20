@@ -101,6 +101,8 @@ pip install -r requirements.txt
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
 
+2. If you are using Python <= 3.6, `pycocotools` installing may failed with error like `distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('cython>=0.27.3')`, please install `cython` firstly, for example `pip install cython`
+
 After installation, make sure the tests pass:
 
 ```shell
