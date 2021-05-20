@@ -202,9 +202,8 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 ### Get Started
 
 - [Installation guide](docs/tutorials/INSTALL_en.md)
-- [Quick start on small dataset](docs/tutorials/QUICK_STARTED_en.md)
 - [Prepare dataset](docs/tutorials/PrepareDataSet.md)
-- [Train/Evaluation/Inference/Deploy](docs/tutorials/GETTING_STARTED_en.md)
+- [Quick start on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
 
 
 ### Advanced Tutorials
@@ -218,10 +217,11 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
 
 - Inference and deployment
   - [Export model for inference](deploy/EXPORT_MODEL.md)
-  - [Python inference](deploy/python)
-  - [C++ inference](deploy/cpp)
-  - [Serving](deploy/serving)
+  - [Paddle Inference](deploy/README.md)
+      - [Python inference](deploy/python)
+      - [C++ inference](deploy/cpp)
   - [Paddle-Lite](deploy/lite)
+  - [Paddle Serving](deploy/serving)
   - [Inference benchmark](deploy/BENCHMARK_INFER.md)
 
 - Advanced development
