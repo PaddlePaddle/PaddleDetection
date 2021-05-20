@@ -577,27 +577,15 @@ class S2ANetHead(nn.Layer):
     def get_prediction(self, nms_pre):
         refine_anchors = self.refine_anchor_list
         fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = self.s2anet_head_out
-        pred_scores_list = []
-        pred_bboxes_list = []
-        # each image
-        batch_size = paddle.slice(paddle.shape(odm_reg_branch_list[0]), [0], [0], [1])
-        for im_id in range(batch_size):
-            im_odm_cls_branch_list = []
-            im_odm_reg_branch_list = []
-            for odm_cls_out, odm_reg_out in zip(odm_cls_branch_list, odm_reg_branch_list):
-                im_odm_cls_branch_list.append(paddle.unsqueeze(odm_cls_out[im_id], 0))
-                im_odm_reg_branch_list.append(paddle.unsqueeze(odm_reg_out[im_id], 0))
-            pred_scores, pred_bboxes = self.get_bboxes(
-                im_odm_cls_branch_list,
-                im_odm_reg_branch_list,
-                refine_anchors,
-                nms_pre,
-                cls_out_channels=self.cls_out_channels,
-                use_sigmoid_cls=self.use_sigmoid_cls)
-            pred_scores_list.append(pred_scores)
-            pred_bboxes_list.append(pred_bboxes)
+        pred_scores, pred_bboxes = self.get_bboxes(
+            odm_cls_branch_list,
+            odm_reg_branch_list,
+            refine_anchors,
+            nms_pre,
+            cls_out_channels=self.cls_out_channels,
+            use_sigmoid_cls=self.use_sigmoid_cls)
 
-        return pred_scores_list, pred_bboxes_list
+        return pred_scores, pred_bboxes
 
     def smooth_l1_loss(self, pred, label, delta=1.0 / 9.0):
         """
@@ -843,6 +831,8 @@ class S2ANetHead(nn.Layer):
 
         mlvl_bboxes = []
         mlvl_scores = []
+
+        idx = 0
         for cls_score, bbox_pred, anchors in zip(cls_score_list, bbox_pred_list,
                                                  mlvl_anchors):
             cls_score = paddle.reshape(cls_score, [-1, cls_out_channels])
@@ -850,6 +840,8 @@ class S2ANetHead(nn.Layer):
                 scores = F.sigmoid(cls_score)
             else:
                 scores = F.softmax(cls_score, axis=-1)
+
+            # bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 5)
             bbox_pred = paddle.transpose(bbox_pred, [1, 2, 0])
             bbox_pred = paddle.reshape(bbox_pred, [-1, 5])
             anchors = paddle.reshape(anchors, [-1, 5])
@@ -870,6 +862,8 @@ class S2ANetHead(nn.Layer):
                                      self.target_stds)
             mlvl_bboxes.append(bboxes)
             mlvl_scores.append(scores)
+
+            idx += 1
 
         mlvl_bboxes = paddle.concat(mlvl_bboxes, axis=0)
         mlvl_scores = paddle.concat(mlvl_scores)
