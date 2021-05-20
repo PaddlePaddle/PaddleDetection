@@ -22,7 +22,6 @@ import copy
 
 def rpn_anchor_target(anchors,
                       gt_boxes,
-                      is_crowd,
                       rpn_batch_size_per_im,
                       rpn_positive_overlap,
                       rpn_negative_overlap,
@@ -30,17 +29,18 @@ def rpn_anchor_target(anchors,
                       use_random=True,
                       batch_size=1,
                       ignore_thresh=-1,
+                      is_crowd=None,
                       weights=[1., 1., 1., 1.]):
     tgt_labels = []
     tgt_bboxes = []
     tgt_deltas = []
     for i in range(batch_size):
         gt_bbox = gt_boxes[i]
-        is_crowd_i = is_crowd[i]
+        is_crowd_i = is_crowd[i] if is_crowd else None
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
-            anchors, gt_bbox, is_crowd_i, rpn_positive_overlap,
-            rpn_negative_overlap, True, ignore_thresh)
+            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
+            ignore_thresh, is_crowd_i)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
@@ -67,11 +67,16 @@ def rpn_anchor_target(anchors,
     return tgt_labels, tgt_bboxes, tgt_deltas
 
 
-def label_box(anchors, gt_boxes, is_crowd, positive_overlap, negative_overlap,
-              allow_low_quality, ignore_thresh):
+def label_box(anchors,
+              gt_boxes,
+              positive_overlap,
+              negative_overlap,
+              allow_low_quality,
+              ignore_thresh,
+              is_crowd=None):
     iou = bbox_overlaps(gt_boxes, anchors)
     n_gt = gt_boxes.shape[0]
-    if n_gt == 0:
+    if n_gt == 0 or is_crowd is None:
         n_gt_crowd = 0
     else:
         n_gt_crowd = paddle.nonzero(is_crowd).shape[0]
@@ -165,13 +170,13 @@ def subsample_labels(labels,
 def generate_proposal_target(rpn_rois,
                              gt_classes,
                              gt_boxes,
-                             is_crowd,
                              batch_size_per_im,
                              fg_fraction,
                              fg_thresh,
                              bg_thresh,
                              num_classes,
                              ignore_thresh=-1.,
+                             is_crowd=None,
                              use_random=True,
                              is_cascade=False,
                              cascade_iou=0.5):
@@ -188,7 +193,7 @@ def generate_proposal_target(rpn_rois,
     bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
         gt_bbox = gt_boxes[i]
-        is_crowd_i = is_crowd[i]
+        is_crowd_i = is_crowd[i] if is_crowd else None
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
         # Concat RoIs and gt boxes except cascade rcnn or none gt
@@ -198,8 +203,8 @@ def generate_proposal_target(rpn_rois,
             bbox = rpn_roi
 
         # Step1: label bbox
-        matches, match_labels = label_box(bbox, gt_bbox, is_crowd_i, fg_thresh,
-                                          bg_thresh, False, ignore_thresh)
+        matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
+                                          False, ignore_thresh, is_crowd_i)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
