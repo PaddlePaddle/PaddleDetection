@@ -1139,7 +1139,7 @@ def matrix_nms(bboxes,
         index = helper.create_variable_for_type_inference(dtype='int')
         outputs = {'Out': output, 'Index': index}
         if return_rois_num:
-            rois_num = helper.create_variable_for_type_inference(dtype='int')
+            rois_num = helper.create_variable_for_type_inference(dtype='int32')
             outputs['RoisNum'] = rois_num
 
         helper.append_op(
