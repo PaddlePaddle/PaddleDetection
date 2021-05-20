@@ -96,8 +96,7 @@ class Detector(object):
         input_im_lst = []
         input_im_info_lst = []
         for im_path in image_list:
-            im, im_info = preprocess(im_path, preprocess_ops,
-                                     self.pred_config.input_shape)
+            im, im_info = preprocess(im_path, preprocess_ops)
             input_im_lst.append(im)
             input_im_info_lst.append(im_info)
         inputs = create_inputs(input_im_lst, input_im_info_lst)
