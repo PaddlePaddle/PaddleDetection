@@ -50,7 +50,7 @@ std::vector<int> GenerateColorMap(int num_class);
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
-                     const std::vector<std::string>& lable_list,
+                     const std::vector<std::string>& lables,
                      const std::vector<int>& colormap,
                      const bool is_rbox);
 
@@ -93,11 +93,12 @@ class ObjectDetector {
     const std::string& run_mode = "fluid");
 
   // Run predictor
-  void Predict(const cv::Mat& im,
+  void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
       std::vector<ObjectResult>* result = nullptr,
+      std::vector<int>* bbox_num = nullptr,
       std::vector<double>* times = nullptr);
 
   // Get Model Label list
@@ -120,14 +121,16 @@ class ObjectDetector {
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(
-      const cv::Mat& raw_mat,
+      const std::vector<cv::Mat> mats,
       std::vector<ObjectResult>* result,
+      std::vector<int> bbox_num,
       bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
+  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
   std::vector<int> image_shape_;

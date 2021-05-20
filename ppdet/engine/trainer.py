@@ -436,7 +436,7 @@ class Trainer(object):
 
                 image = visualize_results(
                     image, bbox_res, mask_res, segm_res, keypoint_res,
-                    int(outs['im_id']), catid2name, draw_threshold)
+                    int(im_id), catid2name, draw_threshold)
                 self.status['result_image'] = np.array(image.copy())
                 if self._compose_callback:
                     self._compose_callback.on_step_end(self.status)

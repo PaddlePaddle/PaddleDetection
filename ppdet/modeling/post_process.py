@@ -264,7 +264,6 @@ class S2ANetBBoxPostProcess(nn.Layer):
             bbox_num = self.fake_bbox_num
 
         pred_cls_score_bbox = paddle.reshape(pred_cls_score_bbox, [-1, 10])
-        assert pred_cls_score_bbox.shape[1] == 10
         return pred_cls_score_bbox, bbox_num
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
@@ -281,7 +280,6 @@ class S2ANetBBoxPostProcess(nn.Layer):
                                including labels, scores and bboxes. The size of
                                bboxes are corresponding to the original image.
         """
-        assert bboxes.shape[1] == 10
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
         origin_shape_list = []
@@ -307,6 +305,7 @@ class S2ANetBBoxPostProcess(nn.Layer):
         pred_bbox = bboxes[:, 2:]
 
         # rescale bbox to original image
+        pred_bbox = pred_bbox.reshape([-1, 8])
         scaled_bbox = pred_bbox / scale_factor_list
         origin_h = origin_shape_list[:, 0]
         origin_w = origin_shape_list[:, 1]
