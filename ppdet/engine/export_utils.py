@@ -34,7 +34,7 @@ TRT_MIN_SUBGRAPH = {
     'S2ANet': 40,
     'EfficientDet': 40,
     'Face': 3,
-    'TTFNet': 3,
+    'TTFNet': 60,
     'FCOS': 16,
     'SOLOv2': 60,
     'HigherHRNet': 3,

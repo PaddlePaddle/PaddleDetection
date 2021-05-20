@@ -123,14 +123,14 @@ class Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.postprocess_time_s.start()
+        self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.postprocess_time_s.end()
+        self.det_times.preprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -191,7 +191,7 @@ class DetectorSOLOv2(Detector):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor, self.config  = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -550,16 +550,16 @@ def main():
             model_dir = FLAGS.model_dir
             mode = FLAGS.run_mode
             model_info = {
-            'model_name': model_dir.strip('/').split('/')[-1],
-            'precision': mode.split('_')[-1]
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
             }
             data_info = {
                 'batch_size': 1,
                 'shape': "dynamic_shape",
                 'data_num': perf_info['img_num']
             }
-            det_log = PaddleInferBenchmark(
-                detector.config, model_info, data_info, perf_info, mems)
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
             det_log('Det')
 
 
