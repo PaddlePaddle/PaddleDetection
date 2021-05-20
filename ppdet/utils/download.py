@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 import os.path as osp
+import sys
 import yaml
 import shutil
 import requests
@@ -348,6 +349,11 @@ def _download(url, path, md5sum=None):
                                "Retry limit reached".format(url))
 
         logger.info("Downloading {} from {}".format(fname, url))
+
+        
+        # NOTE: windows path join may incur \, which is invalid in url
+        if sys.platform == "win32":
+            url = url.replace('\\', '/')
 
         req = requests.get(url, stream=True)
         if req.status_code != 200:
