@@ -1,62 +1,53 @@
 # PaddleDetection 预测部署
 
-目前支持的部署方式有：
-- `Paddle Inference预测库`部署:
-  - `Python`语言部署，支持`CPU`、`GPU`和`XPU`环境，参考文档[python部署](python/README.md)。
-  - `C++`语言部署 ，支持`CPU`、`GPU`和`XPU`环境，支持在`Linux`、`Windows`系统下部署，支持`NV Jetson`嵌入式设备上部署。请参考文档[C++部署](cpp/README.md)。
-  - `TensorRT`加速：请参考文档[TensorRT预测部署教程](TENSOR_RT.md)
-- 服务器端部署：使用[PaddleServing](./serving/README.md)部署。
-- 手机移动端部署：使用[Paddle-Lite](./lite/README.md) 在手机移动端部署。
+PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署形式，支持服务端、移动端、嵌入式等多种平台，提供了完善的Python和C++部署方案。
+
+## PaddleDetection支持的部署形式说明
+|形式|语言|教程|设备/平台|
+|-|-|-|-|
+|PaddleInference|Python|已完善|Linux(ARM\X86)、Windows
+|PaddleInference|C++|已完善|Linux(ARM\X86)、Windows|
+|PaddleServing|Python|已完善|Linux(ARM\X86)、Windows|
+|PaddleLite|C++|已完善|Android、IOS、FPGA、RK...
 
 
-## 1.模型导出
+## 1.Paddle Inference部署
+
+### 1.1 导出模型
 
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams
 ```
-预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
+预测模型会导出到`output_inference/yolov3_mobilenet_v1_roadsign`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
+模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
+
+### 1.2 使用PaddleInference进行预测
+* Python部署 支持`CPU`、`GPU`和`XPU`环境，支持，windows、linux系统，支持NV Jetson嵌入式设备上部署。参考文档[python部署](python/README.md)
+* C++部署 支持`CPU`、`GPU`和`XPU`环境，支持，windows、linux系统，支持NV Jetson嵌入式设备上部署。参考文档[C++部署](cpp/README.md)
+* PaddleDetection支持TensorRT加速,相关文档请参考[TensorRT预测部署教程](TENSOR_RT.md)
+
+##  2.PaddleServing部署
+### 2.1 导出模型
 
 如果需要导出`PaddleServing`格式的模型，需要设置`export_serving_model=True`:
 ```buildoutcfg
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams --export_serving_model=True
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams --export_serving_model=True
 ```
 预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/`文件夹, `serving_server/`文件夹。
 
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
-## 2.部署环境准备
+### 2.2 使用PaddleServing进行预测
+* [安装PaddleServing](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)
+* [使用PaddleServing](./serving/README.md)
 
-- Python预测：在python环境下安装PaddlePaddle环境即可，如需TensorRT预测，在[Paddle Release版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-release)中下载合适的wheel包即可。
 
-- C++预测库：请从[这里](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)，如果需要使用TensorRT，请下载带有TensorRT编译的预测库。您也可以自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-**注意:**  Paddle预测库版本需要>=2.0
+## 3.PaddleLite部署
+- [使用PaddleLite部署PaddleDetection模型](./lite/README.md)
+- 详细案例请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。更多内容，请参考[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)
 
-- PaddleServing部署
-  请选择PaddleServing>0.5.0以上版本，具体可参考[PaddleServing安装文档](https://github.com/PaddlePaddle/Serving/blob/develop/README.md#installation)。
-
-- Paddle-Lite部署
-  Paddle-Lite支持OP列表请参考：[Paddle-Lite支持的OP列表](https://paddle-lite.readthedocs.io/zh/latest/source_compile/library.html) ，请跟进所部署模型中使用到的op选择Paddle-Lite版本。
-
-- NV Jetson部署
-  Paddle官网提供在NV Jetson平台上已经编译好的预测库，[Paddle NV Jetson预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/build_and_install_lib_cn.html)。若列表中没有您需要的预测库，您可以在您的平台上自行编译，编译过程请参考[Paddle源码编译](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html)。
-
-## 3.部署预测
-- Python部署：使用`deploy/python/infer.py`进行预测，可具体参考[python部署文档](python/README.md)。
-```shell
-python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image --use_gpu=(False/True)
-```
-
-- C++部署，先使用跨平台编译工具`CMake`根据`CMakeLists.txt`生成`Makefile`，支持[Windows](cpp/docs/windows_vs2019_build.md)、[Linux](cpp/docs/linux_build.md)、[NV Jetson](cpp/docs/Jetson_build.md)平台部署，然后进行编译产出可执行文件。可以直接使用`cpp/scripts/build.sh`脚本编译：
-```buildoutcfg
-cd cpp
-sh scripts/build.sh
-```
-
-- PaddleServing部署请参考，[PaddleServing部署](./serving/README.md)部署。
-
-- 手机移动端部署，请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。
 
 ## 4.Benchmark测试
 - 使用导出的模型，运行Benchmark批量测试脚本：

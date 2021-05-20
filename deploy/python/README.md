@@ -14,17 +14,14 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 
 导出后目录下，包括`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`四个文件。
 
-## 2. 基于python的预测
+## 2. 基于Python的预测
 
-### 2.1 安装依赖
-- `PaddlePaddle`的安装: 请点击[官方安装文档](https://paddlepaddle.org.cn/install/quick) 选择适合的版本进行安装，要求PaddlePaddle>=2.0.1以上。
-- 切换到`PaddleDetection`代码库根目录，执行`pip install -r requirements.txt`安装其它依赖。
 
-### 2.2 执行预测程序
+
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/image --use_gpu=(False/True)
+python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --use_gpu=True
 ```
 
 参数说明如下:
@@ -48,4 +45,4 @@ python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/
 
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 - run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
-- 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_usage/deploy/inference/paddle_tensorrt_infer.html)。
+- 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。

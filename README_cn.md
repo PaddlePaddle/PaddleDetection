@@ -191,9 +191,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 ### 入门教程
 
 - [安装说明](docs/tutorials/INSTALL_cn.md)
-- [快速开始](docs/tutorials/QUICK_STARTED_cn.md)
-- [如何准备数据](docs/tutorials/PrepareDataSet.md)
-- [训练/评估/预测流程](docs/tutorials/GETTING_STARTED_cn.md)
+- [数据准备](docs/tutorials/PrepareDataSet.md)
+- [30分钟上手PaddleDetcion](docs/tutorials/GETTING_STARTED_cn.md)
 
 ### 进阶教程
 
@@ -202,17 +201,18 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
     - [PP-YOLO参数说明](docs/tutorials/config_annotation/ppyolo_r50vd_dcn_1x_coco_annotation.md)
 - 模型压缩(基于[PaddleSlim](https://github.com/PaddlePaddle/PaddleSlim))
     - [剪裁/量化/蒸馏教程](configs/slim)
+
 - [推理部署](deploy/README.md)
     - [模型导出教程](deploy/EXPORT_MODEL.md)
-    - [Python端推理部署](deploy/python)
-    - [C++端推理部署](deploy/cpp)
-    - [服务端部署](deploy/serving)
-    - [移动端部署](deploy/lite)
+    - [PaddleInference部署](deploy/README.md)
+         - [Python端推理部署](deploy/python)
+         - [C++端推理部署](deploy/cpp)
+    - [PaddleLite部署](deploy/serving)
+    - [PaddleServing部署](deploy/lite)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
 - 进阶开发
     - [数据处理模块](docs/advanced_tutorials/READER.md)
     - [新增检测模型](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-
 
 ## 模型库
 

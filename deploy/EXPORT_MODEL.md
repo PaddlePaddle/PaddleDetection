@@ -3,17 +3,18 @@
 ## 一、模型导出
 本章节介绍如何使用`tools/export_model.py`脚本导出模型。
 ### 1、导出模输入输出说明
-- `PaddleDetection`中输入变量以及输入形状如下：
-| 输入名称 | 输入形状 | 表示含义 |
-| :---------: | ----------- | ---------- |
-| image |  [None, 3, H, W] | 输入网络的图像，None表示batch维度，如果输入图像大小为变长，则H,W为None |
-| im_shape | [None, 2] | 图像经过resize后的大小，表示为H,W, None表示batch维度 |
-| scale_factor | [None, 2] | 输入图像大小比真实图像大小，表示为scale_y, scale_x |
+- 输入变量以及输入形状如下：
+
+  | 输入名称 | 输入形状 | 表示含义 |
+  | :---------: | ----------- | ---------- |
+  | image |  [None, 3, H, W] | 输入网络的图像，None表示batch维度，如果输入图像大小为变长，则H,W为None |
+  | im_shape | [None, 2] | 图像经过resize后的大小，表示为H,W, None表示batch维度 |
+  | scale_factor | [None, 2] | 输入图像大小比真实图像大小，表示为scale_y, scale_x |
 
 **注意**具体预处理方式可参考配置文件中TestReader部分。
 
 
-- PaddleDetection`中动转静导出模型输出统一为：
+- PaddleDetection中动转静导出模型输出统一为：
 
   - bbox, NMS的输出，形状为[N, 6], 其中N为预测框的个数，6为[class_id, score, x1, y1, x2, y2]。
   - bbox\_num, 每张图片对应预测框的个数，例如batch_size为2，输出为[N1, N2], 表示第一张图包含N1个预测框，第二张图包含N2个预测框，并且预测框的总个数和NMS输出的第一维N相同
