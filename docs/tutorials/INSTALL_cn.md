@@ -62,7 +62,7 @@ python -c "import paddle; print(paddle.__version__)"
 
 ```
 # pip安装paddledet
-pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
+pip install paddledet==2.1.0 -i https://mirror.baidu.com/pypi/simple
 
 # 下载使用源码中的配置文件和代码示例
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -90,6 +90,8 @@ pip install -r requirements.txt
 1. 若您使用的是Windows系统，由于原版cocoapi不支持Windows，`pycocotools`依赖可能安装失败，可采用第三方实现版本，该版本仅支持Python3
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
+
+2. 若您使用的是Python <= 3.6的版本，安装`pycocotools`可能会报错`distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('cython>=0.27.3')`, 您可通过先安装`cython`如`pip install cython`解决该问题
 
 
 安装后确认测试通过：

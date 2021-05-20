@@ -6,7 +6,7 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection and its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/tree/develop).
 
 ## Requirements:
 
@@ -72,7 +72,7 @@ PaddleDetection can be installed in the following two ways:
 
 ```
 # Install paddledet via pip
-pip install paddledet==2.0.1 -i https://mirror.baidu.com/pypi/simple
+pip install paddledet==2.1.0 -i https://mirror.baidu.com/pypi/simple
 
 # Download and use the configuration files and code examples in the source code
 git clone https://github.com/PaddlePaddle/PaddleDetection.git
@@ -100,6 +100,8 @@ pip install -r requirements.txt
 1. If you are working on Windows OS, `pycocotools` installing may failed because of the origin version of cocoapi does not support windows, another version can be used used which only supports Python3:
 
     ```pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI```
+
+2. If you are using Python <= 3.6, `pycocotools` installing may failed with error like `distutils.errors.DistutilsError: Could not find suitable distribution for Requirement.parse('cython>=0.27.3')`, please install `cython` firstly, for example `pip install cython`
 
 After installation, make sure the tests pass:
 

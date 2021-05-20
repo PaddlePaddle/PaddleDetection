@@ -116,8 +116,6 @@ class BaseDataLoader(object):
         shuffle (bool): whether to shuffle samples
         drop_last (bool): whether to drop the last incomplete,
                           default False
-        drop_empty (bool): whether to drop samples with no ground
-                           truth labels, default True
         num_classes (int): class number of dataset, default 80
         collate_batch (bool): whether to collate batch in dataloader.
             If set to True, the samples will collate into batch according
@@ -140,7 +138,6 @@ class BaseDataLoader(object):
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
-                 drop_empty=True,
                  num_classes=80,
                  collate_batch=True,
                  use_shared_memory=False,
@@ -180,7 +177,10 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
-        use_shared_memory = self.use_shared_memory
+        # DataLoader do not start sub-process in Windows and Mac
+        # system, do not need to use shared memory
+        use_shared_memory = self.use_shared_memory and \
+                            sys.platform not in ['win32', 'darwin']
         # check whether shared memory size is bigger than 1G(1024M)
         if use_shared_memory:
             shm_size = _get_shared_memory_size_in_M()
@@ -228,13 +228,12 @@ class TrainReader(BaseDataLoader):
                  batch_size=1,
                  shuffle=True,
                  drop_last=True,
-                 drop_empty=True,
                  num_classes=80,
                  collate_batch=True,
                  **kwargs):
-        super(TrainReader, self).__init__(
-            sample_transforms, batch_transforms, batch_size, shuffle, drop_last,
-            drop_empty, num_classes, collate_batch, **kwargs)
+        super(TrainReader, self).__init__(sample_transforms, batch_transforms,
+                                          batch_size, shuffle, drop_last,
+                                          num_classes, collate_batch, **kwargs)
 
 
 @register
@@ -247,12 +246,11 @@ class EvalReader(BaseDataLoader):
                  batch_size=1,
                  shuffle=False,
                  drop_last=True,
-                 drop_empty=True,
                  num_classes=80,
                  **kwargs):
         super(EvalReader, self).__init__(sample_transforms, batch_transforms,
                                          batch_size, shuffle, drop_last,
-                                         drop_empty, num_classes, **kwargs)
+                                         num_classes, **kwargs)
 
 
 @register
@@ -265,12 +263,11 @@ class TestReader(BaseDataLoader):
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
-                 drop_empty=True,
                  num_classes=80,
                  **kwargs):
         super(TestReader, self).__init__(sample_transforms, batch_transforms,
                                          batch_size, shuffle, drop_last,
-                                         drop_empty, num_classes, **kwargs)
+                                         num_classes, **kwargs)
 
 
 @register
@@ -283,12 +280,11 @@ class EvalMOTReader(BaseDataLoader):
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
-                 drop_empty=True,
                  num_classes=1,
                  **kwargs):
         super(EvalMOTReader, self).__init__(sample_transforms, batch_transforms,
                                             batch_size, shuffle, drop_last,
-                                            drop_empty, num_classes, **kwargs)
+                                            num_classes, **kwargs)
 
 
 @register
@@ -301,9 +297,8 @@ class TestMOTReader(BaseDataLoader):
                  batch_size=1,
                  shuffle=False,
                  drop_last=False,
-                 drop_empty=True,
                  num_classes=1,
                  **kwargs):
         super(TestMOTReader, self).__init__(sample_transforms, batch_transforms,
                                             batch_size, shuffle, drop_last,
-                                            drop_empty, num_classes, **kwargs)
+                                            num_classes, **kwargs)

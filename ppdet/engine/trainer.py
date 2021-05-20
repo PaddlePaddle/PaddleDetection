@@ -498,7 +498,7 @@ class Trainer(object):
         }]
 
         # dy2st and save model
-        if 'slim' not in self.cfg or self.cfg['slim'] != 'QAT':
+        if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
             # NOTE: dy2st do not pruned program, but jit.save will prune program

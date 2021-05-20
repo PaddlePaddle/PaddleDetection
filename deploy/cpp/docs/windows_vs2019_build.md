@@ -24,7 +24,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 ### Step2: 下载PaddlePaddle C++ 预测库 fluid_inference
 
-PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/windows_cpp_inference.html)
+PaddlePaddle C++ 预测库针对不同的`CPU`和`CUDA`版本提供了不同的预编译版本，请根据实际情况下载:  [C++预测库下载列表](https://paddleinference.paddlepaddle.org.cn/user_guides/download_lib.html#windows)
 
 解压后`D:\projects\fluid_inference`目录包含内容为：
 ```
@@ -128,4 +128,4 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 
 
 ## 性能测试
-benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)
+Benchmark请查看[BENCHMARK_INFER](../../BENCHMARK_INFER.md)

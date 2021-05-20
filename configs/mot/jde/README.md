@@ -48,19 +48,8 @@ Evaluating the track performance of JDE on val dataset in single GPU with follow
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
 
 # use saved checkpoint in training
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
 ```
-
-### 3. Inference
-
-Inference a vidoe in single GPU with following commands.
-
-```bash
-# inference on video and save a video
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4 --save_videos
-```
-**Notes:**
- Please make sure that [ffmpeg](https://www.ffmpeg.org) is installed first.
 
 ## Citations
 ```
