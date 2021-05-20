@@ -2,6 +2,28 @@
 
 ## 最新版本信息
 
+### 2.1(05.20/2021)
+- 模型丰富度提升：
+    - 发布关键点模型HRNet，HigherHRNet
+    - 发布多目标跟踪模型DeepSort, FairMot, JDE
+
+- 框架基础能力：
+    - 支持无标注框训练
+
+- 预测部署：
+    - Paddle Inference YOLOv3系列模型支持batch size>1预测
+    - 旋转框检测S2ANet模型预测部署打通
+    - 增加量化模型Benchmark
+    - 增加动态图模型与静态图模型Paddle-Lite demo
+
+- 检测模型压缩：
+    - 发布PPYOLO系列模型压缩模型
+
+- 文档：
+    - 更新快速开始，预测部署等教程文档
+    - 新增移动端部署文档
+
+
 ### 2.0(04.15/2021)
 
   **说明：** 自2.0版本开始，动态图作为PaddleDetection默认版本，原`dygraph`目录切换为根目录，原静态图实现移动到`static`目录下。
