@@ -280,8 +280,9 @@ class Tracker(object):
             timer_calls.append(tc)
 
             if save_videos:
-                output_video_path = os.path.join(save_dir, '{}.mp4'.format(seq))
-                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -c:v copy {}'.format(
+                output_video_path = os.path.join(save_dir, '..',
+                                                 '{}_vis.mp4'.format(seq))
+                cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
                     save_dir, output_video_path)
                 os.system(cmd_str)
                 logger.info('Save video in {}.'.format(output_video_path))
@@ -367,8 +368,9 @@ class Tracker(object):
             raise ValueError(model_type)
 
         if save_videos:
-            output_video_path = os.path.join(save_dir, '{}.mp4'.format(seq))
-            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg -c:v copy {}'.format(
+            output_video_path = os.path.join(save_dir, '..',
+                                             '{}_vis.mp4'.format(seq))
+            cmd_str = 'ffmpeg -f image2 -i {}/%05d.jpg {}'.format(
                 save_dir, output_video_path)
             os.system(cmd_str)
             logger.info('Save video in {}'.format(output_video_path))

@@ -28,3 +28,14 @@ EvalMOTReader:
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
     - Permute: {to_rgb: True}
   batch_size: 1
+
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 608, 1088]
+  sample_transforms:
+    - Decode: {to_rgb: False}
+    - LetterBoxResize: {target_size: [608, 1088]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1]}
+    - Permute: {to_rgb: True}
+  batch_size: 1
