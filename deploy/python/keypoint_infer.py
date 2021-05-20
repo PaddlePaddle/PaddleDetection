@@ -28,7 +28,8 @@ from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
 from keypoint_visualize import draw_pose
 from paddle.inference import Config
 from paddle.inference import create_predictor
-from utils import argsparser, Timer, get_current_memory_mb, LoggerHelper
+from utils import argsparser, Timer, get_current_memory_mb
+from benchmark_utils import PaddleInferBenchmark
 from infer import get_test_images, print_arguments
 
 # Global dictionary
@@ -66,7 +67,7 @@ class KeyPoint_Detector(object):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -129,7 +130,7 @@ class KeyPoint_Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.preprocess_time.start()
+        self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
@@ -137,7 +138,7 @@ class KeyPoint_Detector(object):
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time.end()
+        self.det_times.preprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -152,7 +153,7 @@ class KeyPoint_Detector(object):
                     inds_k.copy_to_cpu()
                 ]
 
-        self.det_times.inference_time.start()
+        self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -166,12 +167,12 @@ class KeyPoint_Detector(object):
                     masks_tensor.copy_to_cpu(), heat_k.copy_to_cpu(),
                     inds_k.copy_to_cpu()
                 ]
-        self.det_times.inference_time.end(repeats=repeats)
+        self.det_times.inference_time_s.end(repeats=repeats)
 
-        self.det_times.postprocess_time.start()
+        self.det_times.postprocess_time_s.start()
         results = self.postprocess(
             np_boxes, np_masks, inputs, threshold=threshold)
-        self.det_times.postprocess_time.end()
+        self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return results
 
@@ -318,7 +319,7 @@ def load_predictor(model_dir,
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
     predictor = create_predictor(config)
-    return predictor
+    return predictor, config
 
 
 def predict_image(detector, image_list):
@@ -347,7 +348,8 @@ def predict_video(detector, camera_id):
         video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.basename(os.path.split(FLAGS.video_file)[-1])
+        video_name = os.path.splitext(os.path.basename(FLAGS.video_file))[
+            0] + '.mp4'
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -403,13 +405,25 @@ def main():
             detector.det_times.info(average=True)
         else:
             mems = {
-                'cpu_rss': detector.cpu_mem / len(img_list),
-                'gpu_rss': detector.gpu_mem / len(img_list),
+                'cpu_rss_mb': detector.cpu_mem / len(img_list),
+                'gpu_rss_mb': detector.gpu_mem / len(img_list),
                 'gpu_util': detector.gpu_util * 100 / len(img_list)
             }
-            det_logger = LoggerHelper(
-                FLAGS, detector.det_times.report(average=True), mems)
-            det_logger.report()
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': 1,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
+            det_log('KeyPoint')
 
 
 if __name__ == '__main__':

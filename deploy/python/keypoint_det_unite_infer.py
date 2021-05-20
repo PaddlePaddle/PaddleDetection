@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-
 from PIL import Image
 import cv2
 import numpy as np
@@ -52,7 +51,7 @@ def get_person_from_rect(images, results):
     org_rects = []
     for rect in valid_rects:
         rect_image, new_rect, org_rect = expand_crop(images, rect)
-        if rect_image is None:
+        if rect_image is None or rect_image.size == 0:
             continue
         image_buff.append([rect_image, new_rect])
         org_rects.append(org_rect)
@@ -113,13 +112,13 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
-    index = 1
+    index = 0
     while (1):
         ret, frame = capture.read()
         if not ret:
             break
-        print('detect frame:%d' % (index))
         index += 1
+        print('detect frame:%d' % (index))
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict(frame2, FLAGS.det_threshold)
@@ -136,7 +135,7 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         keypoint_res = {}
         keypoint_res['keypoint'] = [
             np.vstack(keypoint_vector), np.vstack(score_vector)
-        ]
+        ] if len(keypoint_vector) > 0 else [[], []]
         keypoint_res['bbox'] = rect_vecotr
         im = draw_pose(
             frame,
@@ -189,8 +188,6 @@ def main():
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
         topdown_unite_predict(detector, topdown_keypoint_detector, img_list)
-        detector.det_times.info(average=True)
-        topdown_keypoint_detector.det_times.info(average=True)
 
 
 if __name__ == '__main__':
