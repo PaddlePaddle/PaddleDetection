@@ -861,7 +861,7 @@ class S2ANetHead(nn.Layer):
                 else:
                     max_scores = paddle.max(scores[:, 1:], axis=1)
 
-                topk_val, topk_inds = paddle.topk(max_scores, 2000)
+                topk_val, topk_inds = paddle.topk(max_scores, nms_pre)
                 anchors = paddle.gather(anchors, topk_inds)
                 bbox_pred = paddle.gather(bbox_pred, topk_inds)
                 scores = paddle.gather(scores, topk_inds)
