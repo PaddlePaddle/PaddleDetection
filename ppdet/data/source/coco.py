@@ -33,6 +33,12 @@ class COCODataSet(DetDataset):
         anno_path (str): coco annotation file path.
         data_fields (list): key name of data dictionary, at least have 'image'.
         sample_num (int): number of samples to load, -1 means all.
+        load_crowd (bool): whether to load crowded ground-truth. 
+            False as default
+        allow_empty (bool): whether to load empty entry. False as default
+        empty_ratio (float): the ratio of empty record number to total 
+            record's, if empty_ratio is out of [0. ,1.), do not sample the 
+            records. 1. as default
     """
 
     def __init__(self,
@@ -40,11 +46,26 @@ class COCODataSet(DetDataset):
                  image_dir=None,
                  anno_path=None,
                  data_fields=['image'],
-                 sample_num=-1):
+                 sample_num=-1,
+                 load_crowd=False,
+                 allow_empty=False,
+                 empty_ratio=1.):
         super(COCODataSet, self).__init__(dataset_dir, image_dir, anno_path,
                                           data_fields, sample_num)
         self.load_image_only = False
         self.load_semantic = False
+        self.load_crowd = load_crowd
+        self.allow_empty = allow_empty
+        self.empty_ratio = empty_ratio
+
+    def _sample_empty(self, records, num):
+        # if empty_ratio is out of [0. ,1.), do not sample the records
+        if self.empty_ratio < 0. or self.empty_ratio >= 1.:
+            return records
+        import random
+        sample_num = int(num * self.empty_ratio / (1 - self.empty_ratio))
+        records = random.sample(records, sample_num)
+        return records
 
     def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
@@ -58,6 +79,7 @@ class COCODataSet(DetDataset):
         img_ids.sort()
         cat_ids = coco.getCatIds()
         records = []
+        empty_records = []
         ct = 0
 
         self.catid2clsid = dict({catid: i for i, catid in enumerate(cat_ids)})
@@ -79,6 +101,7 @@ class COCODataSet(DetDataset):
 
             im_path = os.path.join(image_dir,
                                    im_fname) if image_dir else im_fname
+            is_empty = False
             if not os.path.exists(im_path):
                 logger.warning('Illegal image file: {}, and it will be '
                                'ignored'.format(im_path))
@@ -98,12 +121,16 @@ class COCODataSet(DetDataset):
             } if 'image' in self.data_fields else {}
 
             if not self.load_image_only:
-                ins_anno_ids = coco.getAnnIds(imgIds=[img_id], iscrowd=False)
+                ins_anno_ids = coco.getAnnIds(
+                    imgIds=[img_id], iscrowd=None if self.load_crowd else False)
                 instances = coco.loadAnns(ins_anno_ids)
 
                 bboxes = []
+                is_rbox_anno = False
                 for inst in instances:
                     # check gt bbox
+                    if inst.get('ignore', False):
+                        continue
                     if 'bbox' not in inst.keys():
                         continue
                     else:
@@ -137,8 +164,10 @@ class COCODataSet(DetDataset):
                                 img_id, float(inst['area']), x1, y1, x2, y2))
 
                 num_bbox = len(bboxes)
-                if num_bbox <= 0:
+                if num_bbox <= 0 and not self.allow_empty:
                     continue
+                elif num_bbox <= 0:
+                    is_empty = True
 
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 if is_rbox_anno:
@@ -165,7 +194,8 @@ class COCODataSet(DetDataset):
                         gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
-                if has_segmentation and not any(gt_poly):
+                if has_segmentation and not any(
+                        gt_poly) and not self.allow_empty:
                     continue
 
                 if is_rbox_anno:
@@ -196,10 +226,16 @@ class COCODataSet(DetDataset):
 
             logger.debug('Load file: {}, im_id: {}, h: {}, w: {}.'.format(
                 im_path, img_id, im_h, im_w))
-            records.append(coco_rec)
+            if is_empty:
+                empty_records.append(coco_rec)
+            else:
+                records.append(coco_rec)
             ct += 1
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
-        assert len(records) > 0, 'not found any coco record in %s' % (anno_path)
+        assert ct > 0, 'not found any coco record in %s' % (anno_path)
         logger.debug('{} samples in file {}'.format(ct, anno_path))
+        if len(empty_records) > 0:
+            empty_records = self._sample_empty(empty_records, len(records))
+            records += empty_records
         self.roidbs = records

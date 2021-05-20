@@ -22,7 +22,6 @@ EvalReader:
   - Permute: {}
   batch_size: 1
   drop_last: false
-  drop_empty: false
 
 TestReader:
   sample_transforms:
@@ -32,4 +31,3 @@ TestReader:
   - Permute: {}
   batch_size: 1
   drop_last: false
-  drop_empty: false

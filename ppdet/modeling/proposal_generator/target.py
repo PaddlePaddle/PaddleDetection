@@ -28,31 +28,38 @@ def rpn_anchor_target(anchors,
                       rpn_fg_fraction,
                       use_random=True,
                       batch_size=1,
+                      ignore_thresh=-1,
+                      is_crowd=None,
                       weights=[1., 1., 1., 1.]):
     tgt_labels = []
     tgt_bboxes = []
-
     tgt_deltas = []
     for i in range(batch_size):
         gt_bbox = gt_boxes[i]
-
+        is_crowd_i = is_crowd[i] if is_crowd else None
         # Step1: match anchor and gt_bbox
         matches, match_labels = label_box(
-            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True)
+            anchors, gt_bbox, rpn_positive_overlap, rpn_negative_overlap, True,
+            ignore_thresh, is_crowd_i)
         # Step2: sample anchor 
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
         # Fill with the ignore label (-1), then set positive and negative labels
         labels = paddle.full(match_labels.shape, -1, dtype='int32')
-        labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
-        labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+        if bg_inds.shape[0] > 0:
+            labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+        if fg_inds.shape[0] > 0:
+            labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
         # Step3: make output  
-        matched_gt_boxes = paddle.gather(gt_bbox, matches)
-
-        tgt_delta = bbox2delta(anchors, matched_gt_boxes, weights)
+        if gt_bbox.shape[0] == 0:
+            matched_gt_boxes = paddle.zeros([0, 4])
+            tgt_delta = paddle.zeros([0, 4])
+        else:
+            matched_gt_boxes = paddle.gather(gt_bbox, matches)
+            tgt_delta = bbox2delta(anchors, matched_gt_boxes, weights)
+            matched_gt_boxes.stop_gradient = True
+            tgt_delta.stop_gradient = True
         labels.stop_gradient = True
-        matched_gt_boxes.stop_gradient = True
-        tgt_delta.stop_gradient = True
         tgt_labels.append(labels)
         tgt_bboxes.append(matched_gt_boxes)
         tgt_deltas.append(tgt_delta)
@@ -60,16 +67,46 @@ def rpn_anchor_target(anchors,
     return tgt_labels, tgt_bboxes, tgt_deltas
 
 
-def label_box(anchors, gt_boxes, positive_overlap, negative_overlap,
-              allow_low_quality):
+def label_box(anchors,
+              gt_boxes,
+              positive_overlap,
+              negative_overlap,
+              allow_low_quality,
+              ignore_thresh,
+              is_crowd=None):
     iou = bbox_overlaps(gt_boxes, anchors)
-    if iou.numel() == 0:
+    n_gt = gt_boxes.shape[0]
+    if n_gt == 0 or is_crowd is None:
+        n_gt_crowd = 0
+    else:
+        n_gt_crowd = paddle.nonzero(is_crowd).shape[0]
+    if iou.shape[0] == 0 or n_gt_crowd == n_gt:
+        # No truth, assign everything to background
         default_matches = paddle.full((iou.shape[1], ), 0, dtype='int64')
-        default_match_labels = paddle.full((iou.shape[1], ), -1, dtype='int32')
+        default_match_labels = paddle.full((iou.shape[1], ), 0, dtype='int32')
         return default_matches, default_match_labels
+    # if ignore_thresh > 0, remove anchor if it is closed to 
+    # one of the crowded ground-truth
+    if n_gt_crowd > 0:
+        N_a = anchors.shape[0]
+        ones = paddle.ones([N_a])
+        mask = is_crowd * ones
+
+        if ignore_thresh > 0:
+            crowd_iou = iou * mask
+            valid = (paddle.sum((crowd_iou > ignore_thresh).cast('int32'),
+                                axis=0) > 0).cast('float32')
+            iou = iou * (1 - valid) - valid
+
+        # ignore the iou between anchor and crowded ground-truth
+        iou = iou * (1 - mask) - mask
+
     matched_vals, matches = paddle.topk(iou, k=1, axis=0)
     match_labels = paddle.full(matches.shape, -1, dtype='int32')
-    match_labels = paddle.where(matched_vals < negative_overlap,
+    # set ignored anchor with iou = -1
+    neg_cond = paddle.logical_and(matched_vals > -1,
+                                  matched_vals < negative_overlap)
+    match_labels = paddle.where(neg_cond,
                                 paddle.zeros_like(match_labels), match_labels)
     match_labels = paddle.where(matched_vals >= positive_overlap,
                                 paddle.ones_like(match_labels), match_labels)
@@ -84,6 +121,7 @@ def label_box(anchors, gt_boxes, positive_overlap, negative_overlap,
 
     matches = matches.flatten()
     match_labels = match_labels.flatten()
+
     return matches, match_labels
 
 
@@ -96,24 +134,36 @@ def subsample_labels(labels,
         paddle.logical_and(labels != -1, labels != bg_label))
     negative = paddle.nonzero(labels == bg_label)
 
-    positive = positive.cast('int32').flatten()
-    negative = negative.cast('int32').flatten()
-
     fg_num = int(num_samples * fg_fraction)
     fg_num = min(positive.numel(), fg_num)
     bg_num = num_samples - fg_num
     bg_num = min(negative.numel(), bg_num)
+    if fg_num == 0 and bg_num == 0:
+        fg_inds = paddle.zeros([0], dtype='int32')
+        bg_inds = paddle.zeros([0], dtype='int32')
+        return fg_inds, bg_inds
+
     # randomly select positive and negative examples
-    fg_perm = paddle.randperm(positive.numel(), dtype='int32')
-    fg_perm = paddle.slice(fg_perm, axes=[0], starts=[0], ends=[fg_num])
+
+    negative = negative.cast('int32').flatten()
     bg_perm = paddle.randperm(negative.numel(), dtype='int32')
     bg_perm = paddle.slice(bg_perm, axes=[0], starts=[0], ends=[bg_num])
     if use_random:
-        fg_inds = paddle.gather(positive, fg_perm)
         bg_inds = paddle.gather(negative, bg_perm)
     else:
-        fg_inds = paddle.slice(positive, axes=[0], starts=[0], ends=[fg_num])
         bg_inds = paddle.slice(negative, axes=[0], starts=[0], ends=[bg_num])
+    if fg_num == 0:
+        fg_inds = paddle.zeros([0], dtype='int32')
+        return fg_inds, bg_inds
+
+    positive = positive.cast('int32').flatten()
+    fg_perm = paddle.randperm(positive.numel(), dtype='int32')
+    fg_perm = paddle.slice(fg_perm, axes=[0], starts=[0], ends=[fg_num])
+    if use_random:
+        fg_inds = paddle.gather(positive, fg_perm)
+    else:
+        fg_inds = paddle.slice(positive, axes=[0], starts=[0], ends=[fg_num])
+
     return fg_inds, bg_inds
 
 
@@ -125,6 +175,8 @@ def generate_proposal_target(rpn_rois,
                              fg_thresh,
                              bg_thresh,
                              num_classes,
+                             ignore_thresh=-1.,
+                             is_crowd=None,
                              use_random=True,
                              is_cascade=False,
                              cascade_iou=0.5):
@@ -141,17 +193,18 @@ def generate_proposal_target(rpn_rois,
     bg_thresh = cascade_iou if is_cascade else bg_thresh
     for i, rpn_roi in enumerate(rpn_rois):
         gt_bbox = gt_boxes[i]
+        is_crowd_i = is_crowd[i] if is_crowd else None
         gt_class = paddle.squeeze(gt_classes[i], axis=-1)
 
-        # Concat RoIs and gt boxes except cascade rcnn
-        if not is_cascade:
+        # Concat RoIs and gt boxes except cascade rcnn or none gt
+        if not is_cascade and gt_bbox.shape[0] > 0:
             bbox = paddle.concat([rpn_roi, gt_bbox])
         else:
             bbox = rpn_roi
 
         # Step1: label bbox
         matches, match_labels = label_box(bbox, gt_bbox, fg_thresh, bg_thresh,
-                                          False)
+                                          False, ignore_thresh, is_crowd_i)
         # Step2: sample bbox 
         sampled_inds, sampled_gt_classes = sample_bbox(
             matches, match_labels, gt_class, batch_size_per_im, fg_fraction,
@@ -162,7 +215,10 @@ def generate_proposal_target(rpn_rois,
                                                                sampled_inds)
         sampled_gt_ind = matches if is_cascade else paddle.gather(matches,
                                                                   sampled_inds)
-        sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+        if gt_bbox.shape[0] > 0:
+            sampled_bbox = paddle.gather(gt_bbox, sampled_gt_ind)
+        else:
+            sampled_bbox = paddle.zeros([0, 4], dtype='float32')
 
         rois_per_image.stop_gradient = True
         sampled_gt_ind.stop_gradient = True
@@ -184,19 +240,32 @@ def sample_bbox(matches,
                 num_classes,
                 use_random=True,
                 is_cascade=False):
-    gt_classes = paddle.gather(gt_classes, matches)
-    gt_classes = paddle.where(match_labels == 0,
-                              paddle.ones_like(gt_classes) * num_classes,
-                              gt_classes)
-    gt_classes = paddle.where(match_labels == -1,
-                              paddle.ones_like(gt_classes) * -1, gt_classes)
+
+    n_gt = gt_classes.shape[0]
+    if n_gt == 0:
+        # No truth, assign everything to background
+        gt_classes = paddle.ones(matches.shape, dtype='int32') * num_classes
+        #return matches, match_labels + num_classes
+    else:
+        gt_classes = paddle.gather(gt_classes, matches)
+        gt_classes = paddle.where(match_labels == 0,
+                                  paddle.ones_like(gt_classes) * num_classes,
+                                  gt_classes)
+        gt_classes = paddle.where(match_labels == -1,
+                                  paddle.ones_like(gt_classes) * -1, gt_classes)
     if is_cascade:
-        return matches, gt_classes
+        index = paddle.arange(matches.shape[0])
+        return index, gt_classes
     rois_per_image = int(batch_size_per_im)
 
     fg_inds, bg_inds = subsample_labels(gt_classes, rois_per_image, fg_fraction,
                                         num_classes, use_random)
-    sampled_inds = paddle.concat([fg_inds, bg_inds])
+    if fg_inds.shape[0] == 0 and bg_inds.shape[0] == 0:
+        # fake output labeled with -1 when all boxes are neither
+        # foreground nor background
+        sampled_inds = paddle.zeros([1], dtype='int32')
+    else:
+        sampled_inds = paddle.concat([fg_inds, bg_inds])
     sampled_gt_classes = paddle.gather(gt_classes, sampled_inds)
     return sampled_inds, sampled_gt_classes
 
@@ -268,20 +337,29 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
         # to generate mask target with ground-truth
         boxes = fg_rois.numpy()
         gt_segms_per_im = gt_segms[k]
+
         new_segm = []
         inds_per_im = inds_per_im.numpy()
-        for i in inds_per_im:
-            new_segm.append(gt_segms_per_im[i])
+        if len(gt_segms_per_im) > 0:
+            for i in inds_per_im:
+                new_segm.append(gt_segms_per_im[i])
         fg_inds_new = fg_inds.reshape([-1]).numpy()
         results = []
-        for j in fg_inds_new:
-            results.append(
-                rasterize_polygons_within_box(new_segm[j], boxes[j],
-                                              resolution))
+        if len(gt_segms_per_im) > 0:
+            for j in fg_inds_new:
+                results.append(
+                    rasterize_polygons_within_box(new_segm[j], boxes[j],
+                                                  resolution))
+        else:
+            results.append(paddle.ones([resolution, resolution], dtype='int32'))
 
         fg_classes = paddle.gather(labels_per_im, fg_inds)
         weight = paddle.ones([fg_rois.shape[0]], dtype='float32')
         if not has_fg:
+            # now all sampled classes are background
+            # which will cause error in loss calculation,
+            # make fake classes with weight of 0.
+            fg_classes = paddle.zeros([1], dtype='int32')
             weight = weight - 1
         tgt_mask = paddle.stack(results)
         tgt_mask.stop_gradient = True
