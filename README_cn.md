@@ -211,6 +211,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
          - [C++端推理部署](deploy/cpp)
     - [Paddle-Lite部署](deploy/serving)
     - [Paddle Serving部署](deploy/lite)
+    - [ONNX模型导出](deploy/EXPORT_ONNX_MODEL.md)
     - [推理benchmark](deploy/BENCHMARK_INFER.md)
 - 进阶开发
     - [数据处理模块](docs/advanced_tutorials/READER.md)
