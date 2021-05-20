@@ -35,6 +35,8 @@ def argsparser():
         default=None,
         help="Dir of image file, `image_file` has a higher priority.")
     parser.add_argument(
+        "--batch_size", type=int, default=1, help="batch_size for infer.")
+    parser.add_argument(
         "--video_file",
         type=str,
         default=None,

@@ -334,8 +334,11 @@ class RCNNBox(object):
         self.num_classes = num_classes
 
     def __call__(self, bbox_head_out, rois, im_shape, scale_factor):
-        bbox_pred, cls_prob = bbox_head_out
-        roi, rois_num = rois
+        bbox_pred = bbox_head_out[0]
+        cls_prob = bbox_head_out[1]
+        roi = rois[0]
+        rois_num = rois[1]
+
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         scale_list = []
         origin_shape_list = []

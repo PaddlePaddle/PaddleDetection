@@ -62,11 +62,11 @@ class RPNHead(nn.Layer):
     Args:
         anchor_generator (dict): configure of anchor generation
         rpn_target_assign (dict): configure of rpn targets assignment
-        train_proposal (dict): configure of proposals generation 
+        train_proposal (dict): configure of proposals generation
             at the stage of training
         test_proposal (dict): configure of proposals generation
             at the stage of prediction
-        in_channel (int): channel of input feature maps which can be 
+        in_channel (int): channel of input feature maps which can be
             derived by from_config
     """
 
@@ -156,31 +156,35 @@ class RPNHead(nn.Layer):
         """
         prop_gen = self.train_proposal if self.training else self.test_proposal
         im_shape = inputs['im_shape']
-        rpn_rois_list = [[] for i in range(batch_size)]
-        rpn_prob_list = [[] for i in range(batch_size)]
-        rpn_rois_num_list = [[] for i in range(batch_size)]
+
+        # Collect multi-level proposals for each batch
+        # Get 'topk' of them as final output
+        bs_rois_collect = []
+        bs_rois_num_collect = []
+
         # Generate proposals for each level and each batch.
         # Discard batch-computing to avoid sorting bbox cross different batches.
-        for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas, anchors):
-            for i in range(batch_size):
+        for i in range(batch_size):
+            rpn_rois_list = []
+            rpn_prob_list = []
+            rpn_rois_num_list = []
+
+            for rpn_score, rpn_delta, anchor in zip(scores, bbox_deltas,
+                                                    anchors):
                 rpn_rois, rpn_rois_prob, rpn_rois_num, post_nms_top_n = prop_gen(
                     scores=rpn_score[i:i + 1],
                     bbox_deltas=rpn_delta[i:i + 1],
                     anchors=anchor,
                     im_shape=im_shape[i:i + 1])
                 if rpn_rois.shape[0] > 0:
-                    rpn_rois_list[i].append(rpn_rois)
-                    rpn_prob_list[i].append(rpn_rois_prob)
-                    rpn_rois_num_list[i].append(rpn_rois_num)
+                    rpn_rois_list.append(rpn_rois)
+                    rpn_prob_list.append(rpn_rois_prob)
+                    rpn_rois_num_list.append(rpn_rois_num)
 
-        # Collect multi-level proposals for each batch 
-        # Get 'topk' of them as final output 
-        rois_collect = []
-        rois_num_collect = []
-        for i in range(batch_size):
             if len(scores) > 1:
-                rpn_rois = paddle.concat(rpn_rois_list[i])
-                rpn_prob = paddle.concat(rpn_prob_list[i]).flatten()
+                rpn_rois = paddle.concat(rpn_rois_list)
+                rpn_prob = paddle.concat(rpn_prob_list).flatten()
+
                 if rpn_prob.shape[0] > post_nms_top_n:
                     topk_prob, topk_inds = paddle.topk(rpn_prob, post_nms_top_n)
                     topk_rois = paddle.gather(rpn_rois, topk_inds)
@@ -188,17 +192,19 @@ class RPNHead(nn.Layer):
                     topk_rois = rpn_rois
                     topk_prob = rpn_prob
             else:
-                topk_rois = rpn_rois_list[i][0]
-                topk_prob = rpn_prob_list[i][0].flatten()
-            rois_collect.append(topk_rois)
-            rois_num_collect.append(paddle.shape(topk_rois)[0])
-        rois_num_collect = paddle.concat(rois_num_collect)
+                topk_rois = rpn_rois_list[0]
+                topk_prob = rpn_prob_list[0].flatten()
 
-        return rois_collect, rois_num_collect
+            bs_rois_collect.append(topk_rois)
+            bs_rois_num_collect.append(paddle.shape(topk_rois)[0])
+
+        bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
+
+        return bs_rois_collect, bs_rois_num_collect
 
     def get_loss(self, pred_scores, pred_deltas, anchors, inputs):
         """
-        pred_scores (list[Tensor]): Multi-level scores prediction 
+        pred_scores (list[Tensor]): Multi-level scores prediction
         pred_deltas (list[Tensor]): Multi-level deltas prediction
         anchors (list[Tensor]): Multi-level anchors
         inputs (dict): ground truth info, including im, gt_bbox, gt_score
