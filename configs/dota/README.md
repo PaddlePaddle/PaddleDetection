@@ -97,7 +97,7 @@ python3.7 tools/infer.py -c configs/dota/s2anet_1x_dota.yml -o weights=./weights
 
 ## 预测部署
 
-Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时可以不不需要依赖旋转框IOU计算算子。
+Paddle中`multiclass_nms`算子的输入支持四边形输入，因此部署时可以不需要依赖旋转框IOU计算算子。
 
 ```bash
 # 预测

@@ -283,6 +283,10 @@ class PredictConfig():
         self.preprocess_infos = yml_conf['Preprocess']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
+        if self.arch == 'S2ANet':
+            # TODO: move background to num_classes
+            if self.labels[0] != 'background':
+                self.labels.insert(0, 'background')
         self.mask = False
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
