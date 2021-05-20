@@ -8,17 +8,17 @@ PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署
 |PaddleInference|Python|已完善|Linux(ARM\X86)、Windows
 |PaddleInference|C++|已完善|Linux(ARM\X86)、Windows|
 |PaddleServing|Python|已完善|Linux(ARM\X86)、Windows|
-|PaddleLite|Python|已完善|Android、IOS、FPGA、RK...
+|PaddleLite|C++|已完善|Android、IOS、FPGA、RK...
 
 
 ## 1.Paddle Inference部署
 
-### 1.1 导出PaddleInference的模型
+### 1.1 导出模型
 
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
-python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign -o weights=output/yolov3yolov3_mobilenet_v1_roadsign/best_model.pdparams
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams
 ```
 预测模型会导出到`output_inference/yolov3_mobilenet_v1_roadsign`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
@@ -29,11 +29,11 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign -o w
 * PaddleDetection支持TensorRT加速,相关文档请参考[TensorRT预测部署教程](TENSOR_RT.md)
 
 ##  2.PaddleServing部署
-### 2.1 导出PaddleInference的模型
+### 2.1 导出模型
 
 如果需要导出`PaddleServing`格式的模型，需要设置`export_serving_model=True`:
 ```buildoutcfg
-python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=weights/yolov3_mobilenet_v1_roadsign/best_model.pdparams --export_serving_model=True
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=output/yolov3_mobilenet_v1_roadsign/best_model.pdparams --export_serving_model=True
 ```
 预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/`文件夹, `serving_server/`文件夹。
 

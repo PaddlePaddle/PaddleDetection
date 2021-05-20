@@ -14,14 +14,14 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 
 导出后目录下，包括`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`四个文件。
 
-## 2. 基于python的预测
+## 2. 基于Python的预测
 
 
 
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./dataset/roadvoc/images/554.png--use_gpu=True
+python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --use_gpu=True
 ```
 
 参数说明如下:

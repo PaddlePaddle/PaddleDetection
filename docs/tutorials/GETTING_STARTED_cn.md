@@ -11,7 +11,7 @@ PaddleDetection作为成熟的目标检测开发套件，提供了从数据准�
 在本演示案例中，假定用户将PaddleDetection的代码克隆并放置在`/home/paddle`目录中。用户执行的命令操作均在`/home/paddle/PaddleDetection`目录下完成
 
 ## 2 准备数据
-目前PaddleDetection支持：COCO VOC WiderFace四种数据格式。
+目前PaddleDetection支持：COCO VOC WiderFace, MOT四种数据格式。
 - 首先按照[准备数据文档](PrepareDataSet.md) 准备数据。  
 - 然后设置`configs/datasets`中相应的coco或voc等数据配置文件中的数据路径。
 - 在本项目中，我们使用路标识别数据集
@@ -100,7 +100,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 ```bash
 export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
   # 如果模型中参数形状与加载权重形状不同，将不会加载这类参数
-python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \-o pretrain_weights=output/model_final
+python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o pretrain_weights=output/model_final
 ```
 
 * 模型恢复训练
@@ -113,7 +113,7 @@ python tools/train.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -r outp
  ```
 
 ## 5 评估
-* PaddleDetection会默认将训练生成的模型保存在当前`output`文件夹下
+* 默认将训练生成的模型保存在当前`output`文件夹下
  ```bash
 export CUDA_VISIBLE_DEVICES=0 #windows和Mac下不需要执行该命令
 python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams
@@ -219,7 +219,7 @@ visualdl --logdir vdl_dir/scalar/
 
 ```bash
 python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --output_dir=./inference_model \
- -o weights=output/yolov3/yolov3_mobilenet_v1_roadsign/best_model
+ -o weights=output/yolov3_mobilenet_v1_roadsign/best_model
 ```
 预测模型会导出到`inference_model/yolov3_mobilenet_v1_roadsign`目录下，分别为`infer_cfg.yml`, `model.pdiparams`, `model.pdiparams.info`,`model.pdmodel` 如果不指定文件夹，模型则会导出在`output_inference`
 

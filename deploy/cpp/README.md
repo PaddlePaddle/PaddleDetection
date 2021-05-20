@@ -2,10 +2,10 @@
 
 
 
-## 编译部署
-- [Linux 编译指南](docs/linux_build.md)
-- [Windows编译指南(使用Visual Studio 2019)](docs/windows_vs2019_build.md)
-- [NV Jetson部署](docs/Jetson_build.md)
+## 各环境编译部署教程
+- [Linux 编译部署](docs/linux_build.md)
+- [Windows编译部署(使用Visual Studio 2019)](docs/windows_vs2019_build.md)
+- [NV Jetson编译部署](docs/Jetson_build.md)
 
 
 ## C++部署总览
