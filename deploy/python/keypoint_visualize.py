@@ -19,11 +19,6 @@ import numpy as np
 import math
 
 
-def map_coco_to_personlab(keypoints):
-    permute = [0, 6, 8, 10, 5, 7, 9, 12, 14, 16, 11, 13, 15, 2, 1, 4, 3]
-    return keypoints[:, permute, :]
-
-
 def draw_pose(imgfile,
               results,
               visual_thread=0.6,
@@ -39,9 +34,9 @@ def draw_pose(imgfile,
                      'for example: `pip install matplotlib`.')
         raise e
 
-    EDGES = [(0, 14), (0, 13), (0, 4), (0, 1), (14, 16), (13, 15), (4, 10),
-             (1, 7), (10, 11), (7, 8), (11, 12), (8, 9), (4, 5), (1, 2), (5, 6),
-             (2, 3)]
+    EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
+             (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14), (13, 15),
+             (14, 16), (11, 12)]
     NUM_EDGES = len(EDGES)
 
     colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
@@ -52,25 +47,28 @@ def draw_pose(imgfile,
 
     img = cv2.imread(imgfile) if type(imgfile) == str else imgfile
     skeletons, scores = results['keypoint']
+    color_set = results['colors'] if 'colors' in results else None
 
     if 'bbox' in results:
         bboxs = results['bbox']
-        for idx, rect in enumerate(bboxs):
+        for j, rect in enumerate(bboxs):
             xmin, ymin, xmax, ymax = rect
-            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), colors[0], 1)
+            color = colors[0] if color_set is None else colors[color_set[j] %
+                                                               len(colors)]
+            cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color, 1)
 
     canvas = img.copy()
     for i in range(17):
-        rgba = np.array(cmap(1 - i / 17. - 1. / 34))
-        rgba[0:3] *= 255
         for j in range(len(skeletons)):
             if skeletons[j][i, 2] < visual_thread:
                 continue
+            color = colors[i] if color_set is None else colors[color_set[j] %
+                                                               len(colors)]
             cv2.circle(
                 canvas,
                 tuple(skeletons[j][i, 0:2].astype('int32')),
                 2,
-                colors[i],
+                color,
                 thickness=-1)
 
     to_plot = cv2.addWeighted(img, 0.3, canvas, 0.7, 0)
@@ -78,7 +76,6 @@ def draw_pose(imgfile,
 
     stickwidth = 2
 
-    skeletons = map_coco_to_personlab(skeletons)
     for i in range(NUM_EDGES):
         for j in range(len(skeletons)):
             edge = EDGES[i]
@@ -96,7 +93,9 @@ def draw_pose(imgfile,
             polygon = cv2.ellipse2Poly((int(mY), int(mX)),
                                        (int(length / 2), stickwidth),
                                        int(angle), 0, 360, 1)
-            cv2.fillConvexPoly(cur_canvas, polygon, colors[i])
+            color = colors[i] if color_set is None else colors[color_set[j] %
+                                                               len(colors)]
+            cv2.fillConvexPoly(cur_canvas, polygon, color)
             canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
     if returnimg:
         return canvas

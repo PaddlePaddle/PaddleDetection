@@ -76,5 +76,5 @@ python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_
 python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --use_gpu=True --threshold=0.5
 
 #keypoint top-down模型 + detector 检测联合部署推理（联合推理只支持top-down方式）
-python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4
+python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --use_gpu=True
 ```
