@@ -8,7 +8,7 @@
 
 ## 简介
 
-[S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，要求使用PaddlePaddle 2.0.1(可使用pip安装) 或适当的[release/2.1版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/release/2.1/install/Tables.html#whl-release)。
+[S2ANet](https://arxiv.org/pdf/2008.09397.pdf)是用于检测旋转框的模型，要求使用PaddlePaddle 2.1.0版本(可使用pip安装) 。
 
 
 ## DOTA数据集

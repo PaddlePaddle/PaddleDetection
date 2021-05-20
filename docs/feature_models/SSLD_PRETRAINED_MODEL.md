@@ -37,7 +37,7 @@
 
 **注意事项:**  
 
-- [SSLD](https://arxiv.org/abs/2103.05959)是一种知识蒸馏方法，我们使用蒸馏后性能更强的backbone预训练模型，进一步提升检测精度，详细方案请参考[知识蒸馏教程](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.1/docs/en/advanced_tutorials/distillation/distillation_en.md)
+- [SSLD](https://arxiv.org/abs/2103.05959)是一种知识蒸馏方法，我们使用蒸馏后性能更强的backbone预训练模型，进一步提升检测精度，详细方案请参考[知识蒸馏教程](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/en/advanced_tutorials/distillation/distillation_en.md)
 
 ![demo image](../images/ssld_model.png)
 

@@ -36,7 +36,7 @@ English | [简体中文](SSLD_PRETRAINED_MODEL.md)
 
 **Notes:**
 
-- [SSLD](https://arxiv.org/abs/2103.05959) is a knowledge distillation method. We use the stronger backbone pretrained model after distillation to further improve the detection accuracy. Please refer to the [knowledge distillation tutorial](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.1/docs/en/advanced_tutorials/distillation/distillation_en.md).
+- [SSLD](https://arxiv.org/abs/2103.05959) is a knowledge distillation method. We use the stronger backbone pretrained model after distillation to further improve the detection accuracy. Please refer to the [knowledge distillation tutorial](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/en/advanced_tutorials/distillation/distillation_en.md).
 
 ![demo image](../images/ssld_model.png)
 
