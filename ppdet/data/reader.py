@@ -180,7 +180,10 @@ class BaseDataLoader(object):
         else:
             self._batch_sampler = batch_sampler
 
-        use_shared_memory = self.use_shared_memory
+        # DataLoader do not start sub-process in Windows and Mac
+        # system, do not need to use shared memory
+        use_shared_memory = self.use_shared_memory and \
+                            sys.platform not in ['win32', 'darwin']
         # check whether shared memory size is bigger than 1G(1024M)
         if use_shared_memory:
             shm_size = _get_shared_memory_size_in_M()
