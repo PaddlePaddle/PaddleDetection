@@ -277,10 +277,14 @@ void PredictImage(const std::vector<std::string> all_img_paths,
       auto labels = det->GetLabelList();
       auto colormap = PaddleDetection::GenerateColorMap(labels.size());
 
+      int item_start_idx = 0;
       for (int i = 0; i < left_image_cnt; i++) {
         std::cout << all_img_paths.at(idx * batch_size + i) << "result" << std::endl;
+        if (bbox_num[i] <= 1) {
+            continue;
+        }
         for (int j = 0; j < bbox_num[i]; j++) {
-          PaddleDetection::ObjectResult item = result[i * batch_size+j];
+          PaddleDetection::ObjectResult item = result[item_start_idx + j];
           if (item.rect.size() > 6){
             is_rbox = true;
             printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
@@ -305,10 +309,14 @@ void PredictImage(const std::vector<std::string> all_img_paths,
               item.rect[3]);
           }
         }
+        item_start_idx = item_start_idx + bbox_num[i];
       }
       // Visualization result
       int bbox_idx = 0;
       for (int bs = 0; bs < batch_imgs.size(); bs++) {
+        if (bbox_num[bs] <= 1) {
+            continue;
+        }
         cv::Mat im = batch_imgs[bs];
         std::vector<PaddleDetection::ObjectResult> im_result;
         for (int k = 0; k < bbox_num[bs]; k++) {
