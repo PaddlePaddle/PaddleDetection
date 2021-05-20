@@ -191,7 +191,7 @@ class DetectorSOLOv2(Detector):
                  cpu_threads=1,
                  enable_mkldnn=False):
         self.pred_config = pred_config
-        self.predictor, self.config  = load_predictor(
+        self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
@@ -541,8 +541,8 @@ def main():
             detector.det_times.info(average=True)
         else:
             mems = {
-                'cpu_rss': detector.cpu_mem / len(img_list),
-                'gpu_rss': detector.gpu_mem / len(img_list),
+                'cpu_rss_mb': detector.cpu_mem / len(img_list),
+                'gpu_rss_mb': detector.gpu_mem / len(img_list),
                 'gpu_util': detector.gpu_util * 100 / len(img_list)
             }
 
@@ -550,16 +550,16 @@ def main():
             model_dir = FLAGS.model_dir
             mode = FLAGS.run_mode
             model_info = {
-            'model_name': model_dir.strip('/').split('/')[-1],
-            'precision': mode.split('_')[-1]
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
             }
             data_info = {
                 'batch_size': 1,
                 'shape': "dynamic_shape",
                 'data_num': perf_info['img_num']
             }
-            det_log = PaddleInferBenchmark(
-                detector.config, model_info, data_info, perf_info, mems)
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
             det_log('Det')
 
 
