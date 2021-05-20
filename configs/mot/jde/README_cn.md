@@ -47,19 +47,8 @@ python -m paddle.distributed.launch --log_dir=./jde_darknet53_30e_1088x608/ --gp
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
 
 # 使用训练保存的checkpoint
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
 ```
-
-### 3. 预测
-
-使用单个GPU通过如下命令预测一个视频，并保存为视频
-
-```bash
-# 预测一个视频
-CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams --video_file={your video name}.mp4  --save_videos
-```
-**注意:**
- 请先确保已经安装了[ffmpeg](https://www.ffmpeg.org)。
 
 ## 引用
 ```
