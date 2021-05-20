@@ -34,7 +34,7 @@ TRT_MIN_SUBGRAPH = {
     'S2ANet': 40,
     'EfficientDet': 40,
     'Face': 3,
-    'TTFNet': 3,
+    'TTFNet': 60,
     'FCOS': 16,
     'SOLOv2': 60,
     'HigherHRNet': 3,
@@ -111,6 +111,11 @@ def _dump_infer_config(config, path, image_shape, model):
         'label_list'], image_shape = _parse_reader(
             config['TestReader'], config['TestDataset'], config['metric'],
             label_arch, image_shape)
+
+    if infer_arch == 'S2ANet':
+        # TODO: move background to num_classes
+        if infer_cfg['label_list'][0] != 'background':
+            infer_cfg['label_list'].insert(0, 'background')
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))

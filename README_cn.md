@@ -18,6 +18,7 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 
 <div align="center">
   <img src="static/docs/images/football.gif" width='800'/>
+  <img src="docs/images/mot_pose_demo_640x360.gif" width='800'/>
 </div>
 
 ### 产品动态
