@@ -74,7 +74,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
                     })
                     break
 
-    return preprocess_list, label_list, image_shape
+    return preprocess_list, label_list
 
 
 def _dump_infer_config(config, path, image_shape, model):
@@ -85,7 +85,6 @@ def _dump_infer_config(config, path, image_shape, model):
         'mode': 'fluid',
         'draw_threshold': 0.5,
         'metric': config['metric'],
-        'image_shape': image_shape
     })
     infer_arch = config['architecture']
 
@@ -105,10 +104,9 @@ def _dump_infer_config(config, path, image_shape, model):
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
         label_arch = 'keypoint_arch'
-    infer_cfg['Preprocess'], infer_cfg[
-        'label_list'], image_shape = _parse_reader(
-            config['TestReader'], config['TestDataset'], config['metric'],
-            label_arch, image_shape)
+    infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
+        config['TestReader'], config['TestDataset'], config['metric'],
+        label_arch, image_shape)
 
     if infer_arch == 'S2ANet':
         # TODO: move background to num_classes
@@ -117,4 +115,3 @@ def _dump_infer_config(config, path, image_shape, model):
 
     yaml.dump(infer_cfg, open(path, 'w'))
     logger.info("Export inference config file to {}".format(os.path.join(path)))
-    return image_shape
