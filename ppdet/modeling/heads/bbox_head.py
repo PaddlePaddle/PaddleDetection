@@ -265,14 +265,26 @@ class BBoxHead(nn.Layer):
         targets (list[List[Tensor]]): bbox targets containing tgt_labels, tgt_bboxes and tgt_gt_inds
         rois (List[Tensor]): RoIs generated in each batch
         """
+        cls_name = 'loss_bbox_cls'
+        reg_name = 'loss_bbox_reg'
+        loss_bbox = {}
+
         # TODO: better pass args
         tgt_labels, tgt_bboxes, tgt_gt_inds = targets
+
+        # bbox cls
         tgt_labels = paddle.concat(tgt_labels) if len(
             tgt_labels) > 1 else tgt_labels[0]
-        tgt_labels = tgt_labels.cast('int64')
-        tgt_labels.stop_gradient = True
-        loss_bbox_cls = F.cross_entropy(
-            input=scores, label=tgt_labels, reduction='mean')
+        valid_inds = paddle.nonzero(tgt_labels >= 0).flatten()
+        if valid_inds.shape[0] == 0:
+            loss_bbox[cls_name] = paddle.zeros([1], dtype='float32')
+        else:
+            tgt_labels = tgt_labels.cast('int64')
+            tgt_labels.stop_gradient = True
+            loss_bbox_cls = F.cross_entropy(
+                input=scores, label=tgt_labels, reduction='mean')
+            loss_bbox[cls_name] = loss_bbox_cls
+
         # bbox reg
 
         cls_agnostic_bbox_reg = deltas.shape[1] == 4
@@ -281,14 +293,9 @@ class BBoxHead(nn.Layer):
             paddle.logical_and(tgt_labels >= 0, tgt_labels <
                                self.num_classes)).flatten()
 
-        cls_name = 'loss_bbox_cls'
-        reg_name = 'loss_bbox_reg'
-        loss_bbox = {}
-
-        loss_weight = 1.
         if fg_inds.numel() == 0:
-            fg_inds = paddle.zeros([1], dtype='int32')
-            loss_weight = 0.
+            loss_bbox[reg_name] = paddle.zeros([1], dtype='float32')
+            return loss_bbox
 
         if cls_agnostic_bbox_reg:
             reg_delta = paddle.gather(deltas, fg_inds)
@@ -323,8 +330,7 @@ class BBoxHead(nn.Layer):
             loss_bbox_reg = paddle.abs(reg_delta - reg_target).sum(
             ) / tgt_labels.shape[0]
 
-        loss_bbox[cls_name] = loss_bbox_cls * loss_weight
-        loss_bbox[reg_name] = loss_bbox_reg * loss_weight
+        loss_bbox[reg_name] = loss_bbox_reg
 
         return loss_bbox
 

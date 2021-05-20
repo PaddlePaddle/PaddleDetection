@@ -124,6 +124,10 @@ def bbox_overlaps(boxes1, boxes2):
     Return:
         overlaps (Tensor): overlaps between boxes1 and boxes2 with shape [M, N]
     """
+    M = boxes1.shape[0]
+    N = boxes2.shape[0]
+    if M * N == 0:
+        return paddle.zeros([M, N], dtype='float32')
     area1 = bbox_area(boxes1)
     area2 = bbox_area(boxes2)
 

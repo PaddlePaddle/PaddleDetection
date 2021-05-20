@@ -238,18 +238,24 @@ class RPNHead(nn.Layer):
         valid_ind = paddle.nonzero(valid_mask)
 
         # cls loss
-        score_pred = paddle.gather(scores, valid_ind)
-        score_label = paddle.gather(score_tgt, valid_ind).cast('float32')
-        score_label.stop_gradient = True
-        loss_rpn_cls = F.binary_cross_entropy_with_logits(
-            logit=score_pred, label=score_label, reduction="sum")
+        if valid_ind.shape[0] == 0:
+            loss_rpn_cls = paddle.zeros([1], dtype='float32')
+        else:
+            score_pred = paddle.gather(scores, valid_ind)
+            score_label = paddle.gather(score_tgt, valid_ind).cast('float32')
+            score_label.stop_gradient = True
+            loss_rpn_cls = F.binary_cross_entropy_with_logits(
+                logit=score_pred, label=score_label, reduction="sum")
 
         # reg loss
-        loc_pred = paddle.gather(deltas, pos_ind)
-        loc_tgt = paddle.concat(loc_tgt)
-        loc_tgt = paddle.gather(loc_tgt, pos_ind)
-        loc_tgt.stop_gradient = True
-        loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
+        if pos_ind.shape[0] == 0:
+            loss_rpn_reg = paddle.zeros([1], dtype='float32')
+        else:
+            loc_pred = paddle.gather(deltas, pos_ind)
+            loc_tgt = paddle.concat(loc_tgt)
+            loc_tgt = paddle.gather(loc_tgt, pos_ind)
+            loc_tgt.stop_gradient = True
+            loss_rpn_reg = paddle.abs(loc_pred - loc_tgt).sum()
         return {
             'loss_rpn_cls': loss_rpn_cls / norm,
             'loss_rpn_reg': loss_rpn_reg / norm
