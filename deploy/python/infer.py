@@ -123,14 +123,14 @@ class Detector(object):
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''
-        self.det_times.postprocess_time_s.start()
+        self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.postprocess_time_s.end()
+        self.det_times.preprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
