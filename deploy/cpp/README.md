@@ -2,7 +2,7 @@
 
 
 
-## 各平台/系统编译部署指南
+## 编译部署
 - [Linux 编译指南](docs/linux_build.md)
 - [Windows编译指南(使用Visual Studio 2019)](docs/windows_vs2019_build.md)
 - [NV Jetson部署](docs/Jetson_build.md)

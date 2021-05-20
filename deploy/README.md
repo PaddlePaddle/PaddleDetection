@@ -5,9 +5,9 @@ PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署
 ## PaddleDetection支持的部署形式说明
 |形式|语言|教程|设备/平台|
 |-|-|-|-|
-|PaddleInference|Python|已完善|linux(ARM\X86)、windows
-|PaddleInference|C++|已完善|linux(ARM\X86)、windows|
-|PaddleServing|Python|已完善|linux(ARM\X86)、windows|
+|PaddleInference|Python|已完善|Linux(ARM\X86)、Windows
+|PaddleInference|C++|已完善|Linux(ARM\X86)、Windows|
+|PaddleServing|Python|已完善|Linux(ARM\X86)、Windows|
 |PaddleLite|Python|已完善|Android、IOS、FPGA、RK...
 
 
@@ -18,9 +18,9 @@ PaddleDetection提供了PaddleInference、PaddleServing、PaddleLite多种部署
 使用`tools/export_model.py`脚本导出模型已经部署时使用的配置文件，配置文件名字为`infer_cfg.yml`。模型导出脚本如下：
 ```bash
 # 导出YOLOv3模型
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign -o weights=output/yolov3yolov3_mobilenet_v1_roadsign/best_model.pdparams
 ```
-预测模型会导出到`inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
+预测模型会导出到`output_inference/yolov3_mobilenet_v1_roadsign`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`。
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
 ### 1.2 使用PaddleInference进行预测
@@ -33,9 +33,9 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 
 如果需要导出`PaddleServing`格式的模型，需要设置`export_serving_model=True`:
 ```buildoutcfg
-python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o weights=weights/yolov3_darknet53_270e_coco.pdparams --export_serving_model=True
+python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml -o weights=weights/yolov3_mobilenet_v1_roadsign/best_model.pdparams --export_serving_model=True
 ```
-预测模型会导出到`inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/`文件夹, `serving_server/`文件夹。
+预测模型会导出到`output_inference/yolov3_darknet53_270e_coco`目录下，分别为`infer_cfg.yml`, `model.pdiparams`,  `model.pdiparams.info`, `model.pdmodel`, `serving_client/`文件夹, `serving_server/`文件夹。
 
 模型导出具体请参考文档[PaddleDetection模型导出教程](EXPORT_MODEL.md)。
 
@@ -45,7 +45,9 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml -o
 
 
 ## 3.PaddleLite部署
-* 手机移动端部署：使用[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite) 在手机移动端部署。
+- [使用PaddleLite部署PaddleDetection模型](./lite/README.md)
+- 详细案例请参考[Paddle-Lite-Demo](https://github.com/PaddlePaddle/Paddle-Lite-Demo)部署。更多内容，请参考[Paddle-Lite](https://github.com/PaddlePaddle/Paddle-Lite)
+
 
 ## 4.Benchmark测试
 - 使用导出的模型，运行Benchmark批量测试脚本：

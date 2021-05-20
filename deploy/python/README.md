@@ -18,11 +18,10 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 
 
 
-### 2.2 执行预测程序
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=./inference/ppyolov2_r50_dcn_365e_coco --image_file=./demo/000000014439_640x640.jpg --use_gpu=True
+python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./dataset/roadvoc/images/554.png--use_gpu=True
 ```
 
 参数说明如下:
@@ -46,4 +45,4 @@ python deploy/python/infer.py --model_dir=./inference/ppyolov2_r50_dcn_365e_coco
 
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 - run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
-- 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_usage/deploy/inference/paddle_tensorrt_infer.html)。
+- 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
