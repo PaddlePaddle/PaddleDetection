@@ -64,7 +64,6 @@ class ObjectDetector {
                           const std::string& run_mode="fluid",
                           const int batch_size=1,
                           const int gpu_id=0,
-                          bool use_dynamic_shape=false,
                           const int trt_min_shape=1,
                           const int trt_max_shape=1280,
                           const int trt_opt_shape=640,
@@ -74,12 +73,12 @@ class ObjectDetector {
     this->cpu_math_library_num_threads_ = cpu_threads;
     this->use_mkldnn_ = use_mkldnn;
 
-    this->use_dynamic_shape_ = use_dynamic_shape;
     this->trt_min_shape_ = trt_min_shape;
     this->trt_max_shape_ = trt_max_shape;
     this->trt_opt_shape_ = trt_opt_shape;
     this->trt_calib_mode_ = trt_calib_mode;
     config_.load_config(model_dir);
+    this->use_dynamic_shape_ = config_.use_dynamic_shape_;
     this->min_subgraph_size_ = config_.min_subgraph_size_;
     threshold_ = config_.draw_threshold_;
     preprocessor_.Init(config_.preprocess_info_);

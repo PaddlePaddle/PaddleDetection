@@ -49,7 +49,6 @@ DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_bool(run_benchmark, false, "Whether to predict a image_file repeatedly for benchmark");
 DEFINE_bool(use_mkldnn, false, "Whether use mkldnn with CPU");
 DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
-DEFINE_bool(use_dynamic_shape, false, "Trt use dynamic shape or not");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
 DEFINE_int32(trt_opt_shape, 640, "Opt shape of TRT DynamicShapeI");
@@ -361,8 +360,9 @@ int main(int argc, char** argv) {
   }
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id, FLAGS_use_dynamic_shape,
-                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape, FLAGS_trt_calib_mode);
+                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
+                        FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
+			FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
     PredictVideo(FLAGS_video_file, &det);
@@ -374,13 +374,14 @@ int main(int argc, char** argv) {
     if (!FLAGS_image_file.empty()) {
       all_imgs.push_back(FLAGS_image_file);
       if (FLAGS_batch_size > 1) {
-        std::cout << "batch_size should be 1, when image_file is not None" << std::endl;
-        FLAGS_batch_size = 1;
+        std::cout << "batch_size should be 1, when set `image_file`." << std::endl;
+	return -1;
       }
     } else {
       GetAllFiles((char *)FLAGS_image_dir.c_str(), all_imgs);
     }
-    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold, FLAGS_run_benchmark, &det, FLAGS_output_dir);
+    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold,
+		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
 }
