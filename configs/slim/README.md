@@ -20,7 +20,7 @@
 **PaddleDetection、 PaddlePaddle与PaddleSlim 版本关系:**
 |  PaddleDetection版本  | PaddlePaddle版本  | PaddleSlim版本 |  备注    |
 | :------------------: | :---------------: | :-------: |:---------------: |
-| release/2.1       |       >= 2.1.0       | 2.1      |  --  |
+| release/2.1       |       >= 2.1.0       | 2.1      |  量化模型导出依赖最新Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装  |
 | release/2.0       |       >= 2.0.1       | 2.0      | 量化依赖Paddle 2.1及PaddleSlim 2.1 |
 
 
@@ -107,7 +107,7 @@ python tools/export_model.py -c configs/{MODEL.yml} --slim_config configs/slim/{
 #### COCO上benchmark
 | 模型         |  压缩策略 |     GFLOPs     |  模型体积(MB)   | 输入尺寸 | 预测时延(SD855) |   Box AP   |                           下载                          | 模型配置文件 | 压缩算法配置文件  |
 | :---------: | :-------: | :------------: |:-------------: | :------: | :-------------: | :------: | :-----------------------------------------------------: |:-------------: | :------: |
-| PP-YOLO-MobileNetV3_large      |  baseline | -- | 18.5      |   608    | 25.1ms | 24.3       |  [下载链接](https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_mbv3_large_coco.yml)  |  -  |
+| PP-YOLO-MobileNetV3_large      |  baseline | -- | 18.5      |   608    | 25.1ms | 23.2       |  [下载链接](https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_mbv3_large_coco.yml)  |  -  |
 | PP-YOLO-MobileNetV3_large      |  剪裁-FPGM | -37% | 12.6  |   608   | - | 22.3 | [下载链接](https://paddledet.bj.bcebos.com/models/slim/ppyolo_mbv3_large_prune_fpgm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_mbv3_large_coco.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/prune/ppyolo_mbv3_large_prune_fpgm.yml)  |
 | YOLOv3-DarkNet53      |  baseline | -- | 238.2      |   608    | - | 39.0       |  [下载链接](https://paddledet.bj.bcebos.com/models/ppyolo_mbv3_large_coco.pdparams)  | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)  |  -  |
 | YOLOv3-DarkNet53      |  剪裁-FPGM | -24% | - |   608   | - | 37.6 | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_darknet_prune_fpgm.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/yolov3_darknet53_270e_coco.yml)  |  [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/slim/prune/yolov3_darknet_prune_fpgm.yml)  |

@@ -47,11 +47,7 @@ class Resize(object):
         interp (int): method of resize
     """
 
-    def __init__(
-            self,
-            target_size,
-            keep_ratio=True,
-            interp=cv2.INTER_LINEAR, ):
+    def __init__(self, target_size, keep_ratio=True, interp=cv2.INTER_LINEAR):
         if isinstance(target_size, int):
             target_size = [target_size, target_size]
         self.target_size = target_size
@@ -81,14 +77,6 @@ class Resize(object):
         im_info['im_shape'] = np.array(im.shape[:2]).astype('float32')
         im_info['scale_factor'] = np.array(
             [im_scale_y, im_scale_x]).astype('float32')
-        # padding im when image_shape fixed by infer_cfg.yml
-        if self.keep_ratio and im_info['input_shape'][1] != -1:
-            max_size = im_info['input_shape'][1]
-            padding_im = np.zeros(
-                (max_size, max_size, im_channel), dtype=np.float32)
-            im_h, im_w = im.shape[:2]
-            padding_im[:im_h, :im_w, :] = im
-            im = padding_im
         return im, im_info
 
     def generate_scale(self, im):
@@ -205,13 +193,12 @@ class PadStride(object):
         return padding_im, im_info
 
 
-def preprocess(im, preprocess_ops, input_shape):
+def preprocess(im, preprocess_ops):
     # process image by preprocess_ops
     im_info = {
         'scale_factor': np.array(
             [1., 1.], dtype=np.float32),
         'im_shape': None,
-        'input_shape': input_shape,
     }
     im, im_info = decode_image(im, im_info)
     for operator in preprocess_ops:
