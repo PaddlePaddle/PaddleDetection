@@ -99,8 +99,7 @@ class Detector(object):
         input_im_lst = []
         input_im_info_lst = []
         for im_path in image_list:
-            im, im_info = preprocess(im_path, preprocess_ops,
-                                     self.pred_config.input_shape)
+            im, im_info = preprocess(im_path, preprocess_ops)
             input_im_lst.append(im)
             input_im_info_lst.append(im_info)
         inputs = create_inputs(input_im_lst, input_im_info_lst)
@@ -141,12 +140,12 @@ class Detector(object):
         '''
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image_list)
+        self.det_times.preprocess_time_s.end()
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.preprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -236,14 +235,14 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
-        self.det_times.postprocess_time_s.start()
+        self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
+        self.det_times.preprocess_time_s.end()
         np_label, np_score, np_segms = None, None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
-        self.det_times.postprocess_time_s.end()
         for i in range(warmup):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -331,7 +330,6 @@ class PredictConfig():
         self.mask = False
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
-        self.input_shape = yml_conf['image_shape']
         self.print_config()
 
     def check_model(self, yml_conf):

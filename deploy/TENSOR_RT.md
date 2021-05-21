@@ -8,7 +8,9 @@ TensorRT是NVIDIA提出的用于统一模型部署的加速库，可以应用于
 
 - 如果Python和CPP官网没有提供已编译好的安装包或预测库，请参考[源码安装](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/compile/linux-compile.html) 自行编译
 
-注意，您的机器上TensorRT的版本需要跟您使用的预测库中TensorRT版本保持一致。
+**注意：**
+- 您的机器上TensorRT的版本需要跟您使用的预测库中TensorRT版本保持一致。
+- PaddleDetection中部署预测要求TensorRT版本 > 6.0。
 
 ## 2. 导出模型
 模型导出具体请参考文档[PaddleDetection模型导出教程](../EXPORT_MODEL.md)。
@@ -31,7 +33,6 @@ config->EnableTensorRtEngine(1 << 20             /*workspace_size*/,
 ```
 
 ### 3.2 TensorRT固定尺寸预测
-TensorRT版本<=5时，使用TensorRT预测时，只支持固定尺寸输入。
 
 在导出模型时指定模型输入尺寸，设置`TestReader.inputs_def.image_shape=[3,640,640]`，具体请参考[PaddleDetection模型导出教程](../EXPORT_MODEL.md) 。
 

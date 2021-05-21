@@ -88,8 +88,7 @@ class KeyPoint_Detector(object):
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
             preprocess_ops.append(eval(op_type)(**new_op_info))
-        im, im_info = preprocess(im, preprocess_ops,
-                                 self.pred_config.input_shape)
+        im, im_info = preprocess(im, preprocess_ops)
         inputs = create_inputs(im, im_info)
         return inputs
 
@@ -213,7 +212,6 @@ class PredictConfig_KeyPoint():
         self.tagmap = False
         if 'keypoint_bottomup' == self.archcls:
             self.tagmap = True
-        self.input_shape = yml_conf['image_shape']
         self.print_config()
 
     def check_model(self, yml_conf):
