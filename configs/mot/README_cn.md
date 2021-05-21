@@ -4,9 +4,9 @@
 
 ## 内容
 - [简介](#简介)
+- [安装依赖](#安装依赖)
 - [模型库](#模型库)
 - [数据集准备](#数据集准备)
-- [安装依赖](#安装依赖)
 - [快速开始](#快速开始)
 - [引用](#引用)
 
@@ -22,6 +22,19 @@ PaddleDetection实现了3种多目标跟踪方法。
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
 </div>
+
+
+## 安装依赖
+
+一键安装MOT相关的依赖：
+```
+pip install lap sklearn motmetrics openpyxl cython_bbox
+或者
+pip install -r requirements.txt
+```
+**注意：**
+- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
+- Windows cuda 11环境下可能无法正常评估，会尽快修复，可换到cuda 10.2或cuda 10.1环境下进行正常评估。
 
 ## 模型库
 
@@ -153,17 +166,6 @@ dataset/mot
   |——————MOT20
   |——————PRW
 ```
-
-## 安装依赖
-
-一键安装MOT相关的依赖：
-```
-pip install lap sklearn motmetrics openpyxl cython_bbox
-或者
-pip install -r requirements.txt
-```
-**注意：**
- `cython_bbox`在windows上安装可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
 
 ## 快速开始
 
