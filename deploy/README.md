@@ -28,6 +28,8 @@ python tools/export_model.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml 
 * C++部署 支持`CPU`、`GPU`和`XPU`环境，支持，windows、linux系统，支持NV Jetson嵌入式设备上部署。参考文档[C++部署](cpp/README.md)
 * PaddleDetection支持TensorRT加速,相关文档请参考[TensorRT预测部署教程](TENSOR_RT.md)
 
+**注意:**  Paddle预测库版本需要>=2.1，batch_size>1仅支持YOLOv3和PP-YOLO。
+
 ##  2.PaddleServing部署
 ### 2.1 导出模型
 

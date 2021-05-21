@@ -129,7 +129,6 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
     static_cast<float>(im->rows),
     static_cast<float>(im->cols),
   };
-
 }
 
 

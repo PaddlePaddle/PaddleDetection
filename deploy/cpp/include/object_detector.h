@@ -50,7 +50,7 @@ std::vector<int> GenerateColorMap(int num_class);
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
-                     const std::vector<std::string>& lable_list,
+                     const std::vector<std::string>& lables,
                      const std::vector<int>& colormap,
                      const bool is_rbox);
 
@@ -62,6 +62,7 @@ class ObjectDetector {
                           bool use_mkldnn=false,
                           int cpu_threads=1,
                           const std::string& run_mode="fluid",
+                          const int batch_size=1,
                           const int gpu_id=0,
                           bool use_dynamic_shape=false,
                           const int trt_min_shape=1,
@@ -81,9 +82,8 @@ class ObjectDetector {
     config_.load_config(model_dir);
     this->min_subgraph_size_ = config_.min_subgraph_size_;
     threshold_ = config_.draw_threshold_;
-    image_shape_ = config_.image_shape_;
-    preprocessor_.Init(config_.preprocess_info_, image_shape_);
-    LoadModel(model_dir, 1, run_mode);
+    preprocessor_.Init(config_.preprocess_info_);
+    LoadModel(model_dir, batch_size, run_mode);
   }
 
   // Load Paddle inference model
@@ -93,11 +93,12 @@ class ObjectDetector {
     const std::string& run_mode = "fluid");
 
   // Run predictor
-  void Predict(const cv::Mat& im,
+  void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
       std::vector<ObjectResult>* result = nullptr,
+      std::vector<int>* bbox_num = nullptr,
       std::vector<double>* times = nullptr);
 
   // Get Model Label list
@@ -120,17 +121,18 @@ class ObjectDetector {
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(
-      const cv::Mat& raw_mat,
+      const std::vector<cv::Mat> mats,
       std::vector<ObjectResult>* result,
+      std::vector<int> bbox_num,
       bool is_rbox);
 
   std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
+  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
-  std::vector<int> image_shape_;
 };
 
 }  // namespace PaddleDetection
