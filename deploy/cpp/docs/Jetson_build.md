@@ -162,6 +162,7 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 | --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --batch_size |预测时的batch size，在指定`image_dir`时有效 |
 | --run_benchmark | 是否重复预测来进行benchmark测速 ｜
 | --output_dir | 输出图片所在的文件夹, 默认为output ｜
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
