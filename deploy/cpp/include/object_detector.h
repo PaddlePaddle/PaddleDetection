@@ -62,6 +62,7 @@ class ObjectDetector {
                           bool use_mkldnn=false,
                           int cpu_threads=1,
                           const std::string& run_mode="fluid",
+                          const int batch_size=1,
                           const int gpu_id=0,
                           bool use_dynamic_shape=false,
                           const int trt_min_shape=1,
@@ -83,7 +84,7 @@ class ObjectDetector {
     threshold_ = config_.draw_threshold_;
     image_shape_ = config_.image_shape_;
     preprocessor_.Init(config_.preprocess_info_, image_shape_);
-    LoadModel(model_dir, 1, run_mode);
+    LoadModel(model_dir, batch_size, run_mode);
   }
 
   // Load Paddle inference model

@@ -50,6 +50,7 @@ class Detector(object):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -63,6 +64,7 @@ class Detector(object):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 batch_size=1,
                  use_dynamic_shape=False,
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -74,6 +76,7 @@ class Detector(object):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
+            batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             use_gpu=use_gpu,
             use_dynamic_shape=use_dynamic_shape,
@@ -186,6 +189,7 @@ class DetectorSOLOv2(Detector):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -198,6 +202,7 @@ class DetectorSOLOv2(Detector):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 batch_size=1,
                  use_dynamic_shape=False,
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -209,6 +214,7 @@ class DetectorSOLOv2(Detector):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
+            batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             use_gpu=use_gpu,
             use_dynamic_shape=use_dynamic_shape,
@@ -568,6 +574,7 @@ def main():
         FLAGS.model_dir,
         use_gpu=FLAGS.use_gpu,
         run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
         use_dynamic_shape=FLAGS.use_dynamic_shape,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
@@ -581,6 +588,7 @@ def main():
             FLAGS.model_dir,
             use_gpu=FLAGS.use_gpu,
             run_mode=FLAGS.run_mode,
+            batch_size=FLAGS.batch_size,
             use_dynamic_shape=FLAGS.use_dynamic_shape,
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
@@ -615,7 +623,7 @@ def main():
                 'precision': mode.split('_')[-1]
             }
             data_info = {
-                'batch_size': 1,
+                'batch_size': FLAGS.batch_size,
                 'shape': "dynamic_shape",
                 'data_num': perf_info['img_num']
             }
