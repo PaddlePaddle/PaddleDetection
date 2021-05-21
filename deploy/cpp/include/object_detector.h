@@ -82,8 +82,7 @@ class ObjectDetector {
     config_.load_config(model_dir);
     this->min_subgraph_size_ = config_.min_subgraph_size_;
     threshold_ = config_.draw_threshold_;
-    image_shape_ = config_.image_shape_;
-    preprocessor_.Init(config_.preprocess_info_, image_shape_);
+    preprocessor_.Init(config_.preprocess_info_);
     LoadModel(model_dir, batch_size, run_mode);
   }
 
@@ -134,7 +133,6 @@ class ObjectDetector {
   std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
-  std::vector<int> image_shape_;
 };
 
 }  // namespace PaddleDetection
