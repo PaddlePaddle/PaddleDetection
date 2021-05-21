@@ -39,7 +39,7 @@ python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsi
 | --threshold | No|预测得分的阈值，默认为0.5|
 | --output_dir | No|可视化结果保存的根目录，默认为output/|
 | --run_benchmark | No| 是否运行benchmark，同时需指定`--image_file`或`--image_dir` |
-| --use_mkldnn | No | CPU预测中是否开启MKLDNN加速 |
+| --enable_mkldnn | No | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | No| 设置cpu线程数，默认为1 |
 
 说明：

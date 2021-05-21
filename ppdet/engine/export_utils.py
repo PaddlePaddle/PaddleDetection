@@ -31,7 +31,7 @@ TRT_MIN_SUBGRAPH = {
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
-    'S2ANet': 40,
+    'S2ANet': 80,
     'EfficientDet': 40,
     'Face': 3,
     'TTFNet': 60,
