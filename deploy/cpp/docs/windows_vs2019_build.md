@@ -54,7 +54,7 @@ cd D:\projects\PaddleDetection\deploy\cpp
 
 2. 使用CMake生成项目文件
 
-编译参数的含义说明如下（带*表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
+编译参数的含义说明如下（带`*`表示仅在使用**GPU版本**预测库时指定, 其中CUDA库版本尽量对齐，**使用9.0、10.0版本，不使用9.2、10.1等版本CUDA库**）：
 
 |  参数名   | 含义  |
 |  ----  | ----  |
@@ -99,6 +99,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 | --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --batch_size  | 预测时的batch size，在指定`image_dir`时有效 |
 | --run_benchmark | 是否重复预测来进行benchmark测速 |
 | --output_dir | 输出图片所在的文件夹, 默认为output |
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |

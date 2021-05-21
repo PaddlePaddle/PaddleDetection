@@ -72,7 +72,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "enable_mkldnn: " << (FLAGS_use_mkldnn ? "True" : "False");
   LOG(INFO) << "cpu_math_library_num_threads: " << FLAGS_cpu_threads;
   LOG(INFO) << "----------------------- Data info -----------------------";
-  LOG(INFO) << "batch_size: " << 1;
+  LOG(INFO) << "batch_size: " << FLAGS_batch_size;
   LOG(INFO) << "input_shape: " << "dynamic shape";
   LOG(INFO) << "----------------------- Model info -----------------------";
   FLAGS_model_dir.erase(FLAGS_model_dir.find_last_not_of("/") + 1);
@@ -332,7 +332,7 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
           output_path += OS_PATH_SEP;
         }
-        std::string image_file_path = all_img_paths.at(idx * batch_size+bs);
+        std::string image_file_path = all_img_paths.at(idx * batch_size + bs);
         output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
         printf("Visualized output saved as %s\n", output_path.c_str());
@@ -361,7 +361,7 @@ int main(int argc, char** argv) {
   }
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_use_mkldnn,
-                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_gpu_id, FLAGS_use_dynamic_shape,
+                        FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id, FLAGS_use_dynamic_shape,
                         FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape, FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_file.empty() || FLAGS_camera_id != -1) {
