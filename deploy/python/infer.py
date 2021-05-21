@@ -324,7 +324,6 @@ class PredictConfig():
         self.mask = False
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
-        self.input_shape = yml_conf['image_shape']
         self.print_config()
 
     def check_model(self, yml_conf):
