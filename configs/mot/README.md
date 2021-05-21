@@ -4,9 +4,9 @@ English | [简体中文](README_cn.md)
 
 ## Table of Contents
 - [Introduction](#Introduction)
+- [Installation](#Installation)
 - [Model Zoo](#Model_Zoo)
 - [Dataset Preparation](#Dataset_Preparation)
-- [Installation](#Installation)
 - [Getting Start](#Getting_Start)
 - [Citations](#Citations)
 
@@ -21,6 +21,20 @@ PaddleDetection implements three multi-object tracking methods.
 <div align="center">
   <img src="../../docs/images/mot16_jde.gif" width=500 />
 </div>
+
+
+## Installation
+
+Install all the related dependencies for MOT:
+```
+pip install lap sklearn motmetrics openpyxl cython_bbox
+or
+pip install -r requirements.txt
+```
+**Notes:**
+- Install `cython_bbox` for Windows: `pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`. You can refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
+- Evaluation on Windows CUDA 11 environment may not be normally. It will be repaired as soon as possible. You can change to CUDA 10.2 or CUDA 10.1 environment for normal evaluation.
+
 
 ## Model Zoo
 
@@ -154,18 +168,6 @@ dataset/mot
   |——————MOT20
   |——————PRW
 ```
-
-## Installation
-
-Install all the related dependencies for MOT:
-```
-pip install lap sklearn motmetrics openpyxl cython_bbox
-or
-pip install -r requirements.txt
-```
-**Notes:**
- Install `cython_bbox` for windows, please refer to this [tutorial](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)
-
 
 ## Getting Start
 
