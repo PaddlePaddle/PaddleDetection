@@ -90,7 +90,7 @@ class BBoxPostProcess(object):
         """
 
         if bboxes.shape[0] == 0:
-            bbox_pred = paddle.to_tensor(
+            bboxes = paddle.to_tensor(
                 np.array(
                     [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
             bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
