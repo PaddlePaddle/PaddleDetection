@@ -77,11 +77,6 @@ def argsparser():
     parser.add_argument(
         "--cpu_threads", type=int, default=1, help="Num of threads with CPU.")
     parser.add_argument(
-        "--use_dynamic_shape",
-        type=ast.literal_eval,
-        default=False,
-        help="Dynamic_shape for TensorRT.")
-    parser.add_argument(
         "--trt_min_shape", type=int, default=1, help="min_shape for TensorRT.")
     parser.add_argument(
         "--trt_max_shape",

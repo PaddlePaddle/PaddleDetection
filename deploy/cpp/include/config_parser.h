@@ -91,6 +91,14 @@ class ConfigPaser {
       return false;
     }
 
+    // Get use_dynamic_shape for TensorRT
+    if (config["use_dynamic_shape"].IsDefined()) {
+      use_dynamic_shape_ = config["use_dynamic_shape"].as<bool>();
+    } else {
+      std::cerr << "Please set use_dynamic_shape." << std::endl;
+      return false;
+    }
+
     return true;
   }
   std::string mode_;
@@ -99,6 +107,7 @@ class ConfigPaser {
   int min_subgraph_size_;
   YAML::Node preprocess_info_;
   std::vector<std::string> label_list_;
+  bool use_dynamic_shape_;
 };
 
 }  // namespace PaddleDetection
