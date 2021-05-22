@@ -136,7 +136,8 @@ class BatchRandomResize(BaseOperator):
 
     def __call__(self, samples, context=None):
         if self.random_size:
-            target_size = np.random.choice(self.target_size)
+            index = np.random.choice(len(self.target_size))
+            target_size = self.target_size[index]
         else:
             target_size = self.target_size
 
