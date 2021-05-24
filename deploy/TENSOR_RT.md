@@ -43,8 +43,6 @@ TestReader:
 ```
 或者在导出模型时设置`-o TestReader.inputs_def.image_shape=[3,608,608]`，模型将会进行固定尺寸预测，具体请参考[PaddleDetection模型导出教程](../EXPORT_MODEL.md) 。
 
-`TestReader.inputs_def.image_shape`设置的是输入TensorRT引擎的数据尺寸（在像FasterRCNN中，`TestReader.inputs_def.image_shape`指定的是在`Pad`操作之前的图像数据尺寸）。
-
 可以通过[visualdl](https://www.paddlepaddle.org.cn/paddle/visualdl/demo/graph) 打开`model.pdmodel`文件，查看输入的第一个Tensor尺寸是否是固定的，如果不指定，尺寸会用`？`表示，如下图所示：
 ![img](../docs/images/input_shape.png)
 
