@@ -17,7 +17,7 @@ English | [简体中文](README_cn.md)
 
 ## Model Zoo
 
-### JDE on MOT-16 training set
+### JDE on MOT-16 Training Set
 
 | backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |

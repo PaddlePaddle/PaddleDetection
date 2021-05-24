@@ -31,7 +31,7 @@ TRT_MIN_SUBGRAPH = {
     'SSD': 60,
     'RCNN': 40,
     'RetinaNet': 40,
-    'S2ANet': 40,
+    'S2ANet': 80,
     'EfficientDet': 40,
     'Face': 3,
     'TTFNet': 60,
@@ -81,10 +81,12 @@ def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
     from ppdet.core.config.yaml_helpers import setup_orderdict
     setup_orderdict()
+    use_dynamic_shape = True if image_shape[1] == -1 else False
     infer_cfg = OrderedDict({
         'mode': 'fluid',
         'draw_threshold': 0.5,
         'metric': config['metric'],
+        'use_dynamic_shape': use_dynamic_shape
     })
     infer_arch = config['architecture']
 
