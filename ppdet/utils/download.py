@@ -118,44 +118,36 @@ def get_config_path(url):
     download it from url.
     """
     url = parse_url(url)
-    path, _ = get_path(url, CONFIGS_HOME)
-    _download_config(path, url, CONFIGS_HOME)
+    path = map_path(url, CONFIGS_HOME, path_depth=2)
+    if os.path.isfile(path):
+        return path
 
-    return path
+    # config file not found, try download
+    # 1. clear configs directory
+    if osp.isdir(CONFIGS_HOME):
+        shutil.rmtree(CONFIGS_HOME)
 
+    # 2. get url
+    try:
+        from ppdet import __version__ as version
+    except ImportError:
+        version= None
 
-def _download_config(cfg_path, cfg_url, cur_dir):
-    with open(cfg_path) as f:
-        cfg = yaml.load(f, Loader=yaml.Loader)
+    cfg_url = "ppdet://configs/{}/configs.tar".format(version) \
+                if version else "ppdet://configs/configs.tar"
+    cfg_url = parse_url(cfg_url)
 
-    # download dependence base ymls
-    if BASE_KEY in cfg:
-        base_ymls = list(cfg[BASE_KEY])
-        for base_yml in base_ymls:
-            if base_yml.startswith("~"):
-                base_yml = os.path.expanduser(base_yml)
-                relpath = osp.relpath(base_yml, cfg_path)
-            if not base_yml.startswith('/'):
-                relpath = base_yml
-                base_yml = os.path.join(os.path.dirname(cfg_path), base_yml)
+    # 3. download and decompress
+    cfg_fullname = _download(cfg_url, osp.dirname(CONFIGS_HOME))
+    _decompress(cfg_fullname)
 
-            if osp.isfile(base_yml):
-                logger.debug("Found _BASE_ config: {}".format(base_yml))
-                continue
-
-            # download to CONFIGS_HOME firstly
-            base_yml_url = osp.join(osp.split(cfg_url)[0], relpath)
-            path, _ = get_path(base_yml_url, CONFIGS_HOME)
-
-            # move from CONFIGS_HOME to dst_path to restore config directory structure
-            dst_path = osp.join(cur_dir, relpath)
-            dst_dir = osp.split(dst_path)[0]
-            if not osp.isdir(dst_dir):
-                os.makedirs(dst_dir)
-            shutil.move(path, dst_path)
-
-            # perfrom download base yml recursively
-            _download_config(dst_path, base_yml_url, osp.split(dst_path)[0])
+    # 4. check config file existing
+    if os.path.isfile(path):
+        return path
+    else:
+        logger.error("Get config {} failed after download, please contact us on " \
+            "https://github.com/PaddlePaddle/PaddleDetection/issues".format(path))
+        sys.exit(1)
 
 
 def get_dataset_path(path, annotation, image_dir):
@@ -235,11 +227,15 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     logger.debug("Create voc file list finished")
 
 
-def map_path(url, root_dir):
+def map_path(url, root_dir, path_depth=1):
     # parse path after download to decompress under root_dir
-    fname = osp.split(url)[-1]
+    assert path_depth > 0, "path_depth should be a positive integer"
+    dirname = url
+    for _ in range(path_depth):
+        dirname = osp.dirname(dirname)
+    fpath = osp.relpath(url, dirname)
+
     zip_formats = ['.zip', '.tar', '.gz']
-    fpath = fname
     for zip_format in zip_formats:
         fpath = fpath.replace(zip_format, '')
     return osp.join(root_dir, fpath)
