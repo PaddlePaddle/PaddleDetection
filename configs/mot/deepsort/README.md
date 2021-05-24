@@ -13,7 +13,7 @@ English | [简体中文](README_cn.md)
 
 ## Model Zoo
 
-### DeepSORT on MOT-16 training set
+### DeepSORT on MOT-16 Training Set
 
 | backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-------: | :---: | :---: |
