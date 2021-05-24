@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 ## Model Zoo
 
-### JDE on MOT-16 training set
+### JDE on MOT-16 train set
 
 | backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
@@ -49,11 +49,11 @@ pip install -r requirements.txt
 **Notes:**
  JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
 
-### DeepSORT on MOT-16 training set
+### DeepSORT on MOT-16 train set
 
 | backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
-| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
  DeepSORT does not need to train, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, here we use JDE, and then prepare them like this:
