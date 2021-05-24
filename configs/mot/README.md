@@ -38,7 +38,7 @@ pip install -r requirements.txt
 
 ## Model Zoo
 
-### JDE on MOT-16 train set
+### JDE on MOT-16 Training Set
 
 | backbone           | input shape | MOTA | IDF1  |  IDS  |   FP  |  FN  |  FPS  | download | config |
 | :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
@@ -49,7 +49,7 @@ pip install -r requirements.txt
 **Notes:**
  JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
 
-### DeepSORT on MOT-16 train set
+### DeepSORT on MOT-16 Training Set
 
 | backbone  | input shape  | MOTA   | IDF1   |  IDS  |   FP  |   FN  |   FPS  | Detector | ReID | config |
 | :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
@@ -80,7 +80,7 @@ Each txt is the detection result of all the pictures extracted from each video, 
 - `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
 - `x,y,z` are used in 3D, default to `-1` in 2D.
 
-### FairMOT Results on MOT-16 train set
+### FairMOT Results on MOT-16 Training Set
 
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
@@ -88,7 +88,7 @@ Each txt is the detection result of all the pictures extracted from each video, 
 | DLA-34         | 1088x608 |  83.7  |  83.3  |   435  |  3829  |  13764  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 
-### FairMOT Results on MOT-16 test set
+### FairMOT Results on MOT-16 Test Set
 
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
