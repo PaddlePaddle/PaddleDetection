@@ -15,7 +15,7 @@ English | [简体中文](README_cn.md)
 
 ## Model Zoo
 
-### FairMOT Results on MOT-16 train set
+### FairMOT Results on MOT-16 Training Set
 
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
@@ -23,7 +23,7 @@ English | [简体中文](README_cn.md)
 | DLA-34         | 1088x608 |  83.7  |  83.3  |   435  |  3829  |  13764  |     -   | [model](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 
-### FairMOT Results on MOT-16 test set
+### FairMOT Results on MOT-16 Test Set
 
 | backbone       | input shape | MOTA | IDF1 |  IDS  |    FP   |   FN   |    FPS    | download | config |
 | :--------------| :------- | :----: | :----: | :----: | :----: | :----: | :------: | :----: |:-----: |
@@ -54,6 +54,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 
 # use saved checkpoint in training
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
+```
 
 ## Citations
 ```
