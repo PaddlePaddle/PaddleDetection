@@ -51,7 +51,6 @@ class Detector(object):
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
-        use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -65,7 +64,6 @@ class Detector(object):
                  use_gpu=False,
                  run_mode='fluid',
                  batch_size=1,
-                 use_dynamic_shape=False,
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
@@ -79,7 +77,7 @@ class Detector(object):
             batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             use_gpu=use_gpu,
-            use_dynamic_shape=use_dynamic_shape,
+            use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
@@ -189,7 +187,6 @@ class DetectorSOLOv2(Detector):
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
-        use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -202,7 +199,6 @@ class DetectorSOLOv2(Detector):
                  use_gpu=False,
                  run_mode='fluid',
                  batch_size=1,
-                 use_dynamic_shape=False,
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
@@ -216,7 +212,7 @@ class DetectorSOLOv2(Detector):
             batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             use_gpu=use_gpu,
-            use_dynamic_shape=use_dynamic_shape,
+            use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
@@ -328,6 +324,7 @@ class PredictConfig():
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
         self.mask = False
+        self.use_dynamic_shape = yml_conf['use_dynamic_shape']
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
         self.print_config()
@@ -573,7 +570,6 @@ def main():
         use_gpu=FLAGS.use_gpu,
         run_mode=FLAGS.run_mode,
         batch_size=FLAGS.batch_size,
-        use_dynamic_shape=FLAGS.use_dynamic_shape,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
@@ -587,7 +583,6 @@ def main():
             use_gpu=FLAGS.use_gpu,
             run_mode=FLAGS.run_mode,
             batch_size=FLAGS.batch_size,
-            use_dynamic_shape=FLAGS.use_dynamic_shape,
             trt_min_shape=FLAGS.trt_min_shape,
             trt_max_shape=FLAGS.trt_max_shape,
             trt_opt_shape=FLAGS.trt_opt_shape,
