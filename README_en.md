@@ -18,6 +18,7 @@ After a long time of industry practice polishing, PaddleDetection has had smooth
 
 <div align="center">
   <img src="static/docs/images/football.gif" width='800'/>
+  <img src="docs/images/mot_pose_demo_640x360.gif" width='800'/>
 </div>
 
 ### Product news
@@ -247,6 +248,13 @@ The relationship between COCO mAP and FPS on Tesla V100 of representative models
   - [SOLOv2](configs/solov2/README.md)
 - Rotation object detection
   - [S2ANet](configs/dota/README.md)
+- [Keypoint detection](configs/keypoint)
+  - HigherHRNet
+  - HRNeet
+- [Multi-Object Tracking](configs/mot/README.md)
+  - [DeepSORT](configs/mot/deepsort/README.md)
+  - [JDE](configs/mot/jde/README.md)
+  - [FairMOT](configs/mot/fairmot/README.md)
 - Vertical field
   - [Face detection](configs/face_detection/README.md)
   - [Pedestrian detection](configs/pedestrian/README.md)
