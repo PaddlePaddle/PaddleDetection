@@ -49,7 +49,7 @@ TestReader:
 ![img](../docs/images/input_shape.png)
 
 
-注意：由于TesnorRT不支持在batch维度进行slice操作，Faster RCNN 和 Mask RCNN使用固定尺寸输入预测会报错，这两个模型请使用动态尺寸输入。
+注意：由于TesnorRT不支持在batch维度进行slice操作，Faster RCNN 和 Mask RCNN不能使用固定尺寸输入预测，所以不能设置`TestReader.inputs_def.image_shape`字段。
 
 以`YOLOv3`为例，使用固定尺寸输入预测：
 ```
@@ -58,7 +58,7 @@ python python/infer.py --model_dir=../inference_model/yolov3_darknet53_270e_coco
 
 ### 3.3 TensorRT动态尺寸预测
 
-TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。如果模型Reader配置文件中没有设置例如`TestReader.inputs_def.image_shape=[3,608,608]`的字段，或者`image_shape=[3.-1,-1]`，导出模型将以动态尺寸进行预测。
+TensorRT版本>=6时，使用TensorRT预测时，可以支持动态尺寸输入。如果模型Reader配置文件中没有设置例如`TestReader.inputs_def.image_shape=[3,608,608]`的字段，或者`image_shape=[3.-1,-1]`，导出模型将以动态尺寸进行预测。一般RCNN系列模型使用动态图尺寸预测。
 Paddle预测库关于动态尺寸输入请查看[Paddle CPP预测](https://www.paddlepaddle.org.cn/documentation/docs/zh/guides/05_inference_deployment/inference/native_infer.html) 的`SetTRTDynamicShapeInfo`函数说明。
 
 `python/infer.py`设置动态尺寸输入参数说明：
