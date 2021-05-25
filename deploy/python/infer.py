@@ -531,6 +531,8 @@ def predict_video(detector, camera_id):
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.split(FLAGS.video_file)[-1]
     fps = 30
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print('frame_count', frame_count)
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
     # yapf: disable
@@ -547,7 +549,7 @@ def predict_video(detector, camera_id):
             break
         print('detect frame:%d' % (index))
         index += 1
-        results = detector.predict(frame, FLAGS.threshold)
+        results = detector.predict([frame], FLAGS.threshold)
         im = visualize_box_mask(
             frame,
             results,
