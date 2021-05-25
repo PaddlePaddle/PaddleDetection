@@ -21,6 +21,6 @@ try:
     from .version import commit as __git_commit__
 except ImportError:
     import sys
-    sys.stderr.write("Waring: import ppdet from source directory " \
+    sys.stderr.write("Warning: import ppdet from source directory " \
             "without installing, run 'python setup.py install' to " \
             "install ppdet firstly\n")
