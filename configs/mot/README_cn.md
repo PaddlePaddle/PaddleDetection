@@ -38,25 +38,29 @@ pip install -r requirements.txt
 
 ## 模型库
 
-### JDE在MOT-16 Training Set上结果
+### 在MOT-16 Training Set上结果
 
-| 骨干网络            |  输入尺寸  |  MOTA  |  IDF1 |  IDS  |  FP  |  FN  |  FPS  |  检测模型  | 配置文件 |
-| :----------------- | :------- | :----: | :----: | :---: | :----: | :---: | :---: | :---: | :---: |
-| DarkNet53          | 1088x608 |  73.2  |  69.3  | 1351  |  6591  | 21625 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
-| DarkNet53          | 864x480 |  70.1  |  65.2  | 1328  |  6441  | 25187 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_864x480.yml) |
-| DarkNet53          | 576x320 |  63.2  |  64.5  | 1308  |  7011  | 32252 |   -   |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
+| 网络    | 骨干网络            |  输入尺寸  |  MOTA  |  模型下载  | 配置文件 |
+| :-----------------| :----------------- | :------- | :---: |  :---: | :---: |
+| DeepSORT| ResNet-101 (PCBPyramid)  | 1088x608 |  72.1  | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| JDE | DarkNet53          | 1088x608 |  73.2 | [下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
+| JDE | DarkNet53          | 864x480 |  70.1  | [下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_864x480.yml) |
+| JDE | DarkNet53          | 576x320 |  63.2  |[下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
+| FairMOT | DLA-34         | 1088x608 |  83.7  |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
+
+
+### 在MOT-16 Test Set上结果
+
+| 网络    | 骨干网络            |  输入尺寸  |  MOTA  |  模型下载  | 配置文件 |
+| :-----------------| :----------------- | :------- | :---: |  :---: | :---: |
+| DeepSORT| ResNet-101 (PCBPyramid) | 1088x608 |  64.1 |[下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| JDE | DarkNet53          | 1088x608 |  64.4 | [下载链接](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/jde/jde_darknet53_30e_1088x608.yml) |
+| FairMOT | DLA-34         | 1088x608 |  74.8  |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
 
 **注意:**
- JDE使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch。
-
-### DeepSORT在MOT-16 Training Set上结果
-
-|  骨干网络  | 输入尺寸 | MOTA |  IDF1  |  IDS | FP  |   FN  |   FPS  | 检测模型 | ReID模型 | 配置文件 |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
-| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
-
-**注意:**
-  DeepSORT此处不需要训练MOT数据集，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，此处使用JDE，然后像这样准备好结果文件:
+1. JDE使用8个GPU进行训练，每个GPU上batch size为4，训练30个epoch。
+2. FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
+3. DeepSORT不需要训练MOT数据集，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，然后像这样准备好结果文件:
 ```
 det_results_dir
    |——————MOT16-02.txt
@@ -67,41 +71,25 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
+对于MOT16数据集，可以下载PaddleDetection提供的det_results_dir.zip并解压：
+```
+wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
+```
 其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
-[frame_id][identity][bb_left][bb_top][width][height][conf][x][y][z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf]
 ```
-**注意**:
 - `frame_id`是图片帧的序号
 - `identity`是目标id采用默认值为`-1`
 - `bb_left`是目标框的左边界的x坐标
 - `bb_top`是目标框的上边界的y坐标
-- `width，height`是真实的像素宽高
+- `width,height`是真实的像素宽高
 - `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
-- `x,y,z`是3D中用到的，在2D中默认为`-1`
-
-### FairMOT在MOT-16 Training Set上结果
-
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |  IDS  |   FP  |   FN   |   FPS   |  下载链接 | 配置文件 |
-| :--------------| :------- | :----: | :----: | :---: | :----: | :---: | :------: | :----: |:----: |
-| DLA-34(paper)  | 1088x608 |  83.3  |  81.9  |  544  |  3822  | 14095 |    -     |   -   |   -   |
-| DLA-34         | 1088x608 |  83.7  |  83.3  |  435  |  3829  | 13764 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
-
-### FairMOT在MOT-16 Test Set上结果
-
-|    骨干网络      |  输入尺寸 |  MOTA  |  IDF1  |   IDS  |   FP   |   FN   |    FPS   |  下载链接  | 配置文件 |
-| :--------------| :------- | :----: | :----: | :----: | :----: | :----: |:-------: | :----: | :----: |
-| DLA-34(paper)  | 1088x608 |  74.9  |  72.8  |  1074  |    -   |    -   |   25.9   |    -   |   -    |
-| DLA-34         | 1088x608 |  74.8  |  74.4  |  930   |  7038  |  37994 |    -     |[下载链接](https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml) |
-
-**注意:**
- FairMOT使用8个GPU进行训练，每个GPU上batch size为6，训练30个epoch。
-
 
 ## 数据集准备
 
 ### MOT数据集
-PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集。请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去下载并准备好所有的数据集包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。此外还可以下载**MOT15和MOT20**数据集，如果您想使用这些数据集，请**遵循他们的License**。
+PaddleDetection使用和[JDE](https://github.com/Zhongdao/Towards-Realtime-MOT) 还有[FairMOT](https://github.com/ifzhang/FairMOT)相同的数据集。请参照[数据准备文档](../../docs/tutorials/PrepareMOTDataSet_cn.md)去下载并准备好所有的数据集包括**Caltech Pedestrian, CityPersons, CUHK-SYSU, PRW, ETHZ, MOT17和MOT16**。使用前6者作为联合数据集参与训练，MOT16作为评测数据集。此外还可以使用**MOT15和MOT20**进行finetune。所有的行人都有检测框标签，部分有ID标签。如果您想使用这些数据集，请**遵循他们的License**。
 
 ### 数据格式
 这几个相关数据集都遵循以下结构：
