@@ -43,5 +43,6 @@ def init_parallel_env():
 
 
 def set_random_seed(seed):
+    paddle.seed(seed)
     random.seed(seed)
     np.random.seed(seed)
