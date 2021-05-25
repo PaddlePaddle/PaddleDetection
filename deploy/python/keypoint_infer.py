@@ -46,6 +46,7 @@ class KeyPoint_Detector(object):
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -58,6 +59,7 @@ class KeyPoint_Detector(object):
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
+                 use_dynamic_shape=False,
                  trt_min_shape=1,
                  trt_max_shape=1280,
                  trt_opt_shape=640,
@@ -70,7 +72,7 @@ class KeyPoint_Detector(object):
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             use_gpu=use_gpu,
-            use_dynamic_shape=self.pred_config.use_dynamic_shape,
+            use_dynamic_shape=use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
@@ -208,7 +210,6 @@ class PredictConfig_KeyPoint():
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
         self.tagmap = False
-        self.use_dynamic_shape = yml_conf['use_dynamic_shape']
         if 'keypoint_bottomup' == self.archcls:
             self.tagmap = True
         self.print_config()
@@ -383,6 +384,7 @@ def main():
         FLAGS.model_dir,
         use_gpu=FLAGS.use_gpu,
         run_mode=FLAGS.run_mode,
+        use_dynamic_shape=FLAGS.use_dynamic_shape,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
