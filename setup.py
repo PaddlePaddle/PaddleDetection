@@ -16,7 +16,46 @@ import os
 import os.path as osp
 import glob
 import shutil
+import subprocess
 from setuptools import find_packages, setup
+
+
+# ==============  version definition  ==============
+
+PPDET_VERSION = "2.1.0"
+
+def parse_version():
+    return PPDET_VERSION.replace('-', '')
+
+
+def git_commit():
+    try:
+        cmd = ['git', 'rev-parse', 'HEAD']
+        git_commit = subprocess.Popen(cmd, stdout = subprocess.PIPE,
+            ).communicate()[0].strip()
+        git_commit = git_commit.decode()
+    except:
+        git_commit = 'Unknown'
+
+    return str(git_commit)
+
+
+def write_version_py(filename='ppdet/version.py'):
+    ver_str = """# THIS FILE IS GENERATED FROM PADDLEPADDLE SETUP.PY
+#
+full_version    = '%(version)s'
+commit          = '%(commit)s'
+"""
+
+    _git_commit = git_commit()
+    with open(filename, 'w') as f:
+        f.write(ver_str % {
+            'version': PPDET_VERSION,
+            'commit': _git_commit})
+
+write_version_py()
+
+# ==============  version definition  ==============
 
 
 def readme():
@@ -71,7 +110,7 @@ if __name__ == "__main__":
         packages=find_packages(exclude=("configs", "tools", "deploy")),
         package_data={'ppdet.model_zoo': package_model_zoo()},
         author='PaddlePaddle',
-        version='2.1.0',
+        version=parse_version(),
         install_requires=parse_requirements('./requirements.txt'),
         description='Object detection and instance segmentation toolkit based on PaddlePaddle',
         long_description=readme(),
