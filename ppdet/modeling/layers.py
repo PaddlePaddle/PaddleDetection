@@ -342,7 +342,11 @@ class RCNNBox(object):
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         scale_list = []
         origin_shape_list = []
-        for idx, roi_per_im in enumerate(roi):
+        
+        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+        # bbox_pred.shape: [N, C*4]
+        for idx in range(batch_size):
+            roi_per_im = roi[idx]
             rois_num_per_im = rois_num[idx]
             expand_im_shape = paddle.expand(im_shape[idx, :],
                                             [rois_num_per_im, 2])

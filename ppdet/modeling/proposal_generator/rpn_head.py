@@ -133,21 +133,14 @@ class RPNHead(nn.Layer):
 
         anchors = self.anchor_generator(rpn_feats)
 
-        # TODO: Fix batch_size > 1 when testing.
-        if self.training:
-            batch_size = inputs['im_shape'].shape[0]
-        else:
-            batch_size = 1
-
-        rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs,
-                                            batch_size)
+        rois, rois_num = self._gen_proposal(scores, deltas, anchors, inputs)
         if self.training:
             loss = self.get_loss(scores, deltas, anchors, inputs)
             return rois, rois_num, loss
         else:
             return rois, rois_num, None
 
-    def _gen_proposal(self, scores, bbox_deltas, anchors, inputs, batch_size):
+    def _gen_proposal(self, scores, bbox_deltas, anchors, inputs):
         """
         scores (list[Tensor]): Multi-level scores prediction
         bbox_deltas (list[Tensor]): Multi-level deltas prediction
@@ -161,6 +154,7 @@ class RPNHead(nn.Layer):
         # Get 'topk' of them as final output
         bs_rois_collect = []
         bs_rois_num_collect = []
+        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
         # Generate proposals for each level and each batch.
         # Discard batch-computing to avoid sorting bbox cross different batches.
