@@ -207,7 +207,7 @@ class RandomErasingImage(BaseOperator):
         super(RandomErasingImage, self).__init__()
         self.prob = prob
         self.lower = lower
-        self.heigher = heigher
+        self.higher = higher
         self.aspect_ratio = aspect_ratio
 
     def apply(self, sample):
