@@ -78,7 +78,7 @@ class BBoxPostProcess(object):
         Currently only support bs = 1.
 
         Args:
-            bbox_pred (Tensor): The output bboxes with shape [N, 6] after decode
+            bboxes (Tensor): The output bboxes with shape [N, 6] after decode
                 and NMS, including labels, scores and bboxes.
             bbox_num (Tensor): The number of prediction boxes of each batch with
                 shape [1], and is N.
