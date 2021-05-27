@@ -98,10 +98,6 @@ class BBoxPostProcess(nn.Layer):
         if bboxes.shape[0] == 0:
             bboxes = self.fake_bboxes
             bbox_num = self.fake_bbox_num
-            #bboxes = paddle.to_tensor(
-            #    np.array(
-            #        [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            #bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
