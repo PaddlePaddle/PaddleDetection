@@ -35,7 +35,7 @@ __all__ = [
 
 
 @register
-class BBoxPostProcess(object):
+class BBoxPostProcess(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['decode', 'nms']
 
@@ -44,8 +44,14 @@ class BBoxPostProcess(object):
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
+        self.fake_bboxes = paddle.to_tensor(
+            np.array(
+                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
+                dtype='float32'))
+        self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
-    def __call__(self, head_out, rois, im_shape, scale_factor):
+
+    def forward(self, head_out, rois, im_shape, scale_factor):
         """
         Decode the bbox and do NMS if needed. 
 
@@ -90,10 +96,8 @@ class BBoxPostProcess(object):
         """
 
         if bboxes.shape[0] == 0:
-            bboxes = paddle.to_tensor(
-                np.array(
-                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+            bboxes = self.fake_bboxes
+            bbox_num = self.fake_bbox_num
 
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
 
