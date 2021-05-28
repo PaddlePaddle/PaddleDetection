@@ -36,9 +36,23 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'LetterBoxResize', 'MOTRandomAffine', 'Gt2JDETargetThres',
+    'RGBReverse', 'LetterBoxResize', 'MOTRandomAffine', 'Gt2JDETargetThres',
     'Gt2JDETargetMax', 'Gt2FairMOTTarget'
 ]
+
+
+@register_op
+class RGBReverse(BaseOperator):
+    """RGB to BGR, or BGR to RGB, sensitive to MOTRandomAffine
+    """
+
+    def __init__(self):
+        super(RGBReverse, self).__init__()
+
+    def apply(self, sample, context=None):
+        im = sample['image']
+        sample['image'] = np.ascontiguousarray(im[:, :, ::-1])
+        return sample
 
 
 @register_op
