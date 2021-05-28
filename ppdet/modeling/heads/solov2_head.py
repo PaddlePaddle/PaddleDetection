@@ -462,7 +462,8 @@ class SOLOv2Head(nn.Layer):
         # cate_labels & kernel_preds
         cate_labels = inds[:, 1]
         kernel_preds = paddle.gather(kernel_preds, index=inds[:, 0])
-        cate_score_idx = paddle.add(inds[:, 0] * 80, cate_labels)
+        cate_score_idx = paddle.add(inds[:, 0] * self.cate_out_channels,
+                                    cate_labels)
         cate_scores = paddle.gather(cate_preds, index=cate_score_idx)
 
         size_trans = np.power(self.seg_num_grids, 2)

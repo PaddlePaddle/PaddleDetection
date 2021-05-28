@@ -367,8 +367,8 @@ class SOLOv2Head(object):
         # cate_labels & kernel_preds
         cate_labels = inds[:, 1]
         kernel_preds = fluid.layers.gather(kernel_preds, index=inds[:, 0])
-        cate_score_idx = fluid.layers.elementwise_add(inds[:, 0] * 80,
-                                                      cate_labels)
+        cate_score_idx = fluid.layers.elementwise_add(
+            inds[:, 0] * self.cate_out_channels, cate_labels)
         cate_scores = fluid.layers.gather(cate_preds, index=cate_score_idx)
 
         size_trans = np.power(self.seg_num_grids, 2)
