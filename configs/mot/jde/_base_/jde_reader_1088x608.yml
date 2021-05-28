@@ -2,6 +2,7 @@ worker_num: 2
 TrainReader:
   sample_transforms:
     - Decode: {}
+    - RGBReverse: {}
     - AugmentHSV: {}
     - LetterBoxResize: {target_size: [608, 1088]}
     - MOTRandomAffine: {}
@@ -9,6 +10,7 @@ TrainReader:
     - BboxXYXY2XYWH: {}
     - NormalizeBox: {}
     - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - RGBReverse: {}
     - Permute: {}
   batch_transforms:
     - Gt2JDETargetThres:
