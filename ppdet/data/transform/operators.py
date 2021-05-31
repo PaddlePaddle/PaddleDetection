@@ -107,12 +107,10 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self, to_rgb=True):
+    def __init__(self):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
-        # TODO: remove this parameter
-        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
@@ -126,8 +124,7 @@ class Decode(BaseOperator):
         im = cv2.imdecode(data, 1)  # BGR mode, but need RGB mode
         if 'keep_ori_im' in sample and sample['keep_ori_im']:
             sample['ori_image'] = im
-        if self.to_rgb:
-            im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+        im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 
         sample['image'] = im
         if 'h' not in sample:
@@ -154,18 +151,14 @@ class Decode(BaseOperator):
 
 @register_op
 class Permute(BaseOperator):
-    def __init__(self, to_rgb=False):
+    def __init__(self):
         """
         Change the channel to be (C, H, W)
         """
         super(Permute, self).__init__()
-        # TODO: remove this parameter
-        self.to_rgb = to_rgb
 
     def apply(self, sample, context=None):
         im = sample['image']
-        if self.to_rgb:
-            im = np.ascontiguousarray(im[:, :, ::-1])
         im = im.transpose((2, 0, 1))
         sample['image'] = im
         return sample
