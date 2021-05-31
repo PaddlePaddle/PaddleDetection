@@ -10,8 +10,7 @@ English | [简体中文](README_cn.md)
 
 ## Introduction
 
-[FairMOT](https://arxiv.org/abs/2004.01888) focuses on accomplishing the detection and re-identification in a single network to improve the inference speed, presents a simple baseline which consists of two homogeneous branches to predict pixel-wise objectness scores and re-ID features. The achieved fairness between the two tasks allows FairMOT to obtain high levels of detection and tracking accuracy.
-
+[FairMOT](https://arxiv.org/abs/2004.01888) is based on an Anchor Free detector Centernet, which overcomes the problem of anchor and feature misalignment in anchor based detection framework. The fusion of deep and shallow features enables the detection and ReID tasks to obtain the required features respectively. It also uses low dimensional ReID features. FairMOT is a simple baseline composed of two homogeneous branches propose to predict the pixel level target score and ReID features. It achieves the fairness between the two tasks and  obtains a higher level of real-time MOT performance.
 
 ## Model Zoo
 
@@ -54,6 +53,16 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 
 # use saved checkpoint in training
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
+```
+**Notes:**
+ The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT17_train
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/train
+    keep_ori_im: False # set True if save visualization images or video
 ```
 
 ### 3. Inference
