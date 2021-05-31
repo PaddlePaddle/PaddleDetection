@@ -10,7 +10,7 @@
 
 ## 内容
 
-[FairMOT](https://arxiv.org/abs/2004.01888)着重研究在单个网络中实现检测和ReID以提高推理速度，提出了一种由两个同质分支组成的简单基线来预测像素级目标得分和ReID特征, 实现了两个任务之间的公平性，并获得高水平的检测和跟踪精度。
+[FairMOT](https://arxiv.org/abs/2004.01888)以Anchor Free的CenterNet检测器为基础，克服了Anchor-Based的检测框架中anchor和特征不对齐问题，深浅层特征融合使得检测和ReID任务各自获得所需要的特征，并且使用低维度ReID特征，提出了一种由两个同质分支组成的简单baseline来预测像素级目标得分和ReID特征，实现了两个任务之间的公平性，并获得了更高水平的实时多目标跟踪精度。
 
 ## 模型库
 
@@ -52,6 +52,28 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 # 使用训练保存的checkpoint
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
 ```
+**注意:**
+ 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT17_train
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/train
+    keep_ori_im: False # set True if save visualization images or video
+```
+
+### 3. 预测
+
+使用单个GPU通过如下命令预测一个视频，并保存为视频
+
+```bash
+# 预测一个视频
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams --video_file={your video name}.mp4  --save_videos
+```
+
+**注意:**
+ 请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
 ## 引用
 ```
