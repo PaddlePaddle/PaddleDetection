@@ -18,6 +18,7 @@ TrainReader:
   shuffle: true
   drop_last: true
   use_shared_memory: true
+  cutmix_epoch: 200
 
 EvalReader:
   sample_transforms:

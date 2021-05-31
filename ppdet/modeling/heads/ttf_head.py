@@ -86,11 +86,13 @@ class HMHead(nn.Layer):
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
         self.feat = head_conv
         bias_init = float(-np.log((1 - 0.01) / 0.01))
+        weight_attr = None if lite_head else ParamAttr(initializer=Normal(0,
+                                                                          0.01))
         self.head = nn.Conv2D(
             in_channels=ch_out,
             out_channels=num_classes,
             kernel_size=1,
-            weight_attr=ParamAttr(initializer=Normal(0, 0.01)),
+            weight_attr=weight_attr,
             bias_attr=ParamAttr(
                 learning_rate=2.,
                 regularizer=L2Decay(0.),
@@ -160,12 +162,14 @@ class WHHead(nn.Layer):
                                 learning_rate=2., regularizer=L2Decay(0.))))
                 head_conv.add_sublayer(name + '.act', nn.ReLU())
 
+        weight_attr = None if lite_head else ParamAttr(initializer=Normal(0,
+                                                                          0.01))
         self.feat = head_conv
         self.head = nn.Conv2D(
             in_channels=ch_out,
             out_channels=4,
             kernel_size=1,
-            weight_attr=ParamAttr(initializer=Normal(0, 0.001)),
+            weight_attr=weight_attr,
             bias_attr=ParamAttr(
                 learning_rate=2., regularizer=L2Decay(0.)))
 
