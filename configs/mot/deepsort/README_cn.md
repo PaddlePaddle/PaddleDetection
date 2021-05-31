@@ -9,18 +9,24 @@
 - [引用](#引用)
 
 ## 简介
-[DeepSORT](https://arxiv.org/abs/1812.00442) (Deep Cosine Metric Learning SORT) 扩展了原有的[SORT](https://arxiv.org/abs/1703.07402) (Simple Online and Realtime Tracking)算法，增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征，在深度外观描述的基础上整合外观信息。我们使用`JDE`作为检测模型来生成检测框，并选择`PCBPyramid`作为ReID模型。我们还支持加载保存的检测结果文件来进行预测跟踪。
+[DeepSORT](https://arxiv.org/abs/1812.00442)(Deep Cosine Metric Learning SORT) 扩展了原有的[SORT](https://arxiv.org/abs/1703.07402)(Simple Online and Realtime Tracking)算法，增加了一个CNN模型用于在检测器限定的人体部分图像中提取特征，在深度外观描述的基础上整合外观信息，将检出的目标分配和更新到已有的对应轨迹上即进行一个ReID重识别任务。DeepSORT所需的检测框可以由任意一个检测器来生成，然后读入保存的检测结果和视频图片即可进行跟踪预测。ReID模型此处选择[PaddleClas](https://github.com/PaddlePaddle/PaddleClas)提供的`PCB+Pyramid ResNet101`模型。
 
 ## 模型库
 
 ### DeepSORT在MOT-16 Training Set上结果
 
-|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 检测模型 | ReID模型 | 配置文件 |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: |:-----: | :-----: | :-----: |
-| DarkNet53 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  5.07 |[JDE](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams)| [ReID](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 下载链接 | 配置文件 |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----: | :-----: |
+| ResNet101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+
+### DeepSORT在MOT-16 Test Set上结果
+
+|  骨干网络  |  输入尺寸  |  MOTA  |  IDF1  |  IDS |   FP   |   FN  |  FPS | 下载链接 | 配置文件 |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :-----: | :-----: |
+| ResNet101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [下载链接](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **注意:**
-  DeepSORT此处不需要训练MOT数据集，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，此处使用JDE，然后像这样准备好结果文件:
+  DeepSORT不需要训练MOT数据集，只用于评估。在使用DeepSORT模型评估之前，应该首先通过一个检测模型得到检测结果，然后像这样准备好结果文件:
 ```
 det_results_dir
    |——————MOT16-02.txt
@@ -31,9 +37,13 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
+对于MOT16数据集，可以下载PaddleDetection提供的det_results_dir.zip并解压：
+```
+wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
+```
 其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
-[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf],[x],[y],[z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf]
 ```
 **注意**:
 - `frame_id`是图片帧的序号
@@ -42,21 +52,10 @@ det_results_dir
 - `bb_top`是目标框的上边界的y坐标
 - `width,height`是真实的像素宽高
 - `conf`是目标得分设置为`1`(已经按检测的得分阈值筛选出的检测结果)
-- `x,y,z`是3D中用到的，在2D中默认为`-1`
 
 ## 快速开始
 
-### 1. 验证检测模型得到检测结果文件
-
-```bash
-# 使用PaddleDetection发布的权重
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
-
-# 使用训练保存的checkpoint
-CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608_track.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
-```
-
-### 2. 跟踪预测
+### 1. 评估
 
 ```bash
 # 加载检测结果文件得到跟踪结果
