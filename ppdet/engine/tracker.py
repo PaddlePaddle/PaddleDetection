@@ -130,7 +130,8 @@ class Tracker(object):
 
             # forward
             timer.tic()
-            online_targets = self.model(data)
+            pred_dets, pred_embs = self.model(data)
+            online_targets = self.model.tracker.update(pred_dets, pred_embs)
 
             online_tlwhs, online_ids = [], []
             for t in online_targets:
@@ -199,7 +200,9 @@ class Tracker(object):
 
             # forward
             timer.tic()
-            online_targets = self.model(data)
+            detections = self.model(data)
+            self.model.tracker.predict()
+            online_targets = self.model.tracker.update(detections)
 
             online_tlwhs = []
             online_ids = []
@@ -239,6 +242,7 @@ class Tracker(object):
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
         # run tracking
+
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:

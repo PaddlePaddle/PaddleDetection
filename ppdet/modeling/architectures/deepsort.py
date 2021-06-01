@@ -102,10 +102,7 @@ class DeepSORT(BaseArch):
         else:
             detections = []
 
-        self.tracker.predict()
-        online_targets = self.tracker.update(detections)
-
-        return online_targets
+        return detections
 
     def get_pred(self):
         return self._forward()

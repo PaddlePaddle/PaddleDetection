@@ -225,13 +225,7 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        if hasattr(self.model, 'detector'):
-            if self.model.__class__.__name__ == 'FairMOT':
-                load_pretrain_weight(self.model, weights)
-            else:
-                load_pretrain_weight(self.model.detector, weights)
-        else:
-            load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
 
     def resume_weights(self, weights):
@@ -473,8 +467,12 @@ class Trainer(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         image_shape = None
-        if 'inputs_def' in self.cfg['TestReader']:
-            inputs_def = self.cfg['TestReader']['inputs_def']
+        if self.cfg.architecture in ['DeepSORT', 'FairMOT', 'JDE']:
+            test_reader_name = 'TestMOTReader'
+        else:
+            test_reader_name = 'TestReader'
+        if 'inputs_def' in self.cfg[test_reader_name]:
+            inputs_def = self.cfg[test_reader_name]['inputs_def']
             image_shape = inputs_def.get('image_shape', None)
         # set image_shape=[3, -1, -1] as default
         if image_shape is None:

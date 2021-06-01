@@ -39,9 +39,13 @@ TRT_MIN_SUBGRAPH = {
     'SOLOv2': 60,
     'HigherHRNet': 3,
     'HRNet': 3,
+    'DeepSORT': 3,
+    'JDE': 3,
+    'FairMOT': 3,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
 
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
@@ -106,9 +110,15 @@ def _dump_infer_config(config, path, image_shape, model):
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
         label_arch = 'keypoint_arch'
+
+    reader_cfg = config['TestReader']
+    dataset_cfg = config['TestDataset']
+    if infer_arch in MOT_ARCH:
+        reader_cfg = config['TestMOTReader']
+        dataset_cfg = config['TestMOTDataset']
+
     infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
-        config['TestReader'], config['TestDataset'], config['metric'],
-        label_arch, image_shape)
+        reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape)
 
     if infer_arch == 'S2ANet':
         # TODO: move background to num_classes
