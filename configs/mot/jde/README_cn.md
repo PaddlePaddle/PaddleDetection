@@ -1,6 +1,6 @@
 简体中文 | [English](README.md)
 
-# JDE (Joint Detection and Embedding)
+# JDE (Towards Real-Time Multi-Object Tracking)
 
 ## 内容
 - [简介](#简介)
@@ -60,6 +60,16 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 
 # 使用训练保存的checkpoint
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
+```
+**注意:**
+ 默认评估的是MOT-16 Train Set数据集, 如需换评估数据集可参照以下代码修改`configs/datasets/mot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT17_train
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/train
+    keep_ori_im: False # set True if save visualization images or video
 ```
 
 ### 3. 预测
