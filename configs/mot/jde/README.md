@@ -1,6 +1,6 @@
 English | [简体中文](README_cn.md)
 
-# JDE (Joint Detection and Embedding)
+# JDE (Towards Real-Time Multi-Object Tracking)
 
 ## Table of Contents
 - [Introduction](#Introduction)
@@ -10,7 +10,7 @@ English | [简体中文](README_cn.md)
 
 ## Introduction
 
-- [JDE](https://arxiv.org/abs/1909.12605) (Joint Detection and Embedding) learns the object detection task and appearance embedding task simutaneously in a shared neural network. And the detection results and the corresponding embeddings are also outputed at the same time. JDE original paper is based on an Anchor Base detector YOLOv3 , adding a new ReID branch to learn embeddings. The training process is constructed as a multi-task learning problem, taking into account both accuracy and speed.
+- [JDE](https://arxiv.org/abs/1909.12605) (Joint Detection and Embedding) learns the object detection task and appearance embedding task simutaneously in a shared neural network. And the detection results and the corresponding embeddings are also outputed at the same time. JDE original paper is based on an Anchor Base detector YOLOv3, adding a new ReID branch to learn embeddings. The training process is constructed as a multi-task learning problem, taking into account both accuracy and speed.
 
 <div align="center">
   <img src="../../../docs/images/mot16_jde.gif" width=500 />

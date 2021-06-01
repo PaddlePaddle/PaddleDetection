@@ -1,6 +1,6 @@
 English | [简体中文](README_cn.md)
 
-# DeepSORT (Simple Online and Realtime Tracking with a Deep Association Metric)
+# DeepSORT (Deep Cosine Metric Learning for Person Re-identification)
 
 ## Table of Contents
 - [Introduction](#Introduction)
