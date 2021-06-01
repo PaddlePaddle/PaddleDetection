@@ -113,7 +113,7 @@ cd D:\projects\PaddleDetection\deploy\cpp\out\build\x64-Release
 `样例一`：
 ```shell
 #不使用`GPU`测试图片 `D:\\images\\test.jpeg`  
-.\main --model_dir=D:\\models\\yolov3_darknet --image_path=D:\\images\\test.jpeg
+.\main --model_dir=D:\\models\\yolov3_darknet --image_file=D:\\images\\test.jpeg
 ```
 
 图片文件`可视化预测结果`会保存在当前目录下`output.jpg`文件中。
