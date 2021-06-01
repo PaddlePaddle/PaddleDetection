@@ -1,6 +1,6 @@
 简体中文 | [English](README.md)
 
-# DeepSORT
+# DeepSORT (Deep Cosine Metric Learning for Person Re-identification)
 
 ## 内容
 - [简介](#简介)

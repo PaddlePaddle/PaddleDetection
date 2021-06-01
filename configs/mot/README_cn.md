@@ -241,13 +241,6 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_
 
 ## 引用
 ```
-@article{wang2019towards,
-  title={Towards Real-Time Multi-Object Tracking},
-  author={Wang, Zhongdao and Zheng, Liang and Liu, Yixuan and Wang, Shengjin},
-  journal={arXiv preprint arXiv:1909.12605},
-  year={2019}
-}
-
 @inproceedings{Wojke2017simple,
   title={Simple Online and Realtime Tracking with a Deep Association Metric},
   author={Wojke, Nicolai and Bewley, Alex and Paulus, Dietrich},
@@ -273,5 +266,12 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_
   author={Wang, Zhongdao and Zheng, Liang and Liu, Yixuan and Wang, Shengjin},
   journal={arXiv preprint arXiv:1909.12605},
   year={2019}
+}
+
+@article{zhang2020fair,
+  title={FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking},
+  author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
+  journal={arXiv preprint arXiv:2004.01888},
+  year={2020}
 }
 ```
