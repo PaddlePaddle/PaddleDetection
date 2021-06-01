@@ -1,6 +1,6 @@
 简体中文 | [English](README.md)
 
-# JDE (Joint Detection and Embedding)
+# JDE (Towards Real-Time Multi-Object Tracking)
 
 ## 内容
 - [简介](#简介)
