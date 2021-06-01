@@ -35,6 +35,7 @@ English | [简体中文](README_cn.md)
 | DarkNet53(paper)   | 864x480 |   62.1  |  56.9  | 1608  |    -    |   -   |   -   |   -  |   -   |
 | DarkNet53          | 864x480 |   63.2  |  57.7  | 1966  |  10070  | 55081 |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_864x480.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/mot/jde/jde_darknet53_30e_864x480.yml) |
 | DarkNet53          | 576x320 |   59.1  |  56.4  | 1911  |  10923  | 61789  |   -   |[model](https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_576x320.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/mot/jde/jde_darknet53_30e_576x320.yml) |
+
 **Notes:**
  JDE used 8 GPUs for training and mini-batch size as 4 on each GPU, and trained for 30 epoches.
 
@@ -58,6 +59,16 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53
 
 # use saved checkpoint in training
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=output/jde_darknet53_30e_1088x608/model_final.pdparams
+```
+**Notes:**
+ The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`：
+```
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT17_train
+    dataset_dir: dataset/mot
+    data_root: MOT17/images/train
+    keep_ori_im: False # set True if save visualization images or video
 ```
 
 ### 3. Inference
