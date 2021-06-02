@@ -361,6 +361,7 @@ class Trainer(object):
                         "\t3. try to do finetune training by set '-o "
                         "pretrain_weights=xxx' xxx is weights released "
                         "in PaddleDetection model zoo")
+                    is_validate_notice_logged = True
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)
