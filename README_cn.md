@@ -196,6 +196,8 @@ PaddleDetection模块化地实现了多种主流目标检测算法，提供了�
 - [安装说明](docs/tutorials/INSTALL_cn.md)
 - [数据准备](docs/tutorials/PrepareDataSet.md)
 - [30分钟上手PaddleDetcion](docs/tutorials/GETTING_STARTED_cn.md)
+- [常见问题汇总](docs/tutorials/FAQ.md)
+
 
 ### 进阶教程
 
