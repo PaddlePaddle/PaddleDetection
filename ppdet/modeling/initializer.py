@@ -202,15 +202,15 @@ def init_parameter_as_torch(model, include_self=True):
     '''
     for n, m in model.named_sublayers(include_self=include_self):
         if isinstance(m, nn.Conv2D):
-            k = m._groups / (m._in_channels * m._kernel_size[0] *
-                             m._kernel_size[0])
+            k = float(m._groups) / (m._in_channels * m._kernel_size[0] *
+                                    m._kernel_size[1])
             k = math.sqrt(k)
             _no_grad_uniform_(m.weight, -k, k)
             if m.bias is not None:
                 _no_grad_uniform_(m.bias, -k, k)
 
         elif isinstance(m, nn.Linear):
-            k = math.sqrt(1 / m.weight.shape[0])
+            k = math.sqrt(1. / m.weight.shape[0])
             _no_grad_uniform_(m.weight, -k, k)
             if m.bias is not None:
                 _no_grad_uniform_(m.bias, -k, k)
@@ -224,53 +224,3 @@ def init_parameter_as_torch(model, include_self=True):
 
 
 reset_parameter_as_torch = init_parameter_as_torch
-
-if __name__ == '__main__':
-
-    class MM(nn.Layer):
-        def __init__(self, ):
-            super().__init__()
-            self.conv = nn.Conv2D(3, 8, 3, 2, 1)
-            self.linear = nn.Linear(10, 11)
-            self.seq = nn.Sequential(nn.Linear(3, 3), nn.ReLU())
-
-            init_parameter_as_torch(self)
-            self._reset_parameters()
-
-        def forward(self, ):
-            pass
-
-        def _reset_parameters(self, ):
-            for _, m in self.named_sublayers():
-
-                if hasattr(m, 'bias') and getattr(m, 'bias') is not None:
-                    zeros_(m.bias)
-
-                if isinstance(m, nn.Conv2D):
-                    xavier_uniform_(m.weight)
-                elif isinstance(m, nn.Linear):
-                    kaiming_uniform_(m.weight, a=1, reverse=True)
-
-    from paddle import ParamAttr
-    import paddle.nn.initializer as initializer
-
-    class MM(nn.Layer):
-        def __init__(self, ):
-            super().__init__()
-
-            self.embedding = nn.Embedding(
-                100,
-                64,
-                weight_attr=ParamAttr(initializer=initializer.Normal()))
-            self.linear = nn.Linear(
-                10,
-                8, )
-
-            k = 1 / math.sqrt(8)
-            weight_attr = ParamAttr(initializer=initializer.Uniform(
-                low=-k, high=k))
-            bias_attr = ParamAttr(initializer=initializer.Constant())
-            self.conv2d = nn.Conv2D(
-                3, 8, 2, 1, weight_attr=weight_attr, bias_attr=bias_attr)
-
-            self.layers = nn.Sequential(nn.Conv2D(8, 32, 2, 1), nn.ReLU())
