@@ -279,6 +279,7 @@ class Trainer(object):
             self.cfg.log_iter, fmt='{avg:.4f}')
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
+        is_validate_notice_logged = False
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -345,6 +346,21 @@ class Trainer(object):
                         self._eval_dataset,
                         self.cfg.worker_num,
                         batch_sampler=self._eval_batch_sampler)
+                if not is_validate_notice_logged:
+                    logger.info(
+                        "Validation may cost lost of time and look like hanging "
+                        "when sorting bbox in NMS and the model is not converged "
+                        "because of training iteration is not enough, you can "
+                        "try followings:\n"
+                        "\t1. if model training is not on 8 GPU or batch_size "
+                        "has been decreased, please decrease learning_rate "
+                        "by the same ratio of total batch_size\n"
+                        "\t2. if the sample number of your custom dataset "
+                        "is not large enough, please increase snapshot_epoch "
+                        "to increase training iterations when validating\n"
+                        "\t3. try to do finetune training by set '-o "
+                        "pretrain_weights=xxx' xxx is weights released "
+                        "in PaddleDetection model zoo")
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
                     self._eval_with_loader(self._eval_loader)

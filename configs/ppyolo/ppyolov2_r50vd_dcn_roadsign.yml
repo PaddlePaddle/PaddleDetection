@@ -1,0 +1,43 @@
+_BASE_: [
+  '../datasets/roadsign_voc.yml',
+  '../runtime.yml',
+  './_base_/ppyolov2_r50vd_dcn.yml',
+  './_base_/optimizer_365e.yml',
+  './_base_/ppyolov2_reader.yml',
+]
+
+snapshot_epoch: 40
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
+weights: output/ppyolov2_r50vd_dcn_roadsign/model_final
+
+TrainReader:
+  mixup_epoch: 350
+  batch_size: 8
+
+# set collate_batch to false because ground-truth info is needed
+# on voc dataset and should not collate data in batch when batch size
+# is larger than 1.
+EvalReader:
+  collate_batch: false
+
+epoch: 583
+
+LearningRate:
+  base_lr: 0.000333
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 466
+    - 516
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 4000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
