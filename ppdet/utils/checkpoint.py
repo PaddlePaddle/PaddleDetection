@@ -160,8 +160,11 @@ def match_state_dict(model_state_dict, weight_state_dict):
     weight_keys = sorted(weight_state_dict.keys())
 
     def match(a, b):
-        if a.startswith('backbone') and b.startswith('backbone'):
-            b = '.'.join(b.split('.')[1:])
+        if a.startswith('backbone.res5'):
+            # In Faster RCNN, res5 pretrained weights have prefix of backbone, 
+            # however, the corresponding model weights have difficult prefix,
+            # bbox_head.
+            b = b.strip('backbone.')
         return a == b or a.endswith("." + b)
 
     match_matrix = np.zeros([len(model_keys), len(weight_keys)])
@@ -180,9 +183,9 @@ def match_state_dict(model_state_dict, weight_state_dict):
         model_key = model_keys[model_id]
         weight_key = weight_keys[weight_id]
         weight_value = weight_state_dict[weight_key]
-        model_value_shape = model_state_dict[model_key].shape
+        model_value_shape = list(model_state_dict[model_key].shape)
 
-        if weight_value.shape != model_value_shape:
+        if list(weight_value.shape) != model_value_shape:
             logger.info(
                 'The shape {} in pretrained weight {} is unmatched with '
                 'the shape {} in model {}. And the weight {} will not be '
