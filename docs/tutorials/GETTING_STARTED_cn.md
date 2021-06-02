@@ -79,6 +79,12 @@ ppyolov2_reader.yml 主要说明数据读取器配置，如batch size，并发�
 
 <br><center>配置文件结构说明</center></br>
 
+### 修改配置文件说明
+* 关于数据的路径修改说明
+在修改配置文件中，用户如何实现自定义数据集是非常关键的一步，如何定义数据集请参考[如何自定义数据集](https://aistudio.baidu.com/aistudio/projectdetail/1917140)
+* 默认学习率是适配多GPU训练(8x GPU)，若使用单GPU训练，须对应调整学习率（例如，除以8）
+* 更多使用问题，请参考[FAQ](FAQ.md)
+
 ## 4 训练
 
 PaddleDetection提供了单卡/多卡训练模式，满足用户多种训练需求
