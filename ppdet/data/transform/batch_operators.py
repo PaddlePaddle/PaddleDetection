@@ -45,11 +45,14 @@ class PadBatch(BaseOperator):
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
             height and width is divisible by `pad_to_stride`.
+        return_pad_mask (bool): If `return_pad_mask = True`, return
+            `pad_mask` for transformer.
     """
 
-    def __init__(self, pad_to_stride=0):
+    def __init__(self, pad_to_stride=0, return_pad_mask=False):
         super(PadBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
+        self.return_pad_mask = return_pad_mask
 
     def __call__(self, samples, context=None):
         """
@@ -86,6 +89,11 @@ class PadBatch(BaseOperator):
                     dtype=np.uint8)
                 padding_segm[:, :im_h, :im_w] = gt_segm
                 data['gt_segm'] = padding_segm
+            if self.return_pad_mask:
+                padding_mask = np.zeros(
+                    (max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_mask[:im_h, :im_w] = 1.
+                data['pad_mask'] = padding_mask
 
             if 'gt_rbox2poly' in data and data['gt_rbox2poly'] is not None:
                 # ploy to rbox

@@ -28,6 +28,8 @@ __all__ = [
     'xavier_normal_',
     'kaiming_uniform_',
     'kaiming_normal_',
+    'linear_init_',
+    'conv_init_',
     'reset_initialized_parameter',
 ]
 
@@ -46,7 +48,7 @@ def _no_grad_normal_(tensor, mean=0., std=1.):
     return tensor
 
 
-def _no_grad_fill_(tensor, value=0):
+def _no_grad_fill_(tensor, value=0.):
     with paddle.no_grad():
         v = paddle.rand(shape=tensor.shape, dtype=tensor.dtype)
         v[...] = value
@@ -80,7 +82,7 @@ def normal_(tensor, mean=0., std=1.):
     return _no_grad_normal_(tensor, mean, std)
 
 
-def constant_(tensor, value=0):
+def constant_(tensor, value=0.):
     """
     Modified tensor inspace using constant_
     Args:
@@ -150,7 +152,7 @@ def xavier_uniform_(tensor, gain=1., reverse=False):
     Modified tensor inspace using xavier_uniform_
     Args:
         tensor (paddle.Tensor): paddle Tensor
-        gain (str): super parameter, 1. default.
+        gain (float): super parameter, 1. default.
         reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
     Return:
         tensor
@@ -166,7 +168,7 @@ def xavier_normal_(tensor, gain=1., reverse=False):
     Modified tensor inspace using xavier_normal_
     Args:
         tensor (paddle.Tensor): paddle Tensor
-        gain (str): super parameter, 1. default.
+        gain (float): super parameter, 1. default.
         reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
     Return:
         tensor
@@ -258,6 +260,18 @@ def kaiming_normal_(tensor,
     gain = _calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
     return _no_grad_normal_(tensor, 0, std)
+
+
+def linear_init_(module):
+    bound = 1 / math.sqrt(module.weight.shape[0])
+    uniform_(module.weight, -bound, bound)
+    uniform_(module.bias, -bound, bound)
+
+
+def conv_init_(module):
+    bound = 1 / math.sqrt(math.prod(module.weight.shape[1:]))
+    uniform_(module.weight, -bound, bound)
+    uniform_(module.bias, -bound, bound)
 
 
 @paddle.no_grad()
