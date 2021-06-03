@@ -68,6 +68,9 @@ DATASETS = {
         (
             'http://host.robots.ox.ac.uk/pascal/VOC/voc2007/VOCtest_06-Nov-2007.tar',
             'b6e924de25625d8de591ea690078ad9f', ),
+        (
+            'https://paddledet.bj.bcebos.com/data/label_list.txt',
+            '5ae5d62183cfb6f6d3ac109359d06a1b', ),
     ], ["VOCdevkit/VOC2012", "VOCdevkit/VOC2007"]),
     'wider_face': ([
         (
@@ -131,7 +134,7 @@ def get_config_path(url):
     try:
         from ppdet import __version__ as version
     except ImportError:
-        version= None
+        version = None
 
     cfg_url = "ppdet://configs/{}/configs.tar".format(version) \
                 if version else "ppdet://configs/configs.tar"
@@ -346,7 +349,6 @@ def _download(url, path, md5sum=None):
 
         logger.info("Downloading {} from {}".format(fname, url))
 
-        
         # NOTE: windows path join may incur \, which is invalid in url
         if sys.platform == "win32":
             url = url.replace('\\', '/')
@@ -439,6 +441,8 @@ def _decompress(fname):
     elif fname.find('zip') >= 0:
         with zipfile.ZipFile(fname) as zf:
             zf.extractall(path=fpath_tmp)
+    elif fname.find('.txt') >= 0:
+        return
     else:
         raise TypeError("Unsupport compress file type {}".format(fname))
 
