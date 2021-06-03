@@ -38,7 +38,7 @@ class BlazeFace(BaseArch):
     __category__ = 'architecture'
     __inject__ = ['post_process']
 
-    def __init__(self, backbone, blaze_head, neck, post_process="BBoxPostProcess"):
+    def __init__(self, backbone, blaze_head, neck, post_process):
         super(BlazeFace, self).__init__()
         self.backbone = backbone
         self.neck = neck
@@ -70,8 +70,8 @@ class BlazeFace(BaseArch):
         # blaze Head
         if self.training:
             return self.blaze_head(neck_feats, self.inputs['image'],
-                                 self.inputs['gt_bbox'],
-                                 self.inputs['gt_class'])
+                                   self.inputs['gt_bbox'],
+                                   self.inputs['gt_class'])
         else:
             preds, anchors = self.blaze_head(neck_feats, self.inputs['image'])
             bbox, bbox_num = self.post_process(preds, anchors,
