@@ -16,11 +16,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-#from abc import ABC
-
 import paddle
 import paddle.nn as nn
-from paddle.nn import AvgPool2D
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay

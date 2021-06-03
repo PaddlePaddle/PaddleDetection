@@ -25,8 +25,10 @@ from ..shape_spec import ShapeSpec
 
 __all__ = ['BlazeNeck']
 
+
 def hard_swish(x):
     return x * F.relu6(x + 3) / 6.
+
 
 class ConvBNLayer(nn.Layer):
     def __init__(self,
@@ -85,35 +87,40 @@ class ConvBNLayer(nn.Layer):
             x = hard_swish(x)
         return x
 
+
 class FPN(nn.Layer):
     def __init__(self, in_channels, out_channels, name=None):
         super(FPN, self).__init__()
-        self.conv1_fpn = ConvBNLayer(in_channels,
-                                     out_channels//2,
-                                     kernel_size=1,
-                                     padding=0,
-                                     stride=1,
-                                     act='leaky',
-                                     name=name + '_output1')
-        self.conv2_fpn = ConvBNLayer(in_channels,
-                                     out_channels//2,
-                                     kernel_size=1,
-                                     padding=0,
-                                     stride=1,
-                                     act='leaky',
-                                     name=name + '_output2')
-        self.conv3_fpn = ConvBNLayer(out_channels//2,
-                                     out_channels//2,
-                                     kernel_size=3,
-                                     padding=1,
-                                     stride=1,
-                                     act='leaky',
-                                     name=name + '_merge')
+        self.conv1_fpn = ConvBNLayer(
+            in_channels,
+            out_channels // 2,
+            kernel_size=1,
+            padding=0,
+            stride=1,
+            act='leaky',
+            name=name + '_output1')
+        self.conv2_fpn = ConvBNLayer(
+            in_channels,
+            out_channels // 2,
+            kernel_size=1,
+            padding=0,
+            stride=1,
+            act='leaky',
+            name=name + '_output2')
+        self.conv3_fpn = ConvBNLayer(
+            out_channels // 2,
+            out_channels // 2,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act='leaky',
+            name=name + '_merge')
 
     def forward(self, input):
         output1 = self.conv1_fpn(input[0])
         output2 = self.conv2_fpn(input[1])
-        up2 = F.upsample(output2, size=[output1.shape[2],output1.shape[3]], mode='nearest')
+        up2 = F.upsample(
+            output2, size=[output1.shape[2], output1.shape[3]], mode='nearest')
         output1 = paddle.add(output1, up2)
         output1 = self.conv3_fpn(output1)
         return output1, output2
@@ -123,41 +130,46 @@ class SSH(nn.Layer):
     def __init__(self, in_channels, out_channels, name=None):
         super(SSH, self).__init__()
         assert out_channels % 4 == 0
-        self.conv0_ssh = ConvBNLayer(in_channels,
-                                 out_channels // 2,
-                                 kernel_size=3,
-                                 padding=1,
-                                 stride=1,
-                                 act=None,
-                                 name=name + 'ssh_conv3')
-        self.conv1_ssh = ConvBNLayer(out_channels // 2,
-                                 out_channels // 4,
-                                 kernel_size=3,
-                                 padding=1,
-                                 stride=1,
-                                 act='leaky',
-                                 name=name + 'ssh_conv5_1')
-        self.conv2_ssh = ConvBNLayer(out_channels // 4,
-                                 out_channels // 4,
-                                 kernel_size=3,
-                                 padding=1,
-                                 stride=1,
-                                 act=None,
-                                 name=name + 'ssh_conv5_2')
-        self.conv3_ssh = ConvBNLayer(out_channels // 4,
-                                 out_channels // 4,
-                                 kernel_size=3,
-                                 padding=1,
-                                 stride=1,
-                                 act='leaky',
-                                 name=name + 'ssh_conv7_1')
-        self.conv4_ssh = ConvBNLayer(out_channels // 4,
-                                 out_channels // 4,
-                                 kernel_size=3,
-                                 padding=1,
-                                 stride=1,
-                                 act=None,
-                                 name=name + 'ssh_conv7_2')
+        self.conv0_ssh = ConvBNLayer(
+            in_channels,
+            out_channels // 2,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act=None,
+            name=name + 'ssh_conv3')
+        self.conv1_ssh = ConvBNLayer(
+            out_channels // 2,
+            out_channels // 4,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act='leaky',
+            name=name + 'ssh_conv5_1')
+        self.conv2_ssh = ConvBNLayer(
+            out_channels // 4,
+            out_channels // 4,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act=None,
+            name=name + 'ssh_conv5_2')
+        self.conv3_ssh = ConvBNLayer(
+            out_channels // 4,
+            out_channels // 4,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act='leaky',
+            name=name + 'ssh_conv7_1')
+        self.conv4_ssh = ConvBNLayer(
+            out_channels // 4,
+            out_channels // 4,
+            kernel_size=3,
+            padding=1,
+            stride=1,
+            act=None,
+            name=name + 'ssh_conv7_2')
 
     def forward(self, x):
         conv0 = self.conv0_ssh(x)
@@ -168,34 +180,39 @@ class SSH(nn.Layer):
         concat = paddle.concat([conv0, conv2, conv4], axis=1)
         return F.relu(concat)
 
+
 @register
 @serializable
 class BlazeNeck(nn.Layer):
-    def __init__(self,
-                 in_channel,
-                 neck_type="None",
-                 data_format='NCHW'):
+    def __init__(self, in_channel, neck_type="None", data_format='NCHW'):
         super(BlazeNeck, self).__init__()
         self.neck_type = neck_type
         self.reture_input = False
-        self.in_channel = in_channel
-        self._out_channels = []
+        self._out_channels = in_channel
         if self.neck_type == 'None':
             self.reture_input = True
-            self._out_channels = self.in_channel
         if "fpn" in self.neck_type:
-            self.fpn = FPN(self.in_channel[0], self.in_channel[1], name='fpn')
-            self._out_channels = [self.in_channel[0]//2,self.in_channel[1]//2]
+            self.fpn = FPN(self._out_channels[0],
+                           self._out_channels[1],
+                           name='fpn')
+            self._out_channels = [
+                self._out_channels[0] // 2, self._out_channels[1] // 2
+            ]
         if "ssh" in self.neck_type:
-            self.ssh1 = SSH(self.in_channel[0]//2, self.in_channel[0]//2, name='ssh1')
-            self.ssh2 = SSH(self.in_channel[1]//2, self.in_channel[1]//2, name='ssh2')
-            self._out_channels = [self.in_channel[0] // 2, self.in_channel[1] // 2]
+            self.ssh1 = SSH(self._out_channels[0],
+                            self._out_channels[0],
+                            name='ssh1')
+            self.ssh2 = SSH(self._out_channels[1],
+                            self._out_channels[1],
+                            name='ssh2')
+            self._out_channels = [self._out_channels[0], self._out_channels[1]]
 
     def forward(self, inputs):
         if self.reture_input:
             return inputs
-        backout_4, backout_1= inputs
-        output1, output2 = self.fpn([backout_4, backout_1])
+        if "fpn" in self.neck_type:
+            backout_4, backout_1 = inputs
+            output1, output2 = self.fpn([backout_4, backout_1])
         if self.neck_type == "only_fpn":
             return [output1, output2]
         if self.neck_type == "only_ssh":
@@ -203,10 +220,10 @@ class BlazeNeck(nn.Layer):
         feature1 = self.ssh1(output1)
         feature2 = self.ssh2(output2)
         return [feature1, feature2]
+
     @property
     def out_shape(self):
         return [
             ShapeSpec(channels=c)
             for c in [self._out_channels[0], self._out_channels[1]]
         ]
-

@@ -10,7 +10,7 @@ BlazeNet:
   blaze_filters: [[24, 24], [24, 24], [24, 48, 2], [48, 48], [48, 48]]
   double_blaze_filters: [[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
                           [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]]
-  act: relu
+  act: hard_swish
 
 BlazeNeck:
   neck_type : fpn_ssh
