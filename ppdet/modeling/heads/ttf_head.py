@@ -62,7 +62,6 @@ class HMHead(nn.Layer):
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
                         norm_type=norm_type))
-                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
                     head_conv.add_sublayer(
@@ -139,7 +138,6 @@ class WHHead(nn.Layer):
                         in_channels=ch_in if i == 0 else ch_out,
                         out_channels=ch_out,
                         norm_type=norm_type))
-                head_conv.add_sublayer(lite_name + '.act', nn.ReLU6())
             else:
                 if dcn_head:
                     head_conv.add_sublayer(
