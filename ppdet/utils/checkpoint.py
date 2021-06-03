@@ -168,16 +168,6 @@ def load_pretrain_weight(model, pretrain_weight):
             if new_k in model_dict.keys():
                 value = param_state_dict.pop(k)
                 param_state_dict[new_k] = value
-        if 'ssd_head' in k:
-            new_k = k.replace('ssd_head', 'blaze_head')
-            if new_k in model_dict.keys():
-                value = param_state_dict.pop(k)
-                param_state_dict[new_k] = value
-        if "ssh" in k.split(".")[1] or "fpn" in k.split(".")[1]:
-            new_k = k.replace("backbone", "neck")
-            if new_k in model_dict.keys():
-                value = param_state_dict.pop(k)
-                param_state_dict[new_k] = value
 
     for name, weight in param_state_dict.items():
         if name in model_dict.keys():
