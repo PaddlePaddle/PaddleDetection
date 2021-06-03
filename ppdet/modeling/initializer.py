@@ -16,7 +16,6 @@ import math
 
 import paddle
 import paddle.nn as nn
-from paddle.tensor.stat import std
 
 __all__ = [
     'uniform_',
@@ -55,45 +54,36 @@ def _no_grad_fill_(tensor, value=0):
 
 
 def uniform_(tensor, a, b):
-    '''uniform_
-    '''
     return _no_grad_uniform_(tensor, a, b)
 
 
 def normal_(tensor, mean=0., std=1.):
-    '''normal_
-    '''
     return _no_grad_normal_(tensor, mean, std)
 
 
 def constant_(tensor, value=0):
-    '''constant_
-    '''
     return _no_grad_fill_(tensor, value)
 
 
 def ones_(tensor):
-    '''ones_
-    '''
     return _no_grad_fill_(tensor, 1)
 
 
 def zeros_(tensor):
-    '''zeros_
-    '''
     return _no_grad_fill_(tensor, 0)
 
 
 def _calculate_fan_in_and_fan_out(tensor, reverse=False):
-    '''
-    augments:
-        tensor (paddle.Tensor), 
-        reverse: 
-            default is False, tensor format as <cout, cin, ...>
-            e.g.
-                conv: weight [cout, cin, kh, kw], False
-                linear: weight [cin, cout], True
-    '''
+    """
+    Calculate _calculate_fan_in_and_fan_out for tensor
+
+    Args:
+        tensor (Tensor): paddle.Tensor
+        reverse (bool: False): tensor data format order, False by default as [fout, fin, ...]. e.g. : conv.weight [cout, cin, kh, kw] is False; linear.weight [cin, cout] is True
+
+    Return:
+        Tuple[fan_in, fan_out]
+    """
     if tensor.ndim < 2:
         raise ValueError(
             "Fan in and fan out can not be computed for tensor with fewer than 2 dimensions"
@@ -115,8 +105,6 @@ def _calculate_fan_in_and_fan_out(tensor, reverse=False):
 
 
 def xavier_uniform_(tensor, gain=1., reverse=False):
-    '''xavier_uniform_
-    '''
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor, reverse=reverse)
     std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
     k = math.sqrt(3.0) * std
@@ -124,8 +112,6 @@ def xavier_uniform_(tensor, gain=1., reverse=False):
 
 
 def xavier_normal_(tensor, gain=1., reverse=False):
-    '''xavier_normal_
-    '''
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor, reverse=reverse)
     std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
     return _no_grad_normal_(tensor, 0, std)
@@ -133,8 +119,6 @@ def xavier_normal_(tensor, gain=1., reverse=False):
 
 # reference: https://pytorch.org/docs/stable/_modules/torch/nn/init.html
 def _calculate_correct_fan(tensor, mode, reverse=False):
-    '''_calculate_correct_fan
-    '''
     mode = mode.lower()
     valid_modes = ['fan_in', 'fan_out']
     if mode not in valid_modes:
@@ -147,8 +131,6 @@ def _calculate_correct_fan(tensor, mode, reverse=False):
 
 
 def _calculate_gain(nonlinearity, param=None):
-    '''_calculate_gain
-    '''
     linear_fns = [
         'linear', 'conv1d', 'conv2d', 'conv3d', 'conv_transpose1d',
         'conv_transpose2d', 'conv_transpose3d'
@@ -181,8 +163,6 @@ def kaiming_uniform_(tensor,
                      mode='fan_in',
                      nonlinearity='leaky_relu',
                      reverse=False):
-    '''kaiming_uniform_
-    '''
     fan = _calculate_correct_fan(tensor, mode, reverse)
     gain = _calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
@@ -195,8 +175,6 @@ def kaiming_normal_(tensor,
                     mode='fan_in',
                     nonlinearity='leaky_relu',
                     reverse=False):
-    '''kaiming_normal_
-    '''
     fan = _calculate_correct_fan(tensor, mode)
     gain = _calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
@@ -205,8 +183,6 @@ def kaiming_normal_(tensor,
 
 @paddle.no_grad()
 def reset_initialized_parameter(model, include_self=True):
-    '''reset initialized parameters <weight, bias> same as torch initialized-methods.
-    '''
     for _, m in model.named_sublayers(include_self=include_self):
         if isinstance(m, nn.Conv2D):
             k = float(m._groups) / (m._in_channels * m._kernel_size[0] *
