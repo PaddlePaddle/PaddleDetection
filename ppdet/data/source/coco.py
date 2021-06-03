@@ -175,7 +175,6 @@ class COCODataSet(DetDataset):
                 gt_theta = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
-                difficult = np.zeros((num_bbox, 1), dtype=np.int32)
                 gt_poly = [None] * num_bbox
 
                 has_segmentation = False
@@ -189,9 +188,17 @@ class COCODataSet(DetDataset):
                     is_crowd[i][0] = box['iscrowd']
                     # check RLE format 
                     if 'segmentation' in box and box['iscrowd'] == 1:
-                        gt_poly[i] = [[0.0, 0.0], ]
+                        gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
                     elif 'segmentation' in box and box['segmentation']:
-                        gt_poly[i] = box['segmentation']
+                        if not np.array(box['segmentation']
+                                        ).size > 0 and not self.allow_empty:
+                            bboxes.pop(i)
+                            gt_poly.pop(i)
+                            np.delete(is_crowd, i)
+                            np.delete(gt_class, i)
+                            np.delete(gt_bbox, i)
+                        else:
+                            gt_poly[i] = box['segmentation']
                         has_segmentation = True
 
                 if has_segmentation and not any(
