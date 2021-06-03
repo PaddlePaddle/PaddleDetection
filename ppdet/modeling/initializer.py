@@ -54,22 +54,62 @@ def _no_grad_fill_(tensor, value=0):
 
 
 def uniform_(tensor, a, b):
+    """
+    Modified tensor inspace using uniform_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        a (float|int): min value.
+        b (float|int): max value.
+    Return:
+        tensor
+    """
     return _no_grad_uniform_(tensor, a, b)
 
 
 def normal_(tensor, mean=0., std=1.):
+    """
+    Modified tensor inspace using normal_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        mean (float|int): mean value.
+        std (float|int): std value.
+    Return:
+        tensor
+    """
     return _no_grad_normal_(tensor, mean, std)
 
 
 def constant_(tensor, value=0):
+    """
+    Modified tensor inspace using constant_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        value (float|int): value to fill tensor.
+    Return:
+        tensor
+    """
     return _no_grad_fill_(tensor, value)
 
 
 def ones_(tensor):
+    """
+    Modified tensor inspace using ones_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+    Return:
+        tensor
+    """
     return _no_grad_fill_(tensor, 1)
 
 
 def zeros_(tensor):
+    """
+    Modified tensor inspace using zeros_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+    Return:
+        tensor
+    """
     return _no_grad_fill_(tensor, 0)
 
 
@@ -105,6 +145,15 @@ def _calculate_fan_in_and_fan_out(tensor, reverse=False):
 
 
 def xavier_uniform_(tensor, gain=1., reverse=False):
+    """
+    Modified tensor inspace using xavier_uniform_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        gain (str): super parameter, 1. default.
+        reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
+    Return:
+        tensor
+    """
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor, reverse=reverse)
     std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
     k = math.sqrt(3.0) * std
@@ -112,6 +161,15 @@ def xavier_uniform_(tensor, gain=1., reverse=False):
 
 
 def xavier_normal_(tensor, gain=1., reverse=False):
+    """
+    Modified tensor inspace using xavier_normal_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        gain (str): super parameter, 1. default.
+        reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
+    Return:
+        tensor
+    """
     fan_in, fan_out = _calculate_fan_in_and_fan_out(tensor, reverse=reverse)
     std = gain * math.sqrt(2.0 / float(fan_in + fan_out))
     return _no_grad_normal_(tensor, 0, std)
@@ -163,6 +221,16 @@ def kaiming_uniform_(tensor,
                      mode='fan_in',
                      nonlinearity='leaky_relu',
                      reverse=False):
+    """
+    Modified tensor inspace using kaiming_uniform_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        mode (str): ['fan_in', 'fan_out'], 'fin_in' defalut
+        nonlinearity (str): nonlinearity method name
+        reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
+    Return:
+        tensor
+    """
     fan = _calculate_correct_fan(tensor, mode, reverse)
     gain = _calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
@@ -175,7 +243,17 @@ def kaiming_normal_(tensor,
                     mode='fan_in',
                     nonlinearity='leaky_relu',
                     reverse=False):
-    fan = _calculate_correct_fan(tensor, mode)
+    """
+    Modified tensor inspace using kaiming_normal_
+    Args:
+        tensor (paddle.Tensor): paddle Tensor
+        mode (str): ['fan_in', 'fan_out'], 'fin_in' defalut
+        nonlinearity (str): nonlinearity method name
+        reverse (bool):  reverse (bool: False): tensor data format order, False by default as [fout, fin, ...].
+    Return:
+        tensor
+    """
+    fan = _calculate_correct_fan(tensor, mode, reverse)
     gain = _calculate_gain(nonlinearity, a)
     std = gain / math.sqrt(fan)
     return _no_grad_normal_(tensor, 0, std)
@@ -189,7 +267,6 @@ def reset_initialized_parameter(model, include_self=True):
     Args:
         model (paddle.Layer): paddle Layer
         include_self (bool: False): include_self for Layer.named_sublayers method. Indicate whether including itself
-
     Return:
         None
     """
