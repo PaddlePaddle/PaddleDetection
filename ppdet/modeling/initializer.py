@@ -16,11 +16,19 @@ import math
 
 import paddle
 import paddle.nn as nn
+from paddle.tensor.stat import std
 
 __all__ = [
-    'uniform_', 'normal_', 'constant_', 'ones_', 'zeros_', 'xavier_uniform_',
-    'xavier_normal_', 'kaiming_uniform_', 'kaiming_normal_',
-    'init_parameter_as_torch', 'reset_parameter_as_torch'
+    'uniform_',
+    'normal_',
+    'constant_',
+    'ones_',
+    'zeros_',
+    'xavier_uniform_',
+    'xavier_normal_',
+    'kaiming_uniform_',
+    'kaiming_normal_',
+    'reset_initialized_parameter',
 ]
 
 
@@ -196,30 +204,28 @@ def kaiming_normal_(tensor,
 
 
 @paddle.no_grad()
-def init_parameter_as_torch(model, include_self=True):
-    '''init parameters <weight, bias> same as torch init methods.
+def reset_initialized_parameter(model, include_self=True):
+    '''reset initialized parameters <weight, bias> same as torch initialized-methods.
     '''
-    for n, m in model.named_sublayers(include_self=include_self):
+    for _, m in model.named_sublayers(include_self=include_self):
         if isinstance(m, nn.Conv2D):
             k = float(m._groups) / (m._in_channels * m._kernel_size[0] *
                                     m._kernel_size[1])
             k = math.sqrt(k)
             _no_grad_uniform_(m.weight, -k, k)
-            if m.bias is not None:
+            if hasattr(m, 'bias') and getattr(m, 'bias') is not None:
                 _no_grad_uniform_(m.bias, -k, k)
 
         elif isinstance(m, nn.Linear):
             k = math.sqrt(1. / m.weight.shape[0])
             _no_grad_uniform_(m.weight, -k, k)
-            if m.bias is not None:
+            if hasattr(m, 'bias') and getattr(m, 'bias') is not None:
                 _no_grad_uniform_(m.bias, -k, k)
 
         elif isinstance(m, nn.Embedding):
-            _no_grad_normal_(m.weight)
+            _no_grad_normal_(m.weight, mean=0., std=1.)
 
         elif isinstance(m, (nn.BatchNorm2D, nn.LayerNorm)):
-            # same as torch <weight=1, bias=0>
-            pass
-
-
-reset_parameter_as_torch = init_parameter_as_torch
+            _no_grad_fill_(m.weight, 1.)
+            if hasattr(m, 'bias') and getattr(m, 'bias') is not None:
+                _no_grad_fill_(m.bias, 0)
