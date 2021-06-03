@@ -29,7 +29,7 @@ from mot.utils import Timer as Timer2
 from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import get_test_images, print_arguments, predict_image
+from infer import get_test_images, print_arguments
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
@@ -41,7 +41,7 @@ MOT_SUPPORT_MODELS = {
 class MOT_Detector(object):
     """
     Args:
-        config (object): config of model, defined by `Config(model_dir)`
+        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
@@ -49,8 +49,10 @@ class MOT_Detector(object):
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        threshold (float): threshold to reserve the result for output.
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN 
     """
 
     def __init__(self,
@@ -112,16 +114,13 @@ class MOT_Detector(object):
     def predict(self, image, threshold=0.5, repeats=1):
         '''
         Args:
-            image (list): ,list of image
+            image (dict): dict(['image', 'im_shape', 'scale_factor'])
             threshold (float): threshold of predicted box' score
         Returns:
-            results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
-                            MaskRCNN's results include 'masks': np.ndarray:
-                            shape: [N, im_h, im_w]
+            online_tlwhs, online_ids (np.ndarray)
         '''
         self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image) # dict(['image', 'im_shape', 'scale_factor'])
+        inputs = self.preprocess(image)
         self.det_times.preprocess_time_s.end()
         pred_dets, pred_embs = None, None
         input_names = self.predictor.get_input_names()
@@ -135,8 +134,8 @@ class MOT_Detector(object):
             output_names = self.predictor.get_output_names()
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             pred_dets = boxes_tensor.copy_to_cpu()
-            boxes_num = self.predictor.get_output_handle(output_names[1])
-            pred_embs = boxes_num.copy_to_cpu()
+            embs_tensor = self.predictor.get_output_handle(output_names[1])
+            pred_embs = embs_tensor.copy_to_cpu()
 
         self.det_times.inference_time_s.end(repeats=repeats)
 
@@ -221,14 +220,17 @@ def load_predictor(model_dir,
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
-        use_gpu (bool): whether use gpu
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
+        batch_size (int): size of pre batch in inference
+        use_gpu (bool): whether use gpu
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN 
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -295,7 +297,7 @@ def load_predictor(model_dir,
 def predict_video(detector, camera_id):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
-        video_name = 'output.mp4'
+        video_name = 'mot_output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.split(FLAGS.video_file)[-1]
@@ -314,11 +316,10 @@ def predict_video(detector, camera_id):
     frame_id = 0
     timer = Timer2()
     while (1):
-        ret, frame = capture.read() # (480, 640, 3) # BGR
+        ret, frame = capture.read()
         if not ret:
             break
         timer.tic()
-        frame = cv2.resize(frame, (608, 1088)) # todo
         online_tlwhs, online_ids = detector.predict(frame, FLAGS.threshold)
         timer.toc()
 

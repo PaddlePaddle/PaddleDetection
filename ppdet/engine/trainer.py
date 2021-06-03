@@ -46,6 +46,7 @@ logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
 
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
@@ -57,7 +58,11 @@ class Trainer(object):
         self.is_loaded_weights = False
 
         # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        else:
+            self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
+
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
