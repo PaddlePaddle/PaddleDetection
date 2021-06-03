@@ -75,8 +75,6 @@ def get_det_poly_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
         det_nums = bbox_nums[i]
         for j in range(det_nums):
             dt = bboxes[k]
-            print("dt boxes:", dt.tolist())
-            exit()
             k = k + 1
             num_id, score, x1, y1, x2, y2, x3, y3, x4, y4 = dt.tolist()
             if int(num_id) < 0:

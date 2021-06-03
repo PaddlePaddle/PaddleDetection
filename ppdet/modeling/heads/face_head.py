@@ -41,7 +41,7 @@ class FaceHead(nn.Layer):
 
     def __init__(self,
                  num_classes=80,
-                 in_channels=[48, 48],
+                 in_channels=[96, 96],
                  anchor_generator=AnchorGeneratorSSD().__dict__,
                  kernel_size=3,
                  padding=1,
@@ -51,7 +51,6 @@ class FaceHead(nn.Layer):
         # add background class
         self.num_classes = num_classes + 1
         self.in_channels = in_channels
-        print("self.in_channels:", in_channels)
         self.anchor_generator = anchor_generator
         self.loss = loss
 
@@ -82,9 +81,9 @@ class FaceHead(nn.Layer):
                     padding=padding))
             self.score_convs.append(score_conv)
 
-    # @classmethod
-    # def from_config(cls, cfg, input_shape):
-    #     return {'in_channels': [i.channels for i in input_shape], }
+    @classmethod
+    def from_config(cls, cfg, input_shape):
+        return {'in_channels': [i.channels for i in input_shape], }
 
     def forward(self, feats, image, gt_bbox=None, gt_class=None):
         box_preds = []

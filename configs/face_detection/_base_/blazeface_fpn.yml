@@ -13,13 +13,11 @@ BlazeNet:
   act: relu
 
 BlazeNeck:
-  #neck_type : fpn_ssh
-  neck_type : None
+  neck_type : fpn_ssh
   in_channel: [96,96]
 
 FaceHead:
-  #in_channels: [48, 48]
-  in_channels: [96,96]
+  in_channels: [48, 48]
   anchor_generator: AnchorGeneratorSSD
   loss: SSDLoss
 

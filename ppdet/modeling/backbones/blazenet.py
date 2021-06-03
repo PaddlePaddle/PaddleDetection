@@ -145,7 +145,6 @@ class BlazeBlock(nn.Layer):
                         num_groups=out_channels1,
                         name=name + "1_dw_2")))
         self.act = act if self.use_double_block else None
-        #act = 'relu' if self.use_double_block else None
         self.conv_pw = ConvBNLayer(
             in_channels=out_channels1,
             out_channels=out_channels2,

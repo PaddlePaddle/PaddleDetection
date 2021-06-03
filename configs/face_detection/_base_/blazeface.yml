@@ -12,12 +12,10 @@ BlazeNet:
                           [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]]
 
 BlazeNeck:
-  #neck_type : fpn_ssh
   neck_type : None
   in_channel: [96,96]
 
 FaceHead:
-  #in_channels: [48, 48]
   in_channels: [96,96]
   anchor_generator: AnchorGeneratorSSD
   loss: SSDLoss
