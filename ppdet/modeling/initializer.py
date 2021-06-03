@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import math
-import numpy as np
-import functools
 
 import paddle
 import paddle.nn as nn
@@ -80,11 +78,13 @@ def zeros_(tensor):
 
 def _calculate_fan_in_and_fan_out(tensor, reverse=False):
     '''
-    reverse: 
-        default is False, as [cout, cin, ...]
-        e.g.
-            conv: weight [cout, cin, kh, kw], False
-            linear: weight [cin, cout], True
+    augments:
+        tensor (paddle.Tensor), 
+        reverse: 
+            default is False, tensor format as <cout, cin, ...>
+            e.g.
+                conv: weight [cout, cin, kh, kw], False
+                linear: weight [cin, cout], True
     '''
     if tensor.ndim < 2:
         raise ValueError(
@@ -98,8 +98,7 @@ def _calculate_fan_in_and_fan_out(tensor, reverse=False):
 
     receptive_field_size = 1
     if tensor.ndim > 2:
-        receptive_field_size = functools.reduce(lambda a, b: a * b,
-                                                tensor.shape[2:])
+        receptive_field_size = math.prod(tensor.shape[2:])
 
     fan_in = num_input_fmaps * receptive_field_size
     fan_out = num_output_fmaps * receptive_field_size
@@ -164,7 +163,7 @@ def _calculate_gain(nonlinearity, param=None):
                 param))
         return math.sqrt(2.0 / (1 + negative_slope**2))
     elif nonlinearity == 'selu':
-        return 3.0 / 4  # Value found empirically (https://github.com/pytorch/pytorch/pull/50664)
+        return 3.0 / 4
     else:
         raise ValueError("Unsupported nonlinearity {}".format(nonlinearity))
 
@@ -218,7 +217,7 @@ def init_parameter_as_torch(model, include_self=True):
         elif isinstance(m, nn.Embedding):
             _no_grad_normal_(m.weight)
 
-        elif isinstance(m, nn.BatchNorm2D):
+        elif isinstance(m, (nn.BatchNorm2D, nn.LayerNorm)):
             # same as torch <weight=1, bias=0>
             pass
 
