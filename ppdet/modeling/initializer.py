@@ -222,7 +222,7 @@ def kaiming_uniform_(tensor,
                      nonlinearity='leaky_relu',
                      reverse=False):
     """
-    Modified tensor inspace using kaiming_uniform_
+    Modified tensor inspace using kaiming_uniform method
     Args:
         tensor (paddle.Tensor): paddle Tensor
         mode (str): ['fan_in', 'fan_out'], 'fin_in' defalut
