@@ -125,7 +125,7 @@ def load_weight(model, weight, optimizer=None):
                                                            incorrect_keys)
     logger.info('Finish resuming model weights: {}'.format(pdparam_path))
 
-    model.set_dict(model_weight)
+    model.set_dict(model_weight, )
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
@@ -170,6 +170,13 @@ def load_pretrain_weight(model, pretrain_weight):
                 param_state_dict[new_k] = value
 
     for name, weight in param_state_dict.items():
+        if "ssh" in name.split(".")[1] or "fpn" in name.split(".")[1]:
+            # print("===============")
+            # print("before:", name)
+            name = name.replace("backbone", "neck")
+            # print("after name:", name)
+        if "ssd_head" in name:
+            name = name.replace("ssd_head","blaze_head")
         if name in model_dict.keys():
             if list(weight.shape) != list(model_dict[name].shape):
                 logger.info(

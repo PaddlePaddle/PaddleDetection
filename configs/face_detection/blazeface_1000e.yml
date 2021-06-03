@@ -5,5 +5,6 @@ _BASE_: [
   '_base_/blazeface.yml',
   '_base_/face_reader.yml',
 ]
-weights: output/blazeface_1000e/model_final
+#weights: output/model_fpn_ssh/696
+weights: output/model_fpn_ssh/blazeface_1000e
 multi_scale_eval: True

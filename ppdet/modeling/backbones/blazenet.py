@@ -16,8 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+#from abc import ABC
+
 import paddle
 import paddle.nn as nn
+from paddle.nn import AvgPool2D
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
@@ -28,6 +31,9 @@ from ..shape_spec import ShapeSpec
 
 __all__ = ['BlazeNet']
 
+
+def hard_swish(x):
+    return x * F.relu6(x + 3) / 6.
 
 class ConvBNLayer(nn.Layer):
     def __init__(self,
@@ -80,8 +86,11 @@ class ConvBNLayer(nn.Layer):
             x = F.relu(x)
         elif self.act == "relu6":
             x = F.relu6(x)
+        elif self.act == 'leaky':
+            x = F.leaky_relu(x)
+        elif self.act == 'hard_swish':
+            x = hard_swish(x)
         return x
-
 
 class BlazeBlock(nn.Layer):
     def __init__(self,
@@ -132,7 +141,7 @@ class BlazeBlock(nn.Layer):
                         padding=1,
                         num_groups=out_channels1,
                         name=name + "1_dw_2")))
-        act = 'relu' if self.use_double_block else None
+        act = 'hard_swish' if self.use_double_block else None
         self.conv_pw = ConvBNLayer(
             in_channels=out_channels1,
             out_channels=out_channels2,
@@ -311,7 +320,8 @@ class BlazeNet(nn.Layer):
         for block in self.blaze_block:
             y = block(y)
             outs.append(y)
-        return [outs[-4], outs[-1]]
+        return [outs[-4],outs[-1]]
+
 
     @property
     def out_shape(self):
@@ -319,3 +329,4 @@ class BlazeNet(nn.Layer):
             ShapeSpec(channels=c)
             for c in [self._out_channels[-4], self._out_channels[-1]]
         ]
+
