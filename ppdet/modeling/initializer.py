@@ -75,7 +75,7 @@ def zeros_(tensor):
 
 def _calculate_fan_in_and_fan_out(tensor, reverse=False):
     """
-    Calculate _calculate_fan_in_and_fan_out for tensor
+    Calculate (fan_in, _fan_out) for tensor
 
     Args:
         tensor (Tensor): paddle.Tensor
@@ -183,6 +183,16 @@ def kaiming_normal_(tensor,
 
 @paddle.no_grad()
 def reset_initialized_parameter(model, include_self=True):
+    """
+    Reset initialized parameter using following method for [conv, linear, embedding, bn]
+
+    Args:
+        model (paddle.Layer): paddle Layer
+        include_self (bool: False): include_self for Layer.named_sublayers method. Indicate whether including itself
+
+    Return:
+        None
+    """
     for _, m in model.named_sublayers(include_self=include_self):
         if isinstance(m, nn.Conv2D):
             k = float(m._groups) / (m._in_channels * m._kernel_size[0] *
