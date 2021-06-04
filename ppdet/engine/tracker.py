@@ -105,7 +105,9 @@ class Tracker(object):
     def load_weights_sde(self, det_weights, reid_weights):
         if self.model.detector:
             load_weight(self.model.detector, det_weights, self.optimizer)
-        load_weight(self.model.reid, reid_weights, self.optimizer)
+            # todo
+        else:
+            load_weight(self.model.reid, reid_weights, self.optimizer)
 
     def _eval_seq_jde(self,
                       dataloader,
@@ -200,9 +202,11 @@ class Tracker(object):
 
             # forward
             timer.tic()
-            detections = self.model(data)
-            self.model.tracker.predict()
-            online_targets = self.model.tracker.update(detections)
+            #detections = self.model(data)
+            #self.model.tracker.predict()
+            #online_targets = self.model.tracker.update(detections)
+
+            online_targets = self.model(data)
 
             online_tlwhs = []
             online_ids = []

@@ -59,9 +59,9 @@ class Trainer(object):
 
         # build data loader
         if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
-            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
-        else:
             self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
+        else:
+            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
 
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
