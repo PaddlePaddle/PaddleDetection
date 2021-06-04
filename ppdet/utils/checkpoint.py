@@ -164,7 +164,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
             # In Faster RCNN, res5 pretrained weights have prefix of backbone, 
             # however, the corresponding model weights have difficult prefix,
             # bbox_head.
-            b = b.strip('backbone.')
+            b = b[9:]
         return a == b or a.endswith("." + b)
 
     match_matrix = np.zeros([len(model_keys), len(weight_keys)])
