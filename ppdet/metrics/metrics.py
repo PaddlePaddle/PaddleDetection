@@ -235,9 +235,10 @@ class VOCMetric(Metric):
         self.detection_map.reset()
 
     def update(self, inputs, outputs):
-        bboxes = outputs['bbox'][:, 2:].numpy()
-        scores = outputs['bbox'][:, 1].numpy()
-        labels = outputs['bbox'][:, 0].numpy()
+        bbox_np = outputs['bbox'].numpy()
+        bboxes = bbox_np[:, 2:]
+        scores = bbox_np[:, 1]
+        labels = bbox_np[:, 0]
         bbox_lengths = outputs['bbox_num'].numpy()
 
         if bboxes.shape == (1, 1) or bboxes is None:

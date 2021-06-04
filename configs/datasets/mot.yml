@@ -13,13 +13,30 @@ MOTDataZoo: {
   'demo': ['MOT16-02'],
 }
 
+# for MOT training
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
     image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
-# for detection or reid evaluation, no use in MOT evaluation
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'task' and 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT16_train
+    dataset_dir: dataset/mot
+    data_root: MOT16/images/train
+    keep_ori_im: False # set True if save visualization images or video
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTVideoDataset
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+
+
+# for detection or reid evaluation, following the JDE paper, but no use in MOT evaluation
 EvalDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
@@ -31,15 +48,3 @@ EvalDataset:
 TestDataset:
   !ImageFolder
     dataset_dir: dataset/mot
-
-EvalMOTDataset:
-  !MOTImageFolder
-    task: MOT16_train
-    dataset_dir: dataset/mot
-    data_root: MOT16/images/train
-    keep_ori_im: False # set True if save visualization images or video
-
-TestMOTDataset:
-  !MOTVideoDataset
-    dataset_dir: dataset/mot
-    keep_ori_im: True # set True if save visualization images or video

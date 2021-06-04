@@ -174,7 +174,7 @@ CUDNN_LIB=/usr/lib/aarch64-linux-gnu/
 `样例一`：
 ```shell
 #不使用`GPU`测试图片 `/root/projects/images/test.jpeg`  
-./main --model_dir=/root/projects/models/yolov3_darknet --image_path=/root/projects/images/test.jpeg
+./main --model_dir=/root/projects/models/yolov3_darknet --image_file=/root/projects/images/test.jpeg
 ```
 
 图片文件`可视化预测结果`会保存在当前目录下`output.jpg`文件中。
