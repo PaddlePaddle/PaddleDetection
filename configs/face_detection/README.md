@@ -53,10 +53,10 @@
 cd dataset/wider_face && ./download_wider_face.sh
 ```
 
-###参数配置
+### 参数配置
 基础模型的配置可以参考`configs/face_detection/_base_/blazeface.yml`；
 改进模型增加FPN和SSH的neck结构，配置文件可以参考`configs/face_detection/_base_/blazeface_fpn.yml`，可以根据需求配置FPN和SSH，具体如下：
-```python
+```
 BlazeNet:
    blaze_filters: [[24, 24], [24, 24], [24, 48, 2], [48, 48], [48, 48]]
    double_blaze_filters: [[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
