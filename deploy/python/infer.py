@@ -425,9 +425,15 @@ def load_predictor(model_dir,
             use_calib_mode=trt_calib_mode)
 
         if use_dynamic_shape:
-            min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
-            max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
-            opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
+            min_input_shape = {
+                'image': [batch_size, 3, trt_min_shape, trt_min_shape]
+            }
+            max_input_shape = {
+                'image': [batch_size, 3, trt_max_shape, trt_max_shape]
+            }
+            opt_input_shape = {
+                'image': [batch_size, 3, trt_opt_shape, trt_opt_shape]
+            }
             config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
                                               opt_input_shape)
             print('trt set dynamic shape done!')
