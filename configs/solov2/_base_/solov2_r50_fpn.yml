@@ -9,7 +9,6 @@ SOLOv2:
 
 ResNet:
   depth: 50
-  norm_type: bn
   freeze_at: 0
   return_idx: [0,1,2,3]
   num_stages: 4
