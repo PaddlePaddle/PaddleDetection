@@ -120,7 +120,7 @@ class FPN(nn.Layer):
         output1 = self.conv1_fpn(input[0])
         output2 = self.conv2_fpn(input[1])
         up2 = F.upsample(
-            output2, size=[output1.shape[2], output1.shape[3]], mode='nearest')
+            output2, size=paddle.shape(output1)[-2:], mode='nearest')
         output1 = paddle.add(output1, up2)
         output1 = self.conv3_fpn(output1)
         return output1, output2
@@ -210,6 +210,7 @@ class BlazeNeck(nn.Layer):
     def forward(self, inputs):
         if self.reture_input:
             return inputs
+        output1, output2 = None, None
         if "fpn" in self.neck_type:
             backout_4, backout_1 = inputs
             output1, output2 = self.fpn([backout_4, backout_1])
