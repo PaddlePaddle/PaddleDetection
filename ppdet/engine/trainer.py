@@ -433,7 +433,6 @@ class Trainer(object):
                         if 'segm' in batch_res else None
                 keypoint_res = batch_res['keypoint'][start:end] \
                         if 'keypoint' in batch_res else None
-
                 image = visualize_results(
                     image, bbox_res, mask_res, segm_res, keypoint_res,
                     int(im_id), catid2name, draw_threshold)
