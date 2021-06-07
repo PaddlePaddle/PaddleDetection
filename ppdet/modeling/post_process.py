@@ -333,11 +333,13 @@ class JDEBBoxPostProcess(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=1, decode=None, nms=None):
+    def __init__(self, num_classes=1, decode=None, nms=None, return_idx=False):
         super(JDEBBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
         self.nms = nms
+        self.return_idx = return_idx
+
         self.fake_bbox_pred = paddle.to_tensor(
             np.array(
                 [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
@@ -354,7 +356,7 @@ class JDEBBoxPostProcess(nn.Layer):
                 [[[0.0]]], dtype='float32'))
         self.fake_boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
 
-    def forward(self, head_out, anchors):
+    def forward(self, head_out, anchors, im_shape=[[608, 1088]], scale_factor=[[1.0, 1.0]]):
         """
         Decode the bbox and do NMS for JDE model. 
 
@@ -390,7 +392,10 @@ class JDEBBoxPostProcess(nn.Layer):
             bbox_pred = self.fake_bbox_pred
             bbox_num = self.fake_bbox_num
             nms_keep_idx = self.fake_nms_keep_idx
-        return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
+        if self.return_idx:
+            return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
+        else:
+            return bbox_pred, bbox_num
 
 
 @register

@@ -1,16 +1,17 @@
 architecture: DeepSORT
-pretrain_weights: None #https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+pretrain_weights: None
 
 DeepSORT:
   detector: YOLOv3 # JDE version
   reid: PCBPyramid
   tracker: DeepSORTTracker
 
+# JDE version for MOT dataset
 YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
-  post_process: BBoxPostProcess
+  post_process: JDEBBoxPostProcess
 
 DarkNet:
   depth: 53

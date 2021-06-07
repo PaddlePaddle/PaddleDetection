@@ -48,6 +48,7 @@ __all__ = ['Trainer']
 
 MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
 
+
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
@@ -232,6 +233,13 @@ class Trainer(object):
         self.start_epoch = 0
         load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
+
+    def load_weights_sde(self, det_weights, reid_weights):
+        if self.model.detector:
+            load_weight(self.model.detector, det_weights)
+            load_weight(self.model.reid, reid_weights)
+        else:
+            load_weight(self.model.reid, reid_weights)
 
     def resume_weights(self, weights):
         # support Distill resume weights
