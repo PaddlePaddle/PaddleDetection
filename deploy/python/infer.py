@@ -36,6 +36,7 @@ SUPPORT_MODELS = {
     'YOLO',
     'RCNN',
     'SSD',
+    'Face',
     'FCOS',
     'SOLOv2',
     'TTFNet',
@@ -111,14 +112,6 @@ class Detector(object):
                     threshold=0.5):
         # postprocess output of predictor
         results = {}
-        if self.pred_config.arch in ['Face']:
-            h, w = inputs['im_shape']
-            scale_y, scale_x = inputs['scale_factor']
-            w, h = float(h) / scale_y, float(w) / scale_x
-            np_boxes[:, 2] *= h
-            np_boxes[:, 3] *= w
-            np_boxes[:, 4] *= h
-            np_boxes[:, 5] *= w
         results['boxes'] = np_boxes
         results['boxes_num'] = np_boxes_num
         if np_masks is not None:
