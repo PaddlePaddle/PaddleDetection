@@ -35,7 +35,7 @@ struct Object {
 // Object for storing all preprocessed data
 struct ImageBlob {
   // image width and height
-  std::vector<float> im_shape_;
+  std::vector<int> im_shape_;
   // Buffer for image data after preprocessing
   const float* im_data_;
   // Scale factor for image size to origin image size
@@ -270,8 +270,8 @@ ImageBlob prepare_imgdata(const cv::Mat& img,
   int width = target_size_[0];
   int height = target_size_[1];
   img_data.im_shape_ = {
-      static_cast<float>(target_size_[0]),
-      static_cast<float>(target_size_[1])
+      static_cast<int>(target_size_[0]),
+      static_cast<int>(target_size_[1])
   };
       
   img_data.scale_factor_ = {
