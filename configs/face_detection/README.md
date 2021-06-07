@@ -11,7 +11,8 @@
 
 | 网络结构 | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy/Medium/Hard Set  | 预测时延（SD855）| 模型大小(MB) | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/face_detection/blazeface_1000e.yml) |
+| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/develop/configs/face_detection/blazeface_1000e.yml) |
+| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.907 / 0.883 / 0.793 | - | 0.479 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/develop/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
 
 **注意:**  
 - 我们使用多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
@@ -51,6 +52,23 @@
 ```
 cd dataset/wider_face && ./download_wider_face.sh
 ```
+
+### 参数配置
+基础模型的配置可以参考`configs/face_detection/_base_/blazeface.yml`；
+改进模型增加FPN和SSH的neck结构，配置文件可以参考`configs/face_detection/_base_/blazeface_fpn.yml`，可以根据需求配置FPN和SSH，具体如下：
+```yaml
+BlazeNet:
+   blaze_filters: [[24, 24], [24, 24], [24, 48, 2], [48, 48], [48, 48]]
+   double_blaze_filters: [[48, 24, 96, 2], [96, 24, 96], [96, 24, 96],
+                           [96, 24, 96, 2], [96, 24, 96], [96, 24, 96]]
+   act: hard_swish #配置backbone中BlazeBlock的激活函数，基础模型为relu，增加FPN和SSH时需使用hard_swish
+
+BlazeNeck:
+   neck_type : fpn_ssh #可选only_fpn、only_ssh和fpn_ssh
+   in_channel: [96,96]
+```
+
+
 
 ### 训练与评估
 训练流程与评估流程方法与其他算法一致，请参考[GETTING_STARTED_cn.md](../../docs/tutorials/GETTING_STARTED_cn.md)。  

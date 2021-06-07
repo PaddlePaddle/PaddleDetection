@@ -38,3 +38,4 @@ from .jde import *
 from .deepsort import *
 from .fairmot import *
 from .centernet import *
+from .blazeface import *

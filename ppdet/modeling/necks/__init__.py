@@ -23,3 +23,4 @@ from .yolo_fpn import *
 from .hrfpn import *
 from .ttf_fpn import *
 from .centernet_fpn import *
+from .blazeface_fpn import *
