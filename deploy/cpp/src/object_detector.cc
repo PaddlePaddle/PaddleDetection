@@ -30,7 +30,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   std::string prog_file = model_dir + OS_PATH_SEP + "model.pdmodel";
   std::string params_file = model_dir + OS_PATH_SEP + "model.pdiparams";
   config.SetModel(prog_file, params_file);
-  if (this->use_gpu_) {
+  if (this->device_ == "GPU") {
     config.EnableUseGpu(200, this->gpu_id_);
     config.SwitchIrOptim(true);
     // use tensorrt
@@ -73,6 +73,8 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
       }
     }
 
+  } else if (this->device_ == "XPU"){
+    config.EnableXpu(10*1024*1024);
   } else {
     config.DisableGpu();
     if (this->use_mkldnn_) {

@@ -156,7 +156,7 @@ def main():
     detector = Detector(
         pred_config,
         FLAGS.det_model_dir,
-        use_gpu=FLAGS.use_gpu,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
@@ -169,7 +169,7 @@ def main():
     topdown_keypoint_detector = KeyPoint_Detector(
         pred_config,
         FLAGS.keypoint_model_dir,
-        use_gpu=FLAGS.use_gpu,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,

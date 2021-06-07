@@ -41,7 +41,7 @@ DEFINE_string(image_dir, "", "Dir of input image, `image_file` has a higher prio
 DEFINE_int32(batch_size, 1, "batch_size");
 DEFINE_string(video_file, "", "Path of input video, `video_file` or `camera_id` has a highest priority.");
 DEFINE_int32(camera_id, -1, "Device id of camera to predict");
-DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
+DEFINE_string(device, "CPU", "Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU.");
 DEFINE_double(threshold, 0.5, "Threshold of score.");
 DEFINE_string(output_dir, "output", "Directory of output visualization files.");
 DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16/trt_int8)");
@@ -56,7 +56,7 @@ DEFINE_bool(trt_calib_mode, false, "If the model is produced by TRT offline quan
 
 void PrintBenchmarkLog(std::vector<double> det_time, int img_num){
   LOG(INFO) << "----------------------- Config info -----------------------";
-  LOG(INFO) << "runtime_device: " << (FLAGS_use_gpu ? "gpu" : "cpu");
+  LOG(INFO) << "runtime_device: " << FLAGS_device;
   LOG(INFO) << "ir_optim: " << "True";
   LOG(INFO) << "enable_memory_optim: " << "True";
   int has_trt = FLAGS_run_mode.find("trt");
@@ -359,7 +359,7 @@ int main(int argc, char** argv) {
     return -1;
   }
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu, FLAGS_use_mkldnn,
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
                         FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,
                         FLAGS_trt_min_shape, FLAGS_trt_max_shape, FLAGS_trt_opt_shape,
 			FLAGS_trt_calib_mode);
