@@ -52,7 +52,7 @@ deploy/cpp
 ## 3.编译部署
 
 ### 3.1 导出模型
-请确认您已经基于`PaddleDetection`的[export_model.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)。
+请确认您已经基于`PaddleDetection`的[export_model.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/export_model.py)导出您的模型，并妥善保存到合适的位置。导出模型细节请参考 [导出模型教程](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)。
 
 模型导出后, 目录结构如下(以`yolov3_darknet`为例):
 ```

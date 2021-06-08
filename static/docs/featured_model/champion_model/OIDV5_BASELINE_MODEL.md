@@ -19,15 +19,15 @@ OIDV5模型训练结果如下。
 
 |        模型结构         | Public/Private Score |                           下载链接                           | 配置文件 |
 | :-----------------: | :--------: | :----------------------------------------------------------: | :--------: |
-| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd |    0.62690/0.59459    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/oidv5/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
+| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd |    0.62690/0.59459    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/oidv5_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) |  [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/oidv5/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
 
 
 此外，为验证模型的性能，PaddleDetection基于该模型结构，也训练了针对COCO2017和Objects365 Dataset的模型，模型和验证集指标如下表。
 
 |        模型结构         | 数据集 |  验证集mAP |                           下载链接                           | 配置文件 |
 | :-----------------: | :--------: | :--------: | :----------------------------------------------------------: | :--------: |
-| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | COCO2017 |    51.7%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/dcn/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
-| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | Objects365 |    34.5%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/obj365_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/obj365/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
+| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | COCO2017 |    51.7%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/dcn/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
+| CascadeCARCNN-FPN-Dcnv2-Nonlocal ResNet200-vd | Objects365 |    34.5%    | [模型](https://paddlemodels.bj.bcebos.com/object_detection/obj365_cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/obj365/cascade_rcnn_cls_aware_r200_vd_fpn_dcnv2_nonlocal_softnms.yml) |
 
 COCO和Objects365 Dataset数据格式相同，目前只支持预测和评估。
 

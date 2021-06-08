@@ -19,7 +19,7 @@
 
 ## 训练
 
-根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
+根据 [tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/train.py) 编写压缩脚本train.py。脚本中量化的步骤如下。
 
 ### 定义量化配置
 config = {

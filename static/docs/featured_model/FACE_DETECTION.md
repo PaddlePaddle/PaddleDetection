@@ -34,16 +34,16 @@ FaceDetection的目标是提供高效、高速的人脸检测解决方案，包�
 
 | 网络结构 | 类型     | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy Set  | Medium Set | Hard Set  | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
-| BlazeFace    | 原始版本 | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
-| BlazeFace    | Lite版本    | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
-| BlazeFace    | NAS版本    | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas.yml) |
-| BlazeFace    | NAS_V2版本 | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas_v2.yml) |
-| FaceBoxes    | 原始版本 | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes.yml) |
-| FaceBoxes    | Lite版本   | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes_lite.yml) |
+| BlazeFace    | 原始版本 | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface.yml) |
+| BlazeFace    | Lite版本    | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface.yml) |
+| BlazeFace    | NAS版本    | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_nas.yml) |
+| BlazeFace    | NAS_V2版本 | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_nas_v2.yml) |
+| FaceBoxes    | 原始版本 | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/faceboxes.yml) |
+| FaceBoxes    | Lite版本   | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/faceboxes_lite.yml) |
 
 **注意:**  
 - 我们使用`tools/face_eval.py`中多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
-- BlazeFace-Lite的训练与测试使用 [blazeface.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/face_detection/blazeface.yml)配置文件并且设置：`lite_edition: true`。
+- BlazeFace-Lite的训练与测试使用 [blazeface.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/face_detection/blazeface.yml)配置文件并且设置：`lite_edition: true`。
 
 #### FDDB数据集上的mAP
 
@@ -258,7 +258,7 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 
 | 网络结构     | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy Set  | Medium Set | Hard Set  | 下载 | 配置文件 |
 |:------------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
-| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_keypoint.yml) |
+| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [模型](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_keypoint.yml) |
 
 ![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
 
@@ -292,7 +292,7 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 
 **版本信息:**
 - 原始版本: 参考原始论文进行修改；
-- Lite版本: 使用更少的网络层数和通道数，具体可参考[代码](https://github.com/PaddlePaddle/PaddleDetection/blob/master/ppdet/modeling/architectures/faceboxes.py)。
+- Lite版本: 使用更少的网络层数和通道数，具体可参考[代码](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/ppdet/modeling/architectures/faceboxes.py)。
 
 
 ## 如何贡献代码

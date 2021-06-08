@@ -19,4 +19,4 @@
 
 | Backbone                | Type     | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| ResNet50-vd-FPN         | Faster     |     2     |   4x    |     21.847     |  39.1%  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_gridmask_4x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/gridmask/faster_rcnn_r50_vd_fpn_gridmask_4x.yml) |
+| ResNet50-vd-FPN         | Faster     |     2     |   4x    |     21.847     |  39.1%  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_gridmask_4x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/gridmask/faster_rcnn_r50_vd_fpn_gridmask_4x.yml) |

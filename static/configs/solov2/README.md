@@ -25,15 +25,15 @@ SOLOv2 (Segmenting Objects by Locations) is a fast instance segmentation framewo
 | BlendMask | R50-FPN | True        |   3x    |     37.8        |  13.5  | V100 |   -  |  -  |
 | SOLOv2 (Paper) | R50-FPN | False        |   1x    |     34.8        |  18.5  | V100 |   -  |  -  |
 | SOLOv2 (Paper) | X101-DCN-FPN | True        |   3x    |     42.4        |  5.9  | V100 |   -  |  -  |
-| SOLOv2 | Mobilenetv3-FPN                 |  True                |   3x    |    30.0          |  50    | V100 | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_mobilenetv3_fpn_448_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_mobilenetv3_fpn_448_3x.yml) |
-| SOLOv2 | R50-FPN                 |  False                |   1x    |    35.6         |  21.9     | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r50_fpn_1x.yml) |
-| SOLOv2 | R50-FPN                 |  True                |   3x    |     37.9         |   21.9    | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r50_fpn_3x.yml) |
-| SOLOv2 | R101-VD-FPN                 |  True               |   3x    |   42.6        |  12.1     | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r101_vd_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_r101_vd_fpn_3x.yml) |
+| SOLOv2 | Mobilenetv3-FPN                 |  True                |   3x    |    30.0          |  50    | V100 | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_mobilenetv3_fpn_448_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/solov2/solov2_mobilenetv3_fpn_448_3x.yml) |
+| SOLOv2 | R50-FPN                 |  False                |   1x    |    35.6         |  21.9     | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/solov2/solov2_r50_fpn_1x.yml) |
+| SOLOv2 | R50-FPN                 |  True                |   3x    |     37.9         |   21.9    | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r50_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/solov2/solov2_r50_fpn_3x.yml) |
+| SOLOv2 | R101-VD-FPN                 |  True               |   3x    |   42.6        |  12.1     | V100 |  [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_r101_vd_fpn_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/solov2/solov2_r101_vd_fpn_3x.yml) |
 
 ## Enhanced model
 | Backbone                | Input size  | Lr schd | V100 FP32(FPS) | Mask AP<sup>val</sup> |         Download                  | Configs |
 | :---------------------: | :-------------------: | :-----: | :------------: | :-----: | :---------: | :------------------------: |
-| Light-R50-VD-DCN-FPN          |  512     |   3x    |     38.6          |  38.8   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_light_r50_vd_fpn_dcn_512_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/solov2/solov2_light_r50_vd_fpn_dcn_512_3x.yml) |
+| Light-R50-VD-DCN-FPN          |  512     |   3x    |     38.6          |  38.8   | [model](https://paddlemodels.bj.bcebos.com/object_detection/solov2_light_r50_vd_fpn_dcn_512_3x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/solov2/solov2_light_r50_vd_fpn_dcn_512_3x.yml) |
 
 **Notes:**
 
