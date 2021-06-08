@@ -55,7 +55,7 @@ class Detector(object):
     Args:
         config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of __model__, __params__ and infer_cfg.yml
-        use_gpu (bool): whether use gpu
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         threshold (float): threshold to reserve the result for output.
     """
@@ -63,20 +63,20 @@ class Detector(object):
     def __init__(self,
                  config,
                  model_dir,
-                 use_gpu=False,
+                 device='CPU',
                  run_mode='fluid',
                  threshold=0.5,
                  trt_calib_mode=False):
         self.config = config
         if self.config.use_python_inference:
             self.executor, self.program, self.fecth_targets = load_executor(
-                model_dir, use_gpu=use_gpu)
+                model_dir, device=device)
         else:
             self.predictor = load_predictor(
                 model_dir,
                 run_mode=run_mode,
                 min_subgraph_size=self.config.min_subgraph_size,
-                use_gpu=use_gpu,
+                device=device,
                 trt_calib_mode=trt_calib_mode)
 
     def preprocess(self, im):
@@ -221,14 +221,14 @@ class DetectorSOLOv2(Detector):
     def __init__(self,
                  config,
                  model_dir,
-                 use_gpu=False,
+                 device='CPU',
                  run_mode='fluid',
                  threshold=0.5,
                  trt_calib_mode=False):
         super(DetectorSOLOv2, self).__init__(
             config=config,
             model_dir=model_dir,
-            use_gpu=use_gpu,
+            device=device,
             run_mode=run_mode,
             threshold=threshold,
             trt_calib_mode=trt_calib_mode)
@@ -382,24 +382,24 @@ class Config():
 def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
-                   use_gpu=False,
+                   device='CPU',
                    min_subgraph_size=3,
                    trt_calib_mode=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
-        use_gpu (bool): whether use gpu
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
-        ValueError: predict by TensorRT need use_gpu == True.
+        ValueError: predict by TensorRT need device == GPU.
     """
-    if not use_gpu and not run_mode == 'fluid':
+    if device != 'GPU' and not run_mode == 'fluid':
         raise ValueError(
-            "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
-            .format(run_mode, use_gpu))
+            "Predict by TensorRT mode: {}, expect device==GPU, but device == {}"
+            .format(run_mode, device))
     precision_map = {
         'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
         'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
@@ -408,11 +408,13 @@ def load_predictor(model_dir,
     config = fluid.core.AnalysisConfig(
         os.path.join(model_dir, '__model__'),
         os.path.join(model_dir, '__params__'))
-    if use_gpu:
+    if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(100, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
+    elif device == 'XPU':
+        config.enable_xpu(10 * 1024 * 1024)
     else:
         config.disable_gpu()
 
@@ -435,8 +437,8 @@ def load_predictor(model_dir,
     return predictor
 
 
-def load_executor(model_dir, use_gpu=False):
-    if use_gpu:
+def load_executor(model_dir, device='CPU'):
+    if device == 'GPU':
         place = fluid.CUDAPlace(0)
     else:
         place = fluid.CPUPlace()
@@ -539,14 +541,14 @@ def main():
     detector = Detector(
         config,
         FLAGS.model_dir,
-        use_gpu=FLAGS.use_gpu,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_calib_mode=FLAGS.trt_calib_mode)
     if config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
             config,
             FLAGS.model_dir,
-            use_gpu=FLAGS.use_gpu,
+            device=FLAGS.device,
             run_mode=FLAGS.run_mode,
             trt_calib_mode=FLAGS.trt_calib_mode)
     # predict from image
@@ -585,10 +587,17 @@ if __name__ == '__main__':
         default='fluid',
         help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
+        "--device",
+        type=str,
+        default='cpu',
+        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
+    )
+    parser.add_argument(
         "--use_gpu",
         type=ast.literal_eval,
         default=False,
-        help="Whether to predict with GPU.")
+        help="Deprecated, please use `--device` to set the device you want to run."
+    )
     parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,
@@ -612,5 +621,9 @@ if __name__ == '__main__':
     print_arguments(FLAGS)
     if FLAGS.image_file != '' and FLAGS.video_file != '':
         assert "Cannot predict image and video at the same time"
+    FLAGS.device = FLAGS.device.upper()
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
+                            ], "device should be CPU, GPU or XPU"
+    assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()

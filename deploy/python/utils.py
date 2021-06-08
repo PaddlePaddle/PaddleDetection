@@ -60,10 +60,16 @@ def argsparser():
         default='fluid',
         help="mode of running(fluid/trt_fp32/trt_fp16/trt_int8)")
     parser.add_argument(
+        "--device",
+        type=str,
+        default='cpu',
+        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
+    )
+    parser.add_argument(
         "--use_gpu",
         type=ast.literal_eval,
         default=False,
-        help="Whether to predict with GPU.")
+        help="Deprecated, please use `--device`.")
     parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,

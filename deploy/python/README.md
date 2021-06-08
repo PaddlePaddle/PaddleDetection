@@ -21,26 +21,26 @@ PaddleDetection在训练过程包括网络的前向和优化器相关参数，�
 在终端输入以下命令进行预测：
 
 ```bash
-python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --use_gpu=True
+python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsign --image_file=./demo/road554.png --device=GPU
 ```
 
 参数说明如下:
 
 | 参数 | 是否必须|含义 |
 |-------|-------|----------|
-| --model_dir | Yes|上述导出的模型路径 |
-| --image_file | Option |需要预测的图片 |
+| --model_dir | Yes| 上述导出的模型路径 |
+| --image_file | Option | 需要预测的图片 |
 | --image_dir  | Option |  要预测的图片文件夹路径   |
-| --video_file | Option |需要预测的视频 |
+| --video_file | Option | 需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
-| --use_gpu | No |是否GPU，默认为False|
-| --run_mode | No |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
-| --batch_size | No |预测时的batch size，在指定`image_dir`时有效 |
-| --threshold | No|预测得分的阈值，默认为0.5|
-| --output_dir | No|可视化结果保存的根目录，默认为output/|
-| --run_benchmark | No| 是否运行benchmark，同时需指定`--image_file`或`--image_dir` |
-| --enable_mkldnn | No | CPU预测中是否开启MKLDNN加速 |
-| --cpu_threads | No| 设置cpu线程数，默认为1 |
+| --device | Option | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
+| --run_mode | Option |使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
+| --batch_size | Option |预测时的batch size，在指定`image_dir`时有效，默认为1 |
+| --threshold | Option|预测得分的阈值，默认为0.5|
+| --output_dir | Option|可视化结果保存的根目录，默认为output/|
+| --run_benchmark | Option| 是否运行benchmark，同时需指定`--image_file`或`--image_dir`，默认为False |
+| --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
+| --cpu_threads | Option| 设置cpu线程数，默认为1 |
 
 说明：
 
