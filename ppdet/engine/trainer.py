@@ -480,7 +480,7 @@ class Trainer(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         image_shape = None
-        if self.cfg.architecture in ['DeepSORT', 'FairMOT', 'JDE']:
+        if self.cfg.architecture in MOT_ARCH:
             test_reader_name = 'TestMOTReader'
         else:
             test_reader_name = 'TestReader'

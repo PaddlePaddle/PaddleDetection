@@ -5,7 +5,7 @@ _BASE_: [
   '_base_/deepsort_reader_1088x608.yml',
 ]
 
-metric: MOT
+epoch: 0
 
 EvalMOTDataset:
   !MOTImageFolder

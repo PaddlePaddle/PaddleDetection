@@ -5,6 +5,8 @@ _BASE_: [
   '_base_/deepsort_reader_1088x608.yml',
 ]
 
+epoch: 0
+
 EvalMOTDataset:
   !MOTImageFolder
     task: MOT16_train

@@ -61,7 +61,6 @@ class DeepSORT(BaseArch):
         }
 
     def _forward(self):
-        assert 'ori_image' in self.inputs
         load_dets = 'pred_bboxes' in self.inputs and 'pred_scores' in self.inputs
 
         ori_image = self.inputs['ori_image']

@@ -333,7 +333,7 @@ class JDEBBoxPostProcess(nn.Layer):
     __shared__ = ['num_classes']
     __inject__ = ['decode', 'nms']
 
-    def __init__(self, num_classes=1, decode=None, nms=None, return_idx=False):
+    def __init__(self, num_classes=1, decode=None, nms=None, return_idx=True):
         super(JDEBBoxPostProcess, self).__init__()
         self.num_classes = num_classes
         self.decode = decode
