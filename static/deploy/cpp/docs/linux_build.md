@@ -100,7 +100,7 @@ make
 | --image_file  | 要预测的图片文件路径 |
 | --video_path  | 要预测的视频文件路径 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1（表示不使用摄像头预测）|
-| --use_gpu  | 是否使用 GPU 预测, 支持值为0或1(默认值为0)|
+| --device  | 运行时的设备，可选择`CPU/GPU/XPU`，默认为`CPU`|
 | --gpu_id  |  指定进行推理的GPU device id(默认值为0)|
 | --run_mode | 使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
 | --run_benchmark | 是否重复预测来进行benchmark测速 ｜
@@ -121,6 +121,6 @@ make
 `样例二`:
 ```shell
 #使用 `GPU`预测视频`/root/projects/videos/test.mp4`
-./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --use_gpu=1
+./build/main --model_dir=/root/projects/models/yolov3_darknet --video_path=/root/projects/images/test.mp4 --device=GPU
 ```
 视频文件目前支持`.mp4`格式的预测，`可视化预测结果`会保存在当前目录下`output.mp4`文件中。

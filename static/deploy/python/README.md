@@ -45,7 +45,7 @@ python deploy/python/infer.py --model_dir=/path/to/models --image_file=/path/to/
 | --image_file | Option |需要预测的图片 |
 | --video_file | Option |需要预测的视频 |
 | --camera_id | Option | 用来预测的摄像头ID，默认为-1(表示不使用摄像头预测，可设置为：0 - (摄像头数目-1) )，预测过程中在可视化界面按`q`退出输出预测结果到：output/output.mp4|
-| --use_gpu |No|是否GPU，默认为False|
+| --device | Option | 运行时的设备，可选择`CPU/GPU`，默认为`CPU`|
 | --run_mode |No|使用GPU时，默认为fluid, 可选（fluid/trt_fp32/trt_fp16/trt_int8）|
 | --threshold |No|预测得分的阈值，默认为0.5|
 | --output_dir |No|可视化结果保存的根目录，默认为output/|

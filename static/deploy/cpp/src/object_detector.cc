@@ -21,7 +21,7 @@ namespace PaddleDetection {
 
 // Load Model and create model predictor
 void ObjectDetector::LoadModel(const std::string& model_dir,
-                               bool use_gpu,
+                               const std::string& device,
                                const int min_subgraph_size,
                                const int batch_size,
                                const std::string& run_mode,
@@ -31,7 +31,7 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
   std::string prog_file = model_dir + OS_PATH_SEP + "__model__";
   std::string params_file = model_dir + OS_PATH_SEP + "__params__";
   config.SetModel(prog_file, params_file);
-  if (use_gpu) {
+  if (device == "GPU") {
     config.EnableUseGpu(100, gpu_id);
     config.SwitchIrOptim(true);
     if (run_mode != "fluid") {
@@ -51,6 +51,8 @@ void ObjectDetector::LoadModel(const std::string& model_dir,
           false,
           trt_calib_mode);
    }
+  } else if (device == "XPU"){
+    config.EnableXpu(10*1024*1024);
   } else {
     config.DisableGpu();
   }
