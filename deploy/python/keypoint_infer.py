@@ -273,7 +273,7 @@ def load_predictor(model_dir,
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
-    elif device == 'xpu':
+    elif device == 'XPU':
         config.enable_xpu(10 * 1024 * 1024)
     else:
         config.disable_gpu()
