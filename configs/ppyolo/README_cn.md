@@ -79,7 +79,7 @@ PP-YOLO从如下方面优化和提升YOLOv3模型的精度和速度：
 | PP-YOLO tiny                 |     8      |      32       |   4.2MB    |   **1.3M**     |     416     |         22.7         |          65.4         | [model](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_650e_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/ppyolo_tiny_650e_coco.yml) | [预测模型](https://paddledet.bj.bcebos.com/models/ppyolo_tiny_quant.tar) |
 
 - PP-YOLO-tiny 模型使用COCO数据集中train2017作为训练集，使用val2017作为测试集，Box AP<sup>val</sup>为`mAP(IoU=0.5:0.95)`评估结果, Box AP50<sup>val</sup>为`mAP(IoU=0.5)`评估结果。
-- PP-YOLO-tiny 模型训练过程中使用8GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](../../docs/FAQ.md)调整学习率和迭代次数。
+- PP-YOLO-tiny 模型训练过程中使用8GPU，每GPU batch size为32进行训练，如训练GPU数和batch size不使用上述配置，须参考[FAQ](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/FAQ.md)调整学习率和迭代次数。
 - PP-YOLO-tiny 模型推理速度测试环境配置为麒麟990芯片4线程，arm8架构。
 - 我们也提供的PP-YOLO-tiny的后量化压缩模型，将模型体积压缩到**1.3M**，对精度和预测速度基本无影响
 
