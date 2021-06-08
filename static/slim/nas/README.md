@@ -41,7 +41,7 @@ double_blaze_filters = [
        [self.double_filter_num[tokens[2]], self.mid_filter_num[tokens[6]], self.double_filter_num[tokens[3]], 2],
        [self.double_filter_num[tokens[3]], self.mid_filter_num[tokens[7]], self.double_filter_num[tokens[3]]]]
 ```
-blaze_filters与double_blaze_filters字段请参考[blazenet.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/ppdet/modeling/backbones/blazenet.py)中定义。
+blaze_filters与double_blaze_filters字段请参考[blazenet.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/ppdet/modeling/backbones/blazenet.py)中定义。
 
 初始化tokens为：[2, 1, 3, 8, 2, 1, 2, 1, 1]。
 
@@ -84,10 +84,10 @@ BlazeNet:
 
 - （2）训练、评估与预测：
 
-启动完整的训练评估实验，可参考PaddleDetection的[训练、评估与预测流程](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/tutorials/GETTING_STARTED_cn.md)
+启动完整的训练评估实验，可参考PaddleDetection的[训练、评估与预测流程](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/tutorials/GETTING_STARTED_cn.md)
 
 ## 实验结果
-请参考[人脸检测模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/featured_model/FACE_DETECTION.md)中BlazeFace-NAS的实验结果。
+请参考[人脸检测模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/featured_model/FACE_DETECTION.md)中BlazeFace-NAS的实验结果。
 
 ## FAQ
 - 运行报错：`socket.error: [Errno 98] Address already in use`。

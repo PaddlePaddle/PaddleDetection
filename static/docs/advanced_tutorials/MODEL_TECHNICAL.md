@@ -34,7 +34,7 @@ PaddleDetection的网络模型模块所有代码逻辑在`ppdet/modeling/`中，
 ![](../images/models_figure.png)
 
 ## 新增模型
-我们以单阶段检测器YOLOv3为例，结合[yolov3_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml)配置文件，对建立模型过程进行详细描述，
+我们以单阶段检测器YOLOv3为例，结合[yolov3_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_darknet.yml)配置文件，对建立模型过程进行详细描述，
 按照此思路您可以快速搭建新的模型。
 
 搭建新模型的一般步骤是：Backbone编写、检测组件编写与模型组网这三个步骤，下面为您详细介绍：

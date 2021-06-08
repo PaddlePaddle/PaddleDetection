@@ -38,17 +38,17 @@ optimized network structure.
 
 | Architecture | Type     | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download | Configs |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
-| BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
-| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface.yml) |
-| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas.yml) |
-| BlazeFace    | NAS_V2   | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_nas_v2.yml) |
-| FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes.yml) |
-| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/faceboxes_lite.yml) |
+| BlazeFace    | Original | 640  |    8    | 32w     | **0.915** | **0.892**  | **0.797** | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_original.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface.yml) |
+| BlazeFace    | Lite     | 640  |    8    | 32w     | 0.909     | 0.885      | 0.781     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface.yml) |
+| BlazeFace    | NAS      | 640  |    8    | 32w     | 0.837     | 0.807      | 0.658     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_nas.yml) |
+| BlazeFace    | NAS_V2   | 640  |    8    | 32W     | 0.870     | 0.837      | 0.685     | [model](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_nas2.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_nas_v2.yml) |
+| FaceBoxes    | Original | 640  |    8    | 32w     | 0.878     | 0.851      | 0.576     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_original.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/faceboxes.yml) |
+| FaceBoxes    | Lite     | 640  |    8    | 32w     | 0.901     | 0.875      | 0.760     | [model](https://paddlemodels.bj.bcebos.com/object_detection/faceboxes_lite.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/faceboxes_lite.yml) |
 
 **NOTES:**  
 - Get mAP in `Easy/Medium/Hard Set` by multi-scale evaluation in `tools/face_eval.py`.
 For details can refer to [Evaluation](#Evaluate-on-the-WIDER-FACE).
-- BlazeFace-Lite Training and Testing ues [blazeface.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/face_detection/blazeface.yml)
+- BlazeFace-Lite Training and Testing ues [blazeface.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/face_detection/blazeface.yml)
 configs file and set `lite_edition: true`.
 
 #### mAP in FDDB
@@ -274,7 +274,7 @@ wget https://dataset.bj.bcebos.com/wider_face/wider_face_train_bbx_lmk_gt.txt
 
 | Architecture  | Size | Img/gpu | Lr schd | Easy Set  | Medium Set | Hard Set  | Download | Configs |
 |:------------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|:--------:|
-| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [download](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/face_detection/blazeface_keypoint.yml) |
+| BlazeFace Keypoint     | 640  |    16    | 16w     | 0.852     | 0.816      | 0.662     | [download](https://paddlemodels.bj.bcebos.com/object_detection/blazeface_keypoint.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/face_detection/blazeface_keypoint.yml) |
 
 ![](../images/12_Group_Group_12_Group_Group_12_84.jpg)
 

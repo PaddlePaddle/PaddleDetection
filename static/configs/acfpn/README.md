@@ -13,4 +13,4 @@ Cao J, Chen Q, Guo J, et al. Attention-guided Context Feature Pyramid Network fo
 
 | Backbone                | Type     | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| ResNet50-vd-ACFPN         | Faster     |     2     |   1x    |     23.432     |  39.6  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_acfpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/acfpn/faster_rcnn_r50_vd_acfpn_1x.yml) |
+| ResNet50-vd-ACFPN         | Faster     |     2     |   1x    |     23.432     |  39.6  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_acfpn_1x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/acfpn/faster_rcnn_r50_vd_acfpn_1x.yml) |

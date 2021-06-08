@@ -9,7 +9,7 @@
 
 迁移学习需要使用自己的数据集，目前已支持COCO和VOC的数据标注格式，在```tools/x2coco.py```中给出了voc、labelme和cityscape标注格式转换为COCO格式的脚本，具体使用方式可以参考[自定义数据源](READER.md)。数据准备完成后，在配置文件中配置数据路径，对应修改reader中的路径参数即可。
 
-1. COCO数据集需要修改COCODataSet中的参数，以[yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66)为例，修改yolov3\_reader中的配置：
+1. COCO数据集需要修改COCODataSet中的参数，以[yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_darknet.yml#L66)为例，修改yolov3\_reader中的配置：
 
 ```yml
   dataset:
@@ -20,7 +20,7 @@
       with_background: false
 ```
 
-2. VOC数据集需要修改VOCDataSet中的参数，以[yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet_voc.yml#L67)为例：
+2. VOC数据集需要修改VOCDataSet中的参数，以[yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_darknet_voc.yml#L67)为例：
 
 ```yml
   dataset:
@@ -56,7 +56,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 可以显示的指定训练过程中忽略参数的名字，任何参数名均可加入`finetune_exclude_pretrained_params`中，为实现这一目的，可通过如下方式实现：
 
-1. 在 YMAL 配置文件中通过设置`finetune_exclude_pretrained_params`字段。可参考[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_mobilenet_v1_fruit.yml#L15)
+1. 在 YMAL 配置文件中通过设置`finetune_exclude_pretrained_params`字段。可参考[配置文件](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_mobilenet_v1_fruit.yml#L15)
 2. 在 train.py的启动参数中设置`finetune_exclude_pretrained_params`。例如：
 
 ```python
