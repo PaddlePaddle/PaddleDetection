@@ -650,6 +650,6 @@ if __name__ == '__main__':
     FLAGS.device = FLAGS.device.upper()
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
-    assert FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
+    assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()
