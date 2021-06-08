@@ -6,7 +6,7 @@
 [Fleet](https://github.com/PaddlePaddle/Fleet) 是用于 PaddlePaddle 分布式训练的高层 API，基于这套接口用户可以很容易切换到分布式训练程序。
 为了可以同时支持单机训练和多机训练，[PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/) 采用 Fleet API 接口，可以同时支持单机训练和多机训练。
 
-更多的分布式训练可以参考 [Fleet API设计文档](https://github.com/PaddlePaddle/Fleet/blob/develop/README.md)。
+更多的分布式训练可以参考 [Fleet API设计文档](https://github.com/PaddlePaddle/Fleet/blob/release/2.1/README.md)。
 
 
 ## 使用方法
