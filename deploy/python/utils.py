@@ -66,6 +66,11 @@ def argsparser():
         help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
     )
     parser.add_argument(
+        "--use_gpu",
+        type=ast.literal_eval,
+        default=False,
+        help="Deprecated, please use `--device`.")
+    parser.add_argument(
         "--run_benchmark",
         type=ast.literal_eval,
         default=False,

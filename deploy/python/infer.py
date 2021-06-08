@@ -389,7 +389,7 @@ def load_predictor(model_dir,
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
-    elif device == 'xpu':
+    elif device == 'XPU':
         config.enable_xpu(10 * 1024 * 1024)
     else:
         config.disable_gpu()
@@ -647,7 +647,9 @@ if __name__ == '__main__':
     parser = argsparser()
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
+    FLAGS.device = FLAGS.device.upper()
     assert FLAGS.device in ['CPU', 'GPU', 'XPU'
                             ], "device should be CPU, GPU or XPU"
+    assert FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()
