@@ -22,7 +22,7 @@ pip install paddle-serving-server-gpu -i https://mirror.baidu.com/pypi/simple
 ```
 
 ## 3. 导出模型
-PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
+PaddleDetection在训练过程包括网络的前向和优化器相关参数，而在部署过程中，我们只需要前向参数，具体参考:[导出模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/advanced_tutorials/deploy/EXPORT_MODEL.md)
 
 ```
 python tools/export_serving_model.py -c configs/yolov3_mobilenet_v1_roadsign.yml -o use_gpu=true weights=https://paddlemodels.bj.bcebos.com/object_detection/yolov3_mobilenet_v1_roadsign.pdparams --output_dir=./inference_model

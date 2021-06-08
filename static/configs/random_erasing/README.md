@@ -18,4 +18,4 @@
 
 | Backbone                | Type     | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| ResNet50-vd-FPN         | Faster     |     2     |   4x    |     21.847     |  39.0%  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_random_erasing_4x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/random_erasing/faster_rcnn_r50_vd_fpn_random_erasing_4x.yml) |
+| ResNet50-vd-FPN         | Faster     |     2     |   4x    |     21.847     |  39.0%  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_r50_vd_fpn_random_erasing_4x.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/random_erasing/faster_rcnn_r50_vd_fpn_random_erasing_4x.yml) |

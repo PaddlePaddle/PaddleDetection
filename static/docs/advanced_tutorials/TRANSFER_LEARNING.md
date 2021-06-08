@@ -11,7 +11,7 @@ In transfer learning, if different dataset and the number of classes is used, th
 Transfer learning needs custom dataset and annotation in COCO-format and VOC-format is supported now. The script converts the annotation from voc, labelme or cityscape to COCO is provided in ```tools/x2coco.py```. More details please refer to [READER](READER.md). After data preparation, update the data parameters in configuration file.
 
 
-1. COCO-format dataset, take [yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet.yml#L66) for example, modify the COCODataSet in yolov3\_reader:
+1. COCO-format dataset, take [yolov3\_darknet.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_darknet.yml#L66) for example, modify the COCODataSet in yolov3\_reader:
 
 ```yml
   dataset:
@@ -22,7 +22,7 @@ Transfer learning needs custom dataset and annotation in COCO-format and VOC-for
       with_background: false
 ```
 
-2. VOC-format dataset, take [yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_darknet_voc.yml#L67) for example, modify the VOCDataSet in the configuration:
+2. VOC-format dataset, take [yolov3\_darknet\_voc.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_darknet_voc.yml#L67) for example, modify the VOCDataSet in the configuration:
 
 ```yml
   dataset:
@@ -52,7 +52,7 @@ python -u tools/train.py -c configs/faster_rcnn_r50_1x.yml \
 
 The parameters which need to ignore can be specified explicitly as well and arbitrary parameter names can be added to `finetune_exclude_pretrained_params`. For this purpose, several methods can be used as follwed:
 
-- Set `finetune_exclude_pretrained_params` in YAML configuration files. Please refer to [configure file](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/yolov3_mobilenet_v1_fruit.yml#L15)
+- Set `finetune_exclude_pretrained_params` in YAML configuration files. Please refer to [configure file](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/yolov3_mobilenet_v1_fruit.yml#L15)
 - Set `finetune_exclude_pretrained_params` in command line. For example:
 
 ```python

@@ -10,7 +10,7 @@
 - [检测库的常规训练方法](https://github.com/PaddlePaddle/PaddleDetection)
 - [PaddleSlim蒸馏API文档](https://paddlepaddle.github.io/PaddleSlim/api/single_distiller_api/)
 
-已发布蒸馏模型见[压缩模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/README.md)
+已发布蒸馏模型见[压缩模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/slim/README.md)
 
 ## 安装PaddleSlim
 可按照[PaddleSlim使用文档](https://paddlepaddle.github.io/PaddleSlim/)中的步骤安装PaddleSlim
@@ -89,7 +89,7 @@ yolo_output_names = [
 
 ## 训练
 
-根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py)编写压缩脚本`distill.py`。
+根据[PaddleDetection/tools/train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/train.py)编写压缩脚本`distill.py`。
 在该脚本中定义了teacher_model和student_model，用teacher_model的输出指导student_model的训练
 
 ### 执行示例
@@ -178,7 +178,7 @@ python -u slim/distillation/distill.py \
 
 ## 评估
 
-每隔`snap_shot_iter`步后会保存一个checkpoint模型可以用于评估，使用PaddleDetection目录下[tools/eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/eval.py)评估脚本，并指定`weights`为训练得到的模型路径
+每隔`snap_shot_iter`步后会保存一个checkpoint模型可以用于评估，使用PaddleDetection目录下[tools/eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/eval.py)评估脚本，并指定`weights`为训练得到的模型路径
 
 运行命令为：
 ```bash
@@ -197,7 +197,7 @@ python -u tools/eval.py -c configs/yolov3_mobilenet_v1.yml \
 
 ## 预测
 
-每隔`snap_shot_iter`步后保存的checkpoint模型也可以用于预测，使用PaddleDetection目录下[tools/infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/infer.py)评估脚本，并指定`weights`为训练得到的模型路径
+每隔`snap_shot_iter`步后保存的checkpoint模型也可以用于预测，使用PaddleDetection目录下[tools/infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/infer.py)评估脚本，并指定`weights`为训练得到的模型路径
 
 ### Python预测
 

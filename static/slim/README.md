@@ -81,7 +81,7 @@
 
 ### 蒸馏通道剪裁模型
 
-可通过高精度模型蒸馏通道剪裁后模型的方式，训练方法及相关示例见[蒸馏通道剪裁模型](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/extensions/distill_pruned_model/distill_pruned_model_demo.ipynb)。
+可通过高精度模型蒸馏通道剪裁后模型的方式，训练方法及相关示例见[蒸馏通道剪裁模型](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/slim/extensions/distill_pruned_model/distill_pruned_model_demo.ipynb)。
 
 COCO数据集上蒸馏通道剪裁模型库如下。
 
