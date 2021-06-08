@@ -1,6 +1,6 @@
 # 卷积层通道剪裁教程
 
-请确保已正确[安装PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/tutorials/INSTALL_cn.md)及其依赖。
+请确保已正确[安装PaddleDetection](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/tutorials/INSTALL_cn.md)及其依赖。
 
 该文档介绍如何使用[PaddleSlim](https://paddlepaddle.github.io/PaddleSlim)的卷积通道剪裁接口对检测库中的模型的卷积层的通道数进行剪裁。
 
@@ -8,15 +8,15 @@
 
 该教程中所示操作，如无特殊说明，均在`PaddleDetection/`路径下执行。
 
-已发布裁剪模型见[压缩模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/README.md)
+已发布裁剪模型见[压缩模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/slim/README.md)
 
 ## 1. 数据准备
 
-请参考检测库[数据下载](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/tutorials/INSTALL_cn.md)文档准备数据。
+请参考检测库[数据下载](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/tutorials/INSTALL_cn.md)文档准备数据。
 
 ## 2. 模型选择
 
-通过`-c`选项指定待裁剪模型的配置文件的相对路径，更多可选配置文件请参考: [检测库配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs)
+通过`-c`选项指定待裁剪模型的配置文件的相对路径，更多可选配置文件请参考: [检测库配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs)
 
 对于剪裁任务，原模型的权重不一定对剪裁后的模型训练的重训练有贡献，所以加载原模型的权重不是必需的步骤。
 
@@ -32,7 +32,7 @@
 -o weights=output/yolov3_mobilenet_v1_voc/model_final
 ```
 
-官方已发布的模型请参考: [模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/master/docs/MODEL_ZOO_cn.md)
+官方已发布的模型请参考: [模型库](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/docs/MODEL_ZOO_cn.md)
 
 ## 3. 确定待分析参数
 
@@ -49,7 +49,7 @@ python slim/prune/prune.py \
 
 ## 4. 分析待剪裁参数敏感度
 
-可通过敏感度分析脚本分析待剪裁参数敏感度得到合适的剪裁率，敏感度分析工具见[敏感度分析](https://github.com/PaddlePaddle/PaddleDetection/blob/master/slim/sensitive/README.md)。
+可通过敏感度分析脚本分析待剪裁参数敏感度得到合适的剪裁率，敏感度分析工具见[敏感度分析](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/slim/sensitive/README.md)。
 
 ## 5. 启动剪裁任务
 
@@ -97,16 +97,16 @@ python slim/prune/export_model.py \
 
 **当前PaddleSlim的剪裁功能不支持剪裁循环体或条件判断语句块内的卷积层，请避免剪裁循环和判断语句块前的一个卷积和语句块内部的卷积。**
 
-对于[faster_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/faster_rcnn_r50_1x.yml)或[mask_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/mask_rcnn_r50_1x.yml)网络，请剪裁卷积`res4f_branch2c`之前的卷积。
+对于[faster_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/faster_rcnn_r50_1x.yml)或[mask_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/mask_rcnn_r50_1x.yml)网络，请剪裁卷积`res4f_branch2c`之前的卷积。
 
-对[faster_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/faster_rcnn_r50_1x.yml)剪裁示例如下：
+对[faster_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/faster_rcnn_r50_1x.yml)剪裁示例如下：
 
 ```
 # demo for faster_rcnn_r50
 python slim/prune/prune.py -c ./configs/faster_rcnn_r50_1x.yml --pruned_params "res4f_branch2b_weights,res4f_branch2a_weights" --pruned_ratios="0.3,0.4" --eval
 ```
 
-对[mask_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/master/configs/mask_rcnn_r50_1x.yml)剪裁示例如下：
+对[mask_rcnn_r50](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/configs/mask_rcnn_r50_1x.yml)剪裁示例如下：
 
 ```
 # demo for mask_rcnn_r50
