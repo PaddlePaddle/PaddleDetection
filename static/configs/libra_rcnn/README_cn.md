@@ -60,8 +60,8 @@ Faster RCNN中生成许多候选框之后，使用随机的方法挑选正负样
 
 | 骨架网络             | 网络类型     | 每张GPU图片个数 | 学习率策略 |推理时间(fps) | Box AP | Mask AP |                           下载                          | 配置文件 |
 | :---------------------- | :-------------:  | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| ResNet50-vd-BFP         | Faster     |     2     |   1x    |     18.247     |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r50_vd_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/libra_rcnn/libra_rcnn_r50_vd_fpn_1x.yml) |
-| ResNet101-vd-BFP         | Faster     |     2     |   1x    |     14.865     |  42.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r101_vd_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/libra_rcnn/libra_rcnn_r101_vd_fpn_1x.yml) |
+| ResNet50-vd-BFP         | Faster     |     2     |   1x    |     18.247     |  40.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r50_vd_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/libra_rcnn/libra_rcnn_r50_vd_fpn_1x.yml) |
+| ResNet101-vd-BFP         | Faster     |     2     |   1x    |     14.865     |  42.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/libra_rcnn_r101_vd_fpn_1x.tar) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static/configs/libra_rcnn/libra_rcnn_r101_vd_fpn_1x.yml) |
 
 ## 引用
 
