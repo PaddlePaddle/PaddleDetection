@@ -16,7 +16,7 @@ English | [简体中文](INSTALL_cn.md)
 This document covers how to install PaddleDetection, its dependencies
 (including PaddlePaddle), together with COCO and Pascal VOC dataset.
 
-For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/).
+For general information about PaddleDetection, please see [README.md](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.1/).
 
 
 ## Install PaddlePaddle
@@ -106,7 +106,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 **Install Python dependencies:**
 
-Required python packages are specified in [requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt), and can be installed with:
+Required python packages are specified in [requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.1/static/requirements.txt), and can be installed with:
 
 ```
 pip install -r requirements.txt
