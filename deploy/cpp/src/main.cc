@@ -358,6 +358,10 @@ int main(int argc, char** argv) {
     std::cout << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
+  if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" || FLAGS_device == "XPU")) {
+    std::cout << "device should be 'CPU', 'GPU' or 'XPU'.";
+    return -1;
+  }
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device, FLAGS_use_mkldnn,
                         FLAGS_cpu_threads, FLAGS_run_mode, FLAGS_batch_size,FLAGS_gpu_id,

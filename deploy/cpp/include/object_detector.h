@@ -58,7 +58,7 @@ cv::Mat VisualizeResult(const cv::Mat& img,
 class ObjectDetector {
  public:
   explicit ObjectDetector(const std::string& model_dir, 
-                          const std::string& device='CPU',
+                          const std::string& device="CPU",
                           bool use_mkldnn=false,
                           int cpu_threads=1,
                           const std::string& run_mode="fluid",
@@ -106,7 +106,7 @@ class ObjectDetector {
   }
 
  private:
-  bool device_ = false;
+  std::string device_ = "CPU";
   int gpu_id_ = 0;
   int cpu_math_library_num_threads_ = 1;
   bool use_mkldnn_ = false;
