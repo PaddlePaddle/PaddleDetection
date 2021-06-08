@@ -48,7 +48,7 @@ class LetterBoxResize(object):
             img, top, bottom, left, right, cv2.BORDER_CONSTANT,
             value=color)  # padded rectangular
         return img, ratio, padw, padh
-        
+
     def __call__(self, im, im_info):
         """
         Args:

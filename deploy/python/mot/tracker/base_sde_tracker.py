@@ -33,7 +33,6 @@ class TrackState(object):
     Deleted = 3
 
 
-
 class Track(object):
     """
     A single target track with state space `(x, y, a, h)` and associated

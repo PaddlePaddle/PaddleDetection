@@ -74,7 +74,7 @@ def cython_bbox_ious(atlbrs, btlbrs):
         import cython_bbox
     except Exception as e:
         print('cython_bbox not found, please install cython_bbox.'
-                     'for example: `pip install cython_bbox`.')
+              'for example: `pip install cython_bbox`.')
         raise e
 
     ious = cython_bbox.bbox_overlaps(

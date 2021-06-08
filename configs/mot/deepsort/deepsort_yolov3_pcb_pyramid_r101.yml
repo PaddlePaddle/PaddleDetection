@@ -23,9 +23,8 @@ DeepSORT:
   tracker: DeepSORTTracker
 
 # JDE version for MOT dataset
-YOLOv3: 
+YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
   post_process: JDEBBoxPostProcess
-  

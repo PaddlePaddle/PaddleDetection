@@ -24,7 +24,7 @@ from mot_preprocess import LetterBoxResize
 
 from mot.tracker import JDETracker
 from mot import visualization as mot_vis
-from mot.utils import Timer as Timer2
+from mot.utils import Timer as MOTTimer
 
 from paddle.inference import Config
 from paddle.inference import create_predictor
@@ -95,11 +95,7 @@ class MOT_Detector(object):
         inputs = create_inputs(im, im_info)
         return inputs
 
-    def postprocess(self,
-                    pred_dets,
-                    pred_embs,
-                    inputs,
-                    threshold=0.5):
+    def postprocess(self, pred_dets, pred_embs, inputs, threshold=0.5):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs, online_ids = [], []
         for t in online_targets:
@@ -141,7 +137,7 @@ class MOT_Detector(object):
 
         self.det_times.postprocess_time_s.start()
         online_tlwhs, online_ids = self.postprocess(
-                pred_dets, pred_embs, inputs, threshold=threshold)
+            pred_dets, pred_embs, inputs, threshold=threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_ids
@@ -159,7 +155,8 @@ def create_inputs(im, im_info):
     inputs = {}
     inputs['image'] = np.array((im, )).astype('float32')
     inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-    inputs['scale_factor'] = np.array((im_info['scale_factor'], )).astype('float32')
+    inputs['scale_factor'] = np.array(
+        (im_info['scale_factor'], )).astype('float32')
     return inputs
 
 
@@ -314,7 +311,7 @@ def predict_video(detector, camera_id):
     out_path = os.path.join(FLAGS.output_dir, video_name)
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
-    timer = Timer2()
+    timer = MOTTimer()
     while (1):
         ret, frame = capture.read()
         if not ret:
@@ -358,35 +355,7 @@ def main():
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, FLAGS.camera_id)
     else:
-        # predict from image
-        if FLAGS.image_dir is None and FLAGS.image_file is not None:
-            assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
-        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        predict_image(detector, img_list, FLAGS.batch_size)
-        if not FLAGS.run_benchmark:
-            detector.det_times.info(average=True)
-        else:
-            mems = {
-                'cpu_rss_mb': detector.cpu_mem / len(img_list),
-                'gpu_rss_mb': detector.gpu_mem / len(img_list),
-                'gpu_util': detector.gpu_util * 100 / len(img_list)
-            }
-
-            perf_info = detector.det_times.report(average=True)
-            model_dir = FLAGS.model_dir
-            mode = FLAGS.run_mode
-            model_info = {
-                'model_name': model_dir.strip('/').split('/')[-1],
-                'precision': mode.split('_')[-1]
-            }
-            data_info = {
-                'batch_size': FLAGS.batch_size,
-                'shape': "dynamic_shape",
-                'data_num': perf_info['img_num']
-            }
-            det_log = PaddleInferBenchmark(detector.config, model_info,
-                                           data_info, perf_info, mems)
-            det_log('Det')
+        print('MOT models do not support predict single image.')
 
 
 if __name__ == '__main__':

@@ -356,7 +356,11 @@ class JDEBBoxPostProcess(nn.Layer):
                 [[[0.0]]], dtype='float32'))
         self.fake_boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
 
-    def forward(self, head_out, anchors, im_shape=[[608, 1088]], scale_factor=[[1.0, 1.0]]):
+    def forward(self,
+                head_out,
+                anchors,
+                im_shape=[[608, 1088]],
+                scale_factor=[[1.0, 1.0]]):
         """
         Decode the bbox and do NMS for JDE model. 
 
