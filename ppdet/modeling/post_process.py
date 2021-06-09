@@ -50,7 +50,6 @@ class BBoxPostProcess(nn.Layer):
                 dtype='float32'))
         self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
-
     def forward(self, head_out, rois, im_shape, scale_factor):
         """
         Decode the bbox and do NMS if needed. 
@@ -84,7 +83,7 @@ class BBoxPostProcess(nn.Layer):
         Currently only support bs = 1.
 
         Args:
-            bbox_pred (Tensor): The output bboxes with shape [N, 6] after decode
+            bboxes (Tensor): The output bboxes with shape [N, 6] after decode
                 and NMS, including labels, scores and bboxes.
             bbox_num (Tensor): The number of prediction boxes of each batch with
                 shape [1], and is N.
