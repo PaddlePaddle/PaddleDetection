@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 import time
 import random
 import datetime
@@ -63,6 +64,10 @@ class Trainer(object):
             self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
         else:
             self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+
+        if cfg.architecture == 'DeepSORT' and self.mode == 'train':
+            logger.error('DeepSORT has no need of training on mot dataset.')
+            sys.exit(1)
 
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(

@@ -377,18 +377,18 @@ class JDEBBoxPostProcess(nn.Layer):
         """
         boxes_idx, yolo_boxes_scores = self.decode(head_out, anchors)
 
-        if len(boxes_idx) == 0:  # TODO: deploy
+        if len(boxes_idx) == 0:
             boxes_idx = self.fake_boxes_idx
             yolo_boxes_out = self.fake_yolo_boxes_out
             yolo_scores_out = self.fake_yolo_scores_out
-
-        yolo_boxes = paddle.gather_nd(yolo_boxes_scores, boxes_idx)
-        # only bs=1
-        yolo_boxes_out = paddle.reshape(
-            yolo_boxes[:, :4], shape=[1, len(boxes_idx), 4])
-        yolo_scores_out = paddle.reshape(
-            yolo_boxes[:, 4:5], shape=[1, 1, len(boxes_idx)])
-        boxes_idx = boxes_idx[:, 1:]
+        else:
+            yolo_boxes = paddle.gather_nd(yolo_boxes_scores, boxes_idx)
+            # TODO: only support bs=1 now
+            yolo_boxes_out = paddle.reshape(
+                yolo_boxes[:, :4], shape=[1, len(boxes_idx), 4])
+            yolo_scores_out = paddle.reshape(
+                yolo_boxes[:, 4:5], shape=[1, 1, len(boxes_idx)])
+            boxes_idx = boxes_idx[:, 1:]
 
         bbox_pred, bbox_num, nms_keep_idx = self.nms(
             yolo_boxes_out, yolo_scores_out, self.num_classes)
