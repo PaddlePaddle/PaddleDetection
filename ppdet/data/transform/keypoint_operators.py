@@ -39,7 +39,8 @@ registered_ops = []
 __all__ = [
     'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
     'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
-    'TopDownAffine', 'ToHeatmapsTopDown', 'TopDownEvalAffine'
+    'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
+    'TopDownEvalAffine'
 ]
 
 
@@ -393,6 +394,9 @@ class ToHeatmaps(object):
             dul = np.clip(ul, 0, hmsize - 1)
             dbr = np.clip(br, 0, hmsize)
             for i in range(len(visible)):
+                if visible[i][0] < 0 or visible[i][1] < 0 or visible[i][
+                        0] >= hmsize or visible[i][1] >= hmsize:
+                    continue
                 dx1, dy1 = dul[i]
                 dx2, dy2 = dbr[i]
                 sx1, sy1 = sul[i]
@@ -551,13 +555,16 @@ class TopDownAffine(object):
         rot = records['rotate'] if "rotate" in records else 0
         trans = get_affine_transform(records['center'], records['scale'] * 200,
                                      rot, self.trainsize)
+        trans_joint = get_affine_transform(
+            records['center'], records['scale'] * 200, rot,
+            [self.trainsize[0] / 4, self.trainsize[1] / 4])
         image = cv2.warpAffine(
             image,
             trans, (int(self.trainsize[0]), int(self.trainsize[1])),
             flags=cv2.INTER_LINEAR)
         for i in range(joints.shape[0]):
             if joints_vis[i, 0] > 0.0:
-                joints[i, 0:2] = affine_transform(joints[i, 0:2], trans)
+                joints[i, 0:2] = affine_transform(joints[i, 0:2], trans_joint)
         records['image'] = image
         records['joints'] = joints
 
@@ -628,8 +635,8 @@ class ToHeatmapsTopDown(object):
         tmp_size = self.sigma * 3
         for joint_id in range(num_joints):
             feat_stride = image_size / self.hmsize
-            mu_x = int(joints[joint_id][0] / feat_stride[0] + 0.5)
-            mu_y = int(joints[joint_id][1] / feat_stride[1] + 0.5)
+            mu_x = int(joints[joint_id][0] + 0.5)
+            mu_y = int(joints[joint_id][1] + 0.5)
             # Check that any part of the gaussian is in-bounds
             ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
             br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
@@ -657,6 +664,61 @@ class ToHeatmapsTopDown(object):
             if v > 0.5:
                 target[joint_id][img_y[0]:img_y[1], img_x[0]:img_x[1]] = g[g_y[
                     0]:g_y[1], g_x[0]:g_x[1]]
+        records['target'] = target
+        records['target_weight'] = target_weight
+        del records['joints'], records['joints_vis']
+
+        return records
+
+
+@register_keypointop
+class ToHeatmapsTopDown_DARK(object):
+    """to generate the gaussin heatmaps of keypoint for heatmap loss
+
+    Args:
+        hmsize (list): [w, h] output heatmap's size
+        sigma (float): the std of gaussin kernel genereted
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the heatmaps used to heatmaploss
+
+    """
+
+    def __init__(self, hmsize, sigma):
+        super(ToHeatmapsTopDown_DARK, self).__init__()
+        self.hmsize = np.array(hmsize)
+        self.sigma = sigma
+
+    def __call__(self, records):
+        joints = records['joints']
+        joints_vis = records['joints_vis']
+        num_joints = joints.shape[0]
+        target_weight = np.ones((num_joints, 1), dtype=np.float32)
+        target_weight[:, 0] = joints_vis[:, 0]
+        target = np.zeros(
+            (num_joints, self.hmsize[1], self.hmsize[0]), dtype=np.float32)
+        tmp_size = self.sigma * 3
+        for joint_id in range(num_joints):
+            mu_x = joints[joint_id][0]
+            mu_y = joints[joint_id][1]
+            # Check that any part of the gaussian is in-bounds
+            ul = [int(mu_x - tmp_size), int(mu_y - tmp_size)]
+            br = [int(mu_x + tmp_size + 1), int(mu_y + tmp_size + 1)]
+            if ul[0] >= self.hmsize[0] or ul[1] >= self.hmsize[1] or br[
+                    0] < 0 or br[1] < 0:
+                # If not, just return the image as is
+                target_weight[joint_id] = 0
+                continue
+
+            x = np.arange(0, self.hmsize[0], 1, np.float32)
+            y = np.arange(0, self.hmsize[1], 1, np.float32)
+            y = y[:, np.newaxis]
+
+            v = target_weight[joint_id]
+            if v > 0.5:
+                target[joint_id] = np.exp(-(
+                    (x - mu_x)**2 + (y - mu_y)**2) / (2 * self.sigma**2))
         records['target'] = target
         records['target_weight'] = target_weight
         del records['joints'], records['joints_vis']
