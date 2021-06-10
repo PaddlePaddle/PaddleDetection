@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-import cv2
 import numpy as np
+import decord as de
 from collections import OrderedDict
 try:
     from collections.abc import Sequence
@@ -317,26 +317,23 @@ class MOTVideoDataset(DetDataset):
         self.dataset_dir = dataset_dir
         self.keep_ori_im = keep_ori_im
         self.roidbs = None
+        self.frame_rate = 25
 
     def parse_dataset(self, ):
         if not self.roidbs:
             self.roidbs = self._load_video_images()
 
     def _load_video_images(self):
-        self.cap = cv2.VideoCapture(self.video_file)
-        self.vn = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.frame_rate = int(round(self.cap.get(cv2.CAP_PROP_FPS)))
-        logger.info('Length of the video: {:d} frames'.format(self.vn))
-        res = True
-        ct = 0
+        self.video_frames = de.VideoReader(self.video_file)
+        self.video_length = len(self.video_frames)
+        logger.info('Length of the video: {:d} frames.'.format(
+            self.video_length))
         records = []
-        while res:
-            res, img = self.cap.read()
-            image = np.ascontiguousarray(img, dtype=np.float32)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        for idx in range(self.video_length):
+            image = self.video_frames.get_batch([idx]).asnumpy()[0]
             im_shape = image.shape
             rec = {
-                'im_id': np.array([ct]),
+                'im_id': np.array([idx]),
                 'image': image,
                 'h': im_shape[0],
                 'w': im_shape[1],
@@ -347,10 +344,8 @@ class MOTVideoDataset(DetDataset):
             }
             if self.keep_ori_im:
                 rec.update({'ori_image': image})
-            ct += 1
             records.append(rec)
-        records = records[:-1]
-        assert len(records) > 0, "No image file found"
+        assert len(records) > 0, "No image file found."
         return records
 
     def set_video(self, video_file):
