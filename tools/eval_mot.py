@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument(
         "--det_results_dir",
         type=str,
-        default=None,
+        default='',
         help="Directory name for detection results.")
     parser.add_argument(
         '--output_dir',

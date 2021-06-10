@@ -1,48 +1,46 @@
 architecture: DeepSORT
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams
+pretrain_weights: None
 
 DeepSORT:
-  detector: YOLOv3
+  detector: YOLOv3 # JDE version
   reid: PCBPyramid
   tracker: DeepSORTTracker
 
+# JDE version for MOT dataset
 YOLOv3:
   backbone: DarkNet
   neck: YOLOv3FPN
   yolo_head: YOLOv3Head
-  post_process: BBoxPostProcess
+  post_process: JDEBBoxPostProcess
 
 DarkNet:
   depth: 53
   return_idx: [2, 3, 4]
+  freeze_norm: True
 
-# use default config
-# YOLOv3FPN:
+YOLOv3FPN:
+  freeze_norm: True
 
 YOLOv3Head:
-  anchors: [[10, 13], [16, 30], [33, 23],
-            [30, 61], [62, 45], [59, 119],
-            [116, 90], [156, 198], [373, 326]]
-  anchor_masks: [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
-  loss: YOLOv3Loss
+  anchors: [[128,384], [180,540], [256,640], [512,640],
+            [32,96], [45,135], [64,192], [90,271],
+            [8,24], [11,34], [16,48], [23,68]]
+  anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+  loss: JDEDetectionLoss
 
-YOLOv3Loss:
-  ignore_thresh: 0.7
-  downsample: [32, 16, 8]
-  label_smooth: false
-
-BBoxPostProcess:
+JDEBBoxPostProcess:
   decode:
-    name: YOLOBox
-    conf_thresh: 0.2
+    name: JDEBox
+    conf_thresh: 0.3
     downsample_ratio: 32
-    clip_bbox: true
   nms:
     name: MultiClassNMS
-    keep_top_k: 100
+    keep_top_k: 500
     score_threshold: 0.01
-    nms_threshold: 0.45
-    nms_top_k: 1000
+    nms_threshold: 0.5
+    nms_top_k: 2000
+    normalized: true
+  return_idx: false
 
 PCBPyramid:
   num_conv_out_channels: 128
@@ -52,7 +50,7 @@ DeepSORTTracker:
   budget: 100
   max_age: 70
   n_init: 3
-  metric_type: 'cosine'
+  metric_type: cosine
   matching_threshold: 0.2
   max_iou_distance: 0.9
-  motion: 'KalmanFilter'
+  motion: KalmanFilter

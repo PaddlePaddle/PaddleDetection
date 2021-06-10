@@ -12,10 +12,17 @@ EvalMOTDataset:
     data_root: MOT16/images/train
     keep_ori_im: True # set as True in DeepSORT
 
-det_weights: None
+det_weights: https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams
 reid_weights: https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams
 
 DeepSORT:
-  detector: None
+  detector: YOLOv3
   reid: PCBPyramid
   tracker: DeepSORTTracker
+
+# JDE version for MOT dataset
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
