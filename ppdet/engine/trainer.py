@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import sys
 import time
 import random
 import datetime
@@ -46,6 +47,8 @@ logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
+MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT']
+
 
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
@@ -57,7 +60,15 @@ class Trainer(object):
         self.is_loaded_weights = False
 
         # build data loader
-        self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+            self.dataset = cfg['{}MOTDataset'.format(self.mode.capitalize())]
+        else:
+            self.dataset = cfg['{}Dataset'.format(self.mode.capitalize())]
+
+        if cfg.architecture == 'DeepSORT' and self.mode == 'train':
+            logger.error('DeepSORT has no need of training on mot dataset.')
+            sys.exit(1)
+
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(self.mode.capitalize()))(
                 self.dataset, cfg.worker_num)
@@ -225,14 +236,15 @@ class Trainer(object):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        if hasattr(self.model, 'detector'):
-            if self.model.__class__.__name__ == 'FairMOT':
-                load_pretrain_weight(self.model, weights)
-            else:
-                load_pretrain_weight(self.model.detector, weights)
-        else:
-            load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights)
         logger.debug("Load weights {} to start training".format(weights))
+
+    def load_weights_sde(self, det_weights, reid_weights):
+        if self.model.detector:
+            load_weight(self.model.detector, det_weights)
+            load_weight(self.model.reid, reid_weights)
+        else:
+            load_weight(self.model.reid, reid_weights)
 
     def resume_weights(self, weights):
         # support Distill resume weights
@@ -472,8 +484,12 @@ class Trainer(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         image_shape = None
-        if 'inputs_def' in self.cfg['TestReader']:
-            inputs_def = self.cfg['TestReader']['inputs_def']
+        if self.cfg.architecture in MOT_ARCH:
+            test_reader_name = 'TestMOTReader'
+        else:
+            test_reader_name = 'TestReader'
+        if 'inputs_def' in self.cfg[test_reader_name]:
+            inputs_def = self.cfg[test_reader_name]['inputs_def']
             image_shape = inputs_def.get('image_shape', None)
         # set image_shape=[3, -1, -1] as default
         if image_shape is None:
