@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import copy
 import time
 import random
 import datetime
@@ -326,7 +327,7 @@ class Trainer(object):
 
             # apply ema weight on model
             if self.use_ema:
-                weight = self.model.state_dict()
+                weight = copy.deepcopy(self.model.state_dict())
                 self.model.set_dict(self.ema.apply())
 
             self._compose_callback.on_epoch_end(self.status)
