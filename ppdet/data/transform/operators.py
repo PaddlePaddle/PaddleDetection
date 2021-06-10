@@ -200,7 +200,7 @@ class RandomErasingImage(BaseOperator):
         super(RandomErasingImage, self).__init__()
         self.prob = prob
         self.lower = lower
-        self.heigher = heigher
+        self.higher = higher
         self.aspect_ratio = aspect_ratio
 
     def apply(self, sample):
@@ -1506,8 +1506,8 @@ class Cutmix(BaseOperator):
         w = max(img1.shape[1], img2.shape[1])
         cut_rat = np.sqrt(1. - factor)
 
-        cut_w = np.int(w * cut_rat)
-        cut_h = np.int(h * cut_rat)
+        cut_w = np.int32(w * cut_rat)
+        cut_h = np.int32(h * cut_rat)
 
         # uniform
         cx = np.random.randint(w)
@@ -1845,7 +1845,8 @@ class Pad(BaseOperator):
         assert pad_mode in [
             -1, 0, 1, 2
         ], 'currently only supports four modes [-1, 0, 1, 2]'
-        assert pad_mode == -1 and offsets, 'if pad_mode is -1, offsets should not be None'
+        if pad_mode == -1:
+            assert offsets, 'if pad_mode is -1, offsets should not be None'
 
         self.size = size
         self.size_divisor = size_divisor
@@ -1912,7 +1913,7 @@ class Pad(BaseOperator):
                 im_h < h and im_w < w
             ), '(h, w) of target size should be greater than (im_h, im_w)'
         else:
-            h = np.ceil(im_h // self.size_divisor) * self.size_divisor
+            h = np.ceil(im_h / self.size_divisor) * self.size_divisor
             w = np.ceil(im_w / self.size_divisor) * self.size_divisor
 
         if h == im_h and w == im_w:

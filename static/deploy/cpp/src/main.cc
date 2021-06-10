@@ -19,6 +19,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <algorithm>
 
 #ifdef _WIN32
 #include <direct.h>
@@ -35,7 +36,8 @@
 DEFINE_string(model_dir, "", "Path of inference model");
 DEFINE_string(image_file, "", "Path of input image");
 DEFINE_string(video_path, "", "Path of input video");
-DEFINE_bool(use_gpu, false, "Infering with GPU or CPU");
+DEFINE_bool(use_gpu, false, "Deprecated, please use `--device` to set the device you want to run.");
+DEFINE_string(device, "CPU", "Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU.");
 DEFINE_bool(use_camera, false, "Use camera or not");
 DEFINE_string(run_mode, "fluid", "Mode of running(fluid/trt_fp32/trt_fp16)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
@@ -204,9 +206,18 @@ int main(int argc, char** argv) {
     std::cout << "run_mode should be 'fluid', 'trt_fp32', 'trt_fp16' or 'trt_int8'.";
     return -1;
   }
+  transform(FLAGS_device.begin(),FLAGS_device.end(),FLAGS_device.begin(),::toupper);
+  if (!(FLAGS_device == "CPU" || FLAGS_device == "GPU" || FLAGS_device == "XPU")) {
+    std::cout << "device should be 'CPU', 'GPU' or 'XPU'.";
+    return -1;
+  }
+  if (FLAGS_use_gpu) {
+    std::cout << "Deprecated, please use `--device` to set the device you want to run.";
+    return -1;
+  }
 
   // Load model and create a object detector
-  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_use_gpu,
+  PaddleDetection::ObjectDetector det(FLAGS_model_dir, FLAGS_device,
     FLAGS_run_mode, FLAGS_gpu_id, FLAGS_trt_calib_mode);
   // Do inference on input video or image
   if (!FLAGS_video_path.empty() || FLAGS_use_camera) {

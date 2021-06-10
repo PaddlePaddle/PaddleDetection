@@ -106,7 +106,7 @@ git clone https://github.com/PaddlePaddle/PaddleDetection.git
 
 **Install Python dependencies:**
 
-Required python packages are specified in [requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/master/requirements.txt), and can be installed with:
+Required python packages are specified in [requirements.txt](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/requirements.txt), and can be installed with:
 
 ```
 pip install -r requirements.txt

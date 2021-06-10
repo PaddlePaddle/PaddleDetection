@@ -37,7 +37,7 @@ class JDE(BaseArch):
         tracker (object): tracker instance
         metric (str): 'MOTDet' for training and detection evaluation, 'ReID'
             for ReID embedding evaluation, or 'MOT' for multi object tracking
-            evaluation。
+            evaluation.
     """
 
     def __init__(self,
@@ -107,11 +107,11 @@ class JDE(BaseArch):
 
                 pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2]), axis=1)
 
+                boxes_idx = paddle.cast(boxes_idx, 'int64')
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
 
-                online_targets = self.tracker.update(pred_dets, pred_embs)
-                return online_targets
+                return pred_dets, pred_embs
 
             else:
                 raise ValueError("Unknown metric {} for multi object tracking.".

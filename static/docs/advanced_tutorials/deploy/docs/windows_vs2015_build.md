@@ -1,6 +1,6 @@
 # Windows平台使用 Visual Studio 2015 编译指南
 
-本文档步骤，我们同时在`Visual Studio 2015` 和 `Visual Studio 2019 Community` 两个版本进行了测试，我们推荐使用[`Visual Studio 2019`直接编译`CMake`项目](https://github.com/PaddlePaddle/PaddleDetection/blob/master/deploy/cpp/docs/windows_vs2019_build.md)。
+本文档步骤，我们同时在`Visual Studio 2015` 和 `Visual Studio 2019 Community` 两个版本进行了测试，我们推荐使用[`Visual Studio 2019`直接编译`CMake`项目](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/deploy/cpp/docs/windows_vs2019_build.md)。
 
 
 ## 前置条件

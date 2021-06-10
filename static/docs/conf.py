@@ -162,7 +162,7 @@ texinfo_documents = [
 def url_resolver(url):
     if ".html" not in url:
         url = url.replace("../", "")
-        return "https://github.com/PaddlePaddle/PaddleDetection/tree/master" + url
+        return "https://github.com/PaddlePaddle/PaddleDetection/tree/develop/static" + url
     else:
         if DEPLOY:
             return "http://paddledetection.readthedocs.io/" + url

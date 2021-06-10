@@ -392,7 +392,7 @@ EvalReader：
 `DataLoader`的API详见[fluid.io.DataLoader](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api_cn/io_cn/DataLoader_cn.html#dataloader)。
 具体步骤如下：
 
-- 在[train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py)、[eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/eval.py)和[infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/infer.py)里创建训练时的Reader：
+- 在[train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/train.py)、[eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/eval.py)和[infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/static/tools/infer.py)里创建训练时的Reader：
 ```python
 # 创建DataLoader对象
 inputs_def = cfg['TestReader']['inputs_def']

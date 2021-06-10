@@ -27,24 +27,10 @@ EvalMOTDataset:
     task: MOT16_train
     dataset_dir: dataset/mot
     data_root: MOT16/images/train
-    keep_ori_im: False # set True if save visualization images or video
+    keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference
 TestMOTDataset:
   !MOTVideoDataset
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
-
-
-# for detection or reid evaluation, following the JDE paper, but no use in MOT evaluation
-EvalDataset:
-  !MOTDataSet
-    dataset_dir: dataset/mot
-    image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
-    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
-    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
-
-# for detection inference, no use in MOT inference
-TestDataset:
-  !ImageFolder
-    dataset_dir: dataset/mot

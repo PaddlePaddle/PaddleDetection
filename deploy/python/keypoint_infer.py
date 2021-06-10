@@ -44,7 +44,7 @@ class KeyPoint_Detector(object):
     Args:
         config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        use_gpu (bool): whether use gpu
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
@@ -56,7 +56,7 @@ class KeyPoint_Detector(object):
     def __init__(self,
                  pred_config,
                  model_dir,
-                 use_gpu=False,
+                 device='CPU',
                  run_mode='fluid',
                  trt_min_shape=1,
                  trt_max_shape=1280,
@@ -69,7 +69,7 @@ class KeyPoint_Detector(object):
             model_dir,
             run_mode=run_mode,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu,
+            device=device,
             use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
@@ -236,7 +236,7 @@ class PredictConfig_KeyPoint():
 def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
-                   use_gpu=False,
+                   device='CPU',
                    min_subgraph_size=3,
                    use_dynamic_shape=False,
                    trt_min_shape=1,
@@ -248,7 +248,7 @@ def load_predictor(model_dir,
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
-        use_gpu (bool): whether use gpu
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -259,25 +259,22 @@ def load_predictor(model_dir,
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
-        ValueError: predict by TensorRT need use_gpu == True.
+        ValueError: predict by TensorRT need device == 'GPU'.
     """
-    if not use_gpu and not run_mode == 'fluid':
+    if device != 'GPU' and run_mode != 'fluid':
         raise ValueError(
-            "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
-            .format(run_mode, use_gpu))
+            "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
+            .format(run_mode, device))
     config = Config(
         os.path.join(model_dir, 'model.pdmodel'),
         os.path.join(model_dir, 'model.pdiparams'))
-    precision_map = {
-        'trt_int8': Config.Precision.Int8,
-        'trt_fp32': Config.Precision.Float32,
-        'trt_fp16': Config.Precision.Half
-    }
-    if use_gpu:
+    if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
+    elif device == 'XPU':
+        config.enable_xpu(10 * 1024 * 1024)
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
@@ -292,6 +289,11 @@ def load_predictor(model_dir,
                 )
                 pass
 
+    precision_map = {
+        'trt_int8': Config.Precision.Int8,
+        'trt_fp32': Config.Precision.Float32,
+        'trt_fp16': Config.Precision.Half
+    }
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
             workspace_size=1 << 10,
@@ -381,7 +383,7 @@ def main():
     detector = KeyPoint_Detector(
         pred_config,
         FLAGS.model_dir,
-        use_gpu=FLAGS.use_gpu,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
@@ -427,5 +429,9 @@ if __name__ == '__main__':
     parser = argsparser()
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
+    FLAGS.device = FLAGS.device.upper()
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
+                            ], "device should be CPU, GPU or XPU"
+    assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     main()
