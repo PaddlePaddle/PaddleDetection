@@ -74,7 +74,7 @@ EvalDataset:
     image_dir: val2017
     anno_path: annotations/person_keypoints_val2017.json
     dataset_dir: dataset/coco
-    bbox_file: person_detection_results/COCO_val2017_detections_AP_H_56_person.json
+    bbox_file: bbox.json
     num_joints: *num_joints
     trainsize: *trainsize
     pixel_std: *pixel_std

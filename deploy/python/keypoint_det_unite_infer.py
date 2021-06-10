@@ -68,7 +68,9 @@ def affine_backto_orgimages(keypoint_result, batch_records):
 def topdown_unite_predict(detector, topdown_keypoint_detector, image_list):
     for i, img_file in enumerate(image_list):
         image, _ = decode_image(img_file, {})
-        results = detector.predict(image, FLAGS.det_threshold)
+        results = detector.predict([image], FLAGS.det_threshold)
+        if results['boxes_num'] == 0:
+            continue
         batchs_images, det_rects = get_person_from_rect(image, results)
         keypoint_vector = []
         score_vector = []
@@ -121,7 +123,7 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         print('detect frame:%d' % (index))
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = detector.predict(frame2, FLAGS.det_threshold)
+        results = detector.predict([frame2], FLAGS.det_threshold)
         batchs_images, rect_vecotr = get_person_from_rect(frame2, results)
         keypoint_vector = []
         score_vector = []
