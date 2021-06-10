@@ -329,8 +329,38 @@ class S2ANetBBoxPostProcess(nn.Layer):
 
 
 @register
-class JDEBBoxPostProcess(BBoxPostProcess):
-    def __call__(self, head_out, anchors):
+class JDEBBoxPostProcess(nn.Layer):
+    __shared__ = ['num_classes']
+    __inject__ = ['decode', 'nms']
+
+    def __init__(self, num_classes=1, decode=None, nms=None, return_idx=True):
+        super(JDEBBoxPostProcess, self).__init__()
+        self.num_classes = num_classes
+        self.decode = decode
+        self.nms = nms
+        self.return_idx = return_idx
+
+        self.fake_bbox_pred = paddle.to_tensor(
+            np.array(
+                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
+        self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
+        self.fake_nms_keep_idx = paddle.to_tensor(
+            np.array(
+                [[0]], dtype='int32'))
+
+        self.fake_yolo_boxes_out = paddle.to_tensor(
+            np.array(
+                [[[0.0, 0.0, 0.0, 0.0]]], dtype='float32'))
+        self.fake_yolo_scores_out = paddle.to_tensor(
+            np.array(
+                [[[0.0]]], dtype='float32'))
+        self.fake_boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
+
+    def forward(self,
+                head_out,
+                anchors,
+                im_shape=[[608, 1088]],
+                scale_factor=[[1.0, 1.0]]):
         """
         Decode the bbox and do NMS for JDE model. 
 
@@ -345,17 +375,31 @@ class JDEBBoxPostProcess(BBoxPostProcess):
             bbox_num (Tensor): The number of prediction of each batch with shape [N].
             nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
         """
-        boxes_idx, bboxes, score = self.decode(head_out, anchors)
-        bbox_pred, bbox_num, nms_keep_idx = self.nms(bboxes, score,
-                                                     self.num_classes)
-        if bbox_pred.shape[0] == 0:
-            bbox_pred = paddle.to_tensor(
-                np.array(
-                    [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
-            bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
-            nms_keep_idx = paddle.to_tensor(np.array([[0]], dtype='int32'))
+        boxes_idx, yolo_boxes_scores = self.decode(head_out, anchors)
 
-        return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
+        if len(boxes_idx) == 0:
+            boxes_idx = self.fake_boxes_idx
+            yolo_boxes_out = self.fake_yolo_boxes_out
+            yolo_scores_out = self.fake_yolo_scores_out
+        else:
+            yolo_boxes = paddle.gather_nd(yolo_boxes_scores, boxes_idx)
+            # TODO: only support bs=1 now
+            yolo_boxes_out = paddle.reshape(
+                yolo_boxes[:, :4], shape=[1, len(boxes_idx), 4])
+            yolo_scores_out = paddle.reshape(
+                yolo_boxes[:, 4:5], shape=[1, 1, len(boxes_idx)])
+            boxes_idx = boxes_idx[:, 1:]
+
+        bbox_pred, bbox_num, nms_keep_idx = self.nms(
+            yolo_boxes_out, yolo_scores_out, self.num_classes)
+        if bbox_pred.shape[0] == 0:
+            bbox_pred = self.fake_bbox_pred
+            bbox_num = self.fake_bbox_num
+            nms_keep_idx = self.fake_nms_keep_idx
+        if self.return_idx:
+            return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
+        else:
+            return bbox_pred, bbox_num
 
 
 @register
@@ -420,7 +464,7 @@ class CenterNetPostProcess(TTFBox):
             x2 = xs + wh[:, 0:1] / 2
             y2 = ys + wh[:, 1:2] / 2
 
-        n, c, feat_h, feat_w = paddle.shape(hm)
+        n, c, feat_h, feat_w = hm.shape[:]
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
         x1 = x1 * self.down_ratio

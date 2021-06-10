@@ -342,7 +342,7 @@ class RCNNBox(object):
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         scale_list = []
         origin_shape_list = []
-        
+
         batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
         # bbox_pred.shape: [N, C*4]
         for idx in range(batch_size):
@@ -863,9 +863,7 @@ class JDEBox(object):
         return paddle.stack([gx1, gy1, gx2, gy2], axis=1)
 
     def decode_delta_map(self, delta_map, anchors):
-        delta_map_shape = paddle.shape(delta_map)
-        delta_map_shape.stop_gradient = True
-        nB, nA, nGh, nGw, _ = delta_map_shape[:]
+        nB, nA, nGh, nGw, _ = delta_map.shape[:]
         anchor_mesh = self.generate_anchor(nGh, nGw, anchors)
         # only support bs=1
         anchor_mesh = paddle.unsqueeze(anchor_mesh, 0)
@@ -875,8 +873,26 @@ class JDEBox(object):
                 delta_map, shape=[-1, 4]),
             paddle.reshape(
                 anchor_mesh, shape=[-1, 4]))
-        pred_map = paddle.reshape(pred_list, shape=[nB, -1, 4])
+        pred_map = paddle.reshape(pred_list, shape=[nB, nA * nGh * nGw, 4])
         return pred_map
+
+    def _postprocessing_by_level(self, nA, stride, head_out, anchor_vec):
+        boxes_shape = head_out.shape
+        nB, nGh, nGw = 1, boxes_shape[-2], boxes_shape[-1]
+        # only support bs=1
+        p = paddle.reshape(
+            head_out, shape=[nB, nA, self.num_classes + 5, nGh, nGw])
+        p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, nGh, nGw, 6]
+        p_box = p[:, :, :, :, :4]
+        boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*nGh*nGw, 4]
+        boxes = boxes * stride
+
+        p_conf = paddle.transpose(
+            p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
+        p_conf = F.softmax(
+            p_conf, axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
+        scores = paddle.reshape(p_conf, shape=[nB, nA * nGh * nGw, 1])
+        return boxes, scores
 
     def __call__(self, yolo_head_out, anchors):
         bbox_pred_list = []
@@ -885,43 +901,16 @@ class JDEBox(object):
             anc_w, anc_h = anchors[i][0::2], anchors[i][1::2]
             anchor_vec = np.stack((anc_w, anc_h), axis=1) / stride
             nA = len(anc_w)
-            boxes_shape = paddle.shape(head_out)
-            boxes_shape.stop_gradient = True
-            nB, nGh, nGw = boxes_shape[0], boxes_shape[-2], boxes_shape[-1]
-
-            p = head_out.reshape((nB, nA, self.num_classes + 5, nGh, nGw))
-            p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, 19, 34, 6]
-            p_box = p[:, :, :, :, :4]  # [nB, 4, 19, 34, 4]
-            boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*19*34, 4]
-            boxes = boxes * stride
-
-            p_conf = paddle.transpose(
-                p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
-            p_conf = F.softmax(
-                p_conf,
-                axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
-            scores = paddle.reshape(p_conf, shape=[nB, -1, 1])
-
+            boxes, scores = self._postprocessing_by_level(nA, stride, head_out,
+                                                          anchor_vec)
             bbox_pred_list.append(paddle.concat([boxes, scores], axis=-1))
 
-        yolo_boxes_pred = paddle.concat(bbox_pred_list, axis=1)
-        boxes_idx = paddle.nonzero(yolo_boxes_pred[:, :, -1] > self.conf_thresh)
-        boxes_idx.stop_gradient = True
-        if boxes_idx.shape[0] == 0:  # TODO: deploy
-            boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
-            yolo_boxes_out = paddle.to_tensor(
-                np.array(
-                    [[[0.0, 0.0, 0.0, 0.0]]], dtype='float32'))
-            yolo_scores_out = paddle.to_tensor(
-                np.array(
-                    [[[0.0]]], dtype='float32'))
-            return boxes_idx, yolo_boxes_out, yolo_scores_out
+        yolo_boxes_scores = paddle.concat(bbox_pred_list, axis=1)
+        boxes_idx_over_conf_thr = paddle.nonzero(
+            yolo_boxes_scores[:, :, -1] > self.conf_thresh)
+        boxes_idx_over_conf_thr.stop_gradient = True
 
-        yolo_boxes = paddle.gather_nd(yolo_boxes_pred, boxes_idx)
-        yolo_boxes_out = paddle.reshape(yolo_boxes[:, :4], shape=[nB, -1, 4])
-        yolo_scores_out = paddle.reshape(yolo_boxes[:, 4:5], shape=[nB, 1, -1])
-        boxes_idx = boxes_idx[:, 1:]
-        return boxes_idx, yolo_boxes_out, yolo_scores_out  # [163], [1, 163, 4], [1, 1, 163]
+        return boxes_idx_over_conf_thr, yolo_boxes_scores
 
 
 @register

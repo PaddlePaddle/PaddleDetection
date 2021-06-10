@@ -91,12 +91,9 @@ class FairMOT(BaseArch):
             embedding = paddle.transpose(embedding, [0, 2, 3, 1])
             embedding = paddle.reshape(embedding,
                                        [-1, paddle.shape(embedding)[-1]])
-            id_feature = paddle.gather(embedding, bbox_inds)
-            dets = det_outs['bbox']
-            id_feature = id_feature
-            # Note: the tracker only considers batch_size=1 and num_classses=1
-            online_targets = self.tracker.update(dets, id_feature)
-            return online_targets
+            pred_embs = paddle.gather(embedding, bbox_inds)
+            pred_dets = det_outs['bbox']
+            return pred_dets, pred_embs
 
     def get_pred(self):
         output = self._forward()
