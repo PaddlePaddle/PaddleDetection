@@ -532,12 +532,23 @@ class DETRBBoxPostProcess(object):
 
         scores = F.sigmoid(logits) if self.use_focal_loss else F.softmax(
             logits)[:, :, :-1]
-        scores, labels = scores.max(-1), scores.argmax(-1)
 
-        if scores.shape[1] > self.num_top_queries:
-            scores, index = paddle.topk(scores, self.num_top_queries, axis=-1)
-            labels = paddle.stack(
-                [paddle.gather(l, i) for l, i in zip(labels, index)])
+        if not self.use_focal_loss:
+            scores, labels = scores.max(-1), scores.argmax(-1)
+            if scores.shape[1] > self.num_top_queries:
+                scores, index = paddle.topk(
+                    scores, self.num_top_queries, axis=-1)
+                labels = paddle.stack(
+                    [paddle.gather(l, i) for l, i in zip(labels, index)])
+                bbox_pred = paddle.stack(
+                    [paddle.gather(b, i) for b, i in zip(bbox_pred, index)])
+        else:
+            scores, index = paddle.topk(
+                scores.reshape([logits.shape[0], -1]),
+                self.num_top_queries,
+                axis=-1)
+            labels = index % logits.shape[2]
+            index = index // logits.shape[2]
             bbox_pred = paddle.stack(
                 [paddle.gather(b, i) for b, i in zip(bbox_pred, index)])
 
