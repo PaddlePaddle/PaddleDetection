@@ -32,11 +32,14 @@ class PositionEmbedding(nn.Layer):
                  normalize=True,
                  scale=None,
                  embed_type='sine',
-                 num_embeddings=50):
+                 num_embeddings=50,
+                 offset=0.):
         super(PositionEmbedding, self).__init__()
         assert embed_type in ['sine', 'learned']
 
         self.embed_type = embed_type
+        self.offset = offset
+        self.eps = 1e-6
         if self.embed_type == 'sine':
             self.num_pos_feats = num_pos_feats
             self.temperature = temperature
@@ -65,9 +68,10 @@ class PositionEmbedding(nn.Layer):
             y_embed = mask.cumsum(1, dtype='float32')
             x_embed = mask.cumsum(2, dtype='float32')
             if self.normalize:
-                eps = 1e-6
-                y_embed = y_embed / (y_embed[:, -1:, :] + eps) * self.scale
-                x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
+                y_embed = (y_embed + self.offset) / (
+                    y_embed[:, -1:, :] + self.eps) * self.scale
+                x_embed = (x_embed + self.offset) / (
+                    x_embed[:, :, -1:] + self.eps) * self.scale
 
             dim_t = 2 * (paddle.arange(self.num_pos_feats) //
                          2).astype('float32')
