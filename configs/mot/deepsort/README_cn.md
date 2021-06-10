@@ -42,16 +42,15 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
-对于MOT16数据集，可以下载PaddleDetection提供的det_results_dir.zip并解压：
+对于MOT16数据集，可以下载PaddleDetection提供的一个经过匹配之后的检测框结果det_results_dir.zip并解压：
 ```
 wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 ```
-其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
+如果使用更强的检测模型，可以取得更好的结果。其中每个txt是每个视频中所有图片的检测结果，每行都描述一个边界框，格式如下：
 ```
-[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf]
+[frame_id],[bb_left],[bb_top],[width],[height],[conf]
 ```
 - `frame_id`是图片帧的序号
-- `identity`是目标id采用默认值为`-1`
 - `bb_left`是目标框的左边界的x坐标
 - `bb_top`是目标框的上边界的y坐标
 - `width,height`是真实的像素宽高
