@@ -1506,8 +1506,8 @@ class Cutmix(BaseOperator):
         w = max(img1.shape[1], img2.shape[1])
         cut_rat = np.sqrt(1. - factor)
 
-        cut_w = np.int(w * cut_rat)
-        cut_h = np.int(h * cut_rat)
+        cut_w = np.int32(w * cut_rat)
+        cut_h = np.int32(h * cut_rat)
 
         # uniform
         cx = np.random.randint(w)
