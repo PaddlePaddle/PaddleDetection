@@ -12,14 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import matching
-from . import tracker
-from . import motion
-from . import visualization
-from . import utils
+from . import jde_tracker
+from . import deepsort_tracker
 
-from .matching import *
-from .tracker import *
-from .motion import *
-from .visualization import *
-from .utils import *
+from .jde_tracker import *
+from .deepsort_tracker import *

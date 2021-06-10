@@ -16,10 +16,9 @@ This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_so
 """
 
 import numpy as np
-
-from ..matching.deepsort_matching import NearestNeighborDistanceMetric
-from ..matching.deepsort_matching import iou_cost, min_cost_matching, matching_cascade, gate_cost_matrix
-from .base_sde_tracker import Track
+from ppdet.modeling.mot.matching.deepsort_matching import NearestNeighborDistanceMetric
+from ppdet.modeling.mot.matching.deepsort_matching import iou_cost, min_cost_matching, matching_cascade, gate_cost_matrix
+from ppdet.modeling.mot.tracker.base_sde_tracker import Track
 
 __all__ = ['DeepSORTTracker']
 

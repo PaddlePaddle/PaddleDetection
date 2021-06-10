@@ -22,9 +22,9 @@ from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, NormalizeImage, Permute
 from mot_preprocess import LetterBoxResize
 
-from mot.tracker import JDETracker
-from mot import visualization as mot_vis
-from mot.utils import Timer as MOTTimer
+from tracker import JDETracker
+from ppdet.modeling.mot import visualization as mot_vis
+from ppdet.modeling.mot.utils import Timer as MOTTimer
 
 from paddle.inference import Config
 from paddle.inference import create_predictor
@@ -95,7 +95,7 @@ class MOT_Detector(object):
         inputs = create_inputs(im, im_info)
         return inputs
 
-    def postprocess(self, pred_dets, pred_embs, inputs, threshold=0.5):
+    def postprocess(self, pred_dets, pred_embs):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs, online_ids = [], []
         for t in online_targets:
@@ -136,8 +136,7 @@ class MOT_Detector(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_ids = self.postprocess(
-            pred_dets, pred_embs, inputs, threshold=threshold)
+        online_tlwhs, online_ids = self.postprocess(pred_dets, pred_embs)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_ids

@@ -15,10 +15,10 @@
 This code is borrow from https://github.com/Zhongdao/Towards-Realtime-MOT/blob/master/tracker/multitracker.py
 """
 import numpy as np
-from ..matching import jde_matching as matching
-from ..motion import KalmanFilter
-from .base_jde_tracker import TrackState, BaseTrack, STrack
-from .base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
+from ppdet.modeling.mot.matching import jde_matching as matching
+from ppdet.modeling.mot.motion import KalmanFilter
+from ppdet.modeling.mot.tracker.base_jde_tracker import TrackState, BaseTrack, STrack
+from ppdet.modeling.mot.tracker.base_jde_tracker import joint_stracks, sub_stracks, remove_duplicate_stracks
 
 __all__ = ['JDETracker']
 
@@ -109,8 +109,6 @@ class JDETracker(object):
             pred_dets) == 0.0 else False
         """ Step 1: Network forward, get detections & embeddings"""
         if len(pred_dets) > 0 and not empty_pred:
-            #pred_dets = pred_dets.numpy()
-            #pred_embs = pred_embs.numpy()
             detections = [
                 STrack(STrack.tlbr_to_tlwh(tlbrs[:4]), tlbrs[4], f, 30)
                 for (tlbrs, f) in zip(pred_dets, pred_embs)
