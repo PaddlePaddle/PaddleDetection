@@ -2,7 +2,7 @@ use_gpu: true
 log_iter: 5
 save_dir: output
 snapshot_epoch: 10
-weights: output/hrnet_w32_256x192/model_final
+weights: output/hrnet_w48_256x192/model_final
 epoch: 210
 num_joints: &num_joints 17
 pixel_std: &pixel_std 200
@@ -17,14 +17,14 @@ flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 1
 
 #####model
 architecture: TopDownHRNet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/Trunc_HRNet_W32_C_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/Trunc_HRNet_W48_C_pretrained.pdparams
 
 TopDownHRNet:
   backbone: HRNet
   post_process: HRNetPostProcess
   flip_perm: *flip_perm
   num_joints: *num_joints
-  width: &width 32
+  width: &width 48
   loss: KeyPointMSELoss
 
 HRNet:
@@ -101,7 +101,7 @@ TrainReader:
         flip_pairs: *flip_perm
     - TopDownAffine:
         trainsize: *trainsize
-    - ToHeatmapsTopDown:
+    - ToHeatmapsTopDown_DARK:
         hmsize: *hmsize
         sigma: 2
   batch_transforms:
@@ -118,7 +118,7 @@ EvalReader:
   sample_transforms:
     - TopDownAffine:
         trainsize: *trainsize
-    - ToHeatmapsTopDown:
+    - ToHeatmapsTopDown_DARK:
         hmsize: *hmsize
         sigma: 2
   batch_transforms:
@@ -128,6 +128,7 @@ EvalReader:
         is_scale: true
     - Permute: {}
   batch_size: 16
+  drop_empty: false
 
 TestReader:
   sample_transforms:
