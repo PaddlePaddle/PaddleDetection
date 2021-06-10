@@ -113,8 +113,8 @@ def load_det_results(det_file, num_frames):
         results = {'bbox': [], 'score': []}
         lables_with_frame = labels[labels[:, 0] == frame_i + 1]
         for l in lables_with_frame:
-            results['bbox'].append(l[2:6])
-            results['score'].append(l[6])
+            results['bbox'].append(l[1:5])
+            results['score'].append(l[5])
         results_list.append(results)
     return results_list
 

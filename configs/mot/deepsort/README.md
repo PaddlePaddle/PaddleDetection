@@ -41,16 +41,15 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
-For MOT16 dataset, you can download the det_results_dir.zip provided by PaddleDetection：
+For MOT16 dataset, you can download a detection result after matching called det_results_dir.zip provided by PaddleDetection：
 ```
 wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 ```
-Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
+If you use a stronger detection model, you can get better results. Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
 ```
-[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf]
+[frame_id],[bb_left],[bb_top],[width],[height],[conf]
 ```
 - `frame_id` is the frame number of the image
-- `identity` is the object id using default value `-1`
 - `bb_left` is the X coordinate of the left bound of the object box
 - `bb_top` is the Y coordinate of the upper bound of the object box
 - `width,height` is the pixel width and height
