@@ -372,6 +372,8 @@ class Tracker(object):
         else:
             raise ValueError(model_type)
 
+        self.write_mot_results(result_filename, results, data_type)
+
         if save_videos:
             output_video_path = os.path.join(save_dir, '..',
                                              '{}_vis.mp4'.format(seq))
