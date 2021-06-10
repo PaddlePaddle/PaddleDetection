@@ -35,6 +35,7 @@
 ​    目前KeyPoint模型基于coco数据集开发，其他数据集尚未验证
 
 ​    请参考PaddleDetection[数据准备部分](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDataSet.md)部署准备COCO数据集即可
+    请注意，Top-Down方案使用检测框测试时，需要给予检测模型生成bbox.json文件，或者从网上[下载地址](https://paddledet.bj.bcebos.com/data/bbox.json)下载后放在根目录（PaddleDetection）下，然后修改config配置文件中use_gt_bbox: False后生效。然后正常执行测试命令即可。
 
 ### 3、训练与测试
 
