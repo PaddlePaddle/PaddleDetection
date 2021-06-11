@@ -135,18 +135,21 @@ class Tracker(object):
             online_targets = self.model.tracker.update(pred_dets, pred_embs)
 
             online_tlwhs, online_ids = [], []
+            online_scores = []
             for t in online_targets:
                 tlwh = t.tlwh
                 tid = t.track_id
+                tscore = t.score
                 vertical = tlwh[2] / tlwh[3] > 1.6
                 if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
                     online_ids.append(tid)
+                    online_scores.append(tscore)
             timer.toc()
 
             # save results
-            results.append((frame_id + 1, online_tlwhs, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs,
+            results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+            self.save_results(data, frame_id, online_ids, online_tlwhs, online_scores,
                               timer.average_time, show_image, save_dir)
             frame_id += 1
 
@@ -206,19 +209,19 @@ class Tracker(object):
             online_targets = self.model.tracker.update(detections)
 
             online_tlwhs = []
+            online_scores = []
             online_ids = []
             for track in online_targets:
                 if not track.is_confirmed() or track.time_since_update > 1:
                     continue
-                tlwh = track.to_tlwh()
-                track_id = track.track_id
-                online_tlwhs.append(tlwh)
-                online_ids.append(track_id)
+                online_tlwhs.append(track.to_tlwh())
+                online_scores.append(1.0)
+                online_ids.append(track.track_id)
             timer.toc()
 
             # save results
-            results.append((frame_id + 1, online_tlwhs, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs,
+            results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+            self.save_results(data, frame_id, online_ids, online_tlwhs, online_scores,
                               timer.average_time, show_image, save_dir)
             frame_id += 1
 
@@ -384,17 +387,17 @@ class Tracker(object):
 
     def write_mot_results(self, filename, results, data_type='mot'):
         if data_type in ['mot', 'mcmot', 'lab']:
-            save_format = '{frame},{id},{x1},{y1},{w},{h},1,-1,-1,-1\n'
+            save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
         elif data_type == 'kitti':
             save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
         else:
             raise ValueError(data_type)
 
         with open(filename, 'w') as f:
-            for frame_id, tlwhs, track_ids in results:
+            for frame_id, tlwhs, tscores, track_ids in results:
                 if data_type == 'kitti':
                     frame_id -= 1
-                for tlwh, track_id in zip(tlwhs, track_ids):
+                for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
                     if track_id < 0:
                         continue
                     x1, y1, w, h = tlwh
@@ -407,11 +410,12 @@ class Tracker(object):
                         x2=x2,
                         y2=y2,
                         w=w,
-                        h=h)
+                        h=h,
+                        score=score)
                     f.write(line)
         logger.info('MOT results save in {}'.format(filename))
 
-    def save_results(self, data, frame_id, online_ids, online_tlwhs,
+    def save_results(self, data, frame_id, online_ids, online_tlwhs, online_scores, 
                      average_time, show_image, save_dir):
         if show_image or save_dir is not None:
             assert 'ori_image' in data
@@ -420,6 +424,7 @@ class Tracker(object):
                 img0,
                 online_tlwhs,
                 online_ids,
+                online_scores,
                 frame_id=frame_id,
                 fps=1. / average_time)
         if show_image:
