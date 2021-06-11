@@ -47,6 +47,7 @@ def build_slim_model(cfg, slim_cfg, mode='train'):
             model = pruner(model)
             load_pretrain_weight(model, weights)
         cfg['model'] = model
+        cfg['slim_type'] = cfg.slim
     else:
         load_config(slim_cfg)
         model = create(cfg.architecture)
