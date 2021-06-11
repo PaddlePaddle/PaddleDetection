@@ -14,10 +14,12 @@
 
 from . import metrics
 from . import keypoint_metrics
-from . import mot_metrics
 
 from .metrics import *
-from .mot_metrics import *
 from .keypoint_metrics import *
 
-__all__ = metrics.__all__ + keypoint_metrics.__all__ + mot_metrics.__all__
+__all__ = metrics.__all__ + keypoint_metrics.__all__
+
+from . import mot_metrics
+from .mot_metrics import *
+__all__ = __all__ + mot_metrics.__all__
