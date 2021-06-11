@@ -20,8 +20,6 @@ import copy
 import numpy as np
 import paddle
 import paddle.nn.functional as F
-import motmetrics as mm
-mm.lap.default_solver = 'lap'
 from .metrics import Metric
 
 from ppdet.utils.logger import setup_logger
@@ -118,9 +116,13 @@ class MOTEvaluator(object):
             gt_filename, is_ignore=True)
 
     def reset_accumulator(self):
+        import motmetrics as mm
+        mm.lap.default_solver = 'lap'
         self.acc = mm.MOTAccumulator(auto_id=True)
 
     def eval_frame(self, frame_id, trk_tlwhs, trk_ids, rtn_events=False):
+        import motmetrics as mm
+        mm.lap.default_solver = 'lap'
         # results
         trk_tlwhs = np.copy(trk_tlwhs)
         trk_ids = np.copy(trk_ids)
@@ -178,6 +180,8 @@ class MOTEvaluator(object):
                     names,
                     metrics=('mota', 'num_switches', 'idp', 'idr', 'idf1',
                              'precision', 'recall')):
+        import motmetrics as mm
+        mm.lap.default_solver = 'lap'
         names = copy.deepcopy(names)
         if metrics is None:
             metrics = mm.metrics.motchallenge_metrics
