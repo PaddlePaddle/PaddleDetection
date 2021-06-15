@@ -278,15 +278,40 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   
   auto preprocess_end = std::chrono::steady_clock::now();
   // Run predictor
+  // warmup
+  for (int i = 0; i < warmup; i++)
+  {
+    predictor_->Run();
+    // Get output tensor
+    auto output_names = predictor_->GetOutputNames();
+    auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
+    std::vector<int> output_shape = out_tensor->shape();
+    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
+    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
+    // Calculate output length
+    int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+
+    if (output_size < 6) {
+      std::cerr << "[WARNING] No object detected." << std::endl;
+    }
+    output_data_.resize(output_size);
+    out_tensor->CopyToCpu(output_data_.data()); 
+
+    int out_bbox_num_size = 1;
+    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
+      out_bbox_num_size *= out_bbox_num_shape[j];
+    }
+    out_bbox_num_data_.resize(out_bbox_num_size);
+    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
+  }
+  
   bool is_rbox = false;
   auto inference_start = std::chrono::steady_clock::now();
-  std::cout << "warmup=" << warmup << " repeats="<< repeats << std::endl;
-  for (int i = 0; i < warmup + repeats; i++)
+  for (int i = 0; i < repeats; i++)
   {
-    // skip warmup
-    if (i == warmup) {
-      inference_start = std::chrono::steady_clock::now();
-    }
     predictor_->Run();
     // Get output tensor
     auto output_names = predictor_->GetOutputNames();
