@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import os
 import sys
+import copy
 import time
 import random
 import datetime
@@ -34,7 +35,6 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import JDEDetMetric, JDEReIDMetric
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -204,10 +204,6 @@ class Trainer(object):
                                         len(eval_dataset), self.cfg.num_joints,
                                         self.cfg.save_dir)
             ]
-        elif self.cfg.metric == 'MOTDet':
-            self._metrics = [JDEDetMetric(), ]
-        elif self.cfg.metric == 'ReID':
-            self._metrics = [JDEReIDMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -338,7 +334,7 @@ class Trainer(object):
 
             # apply ema weight on model
             if self.use_ema:
-                weight = self.model.state_dict()
+                weight = copy.deepcopy(self.model.state_dict())
                 self.model.set_dict(self.ema.apply())
 
             self._compose_callback.on_epoch_end(self.status)
