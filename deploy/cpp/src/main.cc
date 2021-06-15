@@ -279,12 +279,15 @@ void PredictImage(const std::vector<std::string> all_img_paths,
 
       int item_start_idx = 0;
       for (int i = 0; i < left_image_cnt; i++) {
-        std::cout << all_img_paths.at(idx * batch_size + i) << "result" << std::endl;
+        std::cout << all_img_paths.at(idx * batch_size + i) << " bbox_num " << bbox_num[i] << std::endl;
         if (bbox_num[i] <= 1) {
             continue;
         }
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[item_start_idx + j];
+          if (item.confidence < threshold) {
+            continue;
+          }
           if (item.rect.size() > 6){
             is_rbox = true;
             printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
