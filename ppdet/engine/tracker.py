@@ -268,23 +268,23 @@ class Tracker(object):
             meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
-
-            if model_type in ['JDE', 'FairMOT']:
-                results, nf, ta, tc = self._eval_seq_jde(
-                    dataloader,
-                    save_dir=save_dir,
-                    show_image=show_image,
-                    frame_rate=frame_rate)
-            elif model_type in ['DeepSORT']:
-                results, nf, ta, tc = self._eval_seq_sde(
-                    dataloader,
-                    save_dir=save_dir,
-                    show_image=show_image,
-                    frame_rate=frame_rate,
-                    det_file=os.path.join(det_results_dir,
-                                          '{}.txt'.format(seq)))
-            else:
-                raise ValueError(model_type)
+            with paddle.no_grad():
+                if model_type in ['JDE', 'FairMOT']:
+                    results, nf, ta, tc = self._eval_seq_jde(
+                        dataloader,
+                        save_dir=save_dir,
+                        show_image=show_image,
+                        frame_rate=frame_rate)
+                elif model_type in ['DeepSORT']:
+                    results, nf, ta, tc = self._eval_seq_sde(
+                        dataloader,
+                        save_dir=save_dir,
+                        show_image=show_image,
+                        frame_rate=frame_rate,
+                        det_file=os.path.join(det_results_dir,
+                                              '{}.txt'.format(seq)))
+                else:
+                    raise ValueError(model_type)
 
             self.write_mot_results(result_filename, results, data_type)
             n_frame += nf
@@ -363,21 +363,23 @@ class Tracker(object):
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         frame_rate = self.dataset.frame_rate
 
-        if model_type in ['JDE', 'FairMOT']:
-            results, nf, ta, tc = self._eval_seq_jde(
-                dataloader,
-                save_dir=save_dir,
-                show_image=show_image,
-                frame_rate=frame_rate)
-        elif model_type in ['DeepSORT']:
-            results, nf, ta, tc = self._eval_seq_sde(
-                dataloader,
-                save_dir=save_dir,
-                show_image=show_image,
-                frame_rate=frame_rate,
-                det_file=os.path.join(det_results_dir, '{}.txt'.format(seq)))
-        else:
-            raise ValueError(model_type)
+        with paddle.no_grad():
+            if model_type in ['JDE', 'FairMOT']:
+                results, nf, ta, tc = self._eval_seq_jde(
+                    dataloader,
+                    save_dir=save_dir,
+                    show_image=show_image,
+                    frame_rate=frame_rate)
+            elif model_type in ['DeepSORT']:
+                results, nf, ta, tc = self._eval_seq_sde(
+                    dataloader,
+                    save_dir=save_dir,
+                    show_image=show_image,
+                    frame_rate=frame_rate,
+                    det_file=os.path.join(det_results_dir,
+                                          '{}.txt'.format(seq)))
+            else:
+                raise ValueError(model_type)
 
         self.write_mot_results(result_filename, results, data_type)
 
