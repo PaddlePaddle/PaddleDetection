@@ -1,0 +1,20 @@
+metric: RBOX
+num_classes: 9
+
+TrainDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/train.json
+    dataset_dir: dataset/spine_coco
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_rbox']
+
+EvalDataset:
+  !COCODataSet
+    image_dir: images
+    anno_path: annotations/valid.json
+    dataset_dir: dataset/spine_coco
+
+TestDataset:
+  !ImageFolder
+    anno_path: annotations/valid.json
+    dataset_dir: dataset/spine_coco

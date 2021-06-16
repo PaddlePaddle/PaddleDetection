@@ -22,7 +22,7 @@ import sys
 import numpy as np
 import itertools
 import paddle
-from ppdet.modeling.bbox_utils import poly2rbox
+from ppdet.modeling.bbox_utils import poly2rbox, rbox2poly_np
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
@@ -95,6 +95,21 @@ def calc_rbox_iou(pred, gt_rbox):
     """
     calc_rbox_iou
     """
+    # calc iou of bounding box for speedup
+    pred = np.array(pred, np.float32).reshape(-1, 8)
+    pred = pred.reshape(-1, 2)
+    gt_poly = rbox2poly_np(np.array(gt_rbox).reshape(-1, 5))[0]
+    gt_poly = gt_poly.reshape(-1, 2)
+    pred_rect = [np.min(pred[:, 0]), np.min(pred[:, 1]), np.max(pred[:, 0]), np.max(pred[:, 1])]
+    gt_rect = [np.min(gt_poly[:, 0]), np.min(gt_poly[:, 1]), np.max(gt_poly[:, 0]), np.max(gt_poly[:, 1])]
+    iou = jaccard_overlap(pred_rect, gt_rect, False)
+
+    if iou <= 0:
+        return iou
+
+    # calc rbox iou
+    pred = pred.reshape(-1, 8)
+
     pred = np.array(pred, np.float32).reshape(-1, 8)
     pred_rbox = poly2rbox(pred)
     pred_rbox = pred_rbox.reshape(-1, 5)
@@ -186,13 +201,15 @@ class DetectionMAP(object):
         # record class score positive
         visited = [False] * len(gt_label)
         for b, s, l in zip(bbox, score, label):
-            xmin, ymin, xmax, ymax = b.tolist()
-            pred = [xmin, ymin, xmax, ymax]
+            pred = b.tolist() if isinstance(b, np.ndarray) else b
             max_idx = -1
             max_overlap = -1.0
             for i, gl in enumerate(gt_label):
                 if int(gl) == int(l):
-                    overlap = jaccard_overlap(pred, gt_box[i],
+                    if len(gt_box[i]) == 5:
+                        overlap = calc_rbox_iou(pred, gt_box[i])
+                    else:
+                        overlap = jaccard_overlap(pred, gt_box[i],
                                               self.is_bbox_normalized)
                     if overlap > max_overlap:
                         max_overlap = overlap

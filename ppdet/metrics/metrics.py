@@ -31,7 +31,12 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results', 'RBoxMetric',
+    'Metric',
+    'COCOMetric',
+    'VOCMetric',
+    'WiderFaceMetric',
+    'get_infer_results',
+    'RBoxMetric',
 ]
 
 COCO_SIGMAS = np.array([
@@ -305,7 +310,8 @@ class RBoxMetric(Metric):
     def __init__(self, anno_file, **kwargs):
         assert os.path.isfile(anno_file), \
                 "anno_file {} not a file".format(anno_file)
-        assert os.path.exists(anno_file), "anno_file {} not exists".format(anno_file)
+        assert os.path.exists(anno_file), "anno_file {} not exists".format(
+            anno_file)
         self.anno_file = anno_file
         self.gt_anno = json.load(open(self.anno_file))
         cats = self.gt_anno['categories']
@@ -355,10 +361,15 @@ class RBoxMetric(Metric):
         score = [b['score'] for b in self.result_bbox]
         label = [b['category_id'] for b in self.result_bbox]
         label = [self.catid2clsid[e] for e in label]
-        gt_box = [e['bbox'] for e in self.gt_anno['annotations'] if e['image_id']==outs['im_id']]
-        gt_label = [e['category_id'] for e in self.gt_anno['annotations'] if e['image_id']==outs['im_id']]
-        #gt_label = [self.catid2clsid[e] for e in gt_label]
-        #print('label', label, 'gt_label', gt_label)
+        gt_box = [
+            e['bbox'] for e in self.gt_anno['annotations']
+            if e['image_id'] == outs['im_id']
+        ]
+        gt_label = [
+            e['category_id'] for e in self.gt_anno['annotations']
+            if e['image_id'] == outs['im_id']
+        ]
+        gt_label = [self.catid2clsid[e] for e in gt_label]
         self.detection_map.update(bbox, score, label, gt_box, gt_label)
 
     def accumulate(self):
@@ -374,8 +385,8 @@ class RBoxMetric(Metric):
                 logger.info('The bbox result is saved to {} and do not '
                             'evaluate the mAP.'.format(output))
             else:
-               logger.info("Accumulating evaluatation results...")
-               self.detection_map.accumulate()
+                logger.info("Accumulating evaluatation results...")
+                self.detection_map.accumulate()
 
     def log(self):
         map_stat = 100. * self.detection_map.get_map()
