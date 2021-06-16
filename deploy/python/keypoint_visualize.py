@@ -34,9 +34,16 @@ def draw_pose(imgfile,
                      'for example: `pip install matplotlib`.')
         raise e
 
-    EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
-             (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14), (13, 15),
-             (14, 16), (11, 12)]
+    skeletons, scores = results['keypoint']
+    kpt_nums = len(skeletons[0])
+    if kpt_nums == 17:  #plot coco keypoint
+        EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
+                 (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14),
+                 (13, 15), (14, 16), (11, 12)]
+    else:  #plot mpii keypoint
+        EDGES = [(0, 1), (1, 2), (3, 4), (4, 5), (2, 6), (3, 6), (6, 7), (7, 8),
+                 (8, 9), (10, 11), (11, 12), (13, 14), (14, 15), (8, 12),
+                 (8, 13)]
     NUM_EDGES = len(EDGES)
 
     colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
@@ -46,7 +53,7 @@ def draw_pose(imgfile,
     plt.figure()
 
     img = cv2.imread(imgfile) if type(imgfile) == str else imgfile
-    skeletons, scores = results['keypoint']
+
     color_set = results['colors'] if 'colors' in results else None
 
     if 'bbox' in results:
@@ -58,7 +65,7 @@ def draw_pose(imgfile,
             cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color, 1)
 
     canvas = img.copy()
-    for i in range(17):
+    for i in range(kpt_nums):
         for j in range(len(skeletons)):
             if skeletons[j][i, 2] < visual_thread:
                 continue

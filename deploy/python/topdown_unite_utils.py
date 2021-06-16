@@ -103,5 +103,10 @@ def argsparser():
         default=False,
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
+    parser.add_argument(
+        '--use_dark',
+        type=bool,
+        default=True,
+        help='whether to use darkpose to get better keypoint position predict ')
 
     return parser
