@@ -115,7 +115,7 @@ class Trainer(object):
         self.status = {}
 
         self.start_epoch = 0
-        self.end_epoch = cfg.epoch
+        self.end_epoch = 0 if 'epoch' not in cfg else cfg.epoch
 
         # initial default callbacks
         self._init_callbacks()

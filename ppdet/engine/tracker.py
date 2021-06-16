@@ -148,9 +148,11 @@ class Tracker(object):
             timer.toc()
 
             # save results
-            results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs, online_scores,
-                              timer.average_time, show_image, save_dir)
+            results.append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            self.save_results(data, frame_id, online_ids, online_tlwhs,
+                              online_scores, timer.average_time, show_image,
+                              save_dir)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -220,9 +222,11 @@ class Tracker(object):
             timer.toc()
 
             # save results
-            results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
-            self.save_results(data, frame_id, online_ids, online_tlwhs, online_scores,
-                              timer.average_time, show_image, save_dir)
+            results.append(
+                (frame_id + 1, online_tlwhs, online_scores, online_ids))
+            self.save_results(data, frame_id, online_ids, online_tlwhs,
+                              online_scores, timer.average_time, show_image,
+                              save_dir)
             frame_id += 1
 
         return results, frame_id, timer.average_time, timer.calls
@@ -415,8 +419,8 @@ class Tracker(object):
                     f.write(line)
         logger.info('MOT results save in {}'.format(filename))
 
-    def save_results(self, data, frame_id, online_ids, online_tlwhs, online_scores, 
-                     average_time, show_image, save_dir):
+    def save_results(self, data, frame_id, online_ids, online_tlwhs,
+                     online_scores, average_time, show_image, save_dir):
         if show_image or save_dir is not None:
             assert 'ori_image' in data
             img0 = data['ori_image'].numpy()[0]
