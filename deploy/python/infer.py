@@ -213,6 +213,7 @@ class DetectorSOLOv2(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
+        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
     def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
