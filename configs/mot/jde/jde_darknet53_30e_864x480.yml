@@ -5,6 +5,7 @@ _BASE_: [
   '_base_/jde_darknet53.yml',
   '_base_/jde_reader_864x480.yml',
 ]
+snapshot_epoch: 5
 weights: output/jde_darknet53_30e_864x480/model_final
 
 JDE:

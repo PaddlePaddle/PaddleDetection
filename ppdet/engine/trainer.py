@@ -36,6 +36,8 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
+from ppdet.metrics import MOTMetric
+from .tracker import Tracker
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -204,6 +206,8 @@ class Trainer(object):
                                         len(eval_dataset), self.cfg.num_joints,
                                         self.cfg.save_dir)
             ]
+        elif self.cfg.metric == 'MOT':
+            self._metrics = [MOTMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -342,20 +346,38 @@ class Trainer(object):
             if validate and (self._nranks < 2 or self._local_rank == 0) \
                     and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
                              or epoch_id == self.end_epoch - 1):
-                if not hasattr(self, '_eval_loader'):
+                if self.cfg.architecture in MOT_ARCH:
                     # build evaluation dataset and loader
-                    self._eval_dataset = self.cfg.EvalDataset
-                    self._eval_batch_sampler = \
-                        paddle.io.BatchSampler(
+                    assert hasattr(self.cfg, 'EvalMOTDataset')
+                    self._eval_dataset = self.cfg.EvalMOTDataset
+                    dataset_dir = self._eval_dataset.dataset_dir
+                    data_root = '{}/{}'.format(dataset_dir,
+                                               self._eval_dataset.data_root)
+                    seqs = self.cfg['MOTDataZoo'][self._eval_dataset.task]
+                    # build Tracker
+                    tracker = Tracker(self.cfg, mode='eval')
+                    # inference
+                    tracker.mot_evaluate(
+                        data_root=data_root,
+                        seqs=seqs,
+                        data_type='mot',
+                        model_type=self.cfg.architecture,
+                        output_dir='output')
+                else:
+                    if not hasattr(self, '_eval_loader'):
+                        # build evaluation dataset and loader
+                        self._eval_dataset = self.cfg.EvalDataset
+                        self._eval_batch_sampler = \
+                            paddle.io.BatchSampler(
+                                self._eval_dataset,
+                                batch_size=self.cfg.EvalReader['batch_size'])
+                        self._eval_loader = create('EvalReader')(
                             self._eval_dataset,
-                            batch_size=self.cfg.EvalReader['batch_size'])
-                    self._eval_loader = create('EvalReader')(
-                        self._eval_dataset,
-                        self.cfg.worker_num,
-                        batch_sampler=self._eval_batch_sampler)
-                with paddle.no_grad():
-                    self.status['save_best_model'] = True
-                    self._eval_with_loader(self._eval_loader)
+                            self.cfg.worker_num,
+                            batch_sampler=self._eval_batch_sampler)
+                    with paddle.no_grad():
+                        self.status['save_best_model'] = True
+                        self._eval_with_loader(self._eval_loader)
 
             # restore origin weight on model
             if self.use_ema:

@@ -5,6 +5,5 @@ _BASE_: [
   '_base_/fairmot_dla34.yml',
   '_base_/fairmot_reader_1088x608.yml',
 ]
-
-metric: MOT
+snapshot_epoch: 5
 weights: output/fairmot_dla34_30e_1088x608/model_final
