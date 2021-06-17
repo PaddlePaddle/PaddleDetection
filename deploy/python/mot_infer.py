@@ -98,14 +98,17 @@ class MOT_Detector(object):
     def postprocess(self, pred_dets, pred_embs):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs, online_ids = [], []
+        online_scores = []
         for t in online_targets:
             tlwh = t.tlwh
             tid = t.track_id
+            tscore = t.score
             vertical = tlwh[2] / tlwh[3] > 1.6
             if tlwh[2] * tlwh[3] > self.tracker.min_box_area and not vertical:
                 online_tlwhs.append(tlwh)
                 online_ids.append(tid)
-        return online_tlwhs, online_ids
+                online_scores.append(tscore)
+        return online_tlwhs, online_scores, online_ids
 
     def predict(self, image, threshold=0.5, repeats=1):
         '''
@@ -136,10 +139,11 @@ class MOT_Detector(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_ids = self.postprocess(pred_dets, pred_embs)
+        online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
+                                                                   pred_embs)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
-        return online_tlwhs, online_ids
+        return online_tlwhs, online_scores, online_ids
 
 
 def create_inputs(im, im_info):
@@ -290,6 +294,36 @@ def load_predictor(model_dir,
     return predictor, config
 
 
+def write_mot_results(filename, results, data_type='mot'):
+    if data_type in ['mot', 'mcmot', 'lab']:
+        save_format = '{frame},{id},{x1},{y1},{w},{h},{score},-1,-1,-1\n'
+    elif data_type == 'kitti':
+        save_format = '{frame} {id} pedestrian 0 0 -10 {x1} {y1} {x2} {y2} -10 -10 -10 -1000 -1000 -1000 -10\n'
+    else:
+        raise ValueError(data_type)
+
+    with open(filename, 'w') as f:
+        for frame_id, tlwhs, tscores, track_ids in results:
+            if data_type == 'kitti':
+                frame_id -= 1
+            for tlwh, score, track_id in zip(tlwhs, tscores, track_ids):
+                if track_id < 0:
+                    continue
+                x1, y1, w, h = tlwh
+                x2, y2 = x1 + w, y1 + h
+                line = save_format.format(
+                    frame=frame_id,
+                    id=track_id,
+                    x1=x1,
+                    y1=y1,
+                    x2=x2,
+                    y2=y2,
+                    w=w,
+                    h=h,
+                    score=score)
+                f.write(line)
+
+
 def predict_video(detector, camera_id):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
@@ -311,20 +345,32 @@ def predict_video(detector, camera_id):
     writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
     frame_id = 0
     timer = MOTTimer()
+    results = []
     while (1):
         ret, frame = capture.read()
         if not ret:
             break
         timer.tic()
-        online_tlwhs, online_ids = detector.predict(frame, FLAGS.threshold)
+        online_tlwhs, online_scores, online_ids = detector.predict(
+            frame, FLAGS.threshold)
         timer.toc()
 
+        results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+        fps = 1. / timer.average_time
         online_im = mot_vis.plot_tracking(
             frame,
             online_tlwhs,
             online_ids,
+            online_scores,
             frame_id=frame_id,
-            fps=1. / timer.average_time)
+            fps=fps)
+        if FLAGS.save_images:
+            save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            cv2.imwrite(
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
+                online_im)
         frame_id += 1
         print('detect frame:%d' % (frame_id))
         im = np.array(online_im)
@@ -333,6 +379,10 @@ def predict_video(detector, camera_id):
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
+    if FLAGS.save_results:
+        result_filename = os.path.join(FLAGS.output_dir,
+                                       video_name.split('.')[-2] + '.txt')
+        write_mot_results(result_filename, results)
     writer.release()
 
 
