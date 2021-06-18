@@ -107,7 +107,6 @@ class JDE(BaseArch):
 
                 pred_dets = paddle.concat((bbox[:, 2:], bbox[:, 1:2]), axis=1)
 
-                boxes_idx = paddle.cast(boxes_idx, 'int64')
                 emb_valid = paddle.gather_nd(emb_outs, boxes_idx)
                 pred_embs = paddle.gather_nd(emb_valid, nms_keep_idx)
 
