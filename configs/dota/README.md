@@ -40,7 +40,7 @@ DOTA数据集中总共有2806张图像，其中1411张图像作为训练集，45
 
 然后将标注结果转换成coco标注格式，其中每个`bbox`的格式为 `[x_ctr, y_ctr, w, h, angle]`，这里角度以弧度表示。
 
-在`dataset/spine_coco/`文件夹下，我们提供脊椎间盘数据集，其中训练集230张图像，验证集57张图像。可以快速开始训练S2ANet模型。
+参考[脊椎间盘数据集](https://aistudio.baidu.com/aistudio/datasetdetail/85885) ，我们将数据集划分为训练集(230)、测试集(57)，数据地址为：[spine_coco](https://paddledet.bj.bcebos.com/data/spine_coco.tar) 。该数据集图像数量比较少，使用这个数据集可以快速训练S2ANet模型。
 
 
 ## 开始训练
