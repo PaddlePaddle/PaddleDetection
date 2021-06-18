@@ -100,8 +100,14 @@ def calc_rbox_iou(pred, gt_rbox):
     pred = pred.reshape(-1, 2)
     gt_poly = rbox2poly_np(np.array(gt_rbox).reshape(-1, 5))[0]
     gt_poly = gt_poly.reshape(-1, 2)
-    pred_rect = [np.min(pred[:, 0]), np.min(pred[:, 1]), np.max(pred[:, 0]), np.max(pred[:, 1])]
-    gt_rect = [np.min(gt_poly[:, 0]), np.min(gt_poly[:, 1]), np.max(gt_poly[:, 0]), np.max(gt_poly[:, 1])]
+    pred_rect = [
+        np.min(pred[:, 0]), np.min(pred[:, 1]), np.max(pred[:, 0]),
+        np.max(pred[:, 1])
+    ]
+    gt_rect = [
+        np.min(gt_poly[:, 0]), np.min(gt_poly[:, 1]), np.max(gt_poly[:, 0]),
+        np.max(gt_poly[:, 1])
+    ]
     iou = jaccard_overlap(pred_rect, gt_rect, False)
 
     if iou <= 0:
@@ -210,7 +216,7 @@ class DetectionMAP(object):
                         overlap = calc_rbox_iou(pred, gt_box[i])
                     else:
                         overlap = jaccard_overlap(pred, gt_box[i],
-                                              self.is_bbox_normalized)
+                                                  self.is_bbox_normalized)
                     if overlap > max_overlap:
                         max_overlap = overlap
                         max_idx = i
