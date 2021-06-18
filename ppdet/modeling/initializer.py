@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import math
+import numpy as np
 
 import paddle
 import paddle.nn as nn
@@ -136,7 +137,7 @@ def _calculate_fan_in_and_fan_out(tensor, reverse=False):
 
     receptive_field_size = 1
     if tensor.ndim > 2:
-        receptive_field_size = math.prod(tensor.shape[2:])
+        receptive_field_size = np.prod(tensor.shape[2:])
 
     fan_in = num_input_fmaps * receptive_field_size
     fan_out = num_output_fmaps * receptive_field_size

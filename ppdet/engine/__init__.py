@@ -14,8 +14,6 @@
 
 from . import trainer
 from .trainer import *
-from . import tracker
-from .tracker import *
 
 from . import callbacks
 from .callbacks import *
@@ -24,6 +22,9 @@ from . import env
 from .env import *
 
 __all__ = trainer.__all__ \
-        + tracker.__all__ \
         + callbacks.__all__ \
         + env.__all__
+
+from . import tracker
+from .tracker import *
+__all__ = __all__ + tracker.__all__

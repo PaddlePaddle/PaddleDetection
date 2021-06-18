@@ -100,7 +100,14 @@ def argsparser():
         default=False,
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
-
+    parser.add_argument(
+        '--save_images',
+        action='store_true',
+        help='Save tracking results (image).')
+    parser.add_argument(
+        '--save_results',
+        action='store_true',
+        help='Save tracking results (txt).')
     return parser
 
 

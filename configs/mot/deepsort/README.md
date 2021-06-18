@@ -13,20 +13,24 @@ English | [简体中文](README_cn.md)
 
 ## Model Zoo
 
-### DeepSORT on MOT-16 Training Set
+### DeepSORT Results on MOT-16 Training Set
 
-| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | download| config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: |
-| ResNet101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
+| ResNet-101 | 1088x608 |  72.2  |  60.5  | 998  |  8054  | 21644 |  - | [det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  68.3  |  56.5  | 1722 |  17337 | 15890 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
-### DeepSORT on MOT-16 Test Set
+### DeepSORT Results on MOT-16 Test Set
 
-| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | download| config |
-| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: |
-| ResNet101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - | [download](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| backbone  | input shape | MOTA | IDF1 |  IDS  |   FP  |   FN  |   FPS  | det result/model |ReID model| config |
+| :---------| :------- | :----: | :----: | :--: | :----: | :---: | :---: | :---: | :---: | :---: |
+| ResNet-101 | 1088x608 |  64.1  |  53.0  | 1024  |  12457  | 51919 |  - |[det result](https://dataset.bj.bcebos.com/mot/det_results_dir.zip) |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
+| ResNet-101 | 1088x608 |  61.2  |  48.5  | 1799  |  25796  | 43232 |  - | [det model](https://paddledet.bj.bcebos.com/models/mot/jde_yolov3_darknet53_30e_1088x608.pdparams)  |[ReID model](https://paddledet.bj.bcebos.com/models/mot/deepsort_pcb_pyramid_r101.pdparams)|[config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml) |
 
 **Notes:**
- DeepSORT does not need to train on MOT dataset, only used for evaluation. Before DeepSORT evaluation, you should get detection results by a detection model first, and then prepare them like this:
+DeepSORT does not need to train on MOT dataset, only used for evaluation. Now it supports two evaluation methods.
+
+- 1.Load the result file and the ReID model. Before DeepSORT evaluation, you should get detection results by a detection model first, and then prepare them like this:
 ```
 det_results_dir
    |——————MOT16-02.txt
@@ -37,30 +41,44 @@ det_results_dir
    |——————MOT16-11.txt
    |——————MOT16-13.txt
 ```
-For MOT16 dataset, you can download the det_results_dir.zip provided by PaddleDetection：
+For MOT16 dataset, you can download a detection result after matching called det_results_dir.zip provided by PaddleDetection：
 ```
 wget https://dataset.bj.bcebos.com/mot/det_results_dir.zip
 ```
-Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
+If you use a stronger detection model, you can get better results. Each txt is the detection result of all the pictures extracted from each video, and each line describes a bounding box with the following format:
 ```
-[frame_id],[identity],[bb_left],[bb_top],[width],[height],[conf]
+[frame_id],[bb_left],[bb_top],[width],[height],[conf]
 ```
-**Notes:**
 - `frame_id` is the frame number of the image
-- `identity` is the object id using default value `-1`
 - `bb_left` is the X coordinate of the left bound of the object box
 - `bb_top` is the Y coordinate of the upper bound of the object box
 - `width,height` is the pixel width and height
 - `conf` is the object score with default value `1` (the results had been filtered out according to the detection score threshold)
+
+- 2.Load the detection model and the ReID model at the same time. Here, the JDE version of YOLOv3 is selected. For more detail of configuration, see `configs/mot/deepsort/_base_/deepsort_yolov3_darknet53_pcb_pyramid_r101.yml`.
 
 ## Getting Start
 
 ### 1. Evaluation
 
 ```bash
-# track the objects by loading detected result files
+# Load the result file and ReID model to get the tracking result
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_pcb_pyramid_r101.yml --det_results_dir {your detection results}
+
+# Load the detection model and ReID model to get the tracking results
+CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml
 ```
+
+### 2. Inference
+
+Inference a vidoe on single GPU with following command:
+
+```bash
+# inference on video and save a video
+CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/deepsort/deepsort_yolov3_pcb_pyramid_r101.yml --video_file={your video name}.mp4  --save_videos
+```
+**Notes:**
+ Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 ## Citations
 ```
