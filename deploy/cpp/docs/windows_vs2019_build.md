@@ -77,7 +77,7 @@ cmake . -G "Visual Studio 16 2019" -A x64 -T host=x64 -DWITH_GPU=ON -DWITH_MKL=O
 ```
 
 3. 编译
-用`Visual Studio 16 2019`打开`cpp`文件夹下的`PaddleObjectDetector.sln`，将编译模式设置为`Release`，点击`生成`->`全部生成
+用`Visual Studio 16 2019`打开`cpp`文件夹下的`PaddleObjectDetector.sln`，将编译模式设置为`Release`，将`项目-->属性-->C/C++-->C++语言标准 选择成C++17标准`，点击`生成`->`全部生成
 
 
 ### Step5: 预测及可视化
