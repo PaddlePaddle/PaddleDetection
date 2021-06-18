@@ -93,7 +93,7 @@ def jaccard_overlap(pred, gt, is_bbox_normalized=False):
 
 def calc_rbox_iou(pred, gt_rbox):
     """
-    calc_rbox_iou
+    calc iou between rotated bbox
     """
     # calc iou of bounding box for speedup
     pred = np.array(pred, np.float32).reshape(-1, 8)

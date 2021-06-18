@@ -35,7 +35,8 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import *
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
+from ppdet.metrics import RBoxMetric
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
