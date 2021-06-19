@@ -163,6 +163,8 @@ class ConvNormLayer(nn.Layer):
                 bias_attr=True,
                 lr_scale=dcn_lr_scale,
                 regularizer=dcn_regularizer,
+                dcn_bias_regularizer=dcn_regularizer,
+                dcn_bias_lr_scale=dcn_lr_scale,
                 skip_quant=skip_quant)
 
         norm_lr = 0. if freeze_norm else 1.
