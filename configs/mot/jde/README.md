@@ -83,6 +83,21 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/jde/jde_darknet5
  Please make sure that [ffmpeg](https://ffmpeg.org/ffmpeg.html) is installed first, on Linux(Ubuntu) platform you can directly install it by the following command:`apt-get update && apt-get install -y ffmpeg`.
 
 
+### 4. Export model
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/jde/jde_darknet53_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/jde_darknet53_30e_1088x608.pdparams
+```
+
+### 5. Using exported model for python inference
+
+```bash
+python deploy/python/mot_infer.py --model_dir=output_inference/jde_darknet53_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --use_gpu=True --save_results
+```
+**Notes:** 
+The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_results` to save the txt result file, or `--save_images` to save the visualization images.
+
+
 ## Citations
 ```
 @article{wang2019towards,

@@ -75,6 +75,20 @@ CUDA_VISIBLE_DEVICES=0 python tools/infer_mot.py -c configs/mot/fairmot/fairmot_
 **注意:**
  请先确保已经安装了[ffmpeg](https://ffmpeg.org/ffmpeg.html), Linux(Ubuntu)平台可以直接用以下命令安装：`apt-get update && apt-get install -y ffmpeg`。
 
+### 4. 导出预测模型
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+```
+
+### 5. 用导出的模型基于Python去预测
+
+```bash
+python deploy/python/mot_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --use_gpu=True --save_results
+```
+**注意:** 
+ 跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_results`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
+
 ## 引用
 ```
 @article{zhang2020fair,
