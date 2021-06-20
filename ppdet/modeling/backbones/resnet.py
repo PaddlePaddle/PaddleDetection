@@ -584,8 +584,8 @@ class ResNet(nn.Layer):
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
-            if idx == self.freeze_at:
-                x.stop_gradient = True
+            # if idx == self.freeze_at:
+            #     x.stop_gradient = True
             if idx in self.return_idx:
                 outs.append(x)
         return outs
