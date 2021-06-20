@@ -560,6 +560,15 @@ class ResNet(nn.Layer):
             self.res_layers.append(res_layer)
             self.ch_in = self._out_channels[i]
 
+        if freeze_at >= 0:
+            self._freeze_parameters(self.conv1)
+            for i in range(freeze_at + 1):
+                self._freeze_parameters(self.res_layers[i])
+
+    def _freeze_parameters(self, m):
+        for p in m.parameters():
+            p.stop_gradient = True
+
     @property
     def out_shape(self):
         return [
