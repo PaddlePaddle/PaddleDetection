@@ -1540,7 +1540,7 @@ class RandomResizeCrop(RandomCrop):
         self.cropsizes = cropsizes
         self.prob = prob
         self.mode = mode
-        self.intetp = interp
+        self.interp = interp
         self.keep_ratio = keep_ratio
 
     def applay(self, sample, context=None):
