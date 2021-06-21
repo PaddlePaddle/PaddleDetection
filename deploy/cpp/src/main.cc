@@ -353,19 +353,21 @@ int main(int argc, char** argv) {
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
-    std::vector<std::string> all_imgs;
+    std::vector<std::string> all_img_paths;
+    std::vector<cv::String> cv_all_img_paths;
     if (!FLAGS_image_file.empty()) {
-      all_imgs.push_back(FLAGS_image_file);
+      all_img_paths.push_back(FLAGS_image_file);
       if (FLAGS_batch_size > 1) {
         std::cout << "batch_size should be 1, when set `image_file`." << std::endl;
 	return -1;
       }
     } else {
-      for (const auto & entry : std::filesystem::directory_iterator(FLAGS_image_dir)) {
-        all_imgs.push_back(entry.path());
-      }
+        cv::glob(FLAGS_image_dir, cv_all_img_paths);
+        for (const auto & img_path : cv_all_img_paths) {
+          all_img_paths.push_back(img_path);
+        }
     }
-    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold,
+    PredictImage(all_img_paths, FLAGS_batch_size, FLAGS_threshold,
 		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
