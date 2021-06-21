@@ -1,4 +1,4 @@
-metric: COCO
+metric: RBOX
 num_classes: 15
 
 TrainDataset:

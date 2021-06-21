@@ -36,6 +36,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval
+from ppdet.metrics import RBoxMetric
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -176,6 +177,35 @@ class Trainer(object):
                     output_eval=output_eval,
                     bias=bias,
                     IouType=IouType,
+                    save_prediction_only=save_prediction_only)
+            ]
+        elif self.cfg.metric == 'RBOX':
+            # TODO: bias should be unified
+            bias = self.cfg['bias'] if 'bias' in self.cfg else 0
+            output_eval = self.cfg['output_eval'] \
+                if 'output_eval' in self.cfg else None
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+
+            # pass clsid2catid info to metric instance to avoid multiple loading
+            # annotation file
+            clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
+                                if self.mode == 'eval' else None
+
+            # when do validation in train, annotation file should be get from
+            # EvalReader instead of self.dataset(which is TrainReader)
+            anno_file = self.dataset.get_anno()
+            if self.mode == 'train' and validate:
+                eval_dataset = self.cfg['EvalDataset']
+                eval_dataset.check_or_download_dataset()
+                anno_file = eval_dataset.get_anno()
+
+            self._metrics = [
+                RBoxMetric(
+                    anno_file=anno_file,
+                    clsid2catid=clsid2catid,
+                    classwise=classwise,
+                    output_eval=output_eval,
+                    bias=bias,
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'VOC':
