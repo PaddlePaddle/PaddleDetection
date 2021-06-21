@@ -592,10 +592,16 @@ class RandomFlip(BaseOperator):
 
 @register_op
 class Resize(BaseOperator):
-    def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_LINEAR,
+                 mode='long'):
         """
-        Resize image to target size. if keep_ratio is True, 
-        resize the image's long side to the maximum of target_size
+        Resize image to target size. if keep_ratio is True and mode is 'long', 
+        resize the image's long side to the maximum of target_size, if keep_ratio 
+        is True and mode is 'short', resize the image's short side to the minimum 
+        of target_size.
         if keep_ratio is False, resize the image to target size(h, w)
         Args:
             target_size (int|list): image target size
@@ -612,6 +618,10 @@ class Resize(BaseOperator):
         if isinstance(target_size, Integral):
             target_size = [target_size, target_size]
         self.target_size = target_size
+
+        self.mode = mode.lower()
+        assert self.mode in (
+            'long', 'short'), 'mode value should choice from (`long`, `short`)'
 
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
@@ -691,8 +701,12 @@ class Resize(BaseOperator):
             target_size_min = np.min(self.target_size)
             target_size_max = np.max(self.target_size)
 
-            im_scale = min(target_size_min / im_size_min,
-                           target_size_max / im_size_max)
+            if self.mode == 'long':
+                im_scale = min(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
+            else:
+                im_scale = max(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
 
             resize_h = im_scale * float(im_shape[0])
             resize_w = im_scale * float(im_shape[1])
