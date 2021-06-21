@@ -618,8 +618,6 @@ class S2ANetHead(nn.Layer):
         fam_cls_score = paddle.squeeze(fam_cls_score, axis=0)
         fam_cls_score1 = fam_cls_score
 
-        # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-        feat_labels = feat_labels + 1
         feat_labels = paddle.to_tensor(feat_labels)
         feat_labels_one_hot = F.one_hot(feat_labels, self.cls_out_channels + 1)
         feat_labels_one_hot = feat_labels_one_hot[:, 1:]
@@ -681,9 +679,6 @@ class S2ANetHead(nn.Layer):
         odm_cls_score = paddle.squeeze(odm_cls_score, axis=0)
         odm_cls_score1 = odm_cls_score
 
-        # gt_classes 0~14(data), feat_labels 0~14, sigmoid_focal_loss need class>=1
-        # for debug 0426
-        feat_labels = feat_labels + 1
         feat_labels = paddle.to_tensor(feat_labels)
         feat_labels_one_hot = F.one_hot(feat_labels, self.cls_out_channels + 1)
         feat_labels_one_hot = feat_labels_one_hot[:, 1:]
@@ -833,10 +828,5 @@ class S2ANetHead(nn.Layer):
 
         mlvl_bboxes = paddle.concat(mlvl_bboxes, axis=0)
         mlvl_scores = paddle.concat(mlvl_scores)
-        if use_sigmoid_cls:
-            # Add a dummy background class to the front when using sigmoid
-            padding = paddle.zeros(
-                [mlvl_scores.shape[0], 1], dtype=mlvl_scores.dtype)
-            mlvl_scores = paddle.concat([padding, mlvl_scores], axis=1)
 
         return mlvl_scores, mlvl_bboxes
