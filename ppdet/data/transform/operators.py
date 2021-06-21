@@ -1543,7 +1543,7 @@ class RandomResizeCrop(RandomCrop):
         self.interp = interp
         self.keep_ratio = keep_ratio
 
-    def applay(self, sample, context=None):
+    def apply(self, sample, context=None):
         if random.random() < self.prob:
             _resize = random.choice(self.resizes)
             _cropsize = random.choice(self.cropsizes)
