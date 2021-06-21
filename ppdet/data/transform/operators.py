@@ -1578,11 +1578,8 @@ class RandomResizeCrop(RandomCrop):
                 crop_h = random.randint(min_crop, min(h, max_crop))
                 crop_w = random.randint(min_crop, min(w, max_crop))
 
-                if crop_h == h and crop_w == w:
-                    crop_y, crop_x = 0, 0
-                else:
-                    crop_y = np.random.randint(0, h - crop_h + 1)
-                    crop_x = np.random.randint(0, w - crop_w + 1)
+                crop_y = random.randint(0, h - crop_h)
+                crop_x = random.randint(0, w - crop_w)
 
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
                 iou = self._iou_matrix(
