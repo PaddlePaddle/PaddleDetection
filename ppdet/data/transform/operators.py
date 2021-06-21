@@ -1555,7 +1555,7 @@ class RandomResizeCrop(RandomCrop):
                 keep_ratio=self.keep_ratio,
                 mode=self.mode,
                 interp=self.interp)
-            sample = resizer(sample, contex=context)
+            sample = resizer(sample, context=context)
             sample = self._crop(sample, cropsize=_cropsize, context=context)
         return sample
 
