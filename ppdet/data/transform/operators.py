@@ -1502,22 +1502,22 @@ class RandomScaledCrop(BaseOperator):
 class RandomResizeCrop(RandomCrop):
     """Random crop image and bboxes.
     Args:
-        sizes: resize sizes, [400, 500, 600]. Details see RandomResize
-        crops: crop sizes after resize, [(min_crop_1, max_crop_1), ...]
+        resizes: resize sizes, [400, 500, 600]. Details see RandomResize
+        cropsizes: crop sizes after resize, [(min_crop_1, max_crop_1), ...]
         mode: resize mode, `long` or `short`. Details see RandomResize 
         prob: probability of this op.
     """
 
     def __init__(
             self,
-            sizes,
-            crops,
+            resizes,
+            cropsizes,
             mode='short',
             prob=0.5, ):
         super(RandomResizeCrop, self).__init__()
 
-        self.sizes = sizes
-        self.crops = crops
+        self.resizes = resizes
+        self.cropsizes = cropsizes
         self.prob = prob
         self.mode = mode
 
@@ -1529,8 +1529,10 @@ class RandomResizeCrop(RandomCrop):
 
     def applay(self, sample, context=None):
         if random.random() < self.prob:
-            _resize = random.choice(self.sizes)
-            _cropsize = random.choice(self.crops)
+            _resize = random.choice(self.resizes)
+            _cropsize = random.choice(self.cropsizes)
+            if isinstance(_cropsize, Integral):
+                _cropsize = (_cropsize, _cropsize)
 
             resizer = Resize(
                 _resize,
