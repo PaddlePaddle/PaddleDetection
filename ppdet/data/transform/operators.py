@@ -1541,7 +1541,7 @@ class RandomResizeCrop(RandomCrop):
         self.prob = prob
         self.mode = mode
         self.intetp = interp
-        self.keep_ration = keep_ratio
+        self.keep_ratio = keep_ratio
 
     def applay(self, sample, context=None):
         if random.random() < self.prob:
