@@ -1519,10 +1519,12 @@ class RandomResizeCrop(RandomCrop):
         self.sizes = sizes
         self.prob = prob
         self.mode = mode
+
         self.keep_ratio = True
         self.interp = cv2.INTER_LINEAR
         self.num_attempts = 3
         self.cover_all_box = False
+        self.thresholds = [0.3, 0.5, 0.7]
 
     def applay(self, sample, context=None):
         if random.random() < self.prob:
