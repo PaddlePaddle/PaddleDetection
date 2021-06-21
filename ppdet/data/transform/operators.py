@@ -607,6 +607,7 @@ class Resize(BaseOperator):
             target_size (int|list): image target size
             keep_ratio (bool): whether keep_ratio or not, default true
             interp (int): the interpolation method
+            mode (str): resize mode, choice from ('long', 'short')
         """
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
@@ -1498,32 +1499,49 @@ class RandomScaledCrop(BaseOperator):
 
 @register_op
 class RandomResizeCrop(RandomCrop):
-    """Random crop image and bboxes.
+    """Random resize and crop image and bboxes.
     Args:
-        resizes: resize sizes, [400, 500, 600]. Details see RandomResize
-        cropsizes: crop sizes after resize, [(min_crop_1, max_crop_1), ...]
-        mode: resize mode, `long` or `short`. Details see RandomResize 
-        prob: probability of this op.
+        resizes (list): resize sizes, [400, 500, 600]. Details see RandomResize
+        cropsizes (list): crop sizes after resize, [(min_crop_1, max_crop_1), ...]
+        mode (str): resize mode, `long` or `short`. Details see RandomResize 
+        prob (float): probability of this op.
+        keep_ratio (bool): whether keep_ratio or not, default true
+        interp (int): the interpolation method
+        aspect_ratio (list): aspect ratio of cropped region.
+            in [min, max] format.
+        thresholds (list): iou thresholds for decide a valid bbox crop.
+        num_attempts (int): number of tries before giving up.
+        allow_no_crop (bool): allow return without actually cropping them.
+        cover_all_box (bool): ensure all bboxes are covered in the final crop.
+        is_mask_crop(bool): whether crop the segmentation.
     """
 
     def __init__(
             self,
             resizes,
             cropsizes,
+            prob=0.5,
             mode='short',
-            prob=0.5, ):
-        super(RandomResizeCrop, self).__init__()
+            keep_ratio=True,
+            interp=cv2.INTER_LINEAR,
+            num_attempts=3,
+            cover_all_box=False,
+            allow_no_crop=False,
+            thresholds=[0.3, 0.5, 0.7],
+            is_mask_crop=False, ):
+        super(RandomResizeCrop, self).__init__(
+            num_attempts=num_attempts,
+            cover_all_box=cover_all_box,
+            thresholds=thresholds,
+            allow_no_crop=allow_no_crop,
+            is_mask_crop=is_mask_crop)
 
         self.resizes = resizes
         self.cropsizes = cropsizes
         self.prob = prob
         self.mode = mode
-
-        self.keep_ratio = True
-        self.interp = cv2.INTER_LINEAR
-        self.num_attempts = 3
-        self.cover_all_box = False
-        self.thresholds = [0.3, 0.5, 0.7]
+        self.intetp = interp
+        self.keep_ration = keep_ratio
 
     def applay(self, sample, context=None):
         if random.random() < self.prob:
