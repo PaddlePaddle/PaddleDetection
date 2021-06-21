@@ -562,7 +562,7 @@ class ResNet(nn.Layer):
 
         if freeze_at >= 0:
             self._freeze_parameters(self.conv1)
-            for i in range(freeze_at + 1):
+            for i in range(min(freeze_at + 1, num_stages)):
                 self._freeze_parameters(self.res_layers[i])
 
     def _freeze_parameters(self, m):
@@ -584,8 +584,6 @@ class ResNet(nn.Layer):
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
-            # if idx == self.freeze_at:
-            #     x.stop_gradient = True
             if idx in self.return_idx:
                 outs.append(x)
         return outs
