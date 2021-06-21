@@ -20,6 +20,8 @@ from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
 
+from numpy.core.fromnumeric import size
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -1492,6 +1494,36 @@ class RandomScaledCrop(BaseOperator):
             valid = (area > 1.).nonzero()[0]
             sample['gt_bbox'] = boxes[valid]
             sample['gt_class'] = sample['gt_class'][valid]
+
+        return sample
+
+
+@register_op
+class RandomResizeCrop(BaseOperator):
+    def __init__(
+            self,
+            sizes,
+            crops,
+            mode='short',
+            prob=0.5, ):
+        super(RandomResizeCrop, self).__init__()
+        self.sizes = sizes
+        self.prob = prob
+        self.mode = mode
+        self.keep_ratio = True
+        self.interp = cv2.INTER_LINEAR
+
+    def __call__(self, sample, context=None):
+        if random.random() < self.prob:
+            _resize = random.choice(self.sizes)
+            _crop = random.choice(self.crops)
+
+            resizer = Resize(
+                _resize,
+                keep_ratio=self.keep_ratio,
+                mode=self.mode,
+                interp=self.interp)
+            sample = resizer(sample, context=context)
 
         return sample
 
