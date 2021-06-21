@@ -2015,12 +2015,12 @@ class Rbox2Poly(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    def __init__(self, fraction=0.50, is_bgr=False):
+    def __init__(self, fraction=0.50, is_bgr=True):
         """ 
         Augment the SV channel of image data.
         Args:
-            fraction (float): the fraction for augment 
-            is_bgr (bool): whether the image is BGR mode
+            fraction (float): the fraction for augment. Default: 0.5.
+            is_bgr (bool): whether the image is BGR mode. Default: True.
         """
         super(AugmentHSV, self).__init__()
         self.fraction = fraction
