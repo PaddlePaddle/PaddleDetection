@@ -1517,6 +1517,7 @@ class RandomResizeCrop(RandomCrop):
         super(RandomResizeCrop, self).__init__()
 
         self.sizes = sizes
+        self.crops = crops
         self.prob = prob
         self.mode = mode
 
