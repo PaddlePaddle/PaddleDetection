@@ -607,7 +607,7 @@ class Resize(BaseOperator):
             target_size (int|list): image target size
             keep_ratio (bool): whether keep_ratio or not, default true
             interp (int): the interpolation method
-            mode (str): resize mode, choice from ('long', 'short')
+            mode (str): resize mode, choose from ('long', 'short')
         """
         super(Resize, self).__init__()
         self.keep_ratio = keep_ratio
@@ -622,7 +622,7 @@ class Resize(BaseOperator):
 
         self.mode = mode.lower()
         assert self.mode in (
-            'long', 'short'), 'mode value should choice from (`long`, `short`)'
+            'long', 'short'), 'mode value should choose from (`long`, `short`)'
 
     def apply_image(self, image, scale):
         im_scale_x, im_scale_y = scale
@@ -1507,8 +1507,6 @@ class RandomResizeCrop(RandomCrop):
         prob (float): probability of this op.
         keep_ratio (bool): whether keep_ratio or not, default true
         interp (int): the interpolation method
-        aspect_ratio (list): aspect ratio of cropped region.
-            in [min, max] format.
         thresholds (list): iou thresholds for decide a valid bbox crop.
         num_attempts (int): number of tries before giving up.
         allow_no_crop (bool): allow return without actually cropping them.
@@ -1556,10 +1554,11 @@ class RandomResizeCrop(RandomCrop):
                 mode=self.mode,
                 interp=self.interp)
             sample = resizer(sample, context=context)
-            sample = self._crop(sample, cropsize=_cropsize, context=context)
+            sample = self._random_crop(
+                sample, cropsize=_cropsize, context=context)
         return sample
 
-    def _crop(self, sample, cropsize, context=None):
+    def _random_crop(self, sample, cropsize, context=None):
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
