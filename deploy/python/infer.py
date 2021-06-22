@@ -171,6 +171,9 @@ class Detector(object):
         self.det_times.img_num += len(image_list)
         return results
 
+    def get_timer(self):
+        return self.det_times
+
 
 class DetectorSOLOv2(Detector):
     """
@@ -269,8 +272,8 @@ class DetectorSOLOv2(Detector):
 def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
+        imgs (list(numpy)): list of images (np.ndarray)
+        im_info (list(dict)): list of image info
     Returns:
         inputs (dict): input of model
     """
