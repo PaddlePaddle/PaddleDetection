@@ -993,7 +993,7 @@ def multiclass_nms(bboxes,
 
     else:
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype='int')
+        index = helper.create_variable_for_type_inference(dtype='int32')
 
         inputs = {'BBoxes': bboxes, 'Scores': scores}
         outputs = {'Out': output, 'Index': index}
@@ -1136,7 +1136,7 @@ def matrix_nms(bboxes,
     else:
         helper = LayerHelper('matrix_nms', **locals())
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
-        index = helper.create_variable_for_type_inference(dtype='int')
+        index = helper.create_variable_for_type_inference(dtype='int32')
         outputs = {'Out': output, 'Index': index}
         if return_rois_num:
             rois_num = helper.create_variable_for_type_inference(dtype='int32')
