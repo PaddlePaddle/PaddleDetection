@@ -2128,11 +2128,7 @@ class RandomResizeCrop(BaseOperator):
             num_attempts=3,
             cover_all_box=False,
             allow_no_crop=False,
-            thresholds=[
-                0.3,
-                0.5,
-                0.7,
-            ],
+            thresholds=[0.3, 0.5, 0.7],
             is_mask_crop=False, ):
         super(RandomResizeCrop, self).__init__()
 
