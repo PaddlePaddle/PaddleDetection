@@ -174,59 +174,52 @@ void ObjectDetector::Postprocess(
     bool is_rbox=false) {
   result->clear();
   int start_idx = 0;
-  for (int im_id = 0; im_id < bbox_num.size(); im_id++) {
+  for (int im_id = 0; im_id < mats.size(); im_id++) {
     cv::Mat raw_mat = mats[im_id];
+    int rh = 1;
+    int rw = 1;
+    if (config_.arch_ == "Face") {
+      rh = raw_mat.rows;
+      rw = raw_mat.cols;
+    }
     for (int j = start_idx; j < start_idx+bbox_num[im_id]; j++) {
-      int rh = 1;
-      int rw = 1;
-      if (config_.arch_ == "Face") {
-        rh = raw_mat.rows;
-        rw = raw_mat.cols;
-      }
-
       if (is_rbox) {
-        for (int j = 0; j < bbox_num[im_id]; ++j) {
-          // Class id
-          int class_id = static_cast<int>(round(output_data_[0 + j * 10]));
-          // Confidence score
-          float score = output_data_[1 + j * 10];
-          int x1 = (output_data_[2 + j * 10] * rw);
-          int y1 = (output_data_[3 + j * 10] * rh);
-          int x2 = (output_data_[4 + j * 10] * rw);
-          int y2 = (output_data_[5 + j * 10] * rh);
-          int x3 = (output_data_[6 + j * 10] * rw);
-          int y3 = (output_data_[7 + j * 10] * rh);
-          int x4 = (output_data_[8 + j * 10] * rw);
-          int y4 = (output_data_[9 + j * 10] * rh);
-          if (score > threshold_ && class_id > -1) {
-            ObjectResult result_item;
-            result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
-            result_item.class_id = class_id;
-            result_item.confidence = score;
-            result->push_back(result_item);
-          }
-        }
+        // Class id
+        int class_id = static_cast<int>(round(output_data_[0 + j * 10]));
+        // Confidence score
+        float score = output_data_[1 + j * 10];
+        int x1 = (output_data_[2 + j * 10] * rw);
+        int y1 = (output_data_[3 + j * 10] * rh);
+        int x2 = (output_data_[4 + j * 10] * rw);
+        int y2 = (output_data_[5 + j * 10] * rh);
+        int x3 = (output_data_[6 + j * 10] * rw);
+        int y3 = (output_data_[7 + j * 10] * rh);
+        int x4 = (output_data_[8 + j * 10] * rw);
+        int y4 = (output_data_[9 + j * 10] * rh);
+          
+        ObjectResult result_item;
+        result_item.rect = {x1, y1, x2, y2, x3, y3, x4, y4};
+        result_item.class_id = class_id;
+        result_item.confidence = score;
+        result->push_back(result_item);
       }
       else {
-        for (int j = 0; j < bbox_num[im_id]; ++j) {
-          // Class id
-          int class_id = static_cast<int>(round(output_data_[0 + j * 6]));
-          // Confidence score
-          float score = output_data_[1 + j * 6];
-          int xmin = (output_data_[2 + j * 6] * rw);
-          int ymin = (output_data_[3 + j * 6] * rh);
-          int xmax = (output_data_[4 + j * 6] * rw);
-          int ymax = (output_data_[5 + j * 6] * rh);
-          int wd = xmax - xmin;
-          int hd = ymax - ymin;
-          if (score > threshold_ && class_id > -1) {
-            ObjectResult result_item;
-            result_item.rect = {xmin, ymin, xmax, ymax};
-            result_item.class_id = class_id;
-            result_item.confidence = score;
-            result->push_back(result_item);
-          }
-        }
+        // Class id
+        int class_id = static_cast<int>(round(output_data_[0 + j * 6]));
+        // Confidence score
+        float score = output_data_[1 + j * 6];
+        int xmin = (output_data_[2 + j * 6] * rw);
+        int ymin = (output_data_[3 + j * 6] * rh);
+        int xmax = (output_data_[4 + j * 6] * rw);
+        int ymax = (output_data_[5 + j * 6] * rh);
+        int wd = xmax - xmin;
+        int hd = ymax - ymin;
+          
+        ObjectResult result_item;
+        result_item.rect = {xmin, ymin, xmax, ymax};
+        result_item.class_id = class_id;
+        result_item.confidence = score;
+        result->push_back(result_item);
       }
     }
     start_idx += bbox_num[im_id];
@@ -263,6 +256,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   }
 
   // Prepare input tensor
+  
   auto input_names = predictor_->GetInputNames();
   for (const auto& tensor_name : input_names) {
     auto in_tensor = predictor_->GetInputHandle(tensor_name);
@@ -279,8 +273,10 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
       in_tensor->CopyFromCpu(scale_factor_all.data());
     }
   }
+  
   auto preprocess_end = std::chrono::steady_clock::now();
   // Run predictor
+  // warmup
   for (int i = 0; i < warmup; i++)
   {
     predictor_->Run();
@@ -288,15 +284,28 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
     auto output_names = predictor_->GetOutputNames();
     auto out_tensor = predictor_->GetOutputHandle(output_names[0]);
     std::vector<int> output_shape = out_tensor->shape();
+    auto out_bbox_num = predictor_->GetOutputHandle(output_names[1]);
+    std::vector<int> out_bbox_num_shape = out_bbox_num->shape();
     // Calculate output length
     int output_size = 1;
+    for (int j = 0; j < output_shape.size(); ++j) {
+      output_size *= output_shape[j];
+    }
+
     if (output_size < 6) {
       std::cerr << "[WARNING] No object detected." << std::endl;
     }
     output_data_.resize(output_size);
     out_tensor->CopyToCpu(output_data_.data()); 
-  }
 
+    int out_bbox_num_size = 1;
+    for (int j = 0; j < out_bbox_num_shape.size(); ++j) {
+      out_bbox_num_size *= out_bbox_num_shape[j];
+    }
+    out_bbox_num_data_.resize(out_bbox_num_size);
+    out_bbox_num->CopyToCpu(out_bbox_num_data_.data());
+  }
+  
   bool is_rbox = false;
   auto inference_start = std::chrono::steady_clock::now();
   for (int i = 0; i < repeats; i++)
@@ -331,6 +340,7 @@ void ObjectDetector::Predict(const std::vector<cv::Mat> imgs,
   auto inference_end = std::chrono::steady_clock::now();
   auto postprocess_start = std::chrono::steady_clock::now();
   // Postprocessing result
+  result->clear();
   Postprocess(imgs, result, out_bbox_num_data_, is_rbox);
   bbox_num->clear();
   for (int k=0; k<out_bbox_num_data_.size(); k++) {
