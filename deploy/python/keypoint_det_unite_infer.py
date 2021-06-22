@@ -121,7 +121,10 @@ def topdown_unite_predict(detector,
                 save_dir=FLAGS.output_dir)
 
 
-def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
+def topdown_unite_predict_video(detector,
+                                topdown_keypoint_detector,
+                                camera_id,
+                                keypoint_batch_size=1):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
         video_name = 'output.mp4'
@@ -149,10 +152,16 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict([frame2], FLAGS.det_threshold)
-        batchs_images, rect_vecotr = get_person_from_rect(frame2, results)
+        rec_images, records, rect_vector = topdown_keypoint_detector.get_person_from_rect(
+            frame2, results)
         keypoint_vector = []
         score_vector = []
-        for batch_images, batch_records in batchs_images:
+        batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
+        for i in range(batch_loop_cnt):
+            start_index = i * keypoint_batch_size
+            end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
+            batch_images = rec_images[start_index:end_index]
+            batch_records = np.array(records[start_index:end_index])
             keypoint_result = topdown_keypoint_detector.predict(
                 batch_images, FLAGS.keypoint_threshold)
             orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
@@ -163,7 +172,7 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         keypoint_res['keypoint'] = [
             np.vstack(keypoint_vector), np.vstack(score_vector)
         ] if len(keypoint_vector) > 0 else [[], []]
-        keypoint_res['bbox'] = rect_vecotr
+        keypoint_res['bbox'] = rect_vector
         im = draw_pose(
             frame,
             keypoint_res,
@@ -208,7 +217,7 @@ def main():
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         topdown_unite_predict_video(detector, topdown_keypoint_detector,
-                                    FLAGS.camera_id)
+                                    FLAGS.camera_id, FLAGS.keypoint_batch_size)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
