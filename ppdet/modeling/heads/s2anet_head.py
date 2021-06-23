@@ -859,10 +859,5 @@ class S2ANetHead(nn.Layer):
 
         mlvl_bboxes = paddle.concat(mlvl_bboxes, axis=0)
         mlvl_scores = paddle.concat(mlvl_scores)
-        #if use_sigmoid_cls:
-        #    # Add a dummy background class to the front when using sigmoid
-        #    padding = paddle.zeros(
-        #        [mlvl_scores.shape[0], 1], dtype=mlvl_scores.dtype)
-        #    mlvl_scores = paddle.concat([padding, mlvl_scores], axis=1)
 
         return mlvl_scores, mlvl_bboxes
