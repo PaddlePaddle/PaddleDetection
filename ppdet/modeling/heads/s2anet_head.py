@@ -705,46 +705,71 @@ class S2ANetHead(nn.Layer):
             is_crowd = inputs['is_crowd'][im_id].numpy()
             gt_labels = gt_labels + 1
 
-            # featmap_sizes
-            featmap_sizes = [self.featmap_sizes[e] for e in self.featmap_sizes]
-            anchors_list, valid_flag_list = self.get_init_anchors(featmap_sizes,
-                                                                  np_im_shape)
-            anchors_list_all = []
-            for ii, anchor in enumerate(anchors_list):
-                anchor = anchor.reshape(-1, 4)
-                anchor = bbox_utils.rect2rbox(anchor)
-                anchors_list_all.extend(anchor)
-            anchors_list_all = np.array(anchors_list_all)
-
-            # get im_feat
-            fam_cls_feats_list = [e[im_id] for e in self.s2anet_head_out[0]]
-            fam_reg_feats_list = [e[im_id] for e in self.s2anet_head_out[1]]
-            odm_cls_feats_list = [e[im_id] for e in self.s2anet_head_out[2]]
-            odm_reg_feats_list = [e[im_id] for e in self.s2anet_head_out[3]]
-            im_s2anet_head_out = (fam_cls_feats_list, fam_reg_feats_list,
-                                  odm_cls_feats_list, odm_reg_feats_list)
+            # anchor
+            rbox_anchors_all = paddle.concat(self.rbox_anchors_list)
+            np_rbox_anchors_all = rbox_anchors_all.numpy()
+            # pos_labels, pos_labels_weights, bbox_targets, bbox_weights, pos_inds, neg_inds
+            im_fam_target = self.anchor_assign(np_rbox_anchors_all, gt_bboxes,
+                                               gt_labels, is_crowd)
+            fam_pos_inds = im_fam_target[-2]
+            total_pos_num = np.sum(fam_pos_inds > 0)
 
             # FAM
-            im_fam_target = self.anchor_assign(anchors_list_all, gt_bboxes,
-                                               gt_labels, is_crowd)
-            if im_fam_target is not None:
+            st_idx = 0
+            for idx, feat_size in enumerate(self.featmap_size_list):
+                # feat
+                anchor_num = feat_size[0] * feat_size[1]
+                fam_cls_feat = self.s2anet_head_out[0][idx][im_id]
+                fam_reg_feat = self.s2anet_head_out[1][idx][im_id]
+                im_s2anet_fam_feat = (fam_cls_feat, fam_reg_feat)
+                feat_pos_labels = im_fam_target[0][st_idx:st_idx + anchor_num]
+                feat_pos_labels_weights = im_fam_target[1][st_idx:st_idx +
+                                                           anchor_num]
+                feat_bbox_targets = im_fam_target[2][st_idx:st_idx + anchor_num]
+                feat_bbox_weights = im_fam_target[3][st_idx:st_idx + anchor_num]
+                pos_inds = im_fam_target[4]
+                neg_inds = im_fam_target[5]
+                feat_im_fam_target = feat_pos_labels, feat_pos_labels_weights, feat_bbox_targets, \
+                                     feat_bbox_weights, total_pos_num
+
                 im_fam_cls_loss, im_fam_reg_loss = self.get_fam_loss(
-                    im_fam_target, im_s2anet_head_out)
+                    feat_im_fam_target, im_s2anet_fam_feat)
                 fam_cls_loss_lst.append(im_fam_cls_loss)
                 fam_reg_loss_lst.append(im_fam_reg_loss)
+                st_idx = st_idx + anchor_num
 
             # ODM
-            refine_anchors_list, valid_flag_list = self.get_refine_anchors(
-                featmap_sizes, image_shape=np_im_shape)
-            refine_anchors_list = np.array(refine_anchors_list)
-            im_odm_target = self.anchor_assign(refine_anchors_list, gt_bboxes,
+            # refine anchor
+            refine_anchors_all = paddle.concat(self.refine_anchor_list)
+            np_refine_anchors_all = refine_anchors_all.numpy()
+            # pos_labels, pos_labels_weights, bbox_targets, bbox_weights, pos_inds, neg_inds
+            im_odm_target = self.anchor_assign(np_refine_anchors_all, gt_bboxes,
                                                gt_labels, is_crowd)
+            odm_pos_inds = im_odm_target[-2]
+            total_pos_num = np.sum(odm_pos_inds > 0)
 
-            if im_odm_target is not None:
+            st_idx = 0
+            for idx, feat_size in enumerate(self.featmap_size_list):
+                anchor_num = feat_size[0] * feat_size[1]
+                odm_cls_feat = self.s2anet_head_out[2][idx][im_id]
+                odm_reg_feat = self.s2anet_head_out[3][idx][im_id]
+                im_s2anet_odm_feat = (odm_cls_feat, odm_reg_feat)
+                feat_pos_labels = im_odm_target[0][st_idx:st_idx + anchor_num]
+                feat_pos_labels_weights = im_odm_target[1][st_idx:st_idx +
+                                                           anchor_num]
+                feat_bbox_targets = im_odm_target[2][st_idx:st_idx + anchor_num]
+                feat_bbox_weights = im_odm_target[3][st_idx:st_idx + anchor_num]
+                pos_inds = im_odm_target[4]
+                neg_inds = im_odm_target[5]
+                feat_im_odm_target = feat_pos_labels, feat_pos_labels_weights, feat_bbox_targets, \
+                                     feat_bbox_weights, total_pos_num
+
                 im_odm_cls_loss, im_odm_reg_loss = self.get_odm_loss(
-                    im_odm_target, im_s2anet_head_out)
+                    feat_im_odm_target, im_s2anet_odm_feat)
                 odm_cls_loss_lst.append(im_odm_cls_loss)
                 odm_reg_loss_lst.append(im_odm_reg_loss)
+                st_idx = st_idx + anchor_num
+
         fam_cls_loss = paddle.add_n(fam_cls_loss_lst)
         fam_reg_loss = paddle.add_n(fam_reg_loss_lst)
         odm_cls_loss = paddle.add_n(odm_cls_loss_lst)
