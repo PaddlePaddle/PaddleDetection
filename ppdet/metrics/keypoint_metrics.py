@@ -21,11 +21,18 @@ import numpy as np
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 from ..modeling.keypoint_utils import oks_nms
+from scipy.io import loadmat, savemat
 
-__all__ = ['KeyPointTopDownCOCOEval']
+__all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
 
 
 class KeyPointTopDownCOCOEval(object):
+    '''
+    Adapted from
+        https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+        Copyright (c) Microsoft, under the MIT License.
+    '''
+
     def __init__(self,
                  anno_file,
                  num_samples,
@@ -200,3 +207,161 @@ class KeyPointTopDownCOCOEval(object):
 
     def get_results(self):
         return self.eval_results
+
+
+class KeyPointTopDownMPIIEval(object):
+    def __init__(self,
+                 anno_file,
+                 num_samples,
+                 num_joints,
+                 output_eval,
+                 oks_thre=0.9):
+        super(KeyPointTopDownMPIIEval, self).__init__()
+        self.ann_file = anno_file
+        self.reset()
+
+    def reset(self):
+        self.results = []
+        self.eval_results = {}
+        self.idx = 0
+
+    def update(self, inputs, outputs):
+        kpts, _ = outputs['keypoint'][0]
+
+        num_images = inputs['image'].shape[0]
+        results = {}
+        results['preds'] = kpts[:, :, 0:3]
+        results['boxes'] = np.zeros((num_images, 6))
+        results['boxes'][:, 0:2] = inputs['center'].numpy()[:, 0:2]
+        results['boxes'][:, 2:4] = inputs['scale'].numpy()[:, 0:2]
+        results['boxes'][:, 4] = np.prod(inputs['scale'].numpy() * 200, 1)
+        results['boxes'][:, 5] = np.squeeze(inputs['score'].numpy())
+        results['image_path'] = inputs['image_file']
+
+        self.results.append(results)
+
+    def accumulate(self):
+        self.eval_results = self.evaluate(self.results)
+
+    def log(self):
+        for item, value in self.eval_results.items():
+            print("{} : {}".format(item, value))
+
+    def get_results(self):
+        return self.eval_results
+
+    def evaluate(self, outputs, savepath=None):
+        """Evaluate PCKh for MPII dataset. Adapted from
+        https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+        Copyright (c) Microsoft, under the MIT License.
+
+        Args:
+            outputs(list(preds, boxes)):
+
+                * preds (np.ndarray[N,K,3]): The first two dimensions are
+                  coordinates, score is the third dimension of the array.
+                * boxes (np.ndarray[N,6]): [center[0], center[1], scale[0]
+                  , scale[1],area, score]
+
+        Returns:
+            dict: PCKh for each joint
+        """
+
+        kpts = []
+        for output in outputs:
+            preds = output['preds']
+            batch_size = preds.shape[0]
+            for i in range(batch_size):
+                kpts.append({'keypoints': preds[i]})
+
+        preds = np.stack([kpt['keypoints'] for kpt in kpts])
+
+        # convert 0-based index to 1-based index,
+        # and get the first two dimensions.
+        preds = preds[..., :2] + 1.0
+
+        if savepath is not None:
+            pred_file = os.path.join(savepath, 'pred.mat')
+            savemat(pred_file, mdict={'preds': preds})
+
+        SC_BIAS = 0.6
+        threshold = 0.5
+
+        gt_file = os.path.join(
+            os.path.dirname(self.ann_file), 'mpii_gt_val.mat')
+        gt_dict = loadmat(gt_file)
+        dataset_joints = gt_dict['dataset_joints']
+        jnt_missing = gt_dict['jnt_missing']
+        pos_gt_src = gt_dict['pos_gt_src']
+        headboxes_src = gt_dict['headboxes_src']
+
+        pos_pred_src = np.transpose(preds, [1, 2, 0])
+
+        head = np.where(dataset_joints == 'head')[1][0]
+        lsho = np.where(dataset_joints == 'lsho')[1][0]
+        lelb = np.where(dataset_joints == 'lelb')[1][0]
+        lwri = np.where(dataset_joints == 'lwri')[1][0]
+        lhip = np.where(dataset_joints == 'lhip')[1][0]
+        lkne = np.where(dataset_joints == 'lkne')[1][0]
+        lank = np.where(dataset_joints == 'lank')[1][0]
+
+        rsho = np.where(dataset_joints == 'rsho')[1][0]
+        relb = np.where(dataset_joints == 'relb')[1][0]
+        rwri = np.where(dataset_joints == 'rwri')[1][0]
+        rkne = np.where(dataset_joints == 'rkne')[1][0]
+        rank = np.where(dataset_joints == 'rank')[1][0]
+        rhip = np.where(dataset_joints == 'rhip')[1][0]
+
+        jnt_visible = 1 - jnt_missing
+        uv_error = pos_pred_src - pos_gt_src
+        uv_err = np.linalg.norm(uv_error, axis=1)
+        headsizes = headboxes_src[1, :, :] - headboxes_src[0, :, :]
+        headsizes = np.linalg.norm(headsizes, axis=0)
+        headsizes *= SC_BIAS
+        scale = headsizes * np.ones((len(uv_err), 1), dtype=np.float32)
+        scaled_uv_err = uv_err / scale
+        scaled_uv_err = scaled_uv_err * jnt_visible
+        jnt_count = np.sum(jnt_visible, axis=1)
+        less_than_threshold = (scaled_uv_err <= threshold) * jnt_visible
+        PCKh = 100. * np.sum(less_than_threshold, axis=1) / jnt_count
+
+        # save
+        rng = np.arange(0, 0.5 + 0.01, 0.01)
+        pckAll = np.zeros((len(rng), 16), dtype=np.float32)
+
+        for r, threshold in enumerate(rng):
+            less_than_threshold = (scaled_uv_err <= threshold) * jnt_visible
+            pckAll[r, :] = 100. * np.sum(less_than_threshold,
+                                         axis=1) / jnt_count
+
+        PCKh = np.ma.array(PCKh, mask=False)
+        PCKh.mask[6:8] = True
+
+        jnt_count = np.ma.array(jnt_count, mask=False)
+        jnt_count.mask[6:8] = True
+        jnt_ratio = jnt_count / np.sum(jnt_count).astype(np.float64)
+
+        name_value = [  #noqa
+            ('Head', PCKh[head]),
+            ('Shoulder', 0.5 * (PCKh[lsho] + PCKh[rsho])),
+            ('Elbow', 0.5 * (PCKh[lelb] + PCKh[relb])),
+            ('Wrist', 0.5 * (PCKh[lwri] + PCKh[rwri])),
+            ('Hip', 0.5 * (PCKh[lhip] + PCKh[rhip])),
+            ('Knee', 0.5 * (PCKh[lkne] + PCKh[rkne])),
+            ('Ankle', 0.5 * (PCKh[lank] + PCKh[rank])),
+            ('PCKh', np.sum(PCKh * jnt_ratio)),
+            ('PCKh@0.1', np.sum(pckAll[11, :] * jnt_ratio))
+        ]
+        name_value = OrderedDict(name_value)
+
+        return name_value
+
+    def _sort_and_unique_bboxes(self, kpts, key='bbox_id'):
+        """sort kpts and remove the repeated ones."""
+        kpts = sorted(kpts, key=lambda x: x[key])
+        num = len(kpts)
+        for i in range(num - 1, 0, -1):
+            if kpts[i][key] == kpts[i - 1][key]:
+                del kpts[i]
+
+        return kpts

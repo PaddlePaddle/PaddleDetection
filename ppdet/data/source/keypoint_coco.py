@@ -25,7 +25,8 @@ from ppdet.core.workspace import register, serializable
 
 @serializable
 class KeypointBottomUpBaseDataset(DetDataset):
-    """Base class for bottom-up datasets.
+    """Base class for bottom-up datasets. Adapted from
+        https://github.com/open-mmlab/mmpose
 
     All datasets should subclass it.
     All subclasses should overwrite:
@@ -86,7 +87,8 @@ class KeypointBottomUpBaseDataset(DetDataset):
 @register
 @serializable
 class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
-    """COCO dataset for bottom-up pose estimation.
+    """COCO dataset for bottom-up pose estimation. Adapted from
+        https://github.com/open-mmlab/mmpose
 
     The dataset loads raw features and apply specified transforms
     to return a dict containing the image tensors and other information.
@@ -253,7 +255,8 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
 @register
 @serializable
 class KeypointBottomUpCrowdPoseDataset(KeypointBottomUpCocoDataset):
-    """CrowdPose dataset for bottom-up pose estimation.
+    """CrowdPose dataset for bottom-up pose estimation. Adapted from
+        https://github.com/open-mmlab/mmpose
 
     The dataset loads raw features and apply specified transforms
     to return a dict containing the image tensors and other information.
@@ -374,7 +377,9 @@ class KeypointTopDownBaseDataset(DetDataset):
 @register
 @serializable
 class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
-    """COCO dataset for top-down pose estimation.
+    """COCO dataset for top-down pose estimation. Adapted from
+        https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+        Copyright (c) Microsoft, under the MIT License.
 
     The dataset loads raw features and apply specified transforms
     to return a dict containing the image tensors and other information.
@@ -567,7 +572,9 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
 @register
 @serializable
 class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
-    """MPII dataset for topdown pose estimation.
+    """MPII dataset for topdown pose estimation. Adapted from
+        https://github.com/leoxiaobin/deep-high-resolution-net.pytorch
+        Copyright (c) Microsoft, under the MIT License.
 
     The dataset loads raw features and apply specified transforms
     to return a dict containing the image tensors and other information.
@@ -653,4 +660,5 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 'joints': joints,
                 'joints_vis': joints_vis
             })
+        print("number length: {}".format(len(gt_db)))
         self.db = gt_db

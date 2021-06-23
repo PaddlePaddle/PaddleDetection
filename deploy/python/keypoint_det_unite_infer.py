@@ -178,7 +178,8 @@ def main():
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        use_dark=FLAGS.use_dark)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

@@ -119,9 +119,6 @@ EvalReader:
   sample_transforms:
     - TopDownAffine:
         trainsize: *trainsize
-    - ToHeatmapsTopDown:
-        hmsize: *hmsize
-        sigma: 2
   batch_transforms:
     - NormalizeImage:
         mean: *global_mean

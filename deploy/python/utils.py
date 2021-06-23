@@ -108,6 +108,11 @@ def argsparser():
         '--save_results',
         action='store_true',
         help='Save tracking results (txt).')
+    parser.add_argument(
+        '--use_dark',
+        type=bool,
+        default=True,
+        help='whether to use darkpose to get better keypoint position predict ')
     return parser
 
 
