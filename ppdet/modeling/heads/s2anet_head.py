@@ -196,7 +196,6 @@ class S2ANetHead(nn.Layer):
         target_stds (list): target_stds
         align_conv_type (str): align_conv_type ['Conv', 'AlignConv']
         align_conv_size (int): kernel size of align_conv
-        use_sigmoid_cls (bool): use sigmoid_cls or not
         reg_loss_weight (list): loss weight for regression
     """
     __shared__ = ['num_classes']
@@ -214,7 +213,6 @@ class S2ANetHead(nn.Layer):
                  target_stds=1.0,
                  align_conv_type='AlignConv',
                  align_conv_size=3,
-                 use_sigmoid_cls=True,
                  anchor_assign=RBoxAssigner().__dict__,
                  reg_loss_weight=[1.0, 1.0, 1.0, 1.0, 1.0],
                  cls_loss_weight=[1.0, 1.0]):
@@ -233,8 +231,7 @@ class S2ANetHead(nn.Layer):
         self.align_conv_type = align_conv_type
         self.align_conv_size = align_conv_size
 
-        self.use_sigmoid_cls = use_sigmoid_cls
-        self.cls_out_channels = num_classes if self.use_sigmoid_cls else 1
+        self.cls_out_channels = num_classes
         self.sampling = False
         self.anchor_assign = anchor_assign
         self.reg_loss_weight = reg_loss_weight
@@ -563,8 +560,7 @@ class S2ANetHead(nn.Layer):
             odm_reg_branch_list,
             refine_anchors,
             nms_pre,
-            cls_out_channels=self.cls_out_channels,
-            use_sigmoid_cls=self.use_sigmoid_cls)
+            cls_out_channels=self.cls_out_channels)
 
         return pred_scores, pred_bboxes
 
@@ -785,7 +781,7 @@ class S2ANetHead(nn.Layer):
         }
 
     def get_bboxes(self, cls_score_list, bbox_pred_list, mlvl_anchors, nms_pre,
-                   cls_out_channels, use_sigmoid_cls):
+                   cls_out_channels):
         assert len(cls_score_list) == len(bbox_pred_list) == len(mlvl_anchors)
 
         mlvl_bboxes = []
@@ -795,10 +791,7 @@ class S2ANetHead(nn.Layer):
         for cls_score, bbox_pred, anchors in zip(cls_score_list, bbox_pred_list,
                                                  mlvl_anchors):
             cls_score = paddle.reshape(cls_score, [-1, cls_out_channels])
-            if use_sigmoid_cls:
-                scores = F.sigmoid(cls_score)
-            else:
-                scores = F.softmax(cls_score, axis=-1)
+            scores = F.sigmoid(cls_score)
 
             # bbox_pred = bbox_pred.permute(1, 2, 0).reshape(-1, 5)
             bbox_pred = paddle.transpose(bbox_pred, [1, 2, 0])
@@ -807,10 +800,7 @@ class S2ANetHead(nn.Layer):
 
             if nms_pre > 0 and scores.shape[0] > nms_pre:
                 # Get maximum scores for foreground classes.
-                if use_sigmoid_cls:
-                    max_scores = paddle.max(scores, axis=1)
-                else:
-                    max_scores = paddle.max(scores[:, 1:], axis=1)
+                max_scores = paddle.max(scores, axis=1)
 
                 topk_val, topk_inds = paddle.topk(max_scores, nms_pre)
                 anchors = paddle.gather(anchors, topk_inds)

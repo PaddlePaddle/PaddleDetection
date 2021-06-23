@@ -18,4 +18,3 @@ S2ANetHead:
   num_classes: 15
   align_conv_type: 'Conv'  # AlignConv Conv
   align_conv_size: 3
-  use_sigmoid_cls: True
