@@ -457,7 +457,6 @@ class RBoxAssigner(object):
         pos_labels_weights = np.zeros(anchors_num, dtype=np.float32)
 
         pos_sampled_anchors = anchors[pos_inds]
-        #print('ancho target pos_inds', pos_inds, len(pos_inds))
         pos_sampled_gt_boxes = gt_bboxes[anchor_gt_bbox_inds[pos_inds]]
         if len(pos_inds) > 0:
             pos_bbox_targets = self.rbox2delta(pos_sampled_anchors,
