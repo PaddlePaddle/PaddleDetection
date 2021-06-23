@@ -2,18 +2,17 @@ use_gpu: true
 log_iter: 5
 save_dir: output
 snapshot_epoch: 10
-weights: output/hrnet_w32_256x192/model_final
+weights: output/hrnet_w32_256x256_mpii/model_final
 epoch: 210
-num_joints: &num_joints 17
+num_joints: &num_joints 16
 pixel_std: &pixel_std 200
-metric: KeyPointTopDownCOCOEval
+metric: KeyPointTopDownMPIIEval
 num_classes: 1
 train_height: &train_height 256
-train_width: &train_width 192
+train_width: &train_width 256
 trainsize: &trainsize [*train_width, *train_height]
-hmsize: &hmsize [48, 64]
-flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]]
-
+hmsize: &hmsize [64, 64]
+flip_perm: &flip_perm [[0, 5], [1, 4], [2, 3], [10, 15], [11, 14], [12, 13]]
 
 #####model
 architecture: TopDownHRNet
@@ -58,34 +57,26 @@ OptimizerBuilder:
 
 #####data
 TrainDataset:
-  !KeypointTopDownCocoDataset
-    image_dir: train2017
-    anno_path: annotations/person_keypoints_train2017.json
-    dataset_dir: dataset/coco
+  !KeypointTopDownMPIIDataset
+    image_dir: images
+    anno_path: annotations/mpii_train.json
+    dataset_dir: dataset/mpii
     num_joints: *num_joints
-    trainsize: *trainsize
-    pixel_std: *pixel_std
-    use_gt_bbox: True
 
 
 EvalDataset:
-  !KeypointTopDownCocoDataset
-    image_dir: val2017
-    anno_path: annotations/person_keypoints_val2017.json
-    dataset_dir: dataset/coco
-    bbox_file: bbox.json
+  !KeypointTopDownMPIIDataset
+    image_dir: images
+    anno_path: annotations/mpii_val.json
+    dataset_dir: dataset/mpii
     num_joints: *num_joints
-    trainsize: *trainsize
-    pixel_std: *pixel_std
-    use_gt_bbox: True
-    image_thre: 0.0
 
 
 TestDataset:
   !ImageFolder
     anno_path: dataset/coco/keypoint_imagelist.txt
 
-worker_num: 2
+worker_num: 4
 global_mean: &global_mean [0.485, 0.456, 0.406]
 global_std: &global_std [0.229, 0.224, 0.225]
 TrainReader:
@@ -97,7 +88,7 @@ TrainReader:
         prob_half_body: 0.3
         pixel_std: *pixel_std
         trainsize: *trainsize
-        upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        upper_body_ids: [7, 8, 9, 10, 11, 12, 13, 14, 15]
         flip_pairs: *flip_perm
     - TopDownAffine:
         trainsize: *trainsize

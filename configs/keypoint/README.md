@@ -13,7 +13,7 @@
 
 
 ####   Model Zoo
-
+COCO数据集
 | 模型              | 输入尺寸 | 通道数 | AP(coco val) |                           模型下载                           | 配置文件                                                    |
 | :---------------- | -------- | ------ | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
 | HigherHRNet       | 512      | 32     |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
@@ -24,6 +24,12 @@
 | HRNet+DarkPose             | 256x192  | 32     |     78.0     | [dark_hrnet_w32_256x192.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_256x192.pdparams) | [config](./hrnet/dark_hrnet_w32_256x192.yml)                     |
 | HRNet+DarkPose             | 384x288  | 32     |     78.3     | [dark_hrnet_w32_384x288.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/dark_hrnet_w32_384x288.pdparams) | [config](./hrnet/dark_hrnet_w32_384x288.yml)                     |
 备注： Top-Down模型测试AP结果基于GroundTruth标注框
+
+MPII数据集
+| 模型  | 输入尺寸 | 通道数 | PCKh(Mean) | PCKh(Mean@0.1) |                           模型下载                           | 配置文件                                     |
+| :---- | -------- | ------ | :--------: | :------------: | :----------------------------------------------------------: | -------------------------------------------- |
+| HRNet | 256x256  | 32     |    90.6    |      38.5      | [hrnet_w32_256x256_mpii.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/hrnet_w32_256x256_mpii.pdparams) | [config](./hrnet/hrnet_w32_256x256_mpii.yml) |
+
 
 ## 快速开始
 
@@ -74,9 +80,9 @@ python tools/export_model.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w
 
 #部署推理
 #keypoint top-down/bottom-up 单独推理，该模式下top-down模型只支持单人截图预测。
-python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --use_gpu=True --threshold=0.5
-python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --use_gpu=True --threshold=0.5
+python deploy/python/keypoint_infer.py --model_dir=output_inference/higherhrnet_hrnet_w32_512/ --image_file=./demo/000000014439_640x640.jpg --device=gpu --threshold=0.5
+python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_384x288/ --image_file=./demo/hrnet_demo.jpg --device=gpu --threshold=0.5
 
 #keypoint top-down模型 + detector 检测联合部署推理（联合推理只支持top-down方式）
-python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --use_gpu=True
+python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
