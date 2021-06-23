@@ -412,32 +412,6 @@ class S2ANetHead(nn.Layer):
             init_anchors = paddle.reshape(
                 init_anchors, [featmap_size[0] * featmap_size[1], 4])
             self.init_anchors_list.append(init_anchors)
-
-            if self.training:
-                def judge_anchor(init_anchors, featmap_size, stride):
-                    """
-                    Args:
-                        init_anchors: [M, 4] xmin, ymin, xmax, ymax
-                    Returns: [M]
-                    """
-                    init_anchors = init_anchors.numpy()
-                    featmap_size = featmap_size.numpy()
-                    h, w = featmap_size
-                    valid_flag = np.ones(init_anchors.shape[0], dtype='int32')
-                    valid_flag = valid_flag & (init_anchors[:, 0] >= 0)
-                    valid_flag = valid_flag & (init_anchors[:, 0] <= w * stride)
-                    valid_flag = valid_flag & (init_anchors[:, 1] >= 0)
-                    valid_flag = valid_flag & (init_anchors[:, 1] <= h * stride)
-                    valid_flag = valid_flag & (init_anchors[:, 2] >= 0)
-                    valid_flag = valid_flag & (init_anchors[:, 2] <= w * stride)
-                    valid_flag = valid_flag & (init_anchors[:, 3] >= 0)
-                    valid_flag = valid_flag & (init_anchors[:, 3] <= h * stride)
-                    return valid_flag
-
-                anchor_valid = judge_anchor(init_anchors, featmap_size,
-                                            self.anchor_strides[i])
-                #self.valid_anchor_flag_list.append(anchor_valid)
-
             rbox_anchors = self.rect2rbox(init_anchors)
             self.rbox_anchors_list.append(rbox_anchors)
 
