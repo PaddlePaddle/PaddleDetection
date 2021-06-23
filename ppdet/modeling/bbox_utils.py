@@ -289,6 +289,7 @@ def rect2rbox(bboxes):
     rboxes[inds, 4] = np.pi / 2.0
     return rboxes
 
+
 def delta2rbox(Rrois,
                deltas,
                means=[0, 0, 0, 0, 0],
@@ -408,6 +409,7 @@ def bbox_decode(bbox_preds,
         bboxes = paddle.reshape(bboxes, [H, W, 5])
         bboxes_list.append(bboxes)
     return paddle.stack(bboxes_list, axis=0)
+
 
 def poly2rbox(polys):
     """

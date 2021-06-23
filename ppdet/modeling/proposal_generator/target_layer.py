@@ -433,9 +433,6 @@ class RBoxAssigner(object):
 
         anchor_num = anchors.shape[0]
 
-        # same as release/2.0
-        #anchors_inds = self.anchor_valid(anchors)
-        #anchors = anchors[anchors_inds]
         gt_bboxes = gt_bboxes
         is_crowd_slice = is_crowd
         not_crowd_inds = np.where(is_crowd_slice == 0)
@@ -473,4 +470,3 @@ class RBoxAssigner(object):
             pos_labels_weights[neg_inds] = 1.0
         return (pos_labels, pos_labels_weights, bbox_targets, bbox_weights,
                 pos_inds, neg_inds)
-
