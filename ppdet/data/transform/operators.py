@@ -2094,3 +2094,259 @@ class BboxCXCYWH2XYXY(BaseOperator):
         bbox[:, 2:4] = bbox0[:, :2] + bbox0[:, 2:4] / 2.
         sample['gt_bbox'] = bbox
         return sample
+
+
+@register_op
+class RandomResizeCrop(BaseOperator):
+    """Random resize and crop image and bboxes.
+    Args:
+        resizes (list): resize image to one of resizes. if keep_ratio is True and mode is
+        'long', resize the image's long side to the maximum of target_size, if keep_ratio is
+        True and mode is 'short', resize the image's short side to the minimum of target_size.
+        cropsizes (list): crop sizes after resize, [(min_crop_1, max_crop_1), ...]
+        mode (str): resize mode, `long` or `short`. Details see resizes. 
+        prob (float): probability of this op.
+        keep_ratio (bool): whether keep_ratio or not, default true
+        interp (int): the interpolation method
+        thresholds (list): iou thresholds for decide a valid bbox crop.
+        num_attempts (int): number of tries before giving up.
+        allow_no_crop (bool): allow return without actually cropping them.
+        cover_all_box (bool): ensure all bboxes are covered in the final crop.
+        is_mask_crop(bool): whether crop the segmentation.
+    """
+
+    def __init__(
+            self,
+            resizes,
+            cropsizes,
+            prob=0.5,
+            mode='short',
+            keep_ratio=True,
+            interp=cv2.INTER_LINEAR,
+            num_attempts=3,
+            cover_all_box=False,
+            allow_no_crop=False,
+            thresholds=[0.3, 0.5, 0.7],
+            is_mask_crop=False, ):
+        super(RandomResizeCrop, self).__init__()
+
+        self.resizes = resizes
+        self.cropsizes = cropsizes
+        self.prob = prob
+        self.mode = mode
+
+        self.resizer = Resize(0, keep_ratio=keep_ratio, interp=interp)
+        self.croper = RandomCrop(
+            num_attempts=num_attempts,
+            cover_all_box=cover_all_box,
+            thresholds=thresholds,
+            allow_no_crop=allow_no_crop,
+            is_mask_crop=is_mask_crop)
+
+    def _format_size(self, size):
+        if isinstance(size, Integral):
+            size = (size, size)
+        return size
+
+    def apply(self, sample, context=None):
+        if random.random() < self.prob:
+            _resize = self._format_size(random.choice(self.resizes))
+            _cropsize = self._format_size(random.choice(self.cropsizes))
+            sample = self._resize(
+                self.resizer,
+                sample,
+                size=_resize,
+                mode=self.mode,
+                context=context)
+            sample = self._random_crop(
+                self.croper, sample, size=_cropsize, context=context)
+        return sample
+
+    @staticmethod
+    def _random_crop(croper, sample, size, context=None):
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+
+        self = croper
+        h, w = sample['image'].shape[:2]
+        gt_bbox = sample['gt_bbox']
+        cropsize = size
+        min_crop = min(cropsize)
+        max_crop = max(cropsize)
+
+        thresholds = list(self.thresholds)
+        np.random.shuffle(thresholds)
+
+        for thresh in thresholds:
+            found = False
+            for _ in range(self.num_attempts):
+
+                crop_h = random.randint(min_crop, min(h, max_crop))
+                crop_w = random.randint(min_crop, min(w, max_crop))
+
+                crop_y = random.randint(0, h - crop_h)
+                crop_x = random.randint(0, w - crop_w)
+
+                crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
+                iou = self._iou_matrix(
+                    gt_bbox, np.array(
+                        [crop_box], dtype=np.float32))
+                if iou.max() < thresh:
+                    continue
+
+                if self.cover_all_box and iou.min() < thresh:
+                    continue
+
+                cropped_box, valid_ids = self._crop_box_with_center_constraint(
+                    gt_bbox, np.array(
+                        crop_box, dtype=np.float32))
+                if valid_ids.size > 0:
+                    found = True
+                    break
+
+            if found:
+                if self.is_mask_crop and 'gt_poly' in sample and len(sample[
+                        'gt_poly']) > 0:
+                    crop_polys = self.crop_segms(
+                        sample['gt_poly'],
+                        valid_ids,
+                        np.array(
+                            crop_box, dtype=np.int64),
+                        h,
+                        w)
+                    if [] in crop_polys:
+                        delete_id = list()
+                        valid_polys = list()
+                        for id, crop_poly in enumerate(crop_polys):
+                            if crop_poly == []:
+                                delete_id.append(id)
+                            else:
+                                valid_polys.append(crop_poly)
+                        valid_ids = np.delete(valid_ids, delete_id)
+                        if len(valid_polys) == 0:
+                            return sample
+                        sample['gt_poly'] = valid_polys
+                    else:
+                        sample['gt_poly'] = crop_polys
+
+                if 'gt_segm' in sample:
+                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
+                                                        crop_box)
+                    sample['gt_segm'] = np.take(
+                        sample['gt_segm'], valid_ids, axis=0)
+
+                sample['image'] = self._crop_image(sample['image'], crop_box)
+                sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
+                sample['gt_class'] = np.take(
+                    sample['gt_class'], valid_ids, axis=0)
+                if 'gt_score' in sample:
+                    sample['gt_score'] = np.take(
+                        sample['gt_score'], valid_ids, axis=0)
+
+                if 'is_crowd' in sample:
+                    sample['is_crowd'] = np.take(
+                        sample['is_crowd'], valid_ids, axis=0)
+                return sample
+
+        return sample
+
+    @staticmethod
+    def _resize(resizer, sample, size, mode='short', context=None):
+        self = resizer
+        im = sample['image']
+        target_size = size
+
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        # apply image
+        im_shape = im.shape
+        if self.keep_ratio:
+
+            im_size_min = np.min(im_shape[0:2])
+            im_size_max = np.max(im_shape[0:2])
+
+            target_size_min = np.min(target_size)
+            target_size_max = np.max(target_size)
+
+            if mode == 'long':
+                im_scale = min(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
+            else:
+                im_scale = max(target_size_min / im_size_min,
+                               target_size_max / im_size_max)
+
+            resize_h = im_scale * float(im_shape[0])
+            resize_w = im_scale * float(im_shape[1])
+
+            im_scale_x = im_scale
+            im_scale_y = im_scale
+        else:
+            resize_h, resize_w = target_size
+            im_scale_y = resize_h / im_shape[0]
+            im_scale_x = resize_w / im_shape[1]
+
+        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+        sample['image'] = im
+        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
+        if 'scale_factor' in sample:
+            scale_factor = sample['scale_factor']
+            sample['scale_factor'] = np.asarray(
+                [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
+                dtype=np.float32)
+        else:
+            sample['scale_factor'] = np.asarray(
+                [im_scale_y, im_scale_x], dtype=np.float32)
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
+                                                [im_scale_x, im_scale_y],
+                                                [resize_w, resize_h])
+
+        # apply rbox
+        if 'gt_rbox2poly' in sample:
+            if np.array(sample['gt_rbox2poly']).shape[1] != 8:
+                logger.warn(
+                    "gt_rbox2poly's length shoule be 8, but actually is {}".
+                    format(len(sample['gt_rbox2poly'])))
+            sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],
+                                                     [im_scale_x, im_scale_y],
+                                                     [resize_w, resize_h])
+
+        # apply polygon
+        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im_shape[:2],
+                                                [im_scale_x, im_scale_y])
+
+        # apply semantic
+        if 'semantic' in sample and sample['semantic']:
+            semantic = sample['semantic']
+            semantic = cv2.resize(
+                semantic.astype('float32'),
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            semantic = np.asarray(semantic).astype('int32')
+            semantic = np.expand_dims(semantic, 0)
+            sample['semantic'] = semantic
+
+        # apply gt_segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.resize(
+                    gt_segm,
+                    None,
+                    None,
+                    fx=im_scale_x,
+                    fy=im_scale_y,
+                    interpolation=cv2.INTER_NEAREST)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
+        return sample
