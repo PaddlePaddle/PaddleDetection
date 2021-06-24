@@ -64,7 +64,8 @@ class KeyPoint_Detector(object):
                  trt_opt_shape=640,
                  trt_calib_mode=False,
                  cpu_threads=1,
-                 enable_mkldnn=False):
+                 enable_mkldnn=False,
+                 use_dark=True):
         self.pred_config = pred_config
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -80,6 +81,7 @@ class KeyPoint_Detector(object):
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
+        self.use_dark = use_dark
 
     def get_person_from_rect(self, image, results, det_threshold=0.5):
         # crop the person result from image
@@ -137,7 +139,7 @@ class KeyPoint_Detector(object):
             imshape = inputs['im_shape'][:, ::-1]
             center = np.round(imshape / 2.)
             scale = imshape / 200.
-            keypoint_postprocess = HRNetPostProcess()
+            keypoint_postprocess = HRNetPostProcess(use_dark=self.use_dark)
             results['keypoint'] = keypoint_postprocess(np_boxes, center, scale)
             return results
         else:
@@ -419,7 +421,8 @@ def main():
         trt_opt_shape=FLAGS.trt_opt_shape,
         trt_calib_mode=FLAGS.trt_calib_mode,
         cpu_threads=FLAGS.cpu_threads,
-        enable_mkldnn=FLAGS.enable_mkldnn)
+        enable_mkldnn=FLAGS.enable_mkldnn,
+        use_dark=FLAGS.use_dark)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
