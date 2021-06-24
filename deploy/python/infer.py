@@ -163,7 +163,7 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([]), 'boxes_num': [0]}
+            results = {'boxes': np.array([[]]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
