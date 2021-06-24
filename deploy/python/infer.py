@@ -481,13 +481,13 @@ def visualize(image_list, results, labels, output_dir='output/', threshold=0.5):
     for idx, image_file in enumerate(image_list):
         im_bboxes_num = results['boxes_num'][idx]
         im_results = {}
-        if 'boxes' in results and len(im_results['boxes']) > 0:
+        if 'boxes' in results:
             im_results['boxes'] = results['boxes'][start_idx:start_idx +
                                                    im_bboxes_num, :]
-        if 'masks' in results and len(im_results['masks']) > 0:
+        if 'masks' in results:
             im_results['masks'] = results['masks'][start_idx:start_idx +
                                                    im_bboxes_num, :]
-        if 'segm' in results and len(im_results['segm']) > 0:
+        if 'segm' in results:
             im_results['segm'] = results['segm'][start_idx:start_idx +
                                                  im_bboxes_num, :]
         if 'label' in results:
