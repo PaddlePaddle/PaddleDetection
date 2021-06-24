@@ -163,7 +163,7 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([]), 'boxes_num': [0]}
+            results = {'boxes': np.array([[]]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
@@ -481,13 +481,13 @@ def visualize(image_list, results, labels, output_dir='output/', threshold=0.5):
     for idx, image_file in enumerate(image_list):
         im_bboxes_num = results['boxes_num'][idx]
         im_results = {}
-        if 'boxes' in results:
+        if 'boxes' in results and len(im_results['boxes']) > 0:
             im_results['boxes'] = results['boxes'][start_idx:start_idx +
                                                    im_bboxes_num, :]
-        if 'masks' in results:
+        if 'masks' in results and len(im_results['masks']) > 0:
             im_results['masks'] = results['masks'][start_idx:start_idx +
                                                    im_bboxes_num, :]
-        if 'segm' in results:
+        if 'segm' in results and len(im_results['segm']) > 0:
             im_results['segm'] = results['segm'][start_idx:start_idx +
                                                  im_bboxes_num, :]
         if 'label' in results:
