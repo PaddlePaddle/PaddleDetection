@@ -43,7 +43,9 @@ def argsparser():
         "--keypoint_batch_size",
         type=int,
         default=1,
-        help="batch_size for infer.")
+        help=("batch_size for keypoint inference. In detection-keypoint unit"
+              "inference, the batch size in detection is 1. Then collate det "
+              "result in batch for keypoint inference."))
     parser.add_argument(
         "--video_file",
         type=str,
