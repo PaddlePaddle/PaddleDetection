@@ -296,7 +296,7 @@ class RBoxAssigner(object):
             anchors = anchors.reshape(-1, anchors.shape[-1])
         assert anchors.ndim == 2
         anchor_num = anchors.shape[0]
-        anchor_valid = np.ones((anchor_num), np.uint8)
+        anchor_valid = np.ones((anchor_num), np.int32)
         anchor_inds = np.arange(anchor_num)
         return anchor_inds
 
@@ -371,9 +371,8 @@ class RBoxAssigner(object):
         # calc rbox iou
         anchors_xc_yc = anchors_xc_yc.astype(np.float32)
         gt_bboxes_xc_yc = gt_bboxes_xc_yc.astype(np.float32)
-        anchors_xc_yc = paddle.to_tensor(anchors_xc_yc, place=paddle.CPUPlace())
-        gt_bboxes_xc_yc = paddle.to_tensor(
-            gt_bboxes_xc_yc, place=paddle.CPUPlace())
+        anchors_xc_yc = paddle.to_tensor(anchors_xc_yc)
+        gt_bboxes_xc_yc = paddle.to_tensor(gt_bboxes_xc_yc)
 
         try:
             from rbox_iou_ops import rbox_iou
@@ -433,8 +432,7 @@ class RBoxAssigner(object):
         ignore_iof_thr = self.ignore_iof_thr
 
         anchor_num = anchors.shape[0]
-        anchors_inds = self.anchor_valid(anchors)
-        anchors = anchors[anchors_inds]
+
         gt_bboxes = gt_bboxes
         is_crowd_slice = is_crowd
         not_crowd_inds = np.where(is_crowd_slice == 0)
