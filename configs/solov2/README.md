@@ -23,14 +23,23 @@ SOLOv2 (Segmenting Objects by Locations) is a fast instance segmentation framewo
 | SOLOv2 | R50-FPN                 |  True                |   3x    |     38.0         |   21.9    | V100 |  [model](https://paddledet.bj.bcebos.com/models/solov2_r50_fpn_3x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/solov2_r50_fpn_3x_coco.yml) |
 | SOLOv2 | R101vd-FPN                 |  True                |   3x    |     42.7         |   12.1    | V100 |  [model](https://paddledet.bj.bcebos.com/models/solov2_r101_vd_fpn_3x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/solov2_r101_vd_fpn_3x_coco.yml) |
 
+**Notes:**
+
+- SOLOv2 is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)`.
+
 ## Enhanced model
 | Backbone                | Input size  | Lr schd | V100 FP32(FPS) | Mask AP<sup>val</sup> |         Download                  | Configs |
 | :---------------------: | :-------------------: | :-----: | :------------: | :-----: | :---------: | :------------------------: |
 | Light-R50-VD-DCN-FPN          |  512     |   3x    |     38.6          |  39.0   | [model](https://paddledet.bj.bcebos.com/models/solov2_r50_enhance_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/solov2_r50_enhance_coco.yml) |
 
-**Notes:**
-
-- SOLOv2 is trained on COCO train2017 dataset and evaluated on val2017 results of `mAP(IoU=0.5:0.95)`.
+**Optimizing method of enhanced model:**
+- Better backbone network: ResNet50vd-DCN
+- A better pre-training model for knowledge distillation
+- [Exponential Moving Average](https://www.investopedia.com/terms/e/ema.asp)
+- Synchronized Batch Normalization
+- Multi-scale training
+- More data augmentation methods
+- DropBlock
 
 ## Citations
 ```
