@@ -6,6 +6,8 @@ _BASE_: [
 ]
 weights: output/jde_yolov3_darknet53_30e_1088x608/model_final
 
+metric: MOTDet
+
 EvalReader:
   inputs_def:
     num_max_boxes: 50
@@ -26,10 +28,15 @@ TestReader:
     - Permute: {}
   batch_size: 1
 
-TestDataset:
-  !MOTVideoDataset
+EvalDataset:
+  !MOTDataSet
     dataset_dir: dataset/mot
-    keep_ori_im: True # set True if save visualization images or video
+    image_lists: ['mot16.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+TestDataset:
+  !ImageFolder
+    anno_path: None
 
 architecture: YOLOv3
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/DarkNet53_pretrained.pdparams

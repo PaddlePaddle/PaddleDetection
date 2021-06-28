@@ -21,7 +21,6 @@ import paddle
 from benchmark_utils import PaddleInferBenchmark
 from preprocess import preprocess, NormalizeImage, Permute
 from mot_preprocess import LetterBoxResize
-from IPython import embed
 from tracker import DeepSORTTracker
 from ppdet.modeling.mot import visualization as mot_vis
 from ppdet.modeling.mot.utils import Timer as MOTTimer
@@ -34,9 +33,7 @@ from infer import get_test_images, print_arguments, PredictConfig, Detector
 from mot_infer import load_predictor, write_mot_results
 
 # Global dictionary
-MOT_SUPPORT_MODELS = {
-    'DeepSORT',
-}
+MOT_SUPPORT_MODELS = {'DeepSORT'}
 
 
 def create_inputs(im, im_info):
@@ -80,7 +77,7 @@ def get_crops(xyxy, ori_img, pred_scores, w, h):
     crops = []
     keep_scores = []
     xyxy = xyxy.astype(np.int64)
-    ori_img = ori_img.transpose(1, 0, 2) # [h,w,3]->[w,h,3]
+    ori_img = ori_img.transpose(1, 0, 2)  # [h,w,3]->[w,h,3]
     for i, bbox in enumerate(xyxy):
         if bbox[2] <= bbox[0] or bbox[3] <= bbox[1]:
             continue
@@ -197,7 +194,8 @@ class MOT_Detector(object):
         input_shape = inputs['image'].shape[2:]
         im_shape = inputs['im_shape']
         scale_factor = inputs['scale_factor']
-        pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape, scale_factor)
+        pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
+                                   scale_factor)
         pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
         pred_scores = boxes[:, 1:2]
 
@@ -242,7 +240,10 @@ class MOT_ReID(object):
         return inputs
 
     def postprocess(self, bbox_tlwh, pred_scores, features):
-        detections = [Detection(tlwh, score, feat) for tlwh, score, feat in zip(bbox_tlwh, pred_scores, features)]
+        detections = [
+            Detection(tlwh, score, feat)
+            for tlwh, score, feat in zip(bbox_tlwh, pred_scores, features)
+        ]
         self.tracker.predict()
         online_targets = self.tracker.update(detections)
 
@@ -277,7 +278,8 @@ class MOT_ReID(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_scores, online_ids = self.postprocess(bbox_tlwh, pred_scores, features)
+        online_tlwhs, online_scores, online_ids = self.postprocess(
+            bbox_tlwh, pred_scores, features)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
@@ -314,13 +316,14 @@ def predict_video(detector, reid_model, camera_id):
         timer.toc()
 
         bbox_tlwh = np.concatenate(
-                (pred_bboxes[:, 0:2],
-                 pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
-                axis=1)
+            (pred_bboxes[:, 0:2],
+             pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+            axis=1)
         crops, pred_scores = get_crops(
             pred_bboxes, frame, pred_scores, w=64, h=192)
 
-        online_tlwhs, online_scores, online_ids = reid_model.predict(crops, bbox_tlwh, pred_scores)
+        online_tlwhs, online_scores, online_ids = reid_model.predict(
+            crops, bbox_tlwh, pred_scores)
 
         results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
         fps = 1. / timer.average_time
