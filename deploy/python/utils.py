@@ -109,6 +109,12 @@ def argsparser():
         action='store_true',
         help='Save tracking results (txt).')
     parser.add_argument(
+        "--reid_model_dir",
+        type=str,
+        default=None,
+        help=("Directory include:'model.pdiparams', 'model.pdmodel', "
+              "'infer_cfg.yml', created by tools/export_model.py."))
+    parser.add_argument(
         '--use_dark',
         type=bool,
         default=True,

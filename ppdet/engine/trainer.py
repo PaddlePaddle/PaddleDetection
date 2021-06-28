@@ -546,6 +546,11 @@ class Trainer(object):
             "scale_factor": InputSpec(
                 shape=[None, 2], name='scale_factor')
         }]
+        if self.cfg.architecture == 'DeepSORT':
+            input_spec[0].update({
+                "crops": InputSpec(
+                    shape=[None, 3, 192, 64], name='crops')
+            })
 
         # dy2st and save model
         if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':

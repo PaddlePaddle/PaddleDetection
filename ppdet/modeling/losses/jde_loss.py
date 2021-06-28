@@ -28,9 +28,10 @@ __all__ = ['JDEDetectionLoss', 'JDEEmbeddingLoss', 'JDELoss']
 class JDEDetectionLoss(nn.Layer):
     __shared__ = ['num_classes']
 
-    def __init__(self, num_classes=1):
+    def __init__(self, num_classes=1, for_mot=True):
         super(JDEDetectionLoss, self).__init__()
         self.num_classes = num_classes
+        self.for_mot = for_mot
 
     def det_loss(self, p_det, anchor, t_conf, t_box):
         pshape = paddle.shape(p_det)
@@ -92,7 +93,17 @@ class JDEDetectionLoss(nn.Layer):
             loss_conf, loss_box = self.det_loss(p_det, anchor, t_conf, t_box)
             loss_confs.append(loss_conf)
             loss_boxes.append(loss_box)
-        return {'loss_confs': loss_confs, 'loss_boxes': loss_boxes}
+        if self.for_mot:
+            return {'loss_confs': loss_confs, 'loss_boxes': loss_boxes}
+        else:
+            jde_conf_losses = sum(loss_confs)
+            jde_box_losses = sum(loss_boxes)
+            jde_det_losses = {
+                "loss_conf": jde_conf_losses,
+                "loss_box": jde_box_losses,
+                "loss": jde_conf_losses + jde_box_losses,
+            }
+            return jde_det_losses
 
 
 @register
