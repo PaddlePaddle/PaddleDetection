@@ -46,8 +46,7 @@ class BBoxPostProcess(nn.Layer):
         self.nms = nms
         self.fake_bboxes = paddle.to_tensor(
             np.array(
-                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]],
-                dtype='float32'))
+                [[-1, 0.0, 0.0, 0.0, 0.0, 0.0]], dtype='float32'))
         self.fake_bbox_num = paddle.to_tensor(np.array([1], dtype='int32'))
 
     def forward(self, head_out, rois, im_shape, scale_factor):

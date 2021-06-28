@@ -167,13 +167,16 @@ class Detector(object):
         results = []
         if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
             print('[WARNNING] No object detected.')
-            results = {'boxes': np.array([]), 'boxes_num': [0]}
+            results = {'boxes': np.array([[]]), 'boxes_num': [0]}
         else:
             results = self.postprocess(
                 np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += len(image_list)
         return results
+
+    def get_timer(self):
+        return self.det_times
 
 
 class DetectorSOLOv2(Detector):
@@ -273,8 +276,8 @@ class DetectorSOLOv2(Detector):
 def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
+        imgs (list(numpy)): list of images (np.ndarray)
+        im_info (list(dict)): list of image info
     Returns:
         inputs (dict): input of model
     """

@@ -176,3 +176,21 @@ class TopDownEvalAffine(object):
             flags=cv2.INTER_LINEAR)
 
         return image, im_info
+
+
+def expand_crop(images, rect, expand_ratio=0.3):
+    imgh, imgw, c = images.shape
+    label, conf, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
+    if label != 0:
+        return None, None, None
+    org_rect = [xmin, ymin, xmax, ymax]
+    h_half = (ymax - ymin) * (1 + expand_ratio) / 2.
+    w_half = (xmax - xmin) * (1 + expand_ratio) / 2.
+    if h_half > w_half * 4 / 3:
+        w_half = h_half * 0.75
+    center = [(ymin + ymax) / 2., (xmin + xmax) / 2.]
+    ymin = max(0, int(center[0] - h_half))
+    ymax = min(imgh - 1, int(center[0] + h_half))
+    xmin = max(0, int(center[1] - w_half))
+    xmax = min(imgw - 1, int(center[1] + w_half))
+    return images[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax], org_rect
