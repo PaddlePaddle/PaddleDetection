@@ -36,6 +36,8 @@ S2ANetHead:
   align_conv_type: 'Conv'  # AlignConv Conv
   align_conv_size: 3
   use_sigmoid_cls: True
+  reg_loss_weight: [ 1.0, 1.0, 1.0, 1.0, 1.1 ]
+  cls_loss_weight: [ 1.1, 1.05 ]
 
 RBoxAssigner:
   pos_iou_thr: 0.5
@@ -52,4 +54,3 @@ S2ANetBBoxPostProcess:
     score_threshold: 0.05
     nms_threshold: 0.1
     normalized: False
-    #background_label: -1
