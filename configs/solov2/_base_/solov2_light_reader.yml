@@ -1,0 +1,47 @@
+worker_num: 2
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - Poly2Mask: {}
+  - RandomDistort: {}
+  - RandomCrop: {}
+  - RandomResize: {interp: 1,
+                     target_size: [[352, 852], [384, 852], [416, 852], [448, 852], [480, 852], [512, 852]],
+                     keep_ratio: True}
+  - RandomFlip: {}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  - Gt2Solov2Target: {num_grids: [40, 36, 24, 16, 12],
+                        scale_ranges: [[1, 96], [48, 192], [96, 384], [192, 768], [384, 2048]],
+                        coord_sigma: 0.2}
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Resize: {interp: 1, target_size: [512, 852], keep_ratio: True}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+
+TestReader:
+  sample_transforms:
+  - Decode: {}
+  - NormalizeImage: {is_scale: true, mean: [0.485,0.456,0.406], std: [0.229, 0.224,0.225]}
+  - Resize: {interp: 1, target_size: [512, 852], keep_ratio: True}
+  - Permute: {}
+  batch_transforms:
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
