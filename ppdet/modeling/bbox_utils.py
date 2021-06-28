@@ -290,13 +290,13 @@ def rect2rbox(bboxes):
     return rboxes
 
 
-def delta2rbox(Rrois,
+def delta2rbox(rrois,
                deltas,
                means=[0, 0, 0, 0, 0],
                stds=[1, 1, 1, 1, 1],
                wh_ratio_clip=1e-6):
     """
-    :param Rrois: (cx, cy, w, h, theta)
+    :param rrois: (cx, cy, w, h, theta)
     :param deltas: (dx, dy, dw, dh, dtheta)
     :param means:
     :param stds:
@@ -318,19 +318,19 @@ def delta2rbox(Rrois,
     dw = paddle.clip(dw, min=-max_ratio, max=max_ratio)
     dh = paddle.clip(dh, min=-max_ratio, max=max_ratio)
 
-    Rroi_x = Rrois[:, 0]
-    Rroi_y = Rrois[:, 1]
-    Rroi_w = Rrois[:, 2]
-    Rroi_h = Rrois[:, 3]
-    Rroi_angle = Rrois[:, 4]
+    rroi_x = rrois[:, 0]
+    rroi_y = rrois[:, 1]
+    rroi_w = rrois[:, 2]
+    rroi_h = rrois[:, 3]
+    rroi_angle = rrois[:, 4]
 
-    gx = dx * Rroi_w * paddle.cos(Rroi_angle) - dy * Rroi_h * paddle.sin(
-        Rroi_angle) + Rroi_x
-    gy = dx * Rroi_w * paddle.sin(Rroi_angle) + dy * Rroi_h * paddle.cos(
-        Rroi_angle) + Rroi_y
-    gw = Rroi_w * dw.exp()
-    gh = Rroi_h * dh.exp()
-    ga = np.pi * dangle + Rroi_angle
+    gx = dx * rroi_w * paddle.cos(rroi_angle) - dy * rroi_h * paddle.sin(
+        rroi_angle) + rroi_x
+    gy = dx * rroi_w * paddle.sin(rroi_angle) + dy * rroi_h * paddle.cos(
+        rroi_angle) + rroi_y
+    gw = rroi_w * dw.exp()
+    gh = rroi_h * dh.exp()
+    ga = np.pi * dangle + rroi_angle
     ga = (ga + np.pi / 4) % np.pi - np.pi / 4
     ga = paddle.to_tensor(ga)
 

@@ -1,4 +1,4 @@
-_BASE_: [
+it _BASE_: [
   '../datasets/dota.yml',
   '../runtime.yml',
   '_base_/s2anet_optimizer_1x.yml',
