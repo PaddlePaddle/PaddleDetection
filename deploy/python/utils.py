@@ -103,9 +103,9 @@ def argsparser():
     parser.add_argument(
         '--save_images',
         action='store_true',
-        help='Save tracking results (image).')
+        help='Save visualization image results.')
     parser.add_argument(
-        '--save_results',
+        '--save_mot_txts',
         action='store_true',
         help='Save tracking results (txt).')
     parser.add_argument(
