@@ -15,6 +15,7 @@
 import os
 from PIL import Image
 import cv2
+import math
 import numpy as np
 import paddle
 
@@ -23,80 +24,107 @@ from preprocess import decode_image
 from infer import Detector, PredictConfig, print_arguments, get_test_images
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
 from keypoint_visualize import draw_pose
+from benchmark_utils import PaddleInferBenchmark
+from utils import get_current_memory_mb
 
 
-def expand_crop(images, rect, expand_ratio=0.3):
-    imgh, imgw, c = images.shape
-    label, conf, xmin, ymin, xmax, ymax = [int(x) for x in rect.tolist()]
-    if label != 0:
-        return None, None, None
-    org_rect = [xmin, ymin, xmax, ymax]
-    h_half = (ymax - ymin) * (1 + expand_ratio) / 2.
-    w_half = (xmax - xmin) * (1 + expand_ratio) / 2.
-    if h_half > w_half * 4 / 3:
-        w_half = h_half * 0.75
-    center = [(ymin + ymax) / 2., (xmin + xmax) / 2.]
-    ymin = max(0, int(center[0] - h_half))
-    ymax = min(imgh - 1, int(center[0] + h_half))
-    xmin = max(0, int(center[1] - w_half))
-    xmax = min(imgw - 1, int(center[1] + w_half))
-    return images[ymin:ymax, xmin:xmax, :], [xmin, ymin, xmax, ymax], org_rect
+def bench_log(detector, img_list, model_info, batch_size=1, name=None):
+    mems = {
+        'cpu_rss_mb': detector.cpu_mem / len(img_list),
+        'gpu_rss_mb': detector.gpu_mem / len(img_list),
+        'gpu_util': detector.gpu_util * 100 / len(img_list)
+    }
+    perf_info = detector.det_times.report(average=True)
+    data_info = {
+        'batch_size': batch_size,
+        'shape': "dynamic_shape",
+        'data_num': perf_info['img_num']
+    }
 
-
-def get_person_from_rect(images, results):
-    det_results = results['boxes']
-    mask = det_results[:, 1] > FLAGS.det_threshold
-    valid_rects = det_results[mask]
-    image_buff = []
-    org_rects = []
-    for rect in valid_rects:
-        rect_image, new_rect, org_rect = expand_crop(images, rect)
-        if rect_image is None or rect_image.size == 0:
-            continue
-        image_buff.append([rect_image, new_rect])
-        org_rects.append(org_rect)
-    return image_buff, org_rects
+    log = PaddleInferBenchmark(detector.config, model_info, data_info,
+                               perf_info, mems)
+    log(name)
 
 
 def affine_backto_orgimages(keypoint_result, batch_records):
     kpts, scores = keypoint_result['keypoint']
-    kpts[..., 0] += batch_records[0]
-    kpts[..., 1] += batch_records[1]
+    kpts[..., 0] += batch_records[:, 0:1]
+    kpts[..., 1] += batch_records[:, 1:2]
     return kpts, scores
 
 
-def topdown_unite_predict(detector, topdown_keypoint_detector, image_list):
+def topdown_unite_predict(detector,
+                          topdown_keypoint_detector,
+                          image_list,
+                          keypoint_batch_size=1):
+    det_timer = detector.get_timer()
     for i, img_file in enumerate(image_list):
+        # Decode image in advance in det + pose prediction
+        det_timer.preprocess_time_s.start()
         image, _ = decode_image(img_file, {})
-        results = detector.predict([image], FLAGS.det_threshold)
+        det_timer.preprocess_time_s.end()
+
+        if FLAGS.run_benchmark:
+            results = detector.predict(
+                [image], FLAGS.det_threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+        else:
+            results = detector.predict([image], FLAGS.det_threshold)
+
         if results['boxes_num'] == 0:
             continue
-        batchs_images, det_rects = get_person_from_rect(image, results)
+        rec_images, records, det_rects = topdown_keypoint_detector.get_person_from_rect(
+            image, results, FLAGS.det_threshold)
         keypoint_vector = []
         score_vector = []
-        rect_vecotr = det_rects
-        for batch_images, batch_records in batchs_images:
-            keypoint_result = topdown_keypoint_detector.predict(
-                batch_images, FLAGS.keypoint_threshold)
+        rect_vector = det_rects
+        batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
+
+        for i in range(batch_loop_cnt):
+            start_index = i * keypoint_batch_size
+            end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
+            batch_images = rec_images[start_index:end_index]
+            batch_records = np.array(records[start_index:end_index])
+            if FLAGS.run_benchmark:
+                keypoint_result = topdown_keypoint_detector.predict(
+                    batch_images,
+                    FLAGS.keypoint_threshold,
+                    warmup=10,
+                    repeats=10)
+            else:
+                keypoint_result = topdown_keypoint_detector.predict(
+                    batch_images, FLAGS.keypoint_threshold)
             orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
                                                            batch_records)
             keypoint_vector.append(orgkeypoints)
             score_vector.append(scores)
-        keypoint_res = {}
-        keypoint_res['keypoint'] = [
-            np.vstack(keypoint_vector), np.vstack(score_vector)
-        ]
-        keypoint_res['bbox'] = rect_vecotr
-        if not os.path.exists(FLAGS.output_dir):
-            os.makedirs(FLAGS.output_dir)
-        draw_pose(
-            img_file,
-            keypoint_res,
-            visual_thread=FLAGS.keypoint_threshold,
-            save_dir=FLAGS.output_dir)
+        if FLAGS.run_benchmark:
+            cm, gm, gu = get_current_memory_mb()
+            topdown_keypoint_detector.cpu_mem += cm
+            topdown_keypoint_detector.gpu_mem += gm
+            topdown_keypoint_detector.gpu_util += gu
+        else:
+            keypoint_res = {}
+            keypoint_res['keypoint'] = [
+                np.vstack(keypoint_vector), np.vstack(score_vector)
+            ]
+            keypoint_res['bbox'] = rect_vector
+            if not os.path.exists(FLAGS.output_dir):
+                os.makedirs(FLAGS.output_dir)
+            draw_pose(
+                img_file,
+                keypoint_res,
+                visual_thread=FLAGS.keypoint_threshold,
+                save_dir=FLAGS.output_dir)
 
 
-def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
+def topdown_unite_predict_video(detector,
+                                topdown_keypoint_detector,
+                                camera_id,
+                                keypoint_batch_size=1):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
         video_name = 'output.mp4'
@@ -124,10 +152,16 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict([frame2], FLAGS.det_threshold)
-        batchs_images, rect_vecotr = get_person_from_rect(frame2, results)
+        rec_images, records, rect_vector = topdown_keypoint_detector.get_person_from_rect(
+            frame2, results)
         keypoint_vector = []
         score_vector = []
-        for batch_images, batch_records in batchs_images:
+        batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
+        for i in range(batch_loop_cnt):
+            start_index = i * keypoint_batch_size
+            end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
+            batch_images = rec_images[start_index:end_index]
+            batch_records = np.array(records[start_index:end_index])
             keypoint_result = topdown_keypoint_detector.predict(
                 batch_images, FLAGS.keypoint_threshold)
             orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
@@ -138,7 +172,7 @@ def topdown_unite_predict_video(detector, topdown_keypoint_detector, camera_id):
         keypoint_res['keypoint'] = [
             np.vstack(keypoint_vector), np.vstack(score_vector)
         ] if len(keypoint_vector) > 0 else [[], []]
-        keypoint_res['bbox'] = rect_vecotr
+        keypoint_res['bbox'] = rect_vector
         im = draw_pose(
             frame,
             keypoint_res,
@@ -184,11 +218,30 @@ def main():
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         topdown_unite_predict_video(detector, topdown_keypoint_detector,
-                                    FLAGS.camera_id)
+                                    FLAGS.camera_id, FLAGS.keypoint_batch_size)
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        topdown_unite_predict(detector, topdown_keypoint_detector, img_list)
+        topdown_unite_predict(detector, topdown_keypoint_detector, img_list,
+                              FLAGS.keypoint_batch_size)
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+            topdown_keypoint_detector.det_times.info(average=True)
+        else:
+            mode = FLAGS.run_mode
+            det_model_dir = FLAGS.det_model_dir
+            det_model_info = {
+                'model_name': det_model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            bench_log(detector, img_list, det_model_info, name='Det')
+            keypoint_model_dir = FLAGS.keypoint_model_dir
+            keypoint_model_info = {
+                'model_name': keypoint_model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            bench_log(topdown_keypoint_detector, img_list, keypoint_model_info,
+                      FLAGS.keypoint_batch_size, 'KeyPoint')
 
 
 if __name__ == '__main__':
