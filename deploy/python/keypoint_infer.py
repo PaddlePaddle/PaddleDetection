@@ -20,10 +20,11 @@ from functools import reduce
 
 from PIL import Image
 import cv2
+import math
 import numpy as np
 import paddle
 from preprocess import preprocess, NormalizeImage, Permute
-from keypoint_preprocess import EvalAffine, TopDownEvalAffine
+from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
 from keypoint_visualize import draw_pose
 from paddle.inference import Config
@@ -82,14 +83,41 @@ class KeyPoint_Detector(object):
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
         self.use_dark = use_dark
 
-    def preprocess(self, im):
+    def get_person_from_rect(self, image, results, det_threshold=0.5):
+        # crop the person result from image
+        self.det_times.preprocess_time_s.start()
+        det_results = results['boxes']
+        mask = det_results[:, 1] > det_threshold
+        valid_rects = det_results[mask]
+        rect_images = []
+        new_rects = []
+        #image_buff = []
+        org_rects = []
+        for rect in valid_rects:
+            rect_image, new_rect, org_rect = expand_crop(image, rect)
+            if rect_image is None or rect_image.size == 0:
+                continue
+            #image_buff.append([rect_image, new_rect])
+            rect_images.append(rect_image)
+            new_rects.append(new_rect)
+            org_rects.append(org_rect)
+        self.det_times.preprocess_time_s.end()
+        return rect_images, new_rects, org_rects
+
+    def preprocess(self, image_list):
         preprocess_ops = []
         for op_info in self.pred_config.preprocess_infos:
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
             preprocess_ops.append(eval(op_type)(**new_op_info))
-        im, im_info = preprocess(im, preprocess_ops)
-        inputs = create_inputs(im, im_info)
+
+        input_im_lst = []
+        input_im_info_lst = []
+        for im in image_list:
+            im, im_info = preprocess(im, preprocess_ops)
+            input_im_lst.append(im)
+            input_im_info_lst.append(im_info)
+        inputs = create_inputs(input_im_lst, input_im_info_lst)
         return inputs
 
     def postprocess(self, np_boxes, np_masks, inputs, threshold=0.5):
@@ -118,10 +146,10 @@ class KeyPoint_Detector(object):
             raise ValueError("Unsupported arch: {}, expect {}".format(
                 self.pred_config.arch, KEYPOINT_SUPPORT_MODELS))
 
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (str/np.ndarray): path of image/ np.ndarray read by cv2
+            image_list (list): list of image 
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
@@ -130,7 +158,7 @@ class KeyPoint_Detector(object):
                             shape: [N, im_h, im_w]
         '''
         self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image)
+        inputs = self.preprocess(image_list)
         np_boxes, np_masks = None, None
         input_names = self.predictor.get_input_names()
 
@@ -172,23 +200,24 @@ class KeyPoint_Detector(object):
         results = self.postprocess(
             np_boxes, np_masks, inputs, threshold=threshold)
         self.det_times.postprocess_time_s.end()
-        self.det_times.img_num += 1
+        self.det_times.img_num += len(image_list)
         return results
 
 
-def create_inputs(im, im_info):
+def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
-        model_arch (str): model type
+        imgs (list(numpy)): list of image (np.ndarray)
+        im_info (list(dict)): list of image info
     Returns:
         inputs (dict): input of model
     """
     inputs = {}
-    inputs['image'] = np.array((im, )).astype('float32')
-    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-
+    inputs['image'] = np.stack(imgs, axis=0)
+    im_shape = []
+    for e in im_info:
+        im_shape.append(np.array((e['im_shape'])).astype('float32'))
+    inputs['im_shape'] = np.stack(im_shape, axis=0)
     return inputs
 
 
@@ -326,14 +355,14 @@ def load_predictor(model_dir,
 def predict_image(detector, image_list):
     for i, img_file in enumerate(image_list):
         if FLAGS.run_benchmark:
-            detector.predict(img_file, FLAGS.threshold, warmup=10, repeats=10)
+            detector.predict([img_file], FLAGS.threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
             detector.gpu_util += gu
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
-            results = detector.predict(img_file, FLAGS.threshold)
+            results = detector.predict([img_file], FLAGS.threshold)
             if not os.path.exists(FLAGS.output_dir):
                 os.makedirs(FLAGS.output_dir)
             draw_pose(

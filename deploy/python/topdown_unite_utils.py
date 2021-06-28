@@ -40,6 +40,13 @@ def argsparser():
         default=None,
         help="Dir of image file, `image_file` has a higher priority.")
     parser.add_argument(
+        "--keypoint_batch_size",
+        type=int,
+        default=1,
+        help=("batch_size for keypoint inference. In detection-keypoint unit"
+              "inference, the batch size in detection is 1. Then collate det "
+              "result in batch for keypoint inference."))
+    parser.add_argument(
         "--video_file",
         type=str,
         default=None,
