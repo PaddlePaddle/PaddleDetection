@@ -93,7 +93,7 @@ class MOT_Detector(object):
         inputs = create_inputs(im, im_info)
         return inputs
 
-    def postprocess(self, pred_dets, pred_embs):
+    def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
         online_tlwhs, online_ids = [], []
         online_scores = []
@@ -101,6 +101,7 @@ class MOT_Detector(object):
             tlwh = t.tlwh
             tid = t.track_id
             tscore = t.score
+            if tscore < threshold: continue
             vertical = tlwh[2] / tlwh[3] > 1.6
             if tlwh[2] * tlwh[3] > self.tracker.min_box_area and not vertical:
                 online_tlwhs.append(tlwh)
@@ -137,8 +138,8 @@ class MOT_Detector(object):
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
-        online_tlwhs, online_scores, online_ids = self.postprocess(pred_dets,
-                                                                   pred_embs)
+        online_tlwhs, online_scores, online_ids = self.postprocess(
+            pred_dets, pred_embs, threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
@@ -363,7 +364,8 @@ def predict_video(detector, camera_id):
             online_ids,
             online_scores,
             frame_id=frame_id,
-            fps=fps)
+            fps=fps,
+            threhold=FLAGS.threshold)
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
