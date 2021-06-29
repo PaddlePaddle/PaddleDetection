@@ -13,28 +13,23 @@
 # limitations under the License.
 
 import os
-from PIL import Image
 import cv2
 import math
 import numpy as np
 import paddle
-from IPython import embed 
 
 from mot_keypoint_unite_utils import argsparser
-from preprocess import decode_image, preprocess, NormalizeImage, Permute
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
 from keypoint_visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
-from utils import get_current_memory_mb, Timer
+from utils import Timer
 
 from tracker import JDETracker
 from mot_preprocess import LetterBoxResize
+from mot_infer import MOT_Detector, PredictConfig_MOT, write_mot_results
+from infer import print_arguments
 from ppdet.modeling.mot import visualization as mot_vis
 from ppdet.modeling.mot.utils import Timer as FPSTimer
-from paddle.inference import Config
-from paddle.inference import create_predictor
-from infer import get_test_images, print_arguments
-from mot_infer import MOT_Detector, PredictConfig_MOT, write_mot_results
 
 
 def mot_keypoint_unite_predict_video(mot_model, keypoint_model, camera_id):
@@ -59,45 +54,55 @@ def mot_keypoint_unite_predict_video(mot_model, keypoint_model, camera_id):
     frame_id = 0
     timer_mot = FPSTimer()
     timer_kp = FPSTimer()
+    timer_mot_kp = FPSTimer()
     mot_results = []
     while (1):
         ret, frame = capture.read()
         if not ret:
             break
+        timer_mot_kp.tic()
         timer_mot.tic()
         online_tlwhs, online_scores, online_ids = mot_model.predict(
             frame, FLAGS.mot_threshold)
         timer_mot.toc()
 
-        mot_results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
+        mot_results.append(
+            (frame_id + 1, online_tlwhs, online_scores, online_ids))
         mot_fps = 1. / timer_mot.average_time
-        online_im = mot_vis.plot_tracking(
+
+        timer_kp.tic()
+        keypoint_results = keypoint_model.predict([frame],
+                                                  FLAGS.keypoint_threshold)
+        timer_kp.toc()
+        timer_mot_kp.toc()
+        kp_fps = 1. / timer_kp.average_time
+        mot_kp_fps = 1. / timer_mot_kp.average_time
+
+        im = draw_pose(
             frame,
+            keypoint_results,
+            visual_thread=FLAGS.keypoint_threshold,
+            returnimg=True)
+
+        online_im = mot_vis.plot_tracking(
+            im,
             online_tlwhs,
             online_ids,
             online_scores,
             frame_id=frame_id,
-            fps=mot_fps)
+            fps=mot_kp_fps)
 
         im = np.array(online_im)
-        timer_kp.tic()
-        keypoint_results = keypoint_model.predict([im], FLAGS.keypoint_threshold)
-        timer_kp.toc()
-        kp_fps = 1. / timer_kp.average_time
 
-        im = draw_pose(
-            im, keypoint_results, visual_thread=FLAGS.keypoint_threshold, returnimg=True)
-        
         frame_id += 1
         print('detect frame:%d' % (frame_id))
-        
+
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
             cv2.imwrite(
-                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)),
-                im)
+                os.path.join(save_dir, '{:05d}.jpg'.format(frame_id)), im)
 
         writer.write(im)
         if camera_id != -1:
@@ -141,7 +146,8 @@ def main():
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
-        mot_keypoint_unite_predict_video(mot_model, keypoint_model, FLAGS.camera_id)
+        mot_keypoint_unite_predict_video(mot_model, keypoint_model,
+                                         FLAGS.camera_id)
     else:
         print('Do not support unite predict single image.')
 

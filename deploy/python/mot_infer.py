@@ -80,7 +80,7 @@ class MOT_Detector(object):
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
-        
+
         self.tracker = JDETracker()
 
     def preprocess(self, im):
