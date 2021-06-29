@@ -250,6 +250,47 @@ class LiteConv(nn.Layer):
         return out
 
 
+class DropBlock(nn.Layer):
+    def __init__(self, block_size, keep_prob, name, data_format='NCHW'):
+        """
+        DropBlock layer, see https://arxiv.org/abs/1810.12890
+
+        Args:
+            block_size (int): block size
+            keep_prob (int): keep probability
+            name (str): layer name
+            data_format (str): data format, NCHW or NHWC
+        """
+        super(DropBlock, self).__init__()
+        self.block_size = block_size
+        self.keep_prob = keep_prob
+        self.name = name
+        self.data_format = data_format
+
+    def forward(self, x):
+        if not self.training or self.keep_prob == 1:
+            return x
+        else:
+            gamma = (1. - self.keep_prob) / (self.block_size**2)
+            if self.data_format == 'NCHW':
+                shape = x.shape[2:]
+            else:
+                shape = x.shape[1:3]
+            for s in shape:
+                gamma *= s / (s - self.block_size + 1)
+
+            matrix = paddle.cast(paddle.rand(x.shape, x.dtype) < gamma, x.dtype)
+            mask_inv = F.max_pool2d(
+                matrix,
+                self.block_size,
+                stride=1,
+                padding=self.block_size // 2,
+                data_format=self.data_format)
+            mask = 1. - mask_inv
+            y = x * mask * (mask.numel() / mask.sum())
+            return y
+
+
 @register
 @serializable
 class AnchorGeneratorSSD(object):

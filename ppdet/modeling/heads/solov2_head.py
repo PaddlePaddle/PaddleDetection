@@ -22,7 +22,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
 
-from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS
+from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS, DropBlock
 from ppdet.core.workspace import register
 
 from six.moves import zip
@@ -182,7 +182,8 @@ class SOLOv2Head(nn.Layer):
                  score_threshold=0.1,
                  mask_threshold=0.5,
                  mask_nms=None,
-                 norm_type='gn'):
+                 norm_type='gn',
+                 drop_block=False):
         super(SOLOv2Head, self).__init__()
         self.num_classes = num_classes
         self.in_channels = in_channels
@@ -198,6 +199,7 @@ class SOLOv2Head(nn.Layer):
         self.score_threshold = score_threshold
         self.mask_threshold = mask_threshold
         self.norm_type = norm_type
+        self.drop_block = drop_block
 
         self.kernel_pred_convs = []
         self.cate_pred_convs = []
@@ -249,6 +251,10 @@ class SOLOv2Head(nn.Layer):
                     mean=0., std=0.01)),
                 bias_attr=ParamAttr(initializer=Constant(
                     value=float(-np.log((1 - 0.01) / 0.01))))))
+
+        if self.drop_block:
+            self.drop_block_fun = DropBlock(
+                block_size=3, keep_prob=0.9, name='solo_cate.dropblock')
 
     def _points_nms(self, heat, kernel_size=2):
         hmax = F.max_pool2d(heat, kernel_size=kernel_size, stride=1, padding=1)
@@ -318,10 +324,14 @@ class SOLOv2Head(nn.Layer):
 
         for kernel_layer in self.kernel_pred_convs:
             kernel_feat = F.relu(kernel_layer(kernel_feat))
+        if self.drop_block:
+            kernel_feat = self.drop_block_fun(kernel_feat)
         kernel_pred = self.solo_kernel(kernel_feat)
         # cate branch
         for cate_layer in self.cate_pred_convs:
             cate_feat = F.relu(cate_layer(cate_feat))
+        if self.drop_block:
+            cate_feat = self.drop_block_fun(cate_feat)
         cate_pred = self.solo_cate(cate_feat)
 
         if not self.training:
