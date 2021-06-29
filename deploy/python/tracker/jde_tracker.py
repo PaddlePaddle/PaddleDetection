@@ -24,7 +24,6 @@ __all__ = ['JDETracker']
 
 
 class JDETracker(object):
-    __inject__ = ['motion']
     """
     JDE tracker
 
