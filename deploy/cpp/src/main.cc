@@ -14,8 +14,8 @@
 
 #include <glog/logging.h>
 
-#include <dirent.h>
 #include <iostream>
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <numeric>
@@ -126,37 +126,6 @@ static void MkDirs(const std::string& path) {
 
   MkDirs(DirName(path));
   MkDir(path);
-}
-
-void GetAllFiles(const char *dir_name,
-                          std::vector<std::string> &all_inputs) {
-  if (NULL == dir_name) {
-    std::cout << " dir_name is null ! " << std::endl;
-    return;
-  }
-  struct stat s;
-  lstat(dir_name, &s);
-  if (!S_ISDIR(s.st_mode)) {
-    std::cout << "dir_name is not a valid directory !" << std::endl;
-    all_inputs.push_back(dir_name);
-    return;
-  } else {
-    struct dirent *filename; // return value for readdir()
-    DIR *dir;                // return value for opendir()
-    dir = opendir(dir_name);
-    if (NULL == dir) {
-      std::cout << "Can not open dir " << dir_name << std::endl;
-      return;
-    }
-    std::cout << "Successfully opened the dir !" << std::endl;
-    while ((filename = readdir(dir)) != NULL) {
-      if (strcmp(filename->d_name, ".") == 0 ||
-          strcmp(filename->d_name, "..") == 0)
-        continue;
-      all_inputs.push_back(dir_name + std::string("/") +
-                           std::string(filename->d_name));
-    }
-  }
 }
 
 void PredictVideo(const std::string& video_path,
@@ -384,17 +353,21 @@ int main(int argc, char** argv) {
     if (!PathExists(FLAGS_output_dir)) {
       MkDirs(FLAGS_output_dir);
     }
-    std::vector<std::string> all_imgs;
+    std::vector<std::string> all_img_paths;
+    std::vector<cv::String> cv_all_img_paths;
     if (!FLAGS_image_file.empty()) {
-      all_imgs.push_back(FLAGS_image_file);
+      all_img_paths.push_back(FLAGS_image_file);
       if (FLAGS_batch_size > 1) {
         std::cout << "batch_size should be 1, when set `image_file`." << std::endl;
 	return -1;
       }
     } else {
-      GetAllFiles((char *)FLAGS_image_dir.c_str(), all_imgs);
+        cv::glob(FLAGS_image_dir, cv_all_img_paths);
+        for (const auto & img_path : cv_all_img_paths) {
+          all_img_paths.push_back(img_path);
+        }
     }
-    PredictImage(all_imgs, FLAGS_batch_size, FLAGS_threshold,
+    PredictImage(all_img_paths, FLAGS_batch_size, FLAGS_threshold,
 		 FLAGS_run_benchmark, &det, FLAGS_output_dir);
   }
   return 0;
