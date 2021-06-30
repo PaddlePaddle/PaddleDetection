@@ -12,11 +12,10 @@
 | 网络结构 | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy/Medium/Hard Set  | 预测时延（SD855）| 模型大小(MB) | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
 | BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_1000e.yml) |
-| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.907 / 0.883 / 0.793 | - | 0.479 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
+| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.920 / 0.900 / 0.822 | - | 0.646 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
 
 **注意:**  
 - 我们使用多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
-
 ## 快速开始
 
 ### 数据准备
@@ -79,9 +78,9 @@ BlazeNeck:
 ```shell
 python -u tools/eval.py -c configs/face_detection/blazeface_1000e.yml \
        -o weights=output/blazeface_1000e/model_final \
-       multi_scale=True
+       multi_scale_eval=True
 ```
-设置`multi_scale=True`进行多尺度评估，评估完成后，将在`output/pred`中生成txt格式的测试结果。
+设置`multi_scale_eval=True`进行多尺度评估，评估完成后，将在`output/pred`中生成txt格式的测试结果。
 
 - 步骤二：下载官方评估脚本和Ground Truth文件：
 ```
@@ -110,6 +109,7 @@ legend_name = 'Paddle-BlazeFace';
 `wider_eval.m` 是评估模块的主要执行程序。运行命令如下：
 matlab -nodesktop -nosplash -nojvm -r "run wider_eval.m;quit;"
 ```
+
 
 
 ## Citations
