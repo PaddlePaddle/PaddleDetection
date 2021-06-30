@@ -35,7 +35,7 @@ fluid_inference
 **注意:** 预编译版本除`nv-jetson-cuda10-cudnn7.5-trt5` 以外其它包都是基于`GCC 4.8.5`编译，使用高版本`GCC`可能存在 `ABI`兼容性问题，建议降级或[自行编译预测库](https://www.paddlepaddle.org.cn/documentation/docs/zh/advanced_guide/inference_deployment/inference/build_and_install_lib_cn.html)。
 
 
-### Step4: 编译
+### Step3: 编译
 
 编译`cmake`的命令在`scripts/build.sh`中，请根据实际情况修改主要参数，其主要内容说明如下：
 
@@ -92,7 +92,7 @@ make
 
 **注意**: OPENCV依赖OPENBLAS，Ubuntu用户需确认系统是否已存在`libopenblas.so`。如未安装，可执行apt-get install libopenblas-dev进行安装。
 
-### Step5: 预测及可视化
+### Step4: 预测及可视化
 编译成功后，预测入口程序为`build/main`其主要命令参数说明如下：
 |  参数   | 说明  |
 |  ----  | ----  |
