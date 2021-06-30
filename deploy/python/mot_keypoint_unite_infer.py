@@ -25,7 +25,7 @@ from benchmark_utils import PaddleInferBenchmark
 from utils import Timer
 
 from tracker import JDETracker
-from mot_preprocess import LetterBoxResize
+from preprocess import LetterBoxResize
 from mot_infer import MOT_Detector, PredictConfig_MOT, write_mot_results
 from infer import print_arguments
 from ppdet.modeling.mot import visualization as mot_vis

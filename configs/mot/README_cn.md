@@ -39,7 +39,7 @@ pip install lap sklearn motmetrics openpyxl cython_bbox
 pip install -r requirements.txt
 ```
 **注意：**
-- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)。
+- `cython_bbox`在windows上安装：`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。可参考这个[教程](https://stackoverflow.com/questions/60349980/is-there-a-way-to-install-cython-bbox-for-windows)或者`pip install -e git+https://github.com/samson-wang/cython_bbox.git#egg=cython-bbox`。
 - Windows cuda 11环境下可能无法正常评估，会尽快修复，可换到cuda 10.2或cuda 10.1环境下进行正常评估。
 
 ## 模型库

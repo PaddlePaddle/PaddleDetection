@@ -19,8 +19,7 @@ import cv2
 import numpy as np
 import paddle
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, NormalizeImage, Permute
-from mot_preprocess import LetterBoxResize
+from preprocess import preprocess, NormalizeImage, Permute, LetterBoxResize
 from tracker import DeepSORTTracker
 from ppdet.modeling.mot import visualization as mot_vis
 from ppdet.modeling.mot.utils import Timer as MOTTimer
@@ -30,26 +29,10 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
 from infer import get_test_images, print_arguments, PredictConfig, Detector
-from mot_infer import load_predictor, write_mot_results
+from mot_infer import create_inputs, load_predictor, write_mot_results
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {'DeepSORT'}
-
-
-def create_inputs(im, im_info):
-    """generate input for different model type
-    Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
-    Returns:
-        inputs (dict): input of model
-    """
-    inputs = {}
-    inputs['image'] = np.array((im, )).astype('float32')
-    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-    inputs['scale_factor'] = np.array(
-        (im_info['scale_factor'], )).astype('float32')
-    return inputs
 
 
 def scale_coords(coords, input_shape, im_shape, scale_factor):
@@ -108,15 +91,14 @@ def preprocess_reid(imgs,
     im_batch = np.concatenate(im_batch, 0)
     return im_batch
 
-
+from IPython import embed
 class MOT_Detector(object):
     """
     Args:
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        use_gpu (bool): whether use gpu
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -129,9 +111,8 @@ class MOT_Detector(object):
     def __init__(self,
                  pred_config,
                  model_dir,
-                 use_gpu=False,
+                 device='CPU',
                  run_mode='fluid',
-                 batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
                  trt_opt_shape=608,
@@ -142,9 +123,8 @@ class MOT_Detector(object):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
-            batch_size=batch_size,
+            device=device,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu,
             use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
@@ -164,6 +144,14 @@ class MOT_Detector(object):
         im, im_info = preprocess(im, preprocess_ops)
         inputs = create_inputs(im, im_info)
         return inputs
+
+    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold):
+        pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
+                                   scale_factor)
+        pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
+        pred_scores = boxes[:, 1:2]
+        keep_mask = pred_scores[:, 0] >= threshold
+        return pred_bboxes[keep_mask], pred_scores[keep_mask]
 
     def predict(self, image, threshold=0.5, repeats=1):
         '''
@@ -191,14 +179,12 @@ class MOT_Detector(object):
             boxes = boxes_tensor.copy_to_cpu()
         self.det_times.inference_time_s.end(repeats=repeats)
 
+        self.det_times.postprocess_time_s.start()
         input_shape = inputs['image'].shape[2:]
         im_shape = inputs['im_shape']
         scale_factor = inputs['scale_factor']
-        pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
-                                   scale_factor)
-        pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
-        pred_scores = boxes[:, 1:2]
-
+        pred_bboxes, pred_scores = self.postprocess(boxes, input_shape, im_shape, scale_factor, threshold)
+        self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return pred_bboxes, pred_scores
 
@@ -207,9 +193,8 @@ class MOT_ReID(object):
     def __init__(self,
                  pred_config,
                  model_dir,
-                 use_gpu=False,
+                 device='CPU',
                  run_mode='fluid',
-                 batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
                  trt_opt_shape=608,
@@ -220,9 +205,8 @@ class MOT_ReID(object):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
-            batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_gpu=use_gpu,
+            device=device,
             use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
@@ -232,6 +216,7 @@ class MOT_ReID(object):
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
+
         self.tracker = DeepSORTTracker()
 
     def preprocess(self, crops):
@@ -258,7 +243,7 @@ class MOT_ReID(object):
             online_ids.append(track.track_id)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, crops, bbox_tlwh, pred_scores, threshold=0.5, repeats=1):
+    def predict(self, crops, bbox_tlwh, pred_scores, repeats=1):
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(crops)
         self.det_times.preprocess_time_s.end()
@@ -349,7 +334,7 @@ def predict_video(detector, reid_model, camera_id):
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    if FLAGS.save_results:
+    if FLAGS.save_mot_txts:
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
         write_mot_results(result_filename, results)
@@ -361,8 +346,8 @@ def main():
     detector = MOT_Detector(
         pred_config,
         FLAGS.model_dir,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
-        batch_size=FLAGS.batch_size,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
@@ -374,7 +359,7 @@ def main():
     reid_model = MOT_ReID(
         pred_config,
         FLAGS.reid_model_dir,
-        use_gpu=FLAGS.use_gpu,
+        device=FLAGS.device,
         run_mode=FLAGS.run_mode,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
@@ -395,5 +380,8 @@ if __name__ == '__main__':
     parser = argsparser()
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
+    FLAGS.device = FLAGS.device.upper()
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
+                            ], "device should be CPU, GPU or XPU"
 
     main()
