@@ -118,6 +118,8 @@ EvalReader:
   batch_size: 16
 
 TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
   sample_transforms:
     - Decode: {}
     - TopDownEvalAffine:
