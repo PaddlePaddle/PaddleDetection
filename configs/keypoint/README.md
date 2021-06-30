@@ -35,14 +35,15 @@ MPII数据集
 
 ### 1、环境安装
 
-​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可
+​    请参考PaddleDetection [安装文档](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/docs/tutorials/INSTALL_cn.md)正确安装PaddlePaddle和PaddleDetection即可。
 
 ### 2、数据准备
 
-​    目前KeyPoint模型基于coco数据集开发，其他数据集尚未验证
+​    目前KeyPoint模型支持[COCO](https://cocodataset.org/#keypoints-2017)数据集和[MPII](http://human-pose.mpi-inf.mpg.de/#overview)数据集，数据集的准备方式请参考[关键点数据准备](../../docs/tutorials/PrepareKeypointDataSet_cn.md)。
 
-​    请参考PaddleDetection[数据准备部分](https://github.com/PaddlePaddle/PaddleDetection/blob/f0a30f3ba6095ebfdc8fffb6d02766406afc438a/docs/tutorials/PrepareDataSet.md)部署准备COCO数据集即可
-    请注意，Top-Down方案使用检测框测试时，需要给予检测模型生成bbox.json文件，或者从网上[下载地址](https://paddledet.bj.bcebos.com/data/bbox.json)下载后放在根目录（PaddleDetection）下，然后修改config配置文件中use_gt_bbox: False后生效。然后正常执行测试命令即可。
+    
+  - 请注意，Top-Down方案使用检测框测试时，需要通过检测模型生成bbox.json文件。COCO val2017的检测结果可以参考[Detector having human AP of 56.4 on COCO val2017 dataset](https://paddledet.bj.bcebos.com/data/bbox.json)，下载后放在根目录（PaddleDetection）下，然后修改config配置文件中`use_gt_bbox: False`后生效。然后正常执行测试命令即可。
+
 
 ### 3、训练与测试
 
@@ -50,18 +51,27 @@ MPII数据集
 
 ```shell
 CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
+
+#MPII DataSet
+CUDA_VISIBLE_DEVICES=0 nohup python3 tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
 ​    **多卡训练：**
 
 ```shell
 CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
+
+#MPII DataSet
+CUDA_VISIBLE_DEVICES=0,1,2,3 nohup python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
 ​    **模型评估：**
 
 ```shell
 CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
+
+#MPII DataSet
+CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
 ​    **模型预测：**
@@ -98,3 +108,36 @@ python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inferenc
 ```
 **注意:**
  跟踪模型导出教程请参考`configs/mot/README.md`。
+
+
+## 引用
+```
+@inproceedings{cheng2020bottom,
+  title={HigherHRNet: Scale-Aware Representation Learning for Bottom-Up Human Pose Estimation},
+  author={Bowen Cheng and Bin Xiao and Jingdong Wang and Honghui Shi and Thomas S. Huang and Lei Zhang},
+  booktitle={CVPR},
+  year={2020}
+}
+
+@inproceedings{SunXLW19,
+  title={Deep High-Resolution Representation Learning for Human Pose Estimation},
+  author={Ke Sun and Bin Xiao and Dong Liu and Jingdong Wang},
+  booktitle={CVPR},
+  year={2019}
+}
+
+@article{wang2019deep,
+  title={Deep High-Resolution Representation Learning for Visual Recognition},
+  author={Wang, Jingdong and Sun, Ke and Cheng, Tianheng and Jiang, Borui and Deng, Chaorui and Zhao, Yang and Liu, Dong and Mu, Yadong and Tan, Mingkui and Wang, Xinggang and Liu, Wenyu and Xiao, Bin},
+  journal={TPAMI},
+  year={2019}
+}
+
+@InProceedings{Zhang_2020_CVPR,
+    author = {Zhang, Feng and Zhu, Xiatian and Dai, Hanbin and Ye, Mao and Zhu, Ce},
+    title = {Distribution-Aware Coordinate Representation for Human Pose Estimation},
+    booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month = {June},
+    year = {2020}
+}
+```
