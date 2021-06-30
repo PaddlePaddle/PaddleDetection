@@ -1,4 +1,5 @@
 architecture: BlazeFace
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/blazenet_pretrain.pdparams
 
 BlazeFace:
   backbone: BlazeNet
