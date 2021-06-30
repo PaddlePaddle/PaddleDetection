@@ -97,6 +97,19 @@ python deploy/python/keypoint_infer.py --model_dir=output_inference/hrnet_w32_38
 python deploy/python/keypoint_det_unite_infer.py --det_model_dir=output_inference/ppyolo_r50vd_dcn_2x_coco/ --keypoint_model_dir=output_inference/hrnet_w32_384x288/ --video_file=../video/xxx.mp4  --device=gpu
 ```
 
+​    **与多目标跟踪模型FairMOT联合部署预测：**
+
+```shell
+#导出FairMOT跟踪模型
+python tools/export_model.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=https://paddledet.bj.bcebos.com/models/mot/fairmot_dla34_30e_1088x608.pdparams
+
+#用导出的跟踪和关键点模型Python联合预测
+python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
+```
+**注意:**
+ 跟踪模型导出教程请参考`configs/mot/README.md`。
+
+
 ## 引用
 ```
 @inproceedings{cheng2020bottom,

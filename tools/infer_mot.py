@@ -68,6 +68,11 @@ def parse_args():
         '--show_image',
         action='store_true',
         help='Show tracking results (image).')
+    parser.add_argument(
+        "--draw_threshold",
+        type=float,
+        default=0.5,
+        help="Threshold to reserve the result for visualization.")
     args = parser.parse_args()
     return args
 
@@ -94,7 +99,8 @@ def run(FLAGS, cfg):
         save_images=FLAGS.save_images,
         save_videos=FLAGS.save_videos,
         show_image=FLAGS.show_image,
-        det_results_dir=FLAGS.det_results_dir)
+        det_results_dir=FLAGS.det_results_dir,
+        draw_threshold=FLAGS.draw_threshold)
 
 
 def main():

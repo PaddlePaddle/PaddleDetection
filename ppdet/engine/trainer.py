@@ -301,8 +301,7 @@ class Trainer(object):
         model = self.model
         if self.cfg.get('fleet', False):
             model = fleet.distributed_model(model)
-            self.optimizer = fleet.distributed_optimizer(
-                self.optimizer).user_defined_optimizer
+            self.optimizer = fleet.distributed_optimizer(self.optimizer)
         elif self._nranks > 1:
             find_unused_parameters = self.cfg[
                 'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False

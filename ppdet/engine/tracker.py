@@ -112,7 +112,8 @@ class Tracker(object):
                       dataloader,
                       save_dir=None,
                       show_image=False,
-                      frame_rate=30):
+                      frame_rate=30,
+                      draw_threshold=0):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -140,6 +141,7 @@ class Tracker(object):
                 tlwh = t.tlwh
                 tid = t.track_id
                 tscore = t.score
+                if tscore < draw_threshold: continue
                 vertical = tlwh[2] / tlwh[3] > 1.6
                 if tlwh[2] * tlwh[3] > tracker.min_box_area and not vertical:
                     online_tlwhs.append(tlwh)
@@ -162,7 +164,8 @@ class Tracker(object):
                       save_dir=None,
                       show_image=False,
                       frame_rate=30,
-                      det_file=''):
+                      det_file='',
+                      draw_threshold=0):
         if save_dir:
             if not os.path.exists(save_dir): os.makedirs(save_dir)
         tracker = self.model.tracker
@@ -191,6 +194,7 @@ class Tracker(object):
                 dets = dets_list[frame_id]
                 bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
                 pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
+                if pred_scores < draw_threshold: continue
                 if bbox_tlwh.shape[0] > 0:
                     pred_bboxes = paddle.concat(
                         (bbox_tlwh[:, 0:2],
@@ -343,7 +347,8 @@ class Tracker(object):
                     save_images=False,
                     save_videos=True,
                     show_image=False,
-                    det_results_dir=''):
+                    det_results_dir='',
+                    draw_threshold=0.5):
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
@@ -369,7 +374,8 @@ class Tracker(object):
                     dataloader,
                     save_dir=save_dir,
                     show_image=show_image,
-                    frame_rate=frame_rate)
+                    frame_rate=frame_rate,
+                    draw_threshold=draw_threshold)
             elif model_type in ['DeepSORT']:
                 results, nf, ta, tc = self._eval_seq_sde(
                     dataloader,
@@ -377,7 +383,8 @@ class Tracker(object):
                     show_image=show_image,
                     frame_rate=frame_rate,
                     det_file=os.path.join(det_results_dir,
-                                          '{}.txt'.format(seq)))
+                                          '{}.txt'.format(seq)),
+                    draw_threshold=draw_threshold)
             else:
                 raise ValueError(model_type)
 

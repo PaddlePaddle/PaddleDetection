@@ -1,0 +1,50 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/solov2_r50_fpn.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/solov2_light_reader.yml',
+]
+pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+weights: output/solov2_r50_fpn_3x_coco/model_final
+epoch: 36
+use_ema: true
+ema_decay: 0.9998
+
+ResNet:
+  depth: 50
+  variant: d
+  freeze_at: 0
+  freeze_norm: false
+  norm_type: sync_bn
+  return_idx: [0,1,2,3]
+  dcn_v2_stages: [1,2,3]
+  lr_mult_list: [0.05, 0.05, 0.1, 0.15]
+  num_stages: 4
+
+SOLOv2Head:
+  seg_feat_channels: 256
+  stacked_convs: 3
+  num_grids: [40, 36, 24, 16, 12]
+  kernel_out_channels: 128
+  solov2_loss: SOLOv2Loss
+  mask_nms: MaskMatrixNMS
+  dcn_v2_stages: [2]
+  drop_block: True
+
+SOLOv2MaskHead:
+  mid_channels: 128
+  out_channels: 128
+  start_level: 0
+  end_level: 3
+  use_dcn_in_tower: True
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [24, 33]
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 1000

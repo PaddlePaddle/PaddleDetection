@@ -19,7 +19,7 @@ import argparse
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--det_model_dir",
+        "--mot_model_dir",
         type=str,
         default=None,
         help=("Directory include:'model.pdiparams', 'model.pdmodel', "
@@ -58,7 +58,7 @@ def argsparser():
         default=-1,
         help="device id of camera to predict.")
     parser.add_argument(
-        "--det_threshold", type=float, default=0.5, help="Threshold of score.")
+        "--mot_threshold", type=float, default=0.5, help="Threshold of score.")
     parser.add_argument(
         "--keypoint_threshold",
         type=float,
@@ -97,12 +97,12 @@ def argsparser():
     parser.add_argument(
         "--trt_max_shape",
         type=int,
-        default=1280,
+        default=1088,
         help="max_shape for TensorRT.")
     parser.add_argument(
         "--trt_opt_shape",
         type=int,
-        default=640,
+        default=608,
         help="opt_shape for TensorRT.")
     parser.add_argument(
         "--trt_calib_mode",
@@ -110,6 +110,14 @@ def argsparser():
         default=False,
         help="If the model is produced by TRT offline quantitative "
         "calibration, trt_calib_mode need to set True.")
+    parser.add_argument(
+        '--save_images',
+        action='store_true',
+        help='Save visualization image results.')
+    parser.add_argument(
+        '--save_mot_txts',
+        action='store_true',
+        help='Save tracking results (txt).')
     parser.add_argument(
         '--use_dark',
         type=bool,
