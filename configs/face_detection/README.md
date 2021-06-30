@@ -11,12 +11,12 @@
 
 | 网络结构 | 输入尺寸 | 图片个数/GPU | 学习率策略 | Easy/Medium/Hard Set  | 预测时延（SD855）| 模型大小(MB) | 下载 | 配置文件 |
 |:------------:|:--------:|:----:|:-------:|:-------:|:---------:|:----------:|:---------:|:--------:|
-| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[model](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_1000e.yml) |
-| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.920 / 0.900 / 0.822 | - | 0.646 |[model](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) / [pretrain model](https://paddledet.bj.bcebos.com/models/pretrained/blazenet_pretrain.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
+| BlazeFace  | 640  |    8    | 1000e     | 0.885 / 0.855 / 0.731 | - | 0.472 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_1000e.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_1000e.yml) |
+| BlazeFace-FPN-SSH  | 640  |    8    | 1000e     | 0.920 / 0.900 / 0.822 | - | 0.646 |[下载链接](https://paddledet.bj.bcebos.com/models/blazeface_fpn_ssh_1000e.pdparams) / [预训练模型](https://paddledet.bj.bcebos.com/models/pretrained/blazenet_pretrain.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.1/configs/face_detection/blazeface_fpn_ssh_1000e.yml) |
 
 **注意:**  
 - 我们使用多尺度评估策略得到`Easy/Medium/Hard Set`里的mAP。具体细节请参考[在WIDER-FACE数据集上评估](#在WIDER-FACE数据集上评估)。
-
+- 表中BlazeFace-FPN-SSH的mAP通过使用预训练模型训练得到。
 ## 快速开始
 
 ### 数据准备
