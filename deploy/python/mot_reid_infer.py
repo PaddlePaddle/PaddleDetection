@@ -91,7 +91,7 @@ def preprocess_reid(imgs,
     im_batch = np.concatenate(im_batch, 0)
     return im_batch
 
-from IPython import embed
+
 class MOT_Detector(object):
     """
     Args:
