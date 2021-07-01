@@ -109,8 +109,8 @@ class Trainer(object):
             self._callbacks = []
             self._compose_callback = None
 
-    def _init_metrics(self):
-        if self.mode == 'test':
+    def _init_metrics(self,validate=False):
+        if self.mode == 'test' or (self.mode == 'train' and not validate):
             self._metrics = []
             return
         if self.cfg.metric == 'COCO':
@@ -118,9 +118,13 @@ class Trainer(object):
             bias = self.cfg['bias'] if 'bias' in self.cfg else 0
             save_prediction_only = self.cfg['save_prediction_only'] \
                 if 'save_prediction_only' in self.cfg else False
+            anno_file = self.dataset.get_anno()
+            if self.mode == 'train' and validate:
+                eval_dataset = self.cfg['EvalDataset']
+                anno_file = eval_dataset.get_anno()
             self._metrics = [
                 COCOMetric(
-                    anno_file=self.dataset.get_anno(),
+                    anno_file=anno_file,
                     bias=bias,
                     save_prediction_only=save_prediction_only)
             ]
@@ -181,6 +185,9 @@ class Trainer(object):
     def train(self, validate=False):
         assert self.mode == 'train', "Model not in 'train' mode"
 
+        if validate:
+            self._init_metrics(validate=validate)
+            self._reset_metrics()
         model = self.model
         if self._nranks > 1:
             model = paddle.DataParallel(self.model)
