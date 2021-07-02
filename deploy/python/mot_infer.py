@@ -108,7 +108,7 @@ class MOT_Detector(object):
                 online_scores.append(tscore)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, image, threshold=0.5, repeats=1):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (np.ndarray): numpy image data
@@ -125,6 +125,12 @@ class MOT_Detector(object):
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            pred_dets = boxes_tensor.copy_to_cpu()
 
         self.det_times.inference_time_s.start()
         for i in range(repeats):
@@ -282,6 +288,30 @@ def write_mot_results(filename, results, data_type='mot'):
                 f.write(line)
 
 
+def predict_image(detector, image_list):
+    results = []
+    for i, img_file in enumerate(image_list):
+        frame = cv2.imread(img_file)
+        if FLAGS.run_benchmark:
+            detector.predict(frame, FLAGS.threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+            print('Test iter {}, file name:{}'.format(i, img_file))
+        else:
+            online_tlwhs, online_scores, online_ids = detector.predict(
+                frame, FLAGS.threshold)
+
+            online_im = mot_vis.plot_tracking(
+                frame, online_tlwhs, online_ids, online_scores, frame_id=i)
+
+            if FLAGS.save_images:
+                if not os.path.exists(FLAGS.output_dir):
+                    os.makedirs(FLAGS.output_dir)
+                cv2.imwrite(os.path.join(FLAGS.output_dir, img_file), online_im)
+
+
 def predict_video(detector, camera_id):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
@@ -362,7 +392,32 @@ def main():
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, FLAGS.camera_id)
     else:
-        print('MOT models do not support predict single image.')
+        # predict from image
+        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
+        predict_image(detector, img_list)
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+        else:
+            mems = {
+                'cpu_rss_mb': detector.cpu_mem / len(img_list),
+                'gpu_rss_mb': detector.gpu_mem / len(img_list),
+                'gpu_util': detector.gpu_util * 100 / len(img_list)
+            }
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': 1,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
+            det_log('MOT')
 
 
 if __name__ == '__main__':

@@ -35,6 +35,23 @@ from mot_infer import create_inputs, load_predictor, write_mot_results
 MOT_SUPPORT_MODELS = {'DeepSORT'}
 
 
+def bench_log(detector, img_list, model_info, batch_size=1, name=None):
+    mems = {
+        'cpu_rss_mb': detector.cpu_mem / len(img_list),
+        'gpu_rss_mb': detector.gpu_mem / len(img_list),
+        'gpu_util': detector.gpu_util * 100 / len(img_list)
+    }
+    perf_info = detector.det_times.report(average=True)
+    data_info = {
+        'batch_size': batch_size,
+        'shape': "dynamic_shape",
+        'data_num': perf_info['img_num']
+    }
+    log = PaddleInferBenchmark(detector.config, model_info, data_info,
+                               perf_info, mems)
+    log(name)
+
+
 def scale_coords(coords, input_shape, im_shape, scale_factor):
     im_shape = im_shape[0]
     ratio = scale_factor[0][0]
@@ -145,7 +162,8 @@ class MOT_Detector(object):
         inputs = create_inputs(im, im_info)
         return inputs
 
-    def postprocess(self, boxes, input_shape, im_shape, scale_factor, threshold):
+    def postprocess(self, boxes, input_shape, im_shape, scale_factor,
+                    threshold):
         pred_bboxes = scale_coords(boxes[:, 2:], input_shape, im_shape,
                                    scale_factor)
         pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape, scale_factor)
@@ -153,7 +171,7 @@ class MOT_Detector(object):
         keep_mask = pred_scores[:, 0] >= threshold
         return pred_bboxes[keep_mask], pred_scores[keep_mask]
 
-    def predict(self, image, threshold=0.5, repeats=1):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
             image (np.ndarray): image numpy data
@@ -171,6 +189,12 @@ class MOT_Detector(object):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
 
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            boxes = boxes_tensor.copy_to_cpu()
+
         self.det_times.inference_time_s.start()
         for i in range(repeats):
             self.predictor.run()
@@ -183,7 +207,8 @@ class MOT_Detector(object):
         input_shape = inputs['image'].shape[2:]
         im_shape = inputs['im_shape']
         scale_factor = inputs['scale_factor']
-        pred_bboxes, pred_scores = self.postprocess(boxes, input_shape, im_shape, scale_factor, threshold)
+        pred_bboxes, pred_scores = self.postprocess(
+            boxes, input_shape, im_shape, scale_factor, threshold)
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return pred_bboxes, pred_scores
@@ -243,7 +268,7 @@ class MOT_ReID(object):
             online_ids.append(track.track_id)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, crops, bbox_tlwh, pred_scores, repeats=1):
+    def predict(self, crops, bbox_tlwh, pred_scores, warmup=0, repeats=1):
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(crops)
         self.det_times.preprocess_time_s.end()
@@ -253,6 +278,12 @@ class MOT_ReID(object):
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            feature_tensor = self.predictor.get_output_handle(output_names[0])
+            features = feature_tensor.copy_to_cpu()
 
         self.det_times.inference_time_s.start()
         for i in range(repeats):
@@ -268,6 +299,45 @@ class MOT_ReID(object):
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
+
+
+def predict_image(detector, reid_model, image_list):
+    results = []
+    for i, img_file in enumerate(image_list):
+        frame = cv2.imread(img_file)
+        if FLAGS.run_benchmark:
+            pred_bboxes, pred_scores = detector.predict(
+                frame, FLAGS.threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+            print('Test iter {}, file name:{}'.format(i, img_file))
+        else:
+            pred_bboxes, pred_scores = detector.predict(frame, FLAGS.threshold)
+
+        # process
+        bbox_tlwh = np.concatenate(
+            (pred_bboxes[:, 0:2],
+             pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+            axis=1)
+        crops, pred_scores = get_crops(
+            pred_bboxes, frame, pred_scores, w=64, h=192)
+
+        if FLAGS.run_benchmark:
+            online_tlwhs, online_scores, online_ids = reid_model.predict(
+                crops, bbox_tlwh, pred_scores, warmup=10, repeats=10)
+        else:
+            online_tlwhs, online_scores, online_ids = reid_model.predict(
+                crops, bbox_tlwh, pred_scores)
+
+            online_im = mot_vis.plot_tracking(
+                frame, online_tlwhs, online_ids, online_scores, frame_id=i)
+
+            if FLAGS.save_images:
+                if not os.path.exists(FLAGS.output_dir):
+                    os.makedirs(FLAGS.output_dir)
+                cv2.imwrite(os.path.join(FLAGS.output_dir, img_file), online_im)
 
 
 def predict_video(detector, reid_model, camera_id):
@@ -372,7 +442,28 @@ def main():
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, reid_model, FLAGS.camera_id)
     else:
-        print('MOT models do not support predict single image.')
+        # predict from image
+        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
+        predict_image(detector, reid_model, img_list)
+
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+            reid_model.det_times.info(average=True)
+        else:
+            mode = FLAGS.run_mode
+            det_model_dir = FLAGS.model_dir
+            det_model_info = {
+                'model_name': det_model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            bench_log(detector, img_list, det_model_info, name='Det')
+
+            reid_model_dir = FLAGS.reid_model_dir
+            reid_model_info = {
+                'model_name': reid_model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            bench_log(reid_model, img_list, reid_model_info, name='ReID')
 
 
 if __name__ == '__main__':
