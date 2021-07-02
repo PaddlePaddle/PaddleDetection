@@ -19,8 +19,7 @@ import cv2
 import numpy as np
 import paddle
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, NormalizeImage, Permute
-from mot_preprocess import LetterBoxResize
+from preprocess import preprocess, NormalizeImage, Permute, LetterBoxResize
 
 from tracker import JDETracker
 from ppdet.modeling.mot import visualization as mot_vis
@@ -29,7 +28,7 @@ from ppdet.modeling.mot.utils import Timer as MOTTimer
 from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import get_test_images, print_arguments
+from infer import get_test_images, print_arguments, PredictConfig
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
@@ -69,8 +68,8 @@ class MOT_Detector(object):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
-            min_subgraph_size=self.pred_config.min_subgraph_size,
             device=device,
+            min_subgraph_size=self.pred_config.min_subgraph_size,
             use_dynamic_shape=self.pred_config.use_dynamic_shape,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
@@ -109,10 +108,10 @@ class MOT_Detector(object):
                 online_scores.append(tscore)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, image, threshold=0.5, repeats=1):
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (dict): dict(['image', 'im_shape', 'scale_factor'])
+            image (np.ndarray): numpy image data
             threshold (float): threshold of predicted box' score
         Returns:
             online_tlwhs, online_ids (np.ndarray)
@@ -120,11 +119,18 @@ class MOT_Detector(object):
         self.det_times.preprocess_time_s.start()
         inputs = self.preprocess(image)
         self.det_times.preprocess_time_s.end()
+
         pred_dets, pred_embs = None, None
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
             input_tensor = self.predictor.get_input_handle(input_names[i])
             input_tensor.copy_from_cpu(inputs[input_names[i]])
+
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            pred_dets = boxes_tensor.copy_to_cpu()
 
         self.det_times.inference_time_s.start()
         for i in range(repeats):
@@ -134,7 +140,6 @@ class MOT_Detector(object):
             pred_dets = boxes_tensor.copy_to_cpu()
             embs_tensor = self.predictor.get_output_handle(output_names[1])
             pred_embs = embs_tensor.copy_to_cpu()
-
         self.det_times.inference_time_s.end(repeats=repeats)
 
         self.det_times.postprocess_time_s.start()
@@ -150,7 +155,6 @@ def create_inputs(im, im_info):
     Args:
         im (np.ndarray): image (np.ndarray)
         im_info (dict): info of image
-        model_arch (str): model type
     Returns:
         inputs (dict): input of model
     """
@@ -160,48 +164,6 @@ def create_inputs(im, im_info):
     inputs['scale_factor'] = np.array(
         (im_info['scale_factor'], )).astype('float32')
     return inputs
-
-
-class PredictConfig_MOT():
-    """set config of preprocess, postprocess and visualize
-    Args:
-        model_dir (str): root path of model.yml
-    """
-
-    def __init__(self, model_dir):
-        # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
-        with open(deploy_file) as f:
-            yml_conf = yaml.safe_load(f)
-        self.check_model(yml_conf)
-        self.arch = yml_conf['arch']
-        self.preprocess_infos = yml_conf['Preprocess']
-        self.min_subgraph_size = yml_conf['min_subgraph_size']
-        self.labels = yml_conf['label_list']
-        self.mask = False
-        self.use_dynamic_shape = yml_conf['use_dynamic_shape']
-        if 'mask' in yml_conf:
-            self.mask = yml_conf['mask']
-        self.print_config()
-
-    def check_model(self, yml_conf):
-        """
-        Raises:
-            ValueError: loaded model not in supported model type 
-        """
-        for support_model in MOT_SUPPORT_MODELS:
-            if support_model in yml_conf['arch']:
-                return True
-        raise ValueError("Unsupported arch: {}, expect {}".format(yml_conf[
-            'arch'], MOT_SUPPORT_MODELS))
-
-    def print_config(self):
-        print('-----------  Model Configuration -----------')
-        print('%s: %s' % ('Model Arch', self.arch))
-        print('%s: ' % ('Transform Order'))
-        for op_info in self.preprocess_infos:
-            print('--%s: %s' % ('transform op', op_info['type']))
-        print('--------------------------------------------')
 
 
 def load_predictor(model_dir,
@@ -217,6 +179,7 @@ def load_predictor(model_dir,
                    cpu_threads=1,
                    enable_mkldnn=False):
     """set AnalysisConfig, generate AnalysisPredictor
+       Note: only support batch_size=1 now
     Args:
         model_dir (str): root path of __model__ and __params__
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
@@ -325,6 +288,30 @@ def write_mot_results(filename, results, data_type='mot'):
                 f.write(line)
 
 
+def predict_image(detector, image_list):
+    results = []
+    for i, img_file in enumerate(image_list):
+        frame = cv2.imread(img_file)
+        if FLAGS.run_benchmark:
+            detector.predict(frame, FLAGS.threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+            print('Test iter {}, file name:{}'.format(i, img_file))
+        else:
+            online_tlwhs, online_scores, online_ids = detector.predict(
+                frame, FLAGS.threshold)
+
+            online_im = mot_vis.plot_tracking(
+                frame, online_tlwhs, online_ids, online_scores, frame_id=i)
+
+            if FLAGS.save_images:
+                if not os.path.exists(FLAGS.output_dir):
+                    os.makedirs(FLAGS.output_dir)
+                cv2.imwrite(os.path.join(FLAGS.output_dir, img_file), online_im)
+
+
 def predict_video(detector, camera_id):
     if camera_id != -1:
         capture = cv2.VideoCapture(camera_id)
@@ -364,8 +351,7 @@ def predict_video(detector, camera_id):
             online_ids,
             online_scores,
             frame_id=frame_id,
-            fps=fps,
-            threhold=FLAGS.threshold)
+            fps=fps)
         if FLAGS.save_images:
             save_dir = os.path.join(FLAGS.output_dir, video_name.split('.')[-2])
             if not os.path.exists(save_dir):
@@ -381,7 +367,7 @@ def predict_video(detector, camera_id):
             cv2.imshow('Tracking Detection', im)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
-    if FLAGS.save_results:
+    if FLAGS.save_mot_txts:
         result_filename = os.path.join(FLAGS.output_dir,
                                        video_name.split('.')[-2] + '.txt')
         write_mot_results(result_filename, results)
@@ -389,7 +375,7 @@ def predict_video(detector, camera_id):
 
 
 def main():
-    pred_config = PredictConfig_MOT(FLAGS.model_dir)
+    pred_config = PredictConfig(FLAGS.model_dir)
     detector = MOT_Detector(
         pred_config,
         FLAGS.model_dir,
@@ -406,7 +392,32 @@ def main():
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, FLAGS.camera_id)
     else:
-        print('MOT models do not support predict single image.')
+        # predict from image
+        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
+        predict_image(detector, img_list)
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+        else:
+            mems = {
+                'cpu_rss_mb': detector.cpu_mem / len(img_list),
+                'gpu_rss_mb': detector.gpu_mem / len(img_list),
+                'gpu_util': detector.gpu_util * 100 / len(img_list)
+            }
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': 1,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
+            det_log('MOT')
 
 
 if __name__ == '__main__':

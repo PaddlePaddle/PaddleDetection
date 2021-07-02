@@ -20,12 +20,14 @@ import copy
 import numpy as np
 import paddle
 import paddle.nn.functional as F
+from ppdet.modeling.bbox_utils import bbox_iou_np_expand
+from .map_utils import ap_per_class
 from .metrics import Metric
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['MOTEvaluator', 'MOTMetric']
+__all__ = ['MOTEvaluator', 'MOTMetric', 'JDEDetMetric']
 
 
 def read_mot_results(filename, is_gt=False, is_ignore=False):
@@ -236,3 +238,67 @@ class MOTMetric(Metric):
 
     def get_results(self):
         return self.strsummary
+
+
+class JDEDetMetric(Metric):
+    # Note this detection AP metric is different from COCOMetric or VOCMetric,
+    # and the bboxes coordinates are not scaled to the original image
+    def __init__(self, overlap_thresh=0.5):
+        self.overlap_thresh = overlap_thresh
+        self.reset()
+
+    def reset(self):
+        self.AP_accum = np.zeros(1)
+        self.AP_accum_count = np.zeros(1)
+
+    def update(self, inputs, outputs):
+        bboxes = outputs['bbox'][:, 2:].numpy()
+        scores = outputs['bbox'][:, 1].numpy()
+        labels = outputs['bbox'][:, 0].numpy()
+        bbox_lengths = outputs['bbox_num'].numpy()
+        if bboxes.shape[0] == 1 and bboxes.sum() == 0.0:
+            return
+
+        gt_boxes = inputs['gt_bbox'].numpy()[0]
+        gt_labels = inputs['gt_class'].numpy()[0]
+        if gt_labels.shape[0] == 0:
+            return
+
+        correct = []
+        detected = []
+        for i in range(bboxes.shape[0]):
+            obj_pred = 0
+            pred_bbox = bboxes[i].reshape(1, 4)
+            # Compute iou with target boxes
+            iou = bbox_iou_np_expand(pred_bbox, gt_boxes, x1y1x2y2=True)[0]
+            # Extract index of largest overlap
+            best_i = np.argmax(iou)
+            # If overlap exceeds threshold and classification is correct mark as correct
+            if iou[best_i] > self.overlap_thresh and obj_pred == gt_labels[
+                    best_i] and best_i not in detected:
+                correct.append(1)
+                detected.append(best_i)
+            else:
+                correct.append(0)
+
+        # Compute Average Precision (AP) per class
+        target_cls = list(gt_labels.T[0])
+        AP, AP_class, R, P = ap_per_class(
+            tp=correct,
+            conf=scores,
+            pred_cls=np.zeros_like(scores),
+            target_cls=target_cls)
+        self.AP_accum_count += np.bincount(AP_class, minlength=1)
+        self.AP_accum += np.bincount(AP_class, minlength=1, weights=AP)
+
+    def accumulate(self):
+        logger.info("Accumulating evaluatation results...")
+        self.map_stat = self.AP_accum[0] / (self.AP_accum_count[0] + 1E-16)
+
+    def log(self):
+        map_stat = 100. * self.map_stat
+        logger.info("mAP({:.2f}) = {:.2f}%".format(self.overlap_thresh,
+                                                   map_stat))
+
+    def get_results(self):
+        return self.map_stat

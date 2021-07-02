@@ -16,6 +16,7 @@ This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_so
 """
 
 import numpy as np
+from ppdet.modeling.mot.motion import KalmanFilter
 from ppdet.modeling.mot.matching.deepsort_matching import NearestNeighborDistanceMetric
 from ppdet.modeling.mot.matching.deepsort_matching import iou_cost, min_cost_matching, matching_cascade, gate_cost_matrix
 from ppdet.modeling.mot.tracker.base_sde_tracker import Track
@@ -24,7 +25,6 @@ __all__ = ['DeepSORTTracker']
 
 
 class DeepSORTTracker(object):
-    __inject__ = ['motion']
     """
     DeepSORT tracker
 
@@ -60,7 +60,7 @@ class DeepSORTTracker(object):
         self.metric = NearestNeighborDistanceMetric(metric_type,
                                                     matching_threshold, budget)
         self.max_iou_distance = max_iou_distance
-        self.motion = motion
+        self.motion = KalmanFilter()
 
         self.tracks = []
         self._next_id = 1
