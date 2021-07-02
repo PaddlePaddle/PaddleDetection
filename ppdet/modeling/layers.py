@@ -759,8 +759,9 @@ class FCOSBox(object):
 
         # recover the location to original image
         im_scale = paddle.concat([scale_factor, scale_factor], axis=1)
-        for i in range(box_reg_decoding.shape[0]):
-            box_reg_decoding[i] = box_reg_decoding[i] / im_scale[i]
+        im_scale = paddle.expand(im_scale, [box_reg_decoding.shape[0], 4])
+        im_scale = paddle.reshape(im_scale, [box_reg_decoding.shape[0], -1, 4])
+        box_reg_decoding = box_reg_decoding / im_scale
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
 
