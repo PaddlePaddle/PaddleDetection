@@ -386,7 +386,11 @@ class RCNNBox(object):
         scale_list = []
         origin_shape_list = []
 
-        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+        batch_size = 1
+        if isinstance(roi, list):
+            batch_size = len(roi)
+        else:
+            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
         # bbox_pred.shape: [N, C*4]
         for idx in range(batch_size):
             roi_per_im = roi[idx]
@@ -866,7 +870,9 @@ class TTFBox(object):
         results = []
         results_num = []
         for i in range(scale_factor.shape[0]):
-            result, num = self._decode(hm[i:i+1, ], wh[i:i+1, ], im_shape[i:i+1, ], scale_factor[i:i+1, ])
+            result, num = self._decode(hm[i:i + 1, ], wh[i:i + 1, ],
+                                       im_shape[i:i + 1, ],
+                                       scale_factor[i:i + 1, ])
             results.append(result)
             results_num.append(num)
         results = paddle.concat(results, axis=0)
