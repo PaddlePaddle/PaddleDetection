@@ -355,11 +355,7 @@ class JDEBBoxPostProcess(nn.Layer):
                 [[[0.0]]], dtype='float32'))
         self.fake_boxes_idx = paddle.to_tensor(np.array([[0]], dtype='int64'))
 
-    def forward(self,
-                head_out,
-                anchors,
-                im_shape=[[608, 1088]],
-                scale_factor=[[1.0, 1.0]]):
+    def forward(self, head_out, anchors):
         """
         Decode the bbox and do NMS for JDE model. 
 
@@ -389,16 +385,21 @@ class JDEBBoxPostProcess(nn.Layer):
                 yolo_boxes[:, 4:5], shape=[1, 1, len(boxes_idx)])
             boxes_idx = boxes_idx[:, 1:]
 
-        bbox_pred, bbox_num, nms_keep_idx = self.nms(
-            yolo_boxes_out, yolo_scores_out, self.num_classes)
-        if bbox_pred.shape[0] == 0:
-            bbox_pred = self.fake_bbox_pred
-            bbox_num = self.fake_bbox_num
-            nms_keep_idx = self.fake_nms_keep_idx
         if self.return_idx:
+            bbox_pred, bbox_num, nms_keep_idx = self.nms(
+                yolo_boxes_out, yolo_scores_out, self.num_classes)
+            if bbox_pred.shape[0] == 0:
+                bbox_pred = self.fake_bbox_pred
+                bbox_num = self.fake_bbox_num
+                nms_keep_idx = self.fake_nms_keep_idx
             return boxes_idx, bbox_pred, bbox_num, nms_keep_idx
         else:
-            return bbox_pred, bbox_num
+            bbox_pred, bbox_num, _ = self.nms(yolo_boxes_out, yolo_scores_out,
+                                              self.num_classes)
+            if bbox_pred.shape[0] == 0:
+                bbox_pred = self.fake_bbox_pred
+                bbox_num = self.fake_bbox_num
+            return _, bbox_pred, bbox_num, _
 
 
 @register

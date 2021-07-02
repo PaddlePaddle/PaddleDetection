@@ -36,7 +36,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval
-from ppdet.metrics import RBoxMetric
+from ppdet.metrics import RBoxMetric, JDEDetMetric
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 
@@ -243,6 +243,8 @@ class Trainer(object):
                                         len(eval_dataset), self.cfg.num_joints,
                                         self.cfg.save_dir)
             ]
+        elif self.cfg.metric == 'MOTDet':
+            self._metrics = [JDEDetMetric(), ]
         else:
             logger.warn("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -545,6 +547,11 @@ class Trainer(object):
             "scale_factor": InputSpec(
                 shape=[None, 2], name='scale_factor')
         }]
+        if self.cfg.architecture == 'DeepSORT':
+            input_spec[0].update({
+                "crops": InputSpec(
+                    shape=[None, 3, 192, 64], name='crops')
+            })
 
         # dy2st and save model
         if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
