@@ -90,7 +90,7 @@ def parse_args():
 def run(FLAGS, cfg):
     # init fleet environment
     if cfg.fleet:
-        init_fleet_env()
+        init_fleet_env(cfg.get('find_unused_parameters', False))
     else:
         # init parallel environment if nranks > 1
         init_parallel_env()
