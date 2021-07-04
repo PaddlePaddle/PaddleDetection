@@ -386,7 +386,11 @@ class RCNNBox(object):
         scale_list = []
         origin_shape_list = []
 
-        batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+        batch_size = 1
+        if isinstance(roi, list):
+            batch_size = len(roi)
+        else:
+            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
         # bbox_pred.shape: [N, C*4]
         for idx in range(batch_size):
             roi_per_im = roi[idx]
@@ -755,6 +759,8 @@ class FCOSBox(object):
 
         # recover the location to original image
         im_scale = paddle.concat([scale_factor, scale_factor], axis=1)
+        im_scale = paddle.expand(im_scale, [box_reg_decoding.shape[0], 4])
+        im_scale = paddle.reshape(im_scale, [box_reg_decoding.shape[0], -1, 4])
         box_reg_decoding = box_reg_decoding / im_scale
         box_cls_ch_last = box_cls_ch_last * box_ctn_ch_last
         return box_cls_ch_last, box_reg_decoding
@@ -822,7 +828,7 @@ class TTFBox(object):
 
         return topk_score, topk_inds, topk_clses, topk_ys, topk_xs
 
-    def __call__(self, hm, wh, im_shape, scale_factor):
+    def _decode(self, hm, wh, im_shape, scale_factor):
         heatmap = F.sigmoid(hm)
         heat = self._simple_nms(heatmap)
         scores, inds, clses, ys, xs = self._topk(heat)
@@ -860,6 +866,19 @@ class TTFBox(object):
         valid_ind = paddle.nonzero(scores > self.score_thresh)
         results = paddle.gather(results, valid_ind)
         return results, paddle.shape(results)[0:1]
+
+    def __call__(self, hm, wh, im_shape, scale_factor):
+        results = []
+        results_num = []
+        for i in range(scale_factor.shape[0]):
+            result, num = self._decode(hm[i:i + 1, ], wh[i:i + 1, ],
+                                       im_shape[i:i + 1, ],
+                                       scale_factor[i:i + 1, ])
+            results.append(result)
+            results_num.append(num)
+        results = paddle.concat(results, axis=0)
+        results_num = paddle.concat(results_num, axis=0)
+        return results, results_num
 
 
 @register
