@@ -191,8 +191,10 @@ def draw_segm(im,
             color_mask[c] = color_mask[c] * (1 - w_ratio) + w_ratio * 255
         idx = np.nonzero(mask)
         color_mask = np.array(color_mask)
-        im[idx[0], idx[1], :] *= 1.0 - alpha
-        im[idx[0], idx[1], :] += alpha * color_mask
+        idx0 = np.minimum(idx[0], im.shape[0] - 1)
+        idx1 = np.minimum(idx[1], im.shape[1] - 1)
+        im[idx0, idx1, :] *= 1.0 - alpha
+        im[idx0, idx1, :] += alpha * color_mask
         sum_x = np.sum(mask, axis=0)
         x = np.where(sum_x > 0.5)[0]
         sum_y = np.sum(mask, axis=1)
