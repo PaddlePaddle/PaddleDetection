@@ -93,7 +93,7 @@ def dota_2_coco(image_dir,
         # annotations
         anno_txt_path = osp.join(txt_dir, osp.splitext(basename)[0] + '.txt')
         if not osp.exists(anno_txt_path):
-            logger.warn('path of {} not exists'.format(anno_txt_path))
+            logger.warning('path of {} not exists'.format(anno_txt_path))
 
         for line in open(anno_txt_path):
             line = line.strip()

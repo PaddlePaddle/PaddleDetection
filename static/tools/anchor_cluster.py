@@ -265,9 +265,9 @@ class YOLOv5AnchorCluster(BaseAnchorCluster):
         wh0 = self.whs
         i = (wh0 < 3.0).any(1).sum()
         if i:
-            logger.warn('Extremely small objects found. %d of %d'
-                        'labels are < 3 pixels in width or height' %
-                        (i, len(wh0)))
+            logger.warning('Extremely small objects found. %d of %d'
+                           'labels are < 3 pixels in width or height' %
+                           (i, len(wh0)))
 
         wh = wh0[(wh0 >= 2.0).any(1)]
         logger.info('Running kmeans for %g anchors on %g points...' %
