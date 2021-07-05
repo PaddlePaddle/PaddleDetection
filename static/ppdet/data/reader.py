@@ -46,8 +46,9 @@ class Compose(object):
                 data = f(data, ctx)
             except Exception as e:
                 stack_info = traceback.format_exc()
-                logger.warn("fail to map op [{}] with error: {} and stack:\n{}".
-                            format(f, e, str(stack_info)))
+                logger.warning(
+                    "fail to map op [{}] with error: {} and stack:\n{}".format(
+                        f, e, str(stack_info)))
                 raise e
         return data
 
