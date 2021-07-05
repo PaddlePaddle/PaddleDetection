@@ -29,7 +29,6 @@ logging.basicConfig(level=logging.INFO, format=FORMAT)
 logger = logging.getLogger(__name__)
 
 from scipy.cluster.vq import kmeans
-import random
 import numpy as np
 from tqdm import tqdm
 

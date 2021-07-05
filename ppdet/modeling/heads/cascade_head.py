@@ -15,16 +15,13 @@
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle.nn.initializer import Normal, XavierUniform
-from paddle.regularizer import L2Decay
+from paddle.nn.initializer import Normal
 
-from ppdet.core.workspace import register, create
-from ppdet.modeling import ops
-
+from ppdet.core.workspace import register
 from .bbox_head import BBoxHead, TwoFCHead, XConvNormHead
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
-from ..bbox_utils import bbox2delta, delta2bbox, clip_bbox, nonempty_bbox
+from ..bbox_utils import delta2bbox, clip_bbox, nonempty_bbox
 
 __all__ = ['CascadeTwoFCHead', 'CascadeXConvNormHead', 'CascadeHead']
 

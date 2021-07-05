@@ -13,17 +13,12 @@
 # limitations under the License.
 
 import os
-import time
 import yaml
-import glob
-from functools import reduce
 
-from PIL import Image
 import cv2
 import numpy as np
 import paddle
-from preprocess import preprocess, NormalizeImage, Permute
-from keypoint_preprocess import EvalAffine, TopDownEvalAffine
+from preprocess import preprocess
 from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
 from keypoint_visualize import draw_pose
 from paddle.inference import Config

@@ -29,10 +29,10 @@ import binascii
 import tarfile
 import zipfile
 
-from .voc_utils import create_list
 from ppdet.core.workspace import BASE_KEY
-
 from .logger import setup_logger
+from .voc_utils import create_list
+
 logger = setup_logger(__name__)
 
 __all__ = [
@@ -350,7 +350,6 @@ def _download(url, path, md5sum=None):
 
         logger.info("Downloading {} from {}".format(fname, url))
 
-        
         # NOTE: windows path join may incur \, which is invalid in url
         if sys.platform == "win32":
             url = url.replace('\\', '/')

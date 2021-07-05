@@ -165,7 +165,6 @@ class MOTMetric(Metric):
 
     def accumulate(self):
         import motmetrics as mm
-        import openpyxl
         metrics = mm.metrics.motchallenge_metrics
         mh = mm.metrics.create()
         summary = self.MOTEvaluator.get_summary(self.accs, self.seqs, metrics)

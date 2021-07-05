@@ -24,7 +24,7 @@ import time
 import paddle.fluid as fluid
 
 from .voc_eval import bbox_eval as voc_bbox_eval
-from .post_process import mstest_box_post_process, mstest_mask_post_process, box_flip
+from .post_process import mstest_box_post_process, mstest_mask_post_process
 
 __all__ = ['parse_fetches', 'eval_run', 'eval_results', 'json_eval_results']
 

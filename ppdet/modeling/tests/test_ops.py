@@ -24,7 +24,6 @@ import numpy as np
 
 import paddle
 import paddle.fluid as fluid
-from paddle.fluid.framework import Program, program_guard
 from paddle.fluid.dygraph import base
 
 import ppdet.modeling.ops as ops

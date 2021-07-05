@@ -1,4 +1,4 @@
-from paddle.utils.cpp_extension import CppExtension, CUDAExtension, setup
+from paddle.utils.cpp_extension import CUDAExtension, setup
 
 if __name__ == "__main__":
     setup(

@@ -19,7 +19,6 @@ from __future__ import print_function
 import paddle
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.regularizer import L2Decay
 
 from ppdet.modeling.ops import ConvNorm, DeformConvNorm, MaskMatrixNMS, DropBlock
 from ppdet.core.workspace import register

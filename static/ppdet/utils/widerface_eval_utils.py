@@ -20,7 +20,6 @@ import os
 import numpy as np
 
 from ppdet.data.source.widerface import widerface_label
-from ppdet.utils.coco_eval import bbox2out
 
 import logging
 logger = logging.getLogger(__name__)

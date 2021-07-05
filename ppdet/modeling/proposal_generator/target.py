@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import six
-import math
 import numpy as np
 import paddle
 from ..bbox_utils import bbox2delta, bbox_overlaps
-import copy
 
 
 def rpn_anchor_target(anchors,

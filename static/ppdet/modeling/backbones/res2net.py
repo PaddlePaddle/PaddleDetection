@@ -16,20 +16,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from collections import OrderedDict
-
 from paddle import fluid
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.framework import Variable
-from paddle.fluid.regularizer import L2Decay
-from paddle.fluid.initializer import Constant
 
 from ppdet.core.workspace import register, serializable
-from numbers import Integral
-
 from .nonlocal_helper import add_space_nonlocal
-from .name_adapter import NameAdapter
-from .resnet import ResNet, ResNetC5
+from .resnet import ResNet
 
 __all__ = ['Res2Net', 'Res2NetC5']
 

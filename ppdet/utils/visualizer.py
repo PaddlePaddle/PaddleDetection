@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import numpy as np
 from PIL import Image, ImageDraw
 import cv2
-import os
 import math
 
 from .colormap import colormap
