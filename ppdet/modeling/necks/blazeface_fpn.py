@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-import math
 import paddle
 import paddle.nn.functional as F
 from paddle import ParamAttr
 import paddle.nn as nn
 from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
-from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec
 
 __all__ = ['BlazeNeck']

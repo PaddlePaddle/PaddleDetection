@@ -20,9 +20,7 @@ import os
 import sys
 import datetime
 import six
-import numpy as np
 
-import paddle
 import paddle.distributed as dist
 
 from ppdet.utils.checkpoint import save_model
@@ -217,7 +215,8 @@ class VisualDLWriter(Callback):
             logger.error('visualdl not found, plaese install visualdl. '
                          'for example: `pip install visualdl`.')
             raise e
-        self.vdl_writer = LogWriter(model.cfg.get('vdl_log_dir', 'vdl_log_dir/scalar'))
+        self.vdl_writer = LogWriter(
+            model.cfg.get('vdl_log_dir', 'vdl_log_dir/scalar'))
         self.vdl_loss_step = 0
         self.vdl_mAP_step = 0
         self.vdl_image_step = 0

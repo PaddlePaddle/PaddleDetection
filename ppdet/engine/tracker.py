@@ -23,16 +23,14 @@ import paddle
 import numpy as np
 
 from ppdet.core.workspace import create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight
 
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
 from ppdet.metrics import Metric, MOTMetric
-import ppdet.utils.stats as stats
 
 from .callbacks import Callback, ComposeCallback
-from .export_utils import _dump_infer_config
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)

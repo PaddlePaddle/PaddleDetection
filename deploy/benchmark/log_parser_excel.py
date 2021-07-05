@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import sys
 import re
 import argparse
 import pandas as pd

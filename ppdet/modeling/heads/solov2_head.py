@@ -21,8 +21,7 @@ from paddle import ParamAttr
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant
-
-from ppdet.modeling.layers import ConvNormLayer, MaskMatrixNMS
+from ppdet.modeling.layers import ConvNormLayer
 from ppdet.core.workspace import register
 
 from six.moves import zip

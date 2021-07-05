@@ -15,7 +15,10 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import os, sys
+
+import os
+import sys
+
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
@@ -24,7 +27,6 @@ if parent_path not in sys.path:
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
-import glob
 
 import paddle
 from paddle.distributed import ParallelEnv

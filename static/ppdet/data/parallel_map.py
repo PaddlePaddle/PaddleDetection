@@ -31,7 +31,6 @@ import uuid
 import logging
 import signal
 import threading
-import traceback
 
 logger = logging.getLogger(__name__)
 

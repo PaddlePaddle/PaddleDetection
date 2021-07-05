@@ -27,7 +27,6 @@ import cv2
 import numpy as np
 import math
 import copy
-import os
 
 from ...modeling.keypoint_utils import get_affine_mat_kernel, warp_affine_joints, get_affine_transform, affine_transform
 from ppdet.core.workspace import serializable

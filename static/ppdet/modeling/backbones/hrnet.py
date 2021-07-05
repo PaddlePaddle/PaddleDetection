@@ -28,8 +28,6 @@ from numbers import Integral
 from paddle.fluid.initializer import MSRA
 import math
 
-from .name_adapter import NameAdapter
-
 __all__ = ['HRNet']
 
 

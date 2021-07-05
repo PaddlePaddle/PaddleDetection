@@ -17,7 +17,6 @@ import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
-from paddle import ParamAttr
 from paddle.nn.initializer import KaimingUniform, Uniform
 from ppdet.core.workspace import register
 from ppdet.modeling.heads.centernet_head import ConvLayer

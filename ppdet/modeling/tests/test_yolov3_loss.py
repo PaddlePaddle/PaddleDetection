@@ -15,13 +15,9 @@
 from __future__ import division
 
 import unittest
-import numpy as np
-from scipy.special import logit
-from scipy.special import expit
 
 import paddle
 from paddle import fluid
-from paddle.fluid import core
 # add python path of PadleDetection to sys.path
 import os
 import sys
@@ -31,7 +27,6 @@ if parent_path not in sys.path:
 
 from ppdet.modeling.losses import YOLOv3Loss
 from ppdet.data.transform.op_helper import jaccard_overlap
-import random
 import numpy as np
 
 

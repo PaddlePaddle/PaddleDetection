@@ -17,7 +17,6 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import Constant, Uniform, Normal, XavierUniform
-from paddle import ParamAttr
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from ppdet.modeling.layers import DeformableConvV2, ConvNormLayer, LiteConv
