@@ -54,22 +54,12 @@ python -c "import paddle; print(paddle.__version__)"
 
 ### 2. 安装PaddleDetection
 
-可通过如下两种方式安装PaddleDetection
 
-#### 2.1 通过pip安装
+
 
 **注意：** pip安装方式只支持Python3
 
-```
-# pip安装paddledet
-pip install paddledet==2.1.0 -i https://mirror.baidu.com/pypi/simple
 
-# 下载使用源码中的配置文件和代码示例
-git clone https://github.com/PaddlePaddle/PaddleDetection.git
-cd PaddleDetection
-```
-
-#### 2.2 源码编译安装
 
 ```
 # 克隆PaddleDetection仓库
@@ -82,10 +72,10 @@ python setup.py install
 
 # 安装其他依赖
 pip install -r requirements.txt
-
 ```
 
 **注意**
+1. 如果github下载代码较慢，可尝试使用[gitee](https://gitee.com/PaddlePaddle/PaddleDetection.git)或者[代理加速](https://doc.fastgit.org/zh-cn/guide.html)。
 
 1. 若您使用的是Windows系统，由于原版cocoapi不支持Windows，`pycocotools`依赖可能安装失败，可采用第三方实现版本，该版本仅支持Python3
 
