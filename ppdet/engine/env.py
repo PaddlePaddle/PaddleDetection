@@ -26,8 +26,10 @@ from paddle.distributed import fleet
 __all__ = ['init_parallel_env', 'set_random_seed', 'init_fleet_env']
 
 
-def init_fleet_env():
-    fleet.init(is_collective=True)
+def init_fleet_env(find_unused_parameters=False):
+    strategy = fleet.DistributedStrategy()
+    strategy.find_unused_parameters = find_unused_parameters
+    fleet.init(is_collective=True, strategy=strategy)
 
 
 def init_parallel_env():

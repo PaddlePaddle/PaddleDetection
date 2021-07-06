@@ -27,7 +27,7 @@ from paddle.inference import Config
 from paddle.inference import create_predictor
 
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize
 from visualize import visualize_box_mask
 from utils import argsparser, Timer, get_current_memory_mb
 
@@ -41,6 +41,9 @@ SUPPORT_MODELS = {
     'SOLOv2',
     'TTFNet',
     'S2ANet',
+    'JDE',
+    'FairMOT',
+    'DeepSORT',
 }
 
 

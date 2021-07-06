@@ -21,6 +21,7 @@ import copy
 
 from mot_keypoint_unite_utils import argsparser
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
+from keypoint_det_unite_infer import bench_log
 from keypoint_visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import Timer
@@ -53,7 +54,10 @@ def convert_mot_to_det(tlwhs, scores):
     return results
 
 
-def mot_keypoint_unite_predict_image(mot_model, keypoint_model, image_list):
+def mot_keypoint_unite_predict_image(mot_model,
+                                     keypoint_model,
+                                     image_list,
+                                     keypoint_batch_size=1):
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
 
@@ -65,21 +69,13 @@ def mot_keypoint_unite_predict_image(mot_model, keypoint_model, image_list):
             mot_model.gpu_mem += gm
             mot_model.gpu_util += gu
 
-            #keypoint_model.predict(
-            #    [frame], FLAGS.keypoint_threshold, warmup=10, repeats=10)
-            #cm, gm, gu = get_current_memory_mb()
-            #keypoint_model.cpu_mem += cm
-            #keypoint_model.gpu_mem += gm
-            #keypoint_model.gpu_util += gu
         else:
             online_tlwhs, online_scores, online_ids = mot_model.predict(
                 frame, FLAGS.mot_threshold)
-            #keypoint_results = keypoint_model.predict([frame],
-            #                                          FLAGS.keypoint_threshold)
 
-        results = convert_mot_to_det(online_tlwhs, online_scores)
         keypoint_arch = keypoint_model.pred_config.arch
         if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
+            results = convert_mot_to_det(online_tlwhs, online_scores)
             keypoint_results = predict_with_given_det(
                 frame, results, keypoint_model, keypoint_batch_size,
                 FLAGS.mot_threshold, FLAGS.keypoint_threshold,
@@ -158,10 +154,9 @@ def mot_keypoint_unite_predict_video(mot_model,
 
         timer_kp.tic()
 
-        results = convert_mot_to_det(online_tlwhs, online_scores)
-
         keypoint_arch = keypoint_model.pred_config.arch
         if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
+            results = convert_mot_to_det(online_tlwhs, online_scores)
             keypoint_results = predict_with_given_det(
                 frame, results, keypoint_model, keypoint_batch_size,
                 FLAGS.mot_threshold, FLAGS.keypoint_threshold,
@@ -250,7 +245,8 @@ def main():
     else:
         # predict from image
         img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
-        mot_keypoint_unite_predict_image(mot_model, keypoint_model, img_list)
+        mot_keypoint_unite_predict_image(mot_model, keypoint_model, img_list,
+                                         FLAGS.keypoint_batch_size)
 
         if not FLAGS.run_benchmark:
             mot_model.det_times.info(average=True)

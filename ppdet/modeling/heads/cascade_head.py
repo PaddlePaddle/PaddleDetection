@@ -266,7 +266,9 @@ class CascadeHead(BBoxHead):
             proposals) > 1 else proposals[0]
         pred_bbox = delta2bbox(deltas, pred_proposals, weights)
         pred_bbox = paddle.reshape(pred_bbox, [-1, deltas.shape[-1]])
-        num_prop = [p.shape[0] for p in proposals]
+        num_prop = []
+        for p in proposals:
+            num_prop.append(p.shape[0])
         return pred_bbox.split(num_prop)
 
     def get_prediction(self, head_out_list):

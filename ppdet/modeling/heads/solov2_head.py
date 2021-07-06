@@ -252,7 +252,7 @@ class SOLOv2Head(nn.Layer):
                 bias_attr=ParamAttr(initializer=Constant(
                     value=float(-np.log((1 - 0.01) / 0.01))))))
 
-        if self.drop_block:
+        if self.drop_block and self.training:
             self.drop_block_fun = DropBlock(
                 block_size=3, keep_prob=0.9, name='solo_cate.dropblock')
 
@@ -324,13 +324,13 @@ class SOLOv2Head(nn.Layer):
 
         for kernel_layer in self.kernel_pred_convs:
             kernel_feat = F.relu(kernel_layer(kernel_feat))
-        if self.drop_block:
+        if self.drop_block and self.training:
             kernel_feat = self.drop_block_fun(kernel_feat)
         kernel_pred = self.solo_kernel(kernel_feat)
         # cate branch
         for cate_layer in self.cate_pred_convs:
             cate_feat = F.relu(cate_layer(cate_feat))
-        if self.drop_block:
+        if self.drop_block and self.training:
             cate_feat = self.drop_block_fun(cate_feat)
         cate_pred = self.solo_cate(cate_feat)
 

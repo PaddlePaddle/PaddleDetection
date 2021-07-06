@@ -24,7 +24,7 @@ import numpy as np
 
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
-
+from ppdet.modeling.mot.utils import Detection, get_crops, scale_coords, clip_box
 from ppdet.modeling.mot.utils import Timer, load_det_results
 from ppdet.modeling.mot import visualization as mot_vis
 
@@ -188,9 +188,12 @@ class Tracker(object):
                 logger.info('Processing frame {} ({:.2f} fps)'.format(
                     frame_id, 1. / max(1e-5, timer.average_time)))
 
+            ori_image = data['ori_image']
+            input_shape = data['image'].shape[2:]
+            im_shape = data['im_shape']
+            scale_factor = data['scale_factor']
             timer.tic()
             if not use_detector:
-                timer.tic()
                 dets = dets_list[frame_id]
                 bbox_tlwh = paddle.to_tensor(dets['bbox'], dtype='float32')
                 pred_scores = paddle.to_tensor(dets['score'], dtype='float32')
@@ -203,14 +206,35 @@ class Tracker(object):
                 else:
                     pred_bboxes = []
                     pred_scores = []
-                data.update({
-                    'pred_bboxes': pred_bboxes,
-                    'pred_scores': pred_scores
-                })
+            else:
+                outs = self.model.detector(data)
+                if outs['bbox_num'] > 0:
+                    pred_bboxes = scale_coords(outs['bbox'][:, 2:], input_shape,
+                                               im_shape, scale_factor)
+                    pred_scores = outs['bbox'][:, 1:2]
+                else:
+                    pred_bboxes = []
+                    pred_scores = []
 
-            # forward
-            timer.tic()
-            detections = self.model(data)
+            pred_bboxes = clip_box(pred_bboxes, input_shape, im_shape,
+                                   scale_factor)
+            bbox_tlwh = paddle.concat(
+                (pred_bboxes[:, 0:2],
+                 pred_bboxes[:, 2:4] - pred_bboxes[:, 0:2] + 1),
+                axis=1)
+
+            crops, pred_scores = get_crops(
+                pred_bboxes, ori_image, pred_scores, w=64, h=192)
+            crops = paddle.to_tensor(crops)
+            pred_scores = paddle.to_tensor(pred_scores)
+
+            data.update({'crops': crops})
+            features = self.model(data)
+            features = features.numpy()
+            detections = [
+                Detection(tlwh, score, feat)
+                for tlwh, score, feat in zip(bbox_tlwh, pred_scores, features)
+            ]
             self.model.tracker.predict()
             online_targets = self.model.tracker.update(detections)
 
