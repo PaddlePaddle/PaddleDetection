@@ -354,3 +354,10 @@ def affine_transform(pt, t):
     new_pt = np.array([pt[0], pt[1], 1.]).T
     new_pt = np.dot(t, new_pt)
     return new_pt[:2]
+
+
+def affine_backto_orgimages(keypoint_result, batch_records):
+    kpts, scores = keypoint_result['keypoint']
+    kpts[..., 0] += batch_records[:, 0:1]
+    kpts[..., 1] += batch_records[:, 1:2]
+    return kpts, scores

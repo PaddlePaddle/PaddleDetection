@@ -17,6 +17,7 @@ import cv2
 import os
 import numpy as np
 import math
+from ppdet.modeling.mot.visualization import get_color
 
 
 def draw_pose(imgfile,
@@ -24,7 +25,8 @@ def draw_pose(imgfile,
               visual_thread=0.6,
               save_name='pose.jpg',
               save_dir='output',
-              returnimg=False):
+              returnimg=False,
+              ids=None):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -35,7 +37,7 @@ def draw_pose(imgfile,
         raise e
 
     skeletons, scores = results['keypoint']
-    kpt_nums = len(skeletons[0])
+    kpt_nums = skeletons.shape[1]
     if kpt_nums == 17:  #plot coco keypoint
         EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
                  (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14),
@@ -56,7 +58,7 @@ def draw_pose(imgfile,
 
     color_set = results['colors'] if 'colors' in results else None
 
-    if 'bbox' in results:
+    if 'bbox' in results and ids is None:
         bboxs = results['bbox']
         for j, rect in enumerate(bboxs):
             xmin, ymin, xmax, ymax = rect
@@ -69,8 +71,13 @@ def draw_pose(imgfile,
         for j in range(len(skeletons)):
             if skeletons[j][i, 2] < visual_thread:
                 continue
-            color = colors[i] if color_set is None else colors[color_set[j] %
-                                                               len(colors)]
+            if ids is None:
+                color = colors[i] if color_set is None else colors[color_set[j]
+                                                                   %
+                                                                   len(colors)]
+            else:
+                color = get_color(ids[j])
+
             cv2.circle(
                 canvas,
                 tuple(skeletons[j][i, 0:2].astype('int32')),
@@ -100,8 +107,12 @@ def draw_pose(imgfile,
             polygon = cv2.ellipse2Poly((int(mY), int(mX)),
                                        (int(length / 2), stickwidth),
                                        int(angle), 0, 360, 1)
-            color = colors[i] if color_set is None else colors[color_set[j] %
-                                                               len(colors)]
+            if ids is None:
+                color = colors[i] if color_set is None else colors[color_set[j]
+                                                                   %
+                                                                   len(colors)]
+            else:
+                color = get_color(ids[j])
             cv2.fillConvexPoly(cur_canvas, polygon, color)
             canvas = cv2.addWeighted(canvas, 0.4, cur_canvas, 0.6, 0)
     if returnimg:

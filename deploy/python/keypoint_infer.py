@@ -91,13 +91,11 @@ class KeyPoint_Detector(object):
         valid_rects = det_results[mask]
         rect_images = []
         new_rects = []
-        #image_buff = []
         org_rects = []
         for rect in valid_rects:
             rect_image, new_rect, org_rect = expand_crop(image, rect)
             if rect_image is None or rect_image.size == 0:
                 continue
-            #image_buff.append([rect_image, new_rect])
             rect_images.append(rect_image)
             new_rects.append(new_rect)
             org_rects.append(org_rect)
@@ -395,10 +393,9 @@ def predict_video(detector, camera_id):
         ret, frame = capture.read()
         if not ret:
             break
-
         print('detect frame:%d' % (index))
         index += 1
-        results = detector.predict(frame, FLAGS.threshold)
+        results = detector.predict([frame], FLAGS.threshold)
         im = draw_pose(
             frame, results, visual_thread=FLAGS.threshold, returnimg=True)
         writer.write(im)
