@@ -359,7 +359,7 @@ Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-de
 将数据划分为训练集和测试集
 ```
 # 生成 label_list.txt 文件
->>echo "speedlimit\ncrosswalk\ntrafficlight\nstop" > label_list.txt
+>>echo -e "speedlimit\ncrosswalk\ntrafficlight\nstop" > label_list.txt
 
 # 生成 train.txt、valid.txt和test.txt列表文件
 >>ls images/*.png | shuf > all_image_list.txt
