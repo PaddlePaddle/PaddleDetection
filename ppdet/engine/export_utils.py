@@ -41,7 +41,7 @@ TRT_MIN_SUBGRAPH = {
     'HRNet': 3,
     'DeepSORT': 3,
     'JDE': 3,
-    'FairMOT': 3,
+    'FairMOT': 5,
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
