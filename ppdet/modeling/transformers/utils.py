@@ -25,7 +25,7 @@ from ..bbox_utils import bbox_overlaps
 
 __all__ = [
     '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
-    'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss'
+    'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', '_convert_attention_mask'
 ]
 
 
@@ -56,3 +56,24 @@ def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):
         loss = alpha_t * loss
     return loss.mean(1).sum() / normalizer if normalizer > 1. else loss.mean(
         1).sum()
+
+
+def _convert_attention_mask(attn_mask, dtype):
+    """
+    Convert the attention mask to the target dtype we expect.
+    Parameters:
+        attn_mask (Tensor, optional): A tensor used in multi-head attention
+                to prevents attention to some unwanted positions, usually the
+                paddings or the subsequent positions. It is a tensor with shape
+                broadcasted to `[batch_size, n_head, sequence_length, sequence_length]`.
+                When the data type is bool, the unwanted positions have `False` 
+                values and the others have `True` values. When the data type is 
+                int, the unwanted positions have 0 values and the others have 1 
+                values. When the data type is float, the unwanted positions have 
+                `-INF` values and the others have 0 values. It can be None when 
+                nothing wanted or needed to be prevented attention to. Default None.
+        dtype (VarType): The target type of `attn_mask` we expect.
+    Returns:
+        Tensor: A Tensor with shape same as input `attn_mask`, with data type `dtype`.
+    """
+    return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)

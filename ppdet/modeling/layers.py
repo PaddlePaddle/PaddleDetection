@@ -19,21 +19,20 @@ from numbers import Integral
 
 import paddle
 import paddle.nn as nn
+import paddle.nn.functional as F
+
 from paddle import ParamAttr
 from paddle import to_tensor
 from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
-import paddle.nn.functional as F
+from paddle.vision.ops import DeformConv2D
 from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay
-
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.bbox_utils import delta2bbox
+
 from . import ops
 from .initializer import xavier_uniform_, constant_
-
-from paddle.vision.ops import DeformConv2D
-from paddle.nn.layer import transformer
-_convert_attention_mask = transformer._convert_attention_mask
+from .transformers import _convert_attention_mask
 
 
 def _to_list(l):

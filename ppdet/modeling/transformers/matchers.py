@@ -19,9 +19,13 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+
+import numpy as np
+import itertools
 from scipy.optimize import linear_sum_assignment
 
 from ppdet.core.workspace import register, serializable
+
 from ..losses.iou_loss import GIoULoss
 from .utils import bbox_cxcywh_to_xyxy
 
@@ -111,13 +115,12 @@ class HungarianMatcher(nn.Layer):
         C = self.matcher_coeff['class'] * cost_class + self.matcher_coeff['bbox'] * cost_bbox + \
             self.matcher_coeff['giou'] * cost_giou
         C = C.reshape([bs, num_queries, -1])
-        C = [a.squeeze(0) for a in C.chunk(bs)]
 
         sizes = [a.shape[0] for a in gt_bbox]
-        indices = [
-            linear_sum_assignment(c.split(sizes, -1)[i].numpy())
-            for i, c in enumerate(C)
-        ]
+        _sizes = list(itertools.accumulate(sizes))[:-1]
+        C = np.split(C.numpy(), _sizes, -1)
+        indices = [linear_sum_assignment(c[i]) for i, c in enumerate(C)]
+
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
                 j, dtype=paddle.int64)) for i, j in indices]
