@@ -48,14 +48,14 @@ def read_mot_results(filename, is_gt=False, is_ignore=False):
                 box_size = float(linelist[4]) * float(linelist[5])
 
                 if is_gt:
-                    if 'MOT16-' in filename or 'MOT17-' in filename:
+                    if 'MOT16-' in filename or 'MOT17-' in filename or 'MOT15-' in filename or 'MOT20-' in filename:
                         label = int(float(linelist[7]))
                         mark = int(float(linelist[6]))
                         if mark == 0 or label not in valid_labels:
                             continue
                     score = 1
                 elif is_ignore:
-                    if 'MOT16-' in filename or 'MOT17-' in filename:
+                    if 'MOT16-' in filename or 'MOT17-' in filename or 'MOT15-' in filename or 'MOT20-' in filename:
                         label = int(float(linelist[7]))
                         vis_ratio = float(linelist[8])
                         if label not in ignore_labels and vis_ratio >= 0:
