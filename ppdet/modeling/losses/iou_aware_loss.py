@@ -15,15 +15,11 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy as np
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import NumpyArrayInitializer
 
-from paddle import fluid
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
-
-__all__ = ['IouAwareLoss']
+from ..bbox_utils import bbox_iou
 
 
 @register
@@ -37,43 +33,15 @@ class IouAwareLoss(IouLoss):
         max_width (int): max width of input to support random shape input
     """
 
-    def __init__(self, loss_weight=1.0, max_height=608, max_width=608):
+    def __init__(self, loss_weight=1.0, giou=False, diou=False, ciou=False):
         super(IouAwareLoss, self).__init__(
-            loss_weight=loss_weight, max_height=max_height, max_width=max_width)
+            loss_weight=loss_weight, giou=giou, diou=diou, ciou=ciou)
 
-    def __call__(self,
-                 ioup,
-                 x,
-                 y,
-                 w,
-                 h,
-                 tx,
-                 ty,
-                 tw,
-                 th,
-                 anchors,
-                 downsample_ratio,
-                 batch_size,
-                 scale_x_y,
-                 eps=1.e-10):
-        '''
-        Args:
-            ioup ([Variables]): the predicted iou
-            x  | y | w | h  ([Variables]): the output of yolov3 for encoded x|y|w|h
-            tx |ty |tw |th  ([Variables]): the target of yolov3 for encoded x|y|w|h
-            anchors ([float]): list of anchors for current output layer
-            downsample_ratio (float): the downsample ratio for current output layer
-            batch_size (int): training batch size
-            eps (float): the decimal to prevent the denominator eqaul zero
-        '''
-
-        pred = self._bbox_transform(x, y, w, h, anchors, downsample_ratio,
-                                    batch_size, False, scale_x_y, eps)
-        gt = self._bbox_transform(tx, ty, tw, th, anchors, downsample_ratio,
-                                  batch_size, True, scale_x_y, eps)
-        iouk = self._iou(pred, gt, ioup, eps)
-        iouk.stop_gradient = True
-
-        loss_iou_aware = fluid.layers.cross_entropy(ioup, iouk, soft_label=True)
-        loss_iou_aware = loss_iou_aware * self._loss_weight
+    def __call__(self, ioup, pbox, gbox):
+        iou = bbox_iou(
+            pbox, gbox, giou=self.giou, diou=self.diou, ciou=self.ciou)
+        iou.stop_gradient = True
+        loss_iou_aware = F.binary_cross_entropy_with_logits(
+            ioup, iou, reduction='none')
+        loss_iou_aware = loss_iou_aware * self.loss_weight
         return loss_iou_aware

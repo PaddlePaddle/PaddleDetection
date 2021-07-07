@@ -12,41 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import os, sys
-# add python path of PadleDetection to sys.path
-parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
-if parent_path not in sys.path:
-    sys.path.append(parent_path)
-
-import argparse
-import time
+import os
 import yaml
-import ast
+import glob
 from functools import reduce
 
-from PIL import Image
 import cv2
 import numpy as np
+import math
 import paddle
-import paddle.fluid as fluid
-from preprocess import preprocess, Resize, Normalize, Permute, PadStride
-from visualize import visualize_box_mask, lmk2out
+from paddle.inference import Config
+from paddle.inference import create_predictor
+
+from benchmark_utils import PaddleInferBenchmark
+from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride
+from visualize import visualize_box_mask
+from utils import argsparser, Timer, get_current_memory_mb
 
 # Global dictionary
 SUPPORT_MODELS = {
     'YOLO',
-    'SSD',
-    'RetinaNet',
-    'EfficientDet',
     'RCNN',
+    'SSD',
     'Face',
-    'TTF',
     'FCOS',
     'SOLOv2',
+    'TTFNet',
+    'S2ANet',
 }
 
 
@@ -54,282 +46,263 @@ class Detector(object):
     """
     Args:
         config (object): config of model, defined by `Config(model_dir)`
-        model_dir (str): root path of __model__, __params__ and infer_cfg.yml
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         use_gpu (bool): whether use gpu
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
         threshold (float): threshold to reserve the result for output.
     """
 
     def __init__(self,
-                 config,
+                 pred_config,
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
-                 threshold=0.5):
-        self.config = config
-        if self.config.use_python_inference:
-            self.executor, self.program, self.fecth_targets = load_executor(
-                model_dir, use_gpu=use_gpu)
-        else:
-            self.predictor = load_predictor(
-                model_dir,
-                run_mode=run_mode,
-                min_subgraph_size=self.config.min_subgraph_size,
-                use_gpu=use_gpu)
+                 batch_size=1,
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
+        self.pred_config = pred_config
+        self.predictor, self.config = load_predictor(
+            model_dir,
+            run_mode=run_mode,
+            batch_size=batch_size,
+            min_subgraph_size=self.pred_config.min_subgraph_size,
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
+        self.det_times = Timer()
+        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
 
-    def preprocess(self, im):
+    def preprocess(self, image_list):
         preprocess_ops = []
-        for op_info in self.config.preprocess_infos:
+        for op_info in self.pred_config.preprocess_infos:
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
-            if op_type == 'Resize':
-                new_op_info['arch'] = self.config.arch
             preprocess_ops.append(eval(op_type)(**new_op_info))
-        im, im_info = preprocess(im, preprocess_ops)
-        inputs = create_inputs(im, im_info, self.config.arch)
-        return inputs, im_info
 
-    def postprocess(self, np_boxes, np_masks, np_lmk, im_info, threshold=0.5):
+        input_im_lst = []
+        input_im_info_lst = []
+        for im_path in image_list:
+            im, im_info = preprocess(im_path, preprocess_ops)
+            input_im_lst.append(im)
+            input_im_info_lst.append(im_info)
+        inputs = create_inputs(input_im_lst, input_im_info_lst)
+        return inputs
+
+    def postprocess(self,
+                    np_boxes,
+                    np_masks,
+                    inputs,
+                    np_boxes_num,
+                    threshold=0.5):
         # postprocess output of predictor
         results = {}
-        if np_lmk is not None:
-            results['landmark'] = lmk2out(np_boxes, np_lmk, im_info, threshold)
-
-        if self.config.arch in ['SSD', 'Face']:
-            w, h = im_info['origin_shape']
-            np_boxes[:, 2] *= h
-            np_boxes[:, 3] *= w
-            np_boxes[:, 4] *= h
-            np_boxes[:, 5] *= w
-        expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
-        np_boxes = np_boxes[expect_boxes, :]
-        for box in np_boxes:
-            print('class_id:{:d}, confidence:{:.4f},'
-                  'left_top:[{:.2f},{:.2f}],'
-                  ' right_bottom:[{:.2f},{:.2f}]'.format(
-                      int(box[0]), box[1], box[2], box[3], box[4], box[5]))
         results['boxes'] = np_boxes
+        results['boxes_num'] = np_boxes_num
         if np_masks is not None:
-            np_masks = np_masks[expect_boxes, :, :, :]
             results['masks'] = np_masks
         return results
 
-    def predict(self,
-                image,
-                threshold=0.5,
-                warmup=0,
-                repeats=1,
-                run_benchmark=False):
+    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (str/np.ndarray): path of image/ np.ndarray read by cv2
+            image_list (list): ,list of image
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
                             matix element:[class, score, x_min, y_min, x_max, y_max]
                             MaskRCNN's results include 'masks': np.ndarray:
-                            shape:[N, class_num, mask_resolution, mask_resolution]
+                            shape: [N, im_h, im_w]
         '''
-        inputs, im_info = self.preprocess(image)
-        np_boxes, np_masks, np_lmk = None, None, None
-        if self.config.use_python_inference:
-            for i in range(warmup):
-                outs = self.executor.run(self.program,
-                                         feed=inputs,
-                                         fetch_list=self.fecth_targets,
-                                         return_numpy=False)
-            t1 = time.time()
-            for i in range(repeats):
-                outs = self.executor.run(self.program,
-                                         feed=inputs,
-                                         fetch_list=self.fecth_targets,
-                                         return_numpy=False)
-            t2 = time.time()
-            ms = (t2 - t1) * 1000.0 / repeats
-            print("Inference: {} ms per batch image".format(ms))
-            np_boxes = np.array(outs[0])
-            if self.config.mask_resolution is not None:
-                np_masks = np.array(outs[1])
-        else:
-            input_names = self.predictor.get_input_names()
-            for i in range(len(input_names)):
-                input_tensor = self.predictor.get_input_tensor(input_names[i])
-                input_tensor.copy_from_cpu(inputs[input_names[i]])
+        self.det_times.preprocess_time_s.start()
+        inputs = self.preprocess(image_list)
+        self.det_times.preprocess_time_s.end()
+        np_boxes, np_masks = None, None
+        input_names = self.predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = self.predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(inputs[input_names[i]])
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            np_boxes = boxes_tensor.copy_to_cpu()
+            if self.pred_config.mask:
+                masks_tensor = self.predictor.get_output_handle(output_names[2])
+                np_masks = masks_tensor.copy_to_cpu()
 
-            for i in range(warmup):
-                self.predictor.zero_copy_run()
-                output_names = self.predictor.get_output_names()
-                boxes_tensor = self.predictor.get_output_tensor(output_names[0])
-                np_boxes = boxes_tensor.copy_to_cpu()
-                if self.config.mask_resolution is not None:
-                    masks_tensor = self.predictor.get_output_tensor(
-                        output_names[1])
-                    np_masks = masks_tensor.copy_to_cpu()
+        self.det_times.inference_time_s.start()
+        for i in range(repeats):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            boxes_tensor = self.predictor.get_output_handle(output_names[0])
+            np_boxes = boxes_tensor.copy_to_cpu()
+            boxes_num = self.predictor.get_output_handle(output_names[1])
+            np_boxes_num = boxes_num.copy_to_cpu()
+            if self.pred_config.mask:
+                masks_tensor = self.predictor.get_output_handle(output_names[2])
+                np_masks = masks_tensor.copy_to_cpu()
+        self.det_times.inference_time_s.end(repeats=repeats)
 
-                if self.config.with_lmk is not None and self.config.with_lmk == True:
-                    face_index = self.predictor.get_output_tensor(output_names[
-                        1])
-                    landmark = self.predictor.get_output_tensor(output_names[2])
-                    prior_boxes = self.predictor.get_output_tensor(output_names[
-                        3])
-                    np_face_index = face_index.copy_to_cpu()
-                    np_prior_boxes = prior_boxes.copy_to_cpu()
-                    np_landmark = landmark.copy_to_cpu()
-                    np_lmk = [np_face_index, np_landmark, np_prior_boxes]
-
-            t1 = time.time()
-            for i in range(repeats):
-                self.predictor.zero_copy_run()
-                output_names = self.predictor.get_output_names()
-                boxes_tensor = self.predictor.get_output_tensor(output_names[0])
-                np_boxes = boxes_tensor.copy_to_cpu()
-                if self.config.mask_resolution is not None:
-                    masks_tensor = self.predictor.get_output_tensor(
-                        output_names[1])
-                    np_masks = masks_tensor.copy_to_cpu()
-
-                if self.config.with_lmk is not None and self.config.with_lmk == True:
-                    face_index = self.predictor.get_output_tensor(output_names[
-                        1])
-                    landmark = self.predictor.get_output_tensor(output_names[2])
-                    prior_boxes = self.predictor.get_output_tensor(output_names[
-                        3])
-                    np_face_index = face_index.copy_to_cpu()
-                    np_prior_boxes = prior_boxes.copy_to_cpu()
-                    np_landmark = landmark.copy_to_cpu()
-                    np_lmk = [np_face_index, np_landmark, np_prior_boxes]
-            t2 = time.time()
-            ms = (t2 - t1) * 1000.0 / repeats
-            print("Inference: {} ms per batch image".format(ms))
-
-        # do not perform postprocess in benchmark mode
+        self.det_times.postprocess_time_s.start()
         results = []
-        if not run_benchmark:
-            if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
-                print('[WARNNING] No object detected.')
-                results = {'boxes': np.array([])}
-            else:
-                results = self.postprocess(
-                    np_boxes, np_masks, np_lmk, im_info, threshold=threshold)
-
+        if reduce(lambda x, y: x * y, np_boxes.shape) < 6:
+            print('[WARNNING] No object detected.')
+            results = {'boxes': np.array([]), 'boxes_num': [0]}
+        else:
+            results = self.postprocess(
+                np_boxes, np_masks, inputs, np_boxes_num, threshold=threshold)
+        self.det_times.postprocess_time_s.end()
+        self.det_times.img_num += len(image_list)
         return results
 
 
 class DetectorSOLOv2(Detector):
+    """
+    Args:
+        config (object): config of model, defined by `Config(model_dir)`
+        model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
+        use_gpu (bool): whether use gpu
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        threshold (float): threshold to reserve the result for output.
+    """
+
     def __init__(self,
-                 config,
+                 pred_config,
                  model_dir,
                  use_gpu=False,
                  run_mode='fluid',
-                 threshold=0.5):
-        super(DetectorSOLOv2, self).__init__(
-            config=config,
-            model_dir=model_dir,
-            use_gpu=use_gpu,
+                 batch_size=1,
+                 use_dynamic_shape=False,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False):
+        self.pred_config = pred_config
+        self.predictor, self.config = load_predictor(
+            model_dir,
             run_mode=run_mode,
-            threshold=threshold)
+            batch_size=batch_size,
+            min_subgraph_size=self.pred_config.min_subgraph_size,
+            use_gpu=use_gpu,
+            use_dynamic_shape=use_dynamic_shape,
+            trt_min_shape=trt_min_shape,
+            trt_max_shape=trt_max_shape,
+            trt_opt_shape=trt_opt_shape,
+            trt_calib_mode=trt_calib_mode,
+            cpu_threads=cpu_threads,
+            enable_mkldnn=enable_mkldnn)
+        self.det_times = Timer()
 
-    def predict(self,
-                image,
-                threshold=0.5,
-                warmup=0,
-                repeats=1,
-                run_benchmark=False):
-        inputs, im_info = self.preprocess(image)
+    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+        '''
+        Args:
+            image (str/np.ndarray): path of image/ np.ndarray read by cv2
+            threshold (float): threshold of predicted box' score
+        Returns:
+            results (dict): 'segm': np.ndarray,shape:[N, im_h, im_w]
+                            'cate_label': label of segm, shape:[N]
+                            'cate_score': confidence score of segm, shape:[N]
+        '''
+        self.det_times.preprocess_time_s.start()
+        inputs = self.preprocess(image)
+        self.det_times.preprocess_time_s.end()
         np_label, np_score, np_segms = None, None, None
-        if self.config.use_python_inference:
-            for i in range(warmup):
-                outs = self.executor.run(self.program,
-                                         feed=inputs,
-                                         fetch_list=self.fecth_targets,
-                                         return_numpy=False)
-            t1 = time.time()
-            for i in range(repeats):
-                outs = self.executor.run(self.program,
-                                         feed=inputs,
-                                         fetch_list=self.fecth_targets,
-                                         return_numpy=False)
-            t2 = time.time()
-            ms = (t2 - t1) * 1000.0 / repeats
-            print("Inference: {} ms per batch image".format(ms))
-            np_label, np_score, np_segms = np.array(outs[0]), np.array(outs[
-                1]), np.array(outs[2])
-        else:
-            input_names = self.predictor.get_input_names()
-            for i in range(len(input_names)):
-                input_tensor = self.predictor.get_input_tensor(input_names[i])
-                input_tensor.copy_from_cpu(inputs[input_names[i]])
-            for i in range(warmup):
-                self.predictor.zero_copy_run()
-                output_names = self.predictor.get_output_names()
-                np_label = self.predictor.get_output_tensor(output_names[
-                    0]).copy_to_cpu()
-                np_score = self.predictor.get_output_tensor(output_names[
-                    1]).copy_to_cpu()
-                np_segms = self.predictor.get_output_tensor(output_names[
-                    2]).copy_to_cpu()
+        input_names = self.predictor.get_input_names()
+        for i in range(len(input_names)):
+            input_tensor = self.predictor.get_input_handle(input_names[i])
+            input_tensor.copy_from_cpu(inputs[input_names[i]])
+        for i in range(warmup):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            np_label = self.predictor.get_output_handle(output_names[
+                1]).copy_to_cpu()
+            np_score = self.predictor.get_output_handle(output_names[
+                2]).copy_to_cpu()
+            np_segms = self.predictor.get_output_handle(output_names[
+                3]).copy_to_cpu()
 
-            t1 = time.time()
-            for i in range(repeats):
-                self.predictor.zero_copy_run()
-                output_names = self.predictor.get_output_names()
-                np_label = self.predictor.get_output_tensor(output_names[
-                    0]).copy_to_cpu()
-                np_score = self.predictor.get_output_tensor(output_names[
-                    1]).copy_to_cpu()
-                np_segms = self.predictor.get_output_tensor(output_names[
-                    2]).copy_to_cpu()
-            t2 = time.time()
-            ms = (t2 - t1) * 1000.0 / repeats
-            print("Inference: {} ms per batch image".format(ms))
+        self.det_times.inference_time_s.start()
+        for i in range(repeats):
+            self.predictor.run()
+            output_names = self.predictor.get_output_names()
+            np_label = self.predictor.get_output_handle(output_names[
+                1]).copy_to_cpu()
+            np_score = self.predictor.get_output_handle(output_names[
+                2]).copy_to_cpu()
+            np_segms = self.predictor.get_output_handle(output_names[
+                3]).copy_to_cpu()
+        self.det_times.inference_time_s.end(repeats=repeats)
+        self.det_times.img_num += 1
 
-        # do not perform postprocess in benchmark mode
-        results = []
-        if not run_benchmark:
-            return dict(segm=np_segms, label=np_label, score=np_score)
-        return results
+        return dict(segm=np_segms, label=np_label, score=np_score)
 
 
-def create_inputs(im, im_info, model_arch='YOLO'):
+def create_inputs(imgs, im_info):
     """generate input for different model type
     Args:
         im (np.ndarray): image (np.ndarray)
         im_info (dict): info of image
-        model_arch (str): model type
     Returns:
         inputs (dict): input of model
     """
     inputs = {}
-    inputs['image'] = im
-    origin_shape = list(im_info['origin_shape'])
-    resize_shape = list(im_info['resize_shape'])
-    pad_shape = list(im_info['pad_shape']) if im_info[
-        'pad_shape'] is not None else list(im_info['resize_shape'])
-    scale_x, scale_y = im_info['scale']
-    if 'YOLO' in model_arch:
-        im_size = np.array([origin_shape]).astype('int32')
-        inputs['im_size'] = im_size
-    elif 'RetinaNet' in model_arch or 'EfficientDet' in model_arch:
-        scale = scale_x
-        im_info = np.array([pad_shape + [scale]]).astype('float32')
-        inputs['im_info'] = im_info
-    elif ('RCNN' in model_arch) or ('FCOS' in model_arch):
-        scale = scale_x
-        im_info = np.array([pad_shape + [scale]]).astype('float32')
-        im_shape = np.array([origin_shape + [1.]]).astype('float32')
-        inputs['im_info'] = im_info
-        inputs['im_shape'] = im_shape
-    elif 'TTF' in model_arch:
-        scale_factor = np.array([scale_x, scale_y] * 2).astype('float32')
-        inputs['scale_factor'] = scale_factor
-    elif 'SOLOv2' in model_arch:
-        scale = scale_x
-        im_info = np.array([resize_shape + [scale]]).astype('float32')
-        inputs['im_info'] = im_info
+
+    im_shape = []
+    scale_factor = []
+    for e in im_info:
+        im_shape.append(np.array((e['im_shape'], )).astype('float32'))
+        scale_factor.append(np.array((e['scale_factor'], )).astype('float32'))
+
+    origin_scale_factor = np.concatenate(scale_factor, axis=0)
+
+    imgs_shape = [[e.shape[1], e.shape[2]] for e in imgs]
+    max_shape_h = max([e[0] for e in imgs_shape])
+    max_shape_w = max([e[1] for e in imgs_shape])
+    padding_imgs = []
+    padding_imgs_shape = []
+    padding_imgs_scale = []
+    for img in imgs:
+        im_c, im_h, im_w = img.shape[:]
+        padding_im = np.zeros(
+            (im_c, max_shape_h, max_shape_w), dtype=np.float32)
+        padding_im[:, :im_h, :im_w] = img
+        padding_imgs.append(padding_im)
+        padding_imgs_shape.append(
+            np.array([max_shape_h, max_shape_w]).astype('float32'))
+        rescale = [
+            float(max_shape_h) / float(im_h), float(max_shape_w) / float(im_w)
+        ]
+        padding_imgs_scale.append(np.array(rescale).astype('float32'))
+    inputs['image'] = np.stack(padding_imgs, axis=0)
+    inputs['im_shape'] = np.stack(padding_imgs_shape, axis=0)
+    inputs['scale_factor'] = origin_scale_factor
     return inputs
 
 
-class Config():
+class PredictConfig():
     """set config of preprocess, postprocess and visualize
     Args:
         model_dir (str): root path of model.yml
@@ -343,15 +316,11 @@ class Config():
         self.check_model(yml_conf)
         self.arch = yml_conf['arch']
         self.preprocess_infos = yml_conf['Preprocess']
-        self.use_python_inference = yml_conf['use_python_inference']
         self.min_subgraph_size = yml_conf['min_subgraph_size']
         self.labels = yml_conf['label_list']
-        self.mask_resolution = None
-        if 'mask_resolution' in yml_conf:
-            self.mask_resolution = yml_conf['mask_resolution']
-        self.with_lmk = None
-        if 'with_lmk' in yml_conf:
-            self.with_lmk = yml_conf['with_lmk']
+        self.mask = False
+        if 'mask' in yml_conf:
+            self.mask = yml_conf['mask']
         self.print_config()
 
     def check_model(self, yml_conf):
@@ -368,7 +337,6 @@ class Config():
     def print_config(self):
         print('-----------  Model Configuration -----------')
         print('%s: %s' % ('Model Arch', self.arch))
-        print('%s: %s' % ('Use Paddle Executor', self.use_python_inference))
         print('%s: ' % ('Transform Order'))
         for op_info in self.preprocess_infos:
             print('--%s: %s' % ('transform op', op_info['type']))
@@ -379,11 +347,25 @@ def load_predictor(model_dir,
                    run_mode='fluid',
                    batch_size=1,
                    use_gpu=False,
-                   min_subgraph_size=3):
+                   min_subgraph_size=3,
+                   use_dynamic_shape=False,
+                   trt_min_shape=1,
+                   trt_max_shape=1280,
+                   trt_opt_shape=640,
+                   trt_calib_mode=False,
+                   cpu_threads=1,
+                   enable_mkldnn=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
         use_gpu (bool): whether use gpu
+        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
+        use_dynamic_shape (bool): use dynamic shape or not
+        trt_min_shape (int): min shape for dynamic shape in trt
+        trt_max_shape (int): max shape for dynamic shape in trt
+        trt_opt_shape (int): opt shape for dynamic shape in trt
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
     Raises:
@@ -393,24 +375,32 @@ def load_predictor(model_dir,
         raise ValueError(
             "Predict by TensorRT mode: {}, expect use_gpu==True, but use_gpu == {}"
             .format(run_mode, use_gpu))
-    if run_mode == 'trt_int8':
-        raise ValueError("TensorRT int8 mode is not supported now, "
-                         "please use trt_fp32 or trt_fp16 instead.")
+    config = Config(
+        os.path.join(model_dir, 'model.pdmodel'),
+        os.path.join(model_dir, 'model.pdiparams'))
     precision_map = {
-        'trt_int8': fluid.core.AnalysisConfig.Precision.Int8,
-        'trt_fp32': fluid.core.AnalysisConfig.Precision.Float32,
-        'trt_fp16': fluid.core.AnalysisConfig.Precision.Half
+        'trt_int8': Config.Precision.Int8,
+        'trt_fp32': Config.Precision.Float32,
+        'trt_fp16': Config.Precision.Half
     }
-    config = fluid.core.AnalysisConfig(
-        os.path.join(model_dir, '__model__'),
-        os.path.join(model_dir, '__params__'))
     if use_gpu:
         # initial GPU memory(M), device ID
-        config.enable_use_gpu(100, 0)
+        config.enable_use_gpu(200, 0)
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     else:
         config.disable_gpu()
+        config.set_cpu_math_library_num_threads(cpu_threads)
+        if enable_mkldnn:
+            try:
+                # cache 10 different shapes for mkldnn to avoid memory leak
+                config.set_mkldnn_cache_capacity(10)
+                config.enable_mkldnn()
+            except Exception as e:
+                print(
+                    "The current environment does not support `mkldnn`, so disable mkldnn."
+                )
+                pass
 
     if run_mode in precision_map.keys():
         config.enable_tensorrt_engine(
@@ -419,7 +409,15 @@ def load_predictor(model_dir,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[run_mode],
             use_static=False,
-            use_calib_mode=False)
+            use_calib_mode=trt_calib_mode)
+
+        if use_dynamic_shape:
+            min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
+            max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
+            opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
+            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
+                                              opt_input_shape)
+            print('trt set dynamic shape done!')
 
     # disable print log when predict
     config.disable_glog_info()
@@ -427,43 +425,65 @@ def load_predictor(model_dir,
     config.enable_memory_optim()
     # disable feed, fetch OP, needed by zero_copy_run
     config.switch_use_feed_fetch_ops(False)
-    predictor = fluid.core.create_paddle_predictor(config)
-    return predictor
+    predictor = create_predictor(config)
+    return predictor, config
 
 
-def load_executor(model_dir, use_gpu=False):
-    if use_gpu:
-        place = fluid.CUDAPlace(0)
-    else:
-        place = fluid.CPUPlace()
-    exe = fluid.Executor(place)
-    program, feed_names, fetch_targets = fluid.io.load_inference_model(
-        dirname=model_dir,
-        executor=exe,
-        model_filename='__model__',
-        params_filename='__params__')
-    return exe, program, fetch_targets
+def get_test_images(infer_dir, infer_img):
+    """
+    Get image path list in TEST mode
+    """
+    assert infer_img is not None or infer_dir is not None, \
+        "--infer_img or --infer_dir should be set"
+    assert infer_img is None or os.path.isfile(infer_img), \
+            "{} is not a file".format(infer_img)
+    assert infer_dir is None or os.path.isdir(infer_dir), \
+            "{} is not a directory".format(infer_dir)
+
+    # infer_img has a higher priority
+    if infer_img and os.path.isfile(infer_img):
+        return [infer_img]
+
+    images = set()
+    infer_dir = os.path.abspath(infer_dir)
+    assert os.path.isdir(infer_dir), \
+        "infer_dir {} is not a directory".format(infer_dir)
+    exts = ['jpg', 'jpeg', 'png', 'bmp']
+    exts += [ext.upper() for ext in exts]
+    for ext in exts:
+        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+    images = list(images)
+
+    assert len(images) > 0, "no image found in {}".format(infer_dir)
+    print("Found {} inference images in total.".format(len(images)))
+
+    return images
 
 
-def visualize(image_file,
-              results,
-              labels,
-              mask_resolution=14,
-              output_dir='output/',
-              threshold=0.5):
+def visualize(image_list, results, labels, output_dir='output/', threshold=0.5):
     # visualize the predict result
-    im = visualize_box_mask(
-        image_file,
-        results,
-        labels,
-        mask_resolution=mask_resolution,
-        threshold=threshold)
-    img_name = os.path.split(image_file)[-1]
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    out_path = os.path.join(output_dir, img_name)
-    im.save(out_path, quality=95)
-    print("save result to: " + out_path)
+    start_idx = 0
+    for idx, image_file in enumerate(image_list):
+        im_bboxes_num = results['boxes_num'][idx]
+        im_results = {}
+        if 'boxes' in results:
+            im_results['boxes'] = results['boxes'][start_idx:start_idx +
+                                                   im_bboxes_num, :]
+        if 'masks' in results:
+            im_results['masks'] = results['masks'][start_idx:start_idx +
+                                                   im_bboxes_num, :]
+        if 'segm' in results:
+            im_results['segm'] = results['segm'][start_idx:start_idx +
+                                                 im_bboxes_num, :]
+        start_idx += im_bboxes_num
+        im = visualize_box_mask(
+            image_file, im_results, labels, threshold=threshold)
+        img_name = os.path.split(image_file)[-1]
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        out_path = os.path.join(output_dir, img_name)
+        im.save(out_path, quality=95)
+        print("save result to: " + out_path)
 
 
 def print_arguments(args):
@@ -473,23 +493,28 @@ def print_arguments(args):
     print('------------------------------------------')
 
 
-def predict_image(detector):
-    if FLAGS.run_benchmark:
-        detector.predict(
-            FLAGS.image_file,
-            FLAGS.threshold,
-            warmup=100,
-            repeats=100,
-            run_benchmark=True)
-    else:
-        results = detector.predict(FLAGS.image_file, FLAGS.threshold)
-        visualize(
-            FLAGS.image_file,
-            results,
-            detector.config.labels,
-            mask_resolution=detector.config.mask_resolution,
-            output_dir=FLAGS.output_dir,
-            threshold=FLAGS.threshold)
+def predict_image(detector, image_list, batch_size=1):
+    batch_loop_cnt = math.ceil(float(len(image_list)) / batch_size)
+    for i in range(batch_loop_cnt):
+        start_index = i * batch_size
+        end_index = min((i + 1) * batch_size, len(image_list))
+        batch_image_list = image_list[start_index:end_index]
+        if FLAGS.run_benchmark:
+            detector.predict(
+                batch_image_list, FLAGS.threshold, warmup=10, repeats=10)
+            cm, gm, gu = get_current_memory_mb()
+            detector.cpu_mem += cm
+            detector.gpu_mem += gm
+            detector.gpu_util += gu
+            print('Test iter {}'.format(i))
+        else:
+            results = detector.predict(batch_image_list, FLAGS.threshold)
+            visualize(
+                batch_image_list,
+                results,
+                detector.pred_config.labels,
+                output_dir=FLAGS.output_dir,
+                threshold=FLAGS.threshold)
 
 
 def predict_video(detector, camera_id):
@@ -500,9 +525,13 @@ def predict_video(detector, camera_id):
         capture = cv2.VideoCapture(FLAGS.video_file)
         video_name = os.path.split(FLAGS.video_file)[-1]
     fps = 30
+    frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    print('frame_count', frame_count)
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # yapf: disable
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # yapf: enable
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)
@@ -514,12 +543,11 @@ def predict_video(detector, camera_id):
             break
         print('detect frame:%d' % (index))
         index += 1
-        results = detector.predict(frame, FLAGS.threshold)
+        results = detector.predict([frame], FLAGS.threshold)
         im = visualize_box_mask(
             frame,
             results,
-            detector.config.labels,
-            mask_resolution=detector.config.mask_resolution,
+            detector.pred_config.labels,
             threshold=FLAGS.threshold)
         im = np.array(im)
         writer.write(im)
@@ -531,71 +559,74 @@ def predict_video(detector, camera_id):
 
 
 def main():
-    config = Config(FLAGS.model_dir)
+    pred_config = PredictConfig(FLAGS.model_dir)
     detector = Detector(
-        config, FLAGS.model_dir, use_gpu=FLAGS.use_gpu, run_mode=FLAGS.run_mode)
-    if config.arch == 'SOLOv2':
+        pred_config,
+        FLAGS.model_dir,
+        use_gpu=FLAGS.use_gpu,
+        run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.batch_size,
+        use_dynamic_shape=FLAGS.use_dynamic_shape,
+        trt_min_shape=FLAGS.trt_min_shape,
+        trt_max_shape=FLAGS.trt_max_shape,
+        trt_opt_shape=FLAGS.trt_opt_shape,
+        trt_calib_mode=FLAGS.trt_calib_mode,
+        cpu_threads=FLAGS.cpu_threads,
+        enable_mkldnn=FLAGS.enable_mkldnn)
+    if pred_config.arch == 'SOLOv2':
         detector = DetectorSOLOv2(
-            config,
+            pred_config,
             FLAGS.model_dir,
             use_gpu=FLAGS.use_gpu,
-            run_mode=FLAGS.run_mode)
-    # predict from image
-    if FLAGS.image_file != '':
-        predict_image(detector)
+            run_mode=FLAGS.run_mode,
+            batch_size=FLAGS.batch_size,
+            use_dynamic_shape=FLAGS.use_dynamic_shape,
+            trt_min_shape=FLAGS.trt_min_shape,
+            trt_max_shape=FLAGS.trt_max_shape,
+            trt_opt_shape=FLAGS.trt_opt_shape,
+            trt_calib_mode=FLAGS.trt_calib_mode,
+            cpu_threads=FLAGS.cpu_threads,
+            enable_mkldnn=FLAGS.enable_mkldnn)
+
     # predict from video file or camera video stream
-    if FLAGS.video_file != '' or FLAGS.camera_id != -1:
+    if FLAGS.video_file is not None or FLAGS.camera_id != -1:
         predict_video(detector, FLAGS.camera_id)
+    else:
+        # predict from image
+        if FLAGS.image_dir is None and FLAGS.image_file is not None:
+            assert FLAGS.batch_size == 1, "batch_size should be 1, when image_file is not None"
+        img_list = get_test_images(FLAGS.image_dir, FLAGS.image_file)
+        predict_image(detector, img_list, FLAGS.batch_size)
+        if not FLAGS.run_benchmark:
+            detector.det_times.info(average=True)
+        else:
+            mems = {
+                'cpu_rss_mb': detector.cpu_mem / len(img_list),
+                'gpu_rss_mb': detector.gpu_mem / len(img_list),
+                'gpu_util': detector.gpu_util * 100 / len(img_list)
+            }
+
+            perf_info = detector.det_times.report(average=True)
+            model_dir = FLAGS.model_dir
+            mode = FLAGS.run_mode
+            model_info = {
+                'model_name': model_dir.strip('/').split('/')[-1],
+                'precision': mode.split('_')[-1]
+            }
+            data_info = {
+                'batch_size': FLAGS.batch_size,
+                'shape': "dynamic_shape",
+                'data_num': perf_info['img_num']
+            }
+            det_log = PaddleInferBenchmark(detector.config, model_info,
+                                           data_info, perf_info, mems)
+            det_log('Det')
 
 
 if __name__ == '__main__':
-    try:
-        paddle.enable_static()
-    except:
-        pass
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--model_dir",
-        type=str,
-        default=None,
-        help=("Directory include:'__model__', '__params__', "
-              "'infer_cfg.yml', created by tools/export_model.py."),
-        required=True)
-    parser.add_argument(
-        "--image_file", type=str, default='', help="Path of image file.")
-    parser.add_argument(
-        "--video_file", type=str, default='', help="Path of video file.")
-    parser.add_argument(
-        "--camera_id",
-        type=int,
-        default=-1,
-        help="device id of camera to predict.")
-    parser.add_argument(
-        "--run_mode",
-        type=str,
-        default='fluid',
-        help="mode of running(fluid/trt_fp32/trt_fp16)")
-    parser.add_argument(
-        "--use_gpu",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether to predict with GPU.")
-    parser.add_argument(
-        "--run_benchmark",
-        type=ast.literal_eval,
-        default=False,
-        help="Whether to predict a image_file repeatedly for benchmark")
-    parser.add_argument(
-        "--threshold", type=float, default=0.5, help="Threshold of score.")
-    parser.add_argument(
-        "--output_dir",
-        type=str,
-        default="output",
-        help="Directory of output visualization files.")
-
+    paddle.enable_static()
+    parser = argsparser()
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
-    if FLAGS.image_file != '' and FLAGS.video_file != '':
-        assert "Cannot predict image and video at the same time"
 
     main()

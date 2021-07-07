@@ -20,24 +20,18 @@
 namespace PaddleDetection {
 
 void InitInfo::Run(cv::Mat* im, ImageBlob* data) {
-  data->ori_im_size_ = {
-      static_cast<int>(im->rows),
-      static_cast<int>(im->cols)
-  };
-  data->ori_im_size_f_ = {
+  data->im_shape_ = {
       static_cast<float>(im->rows),
-      static_cast<float>(im->cols),
-      1.0
+      static_cast<float>(im->cols)
   };
-  data->eval_im_size_f_ = {
-    static_cast<float>(im->rows),
-    static_cast<float>(im->cols),
-    1.0
+  data->scale_factor_ = {1., 1.};
+  data->in_net_shape_ = {
+      static_cast<float>(im->rows),
+      static_cast<float>(im->cols)
   };
-  data->scale_factor_f_ = {1., 1., 1., 1.};
 }
 
-void Normalize::Run(cv::Mat* im, ImageBlob* data) {
+void NormalizeImage::Run(cv::Mat* im, ImageBlob* data) {
   double e = 1.0;
   if (is_scale_) {
     e /= 255.0;
@@ -62,37 +56,29 @@ void Permute::Run(cv::Mat* im, ImageBlob* data) {
   (data->im_data_).resize(rc * rh * rw);
   float* base = (data->im_data_).data();
   for (int i = 0; i < rc; ++i) {
-    int cur_c = to_bgr_ ? rc - i - 1 : i;
-    cv::extractChannel(*im, cv::Mat(rh, rw, CV_32FC1, base + cur_c * rh * rw), i);
+    cv::extractChannel(*im, cv::Mat(rh, rw, CV_32FC1, base + i * rh * rw), i);
   }
 }
 
 void Resize::Run(cv::Mat* im, ImageBlob* data) {
   auto resize_scale = GenerateScale(*im);
+  data->im_shape_ = {
+      static_cast<float>(im->cols * resize_scale.first),
+      static_cast<float>(im->rows * resize_scale.second)
+  };
+  data->in_net_shape_ = {
+      static_cast<float>(im->cols * resize_scale.first),
+      static_cast<float>(im->rows * resize_scale.second)
+  };
   cv::resize(
       *im, *im, cv::Size(), resize_scale.first, resize_scale.second, interp_);
-  if (max_size_ != 0 && !image_shape_.empty()) {
-    // Padding the image with 0 border
-    cv::copyMakeBorder(
-      *im,
-      *im,
-      0,
-      max_size_ - im->rows,
-      0,
-      max_size_ - im->cols,
-      cv::BORDER_CONSTANT,
-      cv::Scalar(0));
-  }
-  data->eval_im_size_f_ = {
+  data->im_shape_ = {
     static_cast<float>(im->rows),
     static_cast<float>(im->cols),
-    resize_scale.first
   };
-  data->scale_factor_f_ = {
-    resize_scale.first,
+  data->scale_factor_ = {
     resize_scale.second,
     resize_scale.first,
-    resize_scale.second
   };
 }
 
@@ -101,23 +87,22 @@ std::pair<float, float> Resize::GenerateScale(const cv::Mat& im) {
   int origin_w = im.cols;
   int origin_h = im.rows;
 
-  if (max_size_ != 0 && (arch_ == "RCNN" || arch_ == "RetinaNet")) {
+  if (keep_ratio_) {
     int im_size_max = std::max(origin_w, origin_h);
     int im_size_min = std::min(origin_w, origin_h);
-    float scale_ratio =
-        static_cast<float>(target_size_) / static_cast<float>(im_size_min);
-    if (max_size_ > 0) {
-      if (round(scale_ratio * im_size_max) > max_size_) {
-        scale_ratio =
-            static_cast<float>(max_size_) / static_cast<float>(im_size_max);
-      }
-    }
+    int target_size_max = *std::max_element(target_size_.begin(), target_size_.end());
+    int target_size_min = *std::min_element(target_size_.begin(), target_size_.end());
+    float scale_min =
+        static_cast<float>(target_size_min) / static_cast<float>(im_size_min);
+    float scale_max =
+        static_cast<float>(target_size_max) / static_cast<float>(im_size_max);
+    float scale_ratio = std::min(scale_min, scale_max);
     resize_scale = {scale_ratio, scale_ratio};
   } else {
     resize_scale.first =
-        static_cast<float>(target_size_) / static_cast<float>(origin_w);
+        static_cast<float>(target_size_[1]) / static_cast<float>(origin_w);
     resize_scale.second =
-        static_cast<float>(target_size_) / static_cast<float>(origin_h);
+        static_cast<float>(target_size_[0]) / static_cast<float>(origin_h);
   }
   return resize_scale;
 }
@@ -140,14 +125,16 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
     nw - rw,
     cv::BORDER_CONSTANT,
     cv::Scalar(0));
-  (data->eval_im_size_f_)[0] = static_cast<float>(im->rows);
-  (data->eval_im_size_f_)[1] = static_cast<float>(im->cols);
+  data->in_net_shape_ = {
+    static_cast<float>(im->rows),
+    static_cast<float>(im->cols),
+  };
 }
 
 
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {
-  "InitInfo", "Resize", "Normalize", "PadStride", "Permute"
+  "InitInfo", "Resize", "NormalizeImage", "PadStride", "Permute"
 };
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {

@@ -1,0 +1,27 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1700e.yml',
+  '_base_/ssdlite_ghostnet_320.yml',
+  '_base_/ssdlite320_reader.yml',
+]
+weights: output/ssdlite_ghostnet_320_coco/model_final
+
+epoch: 1700
+
+LearningRate:
+  base_lr: 0.2
+  schedulers:
+  - !CosineDecay
+    max_epochs: 1700
+  - !LinearWarmup
+    start_factor: 0.33333
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2

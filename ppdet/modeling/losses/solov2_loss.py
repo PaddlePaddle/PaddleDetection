@@ -17,7 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import paddle
-from paddle import fluid
+import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['SOLOv2Loss']
@@ -43,17 +43,12 @@ class SOLOv2Loss(object):
         self.focal_loss_alpha = focal_loss_alpha
 
     def _dice_loss(self, input, target):
-        input = fluid.layers.reshape(
-            input, shape=(fluid.layers.shape(input)[0], -1))
-        target = fluid.layers.reshape(
-            target, shape=(fluid.layers.shape(target)[0], -1))
-        target = fluid.layers.cast(target, 'float32')
-        a = fluid.layers.reduce_sum(paddle.multiply(input, target), dim=1)
-        b = fluid.layers.reduce_sum(
-            paddle.multiply(input, input), dim=1) + 0.001
-        c = fluid.layers.reduce_sum(
-            paddle.multiply(target, target), dim=1) + 0.001
-        d = paddle.divide((2 * a), paddle.add(b, c))
+        input = paddle.reshape(input, shape=(paddle.shape(input)[0], -1))
+        target = paddle.reshape(target, shape=(paddle.shape(target)[0], -1))
+        a = paddle.sum(input * target, axis=1)
+        b = paddle.sum(input * input, axis=1) + 0.001
+        c = paddle.sum(target * target, axis=1) + 0.001
+        d = (2 * a) / (b + c)
         return 1 - d
 
     def __call__(self, ins_pred_list, ins_label_list, cate_preds, cate_labels,
@@ -71,29 +66,36 @@ class SOLOv2Loss(object):
             loss_cate (Variable): The category loss Variable of SOLOv2 network.
         """
 
-        # Ues dice_loss to calculate instance loss
+        #1. Ues dice_loss to calculate instance loss
         loss_ins = []
-        total_weights = fluid.layers.zeros(shape=[1], dtype='float32')
+        total_weights = paddle.zeros(shape=[1], dtype='float32')
         for input, target in zip(ins_pred_list, ins_label_list):
-            weights = fluid.layers.cast(
-                fluid.layers.reduce_sum(
-                    target, dim=[1, 2]) > 0, 'float32')
-            input = fluid.layers.sigmoid(input)
-            dice_out = fluid.layers.elementwise_mul(
-                self._dice_loss(input, target), weights)
-            total_weights += fluid.layers.reduce_sum(weights)
+            if input is None:
+                continue
+            target = paddle.cast(target, 'float32')
+            target = paddle.reshape(
+                target,
+                shape=[-1, paddle.shape(input)[-2], paddle.shape(input)[-1]])
+            weights = paddle.cast(
+                paddle.sum(target, axis=[1, 2]) > 0, 'float32')
+            input = F.sigmoid(input)
+            dice_out = paddle.multiply(self._dice_loss(input, target), weights)
+            total_weights += paddle.sum(weights)
             loss_ins.append(dice_out)
-        loss_ins = fluid.layers.reduce_sum(fluid.layers.concat(
-            loss_ins)) / total_weights
+        loss_ins = paddle.sum(paddle.concat(loss_ins)) / total_weights
         loss_ins = loss_ins * self.ins_loss_weight
 
-        # Ues sigmoid_focal_loss to calculate category loss
-        loss_cate = fluid.layers.sigmoid_focal_loss(
-            x=cate_preds,
-            label=cate_labels,
-            fg_num=num_ins + 1,
+        #2. Ues sigmoid_focal_loss to calculate category loss
+        # expand onehot labels
+        num_classes = cate_preds.shape[-1]
+        cate_labels_bin = F.one_hot(cate_labels, num_classes=num_classes + 1)
+        cate_labels_bin = cate_labels_bin[:, 1:]
+
+        loss_cate = F.sigmoid_focal_loss(
+            cate_preds,
+            label=cate_labels_bin,
+            normalizer=num_ins + 1.,
             gamma=self.focal_loss_gamma,
             alpha=self.focal_loss_alpha)
-        loss_cate = fluid.layers.reduce_sum(loss_cate)
 
         return loss_ins, loss_cate

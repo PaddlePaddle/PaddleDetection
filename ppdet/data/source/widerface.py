@@ -14,49 +14,50 @@
 
 import os
 import numpy as np
-import logging
-logger = logging.getLogger(__name__)
 
 from ppdet.core.workspace import register, serializable
-from .dataset import DataSet
+from .dataset import DetDataset
+
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
 
 
 @register
 @serializable
-class WIDERFaceDataSet(DataSet):
+class WIDERFaceDataSet(DetDataset):
     """
     Load WiderFace records with 'anno_path'
 
     Args:
         dataset_dir (str): root directory for dataset.
         image_dir (str): directory for images.
-        anno_path (str): root directory for voc annotation data
-        sample_num (int): number of samples to load, -1 means all
-        with_background (bool): whether load background as a class.
-            if True, total class number will be 2. default True.
+        anno_path (str): WiderFace annotation data.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+        with_lmk (bool): whether to load face landmark keypoint labels.
     """
 
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
-                 with_background=True,
                  with_lmk=False):
         super(WIDERFaceDataSet, self).__init__(
+            dataset_dir=dataset_dir,
             image_dir=image_dir,
             anno_path=anno_path,
+            data_fields=data_fields,
             sample_num=sample_num,
-            dataset_dir=dataset_dir,
-            with_background=with_background)
+            with_lmk=with_lmk)
         self.anno_path = anno_path
         self.sample_num = sample_num
-        self.with_background = with_background
         self.roidbs = None
         self.cname2cid = None
         self.with_lmk = with_lmk
 
-    def load_roidb_and_cname2cid(self):
+    def parse_dataset(self):
         anno_path = os.path.join(self.dataset_dir, self.anno_path)
         image_dir = os.path.join(self.dataset_dir, self.image_dir)
 
@@ -65,13 +66,13 @@ class WIDERFaceDataSet(DataSet):
         records = []
         ct = 0
         file_lists = self._load_file_list(txt_file)
-        cname2cid = widerface_label(self.with_background)
+        cname2cid = widerface_label()
 
         for item in file_lists:
             im_fname = item[0]
             im_id = np.array([ct])
             gt_bbox = np.zeros((len(item) - 1, 4), dtype=np.float32)
-            gt_class = np.ones((len(item) - 1, 1), dtype=np.int32)
+            gt_class = np.zeros((len(item) - 1, 1), dtype=np.int32)
             gt_lmk_labels = np.zeros((len(item) - 1, 10), dtype=np.float32)
             lmk_ignore_flag = np.zeros((len(item) - 1, 1), dtype=np.int32)
             for index_box in range(len(item)):
@@ -86,9 +87,14 @@ class WIDERFaceDataSet(DataSet):
             widerface_rec = {
                 'im_file': im_fname,
                 'im_id': im_id,
+            } if 'image' in self.data_fields else {}
+            gt_rec = {
                 'gt_bbox': gt_bbox,
                 'gt_class': gt_class,
             }
+            for k, v in gt_rec.items():
+                if k in self.data_fields:
+                    widerface_rec[k] = v
             if self.with_lmk:
                 widerface_rec['gt_keypoint'] = gt_lmk_labels
                 widerface_rec['keypoint_ignore'] = lmk_ignore_flag
@@ -133,9 +139,9 @@ class WIDERFaceDataSet(DataSet):
                 h = float(split_str[3])
                 # Filter out wrong labels
                 if w < 0 or h < 0:
-                    logger.warn('Illegal box with w: {}, h: {} in '
-                                'img: {}, and it will be ignored'.format(
-                                    w, h, file_dict[num_class][0]))
+                    logger.warning('Illegal box with w: {}, h: {} in '
+                                   'img: {}, and it will be ignored'.format(
+                                       w, h, file_dict[num_class][0]))
                     continue
                 xmin = max(0, xmin)
                 ymin = max(0, ymin)
@@ -169,8 +175,6 @@ class WIDERFaceDataSet(DataSet):
         return list(file_dict.values())
 
 
-def widerface_label(with_background=True):
-    labels_map = {'face': 1}
-    if not with_background:
-        labels_map = {k: v - 1 for k, v in labels_map.items()}
+def widerface_label():
+    labels_map = {'face': 0}
     return labels_map

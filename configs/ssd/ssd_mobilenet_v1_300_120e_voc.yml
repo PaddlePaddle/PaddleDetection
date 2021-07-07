@@ -1,0 +1,14 @@
+_BASE_: [
+  '../datasets/voc.yml',
+  '../runtime.yml',
+  '_base_/optimizer_120e.yml',
+  '_base_/ssd_mobilenet_v1_300.yml',
+  '_base_/ssd_mobilenet_reader.yml',
+]
+weights: output/ssd_mobilenet_v1_300_120e_voc/model_final
+
+# set collate_batch to false because ground-truth info is needed
+# on voc dataset and should not collate data in batch when batch size
+# is larger than 1.
+EvalReader:
+  collate_batch: false

@@ -17,20 +17,54 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import logging
+import paddle
+import paddle.nn as nn
 
-from paddle import fluid
-
-import paddle.fluid.optimizer as optimizer
-import paddle.fluid.regularizer as regularizer
-from paddle.fluid.layers.learning_rate_scheduler import _decay_step_counter
-from paddle.fluid.layers.ops import cos
+import paddle.optimizer as optimizer
+import paddle.regularizer as regularizer
 
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['LearningRate', 'OptimizerBuilder']
 
-logger = logging.getLogger(__name__)
+from ppdet.utils.logger import setup_logger
+logger = setup_logger(__name__)
+
+
+@serializable
+class CosineDecay(object):
+    """
+    Cosine learning rate decay
+
+    Args:
+        max_epochs (int): max epochs for the training process.
+            if you commbine cosine decay with warmup, it is recommended that
+            the max_iters is much larger than the warmup iter
+    """
+
+    def __init__(self, max_epochs=1000, use_warmup=True):
+        self.max_epochs = max_epochs
+        self.use_warmup = use_warmup
+
+    def __call__(self,
+                 base_lr=None,
+                 boundary=None,
+                 value=None,
+                 step_per_epoch=None):
+        assert base_lr is not None, "either base LR or values should be provided"
+
+        max_iters = self.max_epochs * int(step_per_epoch)
+
+        if boundary is not None and value is not None and self.use_warmup:
+            for i in range(int(boundary[-1]), max_iters):
+                boundary.append(i)
+
+                decayed_lr = base_lr * 0.5 * (
+                    math.cos(i * math.pi / max_iters) + 1)
+                value.append(decayed_lr)
+            return optimizer.lr.PiecewiseDecay(boundary, value)
+
+        return optimizer.lr.CosineAnnealingDecay(base_lr, T_max=max_iters)
 
 
 @serializable
@@ -43,8 +77,11 @@ class PiecewiseDecay(object):
         milestones (list): steps at which to decay learning rate
     """
 
-    def __init__(self, gamma=[0.1, 0.1], milestones=[60000, 80000],
-                 values=None):
+    def __init__(self,
+                 gamma=[0.1, 0.01],
+                 milestones=[8, 11],
+                 values=None,
+                 use_warmup=True):
         super(PiecewiseDecay, self).__init__()
         if type(gamma) is not list:
             self.gamma = []
@@ -54,125 +91,31 @@ class PiecewiseDecay(object):
             self.gamma = gamma
         self.milestones = milestones
         self.values = values
+        self.use_warmup = use_warmup
 
-    def __call__(self, base_lr=None, learning_rate=None):
-        if self.values is not None:
-            return fluid.layers.piecewise_decay(self.milestones, self.values)
-        assert base_lr is not None, "either base LR or values should be provided"
-        values = [base_lr]
-        for g in self.gamma:
-            new_lr = base_lr * g
-            values.append(new_lr)
-        return fluid.layers.piecewise_decay(self.milestones, values)
-
-
-@serializable
-class PolynomialDecay(object):
-    """
-    Applies polynomial decay to the initial learning rate.
-    Args:
-        max_iter (int): The learning rate decay steps. 
-        end_lr (float): End learning rate.
-        power (float): Polynomial attenuation coefficient
-    """
-
-    def __init__(self, max_iter=180000, end_lr=0.0001, power=1.0):
-        super(PolynomialDecay).__init__()
-        self.max_iter = max_iter
-        self.end_lr = end_lr
-        self.power = power
-
-    def __call__(self, base_lr=None, learning_rate=None):
-        assert base_lr is not None, "either base LR or values should be provided"
-        lr = fluid.layers.polynomial_decay(base_lr, self.max_iter, self.end_lr,
-                                           self.power)
-        return lr
-
-
-@serializable
-class ExponentialDecay(object):
-    """
-    Applies exponential decay to the learning rate.
-    Args:
-        max_iter (int): The learning rate decay steps. 
-        decay_rate (float): The learning rate decay rate. 
-    """
-
-    def __init__(self, max_iter, decay_rate):
-        super(ExponentialDecay).__init__()
-        self.max_iter = max_iter
-        self.decay_rate = decay_rate
-
-    def __call__(self, base_lr=None, learning_rate=None):
-        assert base_lr is not None, "either base LR or values should be provided"
-        lr = fluid.layers.exponential_decay(base_lr, self.max_iter,
-                                            self.decay_rate)
-        return lr
-
-
-@serializable
-class CosineDecay(object):
-    """
-    Cosine learning rate decay
-
-    Args:
-        max_iters (float): max iterations for the training process.
-            if you commbine cosine decay with warmup, it is recommended that
-            the max_iter is much larger than the warmup iter
-    """
-
-    def __init__(self, max_iters=180000):
-        self.max_iters = max_iters
-
-    def __call__(self, base_lr=None, learning_rate=None):
-        assert base_lr is not None, "either base LR or values should be provided"
-        lr = fluid.layers.cosine_decay(base_lr, 1, self.max_iters)
-        return lr
-
-
-@serializable
-class CosineDecayWithSkip(object):
-    """
-    Cosine decay, with explicit support for warm up
-
-    Args:
-        total_steps (int): total steps over which to apply the decay
-        skip_steps (int): skip some steps at the beginning, e.g., warm up
-    """
-
-    def __init__(self, total_steps, skip_steps=None):
-        super(CosineDecayWithSkip, self).__init__()
-        assert (not skip_steps or skip_steps > 0), \
-            "skip steps must be greater than zero"
-        assert total_steps > 0, "total step must be greater than zero"
-        assert (not skip_steps or skip_steps < total_steps), \
-            "skip steps must be smaller than total steps"
-        self.total_steps = total_steps
-        self.skip_steps = skip_steps
-
-    def __call__(self, base_lr=None, learning_rate=None):
-        steps = _decay_step_counter()
-        total = self.total_steps
-        if self.skip_steps is not None:
-            total -= self.skip_steps
-
-        lr = fluid.layers.tensor.create_global_var(
-            shape=[1],
-            value=base_lr,
-            dtype='float32',
-            persistable=True,
-            name="learning_rate")
-
-        def decay():
-            cos_lr = base_lr * .5 * (cos(steps * (math.pi / total)) + 1)
-            fluid.layers.tensor.assign(input=cos_lr, output=lr)
-
-        if self.skip_steps is None:
-            decay()
+    def __call__(self,
+                 base_lr=None,
+                 boundary=None,
+                 value=None,
+                 step_per_epoch=None):
+        if boundary is not None and self.use_warmup:
+            boundary.extend([int(step_per_epoch) * i for i in self.milestones])
         else:
-            skipped = steps >= self.skip_steps
-            fluid.layers.cond(skipped, decay)
-        return lr
+            # do not use LinearWarmup
+            boundary = [int(step_per_epoch) * i for i in self.milestones]
+            value = [base_lr]  # during step[0, boundary[0]] is base_lr
+
+        # self.values is setted directly in config 
+        if self.values is not None:
+            assert len(self.milestones) + 1 == len(self.values)
+            return optimizer.lr.PiecewiseDecay(boundary, self.values)
+
+        # value is computed by self.gamma
+        value = value if value is not None else [base_lr]
+        for i in self.gamma:
+            value.append(base_lr * i)
+
+        return optimizer.lr.PiecewiseDecay(boundary, value)
 
 
 @serializable
@@ -190,14 +133,43 @@ class LinearWarmup(object):
         self.steps = steps
         self.start_factor = start_factor
 
-    def __call__(self, base_lr, learning_rate):
-        start_lr = base_lr * self.start_factor
+    def __call__(self, base_lr, step_per_epoch):
+        boundary = []
+        value = []
+        for i in range(self.steps + 1):
+            if self.steps > 0:
+                alpha = i / self.steps
+                factor = self.start_factor * (1 - alpha) + alpha
+                lr = base_lr * factor
+                value.append(lr)
+            if i > 0:
+                boundary.append(i)
+        return boundary, value
 
-        return fluid.layers.linear_lr_warmup(
-            learning_rate=learning_rate,
-            warmup_steps=self.steps,
-            start_lr=start_lr,
-            end_lr=base_lr)
+
+@serializable
+class BurninWarmup(object):
+    """
+    Warm up learning rate in burnin mode
+    Args:
+        steps (int): warm up steps
+    """
+
+    def __init__(self, steps=1000):
+        super(BurninWarmup, self).__init__()
+        self.steps = steps
+
+    def __call__(self, base_lr, step_per_epoch):
+        boundary = []
+        value = []
+        burnin = min(self.steps, step_per_epoch)
+        for i in range(burnin + 1):
+            factor = (i * 1.0 / burnin)**4
+            lr = base_lr * factor
+            value.append(lr)
+            if i > 0:
+                boundary.append(i)
+        return boundary, value
 
 
 @register
@@ -218,18 +190,25 @@ class LearningRate(object):
         self.base_lr = base_lr
         self.schedulers = schedulers
 
-    def __call__(self):
-        lr = None
-        for sched in self.schedulers:
-            lr = sched(self.base_lr, lr)
-        return lr
+    def __call__(self, step_per_epoch):
+        assert len(self.schedulers) >= 1
+        if not self.schedulers[0].use_warmup:
+            return self.schedulers[0](base_lr=self.base_lr,
+                                      step_per_epoch=step_per_epoch)
+
+        # TODO: split warmup & decay 
+        # warmup
+        boundary, value = self.schedulers[1](self.base_lr, step_per_epoch)
+        # decay
+        decay_lr = self.schedulers[0](self.base_lr, boundary, value,
+                                      step_per_epoch)
+        return decay_lr
 
 
 @register
 class OptimizerBuilder():
     """
     Build optimizer handles
-
     Args:
         regularizer (object): an `Regularizer` instance
         optimizer (object): an `Optimizer` instance
@@ -246,21 +225,58 @@ class OptimizerBuilder():
         self.regularizer = regularizer
         self.optimizer = optimizer
 
-    def __call__(self, learning_rate):
+    def __call__(self, learning_rate, params=None):
         if self.clip_grad_by_norm is not None:
-            fluid.clip.set_gradient_clip(
-                clip=fluid.clip.GradientClipByGlobalNorm(
-                    clip_norm=self.clip_grad_by_norm))
-        if self.regularizer:
+            grad_clip = nn.ClipGradByGlobalNorm(
+                clip_norm=self.clip_grad_by_norm)
+        else:
+            grad_clip = None
+        if self.regularizer and self.regularizer != 'None':
             reg_type = self.regularizer['type'] + 'Decay'
             reg_factor = self.regularizer['factor']
             regularization = getattr(regularizer, reg_type)(reg_factor)
         else:
             regularization = None
+
         optim_args = self.optimizer.copy()
         optim_type = optim_args['type']
         del optim_args['type']
         op = getattr(optimizer, optim_type)
         return op(learning_rate=learning_rate,
-                  regularization=regularization,
+                  parameters=params,
+                  weight_decay=regularization,
+                  grad_clip=grad_clip,
                   **optim_args)
+
+
+class ModelEMA(object):
+    def __init__(self, decay, model, use_thres_step=False):
+        self.step = 0
+        self.decay = decay
+        self.state_dict = dict()
+        for k, v in model.state_dict().items():
+            self.state_dict[k] = paddle.zeros_like(v)
+        self.use_thres_step = use_thres_step
+
+    def update(self, model):
+        if self.use_thres_step:
+            decay = min(self.decay, (1 + self.step) / (10 + self.step))
+        else:
+            decay = self.decay
+        self._decay = decay
+        model_dict = model.state_dict()
+        for k, v in self.state_dict.items():
+            v = decay * v + (1 - decay) * model_dict[k]
+            v.stop_gradient = True
+            self.state_dict[k] = v
+        self.step += 1
+
+    def apply(self):
+        if self.step == 0:
+            return self.state_dict
+        state_dict = dict()
+        for k, v in self.state_dict.items():
+            v = v / (1 - self._decay**self.step)
+            v.stop_gradient = True
+            state_dict[k] = v
+        return state_dict

@@ -1,0 +1,21 @@
+epoch: 1000
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 333
+    - 800
+  - !LinearWarmup
+    start_factor: 0.3333333333333333
+    steps: 500
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.0
+    type: RMSProp
+  regularizer:
+    factor: 0.0005
+    type: L2

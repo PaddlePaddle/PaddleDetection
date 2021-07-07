@@ -1,0 +1,47 @@
+_BASE_: [
+  '../../datasets/mot.yml',
+  '../../runtime.yml',
+  '_base_/optimizer_30e.yml',
+  '_base_/jde_darknet53.yml',
+  '_base_/jde_reader_576x320.yml',
+]
+weights: output/jde_darknet53_30e_576x320/model_final
+
+JDE:
+  detector: YOLOv3
+  reid: JDEEmbeddingHead
+  tracker: JDETracker
+
+YOLOv3:
+  backbone: DarkNet
+  neck: YOLOv3FPN
+  yolo_head: YOLOv3Head
+  post_process: JDEBBoxPostProcess
+  for_mot: True
+
+YOLOv3Head:
+  anchors: [[85,255], [120,360], [170,420], [340,420],
+            [21,64], [30,90], [43,128], [60,180],
+            [6,16], [8,23], [11,32], [16,45]]
+  anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+  loss: JDEDetectionLoss
+
+JDETracker:
+  det_thresh: 0.3
+  track_buffer: 30
+  min_box_area: 200
+  motion: KalmanFilter
+
+JDEBBoxPostProcess:
+  decode:
+    name: JDEBox
+    conf_thresh: 0.5
+    downsample_ratio: 32
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 500
+    score_threshold: 0.01
+    nms_threshold: 0.4
+    nms_top_k: 2000
+    normalized: true
+    return_index: true

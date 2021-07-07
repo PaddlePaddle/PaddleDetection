@@ -1,0 +1,37 @@
+architecture: SSD
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/VGG16_caffe_pretrained.pdparams
+
+# Model Achitecture
+SSD:
+  # model feat info flow
+  backbone: VGG
+  ssd_head: SSDHead
+  # post process
+  post_process: BBoxPostProcess
+
+VGG:
+  depth: 16
+  normalizations: [20., -1, -1, -1, -1, -1]
+
+SSDHead:
+  anchor_generator:
+    steps: [8, 16, 32, 64, 100, 300]
+    aspect_ratios: [[2.], [2., 3.], [2., 3.], [2., 3.], [2.], [2.]]
+    min_ratio: 20
+    max_ratio: 90
+    min_sizes: [30.0, 60.0, 111.0, 162.0, 213.0, 264.0]
+    max_sizes: [60.0, 111.0, 162.0, 213.0, 264.0, 315.0]
+    offset: 0.5
+    flip: true
+    min_max_aspect_ratios_order: true
+
+BBoxPostProcess:
+  decode:
+    name: SSDBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 200
+    score_threshold: 0.01
+    nms_threshold: 0.45
+    nms_top_k: 400
+    nms_eta: 1.0

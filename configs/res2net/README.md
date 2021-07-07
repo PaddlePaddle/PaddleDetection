@@ -28,9 +28,10 @@
 
 ## Model Zoo
 
-| Backbone                | Type           | deformable Conv  | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
-| :---------------------- | :------------- | :---: | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
-| Res2Net50-FPN            | Faster         | False |     2     |   1x    |     20.320     |  39.5  |    -    | [model](https://paddlemodels.bj.bcebos.com/object_detection/faster_rcnn_res2net50_vb_26w_4s_fpn_1x.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/res2net/faster_rcnn_res2net50_vb_26w_4s_fpn_1x.yml) |
-| Res2Net50-FPN            | Mask         | False |     2     |   2x    |     16.069     |  40.7  |    36.2    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vb_26w_4s_fpn_2x.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/res2net/faster_rcnn_res2net50_vb_26w_4s_fpn_2x.yml) |
-| Res2Net50-vd-FPN            | Mask         | False |     2     |   2x    |     15.816     |  40.9  |    36.2    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_2x.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/res2net/mask_rcnn_res2net50_vd_26w_4s_fpn_2x.yml) |
-| Res2Net50-vd-FPN            | Mask         | True |     2     |   2x    |     14.478     |  43.5  |    38.4    | [model](https://paddlemodels.bj.bcebos.com/object_detection/mask_rcnn_res2net50_vd_26w_4s_fpn_dcnv2_1x.tar) |  [config](https://github.com/PaddlePaddle/PaddleDetection/tree/master/configs/res2net/mask_rcnn_res2net50_vd_26w_4s_fpn_dcnv2_1x.yml) |
+| Backbone                | Type           | Image/gpu | Lr schd | Inf time (fps) | Box AP | Mask AP |                           Download                           | Configs |
+| :---------------------- | :------------- | :-------: | :-----: | :------------: | :----: | :-----: | :----------------------------------------------------------: | :-----: |
+| Res2Net50-FPN            | Faster         |     2     |   1x    |     -     |  40.6  |    -    | [model](https://paddledet.bj.bcebos.com/models/faster_rcnn_res2net50_vb_26w_4s_fpn_1x_coco.pdparams) |  [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.1/configs/res2net/faster_rcnn_res2net50_vb_26w_4s_fpn_1x_coco.yml)  |
+| Res2Net50-FPN            | Mask         |     2     |   2x    |     -     |  42.4  |    38.1    | [model](https://paddledet.bj.bcebos.com/models/mask_rcnn_res2net50_vb_26w_4s_fpn_2x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.1/configs/res2net/mask_rcnn_res2net50_vb_26w_4s_fpn_2x_coco.yml) |
+| Res2Net50-vd-FPN            | Mask         |     2     |   2x    |     -     |  42.6  |    38.1    | [model](https://paddledet.bj.bcebos.com/models/mask_rcnn_res2net50_vd_26w_4s_fpn_2x_coco.pdparams) | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.1/configs/res2net/mask_rcnn_res2net50_vd_26w_4s_fpn_2x_coco.yml) |
+
+Note: all the above models are trained with 8 gpus.

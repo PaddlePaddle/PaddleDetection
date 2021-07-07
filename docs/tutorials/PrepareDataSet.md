@@ -15,6 +15,7 @@
     - [用户数据数据转换示例](#用户数据数据转换示例)
 
 ### 目标检测数据说明  
+
 目标检测的数据比分类复杂，一张图像中，需要标记出各个目标区域的位置和类别。
 
 一般的目标区域位置用一个矩形框来表示，一般用以下3种方式表达：
@@ -22,12 +23,13 @@
 |         表达方式    |                 说明               |
 | :----------------: | :--------------------------------: |
 |     x1,y1,x2,y2    | (x1,y1)为左上角坐标，(x2,y2)为右下角坐标  |  
-|       x,y,w,h      | (x,y)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
+|     x1,y1,w,h      | (x1,y1)为左上角坐标，w为目标区域宽度，h为目标区域高度  |
 |     xc,yc,w,h    | (xc,yc)为目标区域中心坐标，w为目标区域宽度，h为目标区域高度  |  
 
-常见的目标检测数据集如Pascal VOC和COCO，采用的是第一种 `x1,y1,x2,y2` 表示物体的bounding box.  
+常见的目标检测数据集如Pascal VOC采用的`[x1,y1,x2,y2]` 表示物体的bounding box, COCO采用的`[x1,y1,w,h]` 表示物体的bounding box, Cformat](https://cocodataset.org/#format-data).
 
 ### 准备训练数据  
+
 PaddleDetection默认支持[COCO](http://cocodataset.org)和[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/) 数据源。  
 同时还支持自定义数据源，包括：  
 
@@ -43,11 +45,13 @@ ppdet_root=$(pwd)
 ```
 
 #### VOC数据数据  
+
 VOC数据是[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/) 比赛使用的数据。Pascal VOC比赛不仅包含图像分类分类任务，还包含图像目标检测、图像分割等任务，其标注文件中包含多个任务的标注内容。
 VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数据，xml文件中的非必须字段，请根据实际情况选择是否标注或是否使用默认值。
+
 ##### VOC数据集下载  
 
-- 通过代码自动化下载VOC数据集  
+- 通过代码自动化下载VOC数据集，数据集较大，下载需要较长时间
 
     ```
     # 执行代码自动化下载VOC数据集  
@@ -114,6 +118,7 @@ VOC数据集指的是Pascal VOC比赛使用的数据。用户自定义的VOC数�
     按照如上数据文件组织结构组织文件即可。
 
 ##### VOC数据标注文件介绍  
+
 VOC数据是每个图像文件对应一个同名的xml文件，xml文件中标记物体框的坐标和类别等信息。例如图像`2007_002055.jpg`：
 ![](../images/2007_002055.jpg)
 
@@ -146,11 +151,11 @@ COCO数据集指的是COCO比赛使用的数据。用户自定义的COCO数据�
 
 
 ##### COCO数据下载  
-- 通过代码自动化下载COCO数据集  
+- 通过代码自动化下载COCO数据集，数据集较大，下载需要较长时间
 
     ```
     # 执行代码自动化下载COCO数据集  
-    python dataset/voc/download_coco.py
+    python dataset/coco/download_coco.py
     ```
 
     代码执行完成后COCO数据集文件组织结构为：
@@ -203,7 +208,7 @@ json文件中包含以下key：
         'area': 2765.1486500000005, # 物体的区域面积
         'iscrowd': 0,               # iscrowd
         'image_id': 558840,         # image id
-        'bbox': [199.84, 200.46, 77.71, 70.88], # bbox
+        'bbox': [199.84, 200.46, 77.71, 70.88], # bbox [x1,y1,w,h]
         'category_id': 58,          # category_id
         'id': 156                   # image id
     }
@@ -284,7 +289,7 @@ classname2
 ...
 ```
 
-##### 用户数据转成COCO  
+##### 用户数据转成COCO数据
 在`./tools/`中提供了`x2coco.py`用于将VOC数据集、labelme标注的数据集或cityscape数据集转换为COCO数据，例如:
 
 （1）labelme数据转换为COCO数据：
@@ -323,14 +328,14 @@ dataset/xxx/
 ```
 
 ##### 用户数据自定义reader  
-如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#添加新数据源)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
+如果数据集有新的数据需要添加进PaddleDetection中，您可参考数据处理文档中的[添加新数据源](../advanced_tutorials/READER.md#2.3自定义数据集)文档部分，开发相应代码完成新的数据源支持，同时数据处理具体代码解析等可阅读[数据处理文档](../advanced_tutorials/READER.md)
 
 
 #### 用户数据数据转换示例  
 
 以[Kaggle数据集](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据为例，说明如何准备自定义数据。
 Kaggle上的 [road-sign-detection](https://www.kaggle.com/andrewmvd/road-sign-detection) 比赛数据包含877张图像，数据类别4类：crosswalk，speedlimit，stop，trafficlight。
-可从Kaggle上下载，也可以从[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign.zip) 下载。
+可从Kaggle上下载，也可以从[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar) 下载。
 路标数据集示例图：
 ![](../images/road554.png)
 
@@ -404,14 +409,15 @@ trafficlight
 ./images/road681.png ./annotations/road681.xml
 ```
 
-也可以下载准备好的数据[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.zip) ，解压到`dataset/roadsign_voc/`文件夹下即可。  
+也可以下载准备好的数据[下载链接](https://paddlemodels.bj.bcebos.com/object_detection/roadsign_voc.tar) ，解压到`dataset/roadsign_voc/`文件夹下即可。  
 准备好数据后，一般的我们要对数据有所了解，比如图像量，图像尺寸，每一类目标区域个数，目标区域大小等。如有必要，还要对数据进行清洗。  
 roadsign数据集统计:
 
 |    数据    |    图片数量    |
 | :--------: | :-----------: |
-|   train    |     701       |  
-|   valid    |     176       |  
+|   train    |     701       |
+|   valid    |     176       |
 
-**说明：**（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash  
-（2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试  
+**说明：**
+（1）用户数据，建议在训练前仔细检查数据，避免因数据标注格式错误或图像数据不完整造成训练过程中的crash
+（2）如果图像尺寸太大的话，在不限制读入数据尺寸情况下，占用内存较多，会造成内存/显存溢出，请合理设置batch_size，可从小到大尝试

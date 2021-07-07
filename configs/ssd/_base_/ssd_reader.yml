@@ -1,0 +1,41 @@
+worker_num: 2
+TrainReader:
+  inputs_def:
+    num_max_boxes: 90
+
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {brightness: [0.5, 1.125, 0.875], random_apply: False}
+    - RandomExpand: {fill_value: [104., 117., 123.]}
+    - RandomCrop: {allow_no_crop: true}
+    - RandomFlip: {}
+    - Resize: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeBox: {}
+    - PadBox: {num_max_boxes: 90}
+
+  batch_transforms:
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+    - Permute: {}
+
+  batch_size: 8
+  shuffle: true
+  drop_last: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+    - Permute: {}
+  batch_size: 1
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 300, 300]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [300, 300], keep_ratio: False, interp: 1}
+    - NormalizeImage: {mean: [104., 117., 123.], std: [1., 1., 1.], is_scale: false}
+    - Permute: {}
+  batch_size: 1

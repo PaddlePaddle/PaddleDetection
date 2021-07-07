@@ -1,107 +1,76 @@
 # 数据处理模块
 
 ## 目录
-- [简介](#简介)
-- [数据准备](#数据准备)
-    - [数据解析](#数据解析)
-        - [COCO数据源](#COCO数据源)
-        - [Pascal VOC数据源](#Pascal-VOC数据源)
-        - [添加新数据源](#添加新数据源)
-    - [数据预处理](#数据预处理)
-        - [数据增强算子](#数据增强算子)
-        - [自定义数据增强算子](#自定义数据增强算子)
-        - [组建Reader迭代器](#组建Reader迭代器)
-- [配置及运行](#配置及运行)
-    - [训练配置](#训练配置)
-    - [评估配置](#评估配置)
-    - [推理配置](#推理配置)
-    - [运行](#运行)
+- [1.简介](#1.简介)
+- [2.数据集](#2.数据集)
+  - [2.1COCO数据集](#2.1COCO数据集)
+  - [2.2Pascal VOC数据集](#2.2Pascal-VOC数据集)
+  - [2.3自定义数据集](#2.3自定义数据集)
+- [3.数据预处理](#3.数据预处理)
+  - [3.1数据增强算子](#3.1数据增强算子)
+  - [3.2自定义数据增强算子](#3.2自定义数据增强算子)
+- [4.Raeder](#4.Reader)
+- [5.配置及运行](#5.配置及运行)
+  - [5.1配置](#5.1配置)
+  - [5.2运行](#5.2运行)
 
-## 简介
-PaddleDetection的数据处理模块是一个Python模块，所有代码逻辑在`ppdet/data/`中，数据处理模块用于加载数据并将其转换成适用于物体检测模型的训练、评估、推理所需要的格式。
+### 1.简介
+PaddleDetection的数据处理模块的所有代码逻辑在`ppdet/data/`中，数据处理模块用于加载数据并将其转换成适用于物体检测模型的训练、评估、推理所需要的格式。
 数据处理模块的主要构成如下架构所示：
 ```bash
   ppdet/data/
-  ├── reader.py     # 数据处理模块的总接口
-  ├── shared_queue  # 共享内存管理模块
-  │   ├── queue.py        # 定义共享内存队列
-  │   ├── sharedmemory.py # 负责分配内存
+  ├── reader.py     # 基于Dataloader封装的Reader模块
   ├── source  # 数据源管理模块
   │   ├── dataset.py      # 定义数据源基类，各类数据集继承于此
   │   ├── coco.py         # COCO数据集解析与格式化数据
   │   ├── voc.py          # Pascal VOC数据集解析与格式化数据
   │   ├── widerface.py    # WIDER-FACE数据集解析与格式化数据
-  ├── tests  # 单元测试模块
-  │   ├── test_dataset.py # 对数据集解析、加载等进行单元测试
-  │   │   ...
+  │   ├── category.py    # 相关数据集的类别信息
   ├── transform  # 数据预处理模块
   │   ├── batch_operators.py  # 定义各类基于批量数据的预处理算子
   │   ├── op_helper.py    # 预处理算子的辅助函数
   │   ├── operators.py    # 定义各类基于单张图片的预处理算子
-  ├── parallel_map.py     # 在多进程/多线程模式中对数据预处理操作进行加速
+  │   ├── gridmask_utils.py    # GridMask数据增强函数
+  │   ├── autoaugment_utils.py  # AutoAugment辅助函数
+  ├── shm_utils.py     # 用于使用共享内存的辅助函数
   ```
 
-![](../images/reader_figure.png)
 
-## 数据准备
-PaddleDetection目前支持[COCO](http://cocodataset.org)、[Pascal VOC](http://host.robots.ox.ac.uk/pascal/VOC/)
-和[WIDER-FACE](http://shuoyang1213.me/WIDERFACE/)数据源，默认数据集可自动下载，请参考[默认数据集安装方法](../tutorials/INSTALL_cn.md)。
-同时我们还支持自定义数据源，包括(1)自定义数据源转换成COCO数据集；(2)定义新的数据源。
-
-数据准备分为三步：
-- （1）[数据解析](#数据解析)
-- （2）[数据预处理](#数据预处理)
-- （3）[组建Reader迭代器](#组建Reader迭代器)
-
-下面为您分别介绍下这三步的具体内容：
-
-### 数据解析
-数据解析逻辑在`source`目录中，其中，`dataset.py`是数据源定义的基类，所有数据集继承于此，`DataSet`基类里定义了如下等方法：
+### 2.数据集
+数据集定义在`source`目录下，其中`dataset.py`中定义了数据集的基类`DetDataSet`, 所有的数据集均继承于基类，`DetDataset`基类里定义了如下等方法：
 
 | 方法                        | 输入   | 输出           |  备注                   |
 | :------------------------: | :----: | :------------: | :--------------: |
-| load_roidb_and_cname2cid() | 无     | 无     |加载`DataSet`中Roidb数据源list, 类别名到id的映射dict |
-| get_roidb()                | 无     | list[dict], Roidb数据源  | 获取数据源 |
-| get_cname2cid()            | 无     | dict，类别名到id的映射  |  获取标签ID |
-| get_anno()                 | 无     | str, 标注文件路径  | 获取标注文件路径 |
-| get_imid2path()            | 无     | dict, 图片路径  | 获取图片路径 |
+| \_\_len\_\_ | 无     | int, 数据集中样本的数量     | 过滤掉了无标注的样本 |
+| \_\_getitem\_\_ | int, 样本的索引idx     |  dict, 索引idx对应的样本roidb  | 得到transform之后的样本roidb |
+| check_or_download_dataset            | 无     | 无  |  检查数据集是否存在，如果不存在则下载，目前支持COCO, VOC，widerface等数据集 |
+| set_kwargs                |  可选参数，以键值对的形式给出   | 无  | 目前用于支持接收mixup, cutmix等参数的设置 |
+| set_transform            | 一系列的transform函数   | 无  | 设置数据集的transform函数 |
+| set_epoch            | int, 当前的epoch  | 无  | 用于dataset与训练过程的交互 |
+| parse_dataset            | 无  | 无  | 用于从数据中读取所有的样本 |
+| get_anno            | 无  | 无  | 用于获取标注文件的路径 |
 
-**几点解释：**
-- `load_roidb_and_cname2cid()`在Dataset基类中并没有做实际的操作，需要在子类中重写实际操作。
-- `roidbs`:  
-代表数据源列表。`load_roidb_and_cname2cid`方法中根据数据集标注文件(anno_path)，将每张标注好的图片解析为字典`coco_rec`和`voc_rec`等：
-```python
-xxx_rec = {
-    'im_file': im_fname,         # 一张图像的完整路径
-    'im_id': np.array([img_id]), # 一张图像的ID序号
-    'h': im_h,                   # 图像高度
-    'w': im_w,                   # 图像宽度
-    'is_crowd': is_crowd,        # 是否是群落对象, 默认为0 (VOC中无此字段，为了使个别模型同时适配于COCO与VOC)
-    'gt_class': gt_class,        # 标注框标签名称的ID序号
-    'gt_bbox': gt_bbox,          # 标注框坐标(xmin, ymin, xmax, ymax)
-    'gt_score': gt_score,        # 标注框置信度得分 (此字段为了适配Mixup操作)
-    'gt_poly': gt_poly,          # 分割掩码，此字段只在coco_rec中出现，默认为None
-    'difficult': difficult       # 是否是困难样本，此字段只在voc_rec中出现，默认为0
-}
-```
-然后将所有`xxx_rec`字典封装到`records`列表中，最后传入`self.roidbs`中方便后续调用。
+当一个数据集类继承自`DetDataSet`，那么它只需要实现parse_dataset函数即可。parse_dataset根据数据集设置的数据集根路径dataset_dir，图片文件夹image_dir， 标注文件路径anno_path取出所有的样本，并将其保存在一个列表roidbs中，每一个列表中的元素为一个样本xxx_rec(比如coco_rec或者voc_rec)，用dict表示，dict中包含样本的image, gt_bbox, gt_class等字段。COCO和Pascal-VOC数据集中的xxx_rec的数据结构定义如下：
+  ```python
+  xxx_rec = {
+      'im_file': im_fname,         # 一张图像的完整路径
+      'im_id': np.array([img_id]), # 一张图像的ID序号
+      'h': im_h,                   # 图像高度
+      'w': im_w,                   # 图像宽度
+      'is_crowd': is_crowd,        # 是否是群落对象, 默认为0 (VOC中无此字段)
+      'gt_class': gt_class,        # 标注框标签名称的ID序号
+      'gt_bbox': gt_bbox,          # 标注框坐标(xmin, ymin, xmax, ymax)
+      'gt_poly': gt_poly,          # 分割掩码，此字段只在coco_rec中出现，默认为None
+      'difficult': difficult       # 是否是困难样本，此字段只在voc_rec中出现，默认为0
+  }
+  ```
 
-- `cname2cid`:  
-保存了类别名到id的映射的一个dict。
-  - COCO数据集中：会根据[COCO API](https://github.com/cocodataset/cocoapi)自动加载cname2cid。
-  - VOC数据集中：如果在yaml配置文件中设置`use_default_label=False`，将从`label_list.txt`中读取类别列表，
-反之则可以没有`label_list.txt`文件，PaddleDetection会使用`source/voc.py`里的默认类别字典。
-`label_list.txt`的格式如下所示，每一行文本表示一个类别：
-```bash
-aeroplane
-bicycle
-bird
-...
-```
+xxx_rec中的内容也可以通过`DetDataSet`的data_fields参数来控制，即可以过滤掉一些不需要的字段，但大多数情况下不需要修改，按照`configs/datasets`中的默认配置即可。
 
-#### COCO数据源
+此外，在parse_dataset函数中，保存了类别名到id的映射的一个字典`cname2cid`。在coco数据集中，会利用[COCO API](https://github.com/cocodataset/cocoapi)从标注文件中加载数据集的类别名，并设置此字典。在voc数据集中，如果设置`use_default_label=False`，将从`label_list.txt`中读取类别列表，反之将使用voc默认的类别列表。
 
-该数据集目前分为COCO2014和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
+#### 2.1COCO数据集
+COCO数据集目前分为COCO2014和COCO2017，主要由json文件和image文件组成，其组织结构如下所示：
 
   ```
   dataset/coco/
@@ -120,16 +89,12 @@ bird
   │   ├── 000000000285.jpg
   │   │   ...
   ```
-在`source/coco.py`中定义并注册了`COCODataSet`数据源类，它继承自`DataSet`基类，并重写了`load_roidb_and_cname2cid`：
 
-根据标注文件路径（anno_path），调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`。
+在`source/coco.py`中定义并注册了`COCODataSet`数据集类，其继承自`DetDataSet`，并实现了parse_dataset方法，调用[COCO API](https://github.com/cocodataset/cocoapi)加载并解析COCO格式数据源`roidbs`和`cname2cid`，具体可参见`source/coco.py`源码。将其他数据集转换成COCO格式可以参考[用户数据转成COCO数据](../tutorials/PrepareDataSet.md#用户数据转成COCO数据)
 
-
-#### Pascal VOC数据源
-
+#### 2.2Pascal VOC数据集
 该数据集目前分为VOC2007和VOC2012，主要由xml文件和image文件组成，其组织结构如下所示：
-
-  ```
+```
   dataset/voc/
   ├── trainval.txt
   ├── test.txt
@@ -153,261 +118,211 @@ bird
   │   ├── ImageSets
   │       │   ...
   ```
-在`source/voc.py`中定义并注册了`VOCDataSet`数据源类，它继承自`DataSet`基类，并重写了`load_roidb_and_cname2cid`，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。
+在`source/voc.py`中定义并注册了`VOCDataSet`数据集，它继承自`DetDataSet`基类，并重写了`parse_dataset`方法，解析VOC数据集中xml格式标注文件，更新`roidbs`和`cname2cid`。将其他数据集转换成VOC格式可以参考[用户数据转成VOC数据](../tutorials/PrepareDataSet.md#用户数据转成VOC数据)
 
-#### 添加新数据源
+#### 2.3自定义数据集
+如果COCODataSet和VOCDataSet不能满足你的需求，可以通过自定义数据集的方式来加载你的数据集。只需要以下两步即可实现自定义数据集
 
-- （1）新建`./source/xxx.py`，定义类`XXXDataSet`继承自`DataSet`基类，完成注册与序列化，并重写`load_roidb_and_cname2cid`方法对`roidbs`与`cname2cid`更新：
-```python
-@register
-@serializable
-class XXXDataSet(DataSet):
-    def __init__(self,
-                 dataset_dir=None,
-                 image_dir=None,
-                 anno_path=None,
-                 ...
-                 ):
-        self.roidbs = None
-        self.cname2cid = None
-        ...
+1. 新建`source/xxx.py`，定义类`XXXDataSet`继承自`DetDataSet`基类，完成注册与序列化，并重写`parse_dataset`方法对`roidbs`与`cname2cid`更新：
+  ```python
+  from ppdet.core.workspace import register, serializable
 
-    def load_roidb_and_cname2cid(self):
-        ...
-        省略具体解析数据逻辑
-        ...
-        self.roidbs, self.cname2cid = records, cname2cid
-```
-- （2）在`source/__init__.py`中添加引用：
-```python
-from . import xxx
-from .xxx import *
-```
-完成以上两步就将新的数据源`XXXDataSet`添加好了，操作非常简单。
+  #注册并序列化
+  @register
+  @serializable
+  class XXXDataSet(DetDataSet):
+      def __init__(self,
+                  dataset_dir=None,
+                  image_dir=None,
+                  anno_path=None,
+                  ...
+                  ):
+          self.roidbs = None
+          self.cname2cid = None
+          ...
 
-### 数据预处理
+      def parse_dataset(self):
+          ...
+          省略具体解析数据逻辑
+          ...
+          self.roidbs, self.cname2cid = records, cname2cid
+  ```
 
-#### 数据增强算子
-PaddleDetection中支持了种类丰富的数据增强算子，有单图像数据增强算子与批数据增强算子两种方式，您可选取合适的算子组合使用，已支持的单图像数据增强算子详见下表：
+2. 在`source/__init__.py`中添加引用：
+  ```python
+  from . import xxx
+  from .xxx import *
+  ```
+完成以上两步就将新的数据源`XXXDataSet`添加好了，你可以参考[配置及运行](#5.配置及运行)实现自定义数据集的使用。
+
+### 3.数据预处理
+
+#### 3.1数据增强算子
+PaddleDetection中支持了种类丰富的数据增强算子，有单图像数据增强算子与批数据增强算子两种方式，您可选取合适的算子组合使用。单图像数据增强算子定义在`transform/operators.py`中，已支持的单图像数据增强算子详见下表：
 
 | 名称                     |  作用                   |
 | :---------------------: | :--------------: |
-| DecodeImage             | 从图像文件或内存buffer中加载图像，格式为BGR、HWC格式，如果设置to_rgb=True，则转换为RGB格式。|
-| ResizeImage             | 根据特定的插值方式调整图像大小 |
-| RandomFlipImage         | 随机水平翻转图像 |
-| NormalizeImage          | 对图像像素值进行归一化，如果设置is_scale=True，则先将像素值除以255.0，像素值缩放到到[0-1]区间。 |
+| Decode             | 从图像文件或内存buffer中加载图像，格式为RGB格式 |
+| Permute                 | 假如输入是HWC顺序变成CHW |
+| RandomErasingImage | 对图像进行随机擦除 |
+| NormalizeImage          | 对图像像素值进行归一化，如果设置is_scale=True，则先将像素值除以255.0, 再进行归一化。 |
+| GridMask  | GridMask数据增广 |
 | RandomDistort           | 随机扰动图片亮度、对比度、饱和度和色相 |
-| ExpandImage             | 将原始图片放入用像素均值填充(随后会在减均值操作中减掉)的扩张图中，对此图进行裁剪、缩放和翻转 |
-| CropImage               | 根据缩放比例、长宽比例生成若干候选框，再依据这些候选框和标注框的面积交并比(IoU)挑选出符合要求的裁剪结果 |
-| CropImageWithDataAchorSampling | 基于CropImage，在人脸检测中，随机将图片尺度变换到一定范围的尺度，大大增强人脸的尺度变化 |
-| NormalizeBox            | 对bounding box进行归一化 |
-| Permute                 | 对图像的通道进行排列并转为BGR格式。假如输入是HWC顺序，通道C上是RGB格式，设置channel_first=True，将变成CHW，设置to_bgr=True，通道C上变成BGR格式。 |
-| MixupImage              | 按比例叠加两张图像 |
-| RandomInterpImage       | 使用随机的插值方式调整图像大小 |
-| Resize                  | 根据特定的插值方式同时调整图像与bounding box的大小|
+| AutoAugment | AutoAugment数据增广，包含一系列数据增强方法 |
+| RandomFlip         | 随机水平翻转图像 |
+| Resize             | 对于图像进行resize，并对标注进行相应的变换 |
 | MultiscaleTestResize    | 将图像重新缩放为多尺度list的每个尺寸 |
-| ColorDistort            | 根据特定的亮度、对比度、饱和度和色相为图像增加噪声 |
-| NormalizePermute        | 归一化图像并改变图像通道顺序|
-| RandomExpand            | 原理同ExpandImage，以随机比例与角度对图像进行裁剪、缩放和翻转 |
+| RandomResize | 对于图像进行随机Resize，可以Resize到不同的尺寸以及使用不同的插值策略 |
+| RandomExpand | 将原始图片放入用像素均值填充的扩张图中，对此图进行裁剪、缩放和翻转 |
+| CropWithSampling         | 根据缩放比例、长宽比例生成若干候选框，再依据这些候选框和标注框的面积交并比(IoU)挑选出符合要求的裁剪结果 |
+| CropImageWithDataAchorSampling | 基于CropImage，在人脸检测中，随机将图片尺度变换到一定范围的尺度，大大增强人脸的尺度变化 |
 | RandomCrop              | 原理同CropImage，以随机比例与IoU阈值进行处理 |
+| RandomScaledCrop        | 根据长边对图像进行随机裁剪，并对标注做相应的变换 |
+| Cutmix             | Cutmix数据增强，对两张图片做拼接  |
+| Mixup              | Mixup数据增强，按比例叠加两张图像 |
+| NormalizeBox            | 对bounding box进行归一化 |
 | PadBox                  | 如果bounding box的数量少于num_max_boxes，则将零填充到bbox |
 | BboxXYXY2XYWH           | 将bounding box从(xmin,ymin,xmax,ymin)形式转换为(xmin,ymin,width,height)格式 |
+| Pad           | 将图片Pad某一个数的整数倍或者指定的size，并支持指定Pad的方式 |
+| Poly2Mask | Poly2Mask数据增强 ｜
+
+批数据增强算子定义在`transform/batch_operators.py`中, 目前支持的算子列表如下：
+| 名称                     |  作用                   |
+| :---------------------: | :--------------: |
+| PadBatch           | 随机对每个batch的数据图片进行Pad操作，使得batch中的图片具有相同的shape |
+| BatchRandomResize  | 对一个batch的图片进行resize，使得batch中的图片随机缩放到相同的尺寸  |
+| Gt2YoloTarget      | 通过gt数据生成YOLO系列模型的目标  |
+| Gt2FCOSTarget      | 通过gt数据生成FCOS模型的目标 |
+| Gt2TTFTarget       | 通过gt数据生成TTFNet模型的目标 |
+| Gt2Solov2Target    | 通过gt数据生成SOLOv2模型的目标 |
 
 **几点说明：**
-- 上表中的数据增强算子的输入与输出都是单张图片`sample`，`sample`是由{'image':xx, 'im_info': xxx, ...}组成，来自于上文提到的`roidbs`中的字典信息。
-- 数据增强算子注册后即可生效，在配置yaml文件中添加即可，配置文件中配置方法见下文。
-- Mixup的操作可参考[论文](https://arxiv.org/pdf/1710.09412.pdf)。
+- 数据增强算子的输入为sample或者samples，每一个sample对应上文所说的`DetDataSet`输出的roidbs中的一个样本，如coco_rec或者voc_rec
+- 单图像数据增强算子(Mixup, Cutmix等除外)也可用于批数据处理中。但是，单图像处理算子和批图像处理算子仍有一些差异，以RandomResize和BatchRandomResize为例，RandomResize会将一个Batch中的每张图片进行随机缩放，但是每一张图像Resize之后的形状不尽相同，BatchRandomResize则会将一个Batch中的所有图片随机缩放到相同的形状。
+- 除BatchRandomResize外，定义在`transform/batch_operators.py`的批数据增强算子接收的输入图像均为CHW形式，所以使用这些批数据增强算子前请先使用Permute进行处理。如果用到Gt2xxxTarget算子，需要将其放置在靠后的位置。NormalizeBox算子建议放置在Gt2xxxTarget之前。将这些限制条件总结下来，推荐的预处理算子的顺序为
+  ```
+    - XXX: {}
+    - ...
+    - BatchRandomResize: {...} # 如果不需要，可以移除，如果需要，放置在Permute之前
+    - Permute: {} # 必须项
+    - NormalizeBox: {} # 如果需要，建议放在Gt2XXXTarget之前
+    - PadBatch: {...} # 如果不需要可移除，如果需要，建议放置在Permute之后
+    - Gt2XXXTarget: {...} # 建议与PadBatch放置在最后的位置
+  ```
 
-批数据增强算子列表如下：
+#### 3.2自定义数据增强算子
+如果需要自定义数据增强算子，那么您需要了解下数据增强算子的相关逻辑。数据增强算子基类为定义在`transform/operators.py`中的`BaseOperator`类，单图像数据增强算子与批数据增强算子均继承自这个基类。完整定义参考源码，以下代码显示了`BaseOperator`类的关键函数: apply和__call__方法
+  ``` python
+  class BaseOperator(object):
 
-| 名称                     | 输入与输出 |  作用                   |
-| :---------------------: | :------: | :--------------: |
-| RandomShape           | samples  | 随机对每个batch的数据图片进行resize操作  |
-| PadMultiScaleTest           | samples  | 在多尺度测试中对图像进行填充  |
-| Gt2YoloTarget           | samples  | 通过gt数据生成YOLOv3目标，此OP仅在拆分后的YOLOv3损失模式下使用  |
+    ...
 
-- 批数据增强算子的输入输出都是批数据`samples`，是一个`sample`的list。
-- 需要批数据增强算子的原因: CNN计算时需要一个batch内的图像大小相同，而一些数据增强算子，比如随机大小缩放，会随机选择一个缩放尺寸，为了使得一个batch内的图像大小相同，先组成batch，再做随机大小缩放的数据增强。
-
-#### 自定义数据增强算子
-假如我们定义一个新的单图像数据增强算子`XXXImage`。
-- 在`transform/operators.py`中增加类`XXXImage`继承自BaseOperator，并注册：
-```python
-@register_op
-class XXXImage(BaseOperator):
-    def __init__(self,...):
-
-        super(XXXImage, self).__init__()
-        ...
+    def apply(self, sample, context=None):
+        return sample
 
     def __call__(self, sample, context=None):
-        ...
-        省略对输入的sample具体操作
-        ...
+        if isinstance(sample, Sequence):
+            for i in range(len(sample)):
+                sample[i] = self.apply(sample[i], context)
+        else:
+            sample = self.apply(sample, context)
         return sample
+  ```
+__call__方法为`BaseOperator`的调用入口，接收一个sample(单图像)或者多个sample(多图像)作为输入，并调用apply函数对一个或者多个sample进行处理。大多数情况下，你只需要继承`BaseOperator`重写apply方法或者重写__call__方法即可，如下所示，定义了一个XXXOp继承自BaseOperator，并注册：
+  ```python
+  @register_op
+  class XXXOp(BaseOperator):
+    def __init__(self,...):
+
+      super(XXXImage, self).__init__()
+      ...
+
+    # 大多数情况下只需要重写apply方法
+    def apply(self, sample, context=None):
+      ...
+      省略对输入的sample具体操作
+      ...
+      return sample
+
+    # 如果有需要，可以重写__call__方法，如Mixup, Gt2XXXTarget等
+    # def __call__(self, sample, context=None):
+    #   ...
+    #   省略对输入的sample具体操作
+    #   ...
+    #   return sample
+  ```
+大多数情况下，只需要重写apply方法即可，如`transform/operators.py`中除Mixup和Cutmix外的预处理算子。对于批处理的情况一般需要重写__call__方法，如`transform/batch_operators.py`的预处理算子。
+
+### 4.Reader
+Reader相关的类定义在`reader.py`, 其中定义了`BaseDataLoader`类。`BaseDataLoader`在`paddle.io.DataLoader`的基础上封装了一层，其具备`paddle.io.DataLoader`的所有功能，并能够实现不同模型对于`DetDataset`的不同需求，如可以通过对Reader进行设置，以控制`DetDataset`支持Mixup, Cutmix等操作。除此之外，数据预处理算子通过`Compose`类和`BatchCompose`类组合起来分别传入`DetDataset`和`paddle.io.DataLoader`中。
+所有的Reader类都继承自`BaseDataLoader`类，具体可参见源码。
+
+### 5.配置及运行
+
+#### 5.1配置
+
+与数据预处理相关的模块的配置文件包含所有模型公用的Datas set的配置文件以及不同模型专用的Reader的配置文件。关于Dataset的配置文件存在于`configs/datasets`文件夹。比如COCO数据集的配置文件如下：
 ```
-如此就完成新增单图像数据增强算子`XXXImage`，操作非常简单。
+metric: COCO # 目前支持COCO, VOC, OID， WiderFace等评估标准
+num_classes: 80 # num_classes数据集的类别数，不包含背景类
 
-自定义批量数据增强算子方法同上，在`transform/batch_operators.py`中定义即可。
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017 # 训练集的图片所在文件相对于dataset_dir的路径
+    anno_path: annotations/instances_train2017.json # 训练集的标注文件相对于dataset_dir的路径
+    dataset_dir: dataset/coco #数据集所在路径，相对于PaddleDetection路径
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd'] # 控制dataset输出的sample所包含的字段
 
-### 组建Reader迭代器
-如上面提到，Reader预处理流程为: 单张图像处理 -> 组batch -> batch图像处理。用户一般不需要关注这些方法。
-在`reader.py`中构建了Reader迭代器类，其中包含如下方法：
+EvalDataset:
+  !COCODataSet
+    image_dir: val2017 # 验证集的图片所在文件夹相对于dataset_dir的路径
+    anno_path: annotations/instances_val2017.json # 验证集的标注文件相对于dataset_dir的路径
+    dataset_dir: dataset/coco # 数据集所在路径，相对于PaddleDetection路径
 
-| 方法           | 输入   | 输出       |  备注              |
-| :-----------: | :----: | :-------: | :--------------: |
-| reset()       |  无    | 无     | 重置Reader迭代器 |
-| next()        |  无    | list       | 返回Reader迭代器接下来输出的批数据  |
-| worker()      | bool,list  | list       | 数据预处理的接口，输入(drop_empty, batch_samples)，输出批数据list  |
-| size()        |  无    | int       | 返回roidbs的长度  |
-| drained()     |  无    | bool     | 判断当前Reader迭代器中数据是否已经读完  |
-| stop()        |  无    | 无        | 停止Reader迭代器  |
-
-Reader迭代器的创建使用`reader.py`中的`create_reader`方法，在create_reader函数中需要传入`cfg`参数列表，参数列表详细内容如下：
-
-| 参数名           | 类型      |  含义              |
-| :-----------: | :-------: | :--------------: |
-| sample_transforms | list of BaseOperator | 使用各种单图像数据增强算子的列表 |
-| batch_transforms | list of BaseOperator | 使用批数据数据增强算子的列表 |
-| batch_size | int | 批数据大小（图像个数/batch） |
-| shuffle | bool | 是否随机打乱数据集中图像排序，默认False |
-| drop_last | bool | 是否删除最后一个batch的数据，默认False |
-| drop_empty | bool | 是否删除空数据，默认True |
-| mixup_epoch | int | 在第几个epoch使用Mixup数据增强策略，默认不使用（-1） |
-| class_aware_sampling |bool  | 是否使用class-aware数据增强方法，默认False |
-| worker_num | int | 数据读取中使用多进程的数量 |
-| use_process | bool | 数据读取中是否使用多进程 |
-| bufsize | int | 多进程/多线程缓冲队列的大小，队列中每个元素为一个batch的数据 |
-| memsize | str | 多进程下共享存储队列的大小，默认3G |
-| inputs_def | dict | 用在网络输入定义中获取输入字段，该字段用于确定返回数据的顺序。 |
-
-
-## 配置及运行
-
-在模型的训练、评估与推理的数据处理，都是通过配置文件来实现，下面为您详细介绍配置的步骤。
-
-### 训练配置
-- 首先在yml配置文件中定义如下格式的`训练-数据处理`模块：
-```yaml
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/coco/annotations/instances_val2017.json # 验证集的标注文件所在路径，相对于PaddleDetection的路径
+```
+在PaddleDetection的yml配置文件中，使用`!`直接序列化模块实例(可以是函数，实例等)，上述的配置文件均使用Dataset进行了序列化。
+不同模型专用的Reader定义在每一个模型的文件夹下，如yolov3的Reader配置文件定义在`configs/yolov3/_base_/yolov3_reader.yml`。一个Reader的示例配置如下：
+```
+worker_num: 2
 TrainReader:
-  inputs_def: # 网络输入的定义
-    fields: ['image', 'gt_bbox', 'gt_class', 'gt_score']
-  dataset:    # 数据源
-      !COCODataSet  #序列化COCO数据源
-      dataset_dir: dataset/coco   # 数据集根目录
-      anno_path: annotations/instances_train2017.json  # 标注文件基于数据集根目录的相对路径
-      image_dir: train2017    # 图像数据基于数据集根目录的相对路径
-      with_background: false  # 背景是否作为一类标签
-  sample_transforms:   # 单图像数据增强算子的列表
-    - !DecodeImage     # 序列化DecodeImage算子，详细参数设置参见源码
-      to_rgb: true
-      with_mixup: true
-    - !MixupImage      # 序列化MixupImage算子，详细参数设置参见源码
-      alpha: 1.5
-      beta: 1.5
-    - !ColorDistort {} # 序列化ColorDistort算子，详细参数设置参见源码
-    ...
-  batch_transforms:   # 批数据数据增强算子的列表 （可选）
-    - !RandomShape    # 序列化RandomShape算子，详细参数设置参见源码
-      sizes: [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
-      random_inter: True
-  ...
-  batch_size: 8       # 以下定义见上文Reader参数列表
-  shuffle: true  
-  mixup_epoch: 250  
-  worker_num: 8  
-  use_process: true  
-```
-**几点说明：**
-- `训练-数据处理`模块的名称统一为`TrainReader`；
-- PaddleDetection的yml配置文件中，使用`!`直接序列化模块实例（可以是函数、类等）；
-- `dataset`下需要序列化数据源实例，如`COCODataSet`、`VOCDataSe`和自定义的`XXXDataSet`；
-- `inputs_def`的具体定义与使用请参考[模型技术文档](MODEL_TECHNICAL.md#id6)
-- Reader的参数可选择性配置，如未在yml配置文件中定义，则会选取各参数在源码中的默认值。
-
-
-### 评估配置
-
-```yaml
-EvalReader:
-  inputs_def:
-    fields: ['image', 'im_size', 'im_id']
-  dataset:
-    !COCODataSet
-      dataset_dir: dataset/coco
-      anno_path: annotations/instances_val2017.json
-      image_dir: val2017
-      with_background: false
   sample_transforms:
-    - !DecodeImage
-      to_rgb: True
-    ...  
+    - Decode: {}
+    ...
+  batch_transforms:
+    ...
   batch_size: 8
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    ...
+  batch_size: 1
   drop_empty: false
-```
 
-**几点说明：**
-- `评估-数据处理`模块的名称统一为`EvalReader`；
-- 在评估配置中，数据增强需要去除各种含有随机操作的数据处理算子与操作。
-
-### 推理配置
-```yaml
 TestReader:
   inputs_def:
     image_shape: [3, 608, 608]
-    fields: ['image', 'im_size', 'im_id']
-  dataset:
-    !ImageFolder
-      anno_path: annotations/instances_val2017.json
-      with_background: false
   sample_transforms:
-    - !DecodeImage
-      to_rgb: True
+    - Decode: {}
     ...
   batch_size: 1
 ```
+你可以在Reader中定义不同的预处理算子，每张卡的batch_size以及DataLoader的worker_num等。
 
-**几点说明：**
-- `推理-数据处理`模块的名称统一为`TestReader`；
-- 在推理配置中`dataset`的数据源一般都设置为`ImageFolder`数据源。ImageFolder可以指定图片的文件夹地址，将读取该文件夹下的所有图片。
-
-到此就完成了yml配置文件中的`TrainReader`、`EvalReader`和`TestReader`的编写，您也可以将Reader部分封装到单独的yml文件`xxx_reader.yml`中，利用如下命令进行加载即可：
-```yaml
-_READER_: 'xxx_reader.yml'
+#### 5.2运行
+在PaddleDetection的训练、评估和测试运行程序中，都通过创建Reader迭代器。Reader在`ppdet/engine/trainer.py`中创建。下面的代码展示了如何创建训练时的Reader
+``` python
+from ppdet.core.workspace import create
+# build data loader
+self.dataset = cfg['TrainDataset']
+self.loader = create('TrainReader')(selfdataset, cfg.worker_num)
 ```
-加载完成后可以重写Reader中的方法，比如：
-```yaml
-_READER_: 'xxx_reader.yml'
-TrainReader:
-  batch_size: 2
-  ...
-EvalReader：
-  ...
-```
-这样就可以复用同一份Reader配置文件了，重写更新其中某些参数也很方便。
-
-### 运行
-
-在PaddleDetection的训练、评估和测试运行程序中，都通过创建Reader迭代器，然后将reader封装在DataLoader对象中，
-`DataLoader`的API详见[fluid.io.DataLoader](https://www.paddlepaddle.org.cn/documentation/docs/zh/develop/api_cn/io_cn/DataLoader_cn.html#dataloader)。
-具体步骤如下：
-
-- 在[train.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/train.py)、[eval.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/eval.py)和[infer.py](https://github.com/PaddlePaddle/PaddleDetection/blob/master/tools/infer.py)里创建训练时的Reader：
-```python
-# 创建DataLoader对象
-inputs_def = cfg['TestReader']['inputs_def']
-_, loader = model.build_inputs(**inputs_def)
-# 创建Reader迭代器
-from ppdet.data.reader import create_reader
-# train
-train_reader = create_reader(cfg.TrainReader, max_iter=0, global_cfg=cfg)
-# eval
-reader = create_reader(cfg.EvalReader)
-# infer
-reader = create_reader(cfg.TestReader)
-# 将reader设置为DataLoader数据源
-loader.set_sample_list_generator(reader, place)
-```
-在运行程序中设置完数据处理模块后，就可以开始训练、评估与测试了，具体请参考相应运行程序python源码。
+相应的预测以及评估时的Reader与之类似，具体可参考`ppdet/engine/trainer.py`源码。
 
 > 关于数据处理模块，如您有其他问题或建议，请给我们提issue，我们非常欢迎您的反馈。

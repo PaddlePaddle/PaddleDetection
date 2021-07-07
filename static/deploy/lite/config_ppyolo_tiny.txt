@@ -1,0 +1,12 @@
+model_file ./ppyolo_tiny.nb
+label_path ./coco_label_list.txt
+num_threads 1
+precision fp32
+enable_benchmark 1
+arch YOLO
+image_shape 3,320,320
+Resize 320,320
+keep_ratio False
+mean 0.485,0.456,0.406
+std 0.229,0.224,0.225
+PadStride 0

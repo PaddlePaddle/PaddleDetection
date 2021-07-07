@@ -1,0 +1,33 @@
+worker_num: 2
+TrainReader:
+  sample_transforms:
+  - Decode: {}
+  - RandomFlip: {prob: 0.5}
+  - Resize: {interp: 1, target_size: [512, 512], keep_ratio: False}
+  - NormalizeImage: {mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375], is_scale: false}
+  - Permute: {}
+  batch_transforms:
+  - Gt2TTFTarget: {down_ratio: 4}
+  - PadBatch: {pad_to_stride: 32}
+  batch_size: 12
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 1, target_size: [512, 512], keep_ratio: False}
+  - NormalizeImage: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}
+  - Permute: {}
+  batch_size: 1
+  drop_last: false
+
+TestReader:
+  sample_transforms:
+  - Decode: {}
+  - Resize: {interp: 1, target_size: [512, 512], keep_ratio: False}
+  - NormalizeImage: {is_scale: false, mean: [123.675, 116.28, 103.53], std: [58.395, 57.12, 57.375]}
+  - Permute: {}
+  batch_size: 1
+  drop_last: false

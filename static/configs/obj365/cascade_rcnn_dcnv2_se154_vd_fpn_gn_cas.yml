@@ -1,0 +1,250 @@
+architecture: CascadeRCNN
+max_iters: 500000
+snapshot_iter: 10000
+use_gpu: true
+log_iter: 20
+save_dir: output
+pretrain_weights: https://paddlemodels.bj.bcebos.com/object_detection/cascade_mask_rcnn_dcnv2_se154_vd_fpn_gn_coco_pretrained.tar
+weights: output/cascade_rcnn_dcnv2_se154_vd_fpn_gn_cas/model_final
+metric: COCO
+num_classes: 366
+
+CascadeRCNN:
+  backbone: SENet
+  fpn: FPN
+  rpn_head: FPNRPNHead
+  roi_extractor: FPNRoIAlign
+  bbox_head: CascadeBBoxHead
+  bbox_assigner: CascadeBBoxAssigner
+
+SENet:
+  depth: 152
+  feature_maps: [2, 3, 4, 5]
+  freeze_at: 2
+  group_width: 4
+  groups: 64
+  norm_type: bn
+  freeze_norm: True
+  variant: d
+  dcn_v2_stages: [3, 4, 5]
+  std_senet: True
+
+FPN:
+  min_level: 2
+  max_level: 6
+  num_chan: 256
+  spatial_scale: [0.03125, 0.0625, 0.125, 0.25]
+  freeze_norm: False
+  norm_type: gn
+
+FPNRPNHead:
+  anchor_generator:
+    anchor_sizes: [32, 64, 128, 256, 512]
+    aspect_ratios: [0.5, 1.0, 2.0]
+    stride: [16.0, 16.0]
+    variance: [1.0, 1.0, 1.0, 1.0]
+  anchor_start_size: 32
+  min_level: 2
+  max_level: 6
+  num_chan: 256
+  rpn_target_assign:
+    rpn_batch_size_per_im: 256
+    rpn_fg_fraction: 0.5
+    rpn_positive_overlap: 0.7
+    rpn_negative_overlap: 0.3
+    rpn_straddle_thresh: 0.0
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 2000
+    post_nms_top_n: 2000
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+
+FPNRoIAlign:
+  canconical_level: 4
+  canonical_size: 224
+  min_level: 2
+  max_level: 5
+  box_resolution: 7
+  sampling_ratio: 2
+
+CascadeBBoxAssigner:
+  batch_size_per_im: 1024
+  bbox_reg_weights: [10, 20, 30]
+  bg_thresh_lo: [0.0, 0.0, 0.0]
+  bg_thresh_hi: [0.5, 0.6, 0.7]
+  fg_thresh: [0.5, 0.6, 0.7]
+  fg_fraction: 0.25
+
+CascadeBBoxHead:
+  head: CascadeXConvNormHead
+  nms:
+    keep_top_k: 100
+    nms_threshold: 0.5
+    score_threshold: 0.05
+
+CascadeXConvNormHead:
+  norm_type: gn
+
+CascadeTwoFCHead:
+  mlp_dim: 1024
+
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [400000, 460000]
+  - !LinearWarmup
+    start_factor: 0.01
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0001
+    type: L2
+
+TrainReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'gt_bbox', 'gt_class', 'is_crowd']
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/objects365
+    anno_path: annotations/train.json
+    image_dir: train
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: True
+  - !RandomFlipImage
+    prob: 0.5
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: False
+    mean:
+    - 102.9801
+    - 115.9465
+    - 122.7717
+    std:
+    - 1.0
+    - 1.0
+    - 1.0
+  - !ResizeImage
+    interp: 1
+    target_size:
+    - 416
+    - 448
+    - 480
+    - 512
+    - 544
+    - 576
+    - 608
+    - 640
+    - 672
+    - 704
+    - 736
+    - 768
+    - 800
+    - 832
+    - 864
+    - 896
+    - 928
+    - 960
+    - 992
+    - 1024
+    - 1056
+    - 1088
+    - 1120
+    - 1152
+    - 1184
+    - 1216
+    - 1248
+    - 1280
+    - 1312
+    - 1344
+    - 1376
+    - 1408
+    max_size: 1600
+    use_cv2: true
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+  batch_size: 1
+  worker_num: 4
+  shuffle: true
+  class_aware_sampling: true
+  use_process: false
+
+EvalReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+  dataset:
+    !COCODataSet
+    dataset_dir: dataset/objects365
+    anno_path: annotations/val.json
+    image_dir: val
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: True
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: False
+    mean:
+    - 102.9801
+    - 115.9465
+    - 122.7717
+    std:
+    - 1.0
+    - 1.0
+    - 1.0
+  - !ResizeImage
+    target_size: 800
+    max_size: 1333
+    interp: 1
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+  batch_size: 1
+  drop_empty: false
+  worker_num: 2
+
+TestReader:
+  inputs_def:
+    fields: ['image', 'im_info', 'im_id', 'im_shape']
+  batch_size: 1
+  dataset:
+    !ImageFolder
+    anno_path: dataset/coco/objects365_label.txt
+  sample_transforms:
+  - !DecodeImage
+    to_rgb: True
+  - !NormalizeImage
+    is_channel_first: false
+    is_scale: False
+    mean:
+    - 102.9801
+    - 115.9465
+    - 122.7717
+    std:
+    - 1.0
+    - 1.0
+    - 1.0
+  - !Permute
+    channel_first: true
+    to_bgr: false
+  batch_transforms:
+  - !PadBatch
+    pad_to_stride: 32
+  worker_num: 2

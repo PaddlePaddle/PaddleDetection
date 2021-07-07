@@ -1,0 +1,79 @@
+worker_num: 2
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RGBReverse: {}
+    - AugmentHSV: {}
+    - LetterBoxResize: {target_size: [480, 864]}
+    - MOTRandomAffine: {}
+    - RandomFlip: {}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - RGBReverse: {}
+    - Permute: {}
+  batch_transforms:
+    - Gt2JDETargetThres:
+        anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+        anchors: [[[102,305], [143, 429], [203,508], [407,508]],
+                  [[25,76], [36,107], [51,152], [71,215]],
+                  [[6,19], [9,27], [13,38], [18,54]]]
+        downsample_ratios: [32, 16, 8]
+        ide_thresh: 0.5
+        fg_thresh: 0.5
+        bg_thresh: 0.4
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  use_shared_memory: true
+
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [480, 864]}
+    - BboxXYXY2XYWH: {}
+    - NormalizeBox: {}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_transforms:
+    - Gt2JDETargetMax:
+        anchor_masks: [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+        anchors: [[[102,305], [143, 429], [203,508], [407,508]],
+                  [[25,76], [36,107], [51,152], [71,215]],
+                  [[6,19], [9,27], [13,38], [18,54]]]
+        downsample_ratios: [32, 16, 8]
+        max_iou_thresh: 0.60
+    - BboxCXCYWH2XYXY: {}
+    - Norm2PixelBbox: {}
+  batch_size: 1
+
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 480, 864]
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [480, 864]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+EvalMOTReader:
+  sample_transforms:
+    - Decode: {}
+    - LetterBoxResize: {target_size: [480, 864]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1
+
+
+TestMOTReader:
+  inputs_def:
+    image_shape: [3, 480, 864]
+  sample_transforms:
+    - LetterBoxResize: {target_size: [480, 864]}
+    - NormalizeImage: {mean: [0, 0, 0], std: [1, 1, 1], is_scale: True}
+    - Permute: {}
+  batch_size: 1

@@ -1,0 +1,13 @@
+_BASE_: [
+  '../datasets/roadsign_voc.yml',
+  '../runtime.yml',
+  '_base_/optimizer_40e.yml',
+  '_base_/yolov3_mobilenet_v1.yml',
+  '_base_/yolov3_reader.yml',
+]
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams
+weights: output/yolov3_mobilenet_v1_roadsign/model_final
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  label_smooth: true

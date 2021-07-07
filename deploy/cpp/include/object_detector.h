@@ -29,6 +29,7 @@
 #include "include/preprocess_op.h"
 #include "include/config_parser.h"
 
+using namespace paddle_infer;
 
 namespace PaddleDetection {
 // Object Detection Result
@@ -49,38 +50,56 @@ std::vector<int> GenerateColorMap(int num_class);
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
                      const std::vector<ObjectResult>& results,
-                     const std::vector<std::string>& lable_list,
-                     const std::vector<int>& colormap);
+                     const std::vector<std::string>& lables,
+                     const std::vector<int>& colormap,
+                     const bool is_rbox);
 
 
 class ObjectDetector {
  public:
   explicit ObjectDetector(const std::string& model_dir, 
                           bool use_gpu=false,
+                          bool use_mkldnn=false,
+                          int cpu_threads=1,
                           const std::string& run_mode="fluid",
-                          const int gpu_id=0) {
+                          const int batch_size=1,
+                          const int gpu_id=0,
+                          bool use_dynamic_shape=false,
+                          const int trt_min_shape=1,
+                          const int trt_max_shape=1280,
+                          const int trt_opt_shape=640,
+                          bool trt_calib_mode=false) {
+    this->use_gpu_ = use_gpu;
+    this->gpu_id_ = gpu_id;
+    this->cpu_math_library_num_threads_ = cpu_threads;
+    this->use_mkldnn_ = use_mkldnn;
+
+    this->use_dynamic_shape_ = use_dynamic_shape;
+    this->trt_min_shape_ = trt_min_shape;
+    this->trt_max_shape_ = trt_max_shape;
+    this->trt_opt_shape_ = trt_opt_shape;
+    this->trt_calib_mode_ = trt_calib_mode;
     config_.load_config(model_dir);
+    this->min_subgraph_size_ = config_.min_subgraph_size_;
     threshold_ = config_.draw_threshold_;
-    preprocessor_.Init(config_.preprocess_info_, config_.arch_);
-    LoadModel(model_dir, use_gpu, config_.min_subgraph_size_, 1, run_mode, gpu_id);
+    preprocessor_.Init(config_.preprocess_info_);
+    LoadModel(model_dir, batch_size, run_mode);
   }
 
   // Load Paddle inference model
   void LoadModel(
     const std::string& model_dir,
-    bool use_gpu,
-    const int min_subgraph_size,
     const int batch_size = 1,
-    const std::string& run_mode = "fluid",
-    const int gpu_id=0);
+    const std::string& run_mode = "fluid");
 
   // Run predictor
-  void Predict(const cv::Mat& im,
+  void Predict(const std::vector<cv::Mat> imgs,
       const double threshold = 0.5,
       const int warmup = 0,
       const int repeats = 1,
-      const bool run_benchmark = false,
-      std::vector<ObjectResult>* result = nullptr);
+      std::vector<ObjectResult>* result = nullptr,
+      std::vector<int>* bbox_num = nullptr,
+      std::vector<double>* times = nullptr);
 
   // Get Model Label list
   const std::vector<std::string>& GetLabelList() const {
@@ -88,17 +107,30 @@ class ObjectDetector {
   }
 
  private:
+  bool use_gpu_ = false;
+  int gpu_id_ = 0;
+  int cpu_math_library_num_threads_ = 1;
+  bool use_mkldnn_ = false;
+  int min_subgraph_size_ = 3;
+  bool use_dynamic_shape_ = false;
+  int trt_min_shape_ = 1;
+  int trt_max_shape_ = 1280;
+  int trt_opt_shape_ = 640;
+  bool trt_calib_mode_ = false;
   // Preprocess image and copy data to input buffer
   void Preprocess(const cv::Mat& image_mat);
   // Postprocess result
   void Postprocess(
-      const cv::Mat& raw_mat,
-      std::vector<ObjectResult>* result);
+      const std::vector<cv::Mat> mats,
+      std::vector<ObjectResult>* result,
+      std::vector<int> bbox_num,
+      bool is_rbox);
 
-  std::unique_ptr<paddle::PaddlePredictor> predictor_;
+  std::shared_ptr<Predictor> predictor_;
   Preprocessor preprocessor_;
   ImageBlob inputs_;
   std::vector<float> output_data_;
+  std::vector<int> out_bbox_num_data_;
   float threshold_;
   ConfigPaser config_;
 };

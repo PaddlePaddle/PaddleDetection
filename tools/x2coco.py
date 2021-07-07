@@ -19,11 +19,9 @@ import glob
 import json
 import os
 import os.path as osp
-import sys
 import shutil
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
-import re
 
 import numpy as np
 import PIL.ImageDraw
@@ -45,18 +43,15 @@ class MyEncoder(json.JSONEncoder):
             return super(MyEncoder, self).default(obj)
 
 
-def getbbox(self, points):
-    polygons = points
-    mask = self.polygons_to_mask([self.height, self.width], polygons)
-    return self.mask2box(mask)
-
-
 def images_labelme(data, num):
     image = {}
     image['height'] = data['imageHeight']
     image['width'] = data['imageWidth']
     image['id'] = num + 1
-    image['file_name'] = data['imagePath'].split('/')[-1]
+    if '\\' in data['imagePath']:
+        image['file_name'] = data['imagePath'].split('\\')[-1]
+    else:
+        image['file_name'] = data['imagePath'].split('/')[-1]
     return image
 
 
@@ -198,7 +193,8 @@ def voc_get_label_anno(ann_dir_path, ann_ids_path, labels_path):
     labels_ids = list(range(1, len(labels_str) + 1))
 
     with open(ann_ids_path, 'r') as f:
-        ann_ids = f.read().split()
+        ann_ids = [lin.strip().split(' ')[-1] for lin in f.readlines()]
+
     ann_paths = []
     for aid in ann_ids:
         if aid.endswith('xml'):
@@ -233,8 +229,8 @@ def voc_get_coco_annotation(obj, label2id):
     assert label in label2id, "label is not in label2id."
     category_id = label2id[label]
     bndbox = obj.find('bndbox')
-    xmin = float(bndbox.findtext('xmin')) - 1
-    ymin = float(bndbox.findtext('ymin')) - 1
+    xmin = float(bndbox.findtext('xmin'))
+    ymin = float(bndbox.findtext('ymin'))
     xmax = float(bndbox.findtext('xmax'))
     ymax = float(bndbox.findtext('ymax'))
     assert xmax > xmin and ymax > ymin, "Box size error."
@@ -266,15 +262,14 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
         ann_root = ann_tree.getroot()
 
         img_info = voc_get_image_info(ann_root, im_id)
-        im_id += 1
-        img_id = img_info['id']
         output_json_dict['images'].append(img_info)
 
         for obj in ann_root.findall('object'):
             ann = voc_get_coco_annotation(obj=obj, label2id=label2id)
-            ann.update({'image_id': img_id, 'id': bnd_id})
+            ann.update({'image_id': im_id, 'id': bnd_id})
             output_json_dict['annotations'].append(ann)
             bnd_id = bnd_id + 1
+        im_id += 1
 
     for label, label_id in label2id.items():
         category_info = {'supercategory': 'none', 'id': label_id, 'name': label}
@@ -288,7 +283,9 @@ def voc_xmls_to_cocojson(annotation_paths, label2id, output_dir, output_file):
 def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--dataset_type', help='the type of dataset')
+    parser.add_argument(
+        '--dataset_type',
+        help='the type of dataset, can be `voc`, `labelme` or `cityscape`')
     parser.add_argument('--json_input_dir', help='input annotated directory')
     parser.add_argument('--image_input_dir', help='image directory')
     parser.add_argument(
@@ -369,20 +366,26 @@ def main():
         total_num = len(glob.glob(osp.join(args.json_input_dir, '*.json')))
         if args.train_proportion != 0:
             train_num = int(total_num * args.train_proportion)
-            os.makedirs(args.output_dir + '/train')
+            out_dir = args.output_dir + '/train'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
         else:
             train_num = 0
         if args.val_proportion == 0.0:
             val_num = 0
             test_num = total_num - train_num
-            if args.test_proportion != 0.0:
-                os.makedirs(args.output_dir + '/test')
+            out_dir = args.output_dir + '/test'
+            if args.test_proportion != 0.0 and not os.path.exists(out_dir):
+                os.makedirs(out_dir)
         else:
             val_num = int(total_num * args.val_proportion)
             test_num = total_num - train_num - val_num
-            os.makedirs(args.output_dir + '/val')
-            if args.test_proportion != 0.0:
-                os.makedirs(args.output_dir + '/test')
+            val_out_dir = args.output_dir + '/val'
+            if not os.path.exists(val_out_dir):
+                os.makedirs(val_out_dir)
+            test_out_dir = args.output_dir + '/test'
+            if args.test_proportion != 0.0 and not os.path.exists(test_out_dir):
+                os.makedirs(test_out_dir)
         count = 1
         for img_name in os.listdir(args.image_input_dir):
             if count <= train_num:

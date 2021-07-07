@@ -1,0 +1,14 @@
+_BASE_: [
+  'faster_rcnn_r50_fpn_1x_coco.yml',
+]
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_pretrained.pdparams
+weights: output/faster_rcnn_r101_fpn_1x_coco/model_final
+
+ResNet:
+  # index 0 stands for res2
+  depth: 101
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4

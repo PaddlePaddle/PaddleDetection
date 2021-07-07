@@ -20,12 +20,11 @@ import os
 import os.path as osp
 import re
 import random
-import shutil
 
 __all__ = ['create_list']
 
 
-def create_list(year_dirs, output_dir):
+def create_list(devkit_dir, years, output_dir):
     """
     create following list:
         1. trainval.txt
@@ -33,8 +32,8 @@ def create_list(year_dirs, output_dir):
     """
     trainval_list = []
     test_list = []
-    for year_dir in year_dirs:
-        trainval, test = _walk_voc_dir(year_dir, output_dir)
+    for year in years:
+        trainval, test = _walk_voc_dir(devkit_dir, year, output_dir)
         trainval_list.extend(trainval)
         test_list.extend(test)
 
@@ -50,24 +49,24 @@ def create_list(year_dirs, output_dir):
             fval.write(item[0] + ' ' + item[1] + '\n')
 
 
-def _walk_voc_dir(year_dir, output_dir):
-    filelist_dir = osp.join(year_dir, 'ImageSets/Main')
-    annotation_dir = osp.join(year_dir, 'Annotations')
-    img_dir = osp.join(year_dir, 'JPEGImages')
+def _get_voc_dir(devkit_dir, year, type):
+    return osp.join(devkit_dir, 'VOC' + year, type)
+
+
+def _walk_voc_dir(devkit_dir, year, output_dir):
+    filelist_dir = _get_voc_dir(devkit_dir, year, 'ImageSets/Main')
+    annotation_dir = _get_voc_dir(devkit_dir, year, 'Annotations')
+    img_dir = _get_voc_dir(devkit_dir, year, 'JPEGImages')
     trainval_list = []
     test_list = []
     added = set()
 
-    img_dict = {}
-    for img_file in os.listdir(img_dir):
-        img_dict[img_file.split('.')[0]] = img_file
-
     for _, _, files in os.walk(filelist_dir):
         for fname in files:
             img_ann_list = []
-            if re.match('trainval\.txt', fname):
+            if re.match(r'[a-z]+_trainval\.txt', fname):
                 img_ann_list = trainval_list
-            elif re.match('test\.txt', fname):
+            elif re.match(r'[a-z]+_test\.txt', fname):
                 img_ann_list = test_list
             else:
                 continue
@@ -81,7 +80,7 @@ def _walk_voc_dir(year_dir, output_dir):
                     osp.relpath(annotation_dir, output_dir),
                     name_prefix + '.xml')
                 img_path = osp.join(
-                    osp.relpath(img_dir, output_dir), img_dict[name_prefix])
+                    osp.relpath(img_dir, output_dir), name_prefix + '.jpg')
                 img_ann_list.append((img_path, ann_path))
 
     return trainval_list, test_list

@@ -1,0 +1,61 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '../cascade_rcnn/_base_/optimizer_1x.yml',
+  '../cascade_rcnn/_base_/cascade_mask_rcnn_r50_fpn.yml',
+  '../cascade_rcnn/_base_/cascade_mask_fpn_reader.yml',
+]
+weights: output/cascade_mask_rcnn_r50_fpn_gn_2x_coco/model_final
+
+CascadeRCNN:
+  backbone: ResNet
+  neck: FPN
+  rpn_head: RPNHead
+  bbox_head: CascadeHead
+  mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
+
+FPN:
+  out_channel: 256
+  norm_type: gn
+
+CascadeHead:
+  head: CascadeXConvNormHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+
+CascadeXConvNormHead:
+  num_convs: 4
+  out_channel: 1024
+  norm_type: gn
+
+MaskHead:
+  head: MaskFeat
+  roi_extractor:
+    resolution: 14
+    sampling_ratio: 0
+    aligned: True
+  mask_assigner: MaskAssigner
+  share_bbox_feat: False
+
+MaskFeat:
+  num_convs: 4
+  out_channel: 256
+  norm_type: gn
+
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000

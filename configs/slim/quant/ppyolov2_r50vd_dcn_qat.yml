@@ -1,0 +1,33 @@
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyolov2_r50vd_dcn_365e_coco.pdparams
+slim: QAT
+
+QAT:
+  quant_config: {
+    'activation_preprocess_type': 'PACT',
+    'weight_quantize_type': 'channel_wise_abs_max', 'activation_quantize_type': 'moving_average_abs_max',
+    'weight_bits': 8, 'activation_bits': 8, 'dtype': 'int8', 'window_size': 10000, 'moving_rate': 0.9,
+    'quantizable_layer_type': ['Conv2D', 'Linear']}
+  print_model: True
+
+epoch: 50
+snapshot_epoch: 8
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones:
+    - 30
+    - 45
+  - !LinearWarmup
+    start_factor: 0.
+    steps: 2000
+
+TrainReader:
+   batch_size: 8
+
+PPYOLOPAN:
+  drop_block: false
+  block_size: 3
+  keep_prob: 0.9
+  spp: true

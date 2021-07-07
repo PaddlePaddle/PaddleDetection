@@ -16,92 +16,98 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from paddle import fluid
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Constant, NumpyArrayInitializer
-from ppdet.core.workspace import register, serializable
+import paddle
+import paddle.nn as nn
+import paddle.nn.functional as F
+from ppdet.core.workspace import register
+from ppdet.modeling import ops
 
-INF = 1e8
 __all__ = ['FCOSLoss']
 
 
+def flatten_tensor(inputs, channel_first=False):
+    """
+    Flatten a Tensor
+    Args:
+        inputs (Tensor): 4-D Tensor with shape [N, C, H, W] or [N, H, W, C]
+        channel_first (bool): If true the dimension order of Tensor is 
+            [N, C, H, W], otherwise is [N, H, W, C]
+    Return:
+        output_channel_last (Tensor): The flattened Tensor in channel_last style
+    """
+    if channel_first:
+        input_channel_last = paddle.transpose(inputs, perm=[0, 2, 3, 1])
+    else:
+        input_channel_last = inputs
+    output_channel_last = paddle.flatten(
+        input_channel_last, start_axis=0, stop_axis=2)
+    return output_channel_last
+
+
 @register
-@serializable
-class FCOSLoss(object):
+class FCOSLoss(nn.Layer):
     """
     FCOSLoss
     Args:
-        loss_alpha (float): alpha in focal loss 
+        loss_alpha (float): alpha in focal loss
         loss_gamma (float): gamma in focal loss
-        iou_loss_type(str): location loss type, IoU/GIoU/LINEAR_IoU
-        reg_weights(float): weight for location loss
+        iou_loss_type (str): location loss type, IoU/GIoU/LINEAR_IoU
+        reg_weights (float): weight for location loss
     """
 
     def __init__(self,
                  loss_alpha=0.25,
                  loss_gamma=2.0,
-                 iou_loss_type="IoU",
+                 iou_loss_type="giou",
                  reg_weights=1.0):
+        super(FCOSLoss, self).__init__()
         self.loss_alpha = loss_alpha
         self.loss_gamma = loss_gamma
         self.iou_loss_type = iou_loss_type
         self.reg_weights = reg_weights
 
-    def __flatten_tensor(self, input, channel_first=False):
-        """
-        Flatten a Tensor
-        Args:
-            input   (Variables): Input Tensor
-            channel_first(bool): if true the dimension order of
-                Tensor is [N, C, H, W], otherwise is [N, H, W, C]
-        Return:
-            input_channel_last (Variables): The flattened Tensor in channel_last style
-        """
-        if channel_first:
-            input_channel_last = fluid.layers.transpose(
-                input, perm=[0, 2, 3, 1])
-        else:
-            input_channel_last = input
-        input_channel_last = fluid.layers.flatten(input_channel_last, axis=3)
-        return input_channel_last
-
     def __iou_loss(self, pred, targets, positive_mask, weights=None):
         """
         Calculate the loss for location prediction
         Args:
-            pred          (Variables): bounding boxes prediction
-            targets       (Variables): targets for positive samples
-            positive_mask (Variables): mask of positive samples
-            weights       (Variables): weights for each positive samples
+            pred (Tensor): bounding boxes prediction
+            targets (Tensor): targets for positive samples
+            positive_mask (Tensor): mask of positive samples
+            weights (Tensor): weights for each positive samples
         Return:
-            loss (Varialbes): location loss
+            loss (Tensor): location loss
         """
-        plw = fluid.layers.elementwise_mul(pred[:, 0], positive_mask, axis=0)
-        pth = fluid.layers.elementwise_mul(pred[:, 1], positive_mask, axis=0)
-        prw = fluid.layers.elementwise_mul(pred[:, 2], positive_mask, axis=0)
-        pbh = fluid.layers.elementwise_mul(pred[:, 3], positive_mask, axis=0)
-        tlw = fluid.layers.elementwise_mul(targets[:, 0], positive_mask, axis=0)
-        tth = fluid.layers.elementwise_mul(targets[:, 1], positive_mask, axis=0)
-        trw = fluid.layers.elementwise_mul(targets[:, 2], positive_mask, axis=0)
-        tbh = fluid.layers.elementwise_mul(targets[:, 3], positive_mask, axis=0)
+        plw = pred[:, 0] * positive_mask
+        pth = pred[:, 1] * positive_mask
+        prw = pred[:, 2] * positive_mask
+        pbh = pred[:, 3] * positive_mask
+
+        tlw = targets[:, 0] * positive_mask
+        tth = targets[:, 1] * positive_mask
+        trw = targets[:, 2] * positive_mask
+        tbh = targets[:, 3] * positive_mask
         tlw.stop_gradient = True
         trw.stop_gradient = True
         tth.stop_gradient = True
         tbh.stop_gradient = True
-        area_target = (tlw + trw) * (tth + tbh)
+
+        ilw = paddle.minimum(plw, tlw)
+        irw = paddle.minimum(prw, trw)
+        ith = paddle.minimum(pth, tth)
+        ibh = paddle.minimum(pbh, tbh)
+
+        clw = paddle.maximum(plw, tlw)
+        crw = paddle.maximum(prw, trw)
+        cth = paddle.maximum(pth, tth)
+        cbh = paddle.maximum(pbh, tbh)
+
         area_predict = (plw + prw) * (pth + pbh)
-        ilw = fluid.layers.elementwise_min(plw, tlw)
-        irw = fluid.layers.elementwise_min(prw, trw)
-        ith = fluid.layers.elementwise_min(pth, tth)
-        ibh = fluid.layers.elementwise_min(pbh, tbh)
-        clw = fluid.layers.elementwise_max(plw, tlw)
-        crw = fluid.layers.elementwise_max(prw, trw)
-        cth = fluid.layers.elementwise_max(pth, tth)
-        cbh = fluid.layers.elementwise_max(pbh, tbh)
+        area_target = (tlw + trw) * (tth + tbh)
         area_inter = (ilw + irw) * (ith + ibh)
         ious = (area_inter + 1.0) / (
             area_predict + area_target - area_inter + 1.0)
-        ious = fluid.layers.elementwise_mul(ious, positive_mask, axis=0)
+        ious = ious * positive_mask
+
         if self.iou_loss_type.lower() == "linear_iou":
             loss = 1.0 - ious
         elif self.iou_loss_type.lower() == "giou":
@@ -110,29 +116,29 @@ class FCOSLoss(object):
             giou = ious - (area_circum - area_uniou) / area_circum
             loss = 1.0 - giou
         elif self.iou_loss_type.lower() == "iou":
-            loss = 0.0 - fluid.layers.log(ious)
+            loss = 0.0 - paddle.log(ious)
         else:
             raise KeyError
         if weights is not None:
             loss = loss * weights
         return loss
 
-    def __call__(self, cls_logits, bboxes_reg, centerness, tag_labels,
-                 tag_bboxes, tag_center):
+    def forward(self, cls_logits, bboxes_reg, centerness, tag_labels,
+                tag_bboxes, tag_center):
         """
         Calculate the loss for classification, location and centerness
         Args:
-            cls_logits (list): list of Variables, which is predicted
+            cls_logits (list): list of Tensor, which is predicted
                 score for all anchor points with shape [N, M, C]
-            bboxes_reg (list): list of Variables, which is predicted
+            bboxes_reg (list): list of Tensor, which is predicted
                 offsets for all anchor points with shape [N, M, 4]
-            centerness (list): list of Variables, which is predicted
+            centerness (list): list of Tensor, which is predicted
                 centerness for all anchor points with shape [N, M, 1]
-            tag_labels (list): list of Variables, which is category
+            tag_labels (list): list of Tensor, which is category
                 targets for each anchor point
-            tag_bboxes (list): list of Variables, which is bounding
+            tag_bboxes (list): list of Tensor, which is bounding
                 boxes targets for positive samples
-            tag_center (list): list of Variables, which is centerness
+            tag_center (list): list of Tensor, which is centerness
                 targets for positive samples
         Return:
             loss (dict): loss composed by classification loss, bounding box
@@ -146,63 +152,74 @@ class FCOSLoss(object):
         num_lvl = len(cls_logits)
         for lvl in range(num_lvl):
             cls_logits_flatten_list.append(
-                self.__flatten_tensor(cls_logits[num_lvl - 1 - lvl], True))
+                flatten_tensor(cls_logits[lvl], True))
             bboxes_reg_flatten_list.append(
-                self.__flatten_tensor(bboxes_reg[num_lvl - 1 - lvl], True))
+                flatten_tensor(bboxes_reg[lvl], True))
             centerness_flatten_list.append(
-                self.__flatten_tensor(centerness[num_lvl - 1 - lvl], True))
-            tag_labels_flatten_list.append(
-                self.__flatten_tensor(tag_labels[lvl], False))
-            tag_bboxes_flatten_list.append(
-                self.__flatten_tensor(tag_bboxes[lvl], False))
-            tag_center_flatten_list.append(
-                self.__flatten_tensor(tag_center[lvl], False))
+                flatten_tensor(centerness[lvl], True))
 
-        cls_logits_flatten = fluid.layers.concat(
-            cls_logits_flatten_list, axis=0)
-        bboxes_reg_flatten = fluid.layers.concat(
-            bboxes_reg_flatten_list, axis=0)
-        centerness_flatten = fluid.layers.concat(
-            centerness_flatten_list, axis=0)
-        tag_labels_flatten = fluid.layers.concat(
-            tag_labels_flatten_list, axis=0)
-        tag_bboxes_flatten = fluid.layers.concat(
-            tag_bboxes_flatten_list, axis=0)
-        tag_center_flatten = fluid.layers.concat(
-            tag_center_flatten_list, axis=0)
+            tag_labels_flatten_list.append(
+                flatten_tensor(tag_labels[lvl], False))
+            tag_bboxes_flatten_list.append(
+                flatten_tensor(tag_bboxes[lvl], False))
+            tag_center_flatten_list.append(
+                flatten_tensor(tag_center[lvl], False))
+
+        cls_logits_flatten = paddle.concat(cls_logits_flatten_list, axis=0)
+        bboxes_reg_flatten = paddle.concat(bboxes_reg_flatten_list, axis=0)
+        centerness_flatten = paddle.concat(centerness_flatten_list, axis=0)
+
+        tag_labels_flatten = paddle.concat(tag_labels_flatten_list, axis=0)
+        tag_bboxes_flatten = paddle.concat(tag_bboxes_flatten_list, axis=0)
+        tag_center_flatten = paddle.concat(tag_center_flatten_list, axis=0)
         tag_labels_flatten.stop_gradient = True
         tag_bboxes_flatten.stop_gradient = True
         tag_center_flatten.stop_gradient = True
 
-        mask_positive = tag_labels_flatten > 0
-        mask_positive.stop_gradient = True
-        mask_positive_float = fluid.layers.cast(mask_positive, dtype="float32")
+        mask_positive_bool = tag_labels_flatten > 0
+        mask_positive_bool.stop_gradient = True
+        mask_positive_float = paddle.cast(mask_positive_bool, dtype="float32")
         mask_positive_float.stop_gradient = True
-        num_positive_fp32 = fluid.layers.reduce_sum(mask_positive_float)
-        num_positive_int32 = fluid.layers.cast(num_positive_fp32, dtype="int32")
-        num_positive_int32 = num_positive_int32 * 0 + 1
-        num_positive_fp32.stop_gradient = True
-        num_positive_int32.stop_gradient = True
-        normalize_sum = fluid.layers.sum(tag_center_flatten)
-        normalize_sum.stop_gradient = True
-        normalize_sum = fluid.layers.reduce_sum(mask_positive_float *
-                                                normalize_sum)
 
+        num_positive_fp32 = paddle.sum(mask_positive_float)
+        num_positive_fp32.stop_gradient = True
+        num_positive_int32 = paddle.cast(num_positive_fp32, dtype="int32")
+        num_positive_int32 = num_positive_int32 * 0 + 1
+        num_positive_int32.stop_gradient = True
+
+        normalize_sum = paddle.sum(tag_center_flatten * mask_positive_float)
         normalize_sum.stop_gradient = True
-        cls_loss = fluid.layers.sigmoid_focal_loss(
-            cls_logits_flatten, tag_labels_flatten,
-            num_positive_int32) / num_positive_fp32
-        reg_loss = self.__iou_loss(bboxes_reg_flatten, tag_bboxes_flatten,
-                                   mask_positive_float, tag_center_flatten)
-        reg_loss = fluid.layers.elementwise_mul(
-            reg_loss, mask_positive_float, axis=0) / normalize_sum
-        ctn_loss = fluid.layers.sigmoid_cross_entropy_with_logits(
-            x=centerness_flatten, label=tag_center_flatten)
-        ctn_loss = fluid.layers.elementwise_mul(
-            ctn_loss, mask_positive_float, axis=0) / num_positive_fp32
+
+        # 1. cls_logits: sigmoid_focal_loss
+        # expand onehot labels
+        num_classes = cls_logits_flatten.shape[-1]
+        tag_labels_flatten = paddle.squeeze(tag_labels_flatten, axis=-1)
+        tag_labels_flatten_bin = F.one_hot(
+            tag_labels_flatten, num_classes=1 + num_classes)
+        tag_labels_flatten_bin = tag_labels_flatten_bin[:, 1:]
+        # sigmoid_focal_loss
+        cls_loss = F.sigmoid_focal_loss(
+            cls_logits_flatten, tag_labels_flatten_bin) / num_positive_fp32
+
+        # 2. bboxes_reg: giou_loss
+        mask_positive_float = paddle.squeeze(mask_positive_float, axis=-1)
+        tag_center_flatten = paddle.squeeze(tag_center_flatten, axis=-1)
+        reg_loss = self.__iou_loss(
+            bboxes_reg_flatten,
+            tag_bboxes_flatten,
+            mask_positive_float,
+            weights=tag_center_flatten)
+        reg_loss = reg_loss * mask_positive_float / normalize_sum
+
+        # 3. centerness: sigmoid_cross_entropy_with_logits_loss
+        centerness_flatten = paddle.squeeze(centerness_flatten, axis=-1)
+        ctn_loss = ops.sigmoid_cross_entropy_with_logits(centerness_flatten,
+                                                         tag_center_flatten)
+        ctn_loss = ctn_loss * mask_positive_float / num_positive_fp32
+
         loss_all = {
-            "loss_centerness": fluid.layers.reduce_sum(ctn_loss),
-            "loss_cls": fluid.layers.reduce_sum(cls_loss),
-            "loss_box": fluid.layers.reduce_sum(reg_loss)
+            "loss_centerness": paddle.sum(ctn_loss),
+            "loss_cls": paddle.sum(cls_loss),
+            "loss_box": paddle.sum(reg_loss)
         }
         return loss_all

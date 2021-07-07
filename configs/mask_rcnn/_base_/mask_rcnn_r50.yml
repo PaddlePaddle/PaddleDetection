@@ -1,0 +1,87 @@
+architecture: MaskRCNN
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+MaskRCNN:
+  backbone: ResNet
+  rpn_head: RPNHead
+  bbox_head: BBoxHead
+  mask_head: MaskHead
+  # post process
+  bbox_post_process: BBoxPostProcess
+  mask_post_process: MaskPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [2]
+  num_stages: 3
+
+RPNHead:
+  anchor_generator:
+    aspect_ratios: [0.5, 1.0, 2.0]
+    anchor_sizes: [32, 64, 128, 256, 512]
+    strides: [16]
+  rpn_target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    use_random: True
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 12000
+    post_nms_top_n: 2000
+    topk_after_collect: False
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 6000
+    post_nms_top_n: 1000
+
+
+BBoxHead:
+  head: Res5Head
+  roi_extractor:
+    resolution: 14
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner: BBoxAssigner
+  with_pool: true
+
+BBoxAssigner:
+  batch_size_per_im: 512
+  bg_thresh: 0.5
+  fg_thresh: 0.5
+  fg_fraction: 0.25
+  use_random: True
+
+
+BBoxPostProcess:
+  decode: RCNNBox
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    score_threshold: 0.05
+    nms_threshold: 0.5
+
+MaskHead:
+  head: MaskFeat
+  roi_extractor:
+    resolution: 14
+    sampling_ratio: 0
+    aligned: True
+  mask_assigner: MaskAssigner
+  share_bbox_feat: true
+
+MaskFeat:
+  num_convs: 0
+  out_channel: 256
+
+MaskAssigner:
+  mask_resolution: 14
+
+MaskPostProcess:
+  binary_thresh: 0.5

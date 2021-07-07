@@ -1,0 +1,56 @@
+architecture: YOLOv3
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x1_0_ssld_pretrained.pdparams
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+
+YOLOv3:
+  backbone: MobileNetV3
+  neck: PPYOLOFPN
+  yolo_head: YOLOv3Head
+  post_process: BBoxPostProcess
+
+MobileNetV3:
+  model_name: large
+  scale: 1.
+  with_extra_blocks: false
+  extra_block_filters: []
+  feature_maps: [13, 16]
+
+PPYOLOFPN:
+  in_channels: [160, 368]
+  coord_conv: true
+  conv_block_num: 0
+  spp: true
+  drop_block: true
+
+YOLOv3Head:
+  anchors: [[11, 18], [34, 47], [51, 126],
+            [115, 71], [120, 195], [254, 235]]
+  anchor_masks: [[3, 4, 5], [0, 1, 2]]
+  loss: YOLOv3Loss
+
+YOLOv3Loss:
+  ignore_thresh: 0.5
+  downsample: [32, 16]
+  label_smooth: false
+  scale_x_y: 1.05
+  iou_loss: IouLoss
+
+IouLoss:
+  loss_weight: 2.5
+  loss_square: true
+
+BBoxPostProcess:
+  decode:
+    name: YOLOBox
+    conf_thresh: 0.005
+    downsample_ratio: 32
+    clip_bbox: true
+    scale_x_y: 1.05
+  nms:
+    name: MultiClassNMS
+    keep_top_k: 100
+    nms_threshold: 0.45
+    nms_top_k: 1000
+    score_threshold: 0.005

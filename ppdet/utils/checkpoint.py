@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,24 +19,14 @@ from __future__ import unicode_literals
 
 import errno
 import os
-import shutil
-import tempfile
 import time
-import numpy as np
-import re
-import paddle.fluid as fluid
 
+import paddle
+import paddle.nn as nn
 from .download import get_weights_path
 
-import logging
-logger = logging.getLogger(__name__)
-
-__all__ = [
-    'load_checkpoint',
-    'load_and_fusebn',
-    'load_params',
-    'save',
-]
+from .logger import setup_logger
+logger = setup_logger(__name__)
 
 
 def is_url(path):
@@ -45,10 +35,27 @@ def is_url(path):
     Args:
         path (string): URL string or not.
     """
-    return path.startswith('http://') or path.startswith('https://')
+    return path.startswith('http://') \
+            or path.startswith('https://') \
+            or path.startswith('ppdet://')
 
 
-def _get_weight_path(path):
+def _get_unique_endpoints(trainer_endpoints):
+    # Sorting is to avoid different environmental variables for each card
+    trainer_endpoints.sort()
+    ips = set()
+    unique_endpoints = set()
+    for endpoint in trainer_endpoints:
+        ip = endpoint.split(":")[0]
+        if ip in ips:
+            continue
+        ips.add(ip)
+        unique_endpoints.add(endpoint)
+    logger.info("unique_endpoints {}".format(unique_endpoints))
+    return unique_endpoints
+
+
+def get_weights_path_dist(path):
     env = os.environ
     if 'PADDLE_TRAINERS_NUM' in env and 'PADDLE_TRAINER_ID' in env:
         trainer_id = int(env['PADDLE_TRAINER_ID'])
@@ -60,6 +67,9 @@ def _get_weight_path(path):
             weight_path = map_path(path, WEIGHTS_HOME)
             lock_path = weight_path + '.lock'
             if not os.path.exists(weight_path):
+                from paddle.distributed import ParallelEnv
+                unique_endpoints = _get_unique_endpoints(ParallelEnv()
+                                                         .trainer_endpoints[:])
                 try:
                     os.makedirs(os.path.dirname(weight_path))
                 except OSError as e:
@@ -67,7 +77,7 @@ def _get_weight_path(path):
                         raise
                 with open(lock_path, 'w'):  # touch    
                     os.utime(lock_path, None)
-                if trainer_id == 0:
+                if ParallelEnv().current_endpoint in unique_endpoints:
                     get_weights_path(path)
                     os.remove(lock_path)
                 else:
@@ -76,20 +86,8 @@ def _get_weight_path(path):
             path = weight_path
     else:
         path = get_weights_path(path)
+
     return path
-
-
-def _load_state(path):
-    if os.path.exists(path + '.pdopt'):
-        # XXX another hack to ignore the optimizer state
-        tmp = tempfile.mkdtemp()
-        dst = os.path.join(tmp, os.path.basename(os.path.normpath(path)))
-        shutil.copy(path + '.pdparams', dst + '.pdparams')
-        state = fluid.io.load_program_state(dst)
-        shutil.rmtree(tmp)
-    else:
-        state = fluid.io.load_program_state(path)
-    return state
 
 
 def _strip_postfix(path):
@@ -99,206 +97,119 @@ def _strip_postfix(path):
     return path
 
 
-def load_params(exe, prog, path, ignore_params=[]):
-    """
-    Load model from the given path.
-    Args:
-        exe (fluid.Executor): The fluid.Executor object.
-        prog (fluid.Program): load weight to which Program object.
-        path (string): URL string or loca model path.
-        ignore_params (list): ignore variable to load when finetuning.
-            It can be specified by finetune_exclude_pretrained_params 
-            and the usage can refer to docs/advanced_tutorials/TRANSFER_LEARNING.md
-    """
+def load_weight(model, weight, optimizer=None):
+    if is_url(weight):
+        weight = get_weights_path_dist(weight)
 
-    if is_url(path):
-        path = _get_weight_path(path)
+    path = _strip_postfix(weight)
+    pdparam_path = path + '.pdparams'
+    if not os.path.exists(pdparam_path):
+        raise ValueError("Model pretrain path {} does not "
+                         "exists.".format(pdparam_path))
 
-    path = _strip_postfix(path)
+    param_state_dict = paddle.load(pdparam_path)
+    model_dict = model.state_dict()
+    model_weight = {}
+    incorrect_keys = 0
+
+    for key in model_dict.keys():
+        if key in param_state_dict.keys():
+            model_weight[key] = param_state_dict[key]
+        else:
+            logger.info('Unmatched key: {}'.format(key))
+            incorrect_keys += 1
+
+    assert incorrect_keys == 0, "Load weight {} incorrectly, \
+            {} keys unmatched, please check again.".format(weight,
+                                                           incorrect_keys)
+    logger.info('Finish resuming model weights: {}'.format(pdparam_path))
+
+    model.set_dict(model_weight)
+
+    last_epoch = 0
+    if optimizer is not None and os.path.exists(path + '.pdopt'):
+        optim_state_dict = paddle.load(path + '.pdopt')
+        # to solve resume bug, will it be fixed in paddle 2.0
+        for key in optimizer.state_dict().keys():
+            if not key in optim_state_dict.keys():
+                optim_state_dict[key] = optimizer.state_dict()[key]
+        if 'last_epoch' in optim_state_dict:
+            last_epoch = optim_state_dict.pop('last_epoch')
+        optimizer.set_state_dict(optim_state_dict)
+
+    return last_epoch
+
+
+def load_pretrain_weight(model, pretrain_weight):
+    if is_url(pretrain_weight):
+        pretrain_weight = get_weights_path_dist(pretrain_weight)
+
+    path = _strip_postfix(pretrain_weight)
     if not (os.path.isdir(path) or os.path.isfile(path) or
             os.path.exists(path + '.pdparams')):
-        raise ValueError("Model pretrain path {} does not "
-                         "exists.".format(path))
+        raise ValueError("Model pretrain path `{}` does not exists. "
+                         "If you don't want to load pretrain model, "
+                         "please delete `pretrain_weights` field in "
+                         "config file.".format(path))
 
-    logger.debug('Loading parameters from {}...'.format(path))
+    model_dict = model.state_dict()
 
-    ignore_set = set()
-    state = _load_state(path)
+    weights_path = path + '.pdparams'
+    param_state_dict = paddle.load(weights_path)
+    ignore_weights = set()
 
-    # ignore the parameter which mismatch the shape 
-    # between the model and pretrain weight.
-    all_var_shape = {}
-    for block in prog.blocks:
-        for param in block.all_parameters():
-            all_var_shape[param.name] = param.shape
-    ignore_set.update([
-        name for name, shape in all_var_shape.items()
-        if name in state and shape != state[name].shape
-    ])
+    # hack: fit for faster rcnn. Pretrain weights contain prefix of 'backbone'
+    # while res5 module is located in bbox_head.head. Replace the prefix of
+    # res5 with 'bbox_head.head' to load pretrain weights correctly.
+    for k in list(param_state_dict.keys()):
+        if 'backbone.res5' in k:
+            new_k = k.replace('backbone', 'bbox_head.head')
+            if new_k in model_dict.keys():
+                value = param_state_dict.pop(k)
+                param_state_dict[new_k] = value
 
-    if ignore_params:
-        all_var_names = [var.name for var in prog.list_vars()]
-        ignore_list = filter(
-            lambda var: any([re.match(name, var) for name in ignore_params]),
-            all_var_names)
-        ignore_set.update(list(ignore_list))
+    for name, weight in param_state_dict.items():
+        if name in model_dict.keys():
+            if list(weight.shape) != list(model_dict[name].shape):
+                logger.info(
+                    '{} not used, shape {} unmatched with {} in model.'.format(
+                        name, weight.shape, list(model_dict[name].shape)))
+                ignore_weights.add(name)
+        else:
+            logger.info('Redundant weight {} and ignore it.'.format(name))
+            ignore_weights.add(name)
 
-    if len(ignore_set) > 0:
-        for k in ignore_set:
-            if k in state:
-                logger.warning('variable {} not used'.format(k))
-                del state[k]
-    fluid.io.set_program_state(prog, state)
+    for weight in ignore_weights:
+        param_state_dict.pop(weight, None)
+
+    model.set_dict(param_state_dict)
+    logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
-def load_checkpoint(exe, prog, path):
+def save_model(model, optimizer, save_dir, save_name, last_epoch):
     """
-    Load model from the given path.
-    Args:
-        exe (fluid.Executor): The fluid.Executor object.
-        prog (fluid.Program): load weight to which Program object.
-        path (string): URL string or loca model path.
-    """
-    if is_url(path):
-        path = _get_weight_path(path)
-
-    path = _strip_postfix(path)
-    if not (os.path.isdir(path) or os.path.exists(path + '.pdparams')):
-        raise ValueError("Model pretrain path {} does not "
-                         "exists.".format(path))
-    fluid.load(prog, path, executor=exe)
-
-
-def global_step(scope=None):
-    """
-    Load global step in scope.
-    Args:
-        scope (fluid.Scope): load global step from which scope. If None,
-            from default global_scope().
-
-    Returns:
-        global step: int.
-    """
-    if scope is None:
-        scope = fluid.global_scope()
-    v = scope.find_var('@LR_DECAY_COUNTER@')
-    step = np.array(v.get_tensor())[0] if v else 0
-    return step
-
-
-def save(exe, prog, path):
-    """
-    Load model from the given path.
-    Args:
-        exe (fluid.Executor): The fluid.Executor object.
-        prog (fluid.Program): save weight from which Program object.
-        path (string): the path to save model.
-    """
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    logger.info('Save model to {}.'.format(path))
-    fluid.save(prog, path)
-
-
-def load_and_fusebn(exe, prog, path):
-    """
-    Fuse params of batch norm to scale and bias.
+    save model into disk.
 
     Args:
-        exe (fluid.Executor): The fluid.Executor object.
-        prog (fluid.Program): save weight from which Program object.
-        path (string): the path to save model.
+        model (paddle.nn.Layer): the Layer instalce to save parameters.
+        optimizer (paddle.optimizer.Optimizer): the Optimizer instance to
+            save optimizer states.
+        save_dir (str): the directory to be saved.
+        save_name (str): the path to be saved.
+        last_epoch (int): the epoch index.
     """
-    logger.debug('Load model and fuse batch norm if have from {}...'.format(
-        path))
-
-    if is_url(path):
-        path = _get_weight_path(path)
-
-    if not os.path.exists(path):
-        raise ValueError("Model path {} does not exists.".format(path))
-
-    # Since the program uses affine-channel, there is no running mean and var
-    # in the program, here append running mean and var.
-    # NOTE, the params of batch norm should be like:
-    #  x_scale
-    #  x_offset
-    #  x_mean
-    #  x_variance
-    #  x is any prefix
-    mean_variances = set()
-    bn_vars = []
-    state = _load_state(path)
-
-    def check_mean_and_bias(prefix):
-        m = prefix + 'mean'
-        v = prefix + 'variance'
-        return v in state and m in state
-
-    has_mean_bias = True
-
-    with fluid.program_guard(prog, fluid.Program()):
-        for block in prog.blocks:
-            ops = list(block.ops)
-            if not has_mean_bias:
-                break
-            for op in ops:
-                if op.type == 'affine_channel':
-                    # remove 'scale' as prefix
-                    scale_name = op.input('Scale')[0]  # _scale
-                    bias_name = op.input('Bias')[0]  # _offset
-                    prefix = scale_name[:-5]
-                    mean_name = prefix + 'mean'
-                    variance_name = prefix + 'variance'
-                    if not check_mean_and_bias(prefix):
-                        has_mean_bias = False
-                        break
-
-                    bias = block.var(bias_name)
-
-                    mean_vb = block.create_var(
-                        name=mean_name,
-                        type=bias.type,
-                        shape=bias.shape,
-                        dtype=bias.dtype)
-                    variance_vb = block.create_var(
-                        name=variance_name,
-                        type=bias.type,
-                        shape=bias.shape,
-                        dtype=bias.dtype)
-
-                    mean_variances.add(mean_vb)
-                    mean_variances.add(variance_vb)
-
-                    bn_vars.append(
-                        [scale_name, bias_name, mean_name, variance_name])
-
-    if not has_mean_bias:
-        fluid.io.set_program_state(prog, state)
-        logger.warning(
-            "There is no paramters of batch norm in model {}. "
-            "Skip to fuse batch norm. And load paramters done.".format(path))
+    if paddle.distributed.get_rank() != 0:
         return
-
-    fluid.load(prog, path, exe)
-    eps = 1e-5
-    for names in bn_vars:
-        scale_name, bias_name, mean_name, var_name = names
-
-        scale = fluid.global_scope().find_var(scale_name).get_tensor()
-        bias = fluid.global_scope().find_var(bias_name).get_tensor()
-        mean = fluid.global_scope().find_var(mean_name).get_tensor()
-        var = fluid.global_scope().find_var(var_name).get_tensor()
-
-        scale_arr = np.array(scale)
-        bias_arr = np.array(bias)
-        mean_arr = np.array(mean)
-        var_arr = np.array(var)
-
-        bn_std = np.sqrt(np.add(var_arr, eps))
-        new_scale = np.float32(np.divide(scale_arr, bn_std))
-        new_bias = bias_arr - mean_arr * new_scale
-
-        # fuse to scale and bias in affine_channel
-        scale.set(new_scale, exe.place)
-        bias.set(new_bias, exe.place)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, save_name)
+    if isinstance(model, nn.Layer):
+        paddle.save(model.state_dict(), save_path + ".pdparams")
+    else:
+        assert isinstance(model,
+                          dict), 'model is not a instance of nn.layer or dict'
+        paddle.save(model, save_path + ".pdparams")
+    state_dict = optimizer.state_dict()
+    state_dict['last_epoch'] = last_epoch
+    paddle.save(state_dict, save_path + ".pdopt")
+    logger.info("Save checkpoint: {}".format(save_dir))

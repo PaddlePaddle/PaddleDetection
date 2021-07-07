@@ -20,7 +20,7 @@ import numpy as np
 from PIL import Image
 
 
-class GridMask(object):
+class Gridmask(object):
     def __init__(self,
                  use_h=True,
                  use_w=True,
@@ -30,7 +30,7 @@ class GridMask(object):
                  mode=1,
                  prob=0.7,
                  upper_iter=360000):
-        super(GridMask, self).__init__()
+        super(Gridmask, self).__init__()
         self.use_h = use_h
         self.use_w = use_w
         self.rotate = rotate
@@ -45,7 +45,7 @@ class GridMask(object):
         self.prob = self.st_prob * min(1, 1.0 * curr_iter / self.upper_iter)
         if np.random.rand() > self.prob:
             return x
-        _, h, w = x.shape
+        h, w, _ = x.shape
         hh = int(1.5 * h)
         ww = int(1.5 * w)
         d = np.random.randint(2, h)
@@ -73,7 +73,7 @@ class GridMask(object):
 
         if self.mode == 1:
             mask = 1 - mask
-        mask = np.expand_dims(mask, axis=0)
+        mask = np.expand_dims(mask, axis=-1)
         if self.offset:
             offset = (2 * (np.random.rand(h, w) - 0.5)).astype(np.float32)
             x = (x * mask + offset * (1 - mask)).astype(x.dtype)

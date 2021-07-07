@@ -14,6 +14,7 @@
 
 #pragma once
 
+#include <glog/logging.h>
 #include <yaml-cpp/yaml.h>
 
 #include <vector>
@@ -21,6 +22,7 @@
 #include <utility>
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -31,37 +33,36 @@ namespace PaddleDetection {
 // Object for storing all preprocessed data
 class ImageBlob {
  public:
-  // Original image width and height
-  std::vector<int> ori_im_size_;
+  // image width and height
+  std::vector<float> im_shape_;
   // Buffer for image data after preprocessing
   std::vector<float> im_data_;
-  // Original image width, height, shrink in float format
-  std::vector<float> ori_im_size_f_;
+  // in net data shape(after pad)
+  std::vector<float> in_net_shape_;
   // Evaluation image width and height
-  std::vector<float>  eval_im_size_f_;
+  //std::vector<float>  eval_im_size_f_;
   // Scale factor for image size to origin image size
-  std::vector<float> scale_factor_f_;
+  std::vector<float> scale_factor_;
 };
 
 // Abstraction of preprocessing opration class
 class PreprocessOp {
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) = 0;
+  virtual void Init(const YAML::Node& item) = 0;
   virtual void Run(cv::Mat* im, ImageBlob* data) = 0;
 };
 
 class InitInfo : public PreprocessOp{
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) {}
+  virtual void Init(const YAML::Node& item) {}
   virtual void Run(cv::Mat* im, ImageBlob* data);
 };
 
-class Normalize : public PreprocessOp {
+class NormalizeImage : public PreprocessOp {
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) {
+  virtual void Init(const YAML::Node& item) {
     mean_ = item["mean"].as<std::vector<float>>();
     scale_ = item["std"].as<std::vector<float>>();
-    is_channel_first_ = item["is_channel_first"].as<bool>();
     is_scale_ = item["is_scale"].as<bool>();
   }
 
@@ -69,38 +70,25 @@ class Normalize : public PreprocessOp {
 
  private:
   // CHW or HWC
-  bool is_channel_first_;
-  bool is_scale_;
   std::vector<float> mean_;
   std::vector<float> scale_;
+  bool is_scale_;
 };
 
 class Permute : public PreprocessOp {
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) {
-      to_bgr_ = item["to_bgr"].as<bool>();
-      is_channel_first_ = item["channel_first"].as<bool>();
-  }
-
+  virtual void Init(const YAML::Node& item) {}
   virtual void Run(cv::Mat* im, ImageBlob* data);
 
- private:
-  // RGB to BGR
-  bool to_bgr_;
-  // CHW or HWC
-  bool is_channel_first_;
 };
 
 class Resize : public PreprocessOp {
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) {
-    arch_ = arch;
+  virtual void Init(const YAML::Node& item) {
     interp_ = item["interp"].as<int>();
-    max_size_ = item["max_size"].as<int>();
-  if (item["image_shape"].IsDefined()) {
-    image_shape_ = item["image_shape"].as<std::vector<int>>();
-    }
-    target_size_ = item["target_size"].as<int>();
+    //max_size_ = item["target_size"].as<int>();
+    keep_ratio_ = item["keep_ratio"].as<bool>();
+    target_size_ = item["target_size"].as<std::vector<int>>();
  }
 
   // Compute best resize scale for x-dimension, y-dimension
@@ -109,17 +97,16 @@ class Resize : public PreprocessOp {
   virtual void Run(cv::Mat* im, ImageBlob* data);
 
  private:
-  std::string arch_;
   int interp_;
-  int max_size_;
-  int target_size_;
-  std::vector<int> image_shape_;
+  bool keep_ratio_;
+  std::vector<int> target_size_;
+  std::vector<int> in_net_shape_;
 };
 
 // Models with FPN need input shape % stride == 0
 class PadStride : public PreprocessOp {
  public:
-  virtual void Init(const YAML::Node& item, const std::string& arch) {
+  virtual void Init(const YAML::Node& item) {
     stride_ = item["stride"].as<int>();
   }
 
@@ -131,14 +118,14 @@ class PadStride : public PreprocessOp {
 
 class Preprocessor {
  public:
-  void Init(const YAML::Node& config_node, const std::string& arch) {
-    arch_ = arch;
+  void Init(const YAML::Node& config_node) {
     // initialize image info at first
     ops_["InitInfo"] = std::make_shared<InitInfo>();
     for (const auto& item : config_node) {
       auto op_name = item["type"].as<std::string>();
+
       ops_[op_name] = CreateOp(op_name);
-      ops_[op_name]->Init(item, arch);
+      ops_[op_name]->Init(item);
     }
   }
 
@@ -147,11 +134,13 @@ class Preprocessor {
       return std::make_shared<Resize>();
     } else if (name == "Permute") {
       return std::make_shared<Permute>();
-    } else if (name == "Normalize") {
-      return std::make_shared<Normalize>();
+    } else if (name == "NormalizeImage") {
+      return std::make_shared<NormalizeImage>();
     } else if (name == "PadStride") {
+      // use PadStride instead of PadBatch
       return std::make_shared<PadStride>();
     }
+    std::cerr << "can not find function of OP: " << name << " and return: nullptr" << std::endl;
     return nullptr;
   }
 
@@ -161,7 +150,6 @@ class Preprocessor {
   static const std::vector<std::string> RUN_ORDER;
 
  private:
-  std::string arch_;
   std::unordered_map<std::string, std::shared_ptr<PreprocessOp>> ops_;
 };
 

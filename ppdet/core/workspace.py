@@ -21,7 +21,6 @@ import os
 import sys
 
 import yaml
-import copy
 import collections
 
 try:
@@ -71,7 +70,32 @@ class AttrDict(dict):
 
 global_config = AttrDict()
 
-READER_KEY = '_READER_'
+BASE_KEY = '_BASE_'
+
+
+# parse and load _BASE_ recursively
+def _load_config_with_base(file_path):
+    with open(file_path) as f:
+        file_cfg = yaml.load(f, Loader=yaml.Loader)
+
+    # NOTE: cfgs outside have higher priority than cfgs in _BASE_
+    if BASE_KEY in file_cfg:
+        all_base_cfg = AttrDict()
+        base_ymls = list(file_cfg[BASE_KEY])
+        for base_yml in base_ymls:
+            if base_yml.startswith("~"):
+                base_yml = os.path.expanduser(base_yml)
+            if not base_yml.startswith('/'):
+                base_yml = os.path.join(os.path.dirname(file_path), base_yml)
+
+            with open(base_yml) as f:
+                base_cfg = _load_config_with_base(base_yml)
+                all_base_cfg = merge_config(base_cfg, all_base_cfg)
+
+        del file_cfg[BASE_KEY]
+        return merge_config(file_cfg, all_base_cfg)
+
+    return file_cfg
 
 
 def load_config(file_path):
@@ -86,21 +110,9 @@ def load_config(file_path):
     _, ext = os.path.splitext(file_path)
     assert ext in ['.yml', '.yaml'], "only support yaml files for now"
 
-    cfg = AttrDict()
-    with open(file_path) as f:
-        cfg = merge_config(yaml.load(f, Loader=yaml.Loader), cfg)
-
-    if READER_KEY in cfg:
-        reader_cfg = cfg[READER_KEY]
-        if reader_cfg.startswith("~"):
-            reader_cfg = os.path.expanduser(reader_cfg)
-        if not reader_cfg.startswith('/'):
-            reader_cfg = os.path.join(os.path.dirname(file_path), reader_cfg)
-
-        with open(reader_cfg) as f:
-            merge_config(yaml.load(f, Loader=yaml.Loader))
-        del cfg[READER_KEY]
-
+    # load config from file and merge into global config
+    cfg = _load_config_with_base(file_path)
+    cfg['filename'] = os.path.splitext(os.path.split(file_path)[-1])[0]
     merge_config(cfg)
 
     return global_config
@@ -137,17 +149,8 @@ def merge_config(config, another_cfg=None):
     Returns: global config
     """
     global global_config
-    dct = another_cfg if another_cfg is not None else global_config
-    dct = dict_merge(dct, config)
-
-    # NOTE: training batch size defined only in TrainReader, sychornized
-    #       batch size config to global, models can get batch size config
-    #       from global config when building model.
-    #       batch size in evaluation or inference can also be added here
-    if 'TrainReader' in dct and 'batch_size' in dct['TrainReader']:
-        dct['train_batch_size'] = dct['TrainReader']['batch_size']
-
-    return dct
+    dct = another_cfg or global_config
+    return dict_merge(dct, config)
 
 
 def get_registered_modules():
@@ -155,22 +158,8 @@ def get_registered_modules():
 
 
 def make_partial(cls):
-    if isinstance(cls.__op__, str):
-        sep = cls.__op__.split('.')
-        op_name = sep[-1]
-        op_module = importlib.import_module('.'.join(sep[:-1]))
-    else:
-        op_name = cls.__op__.__name__
-        op_module = importlib.import_module(cls.__op__.__module__)
-
-    if not hasattr(op_module, op_name):
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warn('{} OP not found, maybe a newer version of paddle '
-                    'is required.'.format(cls.__op__))
-        return cls
-
-    op = getattr(op_module, op_name)
+    op_module = importlib.import_module(cls.__op__.__module__)
+    op = getattr(op_module, cls.__op__.__name__)
     cls.__category__ = getattr(cls, '__category__', None) or 'op'
 
     def partial_apply(self, *args, **kwargs):
@@ -225,12 +214,9 @@ def create(cls_or_name, **kwargs):
         isinstance(global_config[name], SchemaDict), \
         "the module {} is not registered".format(name)
     config = global_config[name]
-    config.update(kwargs)
-    config.validate()
     cls = getattr(config.pymodule, name)
-
-    kwargs = {}
-    kwargs.update(global_config[name])
+    cls_kwargs = {}
+    cls_kwargs.update(global_config[name])
 
     # parse `shared` annoation of registered modules
     if getattr(config, 'shared', None):
@@ -243,31 +229,47 @@ def create(cls_or_name, **kwargs):
                 continue  # value is given for the module
             elif shared_conf.key in global_config:
                 # `key` is present in config
-                kwargs[k] = global_config[shared_conf.key]
+                cls_kwargs[k] = global_config[shared_conf.key]
             else:
-                kwargs[k] = shared_conf.default_value
+                cls_kwargs[k] = shared_conf.default_value
 
     # parse `inject` annoation of registered modules
+    if getattr(cls, 'from_config', None):
+        cls_kwargs.update(cls.from_config(config, **kwargs))
+
     if getattr(config, 'inject', None):
         for k in config.inject:
             target_key = config[k]
             # optional dependency
             if target_key is None:
                 continue
-            # also accept dictionaries and serialized objects
+
             if isinstance(target_key, dict) or hasattr(target_key, '__dict__'):
-                continue
+                if 'name' not in target_key.keys():
+                    continue
+                inject_name = str(target_key['name'])
+                if inject_name not in global_config:
+                    raise ValueError(
+                        "Missing injection name {} and check it's name in cfg file".
+                        format(k))
+                target = global_config[inject_name]
+                for i, v in target_key.items():
+                    if i == 'name':
+                        continue
+                    target[i] = v
+                if isinstance(target, SchemaDict):
+                    cls_kwargs[k] = create(inject_name)
             elif isinstance(target_key, str):
                 if target_key not in global_config:
                     raise ValueError("Missing injection config:", target_key)
                 target = global_config[target_key]
                 if isinstance(target, SchemaDict):
-                    kwargs[k] = create(target_key)
+                    cls_kwargs[k] = create(target_key)
                 elif hasattr(target, '__dict__'):  # serialized object
-                    kwargs[k] = target
+                    cls_kwargs[k] = target
             else:
                 raise ValueError("Unsupported injection type:", target_key)
     # prevent modification of global config values of reference types
     # (e.g., list, dict) from within the created module instances
-    kwargs = copy.deepcopy(kwargs)
-    return cls(**kwargs)
+    #kwargs = copy.deepcopy(kwargs)
+    return cls(**cls_kwargs)

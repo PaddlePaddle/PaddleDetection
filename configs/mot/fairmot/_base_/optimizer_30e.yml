@@ -1,0 +1,14 @@
+epoch: 30
+
+LearningRate:
+  base_lr: 0.0004
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [20,]
+    use_warmup: False
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer: NULL

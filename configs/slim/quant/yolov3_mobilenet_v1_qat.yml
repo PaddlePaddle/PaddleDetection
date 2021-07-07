@@ -1,0 +1,10 @@
+# Weights of yolov3_mobilenet_v1_coco
+pretrain_weights: https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams
+slim: QAT
+
+QAT:
+  quant_config: {
+    'weight_quantize_type': 'channel_wise_abs_max', 'activation_quantize_type': 'moving_average_abs_max',
+    'weight_bits': 8, 'activation_bits': 8, 'dtype': 'int8', 'window_size': 10000, 'moving_rate': 0.9,
+    'quantizable_layer_type': ['Conv2D', 'Linear']}
+  print_model: True

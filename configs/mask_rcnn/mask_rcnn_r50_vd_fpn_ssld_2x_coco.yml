@@ -1,0 +1,29 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/mask_rcnn_r50_fpn.yml',
+  '_base_/mask_fpn_reader.yml',
+]
+pretrain_weights:  https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+weights: output/mask_rcnn_r50_vd_fpn_ssld_2x_coco/model_final
+
+ResNet:
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+  lr_mult_list: [0.05, 0.05, 0.1, 0.15]
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [12, 22]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
