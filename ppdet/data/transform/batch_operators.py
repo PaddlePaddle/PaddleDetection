@@ -33,7 +33,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target'
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget'
 ]
 
 
@@ -744,5 +744,30 @@ class Gt2Solov2Target(BaseOperator):
                     0]] = data['grid_order{}'.format(idx)]
                 data['ins_label{}'.format(idx)] = gt_ins_data
                 data['grid_order{}'.format(idx)] = gt_grid_order
+
+        return samples
+
+
+@register_op
+class Gt2SparseRCNNTarget(BaseOperator):
+    '''
+    Generate SparseRCNN targets by groud truth data
+    '''
+
+    def __init__(self):
+        super(Gt2SparseRCNNTarget, self).__init__()
+
+    def __call__(self, samples, context=None):
+        for sample in samples:
+            im = sample["image"]
+            h, w = im.shape[1:3]
+            img_whwh = np.array([w, h, w, h], dtype=np.int32)
+            sample["img_whwh"] = img_whwh
+            if "scale_factor" in sample:
+                sample["scale_factor_wh"] = np.array([sample["scale_factor"][1], sample["scale_factor"][0]],
+                                                     dtype=np.float32)
+                sample.pop("scale_factor")
+            else:
+                sample["scale_factor_wh"] = np.array([1.0, 1.0], dtype=np.float32)
 
         return samples
