@@ -19,13 +19,19 @@ import math
 import numpy as np
 import paddle
 
-from topdown_unite_utils import argsparser
+from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, PredictConfig, print_arguments, get_test_images
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from keypoint_visualize import draw_pose
+from visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
+from keypoint_postprocess import translate_to_ori_images
+
+KEYPOINT_SUPPORT_MODELS = {
+    'HigherHRNet': 'keypoint_bottomup',
+    'HRNet': 'keypoint_topdown'
+}
 
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
@@ -46,11 +52,38 @@ def bench_log(detector, img_list, model_info, batch_size=1, name=None):
     log(name)
 
 
-def affine_backto_orgimages(keypoint_result, batch_records):
-    kpts, scores = keypoint_result['keypoint']
-    kpts[..., 0] += batch_records[:, 0:1]
-    kpts[..., 1] += batch_records[:, 1:2]
-    return kpts, scores
+def predict_with_given_det(image, det_res, keypoint_detector,
+                           keypoint_batch_size, det_threshold,
+                           keypoint_threshold, run_benchmark):
+    rec_images, records, det_rects = keypoint_detector.get_person_from_rect(
+        image, det_res, det_threshold)
+    keypoint_vector = []
+    score_vector = []
+    rect_vector = det_rects
+    batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
+
+    for i in range(batch_loop_cnt):
+        start_index = i * keypoint_batch_size
+        end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
+        batch_images = rec_images[start_index:end_index]
+        batch_records = np.array(records[start_index:end_index])
+        if run_benchmark:
+            keypoint_result = keypoint_detector.predict(
+                batch_images, keypoint_threshold, warmup=10, repeats=10)
+        else:
+            keypoint_result = keypoint_detector.predict(batch_images,
+                                                        keypoint_threshold)
+        orgkeypoints, scores = translate_to_ori_images(keypoint_result,
+                                                       batch_records)
+        keypoint_vector.append(orgkeypoints)
+        score_vector.append(scores)
+
+    keypoint_res = {}
+    keypoint_res['keypoint'] = [
+        np.vstack(keypoint_vector), np.vstack(score_vector)
+    ] if len(keypoint_vector) > 0 else [[], []]
+    keypoint_res['bbox'] = rect_vector
+    return keypoint_res
 
 
 def topdown_unite_predict(detector,
@@ -76,42 +109,17 @@ def topdown_unite_predict(detector,
 
         if results['boxes_num'] == 0:
             continue
-        rec_images, records, det_rects = topdown_keypoint_detector.get_person_from_rect(
-            image, results, FLAGS.det_threshold)
-        keypoint_vector = []
-        score_vector = []
-        rect_vector = det_rects
-        batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
 
-        for i in range(batch_loop_cnt):
-            start_index = i * keypoint_batch_size
-            end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
-            batch_images = rec_images[start_index:end_index]
-            batch_records = np.array(records[start_index:end_index])
-            if FLAGS.run_benchmark:
-                keypoint_result = topdown_keypoint_detector.predict(
-                    batch_images,
-                    FLAGS.keypoint_threshold,
-                    warmup=10,
-                    repeats=10)
-            else:
-                keypoint_result = topdown_keypoint_detector.predict(
-                    batch_images, FLAGS.keypoint_threshold)
-            orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
-                                                           batch_records)
-            keypoint_vector.append(orgkeypoints)
-            score_vector.append(scores)
+        keypoint_res = predict_with_given_det(
+            image, results, topdown_keypoint_detector, keypoint_batch_size,
+            FLAGS.det_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
+
         if FLAGS.run_benchmark:
             cm, gm, gu = get_current_memory_mb()
             topdown_keypoint_detector.cpu_mem += cm
             topdown_keypoint_detector.gpu_mem += gm
             topdown_keypoint_detector.gpu_util += gu
         else:
-            keypoint_res = {}
-            keypoint_res['keypoint'] = [
-                np.vstack(keypoint_vector), np.vstack(score_vector)
-            ]
-            keypoint_res['bbox'] = rect_vector
             if not os.path.exists(FLAGS.output_dir):
                 os.makedirs(FLAGS.output_dir)
             draw_pose(
@@ -152,27 +160,11 @@ def topdown_unite_predict_video(detector,
 
         frame2 = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = detector.predict([frame2], FLAGS.det_threshold)
-        rec_images, records, rect_vector = topdown_keypoint_detector.get_person_from_rect(
-            frame2, results)
-        keypoint_vector = []
-        score_vector = []
-        batch_loop_cnt = math.ceil(float(len(rec_images)) / keypoint_batch_size)
-        for i in range(batch_loop_cnt):
-            start_index = i * keypoint_batch_size
-            end_index = min((i + 1) * keypoint_batch_size, len(rec_images))
-            batch_images = rec_images[start_index:end_index]
-            batch_records = np.array(records[start_index:end_index])
-            keypoint_result = topdown_keypoint_detector.predict(
-                batch_images, FLAGS.keypoint_threshold)
-            orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
-                                                           batch_records)
-            keypoint_vector.append(orgkeypoints)
-            score_vector.append(scores)
-        keypoint_res = {}
-        keypoint_res['keypoint'] = [
-            np.vstack(keypoint_vector), np.vstack(score_vector)
-        ] if len(keypoint_vector) > 0 else [[], []]
-        keypoint_res['bbox'] = rect_vector
+
+        keypoint_res = predict_with_given_det(
+            frame2, results, topdown_keypoint_detector, keypoint_batch_size,
+            FLAGS.det_threshold, FLAGS.keypoint_threshold, FLAGS.run_benchmark)
+
         im = draw_pose(
             frame,
             keypoint_res,
@@ -202,11 +194,15 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn)
 
     pred_config = PredictConfig_KeyPoint(FLAGS.keypoint_model_dir)
+    assert KEYPOINT_SUPPORT_MODELS[
+        pred_config.
+        arch] == 'keypoint_topdown', 'Detection-Keypoint unite inference only supports topdown models.'
     topdown_keypoint_detector = KeyPoint_Detector(
         pred_config,
         FLAGS.keypoint_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.keypoint_batch_size,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,

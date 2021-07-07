@@ -243,7 +243,6 @@ def draw_pose(image, results, visual_thread=0.6, save_name='pose.jpg'):
             [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
     cmap = matplotlib.cm.get_cmap('hsv')
     plt.figure()
-
     skeletons = np.array([item['keypoints'] for item in results]).reshape(-1,
                                                                           17, 3)
     img = np.array(image).astype('float32')
