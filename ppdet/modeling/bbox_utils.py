@@ -154,6 +154,79 @@ def xywh2xyxy(box):
     return [x1, y1, x2, y2]
 
 
+def box_cxcywh_to_xyxy(x):
+    x_c, y_c, w, h = x.unbind(-1)
+    b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
+         (x_c + 0.5 * w), (y_c + 0.5 * h)]
+    return paddle.stack(b, axis=-1)
+
+
+def box_xyxy_to_cxcywh(x):
+    x0, y0, x1, y1 = x.unbind(-1)
+    b = [(x0 + x1) / 2, (y0 + y1) / 2,
+         (x1 - x0), (y1 - y0)]
+    return paddle.stack(b, axis=-1)
+
+
+def box_area(boxes):
+    assert (boxes[:, 2:] >= boxes[:, :2]).all()
+    wh = boxes[:, 2:] - boxes[:, :2]
+    return wh[:, 0] * wh[:, 1]
+
+
+def boxes_iou(boxes1, boxes2):
+    '''
+    Compute iou
+
+    Args:
+        boxes1 (paddle.tensor) shape (N, 4)
+        boxes2 (paddle.tensor) shape (M, 4)
+
+    Return:
+        (paddle.tensor) shape (N, M)
+    '''
+    area1 = box_area(boxes1)
+    area2 = box_area(boxes2)
+
+    lt = paddle.maximum(boxes1.unsqueeze(-2)[:, :, :2], boxes2[:, :2])
+    rb = paddle.minimum(boxes1.unsqueeze(-2)[:, :, 2:], boxes2[:, 2:])
+
+    wh = (rb - lt).astype("float32").clip(min=1e-9)
+    inter = wh[:, :, 0] * wh[:, :, 1]
+
+    union = area1.unsqueeze(-1) + area2 - inter + 1e-9
+
+    iou = inter / union
+    return iou, union
+
+
+def get_bboxes_giou(boxes1, boxes2, eps=1e-9):
+    """calculate the ious of boxes1 and boxes2
+
+    Args:
+        boxes1 (Tensor): shape [N, 4]
+        boxes2 (Tensor): shape [M, 4]
+        eps (float): epsilon to avoid divide by zero
+
+    Return:
+        ious (Tensor): ious of boxes1 and boxes2, with the shape [N, M]
+    """
+    assert (boxes1[:, 2:] >= boxes1[:, :2]).all()
+    assert (boxes2[:, 2:] >= boxes2[:, :2]).all()
+
+    iou, union = boxes_iou(boxes1, boxes2)
+
+    lt = paddle.minimum(boxes1.unsqueeze(-2)[:, :, :2], boxes2[:, :2])
+    rb = paddle.maximum(boxes1.unsqueeze(-2)[:, :, 2:], boxes2[:, 2:])
+
+    wh = (rb - lt).astype("float32").clip(min=eps)
+    enclose_area = wh[:, :, 0] * wh[:, :, 1]
+
+    giou = iou - (enclose_area - union) / enclose_area
+
+    return giou
+
+
 def make_grid(h, w, dtype):
     yv, xv = paddle.meshgrid([paddle.arange(h), paddle.arange(w)])
     return paddle.stack((xv, yv), 2).cast(dtype=dtype)
@@ -265,150 +338,6 @@ def bbox_iou(box1, box2, giou=False, diou=False, ciou=False, eps=1e-9):
                 return iou - (rho2 / c2 + v * alpha)
     else:
         return iou
-
-
-def rect2rbox(bboxes):
-    """
-    :param bboxes: shape (n, 4) (xmin, ymin, xmax, ymax)
-    :return: dbboxes: shape (n, 5) (x_ctr, y_ctr, w, h, angle)
-    """
-    bboxes = bboxes.reshape(-1, 4)
-    num_boxes = bboxes.shape[0]
-
-    x_ctr = (bboxes[:, 2] + bboxes[:, 0]) / 2.0
-    y_ctr = (bboxes[:, 3] + bboxes[:, 1]) / 2.0
-    edges1 = np.abs(bboxes[:, 2] - bboxes[:, 0])
-    edges2 = np.abs(bboxes[:, 3] - bboxes[:, 1])
-    angles = np.zeros([num_boxes], dtype=bboxes.dtype)
-
-    inds = edges1 < edges2
-
-    rboxes = np.stack((x_ctr, y_ctr, edges1, edges2, angles), axis=1)
-    rboxes[inds, 2] = edges2[inds]
-    rboxes[inds, 3] = edges1[inds]
-    rboxes[inds, 4] = np.pi / 2.0
-    return rboxes
-
-
-def delta2rbox(rrois,
-               deltas,
-               means=[0, 0, 0, 0, 0],
-               stds=[1, 1, 1, 1, 1],
-               wh_ratio_clip=1e-6):
-    """
-    :param rrois: (cx, cy, w, h, theta)
-    :param deltas: (dx, dy, dw, dh, dtheta)
-    :param means:
-    :param stds:
-    :param wh_ratio_clip:
-    :return:
-    """
-    means = paddle.to_tensor(means)
-    stds = paddle.to_tensor(stds)
-    deltas = paddle.reshape(deltas, [-1, deltas.shape[-1]])
-    denorm_deltas = deltas * stds + means
-
-    dx = denorm_deltas[:, 0]
-    dy = denorm_deltas[:, 1]
-    dw = denorm_deltas[:, 2]
-    dh = denorm_deltas[:, 3]
-    dangle = denorm_deltas[:, 4]
-
-    max_ratio = np.abs(np.log(wh_ratio_clip))
-    dw = paddle.clip(dw, min=-max_ratio, max=max_ratio)
-    dh = paddle.clip(dh, min=-max_ratio, max=max_ratio)
-
-    rroi_x = rrois[:, 0]
-    rroi_y = rrois[:, 1]
-    rroi_w = rrois[:, 2]
-    rroi_h = rrois[:, 3]
-    rroi_angle = rrois[:, 4]
-
-    gx = dx * rroi_w * paddle.cos(rroi_angle) - dy * rroi_h * paddle.sin(
-        rroi_angle) + rroi_x
-    gy = dx * rroi_w * paddle.sin(rroi_angle) + dy * rroi_h * paddle.cos(
-        rroi_angle) + rroi_y
-    gw = rroi_w * dw.exp()
-    gh = rroi_h * dh.exp()
-    ga = np.pi * dangle + rroi_angle
-    ga = (ga + np.pi / 4) % np.pi - np.pi / 4
-    ga = paddle.to_tensor(ga)
-
-    gw = paddle.to_tensor(gw, dtype='float32')
-    gh = paddle.to_tensor(gh, dtype='float32')
-    bboxes = paddle.stack([gx, gy, gw, gh, ga], axis=-1)
-    return bboxes
-
-
-def rbox2delta(proposals, gt, means=[0, 0, 0, 0, 0], stds=[1, 1, 1, 1, 1]):
-    """
-
-    Args:
-        proposals:
-        gt:
-        means: 1x5
-        stds: 1x5
-
-    Returns:
-
-    """
-    proposals = proposals.astype(np.float64)
-
-    PI = np.pi
-
-    gt_widths = gt[..., 2]
-    gt_heights = gt[..., 3]
-    gt_angle = gt[..., 4]
-
-    proposals_widths = proposals[..., 2]
-    proposals_heights = proposals[..., 3]
-    proposals_angle = proposals[..., 4]
-
-    coord = gt[..., 0:2] - proposals[..., 0:2]
-    dx = (np.cos(proposals[..., 4]) * coord[..., 0] + np.sin(proposals[..., 4])
-          * coord[..., 1]) / proposals_widths
-    dy = (-np.sin(proposals[..., 4]) * coord[..., 0] + np.cos(proposals[..., 4])
-          * coord[..., 1]) / proposals_heights
-    dw = np.log(gt_widths / proposals_widths)
-    dh = np.log(gt_heights / proposals_heights)
-    da = (gt_angle - proposals_angle)
-
-    da = (da + PI / 4) % PI - PI / 4
-    da /= PI
-
-    deltas = np.stack([dx, dy, dw, dh, da], axis=-1)
-    means = np.array(means, dtype=deltas.dtype)
-    stds = np.array(stds, dtype=deltas.dtype)
-    deltas = (deltas - means) / stds
-    deltas = deltas.astype(np.float32)
-    return deltas
-
-
-def bbox_decode(bbox_preds,
-                anchors,
-                means=[0, 0, 0, 0, 0],
-                stds=[1, 1, 1, 1, 1]):
-    """decode bbox from deltas
-    Args:
-        bbox_preds: [N,H,W,5]
-        anchors: [H*W,5]
-    return:
-        bboxes: [N,H,W,5]
-    """
-    means = paddle.to_tensor(means)
-    stds = paddle.to_tensor(stds)
-    num_imgs, H, W, _ = bbox_preds.shape
-    bboxes_list = []
-    for img_id in range(num_imgs):
-        bbox_pred = bbox_preds[img_id]
-        # bbox_pred.shape=[5,H,W]
-        bbox_delta = bbox_pred
-        anchors = paddle.to_tensor(anchors)
-        bboxes = delta2rbox(
-            anchors, bbox_delta, means, stds, wh_ratio_clip=1e-6)
-        bboxes = paddle.reshape(bboxes, [H, W, 5])
-        bboxes_list.append(bboxes)
-    return paddle.stack(bboxes_list, axis=0)
 
 
 def poly2rbox(polys):
