@@ -1,0 +1,23 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/gflv2_mbv3.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/gfl_lite_reader.yml',
+]
+
+weights: output/gfl_mbv3_280e_coco/model_final
+find_unused_parameters: True
+use_ema: true
+ema_decay: 0.9998
+epoch: 280
+snapshot_epoch: 10
+
+LearningRate:
+  base_lr: 0.4
+  schedulers:
+  - !CosineDecay
+    max_epochs: 280
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 300
