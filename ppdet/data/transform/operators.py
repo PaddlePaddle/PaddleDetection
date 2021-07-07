@@ -40,6 +40,7 @@ from PIL import Image, ImageEnhance, ImageDraw
 from ppdet.core.workspace import serializable
 from ppdet.modeling.layers import AnchorGrid
 from ppdet.modeling import bbox_utils
+from ..reader import Compose
 
 from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
@@ -2348,7 +2349,7 @@ class RandomResizeCrop(BaseOperator):
                 for gt_segm in sample['gt_segm']
             ]
             sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
-        
+
         return sample
 
 
@@ -2528,3 +2529,354 @@ class Mosaic(BaseOperator):
             sample['difficult'] = difficult
 
         return sample
+
+
+@register_op
+class RandomSelect(BaseOperator):
+    """
+    Randomly choose a transformation between transforms1 and transforms2,
+    and the probability of choosing transforms1 is p.
+    """
+
+    def __init__(self, transforms1, transforms2, p=0.5):
+        super(RandomSelect, self).__init__()
+        self.transforms1 = Compose(transforms1)
+        self.transforms2 = Compose(transforms2)
+        self.p = p
+
+    def apply(self, sample, context=None):
+        if random.random() < self.p:
+            return self.transforms1(sample)
+        return self.transforms2(sample)
+
+
+@register_op
+class RandomShortSideResize(BaseOperator):
+    def __init__(self,
+                 short_side_sizes,
+                 max_size=None,
+                 interp=cv2.INTER_LINEAR,
+                 random_interp=False):
+        """
+        Resize the image randomly according to the short side. If max_size is not None,
+        the long side is scaled according to max_size. The whole process will be keep ratio.
+        Args:
+            short_side_sizes (list|tuple): Image target short side size.
+            max_size (int): The size of the longest side of image after resize.
+            interp (int): The interpolation method.
+            random_interp (bool): Whether random select interpolation method.
+        """
+        super(RandomShortSideResize, self).__init__()
+
+        assert isinstance(short_side_sizes,
+                          Sequence), "short_side_sizes must be List or Tuple"
+
+        self.short_side_sizes = short_side_sizes
+        self.max_size = max_size
+        self.interp = interp
+        self.random_interp = random_interp
+        self.interps = [
+            cv2.INTER_NEAREST,
+            cv2.INTER_LINEAR,
+            cv2.INTER_AREA,
+            cv2.INTER_CUBIC,
+            cv2.INTER_LANCZOS4,
+        ]
+
+    def get_size_with_aspect_ratio(self, image_shape, size, max_size=None):
+        h, w = image_shape
+        if max_size is not None:
+            min_original_size = float(min((w, h)))
+            max_original_size = float(max((w, h)))
+            if max_original_size / min_original_size * size > max_size:
+                size = int(
+                    round(max_size * min_original_size / max_original_size))
+
+        if (w <= h and w == size) or (h <= w and h == size):
+            return (w, h)
+
+        if w < h:
+            ow = size
+            oh = int(size * h / w)
+        else:
+            oh = size
+            ow = int(size * w / h)
+
+        return (ow, oh)
+
+    def resize(self,
+               sample,
+               target_size,
+               max_size=None,
+               interp=cv2.INTER_LINEAR):
+        im = sample['image']
+        if not isinstance(im, np.ndarray):
+            raise TypeError("{}: image type is not numpy.".format(self))
+        if len(im.shape) != 3:
+            raise ImageError('{}: image is not 3-dimensional.'.format(self))
+
+        target_size = self.get_size_with_aspect_ratio(im.shape[:2], target_size,
+                                                      max_size)
+        im_scale_y, im_scale_x = target_size[1] / im.shape[0], target_size[
+            0] / im.shape[1]
+
+        sample['image'] = cv2.resize(im, target_size, interpolation=interp)
+        sample['im_shape'] = np.asarray(target_size[::-1], dtype=np.float32)
+        if 'scale_factor' in sample:
+            scale_factor = sample['scale_factor']
+            sample['scale_factor'] = np.asarray(
+                [scale_factor[0] * im_scale_y, scale_factor[1] * im_scale_x],
+                dtype=np.float32)
+        else:
+            sample['scale_factor'] = np.asarray(
+                [im_scale_y, im_scale_x], dtype=np.float32)
+
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(
+                sample['gt_bbox'], [im_scale_x, im_scale_y], target_size)
+        # apply polygon
+        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], im.shape[:2],
+                                                [im_scale_x, im_scale_y])
+        # apply semantic
+        if 'semantic' in sample and sample['semantic']:
+            semantic = sample['semantic']
+            semantic = cv2.resize(
+                semantic.astype('float32'),
+                target_size,
+                interpolation=self.interp)
+            semantic = np.asarray(semantic).astype('int32')
+            semantic = np.expand_dims(semantic, 0)
+            sample['semantic'] = semantic
+        # apply gt_segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.resize(
+                    gt_segm, target_size, interpolation=cv2.INTER_NEAREST)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        return sample
+
+    def apply_bbox(self, bbox, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        bbox[:, 0::2] *= im_scale_x
+        bbox[:, 1::2] *= im_scale_y
+        bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
+        bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
+        return bbox.astype('float32')
+
+    def apply_segm(self, segms, im_size, scale):
+        def _resize_poly(poly, im_scale_x, im_scale_y):
+            resized_poly = np.array(poly).astype('float32')
+            resized_poly[0::2] *= im_scale_x
+            resized_poly[1::2] *= im_scale_y
+            return resized_poly.tolist()
+
+        def _resize_rle(rle, im_h, im_w, im_scale_x, im_scale_y):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, im_h, im_w)
+
+            mask = mask_util.decode(rle)
+            mask = cv2.resize(
+                mask,
+                None,
+                None,
+                fx=im_scale_x,
+                fy=im_scale_y,
+                interpolation=self.interp)
+            rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
+            return rle
+
+        im_h, im_w = im_size
+        im_scale_x, im_scale_y = scale
+        resized_segms = []
+        for segm in segms:
+            if is_poly(segm):
+                # Polygon format
+                resized_segms.append([
+                    _resize_poly(poly, im_scale_x, im_scale_y) for poly in segm
+                ])
+            else:
+                # RLE format
+                import pycocotools.mask as mask_util
+                resized_segms.append(
+                    _resize_rle(segm, im_h, im_w, im_scale_x, im_scale_y))
+
+        return resized_segms
+
+    def apply(self, sample, context=None):
+        target_size = random.choice(self.short_side_sizes)
+        interp = random.choice(
+            self.interps) if self.random_interp else self.interp
+
+        return self.resize(sample, target_size, self.max_size, interp)
+
+
+@register_op
+class RandomSizeCrop(BaseOperator):
+    """
+    Cut the image randomly according to `min_size` and `max_size`
+    """
+
+    def __init__(self, min_size, max_size):
+        super(RandomSizeCrop, self).__init__()
+        self.min_size = min_size
+        self.max_size = max_size
+
+        from paddle.vision.transforms.functional import crop as paddle_crop
+        self.paddle_crop = paddle_crop
+
+    @staticmethod
+    def get_crop_params(img_shape, output_size):
+        """Get parameters for ``crop`` for a random crop.
+        Args:
+            img_shape (list|tuple): Image's height and width.
+            output_size (list|tuple): Expected output size of the crop.
+        Returns:
+            tuple: params (i, j, h, w) to be passed to ``crop`` for random crop.
+        """
+        h, w = img_shape
+        th, tw = output_size
+
+        if h + 1 < th or w + 1 < tw:
+            raise ValueError(
+                "Required crop size {} is larger then input image size {}".
+                format((th, tw), (h, w)))
+
+        if w == tw and h == th:
+            return 0, 0, h, w
+
+        i = random.randint(0, h - th + 1)
+        j = random.randint(0, w - tw + 1)
+        return i, j, th, tw
+
+    def crop(self, sample, region):
+        image_shape = sample['image'].shape[:2]
+        sample['image'] = self.paddle_crop(sample['image'], *region)
+
+        keep_index = None
+        # apply bbox
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], region)
+            bbox = sample['gt_bbox'].reshape([-1, 2, 2])
+            area = (bbox[:, 1, :] - bbox[:, 0, :]).prod(axis=1)
+            keep_index = np.where(area > 0)[0]
+            sample['gt_bbox'] = sample['gt_bbox'][keep_index] if len(
+                keep_index) > 0 else np.zeros(
+                    [0, 4], dtype=np.float32)
+            sample['gt_class'] = sample['gt_class'][keep_index] if len(
+                keep_index) > 0 else np.zeros(
+                    [0, 1], dtype=np.float32)
+            if 'gt_score' in sample:
+                sample['gt_score'] = sample['gt_score'][keep_index] if len(
+                    keep_index) > 0 else np.zeros(
+                        [0, 1], dtype=np.float32)
+            if 'is_crowd' in sample:
+                sample['is_crowd'] = sample['is_crowd'][keep_index] if len(
+                    keep_index) > 0 else np.zeros(
+                        [0, 1], dtype=np.float32)
+
+        # apply polygon
+        if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+            sample['gt_poly'] = self.apply_segm(sample['gt_poly'], region,
+                                                image_shape)
+            if keep_index is not None:
+                sample['gt_poly'] = sample['gt_poly'][keep_index]
+        # apply gt_segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            i, j, h, w = region
+            sample['gt_segm'] = sample['gt_segm'][:, i:i + h, j:j + w]
+            if keep_index is not None:
+                sample['gt_segm'] = sample['gt_segm'][keep_index]
+
+        return sample
+
+    def apply_bbox(self, bbox, region):
+        i, j, h, w = region
+        region_size = np.asarray([w, h])
+        crop_bbox = bbox - np.asarray([j, i, j, i])
+        crop_bbox = np.minimum(crop_bbox.reshape([-1, 2, 2]), region_size)
+        crop_bbox = crop_bbox.clip(min=0)
+        return crop_bbox.reshape([-1, 4]).astype('float32')
+
+    def apply_segm(self, segms, region, image_shape):
+        def _crop_poly(segm, crop):
+            xmin, ymin, xmax, ymax = crop
+            crop_coord = [xmin, ymin, xmin, ymax, xmax, ymax, xmax, ymin]
+            crop_p = np.array(crop_coord).reshape(4, 2)
+            crop_p = Polygon(crop_p)
+
+            crop_segm = list()
+            for poly in segm:
+                poly = np.array(poly).reshape(len(poly) // 2, 2)
+                polygon = Polygon(poly)
+                if not polygon.is_valid:
+                    exterior = polygon.exterior
+                    multi_lines = exterior.intersection(exterior)
+                    polygons = shapely.ops.polygonize(multi_lines)
+                    polygon = MultiPolygon(polygons)
+                multi_polygon = list()
+                if isinstance(polygon, MultiPolygon):
+                    multi_polygon = copy.deepcopy(polygon)
+                else:
+                    multi_polygon.append(copy.deepcopy(polygon))
+                for per_polygon in multi_polygon:
+                    inter = per_polygon.intersection(crop_p)
+                    if not inter:
+                        continue
+                    if isinstance(inter, (MultiPolygon, GeometryCollection)):
+                        for part in inter:
+                            if not isinstance(part, Polygon):
+                                continue
+                            part = np.squeeze(
+                                np.array(part.exterior.coords[:-1]).reshape(1,
+                                                                            -1))
+                            part[0::2] -= xmin
+                            part[1::2] -= ymin
+                            crop_segm.append(part.tolist())
+                    elif isinstance(inter, Polygon):
+                        crop_poly = np.squeeze(
+                            np.array(inter.exterior.coords[:-1]).reshape(1, -1))
+                        crop_poly[0::2] -= xmin
+                        crop_poly[1::2] -= ymin
+                        crop_segm.append(crop_poly.tolist())
+                    else:
+                        continue
+            return crop_segm
+
+        def _crop_rle(rle, crop, height, width):
+            if 'counts' in rle and type(rle['counts']) == list:
+                rle = mask_util.frPyObjects(rle, height, width)
+            mask = mask_util.decode(rle)
+            mask = mask[crop[1]:crop[3], crop[0]:crop[2]]
+            rle = mask_util.encode(np.array(mask, order='F', dtype=np.uint8))
+            return rle
+
+        i, j, h, w = region
+        crop = [j, i, j + w, i + h]
+        height, width = image_shape
+        crop_segms = []
+        for segm in segms:
+            if is_poly(segm):
+                import copy
+                import shapely.ops
+                from shapely.geometry import Polygon, MultiPolygon, GeometryCollection
+                # Polygon format
+                crop_segms.append(_crop_poly(segm, crop))
+            else:
+                # RLE format
+                import pycocotools.mask as mask_util
+                crop_segms.append(_crop_rle(segm, crop, height, width))
+        return crop_segms
+
+    def apply(self, sample, context=None):
+        h = random.randint(self.min_size,
+                           min(sample['image'].shape[0], self.max_size))
+        w = random.randint(self.min_size,
+                           min(sample['image'].shape[1], self.max_size))
+
+        region = self.get_crop_params(sample['image'].shape[:2], [h, w])
+        return self.crop(sample, region)

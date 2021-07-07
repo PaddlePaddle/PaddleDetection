@@ -244,10 +244,11 @@ class OptimizerBuilder():
         optim_args = self.optimizer.copy()
         optim_type = optim_args['type']
         del optim_args['type']
+        if optim_type != 'AdamW':
+            optim_args['weight_decay'] = regularization
         op = getattr(optimizer, optim_type)
         return op(learning_rate=learning_rate,
                   parameters=params,
-                  weight_decay=regularization,
                   grad_clip=grad_clip,
                   **optim_args)
 
