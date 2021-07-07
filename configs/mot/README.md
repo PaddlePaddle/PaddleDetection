@@ -163,7 +163,7 @@ In the annotation text, each line is describing a bounding box and has the follo
 ```
 **Notes:**
 - `class` should be `0`. Only single-class multi-object tracking is supported now.
-- `identity` is an integer from `0` to `num_identities - 1`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
+- `identity` is an integer from `1` to `num_identities`(`num_identities` is the total number of instances of objects in the dataset), or `-1` if this box has no identity annotation.
 - `[x_center] [y_center] [width] [height]` are the center coordinates, width and height, note that they are normalized by the width/height of the image, so they are floating point numbers ranging from 0 to 1.
 
 ### Dataset Directory
@@ -257,7 +257,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairm
 ```bash
 python deploy/python/mot_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
-**Notes:** 
+**Notes:**
 The tracking model is used to predict the video, and does not support the prediction of a single image. The visualization video of the tracking results is saved by default. You can add `--save_mot_txts` to save the txt result file, or `--save_images` to save the visualization images.
 
 ### 6. Using exported MOT and keypoint model for unite python inference
@@ -265,7 +265,7 @@ The tracking model is used to predict the video, and does not support the predic
 ```bash
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
-**Notes:** 
+**Notes:**
  Keypoint model export tutorial: `configs/keypoint/README.md`.
 
 ## Citations
