@@ -927,37 +927,41 @@ class JDEBox(object):
         gy2 = gy + gh * 0.5
         return paddle.stack([gx1, gy1, gx2, gy2], axis=1)
 
-    def decode_delta_map(self, delta_map, anchors):
-        nB, nA, nGh, nGw, _ = delta_map.shape[:]
-        anchor_mesh = self.generate_anchor(nGh, nGw, anchors)
-        # only support bs=1
+    def decode_delta_map(self, nA, nGh, nGw, delta_map, anchor_vec):
+        anchor_mesh = self.generate_anchor(nGh, nGw, anchor_vec)
         anchor_mesh = paddle.unsqueeze(anchor_mesh, 0)
-
         pred_list = self.decode_delta(
             paddle.reshape(
                 delta_map, shape=[-1, 4]),
             paddle.reshape(
                 anchor_mesh, shape=[-1, 4]))
-        pred_map = paddle.reshape(pred_list, shape=[nB, nA * nGh * nGw, 4])
+        pred_map = paddle.reshape(pred_list, shape=[nA * nGh * nGw, 4])
         return pred_map
 
     def _postprocessing_by_level(self, nA, stride, head_out, anchor_vec):
-        boxes_shape = head_out.shape
-        nB, nGh, nGw = 1, boxes_shape[-2], boxes_shape[-1]
-        # only support bs=1
-        p = paddle.reshape(
-            head_out, shape=[nB, nA, self.num_classes + 5, nGh, nGw])
-        p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, nGh, nGw, 6]
-        p_box = p[:, :, :, :, :4]
-        boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*nGh*nGw, 4]
-        boxes = boxes * stride
+        boxes_shape = head_out.shape  # [nB, nA*6, nGh, nGw]
+        nGh, nGw = boxes_shape[-2], boxes_shape[-1]
+        nB = 1  # TODO: only support bs=1 now
+        boxes_list, scores_list = [], []
+        for idx in range(nB):
+            p = paddle.reshape(
+                head_out[idx], shape=[nA, self.num_classes + 5, nGh, nGw])
+            p = paddle.transpose(p, perm=[0, 2, 3, 1])  # [nA, nGh, nGw, 6]
+            delta_map = p[:, :, :, :4]
+            boxes = self.decode_delta_map(nA, nGh, nGw, delta_map, anchor_vec)
+            # [nA * nGh * nGw, 4]
+            boxes_list.append(boxes * stride)
 
-        p_conf = paddle.transpose(
-            p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
-        p_conf = F.softmax(
-            p_conf, axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
-        scores = paddle.reshape(p_conf, shape=[nB, nA * nGh * nGw, 1])
-        return boxes, scores
+            p_conf = paddle.transpose(
+                p[:, :, :, 4:6], perm=[3, 0, 1, 2])  # [2, nA, nGh, nGw]
+            p_conf = F.softmax(
+                p_conf, axis=0)[1, :, :, :].unsqueeze(-1)  # [nA, nGh, nGw, 1]
+            scores = paddle.reshape(p_conf, shape=[nA * nGh * nGw, 1])
+            scores_list.append(scores)
+
+        boxes_results = paddle.stack(boxes_list)
+        scores_results = paddle.stack(scores_list)
+        return boxes_results, scores_results
 
     def __call__(self, yolo_head_out, anchors):
         bbox_pred_list = []
