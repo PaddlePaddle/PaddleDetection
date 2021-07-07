@@ -175,8 +175,7 @@ class JDEEmbeddingHead(nn.Layer):
         for i, p_ide in enumerate(ide_outs):
             p_ide = p_ide.transpose((0, 2, 3, 1))
 
-            p_ide_repeat = paddle.tile(
-                p_ide.unsqueeze(axis=0), [1, self.anchor_scales, 1, 1, 1])
+            p_ide_repeat = paddle.tile(p_ide, [self.anchor_scales, 1, 1, 1])
             embedding = F.normalize(p_ide_repeat, axis=-1)
             emb = paddle.reshape(embedding, [-1, self.embedding_dim])
             emb_outs.append(emb)
