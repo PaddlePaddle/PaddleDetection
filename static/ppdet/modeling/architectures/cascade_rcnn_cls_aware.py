@@ -17,7 +17,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import sys
 
 from collections import OrderedDict
 import copy

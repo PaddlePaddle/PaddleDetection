@@ -21,7 +21,7 @@ from paddle.nn.initializer import Normal
 from numbers import Integral
 import math
 
-from ppdet.core.workspace import register, serializable
+from ppdet.core.workspace import register
 from ..shape_spec import ShapeSpec
 
 __all__ = ['HRNet']

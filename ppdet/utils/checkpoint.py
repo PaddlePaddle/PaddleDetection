@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 import errno
 import os
 import time
-import re
 import numpy as np
 import paddle
 import paddle.nn as nn

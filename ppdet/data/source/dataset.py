@@ -14,7 +14,7 @@
 
 import os
 import numpy as np
-from collections import OrderedDict
+
 try:
     from collections.abc import Sequence
 except Exception:

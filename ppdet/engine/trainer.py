@@ -17,11 +17,9 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import sys
 import copy
 import time
-import random
-import datetime
+
 import numpy as np
 from PIL import Image
 

@@ -21,7 +21,6 @@ import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle import to_tensor
-from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay

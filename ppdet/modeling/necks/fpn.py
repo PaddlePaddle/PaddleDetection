@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-import numpy as np
-import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import XavierUniform
-from paddle.regularizer import L2Decay
+
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
 from ..shape_spec import ShapeSpec

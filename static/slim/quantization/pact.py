@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import paddle
 import paddle.fluid as fluid
-from paddleslim.quant import quant_aware, convert
 import numpy as np
 
 from paddle.fluid.layer_helper import LayerHelper

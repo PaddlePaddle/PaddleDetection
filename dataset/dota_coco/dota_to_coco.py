@@ -17,9 +17,6 @@ import os.path as osp
 import json
 import glob
 import cv2
-import numpy as np
-from PIL import Image
-import logging
 import argparse
 
 # add python path of PadleDetection to sys.path
