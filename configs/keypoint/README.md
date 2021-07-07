@@ -50,24 +50,27 @@ MPII数据集
 ​    **单卡训练：**
 
 ```shell
+#COCO DataSet
 CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
 
 #MPII DataSet
-CUDA_VISIBLE_DEVICES=0 nohup python3 tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
+CUDA_VISIBLE_DEVICES=0 python3 tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
 ​    **多卡训练：**
 
 ```shell
+#COCO DataSet
 CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
 
 #MPII DataSet
-CUDA_VISIBLE_DEVICES=0,1,2,3 nohup python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
+CUDA_VISIBLE_DEVICES=0,1,2,3 python3 -m paddle.distributed.launch tools/train.py -c configs/keypoint/hrnet/hrnet_w32_256x256_mpii.yml
 ```
 
 ​    **模型评估：**
 
 ```shell
+#COCO DataSet
 CUDA_VISIBLE_DEVICES=0 python3 tools/eval.py -c configs/keypoint/higherhrnet/higherhrnet_hrnet_w32_512.yml
 
 #MPII DataSet
