@@ -161,7 +161,7 @@ MOT17
 ```
 **注意**:
 - `class`为`0`，目前仅支持单类别多目标跟踪。
-- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意他们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
@@ -255,7 +255,7 @@ CUDA_VISIBLE_DEVICES=0 python tools/export_model.py -c configs/mot/fairmot/fairm
 ```bash
 python deploy/python/mot_infer.py --model_dir=output_inference/fairmot_dla34_30e_1088x608 --video_file={your video name}.mp4 --device=GPU --save_mot_txts
 ```
-**注意:** 
+**注意:**
  跟踪模型是对视频进行预测，不支持单张图的预测，默认保存跟踪结果可视化后的视频，可添加`--save_mot_txts`表示保存跟踪结果的txt文件，或`--save_images`表示保存跟踪结果可视化图片。
 
 ### 6. 用导出的跟踪和关键点模型Python联合预测
@@ -263,7 +263,7 @@ python deploy/python/mot_infer.py --model_dir=output_inference/fairmot_dla34_30e
 ```bash
 python deploy/python/mot_keypoint_unite_infer.py --mot_model_dir=output_inference/fairmot_dla34_30e_1088x608/ --keypoint_model_dir=output_inference/higherhrnet_hrnet_w32_512/ --video_file={your video name}.mp4 --device=GPU
 ```
-**注意:** 
+**注意:**
  关键点模型导出教程请参考`configs/keypoint/README.md`。
 
 ## 引用

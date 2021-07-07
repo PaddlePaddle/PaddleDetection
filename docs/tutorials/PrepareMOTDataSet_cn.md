@@ -37,7 +37,7 @@ MOT17
 ```
 **注意**:
 - `class`为`0`，目前仅支持单类别多目标跟踪。
-- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意它们的值是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 ### 数据集目录
@@ -206,15 +206,17 @@ imExt=.jpg
 
 `gt.txt`里是当前视频中所有图片的原始标注文件，每行都描述一个边界框，格式如下：
 ```
-[frame_id],[identity],[bb_left],[bb_top],[width],[height],[x],[y],[z]
+[frame_id],[identity],[bb_left],[bb_top],[width],[height],[score],[label],[vis_ratio]
 ```
 **注意**:
 - `frame_id`为当前图片帧序号
-- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`
+- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是当前视频中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`
 - `bb_left`是目标框的左边界的x坐标
 - `bb_top`是目标框的上边界的y坐标
 - `width，height`是真实的像素宽高
-- `x,y,z`是3D中用到的，在2D中默认为`-1`
+- `score`是当前目标是否进入考虑范围内的标志(值为0表示此目标在计算中被忽略，而值为1则用于将其标记为活动实例)，默认为`1`
+- `label`是当前目标的种类标签，由于目前仅支持单类别跟踪，默认为`1`，MOT-16数据集中会有其他类别标签，但都是当作ignore类别计算
+- `vis_ratio`是当前目标被其他目标包含或覆挡后的可见率，是从0到1的浮点数，默认为`1`
 
 
 #### labels_with_ids文件夹
@@ -224,7 +226,7 @@ imExt=.jpg
 ```
 **注意**:
 - `class`为`0`，目前仅支持单类别多目标跟踪。
-- `identity`是从`0`到`num_identifies-1`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
+- `identity`是从`1`到`num_identifies`的整数(`num_identifies`是数据集中不同物体实例的总数)，如果此框没有`identity`标注，则为`-1`。
 - `[x_center] [y_center] [width] [height]`是中心点坐标和宽高，注意是由图片的宽度/高度标准化的，因此它们是从0到1的浮点数。
 
 可采用如下脚本生成相应的`labels_with_ids`:
