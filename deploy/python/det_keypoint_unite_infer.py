@@ -19,14 +19,19 @@ import math
 import numpy as np
 import paddle
 
-from topdown_unite_utils import argsparser
+from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, PredictConfig, print_arguments, get_test_images
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from keypoint_visualize import draw_pose
+from visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
-from keypoint_postprocess import affine_backto_orgimages
+from keypoint_postprocess import translate_to_ori_images
+
+KEYPOINT_SUPPORT_MODELS = {
+    'HigherHRNet': 'keypoint_bottomup',
+    'HRNet': 'keypoint_topdown'
+}
 
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
@@ -68,7 +73,7 @@ def predict_with_given_det(image, det_res, keypoint_detector,
         else:
             keypoint_result = keypoint_detector.predict(batch_images,
                                                         keypoint_threshold)
-        orgkeypoints, scores = affine_backto_orgimages(keypoint_result,
+        orgkeypoints, scores = translate_to_ori_images(keypoint_result,
                                                        batch_records)
         keypoint_vector.append(orgkeypoints)
         score_vector.append(scores)
@@ -189,6 +194,9 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn)
 
     pred_config = PredictConfig_KeyPoint(FLAGS.keypoint_model_dir)
+    assert KEYPOINT_SUPPORT_MODELS[
+        pred_config.
+        arch] == 'keypoint_topdown', 'Detection-Keypoint unite inference only supports topdown models.'
     topdown_keypoint_detector = KeyPoint_Detector(
         pred_config,
         FLAGS.keypoint_model_dir,

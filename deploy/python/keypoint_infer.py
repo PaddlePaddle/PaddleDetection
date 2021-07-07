@@ -26,7 +26,7 @@ import paddle
 from preprocess import preprocess, NormalizeImage, Permute
 from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
 from keypoint_postprocess import HrHRNetPostProcess, HRNetPostProcess
-from keypoint_visualize import draw_pose
+from visualize import draw_pose
 from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
@@ -376,8 +376,7 @@ def predict_video(detector, camera_id):
         video_name = 'output.mp4'
     else:
         capture = cv2.VideoCapture(FLAGS.video_file)
-        video_name = os.path.splitext(os.path.basename(FLAGS.video_file))[
-            0] + '.mp4'
+        video_name = os.path.split(FLAGS.video_file)[-1]
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))

@@ -135,7 +135,6 @@ class NormalizeImage(object):
 
         if self.is_scale:
             im = im / 255.0
-
         im -= mean
         im /= std
         return im, im_info

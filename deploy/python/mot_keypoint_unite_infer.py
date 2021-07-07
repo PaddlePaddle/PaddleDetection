@@ -21,19 +21,17 @@ import copy
 
 from mot_keypoint_unite_utils import argsparser
 from keypoint_infer import KeyPoint_Detector, PredictConfig_KeyPoint
-from keypoint_det_unite_infer import bench_log
-from keypoint_visualize import draw_pose
+from visualize import draw_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import Timer
 
 from tracker import JDETracker
-from mot_infer import MOT_Detector, write_mot_results
+from mot_jde_infer import JDE_Detector, write_mot_results
 from infer import Detector, PredictConfig, print_arguments, get_test_images
 from ppdet.modeling.mot import visualization as mot_vis
 from ppdet.modeling.mot.utils import Timer as FPSTimer
 from utils import get_current_memory_mb
-from keypoint_postprocess import affine_backto_orgimages
-from keypoint_det_unite_infer import predict_with_given_det, bench_log
+from det_keypoint_unite_infer import predict_with_given_det, bench_log
 
 # Global dictionary
 KEYPOINT_SUPPORT_MODELS = {
@@ -63,7 +61,7 @@ def mot_keypoint_unite_predict_image(mot_model,
 
         if FLAGS.run_benchmark:
             online_tlwhs, online_scores, online_ids = mot_model.predict(
-                frame, FLAGS.mot_threshold, warmup=10, repeats=10)
+                [frame], FLAGS.mot_threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             mot_model.cpu_mem += cm
             mot_model.gpu_mem += gm
@@ -71,7 +69,7 @@ def mot_keypoint_unite_predict_image(mot_model,
 
         else:
             online_tlwhs, online_scores, online_ids = mot_model.predict(
-                frame, FLAGS.mot_threshold)
+                [frame], FLAGS.mot_threshold)
 
         keypoint_arch = keypoint_model.pred_config.arch
         if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown':
@@ -101,7 +99,9 @@ def mot_keypoint_unite_predict_image(mot_model,
                 keypoint_results,
                 visual_thread=FLAGS.keypoint_threshold,
                 returnimg=True,
-                ids=online_ids)
+                ids=online_ids
+                if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown'
+                else None)
 
             online_im = mot_vis.plot_tracking(
                 im, online_tlwhs, online_ids, online_scores, frame_id=i)
@@ -109,7 +109,10 @@ def mot_keypoint_unite_predict_image(mot_model,
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
-                cv2.imwrite(os.path.join(FLAGS.output_dir, img_file), online_im)
+                img_name = os.path.split(img_file)[-1]
+                out_path = os.path.join(FLAGS.output_dir, img_name)
+                cv2.imwrite(out_path, online_im)
+                print("save result to: " + out_path)
 
 
 def mot_keypoint_unite_predict_video(mot_model,
@@ -146,7 +149,7 @@ def mot_keypoint_unite_predict_video(mot_model,
         timer_mot_kp.tic()
         timer_mot.tic()
         online_tlwhs, online_scores, online_ids = mot_model.predict(
-            frame, FLAGS.mot_threshold)
+            [frame], FLAGS.mot_threshold)
         timer_mot.toc()
         mot_results.append(
             (frame_id + 1, online_tlwhs, online_scores, online_ids))
@@ -211,7 +214,7 @@ def mot_keypoint_unite_predict_video(mot_model,
 
 def main():
     pred_config = PredictConfig(FLAGS.mot_model_dir)
-    mot_model = MOT_Detector(
+    mot_model = JDE_Detector(
         pred_config,
         FLAGS.mot_model_dir,
         device=FLAGS.device,
