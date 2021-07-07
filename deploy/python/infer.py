@@ -50,7 +50,7 @@ SUPPORT_MODELS = {
 class Detector(object):
     """
     Args:
-        config (object): config of model, defined by `Config(model_dir)`
+        pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
@@ -58,8 +58,10 @@ class Detector(object):
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
-        threshold (float): threshold to reserve the result for output.
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN
     """
 
     def __init__(self,
@@ -124,7 +126,7 @@ class Detector(object):
     def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image_list (list): ,list of image
+            image_list (list): list of image
             threshold (float): threshold of predicted box' score
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
@@ -189,7 +191,10 @@ class DetectorSOLOv2(Detector):
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
-        threshold (float): threshold to reserve the result for output.
+        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
+            calibration, trt_calib_mode need to set True
+        cpu_threads (int): cpu threads
+        enable_mkldnn (bool): whether to open MKLDNN 
     """
 
     def __init__(self,
@@ -284,6 +289,14 @@ def create_inputs(imgs, im_info):
 
     im_shape = []
     scale_factor = []
+    if len(imgs) == 1:
+        inputs['image'] = np.array((imgs[0], )).astype('float32')
+        inputs['im_shape'] = np.array(
+            (im_info[0]['im_shape'], )).astype('float32')
+        inputs['scale_factor'] = np.array(
+            (im_info[0]['scale_factor'], )).astype('float32')
+        return inputs
+
     for e in im_info:
         im_shape.append(np.array((e['im_shape'], )).astype('float32'))
         scale_factor.append(np.array((e['scale_factor'], )).astype('float32'))
