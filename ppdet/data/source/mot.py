@@ -175,12 +175,12 @@ class MOTDataSet(DetDataset):
             lbl_file = self.label_files[data_name][img_index - start_index]
 
             if not os.path.exists(img_file):
-                logger.warn('Illegal image file: {}, and it will be ignored'.
-                            format(img_file))
+                logger.warning('Illegal image file: {}, and it will be ignored'.
+                               format(img_file))
                 continue
             if not os.path.isfile(lbl_file):
-                logger.warn('Illegal label file: {}, and it will be ignored'.
-                            format(lbl_file))
+                logger.warning('Illegal label file: {}, and it will be ignored'.
+                               format(lbl_file))
                 continue
 
             labels = np.loadtxt(lbl_file, dtype=np.float32).reshape(-1, 6)

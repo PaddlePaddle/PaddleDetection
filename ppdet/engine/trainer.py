@@ -198,7 +198,7 @@ class Trainer(object):
         elif self.cfg.metric == 'ReID':
             self._metrics = [JDEReIDMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 

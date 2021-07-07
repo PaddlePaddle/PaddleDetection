@@ -111,13 +111,14 @@ class VOCDataSet(DataSet):
                 img_file, xml_file = [os.path.join(image_dir, x) \
                         for x in line.strip().split()[:2]]
                 if not os.path.exists(img_file):
-                    logger.warn(
+                    logger.warning(
                         'Illegal image file: {}, and it will be ignored'.format(
                             img_file))
                     continue
                 if not os.path.isfile(xml_file):
-                    logger.warn('Illegal xml file: {}, and it will be ignored'.
-                                format(xml_file))
+                    logger.warning(
+                        'Illegal xml file: {}, and it will be ignored'.format(
+                            xml_file))
                     continue
                 tree = ET.parse(xml_file)
                 if tree.find('id') is None:
@@ -129,7 +130,7 @@ class VOCDataSet(DataSet):
                 im_w = float(tree.find('size').find('width').text)
                 im_h = float(tree.find('size').find('height').text)
                 if im_w < 0 or im_h < 0:
-                    logger.warn(
+                    logger.warning(
                         'Illegal width: {} or height: {} in annotation, '
                         'and {} will be ignored'.format(im_w, im_h, xml_file))
                     continue
@@ -156,7 +157,7 @@ class VOCDataSet(DataSet):
                         is_crowd.append([0])
                         difficult.append([_difficult])
                     else:
-                        logger.warn(
+                        logger.warning(
                             'Found an invalid bbox in annotations: xml_file: {}'
                             ', x1: {}, y1: {}, x2: {}, y2: {}.'.format(
                                 xml_file, x1, y1, x2, y2))

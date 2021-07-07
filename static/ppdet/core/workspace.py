@@ -166,8 +166,8 @@ def make_partial(cls):
     if not hasattr(op_module, op_name):
         import logging
         logger = logging.getLogger(__name__)
-        logger.warn('{} OP not found, maybe a newer version of paddle '
-                    'is required.'.format(cls.__op__))
+        logger.warning('{} OP not found, maybe a newer version of paddle '
+                       'is required.'.format(cls.__op__))
         return cls
 
     op = getattr(op_module, op_name)
