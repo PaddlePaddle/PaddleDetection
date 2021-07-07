@@ -327,6 +327,9 @@ class Trainer(object):
             self.cfg.log_iter, fmt='{avg:.4f}')
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
 
+        if self.cfg.get('print_flops', False):
+            self._flops(self.loader)
+
         for epoch_id in range(self.start_epoch, self.cfg.epoch):
             self.status['mode'] = 'train'
             self.status['epoch_id'] = epoch_id
@@ -407,6 +410,8 @@ class Trainer(object):
         self._compose_callback.on_epoch_begin(self.status)
         self.status['mode'] = 'eval'
         self.model.eval()
+        if self.cfg.get('print_flops', False):
+            self._flops(loader)
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             self._compose_callback.on_step_begin(self.status)
@@ -452,6 +457,8 @@ class Trainer(object):
         # Run Infer 
         self.status['mode'] = 'test'
         self.model.eval()
+        if self.cfg.get('print_flops', False):
+            self._flops(loader)
         for step_id, data in enumerate(loader):
             self.status['step_id'] = step_id
             # forward
@@ -589,3 +596,28 @@ class Trainer(object):
                 pass
         paddle.disable_static()
         return pruned_input_spec
+
+    def _flops(self, loader):
+        self.model.eval()
+        try:
+            import paddleslim
+        except Exception as e:
+            logger.warning(
+                'Unable to calculate flops, please install paddleslim, for example: `pip install paddleslim`'
+            )
+            return
+
+        from paddleslim.analysis import dygraph_flops as flops
+        input_data = None
+        for data in loader:
+            input_data = data
+            break
+
+        input_spec = [{
+            "image": input_data['image'][0].unsqueeze(0),
+            "im_shape": input_data['im_shape'][0].unsqueeze(0),
+            "scale_factor": input_data['scale_factor'][0].unsqueeze(0)
+        }]
+        flops = flops(self.model, input_spec) / (1000**3)
+        logger.info(" Model FLOPs : {:.6f}G. (image shape is {})".format(
+            flops, input_data['image'][0].unsqueeze(0).shape))
