@@ -18,11 +18,10 @@ from __future__ import print_function
 
 import paddle
 import paddle.nn as nn
-from paddle.nn.layer.transformer import _convert_attention_mask
 import paddle.nn.functional as F
 
 from ppdet.core.workspace import register
-from ..layers import MultiHeadAttention
+from ..layers import MultiHeadAttention, _convert_attention_mask
 from .position_encoding import PositionEmbedding
 from .utils import *
 from ..initializer import *
