@@ -282,6 +282,7 @@ PaddleDetection is released under the [Apache 2.0 license](LICENSE).
 ## Contributing
 
 Contributions are highly welcomed and we would really appreciate your feedback!!
+- Thanks [Mandroide](https://github.com/Mandroide) for cleaning the code and unifying some function interface.
 
 ## Citation
 
