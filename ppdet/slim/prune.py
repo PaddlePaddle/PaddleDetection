@@ -65,7 +65,7 @@ class Pruner(object):
         if self.print_params:
             print_prune_params(model)
 
-        ori_flops = flops(model, input_spec) / 1000
+        ori_flops = flops(model, input_spec) / (1000**3)
         logger.info("FLOPs before pruning: {}GFLOPs".format(ori_flops))
         if self.criterion == 'fpgm':
             pruner = paddleslim.dygraph.FPGMFilterPruner(model, input_spec)
@@ -78,7 +78,7 @@ class Pruner(object):
         for i, param in enumerate(self.pruned_params):
             ratios[param] = pruned_ratios[i]
         pruner.prune_vars(ratios, [0])
-        pruned_flops = flops(model, input_spec) / 1000
+        pruned_flops = flops(model, input_spec) / (1000**3)
         logger.info("FLOPs after pruning: {}GFLOPs; pruned ratio: {}".format(
             pruned_flops, (ori_flops - pruned_flops) / ori_flops))
 
