@@ -21,10 +21,10 @@ import copy
 import paddle
 import paddle.nn as nn
 
-import ppdet.modeling.initializer as init
 from ppdet.core.workspace import register
 from ppdet.modeling.heads.roi_extractor import RoIAlign
 from ppdet.modeling.bbox_utils import delta2bbox
+from .. import initializer as init
 
 _DEFAULT_SCALE_CLAMP = math.log(100000. / 16)
 
@@ -366,6 +366,5 @@ class SparseRCNNHead(nn.Layer):
 
 def box_cxcywh_to_xyxy(x):
     x_c, y_c, w, h = x.unbind(-1)
-    b = [(x_c - 0.5 * w), (y_c - 0.5 * h),
-         (x_c + 0.5 * w), (y_c + 0.5 * h)]
+    b = [(x_c - 0.5 * w), (y_c - 0.5 * h), (x_c + 0.5 * w), (y_c + 0.5 * h)]
     return paddle.stack(b, axis=-1)
