@@ -35,10 +35,9 @@ import os
 import copy
 
 import cv2
-from PIL import Image, ImageEnhance, ImageDraw
+from PIL import Image, ImageDraw
 
 from ppdet.core.workspace import serializable
-from ppdet.modeling.layers import AnchorGrid
 from ppdet.modeling import bbox_utils
 from ..reader import Compose
 
@@ -46,7 +45,7 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         generate_sample_bbox, clip_bbox, data_anchor_sampling,
                         satisfy_sample_constraint_coverage, crop_image_sampling,
                         generate_sample_bbox_square, bbox_area_sampling,
-                        is_poly, gaussian_radius, draw_gaussian, transform_bbox)
+                        is_poly, transform_bbox)
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)

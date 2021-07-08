@@ -17,14 +17,11 @@ from __future__ import division
 from __future__ import print_function
 
 import math
-import copy
 import paddle
 import paddle.nn as nn
 
 import paddle.optimizer as optimizer
-from paddle.optimizer.lr import CosineAnnealingDecay
 import paddle.regularizer as regularizer
-from paddle import cos
 
 from ppdet.core.workspace import register, serializable
 

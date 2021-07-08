@@ -27,13 +27,12 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.anchor_cluster')
 
 from scipy.cluster.vq import kmeans
-import random
 import numpy as np
 from tqdm import tqdm
 
 from ppdet.utils.cli import ArgsParser
 from ppdet.utils.check import check_gpu, check_version, check_config
-from ppdet.core.workspace import load_config, merge_config, create
+from ppdet.core.workspace import load_config, merge_config
 
 
 class BaseAnchorCluster(object):

@@ -15,7 +15,6 @@
 This code is borrow from https://github.com/nwojke/deep_sort/blob/master/deep_sort/track.py
 """
 
-import numpy as np
 from ppdet.core.workspace import register, serializable
 
 __all__ = ['TrackState', 'Track']

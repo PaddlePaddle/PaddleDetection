@@ -24,7 +24,6 @@ import os
 import time
 import math
 import struct
-import sys
 import six
 
 if six.PY3:
@@ -32,7 +31,6 @@ if six.PY3:
 else:
     import cPickle as pickle
 
-import json
 import uuid
 import random
 import numpy as np

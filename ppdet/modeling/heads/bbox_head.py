@@ -21,8 +21,6 @@ from paddle.nn.initializer import Normal, XavierUniform, KaimingNormal
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register, create
-from ppdet.modeling import ops
-
 from .roi_extractor import RoIAlign
 from ..shape_spec import ShapeSpec
 from ..bbox_utils import bbox2delta

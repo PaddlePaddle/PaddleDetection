@@ -20,10 +20,7 @@ from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.initializer import Uniform
 
-import functools
 from ppdet.core.workspace import register
-from .resnet import ResNet
-import math
 
 __all__ = ['Hourglass']
 

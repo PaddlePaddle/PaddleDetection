@@ -17,7 +17,6 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
 import six
 if six.PY3:
     import pickle

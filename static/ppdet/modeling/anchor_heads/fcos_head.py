@@ -20,8 +20,8 @@ import math
 
 import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Constant, NumpyArrayInitializer
-from paddle.fluid.regularizer import L2Decay
+from paddle.fluid.initializer import Normal, Constant
+
 from ppdet.modeling.ops import ConvNorm, DeformConvNorm
 from ppdet.modeling.ops import MultiClassNMS
 
