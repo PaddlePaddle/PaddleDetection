@@ -131,7 +131,7 @@ class Decode(BaseOperator):
         if 'h' not in sample:
             sample['h'] = im.shape[0]
         elif sample['h'] != im.shape[0]:
-            logger.warn(
+            logger.warning(
                 "The actual image height: {} is not equal to the "
                 "height: {} in annotation, and update sample['h'] by actual "
                 "image height.".format(im.shape[0], sample['h']))
@@ -139,7 +139,7 @@ class Decode(BaseOperator):
         if 'w' not in sample:
             sample['w'] = im.shape[1]
         elif sample['w'] != im.shape[1]:
-            logger.warn(
+            logger.warning(
                 "The actual image width: {} is not equal to the "
                 "width: {} in annotation, and update sample['w'] by actual "
                 "image width.".format(im.shape[1], sample['w']))
@@ -726,7 +726,7 @@ class Resize(BaseOperator):
         # apply rbox
         if 'gt_rbox2poly' in sample:
             if np.array(sample['gt_rbox2poly']).shape[1] != 8:
-                logger.warn(
+                logger.warning(
                     "gt_rbox2poly's length shoule be 8, but actually is {}".
                     format(len(sample['gt_rbox2poly'])))
             sample['gt_rbox2poly'] = self.apply_bbox(sample['gt_rbox2poly'],

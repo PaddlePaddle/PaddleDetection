@@ -211,10 +211,10 @@ class ParallelMap(object):
                 else:
                     errmsg = "consumer[{}] exit abnormally".format(w.ident)
 
-                logger.warn(errmsg)
+                logger.warning(errmsg)
 
         if abnormal_num > 0:
-            logger.warn("{} consumers have exited abnormally!!!" \
+            logger.warning("{} consumers have exited abnormally!!!" \
                 .format(abnormal_num))
 
         return abnormal_num == 0
@@ -239,7 +239,7 @@ class ParallelMap(object):
 
             if isinstance(sample, EndSignal):
                 self._consumer_endsig[sample.id] = sample
-                logger.warn("recv endsignal from outq with errmsg[{}]" \
+                logger.warning("recv endsignal from outq with errmsg[{}]" \
                     .format(sample.errmsg))
 
                 if len(self._consumer_endsig.keys()) < len(self._consumers):
@@ -268,7 +268,7 @@ class ParallelMap(object):
                 " for some consumers exited abnormally before!!!"
 
             if not self.drained():
-                logger.warn("reset before epoch[{}] finishes".format(
+                logger.warning("reset before epoch[{}] finishes".format(
                     self._epoch))
                 self._produced = self._produced - self._consumed
             else:

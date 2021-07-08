@@ -77,7 +77,7 @@ def get_categories(metric_type, anno_file=None, arch=None):
 
     elif metric_type.lower() == 'oid':
         if anno_file and os.path.isfile(anno_file):
-            logger.warn("only default categories support for OID19")
+            logger.warning("only default categories support for OID19")
         return _oid19_category()
 
     elif metric_type.lower() == 'widerface':

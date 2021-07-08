@@ -111,7 +111,7 @@ def main():
     if cfg.weights:
         checkpoint.load_params(exe, eval_prog, cfg.weights)
     else:
-        logger.warn("Please set cfg.weights to load trained model.")
+        logger.warning("Please set cfg.weights to load trained model.")
 
     # whether output bbox is normalized in model output layer
     is_bbox_normalized = False

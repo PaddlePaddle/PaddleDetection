@@ -246,7 +246,7 @@ class Trainer(object):
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 
