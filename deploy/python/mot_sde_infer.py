@@ -214,7 +214,7 @@ class SDE_ReID(object):
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
-        assert not pred_config.tracker, "Tracking model should have tracker"
+        assert pred_config.tracker, "Tracking model should have tracker"
         self.tracker = DeepSORTTracker()
 
     def preprocess(self, crops):

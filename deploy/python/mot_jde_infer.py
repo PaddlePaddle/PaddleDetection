@@ -79,7 +79,7 @@ class JDE_Detector(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
-        assert not pred_config.tracker, "Tracking model should have tracker"
+        assert pred_config.tracker, "Tracking model should have tracker"
         tp = pred_config.tracker
         conf_thres = tp['conf_thres'] if 'conf_thres' in tp else 0.
         tracked_thresh = tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
