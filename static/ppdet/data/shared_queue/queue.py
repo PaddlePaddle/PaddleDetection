@@ -75,7 +75,7 @@ class SharedQueue(Queue):
             stack_info = traceback.format_exc()
             err_msg = 'failed to put a element to SharedQueue '\
                 'with stack info[%s]' % (stack_info)
-            logger.warn(err_msg)
+            logger.warning(err_msg)
 
             if buff is not None:
                 buff.free()
@@ -95,7 +95,7 @@ class SharedQueue(Queue):
             stack_info = traceback.format_exc()
             err_msg = 'failed to get element from SharedQueue '\
                         'with stack info[%s]' % (stack_info)
-            logger.warn(err_msg)
+            logger.warning(err_msg)
             raise e
         finally:
             if buff is not None:

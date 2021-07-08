@@ -175,7 +175,7 @@ class Checkpointer(Callback):
                         else:
                             key = 'mask'
                         if key not in map_res:
-                            logger.warn("Evaluation results empty, this may be due to " \
+                            logger.warning("Evaluation results empty, this may be due to " \
                                         "training iterations being too few or not " \
                                         "loading the correct weights.")
                             return
