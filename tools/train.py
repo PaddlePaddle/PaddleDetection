@@ -16,22 +16,21 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os, sys
+import os
+import sys
+
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-import random
-import numpy as np
 # ignore warning log
 import warnings
 warnings.filterwarnings('ignore')
 
 import paddle
 
-from ppdet.core.workspace import load_config, merge_config, create
-from ppdet.utils.checkpoint import load_weight
+from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
 from ppdet.slim import build_slim_model
 

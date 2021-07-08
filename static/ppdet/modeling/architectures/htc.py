@@ -18,13 +18,9 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import copy
-import numpy as np
 
 import paddle.fluid as fluid
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import MSRA
-from paddle.fluid.regularizer import L2Decay
-from ppdet.experimental import mixed_precision_global_state
+
 from ppdet.core.workspace import register
 from ppdet.utils.check import check_version
 

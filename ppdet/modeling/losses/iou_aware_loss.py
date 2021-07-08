@@ -16,11 +16,10 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from .iou_loss import IouLoss
-from ..bbox_utils import xywh2xyxy, bbox_iou
+from ..bbox_utils import bbox_iou
 
 
 @register

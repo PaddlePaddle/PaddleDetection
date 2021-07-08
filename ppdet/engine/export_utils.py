@@ -40,7 +40,7 @@ TRT_MIN_SUBGRAPH = {
     'HigherHRNet': 3,
     'HRNet': 3,
     'DeepSORT': 3,
-    'JDE': 3,
+    'JDE': 10,
     'FairMOT': 5,
 }
 

@@ -17,11 +17,9 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-import sys
 import copy
 import time
-import random
-import datetime
+
 import numpy as np
 from PIL import Image
 
@@ -246,7 +244,7 @@ class Trainer(object):
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 

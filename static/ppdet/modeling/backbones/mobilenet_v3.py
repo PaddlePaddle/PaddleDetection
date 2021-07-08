@@ -22,10 +22,7 @@ import paddle.fluid as fluid
 from paddle.fluid.param_attr import ParamAttr
 from paddle.fluid.regularizer import L2Decay
 
-import math
 import numpy as np
-from collections import OrderedDict
-
 from ppdet.core.workspace import register
 from numbers import Integral
 

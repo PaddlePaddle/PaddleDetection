@@ -24,7 +24,6 @@ import os
 import time
 import math
 import struct
-import sys
 import six
 
 if six.PY3:
@@ -32,7 +31,6 @@ if six.PY3:
 else:
     import cPickle as pickle
 
-import json
 import uuid
 import random
 import numpy as np
@@ -233,7 +231,7 @@ class PageAllocator(object):
         fname = fname + '.' + str(uuid.uuid4())[:6]
         with open(fname, 'wb') as f:
             f.write(pickle.dumps(info, -1))
-        logger.warn('dump alloc info to file[%s]' % (fname))
+        logger.warning('dump alloc info to file[%s]' % (fname))
 
     def _reset(self):
         alloc_page_pos = self._header_pages
@@ -460,7 +458,7 @@ class SharedMemoryMgr(object):
             if start is None:
                 time.sleep(0.1)
                 if ct % 100 == 0:
-                    logger.warn('not enough space for reason[%s]' % (errmsg))
+                    logger.warning('not enough space for reason[%s]' % (errmsg))
 
                 ct += 1
             else:

@@ -19,11 +19,9 @@ import glob
 import json
 import os
 import os.path as osp
-import sys
 import shutil
 import xml.etree.ElementTree as ET
 from tqdm import tqdm
-import re
 
 import numpy as np
 import PIL.ImageDraw

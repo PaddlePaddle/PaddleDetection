@@ -17,8 +17,6 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import paddle.fluid as fluid
-from paddle.fluid.param_attr import ParamAttr
 from paddleslim.nas.search_space.search_space_base import SearchSpaceBase
 from paddleslim.nas.search_space.search_space_registry import SEARCHSPACE
 from ppdet.modeling.backbones.blazenet import BlazeNet

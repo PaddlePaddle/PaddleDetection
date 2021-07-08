@@ -25,7 +25,6 @@ from paddle.fluid.initializer import Normal, Constant, Uniform, Xavier
 from paddle.fluid.regularizer import L2Decay
 from ppdet.core.workspace import register
 from ppdet.modeling.ops import DeformConv, DropBlock, ConvNorm
-from ppdet.modeling.losses import GiouLoss
 
 __all__ = ['TTFHead', 'TTFLiteHead']
 

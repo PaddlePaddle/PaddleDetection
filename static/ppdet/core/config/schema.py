@@ -185,12 +185,12 @@ def extract_schema(cls):
         annotations = argspec.annotations
         has_kwargs = argspec.varkw is not None
     else:
-        argspec = inspect.getargspec(ctor)
+        argspec = inspect.getfullargspec(ctor)
         # python 2 type hinting workaround, see pep-3107
         # however, since `typeguard` does not support python 2, type checking
         # is still python 3 only for now
         annotations = getattr(ctor, '__annotations__', {})
-        has_kwargs = argspec.keywords is not None
+        has_kwargs = argspec.varkw is not None
 
     names = [arg for arg in argspec.args if arg != 'self']
     defaults = argspec.defaults

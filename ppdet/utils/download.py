@@ -29,10 +29,10 @@ import binascii
 import tarfile
 import zipfile
 
-from .voc_utils import create_list
 from ppdet.core.workspace import BASE_KEY
-
 from .logger import setup_logger
+from .voc_utils import create_list
+
 logger = setup_logger(__name__)
 
 __all__ = [

@@ -21,7 +21,6 @@ from collections import OrderedDict
 from paddle import fluid
 
 from ppdet.core.workspace import register
-import numpy as np
 from ppdet.utils.check import check_version
 
 __all__ = ['CornerNetSqueeze']
