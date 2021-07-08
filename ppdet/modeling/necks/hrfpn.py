@@ -16,8 +16,7 @@ import paddle
 import paddle.nn.functional as F
 from paddle import ParamAttr
 import paddle.nn as nn
-from paddle.regularizer import L2Decay
-from ppdet.core.workspace import register, serializable
+from ppdet.core.workspace import register
 from ..shape_spec import ShapeSpec
 
 __all__ = ['HRFPN']

@@ -19,9 +19,9 @@ from __future__ import print_function
 import numpy as np
 
 import paddle
-import paddle.nn.functional as F
+
 from ppdet.core.workspace import register, serializable
-from ..bbox_utils import xywh2xyxy, bbox_iou
+from ..bbox_utils import bbox_iou
 
 __all__ = ['IouLoss', 'GIoULoss', 'DIouLoss']
 

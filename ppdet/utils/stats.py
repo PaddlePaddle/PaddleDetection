@@ -14,7 +14,6 @@
 
 import collections
 import numpy as np
-import datetime
 
 __all__ = ['SmoothedValue', 'TrainingStats']
 

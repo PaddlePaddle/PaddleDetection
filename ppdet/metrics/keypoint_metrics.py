@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-import copy
 import os
 import json
-from collections import OrderedDict
 from collections import defaultdict
 import numpy as np
 from pycocotools.coco import COCO

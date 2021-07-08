@@ -22,6 +22,7 @@ from . import deepsort
 from . import fairmot
 from . import centernet
 from . import detr
+from . import sparse_rcnn
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -41,3 +42,4 @@ from .fairmot import *
 from .centernet import *
 from .blazeface import *
 from .detr import *
+from .sparse_rcnn import *

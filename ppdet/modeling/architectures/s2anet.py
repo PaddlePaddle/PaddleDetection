@@ -19,7 +19,6 @@ from __future__ import print_function
 import paddle
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
-import numpy as np
 
 __all__ = ['S2ANet']
 

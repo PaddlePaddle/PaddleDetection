@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 import paddle
 from benchmark_utils import PaddleInferBenchmark
-from preprocess import preprocess, NormalizeImage, Permute, LetterBoxResize
+from preprocess import preprocess
 
 from tracker import JDETracker
 from ppdet.modeling.mot import visualization as mot_vis
@@ -28,7 +28,7 @@ from ppdet.modeling.mot.utils import Timer as MOTTimer
 from paddle.inference import Config
 from paddle.inference import create_predictor
 from utils import argsparser, Timer, get_current_memory_mb
-from infer import get_test_images, print_arguments, PredictConfig
+from infer import Detector, get_test_images, print_arguments, PredictConfig
 
 # Global dictionary
 MOT_SUPPORT_MODELS = {
@@ -37,13 +37,14 @@ MOT_SUPPORT_MODELS = {
 }
 
 
-class MOT_Detector(object):
+class JDE_Detector(Detector):
     """
     Args:
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
         device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
         run_mode (str): mode of running(fluid/trt_fp32/trt_fp16)
+        batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
         trt_max_shape (int): max shape for dynamic shape in trt
         trt_opt_shape (int): opt shape for dynamic shape in trt
@@ -58,39 +59,27 @@ class MOT_Detector(object):
                  model_dir,
                  device='CPU',
                  run_mode='fluid',
+                 batch_size=1,
                  trt_min_shape=1,
                  trt_max_shape=1088,
                  trt_opt_shape=608,
                  trt_calib_mode=False,
                  cpu_threads=1,
                  enable_mkldnn=False):
-        self.pred_config = pred_config
-        self.predictor, self.config = load_predictor(
-            model_dir,
-            run_mode=run_mode,
+        super(JDE_Detector, self).__init__(
+            pred_config=pred_config,
+            model_dir=model_dir,
             device=device,
-            min_subgraph_size=self.pred_config.min_subgraph_size,
-            use_dynamic_shape=self.pred_config.use_dynamic_shape,
+            run_mode=run_mode,
+            batch_size=batch_size,
             trt_min_shape=trt_min_shape,
             trt_max_shape=trt_max_shape,
             trt_opt_shape=trt_opt_shape,
             trt_calib_mode=trt_calib_mode,
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn)
-        self.det_times = Timer()
-        self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
-
+        assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
         self.tracker = JDETracker()
-
-    def preprocess(self, im):
-        preprocess_ops = []
-        for op_info in self.pred_config.preprocess_infos:
-            new_op_info = op_info.copy()
-            op_type = new_op_info.pop('type')
-            preprocess_ops.append(eval(op_type)(**new_op_info))
-        im, im_info = preprocess(im, preprocess_ops)
-        inputs = create_inputs(im, im_info)
-        return inputs
 
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
@@ -108,16 +97,16 @@ class MOT_Detector(object):
                 online_scores.append(tscore)
         return online_tlwhs, online_scores, online_ids
 
-    def predict(self, image, threshold=0.5, warmup=0, repeats=1):
+    def predict(self, image_list, threshold=0.5, warmup=0, repeats=1):
         '''
         Args:
-            image (np.ndarray): numpy image data
+            image_list (list): list of image
             threshold (float): threshold of predicted box' score
         Returns:
-            online_tlwhs, online_ids (np.ndarray)
+            online_tlwhs, online_scores, online_ids (np.ndarray)
         '''
         self.det_times.preprocess_time_s.start()
-        inputs = self.preprocess(image)
+        inputs = self.preprocess(image_list)
         self.det_times.preprocess_time_s.end()
 
         pred_dets, pred_embs = None, None
@@ -148,114 +137,6 @@ class MOT_Detector(object):
         self.det_times.postprocess_time_s.end()
         self.det_times.img_num += 1
         return online_tlwhs, online_scores, online_ids
-
-
-def create_inputs(im, im_info):
-    """generate input for different model type
-    Args:
-        im (np.ndarray): image (np.ndarray)
-        im_info (dict): info of image
-    Returns:
-        inputs (dict): input of model
-    """
-    inputs = {}
-    inputs['image'] = np.array((im, )).astype('float32')
-    inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
-    inputs['scale_factor'] = np.array(
-        (im_info['scale_factor'], )).astype('float32')
-    return inputs
-
-
-def load_predictor(model_dir,
-                   run_mode='fluid',
-                   batch_size=1,
-                   device='CPU',
-                   min_subgraph_size=3,
-                   use_dynamic_shape=False,
-                   trt_min_shape=1,
-                   trt_max_shape=1088,
-                   trt_opt_shape=608,
-                   trt_calib_mode=False,
-                   cpu_threads=1,
-                   enable_mkldnn=False):
-    """set AnalysisConfig, generate AnalysisPredictor
-       Note: only support batch_size=1 now
-    Args:
-        model_dir (str): root path of __model__ and __params__
-        run_mode (str): mode of running(fluid/trt_fp32/trt_fp16/trt_int8)
-        batch_size (int): size of pre batch in inference
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
-        use_dynamic_shape (bool): use dynamic shape or not
-        trt_min_shape (int): min shape for dynamic shape in trt
-        trt_max_shape (int): max shape for dynamic shape in trt
-        trt_opt_shape (int): opt shape for dynamic shape in trt
-        trt_calib_mode (bool): If the model is produced by TRT offline quantitative
-            calibration, trt_calib_mode need to set True
-        cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
-    Returns:
-        predictor (PaddlePredictor): AnalysisPredictor
-    Raises:
-        ValueError: predict by TensorRT need use_gpu == True.
-    """
-    if device != 'GPU' and run_mode != 'fluid':
-        raise ValueError(
-            "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
-            .format(run_mode, device))
-    config = Config(
-        os.path.join(model_dir, 'model.pdmodel'),
-        os.path.join(model_dir, 'model.pdiparams'))
-    if device == 'GPU':
-        # initial GPU memory(M), device ID
-        config.enable_use_gpu(200, 0)
-        # optimize graph and fuse op
-        config.switch_ir_optim(True)
-    elif device == 'XPU':
-        config.enable_xpu(10 * 1024 * 1024)
-    else:
-        config.disable_gpu()
-        config.set_cpu_math_library_num_threads(cpu_threads)
-        if enable_mkldnn:
-            try:
-                # cache 10 different shapes for mkldnn to avoid memory leak
-                config.set_mkldnn_cache_capacity(10)
-                config.enable_mkldnn()
-            except Exception as e:
-                print(
-                    "The current environment does not support `mkldnn`, so disable mkldnn."
-                )
-                pass
-
-    precision_map = {
-        'trt_int8': Config.Precision.Int8,
-        'trt_fp32': Config.Precision.Float32,
-        'trt_fp16': Config.Precision.Half
-    }
-    if run_mode in precision_map.keys():
-        config.enable_tensorrt_engine(
-            workspace_size=1 << 10,
-            max_batch_size=batch_size,
-            min_subgraph_size=min_subgraph_size,
-            precision_mode=precision_map[run_mode],
-            use_static=False,
-            use_calib_mode=trt_calib_mode)
-
-        if use_dynamic_shape:
-            min_input_shape = {'image': [1, 3, trt_min_shape, trt_min_shape]}
-            max_input_shape = {'image': [1, 3, trt_max_shape, trt_max_shape]}
-            opt_input_shape = {'image': [1, 3, trt_opt_shape, trt_opt_shape]}
-            config.set_trt_dynamic_shape_info(min_input_shape, max_input_shape,
-                                              opt_input_shape)
-            print('trt set dynamic shape done!')
-
-    # disable print log when predict
-    config.disable_glog_info()
-    # enable shared memory
-    config.enable_memory_optim()
-    # disable feed, fetch OP, needed by zero_copy_run
-    config.switch_use_feed_fetch_ops(False)
-    predictor = create_predictor(config)
-    return predictor, config
 
 
 def write_mot_results(filename, results, data_type='mot'):
@@ -293,7 +174,7 @@ def predict_image(detector, image_list):
     for i, img_file in enumerate(image_list):
         frame = cv2.imread(img_file)
         if FLAGS.run_benchmark:
-            detector.predict(frame, FLAGS.threshold, warmup=10, repeats=10)
+            detector.predict([frame], FLAGS.threshold, warmup=10, repeats=10)
             cm, gm, gu = get_current_memory_mb()
             detector.cpu_mem += cm
             detector.gpu_mem += gm
@@ -301,15 +182,16 @@ def predict_image(detector, image_list):
             print('Test iter {}, file name:{}'.format(i, img_file))
         else:
             online_tlwhs, online_scores, online_ids = detector.predict(
-                frame, FLAGS.threshold)
-
+                [frame], FLAGS.threshold)
             online_im = mot_vis.plot_tracking(
                 frame, online_tlwhs, online_ids, online_scores, frame_id=i)
-
             if FLAGS.save_images:
                 if not os.path.exists(FLAGS.output_dir):
                     os.makedirs(FLAGS.output_dir)
-                cv2.imwrite(os.path.join(FLAGS.output_dir, img_file), online_im)
+                img_name = os.path.split(img_file)[-1]
+                out_path = os.path.join(FLAGS.output_dir, img_name)
+                cv2.imwrite(out_path, online_im)
+                print("save result to: " + out_path)
 
 
 def predict_video(detector, camera_id):
@@ -340,7 +222,7 @@ def predict_video(detector, camera_id):
             break
         timer.tic()
         online_tlwhs, online_scores, online_ids = detector.predict(
-            frame, FLAGS.threshold)
+            [frame], FLAGS.threshold)
         timer.toc()
 
         results.append((frame_id + 1, online_tlwhs, online_scores, online_ids))
@@ -376,7 +258,7 @@ def predict_video(detector, camera_id):
 
 def main():
     pred_config = PredictConfig(FLAGS.model_dir)
-    detector = MOT_Detector(
+    detector = JDE_Detector(
         pred_config,
         FLAGS.model_dir,
         device=FLAGS.device,

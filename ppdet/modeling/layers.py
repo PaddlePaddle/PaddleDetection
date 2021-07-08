@@ -21,7 +21,6 @@ import paddle
 import paddle.nn as nn
 from paddle import ParamAttr
 from paddle import to_tensor
-from paddle.nn import Conv2D, BatchNorm2D, GroupNorm
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal, Constant, XavierUniform
 from paddle.regularizer import L2Decay
@@ -32,8 +31,6 @@ from . import ops
 from .initializer import xavier_uniform_, constant_
 
 from paddle.vision.ops import DeformConv2D
-from paddle.nn.layer import transformer
-_convert_attention_mask = transformer._convert_attention_mask
 
 
 def _to_list(l):
@@ -927,37 +924,41 @@ class JDEBox(object):
         gy2 = gy + gh * 0.5
         return paddle.stack([gx1, gy1, gx2, gy2], axis=1)
 
-    def decode_delta_map(self, delta_map, anchors):
-        nB, nA, nGh, nGw, _ = delta_map.shape[:]
-        anchor_mesh = self.generate_anchor(nGh, nGw, anchors)
-        # only support bs=1
+    def decode_delta_map(self, nA, nGh, nGw, delta_map, anchor_vec):
+        anchor_mesh = self.generate_anchor(nGh, nGw, anchor_vec)
         anchor_mesh = paddle.unsqueeze(anchor_mesh, 0)
-
         pred_list = self.decode_delta(
             paddle.reshape(
                 delta_map, shape=[-1, 4]),
             paddle.reshape(
                 anchor_mesh, shape=[-1, 4]))
-        pred_map = paddle.reshape(pred_list, shape=[nB, nA * nGh * nGw, 4])
+        pred_map = paddle.reshape(pred_list, shape=[nA * nGh * nGw, 4])
         return pred_map
 
     def _postprocessing_by_level(self, nA, stride, head_out, anchor_vec):
-        boxes_shape = head_out.shape
-        nB, nGh, nGw = 1, boxes_shape[-2], boxes_shape[-1]
-        # only support bs=1
-        p = paddle.reshape(
-            head_out, shape=[nB, nA, self.num_classes + 5, nGh, nGw])
-        p = paddle.transpose(p, perm=[0, 1, 3, 4, 2])  # [nB, 4, nGh, nGw, 6]
-        p_box = p[:, :, :, :, :4]
-        boxes = self.decode_delta_map(p_box, anchor_vec)  # [nB, 4*nGh*nGw, 4]
-        boxes = boxes * stride
+        boxes_shape = head_out.shape  # [nB, nA*6, nGh, nGw]
+        nGh, nGw = boxes_shape[-2], boxes_shape[-1]
+        nB = 1  # TODO: only support bs=1 now
+        boxes_list, scores_list = [], []
+        for idx in range(nB):
+            p = paddle.reshape(
+                head_out[idx], shape=[nA, self.num_classes + 5, nGh, nGw])
+            p = paddle.transpose(p, perm=[0, 2, 3, 1])  # [nA, nGh, nGw, 6]
+            delta_map = p[:, :, :, :4]
+            boxes = self.decode_delta_map(nA, nGh, nGw, delta_map, anchor_vec)
+            # [nA * nGh * nGw, 4]
+            boxes_list.append(boxes * stride)
 
-        p_conf = paddle.transpose(
-            p[:, :, :, :, 4:6], perm=[0, 4, 1, 2, 3])  # [nB, 2, 4, 19, 34]
-        p_conf = F.softmax(
-            p_conf, axis=1)[:, 1, :, :, :].unsqueeze(-1)  # [nB, 4, 19, 34, 1]
-        scores = paddle.reshape(p_conf, shape=[nB, nA * nGh * nGw, 1])
-        return boxes, scores
+            p_conf = paddle.transpose(
+                p[:, :, :, 4:6], perm=[3, 0, 1, 2])  # [2, nA, nGh, nGw]
+            p_conf = F.softmax(
+                p_conf, axis=0)[1, :, :, :].unsqueeze(-1)  # [nA, nGh, nGw, 1]
+            scores = paddle.reshape(p_conf, shape=[nA * nGh * nGw, 1])
+            scores_list.append(scores)
+
+        boxes_results = paddle.stack(boxes_list)
+        scores_results = paddle.stack(scores_list)
+        return boxes_results, scores_results
 
     def __call__(self, yolo_head_out, anchors):
         bbox_pred_list = []
@@ -1190,6 +1191,27 @@ class Concat(nn.Layer):
 
     def extra_repr(self):
         return 'dim={}'.format(self.dim)
+
+
+def _convert_attention_mask(attn_mask, dtype):
+    """
+    Convert the attention mask to the target dtype we expect.
+    Parameters:
+        attn_mask (Tensor, optional): A tensor used in multi-head attention
+                to prevents attention to some unwanted positions, usually the
+                paddings or the subsequent positions. It is a tensor with shape
+                broadcasted to `[batch_size, n_head, sequence_length, sequence_length]`.
+                When the data type is bool, the unwanted positions have `False` 
+                values and the others have `True` values. When the data type is 
+                int, the unwanted positions have 0 values and the others have 1 
+                values. When the data type is float, the unwanted positions have 
+                `-INF` values and the others have 0 values. It can be None when 
+                nothing wanted or needed to be prevented attention to. Default None.
+        dtype (VarType): The target type of `attn_mask` we expect.
+    Returns:
+        Tensor: A Tensor with shape same as input `attn_mask`, with data type `dtype`.
+    """
+    return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
 
 
 class MultiHeadAttention(nn.Layer):

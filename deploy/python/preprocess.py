@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from PIL import Image
 import cv2
 import numpy as np
 
@@ -135,7 +134,6 @@ class NormalizeImage(object):
 
         if self.is_scale:
             im = im / 255.0
-
         im -= mean
         im /= std
         return im, im_info
