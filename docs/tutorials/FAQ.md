@@ -25,9 +25,9 @@
 
 * PaddleDetection中提供的默认配置一般是采用8卡训练的配置，配置文件中的`batch_size`数为每卡的batch size，若训练的时候不是使用8卡或者对`batch_size`有修改，需要等比例的调小初始`learning_rate`来获得较好的收敛效果
 
-* 如果使用自定义数据集并且样本数比较少，建议增大`snapshot_epoch`数来增加第一次进行eval的时候的训练轮数来保证模型已经较好收敛 
+* 如果使用自定义数据集并且样本数比较少，建议增大`snapshot_epoch`数来增加第一次进行eval的时候的训练轮数来保证模型已经较好收敛
 
-* 若使用自定义数据集训练，可以加载我们发布的COCO或VOC数据集上训练好的权重进行finetune训练来加快收敛速度，可以使用`-o pretrain_weights=xxx`的方式指定预训练权重，xxx可以是Model Zoo里发布的模型权重链接 
+* 若使用自定义数据集训练，可以加载我们发布的COCO或VOC数据集上训练好的权重进行finetune训练来加快收敛速度，可以使用`-o pretrain_weights=xxx`的方式指定预训练权重，xxx可以是Model Zoo里发布的模型权重链接
 
 
 

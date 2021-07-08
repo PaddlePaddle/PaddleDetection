@@ -18,7 +18,6 @@ from __future__ import print_function
 
 from paddle import fluid
 from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.initializer import Normal, Constant, NumpyArrayInitializer
 from ppdet.core.workspace import register, serializable
 
 INF = 1e8

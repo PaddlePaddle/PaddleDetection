@@ -4,7 +4,6 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.regularizer import L2Decay
 from paddle.nn import Conv2D, MaxPool2D
 from ppdet.core.workspace import register, serializable
 from ..shape_spec import ShapeSpec

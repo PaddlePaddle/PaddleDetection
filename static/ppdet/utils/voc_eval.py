@@ -18,8 +18,6 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
-import sys
-import numpy as np
 
 from ..data.source.voc import pascalvoc_label
 from .map_utils import DetectionMAP

@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import os
-import time
 import yaml
 import glob
 from functools import reduce
 
-from PIL import Image
 import cv2
 import numpy as np
 import math

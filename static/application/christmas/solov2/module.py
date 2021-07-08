@@ -15,11 +15,9 @@
 import os
 import time
 from functools import reduce
-import base64
 import cv2
 import numpy as np
-from paddlehub.module.module import moduleinfo, serving
-
+from paddlehub.module.module import moduleinfo
 import solov2.processor as P
 import solov2.data_feed as D
 

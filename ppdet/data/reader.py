@@ -13,21 +13,19 @@
 # limitations under the License.
 
 import os
-import copy
 import traceback
 import six
 import sys
-import multiprocessing as mp
 if sys.version_info >= (3, 0):
-    import queue as Queue
+    pass
 else:
-    import Queue
+    pass
 import numpy as np
 
 from paddle.io import DataLoader, DistributedBatchSampler
 from paddle.fluid.dataloader.collate import default_collate_fn
 
-from ppdet.core.workspace import register, serializable, create
+from ppdet.core.workspace import register
 from . import transform
 from .shm_utils import _get_shared_memory_size_in_M
 

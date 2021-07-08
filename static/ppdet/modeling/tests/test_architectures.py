@@ -17,10 +17,8 @@ from __future__ import division
 from __future__ import print_function
 
 import unittest
-import numpy as np
 
 import paddle
-import paddle.fluid as fluid
 import os
 import sys
 # add python path of PadleDetection to sys.path
@@ -29,9 +27,9 @@ if parent_path not in sys.path:
     sys.path.append(parent_path)
 
 try:
+    from ppdet.utils.check import enable_static_mode, logger
     from ppdet.modeling.tests.decorator_helper import prog_scope
     from ppdet.core.workspace import load_config, merge_config, create
-    from ppdet.utils.check import enable_static_mode
 except ImportError as e:
     if sys.argv[0].find('static') >= 0:
         logger.error("Importing ppdet failed when running static model "

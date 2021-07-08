@@ -16,7 +16,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os, sys
+import os
+import sys
+
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
@@ -28,7 +30,6 @@ import yaml
 import ast
 from functools import reduce
 
-from PIL import Image
 import cv2
 import numpy as np
 import paddle
@@ -508,7 +509,7 @@ def predict_video(detector, camera_id):
     fps = 30
     width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     if not os.path.exists(FLAGS.output_dir):
         os.makedirs(FLAGS.output_dir)
     out_path = os.path.join(FLAGS.output_dir, video_name)

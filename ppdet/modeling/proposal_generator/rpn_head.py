@@ -16,11 +16,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal
-from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register
-from ppdet.modeling import ops
-
 from .anchor_generator import AnchorGenerator
 from .target_layer import RPNTargetAssign
 from .proposal_generator import ProposalGenerator

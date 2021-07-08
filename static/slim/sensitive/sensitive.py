@@ -16,29 +16,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import os, sys
+import os
+import sys
+
 # add python path of PadleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 3)))
 if parent_path not in sys.path:
     sys.path.append(parent_path)
 
-import time
-import numpy as np
-import datetime
-from collections import deque
-
-import paddle
 from paddle import fluid
-from ppdet.experimental import mixed_precision_context
 from ppdet.core.workspace import load_config, merge_config, create
 
 from ppdet.data.reader import create_reader
 
-from ppdet.utils import dist_utils
 from ppdet.utils.eval_utils import parse_fetches, eval_run, eval_results
-from ppdet.utils.stats import TrainingStats
 from ppdet.utils.cli import ArgsParser
-from ppdet.utils.check import check_gpu, check_version, check_config, enable_static_mode
+from ppdet.utils.check import check_version, check_config, enable_static_mode
 import ppdet.utils.checkpoint as checkpoint
 from paddleslim.prune import sensitivity
 import logging
