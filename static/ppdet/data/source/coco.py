@@ -97,8 +97,8 @@ class COCODataSet(DataSet):
 
         if 'annotations' not in coco.dataset:
             self.load_image_only = True
-            logger.warn('Annotation file: {} does not contains ground truth '
-                        'and load image information only.'.format(anno_path))
+            logger.warning('Annotation file: {} does not contains ground truth '
+                           'and load image information only.'.format(anno_path))
 
         for img_id in img_ids:
             img_anno = coco.loadImgs([img_id])[0]
@@ -109,14 +109,14 @@ class COCODataSet(DataSet):
             im_path = os.path.join(image_dir,
                                    im_fname) if image_dir else im_fname
             if not os.path.exists(im_path):
-                logger.warn('Illegal image file: {}, and it will be '
-                            'ignored'.format(im_path))
+                logger.warning('Illegal image file: {}, and it will be '
+                               'ignored'.format(im_path))
                 continue
 
             if im_w < 0 or im_h < 0:
-                logger.warn('Illegal width: {} or height: {} in annotation, '
-                            'and im_id: {} will be ignored'.format(im_w, im_h,
-                                                                   img_id))
+                logger.warning('Illegal width: {} or height: {} in annotation, '
+                               'and im_id: {} will be ignored'.format(
+                                   im_w, im_h, img_id))
                 continue
 
             coco_rec = {
@@ -141,7 +141,7 @@ class COCODataSet(DataSet):
                         inst['clean_bbox'] = [x1, y1, x2, y2]
                         bboxes.append(inst)
                     else:
-                        logger.warn(
+                        logger.warning(
                             'Found an invalid bbox in annotations: im_id: {}, '
                             'x1: {}, y1: {}, x2: {}, y2: {}.'.format(
                                 img_id, x1, y1, x2, y2))

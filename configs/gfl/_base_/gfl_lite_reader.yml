@@ -13,6 +13,7 @@ TrainReader:
   - Gt2GFLTarget:
       downsample_ratios: [8, 16, 32]
       grid_cell_scale: 5
+      cell_offset: 0.5
   batch_size: 128
   shuffle: true
   drop_last: true

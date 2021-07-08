@@ -75,7 +75,7 @@ class Tracker(object):
         if self.cfg.metric == 'MOT':
             self._metrics = [MOTMetric(), ]
         else:
-            logger.warn("Metric not support for metric type {}".format(
+            logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
             self._metrics = []
 

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import time
 import base64
 import json
 
@@ -21,8 +20,7 @@ import cv2
 import numpy as np
 import paddle.nn as nn
 import paddlehub as hub
-from paddlehub.module.module import moduleinfo, serving, Module
-
+from paddlehub.module.module import moduleinfo, serving
 import solov2_blazeface.processor as P
 
 

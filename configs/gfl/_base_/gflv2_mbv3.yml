@@ -6,7 +6,7 @@ ema_decay: 0.9998
 GFL:
   backbone: MobileNetV3
   neck: PAN
-  head: MiniHead
+  head: PicoHead
 
 MobileNetV3:
   model_name: large
@@ -21,9 +21,9 @@ PAN:
   end_level: 3
   spatial_scales: [0.125, 0.0625, 0.03125]
 
-MiniHead:
+PicoHead:
   conv_feat:
-    name: LiteGFLFeat
+    name: PicoFeat
     feat_in: 96
     feat_out: 96
     num_convs: 2
@@ -33,6 +33,7 @@ MiniHead:
   feat_in_chan: 96
   prior_prob: 0.01
   reg_max: 7
+  cell_offset: 0.5
   dgqp_module:
     name: DGQP
     reg_topk: 4

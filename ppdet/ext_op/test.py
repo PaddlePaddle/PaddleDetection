@@ -1,9 +1,6 @@
 import numpy as np
-import os
 import sys
-import cv2
 import time
-import shapely
 from shapely.geometry import Polygon
 import paddle
 

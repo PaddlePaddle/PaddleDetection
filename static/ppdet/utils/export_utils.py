@@ -18,7 +18,6 @@ from __future__ import print_function
 
 import os
 import yaml
-import numpy as np
 from collections import OrderedDict
 
 import logging

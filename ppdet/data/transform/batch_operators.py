@@ -35,7 +35,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2GFLTarget'
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'Gt2GFLTarget'
 ]
 
 
@@ -468,59 +468,37 @@ class Gt2FCOSTarget(BaseOperator):
 @register_op
 class Gt2GFLTarget(BaseOperator):
     """
-    Generate FCOS targets by groud truth data
+    Generate GFocal loss targets by groud truth data
     """
 
     def __init__(self,
                  num_classes=80,
                  downsample_ratios=[8, 16, 32, 64, 128],
-                 grid_cell_scale=4):
+                 grid_cell_scale=4,
+                 cell_offset=0):
         super(Gt2GFLTarget, self).__init__()
         self.num_classes = num_classes
         self.downsample_ratios = downsample_ratios
         self.grid_cell_scale = grid_cell_scale
+        self.cell_offset = cell_offset
 
         self.assigner = ATSSAssigner(topk=9)
 
-    def get_grid_cells(self, featmap_size, scale, stride):
+    def get_grid_cells(self, featmap_size, scale, stride, offset=0):
         """
         Generate grid cells of a feature map for target assignment.
         Args:
             featmap_size: Size of a single level feature map.
             scale: Grid cell scale.
             stride: Down sample stride of the feature map.
+            offset: Offset of grid cells.
         return:
             Grid_cells xyxy position. Size should be [feat_w * feat_h, 4]
         """
         cell_size = stride * scale
         h, w = featmap_size
-        x_range = (np.arange(w, dtype=np.float32) + 0.5) * stride
-        y_range = (np.arange(h, dtype=np.float32) + 0.5) * stride
-        x, y = np.meshgrid(x_range, y_range)
-        y = y.flatten()
-        x = x.flatten()
-        grid_cells = np.stack(
-            [
-                x - 0.5 * cell_size, y - 0.5 * cell_size, x + 0.5 * cell_size,
-                y + 0.5 * cell_size
-            ],
-            axis=-1)
-        return grid_cells
-
-    def get_grid_cells_v2(self, featmap_size, scale, stride):
-        """
-        Generate grid cells of a feature map for target assignment.
-        Args:
-            featmap_size: Size of a single level feature map.
-            scale: Grid cell scale.
-            stride: Down sample stride of the feature map.
-        return:
-            Grid_cells xyxy position. Size should be [feat_w * feat_h, 4]
-        """
-        cell_size = stride * scale
-        h, w = featmap_size
-        x_range = np.arange(w, dtype=np.float32) * stride
-        y_range = np.arange(h, dtype=np.float32) * stride
+        x_range = (np.arange(w, dtype=np.float32) + offset) * stride
+        y_range = (np.arange(h, dtype=np.float32) + offset) * stride
         x, y = np.meshgrid(x_range, y_range)
         y = y.flatten()
         x = x.flatten()
@@ -557,8 +535,8 @@ class Gt2GFLTarget(BaseOperator):
             featmap_size = (int(math.ceil(h / stride)),
                             int(math.ceil(w / stride)))
             multi_level_grid_cells.append(
-                self.get_grid_cells_v2(featmap_size, self.grid_cell_scale,
-                                       stride))
+                self.get_grid_cells(featmap_size, self.grid_cell_scale, stride,
+                                    self.cell_offset))
         mlvl_grid_cells_list = [
             multi_level_grid_cells for i in range(batch_size)
         ]
@@ -895,5 +873,32 @@ class Gt2Solov2Target(BaseOperator):
                     0]] = data['grid_order{}'.format(idx)]
                 data['ins_label{}'.format(idx)] = gt_ins_data
                 data['grid_order{}'.format(idx)] = gt_grid_order
+
+        return samples
+
+
+@register_op
+class Gt2SparseRCNNTarget(BaseOperator):
+    '''
+    Generate SparseRCNN targets by groud truth data
+    '''
+
+    def __init__(self):
+        super(Gt2SparseRCNNTarget, self).__init__()
+
+    def __call__(self, samples, context=None):
+        for sample in samples:
+            im = sample["image"]
+            h, w = im.shape[1:3]
+            img_whwh = np.array([w, h, w, h], dtype=np.int32)
+            sample["img_whwh"] = img_whwh
+            if "scale_factor" in sample:
+                sample["scale_factor_wh"] = np.array(
+                    [sample["scale_factor"][1], sample["scale_factor"][0]],
+                    dtype=np.float32)
+                sample.pop("scale_factor")
+            else:
+                sample["scale_factor_wh"] = np.array(
+                    [1.0, 1.0], dtype=np.float32)
 
         return samples

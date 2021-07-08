@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import six
-import os
 import numpy as np
-import cv2
 
 
 def get_det_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):

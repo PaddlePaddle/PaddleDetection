@@ -173,7 +173,8 @@ class GFLHead(nn.Layer):
                  reg_max=16,
                  feat_in_chan=256,
                  nms=None,
-                 nms_pre=1000):
+                 nms_pre=1000,
+                 cell_offset=0):
         super(GFLHead, self).__init__()
         self.conv_feat = conv_feat
         self.dgqp_module = dgqp_module
@@ -187,6 +188,7 @@ class GFLHead(nn.Layer):
         self.feat_in_chan = feat_in_chan
         self.nms = nms
         self.nms_pre = nms_pre
+        self.cell_offset = cell_offset
         self.use_sigmoid = self.loss_qfl.use_sigmoid
         if self.use_sigmoid:
             self.cls_out_channels = self.num_classes
@@ -382,7 +384,7 @@ class GFLHead(nn.Layer):
 
         return loss_states
 
-    def get_single_level_center_point(self, featmap_size, stride):
+    def get_single_level_center_point(self, featmap_size, stride, offset=0):
         """
         Generate pixel centers of a single stage feature map.
         Args:
@@ -393,10 +395,8 @@ class GFLHead(nn.Layer):
         """
         h, w = featmap_size
         # TODO: choose a method
-        # x_range = (paddle.arange(w, dtype='float32') + 0.5) * stride
-        # y_range = (paddle.arange(h, dtype='float32') + 0.5) * stride
-        x_range = paddle.arange(w, dtype='float32') * stride
-        y_range = paddle.arange(h, dtype='float32') * stride
+        x_range = (paddle.arange(w, dtype='float32') + offset) * stride
+        y_range = (paddle.arange(h, dtype='float32') + offset) * stride
         y, x = paddle.meshgrid(y_range, x_range)
         y = y.flatten()
         x = x.flatten()
@@ -407,14 +407,16 @@ class GFLHead(nn.Layer):
                           bbox_preds,
                           img_shape,
                           scale_factor,
-                          rescale=True):
+                          rescale=True,
+                          cell_offset=0):
         assert len(cls_scores) == len(bbox_preds)
         mlvl_bboxes = []
         mlvl_scores = []
         for stride, cls_score, bbox_pred in zip(self.fpn_stride, cls_scores,
                                                 bbox_preds):
             featmap_size = cls_score.shape[-2:]
-            y, x = self.get_single_level_center_point(featmap_size, stride)
+            y, x = self.get_single_level_center_point(featmap_size, stride,
+                                                      cell_offset)
             center_points = paddle.stack([x, y], axis=-1)
             scores = F.sigmoid(
                 cls_score.transpose([1, 2, 0]).reshape(
@@ -445,7 +447,12 @@ class GFLHead(nn.Layer):
         mlvl_scores = mlvl_scores.transpose([1, 0])
         return mlvl_bboxes, mlvl_scores
 
-    def decode(self, cls_scores, bbox_preds, im_shape, scale_factor):
+    def decode(self,
+               cls_scores,
+               bbox_preds,
+               im_shape,
+               scale_factor,
+               cell_offset=0):
         batch_bboxes = []
         batch_scores = []
         for img_id in range(cls_scores[0].shape[0]):
@@ -454,7 +461,7 @@ class GFLHead(nn.Layer):
             bbox_pred_list = [bbox_preds[i][img_id] for i in range(num_levels)]
             bboxes, scores = self.get_bboxes_single(
                 cls_score_list, bbox_pred_list, im_shape[img_id],
-                scale_factor[img_id])
+                scale_factor[img_id], cell_offset)
             batch_bboxes.append(bboxes)
             batch_scores.append(scores)
         batch_bboxes = paddle.stack(batch_bboxes, axis=0)
@@ -465,6 +472,6 @@ class GFLHead(nn.Layer):
     def post_process(self, gfl_head_outs, im_shape, scale_factor):
         cls_scores, bboxes_reg = gfl_head_outs
         bboxes, score = self.decode(cls_scores, bboxes_reg, im_shape,
-                                    scale_factor)
+                                    scale_factor, self.cell_offset)
         bbox_pred, bbox_num, _ = self.nms(bboxes, score)
         return bbox_pred, bbox_num

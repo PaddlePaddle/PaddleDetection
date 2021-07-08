@@ -139,9 +139,9 @@ class WIDERFaceDataSet(DetDataset):
                 h = float(split_str[3])
                 # Filter out wrong labels
                 if w < 0 or h < 0:
-                    logger.warn('Illegal box with w: {}, h: {} in '
-                                'img: {}, and it will be ignored'.format(
-                                    w, h, file_dict[num_class][0]))
+                    logger.warning('Illegal box with w: {}, h: {} in '
+                                   'img: {}, and it will be ignored'.format(
+                                       w, h, file_dict[num_class][0]))
                     continue
                 xmin = max(0, xmin)
                 ymin = max(0, ymin)

@@ -32,9 +32,9 @@ from .gfl_head import GFLHead
 
 
 @register
-class LiteGFLFeat(nn.Layer):
+class PicoFeat(nn.Layer):
     """
-    LiteGFLFeat of GFl
+    PicoFeat of PicoDet
 
     Args:
         feat_in (int): The channel number of input Tensor.
@@ -125,9 +125,9 @@ class LiteGFLFeat(nn.Layer):
 
 
 @register
-class MiniHead(GFLHead):
+class PicoHead(GFLHead):
     """
-    MiniHead
+    PicoHead
     Args:
         conv_feat (object): Instance of 'LiteGFLFeat'
         num_classes (int): Number of classes
@@ -145,7 +145,7 @@ class MiniHead(GFLHead):
     __shared__ = ['num_classes']
 
     def __init__(self,
-                 conv_feat='LiteGFLFeat',
+                 conv_feat='PicoFeat',
                  dgqp_module=None,
                  num_classes=80,
                  fpn_stride=[8, 16, 32],
@@ -157,7 +157,7 @@ class MiniHead(GFLHead):
                  feat_in_chan=96,
                  nms=None,
                  nms_pre=1000):
-        super(MiniHead, self).__init__(
+        super(PicoHead, self).__init__(
             conv_feat=conv_feat,
             dgqp_module=dgqp_module,
             num_classes=num_classes,

@@ -12,12 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import paddle
 import paddlehub as hub
 import cv2
-from PIL import Image
-import numpy as np
-import base64
 
 img_file = 'demo_images/test.jpg'
 background = 'element_source/background/1.png'

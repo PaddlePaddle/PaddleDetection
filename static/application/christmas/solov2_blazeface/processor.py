@@ -16,7 +16,7 @@ from __future__ import division
 
 import cv2
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image
 import solov2_blazeface.face_makeup_main as face_makeup_main
 
 

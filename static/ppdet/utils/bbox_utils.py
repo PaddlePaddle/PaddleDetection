@@ -19,8 +19,6 @@ from __future__ import print_function
 import logging
 import numpy as np
 
-import paddle.fluid as fluid
-
 __all__ = ["bbox_overlaps", "box_to_delta"]
 
 logger = logging.getLogger(__name__)

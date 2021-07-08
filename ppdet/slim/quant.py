@@ -16,7 +16,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import paddle
 from paddle.utils import try_import
 
 from ppdet.core.workspace import register, serializable

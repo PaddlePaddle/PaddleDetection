@@ -20,10 +20,8 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
-from paddle.regularizer import L2Decay
 from paddle.nn.initializer import KaimingNormal
 from ppdet.core.workspace import register, serializable
-from numbers import Integral
 from ..shape_spec import ShapeSpec
 
 __all__ = ['BlazeNet']
