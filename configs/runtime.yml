@@ -2,4 +2,4 @@ use_gpu: true
 log_iter: 20
 save_dir: output
 snapshot_epoch: 1
-print_flops: true
+print_flops: false

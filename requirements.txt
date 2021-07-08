@@ -15,4 +15,3 @@ sklearn
 motmetrics
 openpyxl
 decord
-paddleslim>=2.1.0
