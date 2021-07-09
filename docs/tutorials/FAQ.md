@@ -94,3 +94,7 @@ TestDataset:
   !ImageFolder
     anno_path: annotations/instances_val2017.json
 ```
+
+**Q:** 如何打印网络FLOPs？
+
+**A:** 在`configs/runtime.yml`中设置`print_flops: true`，同时需要安装PaddleSlim(比如：pip install paddleslim)，即可打印模型的FLOPs。
