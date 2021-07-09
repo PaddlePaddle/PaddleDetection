@@ -50,7 +50,7 @@ class PicoFeat(nn.Layer):
                  num_convs=2,
                  norm_type='bn',
                  share_cls_reg=False):
-        super(LiteGFLFeat, self).__init__()
+        super(PicoFeat, self).__init__()
         self.num_convs = num_convs
         self.norm_type = norm_type
         self.share_cls_reg = share_cls_reg
@@ -156,7 +156,8 @@ class PicoHead(GFLHead):
                  reg_max=16,
                  feat_in_chan=96,
                  nms=None,
-                 nms_pre=1000):
+                 nms_pre=1000,
+                 cell_offset=0):
         super(PicoHead, self).__init__(
             conv_feat=conv_feat,
             dgqp_module=dgqp_module,
@@ -169,7 +170,8 @@ class PicoHead(GFLHead):
             reg_max=reg_max,
             feat_in_chan=feat_in_chan,
             nms=nms,
-            nms_pre=nms_pre)
+            nms_pre=nms_pre,
+            cell_offset=cell_offset)
         self.conv_feat = conv_feat
         self.num_classes = num_classes
         self.fpn_stride = fpn_stride
@@ -181,6 +183,7 @@ class PicoHead(GFLHead):
         self.feat_in_chan = feat_in_chan
         self.nms = nms
         self.nms_pre = nms_pre
+        self.cell_offset = cell_offset
         self.use_sigmoid = self.loss_qfl.use_sigmoid
         if self.use_sigmoid:
             self.cls_out_channels = self.num_classes

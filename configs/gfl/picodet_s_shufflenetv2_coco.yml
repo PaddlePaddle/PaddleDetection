@@ -10,7 +10,7 @@ weights: output/gfl_mbv3_280e_coco/model_final
 find_unused_parameters: True
 use_ema: true
 ema_decay: 0.9998
-epoch: 280
+epoch: 180
 snapshot_epoch: 10
 
 LearningRate:
