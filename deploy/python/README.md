@@ -41,6 +41,7 @@ python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsi
 | --run_benchmark | Option| 是否运行benchmark，同时需指定`--image_file`或`--image_dir`，默认为False |
 | --enable_mkldnn | Option | CPU预测中是否开启MKLDNN加速，默认为False |
 | --cpu_threads | Option| 设置cpu线程数，默认为1 |
+| --trt_calib_mode | Option| TensorRT是否使用校准功能，默认为False。使用TensorRT的int8功能时，需设置为True，使用PaddleSlim量化后的模型时需要设置为False |
 
 说明：
 
