@@ -79,7 +79,12 @@ class JDE_Detector(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn)
         assert batch_size == 1, "The JDE Detector only supports batch size=1 now"
-        self.tracker = JDETracker()
+        assert pred_config.tracker, "Tracking model should have tracker"
+        tp = pred_config.tracker
+        conf_thres = tp['conf_thres'] if 'conf_thres' in tp else 0.
+        tracked_thresh = tp['tracked_thresh'] if 'tracked_thresh' in tp else 0.7
+        metric_type = tp['metric_type'] if 'metric_type' in tp else 'euclidean'
+        self.tracker = JDETracker(conf_thres=conf_thres, tracked_thresh=tracked_thresh, metric_type=metric_type)
 
     def postprocess(self, pred_dets, pred_embs, threshold):
         online_targets = self.tracker.update(pred_dets, pred_embs)
