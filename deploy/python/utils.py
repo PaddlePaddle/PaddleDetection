@@ -115,6 +115,11 @@ def argsparser():
         help=("Directory include:'model.pdiparams', 'model.pdmodel', "
               "'infer_cfg.yml', created by tools/export_model.py."))
     parser.add_argument(
+        "--reid_batch_size",
+        type=int,
+        default=50,
+        help="max batch_size for reid model inference.")
+    parser.add_argument(
         '--use_dark',
         type=bool,
         default=True,

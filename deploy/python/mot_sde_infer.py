@@ -193,6 +193,7 @@ class SDE_ReID(object):
                  model_dir,
                  device='CPU',
                  run_mode='fluid',
+                 batch_size=50,
                  trt_min_shape=1,
                  trt_max_shape=1088,
                  trt_opt_shape=608,
@@ -203,6 +204,7 @@ class SDE_ReID(object):
         self.predictor, self.config = load_predictor(
             model_dir,
             run_mode=run_mode,
+            batch_size=batch_size,
             min_subgraph_size=self.pred_config.min_subgraph_size,
             device=device,
             use_dynamic_shape=self.pred_config.use_dynamic_shape,
@@ -214,10 +216,12 @@ class SDE_ReID(object):
             enable_mkldnn=enable_mkldnn)
         self.det_times = Timer()
         self.cpu_mem, self.gpu_mem, self.gpu_util = 0, 0, 0
+        self.batch_size = batch_size
         assert pred_config.tracker, "Tracking model should have tracker"
         self.tracker = DeepSORTTracker()
 
     def preprocess(self, crops):
+        crops = crops[:self.batch_size]
         inputs = {}
         inputs['crops'] = np.array(crops).astype('float32')
         return inputs
@@ -423,6 +427,7 @@ def main():
         FLAGS.reid_model_dir,
         device=FLAGS.device,
         run_mode=FLAGS.run_mode,
+        batch_size=FLAGS.reid_batch_size,
         trt_min_shape=FLAGS.trt_min_shape,
         trt_max_shape=FLAGS.trt_max_shape,
         trt_opt_shape=FLAGS.trt_opt_shape,
