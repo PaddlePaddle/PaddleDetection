@@ -345,6 +345,9 @@ class PredictConfig():
         self.use_dynamic_shape = yml_conf['use_dynamic_shape']
         if 'mask' in yml_conf:
             self.mask = yml_conf['mask']
+        self.tracker = None
+        if 'tracker' in yml_conf:
+            self.tracker = yml_conf['tracker']
         self.print_config()
 
     def check_model(self, yml_conf):
