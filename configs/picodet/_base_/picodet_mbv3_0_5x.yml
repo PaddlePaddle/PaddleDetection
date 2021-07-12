@@ -1,15 +1,17 @@
 architecture: GFL
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/ShuffleNetV2_x1_0_pretrained.pdparams
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x0_5_pretrained.pdparams
 
 GFL:
-  backbone: ShuffleNetV2
+  backbone: MobileNetV3
   neck: PAN
   head: PicoHead
 
-ShuffleNetV2:
-  scale: 1.0
-  feature_maps: [5, 13, 17]
-  act: leaky_relu
+MobileNetV3:
+  model_name: large
+  scale: 0.5
+  with_extra_blocks: false
+  extra_block_filters: []
+  feature_maps: [7, 13, 16]
 
 PAN:
   out_channel: 96

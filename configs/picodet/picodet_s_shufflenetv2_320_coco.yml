@@ -1,0 +1,13 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/picodet_shufflenetv2_1x.yml',
+  '_base_/optimizer_280e.yml',
+  '_base_/picodet_320_reader.yml',
+]
+
+weights: output/picodet_s_shufflenetv2_320_coco/model_final
+find_unused_parameters: True
+use_ema: true
+ema_decay: 0.9998
+snapshot_epoch: 10
