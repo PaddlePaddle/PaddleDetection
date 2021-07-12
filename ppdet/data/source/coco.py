@@ -38,7 +38,7 @@ class COCODataSet(DetDataset):
         allow_empty (bool): whether to load empty entry. False as default
         empty_ratio (float): the ratio of empty record number to total 
             record's, if empty_ratio is out of [0. ,1.), do not sample the 
-            records. 1. as default
+            records and use all the empty entries. 1. as default
     """
 
     def __init__(self,
@@ -63,7 +63,8 @@ class COCODataSet(DetDataset):
         if self.empty_ratio < 0. or self.empty_ratio >= 1.:
             return records
         import random
-        sample_num = int(num * self.empty_ratio / (1 - self.empty_ratio))
+        sample_num = min(
+            int(num * self.empty_ratio / (1 - self.empty_ratio)), len(records))
         records = random.sample(records, sample_num)
         return records
 

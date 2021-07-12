@@ -98,3 +98,7 @@ TestDataset:
 **Q:** 如何打印网络FLOPs？
 
 **A:** 在`configs/runtime.yml`中设置`print_flops: true`，同时需要安装PaddleSlim(比如：pip install paddleslim)，即可打印模型的FLOPs。
+
+**Q:** 如何使用无标注框进行训练？
+
+**A:** 在`configs/dataset/coco.py` 或者`configs/dataset/voc.py`中的TrainDataset下设置`allow_empty: true`, 此时允许数据集加载无标注框进行训练。该功能支持coco，voc数据格式，RCNN系列和YOLO系列模型验证能够正常训练。另外，如果无标注框数据过多，会影响模型收敛，在TrainDataset下可以设置`empty_ratio: 0.1`对无标注框数据进行随机采样，控制无标注框的数据量占总数据量的比例，默认值为1.，即使用全部无标注框
