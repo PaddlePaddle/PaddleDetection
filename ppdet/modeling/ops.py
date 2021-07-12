@@ -1588,3 +1588,15 @@ def smooth_l1(input, label, inside_weight=None, outside_weight=None,
     out = paddle.reshape(out, shape=[out.shape[0], -1])
     out = paddle.sum(out, axis=1)
     return out
+
+
+def channel_shuffle(x, groups):
+    batch_size, num_channels, height, width = x.shape[0:4]
+    assert (num_channels % groups == 0,
+            'num_channels should be divisible by groups')
+    channels_per_group = num_channels // groups
+    x = paddle.reshape(
+        x=x, shape=[batch_size, groups, channels_per_group, height, width])
+    x = paddle.transpose(x=x, perm=[0, 2, 1, 3, 4])
+    x = paddle.reshape(x=x, shape=[batch_size, num_channels, height, width])
+    return x

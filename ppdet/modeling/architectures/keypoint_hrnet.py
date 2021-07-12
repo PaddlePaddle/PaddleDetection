@@ -43,7 +43,7 @@ class TopDownHRNet(BaseArch):
                  flip=True,
                  shift_heatmap=True):
         """
-        HRNnet network, see https://arxiv.org/abs/1902.09212
+        HRNet network, see https://arxiv.org/abs/1902.09212
 
         Args:
             backbone (nn.Layer): backbone instance
