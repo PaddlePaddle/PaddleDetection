@@ -248,15 +248,17 @@ void PredictImage(const std::vector<std::string> all_img_paths,
 
       int item_start_idx = 0;
       for (int i = 0; i < left_image_cnt; i++) {
-        std::cout << all_img_paths.at(idx * batch_size + i) << " bbox_num " << bbox_num[i] << std::endl;
-        if (bbox_num[i] <= 1) {
-            continue;
-        }
+        cv::Mat im = batch_imgs[i];
+        std::vector<PaddleDetection::ObjectResult> im_result;
+        int detect_num = 0;
+ 
         for (int j = 0; j < bbox_num[i]; j++) {
           PaddleDetection::ObjectResult item = result[item_start_idx + j];
-          if (item.confidence < threshold) {
+          if (item.confidence < threshold || item.class_id == -1) {
             continue;
           }
+          detect_num += 1;
+          im_result.push_back(item);
           if (item.rect.size() > 6){
             is_rbox = true;
             printf("class=%d confidence=%.4f rect=[%d %d %d %d %d %d %d %d]\n",
@@ -281,20 +283,9 @@ void PredictImage(const std::vector<std::string> all_img_paths,
               item.rect[3]);
           }
         }
+        std::cout << all_img_paths.at(idx * batch_size + i) << " The number of detected box: " << detect_num << std::endl;
         item_start_idx = item_start_idx + bbox_num[i];
-      }
-      // Visualization result
-      int bbox_idx = 0;
-      for (int bs = 0; bs < batch_imgs.size(); bs++) {
-        if (bbox_num[bs] <= 1) {
-            continue;
-        }
-        cv::Mat im = batch_imgs[bs];
-        std::vector<PaddleDetection::ObjectResult> im_result;
-        for (int k = 0; k < bbox_num[bs]; k++) {
-          im_result.push_back(result[bbox_idx+k]);
-        }
-        bbox_idx += bbox_num[bs];
+        // Visualization result
         cv::Mat vis_img = PaddleDetection::VisualizeResult(
             im, im_result, labels, colormap, is_rbox);
         std::vector<int> compression_params;
@@ -304,10 +295,10 @@ void PredictImage(const std::vector<std::string> all_img_paths,
         if (output_dir.rfind(OS_PATH_SEP) != output_dir.size() - 1) {
           output_path += OS_PATH_SEP;
         }
-        std::string image_file_path = all_img_paths.at(idx * batch_size + bs);
+        std::string image_file_path = all_img_paths.at(idx * batch_size + i);
         output_path += image_file_path.substr(image_file_path.find_last_of('/') + 1);
         cv::imwrite(output_path, vis_img, compression_params);
-        printf("Visualized output saved as %s\n", output_path.c_str());
+        printf("Visualized output saved as %s\n", output_path.c_str());       
       }
     }
     det_t[0] += det_times[0];
