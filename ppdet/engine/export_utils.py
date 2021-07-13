@@ -82,11 +82,13 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     return preprocess_list, label_list
 
+
 def _parse_tracker(tracker_cfg):
     tracker_params = {}
     for k, v in tracker_cfg.items():
         tracker_params.update({k: v})
     return tracker_params
+
 
 def _dump_infer_config(config, path, image_shape, model):
     arch_state = False

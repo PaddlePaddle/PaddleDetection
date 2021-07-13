@@ -365,6 +365,7 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
+                    infer_dir,
                     output_dir,
                     data_type='mot',
                     model_type='JDE',
@@ -382,12 +383,23 @@ class Tracker(object):
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
         # run tracking
-        seq = video_file.split('/')[-1].split('.')[0]
+        if infer_dir:
+            seq = infer_dir.split('/')[-1].split('.')[0]
+            images = [
+                '{}/{}'.format(infer_dir, x) for x in os.listdir(infer_dir)
+            ]
+            images.sort()
+            self.dataset.set_images(images)
+            logger.info('Starting tracking folder {}, found {} images'.format(
+                infer_dir, len(images)))
+        else:
+            seq = video_file.split('/')[-1].split('.')[0]
+            self.dataset.set_video(video_file)
+            logger.info('Starting tracking video {}'.format(video_file))
+
         save_dir = os.path.join(output_dir, 'mot_outputs',
                                 seq) if save_images or save_videos else None
-        logger.info('Starting tracking {}'.format(video_file))
 
-        self.dataset.set_video(video_file)
         dataloader = create('TestMOTReader')(self.dataset, 0)
         result_filename = os.path.join(result_root, '{}.txt'.format(seq))
         frame_rate = self.dataset.frame_rate

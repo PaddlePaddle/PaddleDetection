@@ -240,6 +240,7 @@ class MOTImageFolder(DetDataset):
             Set True when used during MOT model inference while saving
             images or video, or used in DeepSORT.
     """
+
     def __init__(self,
                  task='MOT16_train',
                  video_file='',
@@ -257,6 +258,7 @@ class MOTImageFolder(DetDataset):
         self.keep_ori_im = keep_ori_im
         self._imid2path = {}
         self.roidbs = None
+        self.frame_rate = 30
 
     def check_or_download_dataset(self):
         return
@@ -275,7 +277,8 @@ class MOTImageFolder(DetDataset):
         extension = self.video_file.split('.')[-1]
         output_path = self.video_file.replace('.{}'.format(extension), '')
         frames_path = video2frames(self.video_file, output_path)
-        self.video_frames = sorted(glob.glob(os.path.join(frames_path, '*.png')))
+        self.video_frames = sorted(
+            glob.glob(os.path.join(frames_path, '*.png')))
 
         self.video_length = len(self.video_frames)
         logger.info('Length of the video: {:d} frames.'.format(
