@@ -299,29 +299,20 @@ def create_inputs(imgs, im_info):
         im_shape.append(np.array((e['im_shape'], )).astype('float32'))
         scale_factor.append(np.array((e['scale_factor'], )).astype('float32'))
 
-    origin_scale_factor = np.concatenate(scale_factor, axis=0)
+    inputs['im_shape'] = np.concatenate(im_shape, axis=0)
+    inputs['scale_factor'] = np.concatenate(scale_factor, axis=0)
 
     imgs_shape = [[e.shape[1], e.shape[2]] for e in imgs]
     max_shape_h = max([e[0] for e in imgs_shape])
     max_shape_w = max([e[1] for e in imgs_shape])
     padding_imgs = []
-    padding_imgs_shape = []
-    padding_imgs_scale = []
     for img in imgs:
         im_c, im_h, im_w = img.shape[:]
         padding_im = np.zeros(
             (im_c, max_shape_h, max_shape_w), dtype=np.float32)
         padding_im[:, :im_h, :im_w] = img
         padding_imgs.append(padding_im)
-        padding_imgs_shape.append(
-            np.array([max_shape_h, max_shape_w]).astype('float32'))
-        rescale = [
-            float(max_shape_h) / float(im_h), float(max_shape_w) / float(im_w)
-        ]
-        padding_imgs_scale.append(np.array(rescale).astype('float32'))
     inputs['image'] = np.stack(padding_imgs, axis=0)
-    inputs['im_shape'] = np.stack(padding_imgs_shape, axis=0)
-    inputs['scale_factor'] = origin_scale_factor
     return inputs
 
 
