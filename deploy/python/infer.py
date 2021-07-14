@@ -306,19 +306,13 @@ def create_inputs(imgs, im_info):
     max_shape_h = max([e[0] for e in imgs_shape])
     max_shape_w = max([e[1] for e in imgs_shape])
     padding_imgs = []
-    new_rescale = []
     for img in imgs:
         im_c, im_h, im_w = img.shape[:]
         padding_im = np.zeros(
             (im_c, max_shape_h, max_shape_w), dtype=np.float32)
         padding_im[:, :im_h, :im_w] = img
         padding_imgs.append(padding_im)
-        new_rescale_h = max_shape_h / im_h
-        new_rescale_w = max_shape_w / im_w
-        new_rescale = np.array([[new_rescale_h, new_rescale_w]]).astype('float32')
     inputs['image'] = np.stack(padding_imgs, axis=0)
-    inputs['im_shape'] = inputs['im_shape'] * new_rescale
-    inputs['scale_factor'] = inputs['scale_factor'] * new_rescale
     return inputs
 
 
