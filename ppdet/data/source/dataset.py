@@ -1,15 +1,15 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
+# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved. 
+#   
+# Licensed under the Apache License, Version 2.0 (the "License");   
+# you may not use this file except in compliance with the License.  
+# You may obtain a copy of the License at   
+#   
+#     http://www.apache.org/licenses/LICENSE-2.0    
+#   
+# Unless required by applicable law or agreed to in writing, software   
+# distributed under the License is distributed on an "AS IS" BASIS, 
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
+# See the License for the specific language governing permissions and   
 # limitations under the License.
 
 import os
@@ -19,68 +19,96 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
-
+from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
+import copy
 
 
 @serializable
-class DataSet(object):
+class DetDataset(Dataset):
     """
-    Dataset, e.g., coco, pascal voc
+    Load detection dataset.
 
     Args:
-        annotation (str): annotation file path
-        image_dir (str): directory where image files are stored
-        shuffle (bool): shuffle samples
+        dataset_dir (str): root directory for dataset.
+        image_dir (str): directory for images.
+        anno_path (str): annotation file path.
+        data_fields (list): key name of data dictionary, at least have 'image'.
+        sample_num (int): number of samples to load, -1 means all.
+        use_default_label (bool): whether to load default label list.
     """
 
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
+                 data_fields=['image'],
                  sample_num=-1,
-                 with_background=True,
                  use_default_label=None,
                  **kwargs):
-        super(DataSet, self).__init__()
+        super(DetDataset, self).__init__()
+        self.dataset_dir = dataset_dir if dataset_dir is not None else ''
         self.anno_path = anno_path
         self.image_dir = image_dir if image_dir is not None else ''
-        self.dataset_dir = dataset_dir if dataset_dir is not None else ''
+        self.data_fields = data_fields
         self.sample_num = sample_num
-        self.with_background = with_background
         self.use_default_label = use_default_label
+        self._epoch = 0
+        self._curr_iter = 0
 
-        self.cname2cid = None
-        self._imid2path = None
+    def __len__(self, ):
+        return len(self.roidbs)
 
-    def load_roidb_and_cname2cid(self):
-        """load dataset"""
-        raise NotImplementedError('%s.load_roidb_and_cname2cid not available' %
-                                  (self.__class__.__name__))
+    def __getitem__(self, idx):
+        # data batch
+        roidb = copy.deepcopy(self.roidbs[idx])
+        if self.mixup_epoch == 0 or self._epoch < self.mixup_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.cutmix_epoch == 0 or self._epoch < self.cutmix_epoch:
+            n = len(self.roidbs)
+            idx = np.random.randint(n)
+            roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
+        elif self.mosaic_epoch == 0 or self._epoch < self.mosaic_epoch:
+            n = len(self.roidbs)
+            roidb = [roidb, ] + [
+                copy.deepcopy(self.roidbs[np.random.randint(n)])
+                for _ in range(3)
+            ]
+        if isinstance(roidb, Sequence):
+            for r in roidb:
+                r['curr_iter'] = self._curr_iter
+        else:
+            roidb['curr_iter'] = self._curr_iter
+        self._curr_iter += 1
 
-    def get_roidb(self):
-        if not self.roidbs:
-            data_dir = get_dataset_path(self.dataset_dir, self.anno_path,
-                                        self.image_dir)
-            if data_dir:
-                self.dataset_dir = data_dir
-            self.load_roidb_and_cname2cid()
+        return self.transform(roidb)
 
-        return self.roidbs
+    def check_or_download_dataset(self):
+        self.dataset_dir = get_dataset_path(self.dataset_dir, self.anno_path,
+                                            self.image_dir)
 
-    def get_cname2cid(self):
-        if not self.cname2cid:
-            self.load_roidb_and_cname2cid()
-        return self.cname2cid
+    def set_kwargs(self, **kwargs):
+        self.mixup_epoch = kwargs.get('mixup_epoch', -1)
+        self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
+        self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
+
+    def set_transform(self, transform):
+        self.transform = transform
+
+    def set_epoch(self, epoch_id):
+        self._epoch = epoch_id
+
+    def parse_dataset(self, ):
+        raise NotImplementedError(
+            "Need to implement parse_dataset method of Dataset")
 
     def get_anno(self):
         if self.anno_path is None:
             return
         return os.path.join(self.dataset_dir, self.anno_path)
-
-    def get_imid2path(self):
-        return self._imid2path
 
 
 def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
@@ -89,50 +117,43 @@ def _is_valid_file(f, extensions=('.jpg', '.jpeg', '.png', '.bmp')):
 
 def _make_dataset(dir):
     dir = os.path.expanduser(dir)
-    if not os.path.isdir(d):
+    if not os.path.isdir(dir):
         raise ('{} should be a dir'.format(dir))
     images = []
     for root, _, fnames in sorted(os.walk(dir, followlinks=True)):
         for fname in sorted(fnames):
             path = os.path.join(root, fname)
-            if is_valid_file(path):
+            if _is_valid_file(path):
                 images.append(path)
     return images
 
 
 @register
 @serializable
-class ImageFolder(DataSet):
-    """
-    Args:
-        dataset_dir (str): root directory for dataset.
-        image_dir(list|str): list of image folders or list of image files
-        anno_path (str): annotation file path.
-        samples (int): number of samples to load, -1 means all
-    """
-
+class ImageFolder(DetDataset):
     def __init__(self,
                  dataset_dir=None,
                  image_dir=None,
                  anno_path=None,
                  sample_num=-1,
-                 with_background=True,
                  use_default_label=None,
                  **kwargs):
-        super(ImageFolder, self).__init__(dataset_dir, image_dir, anno_path,
-                                          sample_num, with_background,
-                                          use_default_label)
-        self.roidbs = None
+        super(ImageFolder, self).__init__(
+            dataset_dir,
+            image_dir,
+            anno_path,
+            sample_num=sample_num,
+            use_default_label=use_default_label)
         self._imid2path = {}
+        self.roidbs = None
+        self.sample_num = sample_num
 
-    def get_roidb(self):
+    def check_or_download_dataset(self):
+        return
+
+    def parse_dataset(self, ):
         if not self.roidbs:
             self.roidbs = self._load_images()
-        return self.roidbs
-
-    def set_images(self, images):
-        self.image_dir = images
-        self.roidbs = self._load_images()
 
     def _parse(self):
         image_dir = self.image_dir
@@ -162,3 +183,10 @@ class ImageFolder(DataSet):
             records.append(rec)
         assert len(records) > 0, "No image file found"
         return records
+
+    def get_imid2path(self):
+        return self._imid2path
+
+    def set_images(self, images):
+        self.image_dir = images
+        self.roidbs = self._load_images()

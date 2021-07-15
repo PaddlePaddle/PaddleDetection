@@ -1,4 +1,4 @@
-# Copyright (c) 2019 PaddlePaddle Authors. All Rights Reserved.
+#   Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,1107 +12,1579 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import numpy as np
-from numbers import Integral
+import paddle
+import paddle.nn.functional as F
+import paddle.nn as nn
+from paddle import ParamAttr
+from paddle.regularizer import L2Decay
 
-from paddle import fluid
-from paddle.fluid.param_attr import ParamAttr
-from paddle.fluid.regularizer import L2Decay
-from ppdet.core.workspace import register, serializable
-from ppdet.utils.bbox_utils import bbox_overlaps, box_to_delta
+from paddle.fluid.framework import Variable, in_dygraph_mode
+from paddle.fluid import core
+from paddle.fluid.layer_helper import LayerHelper
+from paddle.fluid.data_feeder import check_variable_and_dtype, check_type, check_dtype
 
 __all__ = [
-    'AnchorGenerator', 'DropBlock', 'RPNTargetAssign', 'GenerateProposals',
-    'MultiClassNMS', 'BBoxAssigner', 'MaskAssigner', 'RoIAlign', 'RoIPool',
-    'MultiBoxHead', 'SSDOutputDecoder', 'RetinaTargetAssign',
-    'RetinaOutputDecoder', 'ConvNorm', 'MultiClassSoftNMS', 'LibraBBoxAssigner'
+    'roi_pool',
+    'roi_align',
+    'prior_box',
+    'generate_proposals',
+    'iou_similarity',
+    'box_coder',
+    'yolo_box',
+    'multiclass_nms',
+    'distribute_fpn_proposals',
+    'collect_fpn_proposals',
+    'matrix_nms',
+    'batch_norm',
+    'mish',
 ]
 
 
-def ConvNorm(input,
-             num_filters,
-             filter_size,
-             stride=1,
-             groups=1,
-             norm_decay=0.,
-             norm_type='affine_channel',
-             norm_groups=32,
-             dilation=1,
-             lr_scale=1,
-             freeze_norm=False,
-             act=None,
-             norm_name=None,
-             initializer=None,
-             name=None):
-    fan = num_filters
-    conv = fluid.layers.conv2d(
-        input=input,
-        num_filters=num_filters,
-        filter_size=filter_size,
-        stride=stride,
-        padding=((filter_size - 1) // 2) * dilation,
-        dilation=dilation,
-        groups=groups,
-        act=None,
-        param_attr=ParamAttr(
-            name=name + "_weights",
-            initializer=initializer,
-            learning_rate=lr_scale),
-        bias_attr=False,
-        name=name + '.conv2d.output.1')
+def mish(x):
+    return x * paddle.tanh(F.softplus(x))
+
+
+def batch_norm(ch,
+               norm_type='bn',
+               norm_decay=0.,
+               freeze_norm=False,
+               initializer=None,
+               data_format='NCHW'):
+    if norm_type == 'sync_bn':
+        batch_norm = nn.SyncBatchNorm
+    else:
+        batch_norm = nn.BatchNorm2D
 
     norm_lr = 0. if freeze_norm else 1.
-    pattr = ParamAttr(
-        name=norm_name + '_scale',
-        learning_rate=norm_lr * lr_scale,
-        regularizer=L2Decay(norm_decay))
-    battr = ParamAttr(
-        name=norm_name + '_offset',
-        learning_rate=norm_lr * lr_scale,
-        regularizer=L2Decay(norm_decay))
+    weight_attr = ParamAttr(
+        initializer=initializer,
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay),
+        trainable=False if freeze_norm else True)
+    bias_attr = ParamAttr(
+        learning_rate=norm_lr,
+        regularizer=L2Decay(norm_decay),
+        trainable=False if freeze_norm else True)
 
-    if norm_type in ['bn', 'sync_bn']:
-        global_stats = True if freeze_norm else False
-        out = fluid.layers.batch_norm(
-            input=conv,
-            act=act,
-            name=norm_name + '.output.1',
-            param_attr=pattr,
-            bias_attr=battr,
-            moving_mean_name=norm_name + '_mean',
-            moving_variance_name=norm_name + '_variance',
-            use_global_stats=global_stats)
-        scale = fluid.framework._get_var(pattr.name)
-        bias = fluid.framework._get_var(battr.name)
-    elif norm_type == 'gn':
-        out = fluid.layers.group_norm(
-            input=conv,
-            act=act,
-            name=norm_name + '.output.1',
-            groups=norm_groups,
-            param_attr=pattr,
-            bias_attr=battr)
-        scale = fluid.framework._get_var(pattr.name)
-        bias = fluid.framework._get_var(battr.name)
-    elif norm_type == 'affine_channel':
-        scale = fluid.layers.create_parameter(
-            shape=[conv.shape[1]],
-            dtype=conv.dtype,
-            attr=pattr,
-            default_initializer=fluid.initializer.Constant(1.))
-        bias = fluid.layers.create_parameter(
-            shape=[conv.shape[1]],
-            dtype=conv.dtype,
-            attr=battr,
-            default_initializer=fluid.initializer.Constant(0.))
-        out = fluid.layers.affine_channel(
-            x=conv, scale=scale, bias=bias, act=act)
+    norm_layer = batch_norm(
+        ch,
+        weight_attr=weight_attr,
+        bias_attr=bias_attr,
+        data_format=data_format)
+
+    norm_params = norm_layer.parameters()
     if freeze_norm:
-        scale.stop_gradient = True
-        bias.stop_gradient = True
-    return out
+        for param in norm_params:
+            param.stop_gradient = True
+
+    return norm_layer
 
 
-def DropBlock(input, block_size, keep_prob, is_test):
-    if is_test:
-        return input
+@paddle.jit.not_to_static
+def roi_pool(input,
+             rois,
+             output_size,
+             spatial_scale=1.0,
+             rois_num=None,
+             name=None):
+    """
 
-    def CalculateGamma(input, block_size, keep_prob):
-        input_shape = fluid.layers.shape(input)
-        feat_shape_tmp = fluid.layers.slice(input_shape, [0], [3], [4])
-        feat_shape_tmp = fluid.layers.cast(feat_shape_tmp, dtype="float32")
-        feat_shape_t = fluid.layers.reshape(feat_shape_tmp, [1, 1, 1, 1])
-        feat_area = fluid.layers.pow(feat_shape_t, factor=2)
+    This operator implements the roi_pooling layer.
+    Region of interest pooling (also known as RoI pooling) is to perform max pooling on inputs of nonuniform sizes to obtain fixed-size feature maps (e.g. 7*7).
 
-        block_shape_t = fluid.layers.fill_constant(
-            shape=[1, 1, 1, 1], value=block_size, dtype='float32')
-        block_area = fluid.layers.pow(block_shape_t, factor=2)
+    The operator has three steps:
 
-        useful_shape_t = feat_shape_t - block_shape_t + 1
-        useful_area = fluid.layers.pow(useful_shape_t, factor=2)
+        1. Dividing each region proposal into equal-sized sections with output_size(h, w);
+        2. Finding the largest value in each section;
+        3. Copying these max values to the output buffer.
 
-        upper_t = feat_area * (1 - keep_prob)
-        bottom_t = block_area * useful_area
-        output = upper_t / bottom_t
-        return output
+    For more information, please refer to https://stackoverflow.com/questions/43430056/what-is-roi-layer-in-fast-rcnn
 
-    gamma = CalculateGamma(input, block_size=block_size, keep_prob=keep_prob)
-    input_shape = fluid.layers.shape(input)
-    p = fluid.layers.expand_as(gamma, input)
+    Args:
+        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
+            where N is the batch size, C is the input channel, H is Height, W is weight. 
+            The data type is float32 or float64.
+        rois (Tensor): ROIs (Regions of Interest) to pool over. 
+            2D-Tensor or 2D-LoDTensor with the shape of [num_rois,4], the lod level is 1. 
+            Given as [[x1, y1, x2, y2], ...], (x1, y1) is the top left coordinates, 
+            and (x2, y2) is the bottom right coordinates.
+        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
+        spatial_scale (float, optional): Multiplicative spatial scale factor to translate ROI coords from their input scale to the scale used when pooling. Default: 1.0
+        rois_num (Tensor): The number of RoIs in each image. Default: None
+        name(str, optional): For detailed information, please refer
+            to :ref:`api_guide_Name`. Usually name is no need to set and
+            None by default.
 
-    input_shape_tmp = fluid.layers.cast(input_shape, dtype="int64")
-    random_matrix = fluid.layers.uniform_random(
-        input_shape_tmp, dtype='float32', min=0.0, max=1.0)
-    one_zero_m = fluid.layers.less_than(random_matrix, p)
-    one_zero_m.stop_gradient = True
-    one_zero_m = fluid.layers.cast(one_zero_m, dtype="float32")
 
-    mask_flag = fluid.layers.pool2d(
-        one_zero_m,
-        pool_size=block_size,
-        pool_type='max',
-        pool_stride=1,
-        pool_padding=block_size // 2)
-    mask = 1.0 - mask_flag
+    Returns:
+        Tensor: The pooled feature, 4D-Tensor with the shape of [num_rois, C, output_size[0], output_size[1]].
 
-    elem_numel = fluid.layers.reduce_prod(input_shape)
-    elem_numel_m = fluid.layers.cast(elem_numel, dtype="float32")
-    elem_numel_m.stop_gradient = True
 
-    elem_sum = fluid.layers.reduce_sum(mask)
-    elem_sum_m = fluid.layers.cast(elem_sum, dtype="float32")
-    elem_sum_m.stop_gradient = True
+    Examples:
 
-    output = input * mask * elem_numel_m / elem_sum_m
+    ..  code-block:: python
+
+        import paddle
+        from ppdet.modeling import ops
+        paddle.enable_static()
+
+        x = paddle.static.data(
+                name='data', shape=[None, 256, 32, 32], dtype='float32')
+        rois = paddle.static.data(
+                name='rois', shape=[None, 4], dtype='float32')
+        rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
+
+        pool_out = ops.roi_pool(
+                input=x,
+                rois=rois,
+                output_size=(1, 1),
+                spatial_scale=1.0,
+                rois_num=rois_num)
+    """
+    check_type(output_size, 'output_size', (int, tuple), 'roi_pool')
+    if isinstance(output_size, int):
+        output_size = (output_size, output_size)
+
+    pooled_height, pooled_width = output_size
+    if in_dygraph_mode():
+        assert rois_num is not None, "rois_num should not be None in dygraph mode."
+        pool_out, argmaxes = core.ops.roi_pool(
+            input, rois, rois_num, "pooled_height", pooled_height,
+            "pooled_width", pooled_width, "spatial_scale", spatial_scale)
+        return pool_out, argmaxes
+
+    else:
+        check_variable_and_dtype(input, 'input', ['float32'], 'roi_pool')
+        check_variable_and_dtype(rois, 'rois', ['float32'], 'roi_pool')
+        helper = LayerHelper('roi_pool', **locals())
+        dtype = helper.input_dtype()
+        pool_out = helper.create_variable_for_type_inference(dtype)
+        argmaxes = helper.create_variable_for_type_inference(dtype='int32')
+
+        inputs = {
+            "X": input,
+            "ROIs": rois,
+        }
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+        helper.append_op(
+            type="roi_pool",
+            inputs=inputs,
+            outputs={"Out": pool_out,
+                     "Argmax": argmaxes},
+            attrs={
+                "pooled_height": pooled_height,
+                "pooled_width": pooled_width,
+                "spatial_scale": spatial_scale
+            })
+        return pool_out, argmaxes
+
+
+@paddle.jit.not_to_static
+def roi_align(input,
+              rois,
+              output_size,
+              spatial_scale=1.0,
+              sampling_ratio=-1,
+              rois_num=None,
+              aligned=True,
+              name=None):
+    """
+
+    Region of interest align (also known as RoI align) is to perform
+    bilinear interpolation on inputs of nonuniform sizes to obtain 
+    fixed-size feature maps (e.g. 7*7)
+
+    Dividing each region proposal into equal-sized sections with
+    the pooled_width and pooled_height. Location remains the origin
+    result.
+
+    In each ROI bin, the value of the four regularly sampled locations 
+    are computed directly through bilinear interpolation. The output is
+    the mean of four locations.
+    Thus avoid the misaligned problem. 
+
+    Args:
+        input (Tensor): Input feature, 4D-Tensor with the shape of [N,C,H,W], 
+            where N is the batch size, C is the input channel, H is Height, W is weight. 
+            The data type is float32 or float64.
+        rois (Tensor): ROIs (Regions of Interest) to pool over.It should be
+            a 2-D Tensor or 2-D LoDTensor of shape (num_rois, 4), the lod level is 1. 
+            The data type is float32 or float64. Given as [[x1, y1, x2, y2], ...],
+            (x1, y1) is the top left coordinates, and (x2, y2) is the bottom right coordinates.
+        output_size (int or tuple[int, int]): The pooled output size(h, w), data type is int32. If int, h and w are both equal to output_size.
+        spatial_scale (float32, optional): Multiplicative spatial scale factor to translate ROI coords 
+            from their input scale to the scale used when pooling. Default: 1.0
+        sampling_ratio(int32, optional): number of sampling points in the interpolation grid. 
+            If <=0, then grid points are adaptive to roi_width and pooled_w, likewise for height. Default: -1
+        rois_num (Tensor): The number of RoIs in each image. Default: None
+        name(str, optional): For detailed information, please refer
+            to :ref:`api_guide_Name`. Usually name is no need to set and
+            None by default.
+
+    Returns:
+        Tensor:
+
+        Output: The output of ROIAlignOp is a 4-D tensor with shape (num_rois, channels, pooled_h, pooled_w). The data type is float32 or float64.
+
+
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+
+            x = paddle.static.data(
+                name='data', shape=[None, 256, 32, 32], dtype='float32')
+            rois = paddle.static.data(
+                name='rois', shape=[None, 4], dtype='float32')
+            rois_num = paddle.static.data(name='rois_num', shape=[None], dtype='int32')
+            align_out = ops.roi_align(input=x,
+                                               rois=rois,
+                                               ouput_size=(7, 7),
+                                               spatial_scale=0.5,
+                                               sampling_ratio=-1,
+                                               rois_num=rois_num)
+    """
+    check_type(output_size, 'output_size', (int, tuple), 'roi_align')
+    if isinstance(output_size, int):
+        output_size = (output_size, output_size)
+
+    pooled_height, pooled_width = output_size
+
+    if in_dygraph_mode():
+        assert rois_num is not None, "rois_num should not be None in dygraph mode."
+        align_out = core.ops.roi_align(
+            input, rois, rois_num, "pooled_height", pooled_height,
+            "pooled_width", pooled_width, "spatial_scale", spatial_scale,
+            "sampling_ratio", sampling_ratio, "aligned", aligned)
+        return align_out
+
+    else:
+        check_variable_and_dtype(input, 'input', ['float32', 'float64'],
+                                 'roi_align')
+        check_variable_and_dtype(rois, 'rois', ['float32', 'float64'],
+                                 'roi_align')
+        helper = LayerHelper('roi_align', **locals())
+        dtype = helper.input_dtype()
+        align_out = helper.create_variable_for_type_inference(dtype)
+        inputs = {
+            "X": input,
+            "ROIs": rois,
+        }
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+        helper.append_op(
+            type="roi_align",
+            inputs=inputs,
+            outputs={"Out": align_out},
+            attrs={
+                "pooled_height": pooled_height,
+                "pooled_width": pooled_width,
+                "spatial_scale": spatial_scale,
+                "sampling_ratio": sampling_ratio,
+                "aligned": aligned,
+            })
+        return align_out
+
+
+@paddle.jit.not_to_static
+def iou_similarity(x, y, box_normalized=True, name=None):
+    """
+    Computes intersection-over-union (IOU) between two box lists.
+    Box list 'X' should be a LoDTensor and 'Y' is a common Tensor,
+    boxes in 'Y' are shared by all instance of the batched inputs of X.
+    Given two boxes A and B, the calculation of IOU is as follows:
+
+    $$
+    IOU(A, B) = 
+    \\frac{area(A\\cap B)}{area(A)+area(B)-area(A\\cap B)}
+    $$
+
+    Args:
+        x (Tensor): Box list X is a 2-D Tensor with shape [N, 4] holds N 
+             boxes, each box is represented as [xmin, ymin, xmax, ymax], 
+             the shape of X is [N, 4]. [xmin, ymin] is the left top 
+             coordinate of the box if the input is image feature map, they
+             are close to the origin of the coordinate system. 
+             [xmax, ymax] is the right bottom coordinate of the box.
+             The data type is float32 or float64.
+        y (Tensor): Box list Y holds M boxes, each box is represented as 
+             [xmin, ymin, xmax, ymax], the shape of X is [N, 4]. 
+             [xmin, ymin] is the left top coordinate of the box if the 
+             input is image feature map, and [xmax, ymax] is the right 
+             bottom coordinate of the box. The data type is float32 or float64.
+        box_normalized(bool): Whether treat the priorbox as a normalized box.
+            Set true by default.
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        Tensor: The output of iou_similarity op, a tensor with shape [N, M] 
+              representing pairwise iou scores. The data type is same with x.
+
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+
+            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
+            iou = ops.iou_similarity(x=x, y=y)
+    """
+
+    if in_dygraph_mode():
+        out = core.ops.iou_similarity(x, y, 'box_normalized', box_normalized)
+        return out
+    else:
+        helper = LayerHelper("iou_similarity", **locals())
+        out = helper.create_variable_for_type_inference(dtype=x.dtype)
+
+        helper.append_op(
+            type="iou_similarity",
+            inputs={"X": x,
+                    "Y": y},
+            attrs={"box_normalized": box_normalized},
+            outputs={"Out": out})
+        return out
+
+
+@paddle.jit.not_to_static
+def collect_fpn_proposals(multi_rois,
+                          multi_scores,
+                          min_level,
+                          max_level,
+                          post_nms_top_n,
+                          rois_num_per_level=None,
+                          name=None):
+    """
+
+    **This OP only supports LoDTensor as input**. Concat multi-level RoIs 
+    (Region of Interest) and select N RoIs with respect to multi_scores. 
+    This operation performs the following steps:
+
+    1. Choose num_level RoIs and scores as input: num_level = max_level - min_level
+    2. Concat multi-level RoIs and scores
+    3. Sort scores and select post_nms_top_n scores
+    4. Gather RoIs by selected indices from scores
+    5. Re-sort RoIs by corresponding batch_id
+
+    Args:
+        multi_rois(list): List of RoIs to collect. Element in list is 2-D 
+            LoDTensor with shape [N, 4] and data type is float32 or float64, 
+            N is the number of RoIs.
+        multi_scores(list): List of scores of RoIs to collect. Element in list 
+            is 2-D LoDTensor with shape [N, 1] and data type is float32 or
+            float64, N is the number of RoIs.
+        min_level(int): The lowest level of FPN layer to collect
+        max_level(int): The highest level of FPN layer to collect
+        post_nms_top_n(int): The number of selected RoIs
+        rois_num_per_level(list, optional): The List of RoIs' numbers. 
+            Each element is 1-D Tensor which contains the RoIs' number of each 
+            image on each level and the shape is [B] and data type is 
+            int32, B is the number of images. If it is not None then return 
+            a 1-D Tensor contains the output RoIs' number of each image and 
+            the shape is [B]. Default: None
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default.
+
+    Returns:
+        Variable:
+
+        fpn_rois(Variable): 2-D LoDTensor with shape [N, 4] and data type is 
+        float32 or float64. Selected RoIs. 
+
+        rois_num(Tensor): 1-D Tensor contains the RoIs's number of each 
+        image. The shape is [B] and data type is int32. B is the number of 
+        images. 
+
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+            multi_rois = []
+            multi_scores = []
+            for i in range(4):
+                multi_rois.append(paddle.static.data(
+                    name='roi_'+str(i), shape=[None, 4], dtype='float32', lod_level=1))
+            for i in range(4):
+                multi_scores.append(paddle.static.data(
+                    name='score_'+str(i), shape=[None, 1], dtype='float32', lod_level=1))
+
+            fpn_rois = ops.collect_fpn_proposals(
+                multi_rois=multi_rois, 
+                multi_scores=multi_scores,
+                min_level=2, 
+                max_level=5, 
+                post_nms_top_n=2000)
+    """
+    check_type(multi_rois, 'multi_rois', list, 'collect_fpn_proposals')
+    check_type(multi_scores, 'multi_scores', list, 'collect_fpn_proposals')
+    num_lvl = max_level - min_level + 1
+    input_rois = multi_rois[:num_lvl]
+    input_scores = multi_scores[:num_lvl]
+
+    if in_dygraph_mode():
+        assert rois_num_per_level is not None, "rois_num_per_level should not be None in dygraph mode."
+        attrs = ('post_nms_topN', post_nms_top_n)
+        output_rois, rois_num = core.ops.collect_fpn_proposals(
+            input_rois, input_scores, rois_num_per_level, *attrs)
+        return output_rois, rois_num
+
+    else:
+        helper = LayerHelper('collect_fpn_proposals', **locals())
+        dtype = helper.input_dtype('multi_rois')
+        check_dtype(dtype, 'multi_rois', ['float32', 'float64'],
+                    'collect_fpn_proposals')
+        output_rois = helper.create_variable_for_type_inference(dtype)
+        output_rois.stop_gradient = True
+
+        inputs = {
+            'MultiLevelRois': input_rois,
+            'MultiLevelScores': input_scores,
+        }
+        outputs = {'FpnRois': output_rois}
+        if rois_num_per_level is not None:
+            inputs['MultiLevelRoIsNum'] = rois_num_per_level
+            rois_num = helper.create_variable_for_type_inference(dtype='int32')
+            rois_num.stop_gradient = True
+            outputs['RoisNum'] = rois_num
+        helper.append_op(
+            type='collect_fpn_proposals',
+            inputs=inputs,
+            outputs=outputs,
+            attrs={'post_nms_topN': post_nms_top_n})
+        return output_rois, rois_num
+
+
+@paddle.jit.not_to_static
+def distribute_fpn_proposals(fpn_rois,
+                             min_level,
+                             max_level,
+                             refer_level,
+                             refer_scale,
+                             pixel_offset=False,
+                             rois_num=None,
+                             name=None):
+    """
+
+    **This op only takes LoDTensor as input.** In Feature Pyramid Networks 
+    (FPN) models, it is needed to distribute all proposals into different FPN 
+    level, with respect to scale of the proposals, the referring scale and the 
+    referring level. Besides, to restore the order of proposals, we return an 
+    array which indicates the original index of rois in current proposals. 
+    To compute FPN level for each roi, the formula is given as follows:
+
+    .. math::
+
+        roi\_scale &= \sqrt{BBoxArea(fpn\_roi)}
+
+        level = floor(&\log(\\frac{roi\_scale}{refer\_scale}) + refer\_level)
+
+    where BBoxArea is a function to compute the area of each roi.
+
+    Args:
+
+        fpn_rois(Variable): 2-D Tensor with shape [N, 4] and data type is 
+            float32 or float64. The input fpn_rois.
+        min_level(int32): The lowest level of FPN layer where the proposals come 
+            from.
+        max_level(int32): The highest level of FPN layer where the proposals
+            come from.
+        refer_level(int32): The referring level of FPN layer with specified scale.
+        refer_scale(int32): The referring scale of FPN layer with specified level.
+        rois_num(Tensor): 1-D Tensor contains the number of RoIs in each image. 
+            The shape is [B] and data type is int32. B is the number of images.
+            If it is not None then return a list of 1-D Tensor. Each element 
+            is the output RoIs' number of each image on the corresponding level
+            and the shape is [B]. None by default.
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        Tuple:
+
+        multi_rois(List) : A list of 2-D LoDTensor with shape [M, 4] 
+        and data type of float32 and float64. The length is 
+        max_level-min_level+1. The proposals in each FPN level.
+
+        restore_ind(Variable): A 2-D Tensor with shape [N, 1], N is 
+        the number of total rois. The data type is int32. It is
+        used to restore the order of fpn_rois.
+
+        rois_num_per_level(List): A list of 1-D Tensor and each Tensor is 
+        the RoIs' number in each image on the corresponding level. The shape 
+        is [B] and data type of int32. B is the number of images
+
+
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+            fpn_rois = paddle.static.data(
+                name='data', shape=[None, 4], dtype='float32', lod_level=1)
+            multi_rois, restore_ind = ops.distribute_fpn_proposals(
+                fpn_rois=fpn_rois,
+                min_level=2,
+                max_level=5,
+                refer_level=4,
+                refer_scale=224)
+    """
+    num_lvl = max_level - min_level + 1
+
+    if in_dygraph_mode():
+        assert rois_num is not None, "rois_num should not be None in dygraph mode."
+        attrs = ('min_level', min_level, 'max_level', max_level, 'refer_level',
+                 refer_level, 'refer_scale', refer_scale, 'pixel_offset',
+                 pixel_offset)
+        multi_rois, restore_ind, rois_num_per_level = core.ops.distribute_fpn_proposals(
+            fpn_rois, rois_num, num_lvl, num_lvl, *attrs)
+        return multi_rois, restore_ind, rois_num_per_level
+
+    else:
+        check_variable_and_dtype(fpn_rois, 'fpn_rois', ['float32', 'float64'],
+                                 'distribute_fpn_proposals')
+        helper = LayerHelper('distribute_fpn_proposals', **locals())
+        dtype = helper.input_dtype('fpn_rois')
+        multi_rois = [
+            helper.create_variable_for_type_inference(dtype)
+            for i in range(num_lvl)
+        ]
+
+        restore_ind = helper.create_variable_for_type_inference(dtype='int32')
+
+        inputs = {'FpnRois': fpn_rois}
+        outputs = {
+            'MultiFpnRois': multi_rois,
+            'RestoreIndex': restore_ind,
+        }
+
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+            rois_num_per_level = [
+                helper.create_variable_for_type_inference(dtype='int32')
+                for i in range(num_lvl)
+            ]
+            outputs['MultiLevelRoIsNum'] = rois_num_per_level
+
+        helper.append_op(
+            type='distribute_fpn_proposals',
+            inputs=inputs,
+            outputs=outputs,
+            attrs={
+                'min_level': min_level,
+                'max_level': max_level,
+                'refer_level': refer_level,
+                'refer_scale': refer_scale,
+                'pixel_offset': pixel_offset
+            })
+        return multi_rois, restore_ind, rois_num_per_level
+
+
+@paddle.jit.not_to_static
+def yolo_box(
+        x,
+        origin_shape,
+        anchors,
+        class_num,
+        conf_thresh,
+        downsample_ratio,
+        clip_bbox=True,
+        scale_x_y=1.,
+        name=None, ):
+    """
+
+    This operator generates YOLO detection boxes from output of YOLOv3 network.
+
+     The output of previous network is in shape [N, C, H, W], while H and W
+     should be the same, H and W specify the grid size, each grid point predict
+     given number boxes, this given number, which following will be represented as S,
+     is specified by the number of anchors. In the second dimension(the channel
+     dimension), C should be equal to S * (5 + class_num), class_num is the object
+     category number of source dataset(such as 80 in coco dataset), so the
+     second(channel) dimension, apart from 4 box location coordinates x, y, w, h,
+     also includes confidence score of the box and class one-hot key of each anchor
+     box.
+     Assume the 4 location coordinates are :math:`t_x, t_y, t_w, t_h`, the box
+     predictions should be as follows:
+     $$
+     b_x = \\sigma(t_x) + c_x
+     $$
+     $$
+     b_y = \\sigma(t_y) + c_y
+     $$
+     $$
+     b_w = p_w e^{t_w}
+     $$
+     $$
+     b_h = p_h e^{t_h}
+     $$
+     in the equation above, :math:`c_x, c_y` is the left top corner of current grid
+     and :math:`p_w, p_h` is specified by anchors.
+     The logistic regression value of the 5th channel of each anchor prediction boxes
+     represents the confidence score of each prediction box, and the logistic
+     regression value of the last :attr:`class_num` channels of each anchor prediction
+     boxes represents the classifcation scores. Boxes with confidence scores less than
+     :attr:`conf_thresh` should be ignored, and box final scores is the product of
+     confidence scores and classification scores.
+     $$
+     score_{pred} = score_{conf} * score_{class}
+     $$
+
+    Args:
+        x (Tensor): The input tensor of YoloBox operator is a 4-D tensor with shape of [N, C, H, W].
+                    The second dimension(C) stores box locations, confidence score and
+                    classification one-hot keys of each anchor box. Generally, X should be the output of YOLOv3 network.
+                    The data type is float32 or float64.
+        origin_shape (Tensor): The image size tensor of YoloBox operator, This is a 2-D tensor with shape of [N, 2].
+                    This tensor holds height and width of each input image used for resizing output box in input image
+                    scale. The data type is int32.
+        anchors (list|tuple): The anchor width and height, it will be parsed pair by pair.
+        class_num (int): The number of classes to predict.
+        conf_thresh (float): The confidence scores threshold of detection boxes. Boxes with confidence scores
+                    under threshold should be ignored.
+        downsample_ratio (int): The downsample ratio from network input to YoloBox operator input,
+                    so 32, 16, 8 should be set for the first, second, and thrid YoloBox operators.
+        clip_bbox (bool): Whether clip output bonding box in Input(ImgSize) boundary. Default true.
+        scale_x_y (float): Scale the center point of decoded bounding box. Default 1.0.
+        name (string): The default value is None.  Normally there is no need
+                       for user to set this property.  For more information,
+                       please refer to :ref:`api_guide_Name`
+
+    Returns:
+        boxes Tensor: A 3-D tensor with shape [N, M, 4], the coordinates of boxes,  N is the batch num,
+                    M is output box number, and the 3rd dimension stores [xmin, ymin, xmax, ymax] coordinates of boxes.
+        scores Tensor: A 3-D tensor with shape [N, M, :attr:`class_num`], the coordinates of boxes,  N is the batch num,
+                    M is output box number.
+
+    Raises:
+        TypeError: Attr anchors of yolo box must be list or tuple
+        TypeError: Attr class_num of yolo box must be an integer
+        TypeError: Attr conf_thresh of yolo box must be a float number
+
+    Examples:
+
+    .. code-block:: python
+
+        import paddle
+        from ppdet.modeling import ops
+
+        paddle.enable_static()
+        x = paddle.static.data(name='x', shape=[None, 255, 13, 13], dtype='float32')
+        img_size = paddle.static.data(name='img_size',shape=[None, 2],dtype='int64')
+        anchors = [10, 13, 16, 30, 33, 23]
+        boxes,scores = ops.yolo_box(x=x, img_size=img_size, class_num=80, anchors=anchors,
+                                        conf_thresh=0.01, downsample_ratio=32)
+    """
+    helper = LayerHelper('yolo_box', **locals())
+
+    if not isinstance(anchors, list) and not isinstance(anchors, tuple):
+        raise TypeError("Attr anchors of yolo_box must be list or tuple")
+    if not isinstance(class_num, int):
+        raise TypeError("Attr class_num of yolo_box must be an integer")
+    if not isinstance(conf_thresh, float):
+        raise TypeError(
+            "Attr ignore_thresh of yolo_box must be a float number")
+
+    if in_dygraph_mode():
+        attrs = ('anchors', anchors, 'class_num', class_num, 'conf_thresh',
+                 conf_thresh, 'downsample_ratio', downsample_ratio, 'clip_bbox',
+                 clip_bbox, 'scale_x_y', scale_x_y)
+        boxes, scores = core.ops.yolo_box(x, origin_shape, *attrs)
+        return boxes, scores
+    else:
+        boxes = helper.create_variable_for_type_inference(dtype=x.dtype)
+        scores = helper.create_variable_for_type_inference(dtype=x.dtype)
+
+        attrs = {
+            "anchors": anchors,
+            "class_num": class_num,
+            "conf_thresh": conf_thresh,
+            "downsample_ratio": downsample_ratio,
+            "clip_bbox": clip_bbox,
+            "scale_x_y": scale_x_y,
+        }
+
+        helper.append_op(
+            type='yolo_box',
+            inputs={
+                "X": x,
+                "ImgSize": origin_shape,
+            },
+            outputs={
+                'Boxes': boxes,
+                'Scores': scores,
+            },
+            attrs=attrs)
+        return boxes, scores
+
+@paddle.jit.not_to_static
+def prior_box(input,
+              image,
+              min_sizes,
+              max_sizes=None,
+              aspect_ratios=[1.],
+              variance=[0.1, 0.1, 0.2, 0.2],
+              flip=False,
+              clip=False,
+              steps=[0.0, 0.0],
+              offset=0.5,
+              min_max_aspect_ratios_order=False,
+              name=None):
+    """
+
+    This op generates prior boxes for SSD(Single Shot MultiBox Detector) algorithm.
+    Each position of the input produce N prior boxes, N is determined by
+    the count of min_sizes, max_sizes and aspect_ratios, The size of the
+    box is in range(min_size, max_size) interval, which is generated in
+    sequence according to the aspect_ratios.
+
+    Parameters:
+       input(Tensor): 4-D tensor(NCHW), the data type should be float32 or float64.
+       image(Tensor): 4-D tensor(NCHW), the input image data of PriorBoxOp,
+            the data type should be float32 or float64.
+       min_sizes(list|tuple|float): the min sizes of generated prior boxes.
+       max_sizes(list|tuple|None): the max sizes of generated prior boxes.
+            Default: None.
+       aspect_ratios(list|tuple|float): the aspect ratios of generated
+            prior boxes. Default: [1.].
+       variance(list|tuple): the variances to be encoded in prior boxes.
+            Default:[0.1, 0.1, 0.2, 0.2].
+       flip(bool): Whether to flip aspect ratios. Default:False.
+       clip(bool): Whether to clip out-of-boundary boxes. Default: False.
+       step(list|tuple): Prior boxes step across width and height, If
+            step[0] equals to 0.0 or step[1] equals to 0.0, the prior boxes step across
+            height or weight of the input will be automatically calculated.
+            Default: [0., 0.]
+       offset(float): Prior boxes center offset. Default: 0.5
+       min_max_aspect_ratios_order(bool): If set True, the output prior box is
+            in order of [min, max, aspect_ratios], which is consistent with
+            Caffe. Please note, this order affects the weights order of
+            convolution layer followed by and does not affect the final
+            detection results. Default: False.
+       name(str, optional): The default value is None.  Normally there is no need for 
+            user to set this property. For more information, please refer to :ref:`api_guide_Name`
+
+    Returns:
+        Tuple: A tuple with two Variable (boxes, variances)
+
+        boxes(Tensor): the output prior boxes of PriorBox.
+        4-D tensor, the layout is [H, W, num_priors, 4].
+        H is the height of input, W is the width of input,
+        num_priors is the total box count of each position of input.
+
+        variances(Tensor): the expanded variances of PriorBox.
+        4-D tensor, the layput is [H, W, num_priors, 4].
+        H is the height of input, W is the width of input
+        num_priors is the total box count of each position of input
+
+    Examples:
+        .. code-block:: python
+
+        import paddle
+        from ppdet.modeling import ops
+
+        paddle.enable_static()
+        input = paddle.static.data(name="input", shape=[None,3,6,9])
+        image = paddle.static.data(name="image", shape=[None,3,9,12])
+        box, var = ops.prior_box(
+                    input=input,
+                    image=image,
+                    min_sizes=[100.],
+                    clip=True,
+                    flip=True)
+    """
+    helper = LayerHelper("prior_box", **locals())
+    dtype = helper.input_dtype()
+    check_variable_and_dtype(
+        input, 'input', ['uint8', 'int8', 'float32', 'float64'], 'prior_box')
+
+    def _is_list_or_tuple_(data):
+        return (isinstance(data, list) or isinstance(data, tuple))
+
+    if not _is_list_or_tuple_(min_sizes):
+        min_sizes = [min_sizes]
+    if not _is_list_or_tuple_(aspect_ratios):
+        aspect_ratios = [aspect_ratios]
+    if not (_is_list_or_tuple_(steps) and len(steps) == 2):
+        raise ValueError('steps should be a list or tuple ',
+                         'with length 2, (step_width, step_height).')
+
+    min_sizes = list(map(float, min_sizes))
+    aspect_ratios = list(map(float, aspect_ratios))
+    steps = list(map(float, steps))
+
+    cur_max_sizes = None
+    if max_sizes is not None and len(max_sizes) > 0 and max_sizes[0] > 0:
+        if not _is_list_or_tuple_(max_sizes):
+            max_sizes = [max_sizes]
+        cur_max_sizes = max_sizes
+
+    if in_dygraph_mode():
+        attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
+                 'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
+                 steps[0], 'step_h', steps[1], 'offset', offset,
+                 'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
+        if cur_max_sizes is not None:
+            attrs += ('max_sizes', cur_max_sizes)
+        box, var = core.ops.prior_box(input, image, *attrs)
+        return box, var
+    else:
+        attrs = {
+            'min_sizes': min_sizes,
+            'aspect_ratios': aspect_ratios,
+            'variances': variance,
+            'flip': flip,
+            'clip': clip,
+            'step_w': steps[0],
+            'step_h': steps[1],
+            'offset': offset,
+            'min_max_aspect_ratios_order': min_max_aspect_ratios_order
+        }
+
+        if cur_max_sizes is not None:
+            attrs['max_sizes'] = cur_max_sizes
+
+        box = helper.create_variable_for_type_inference(dtype)
+        var = helper.create_variable_for_type_inference(dtype)
+        helper.append_op(
+            type="prior_box",
+            inputs={"Input": input,
+                    "Image": image},
+            outputs={"Boxes": box,
+                     "Variances": var},
+            attrs=attrs, )
+        box.stop_gradient = True
+        var.stop_gradient = True
+        return box, var
+
+
+@paddle.jit.not_to_static
+def multiclass_nms(bboxes,
+                   scores,
+                   score_threshold,
+                   nms_top_k,
+                   keep_top_k,
+                   nms_threshold=0.3,
+                   normalized=True,
+                   nms_eta=1.,
+                   background_label=-1,
+                   return_index=False,
+                   return_rois_num=True,
+                   rois_num=None,
+                   name=None):
+    """
+    This operator is to do multi-class non maximum suppression (NMS) on
+    boxes and scores.
+    In the NMS step, this operator greedily selects a subset of detection bounding
+    boxes that have high scores larger than score_threshold, if providing this
+    threshold, then selects the largest nms_top_k confidences scores if nms_top_k
+    is larger than -1. Then this operator pruns away boxes that have high IOU
+    (intersection over union) overlap with already selected boxes by adaptive
+    threshold NMS based on parameters of nms_threshold and nms_eta.
+    Aftern NMS step, at most keep_top_k number of total bboxes are to be kept
+    per image if keep_top_k is larger than -1.
+    Args:
+        bboxes (Tensor): Two types of bboxes are supported:
+                           1. (Tensor) A 3-D Tensor with shape
+                           [N, M, 4 or 8 16 24 32] represents the
+                           predicted locations of M bounding bboxes,
+                           N is the batch size. Each bounding box has four
+                           coordinate values and the layout is
+                           [xmin, ymin, xmax, ymax], when box size equals to 4.
+                           2. (LoDTensor) A 3-D Tensor with shape [M, C, 4]
+                           M is the number of bounding boxes, C is the
+                           class number
+        scores (Tensor): Two types of scores are supported:
+                           1. (Tensor) A 3-D Tensor with shape [N, C, M]
+                           represents the predicted confidence predictions.
+                           N is the batch size, C is the class number, M is
+                           number of bounding boxes. For each category there
+                           are total M scores which corresponding M bounding
+                           boxes. Please note, M is equal to the 2nd dimension
+                           of BBoxes.
+                           2. (LoDTensor) A 2-D LoDTensor with shape [M, C].
+                           M is the number of bbox, C is the class number.
+                           In this case, input BBoxes should be the second
+                           case with shape [M, C, 4].
+        background_label (int): The index of background label, the background
+                                label will be ignored. If set to -1, then all
+                                categories will be considered. Default: 0
+        score_threshold (float): Threshold to filter out bounding boxes with
+                                 low confidence score. If not provided,
+                                 consider all boxes.
+        nms_top_k (int): Maximum number of detections to be kept according to
+                         the confidences after the filtering detections based
+                         on score_threshold.
+        nms_threshold (float): The threshold to be used in NMS. Default: 0.3
+        nms_eta (float): The threshold to be used in NMS. Default: 1.0
+        keep_top_k (int): Number of total bboxes to be kept per image after NMS
+                          step. -1 means keeping all bboxes after NMS step.
+        normalized (bool): Whether detections are normalized. Default: True
+        return_index(bool): Whether return selected index. Default: False
+        rois_num(Tensor): 1-D Tensor contains the number of RoIs in each image. 
+            The shape is [B] and data type is int32. B is the number of images.
+            If it is not None then return a list of 1-D Tensor. Each element 
+            is the output RoIs' number of each image on the corresponding level
+            and the shape is [B]. None by default.
+        name(str): Name of the multiclass nms op. Default: None.
+    Returns:
+        A tuple with two Variables: (Out, Index) if return_index is True,
+        otherwise, a tuple with one Variable(Out) is returned.
+        Out: A 2-D LoDTensor with shape [No, 6] represents the detections.
+        Each row has 6 values: [label, confidence, xmin, ymin, xmax, ymax]
+        or A 2-D LoDTensor with shape [No, 10] represents the detections.
+        Each row has 10 values: [label, confidence, x1, y1, x2, y2, x3, y3,
+        x4, y4]. No is the total number of detections.
+        If all images have not detected results, all elements in LoD will be
+        0, and output tensor is empty (None).
+        Index: Only return when return_index is True. A 2-D LoDTensor with
+        shape [No, 1] represents the selected index which type is Integer.
+        The index is the absolute value cross batches. No is the same number
+        as Out. If the index is used to gather other attribute such as age,
+        one needs to reshape the input(N, M, 1) to (N * M, 1) as first, where
+        N is the batch size and M is the number of boxes.
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            boxes = paddle.static.data(name='bboxes', shape=[81, 4],
+                                      dtype='float32', lod_level=1)
+            scores = paddle.static.data(name='scores', shape=[81],
+                                      dtype='float32', lod_level=1)
+            out, index = ops.multiclass_nms(bboxes=boxes,
+                                            scores=scores,
+                                            background_label=0,
+                                            score_threshold=0.5,
+                                            nms_top_k=400,
+                                            nms_threshold=0.3,
+                                            keep_top_k=200,
+                                            normalized=False,
+                                            return_index=True)
+    """
+    helper = LayerHelper('multiclass_nms3', **locals())
+
+    if in_dygraph_mode():
+        attrs = ('background_label', background_label, 'score_threshold',
+                 score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
+                 nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
+                 'normalized', normalized)
+        output, index, nms_rois_num = core.ops.multiclass_nms3(bboxes, scores,
+                                                               rois_num, *attrs)
+        if not return_index:
+            index = None
+        return output, nms_rois_num, index
+
+    else:
+        output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+        index = helper.create_variable_for_type_inference(dtype='int')
+
+        inputs = {'BBoxes': bboxes, 'Scores': scores}
+        outputs = {'Out': output, 'Index': index}
+
+        if rois_num is not None:
+            inputs['RoisNum'] = rois_num
+
+        if return_rois_num:
+            nms_rois_num = helper.create_variable_for_type_inference(
+                dtype='int32')
+            outputs['NmsRoisNum'] = nms_rois_num
+
+        helper.append_op(
+            type="multiclass_nms3",
+            inputs=inputs,
+            attrs={
+                'background_label': background_label,
+                'score_threshold': score_threshold,
+                'nms_top_k': nms_top_k,
+                'nms_threshold': nms_threshold,
+                'keep_top_k': keep_top_k,
+                'nms_eta': nms_eta,
+                'normalized': normalized
+            },
+            outputs=outputs)
+        output.stop_gradient = True
+        index.stop_gradient = True
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            nms_rois_num = None
+
+        return output, nms_rois_num, index
+
+
+@paddle.jit.not_to_static
+def matrix_nms(bboxes,
+               scores,
+               score_threshold,
+               post_threshold,
+               nms_top_k,
+               keep_top_k,
+               use_gaussian=False,
+               gaussian_sigma=2.,
+               background_label=0,
+               normalized=True,
+               return_index=False,
+               return_rois_num=True,
+               name=None):
+    """
+    **Matrix NMS**
+    This operator does matrix non maximum suppression (NMS).
+    First selects a subset of candidate bounding boxes that have higher scores
+    than score_threshold (if provided), then the top k candidate is selected if
+    nms_top_k is larger than -1. Score of the remaining candidate are then
+    decayed according to the Matrix NMS scheme.
+    Aftern NMS step, at most keep_top_k number of total bboxes are to be kept
+    per image if keep_top_k is larger than -1.
+    Args:
+        bboxes (Tensor): A 3-D Tensor with shape [N, M, 4] represents the
+                           predicted locations of M bounding bboxes,
+                           N is the batch size. Each bounding box has four
+                           coordinate values and the layout is
+                           [xmin, ymin, xmax, ymax], when box size equals to 4.
+                           The data type is float32 or float64.
+        scores (Tensor): A 3-D Tensor with shape [N, C, M]
+                           represents the predicted confidence predictions.
+                           N is the batch size, C is the class number, M is
+                           number of bounding boxes. For each category there
+                           are total M scores which corresponding M bounding
+                           boxes. Please note, M is equal to the 2nd dimension
+                           of BBoxes. The data type is float32 or float64.
+        score_threshold (float): Threshold to filter out bounding boxes with
+                                 low confidence score.
+        post_threshold (float): Threshold to filter out bounding boxes with
+                                low confidence score AFTER decaying.
+        nms_top_k (int): Maximum number of detections to be kept according to
+                         the confidences after the filtering detections based
+                         on score_threshold.
+        keep_top_k (int): Number of total bboxes to be kept per image after NMS
+                          step. -1 means keeping all bboxes after NMS step.
+        use_gaussian (bool): Use Gaussian as the decay function. Default: False
+        gaussian_sigma (float): Sigma for Gaussian decay function. Default: 2.0
+        background_label (int): The index of background label, the background
+                                label will be ignored. If set to -1, then all
+                                categories will be considered. Default: 0
+        normalized (bool): Whether detections are normalized. Default: True
+        return_index(bool): Whether return selected index. Default: False
+        return_rois_num(bool): whether return rois_num. Default: True
+        name(str): Name of the matrix nms op. Default: None.
+    Returns:
+        A tuple with three Tensor: (Out, Index, RoisNum) if return_index is True,
+        otherwise, a tuple with two Tensor (Out, RoisNum) is returned.
+        Out (Tensor): A 2-D Tensor with shape [No, 6] containing the
+             detection results.
+             Each row has 6 values: [label, confidence, xmin, ymin, xmax, ymax]
+             (After version 1.3, when no boxes detected, the lod is changed
+             from {0} to {1})
+        Index (Tensor): A 2-D Tensor with shape [No, 1] containing the
+            selected indices, which are absolute values cross batches.
+        rois_num (Tensor): A 1-D Tensor with shape [N] containing 
+            the number of detected boxes in each image.
+    Examples:
+        .. code-block:: python
+            import paddle
+            from ppdet.modeling import ops
+            boxes = paddle.static.data(name='bboxes', shape=[None,81, 4],
+                                      dtype='float32', lod_level=1)
+            scores = paddle.static.data(name='scores', shape=[None,81],
+                                      dtype='float32', lod_level=1)
+            out = ops.matrix_nms(bboxes=boxes, scores=scores, background_label=0,
+                                 score_threshold=0.5, post_threshold=0.1,
+                                 nms_top_k=400, keep_top_k=200, normalized=False)
+    """
+    check_variable_and_dtype(bboxes, 'BBoxes', ['float32', 'float64'],
+                             'matrix_nms')
+    check_variable_and_dtype(scores, 'Scores', ['float32', 'float64'],
+                             'matrix_nms')
+    check_type(score_threshold, 'score_threshold', float, 'matrix_nms')
+    check_type(post_threshold, 'post_threshold', float, 'matrix_nms')
+    check_type(nms_top_k, 'nums_top_k', int, 'matrix_nms')
+    check_type(keep_top_k, 'keep_top_k', int, 'matrix_nms')
+    check_type(normalized, 'normalized', bool, 'matrix_nms')
+    check_type(use_gaussian, 'use_gaussian', bool, 'matrix_nms')
+    check_type(gaussian_sigma, 'gaussian_sigma', float, 'matrix_nms')
+    check_type(background_label, 'background_label', int, 'matrix_nms')
+
+    if in_dygraph_mode():
+        attrs = ('background_label', background_label, 'score_threshold',
+                 score_threshold, 'post_threshold', post_threshold, 'nms_top_k',
+                 nms_top_k, 'gaussian_sigma', gaussian_sigma, 'use_gaussian',
+                 use_gaussian, 'keep_top_k', keep_top_k, 'normalized',
+                 normalized)
+        out, index, rois_num = core.ops.matrix_nms(bboxes, scores, *attrs)
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return out, rois_num, index
+    else:
+        helper = LayerHelper('matrix_nms', **locals())
+        output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
+        index = helper.create_variable_for_type_inference(dtype='int')
+        outputs = {'Out': output, 'Index': index}
+        if return_rois_num:
+            rois_num = helper.create_variable_for_type_inference(dtype='int32')
+            outputs['RoisNum'] = rois_num
+
+        helper.append_op(
+            type="matrix_nms",
+            inputs={'BBoxes': bboxes,
+                    'Scores': scores},
+            attrs={
+                'background_label': background_label,
+                'score_threshold': score_threshold,
+                'post_threshold': post_threshold,
+                'nms_top_k': nms_top_k,
+                'gaussian_sigma': gaussian_sigma,
+                'use_gaussian': use_gaussian,
+                'keep_top_k': keep_top_k,
+                'normalized': normalized
+            },
+            outputs=outputs)
+        output.stop_gradient = True
+
+        if not return_index:
+            index = None
+        if not return_rois_num:
+            rois_num = None
+        return output, rois_num, index
+
+
+def bipartite_match(dist_matrix,
+                    match_type=None,
+                    dist_threshold=None,
+                    name=None):
+    """
+
+    This operator implements a greedy bipartite matching algorithm, which is
+    used to obtain the matching with the maximum distance based on the input
+    distance matrix. For input 2D matrix, the bipartite matching algorithm can
+    find the matched column for each row (matched means the largest distance),
+    also can find the matched row for each column. And this operator only
+    calculate matched indices from column to row. For each instance,
+    the number of matched indices is the column number of the input distance
+    matrix. **The OP only supports CPU**.
+
+    There are two outputs, matched indices and distance.
+    A simple description, this algorithm matched the best (maximum distance)
+    row entity to the column entity and the matched indices are not duplicated
+    in each row of ColToRowMatchIndices. If the column entity is not matched
+    any row entity, set -1 in ColToRowMatchIndices.
+
+    NOTE: the input DistMat can be LoDTensor (with LoD) or Tensor.
+    If LoDTensor with LoD, the height of ColToRowMatchIndices is batch size.
+    If Tensor, the height of ColToRowMatchIndices is 1.
+
+    NOTE: This API is a very low level API. It is used by :code:`ssd_loss`
+    layer. Please consider to use :code:`ssd_loss` instead.
+
+    Args:
+        dist_matrix(Tensor): This input is a 2-D LoDTensor with shape
+            [K, M]. The data type is float32 or float64. It is pair-wise 
+            distance matrix between the entities represented by each row and 
+            each column. For example, assumed one entity is A with shape [K], 
+            another entity is B with shape [M]. The dist_matrix[i][j] is the 
+            distance between A[i] and B[j]. The bigger the distance is, the 
+            better matching the pairs are. NOTE: This tensor can contain LoD 
+            information to represent a batch of inputs. One instance of this 
+            batch can contain different numbers of entities.
+        match_type(str, optional): The type of matching method, should be
+           'bipartite' or 'per_prediction'. None ('bipartite') by default.
+        dist_threshold(float32, optional): If `match_type` is 'per_prediction',
+            this threshold is to determine the extra matching bboxes based
+            on the maximum distance, 0.5 by default.
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default.
+
+    Returns:
+        Tuple:
+
+        matched_indices(Tensor): A 2-D Tensor with shape [N, M]. The data
+        type is int32. N is the batch size. If match_indices[i][j] is -1, it
+        means B[j] does not match any entity in i-th instance.
+        Otherwise, it means B[j] is matched to row
+        match_indices[i][j] in i-th instance. The row number of
+        i-th instance is saved in match_indices[i][j].
+
+        matched_distance(Tensor): A 2-D Tensor with shape [N, M]. The data
+        type is float32. N is batch size. If match_indices[i][j] is -1,
+        match_distance[i][j] is also -1.0. Otherwise, assumed
+        match_distance[i][j] = d, and the row offsets of each instance
+        are called LoD. Then match_distance[i][j] =
+        dist_matrix[d+LoD[i]][j].
+
+    Examples:
+
+        .. code-block:: python
+            import paddle
+            from ppdet.modeling import ops
+            from ppdet.modeling.utils import iou_similarity
+
+            paddle.enable_static()
+
+            x = paddle.static.data(name='x', shape=[None, 4], dtype='float32')
+            y = paddle.static.data(name='y', shape=[None, 4], dtype='float32')
+            iou = iou_similarity(x=x, y=y)
+            matched_indices, matched_dist = ops.bipartite_match(iou)
+    """
+    check_variable_and_dtype(dist_matrix, 'dist_matrix',
+                             ['float32', 'float64'], 'bipartite_match')
+
+    if in_dygraph_mode():
+        match_indices, match_distance = core.ops.bipartite_match(
+            dist_matrix, "match_type", match_type, "dist_threshold",
+            dist_threshold)
+        return match_indices, match_distance
+
+    helper = LayerHelper('bipartite_match', **locals())
+    match_indices = helper.create_variable_for_type_inference(dtype='int32')
+    match_distance = helper.create_variable_for_type_inference(
+        dtype=dist_matrix.dtype)
+    helper.append_op(
+        type='bipartite_match',
+        inputs={'DistMat': dist_matrix},
+        attrs={
+            'match_type': match_type,
+            'dist_threshold': dist_threshold,
+        },
+        outputs={
+            'ColToRowMatchIndices': match_indices,
+            'ColToRowMatchDist': match_distance
+        })
+    return match_indices, match_distance
+
+
+@paddle.jit.not_to_static
+def box_coder(prior_box,
+              prior_box_var,
+              target_box,
+              code_type="encode_center_size",
+              box_normalized=True,
+              axis=0,
+              name=None):
+    """
+    **Box Coder Layer**
+    Encode/Decode the target bounding box with the priorbox information.
+
+    The Encoding schema described below:
+    .. math::
+        ox = (tx - px) / pw / pxv
+        oy = (ty - py) / ph / pyv
+        ow = \log(\abs(tw / pw)) / pwv 
+        oh = \log(\abs(th / ph)) / phv 
+    The Decoding schema described below:
+
+    .. math::
+
+        ox = (pw * pxv * tx * + px) - tw / 2
+        oy = (ph * pyv * ty * + py) - th / 2
+        ow = \exp(pwv * tw) * pw + tw / 2
+        oh = \exp(phv * th) * ph + th / 2   
+    where `tx`, `ty`, `tw`, `th` denote the target box's center coordinates, 
+    width and height respectively. Similarly, `px`, `py`, `pw`, `ph` denote 
+    the priorbox's (anchor) center coordinates, width and height. `pxv`, 
+    `pyv`, `pwv`, `phv` denote the variance of the priorbox and `ox`, `oy`, 
+    `ow`, `oh` denote the encoded/decoded coordinates, width and height. 
+    During Box Decoding, two modes for broadcast are supported. Say target 
+    box has shape [N, M, 4], and the shape of prior box can be [N, 4] or 
+    [M, 4]. Then prior box will broadcast to target box along the 
+    assigned axis. 
+
+    Args:
+        prior_box(Tensor): Box list prior_box is a 2-D Tensor with shape 
+            [M, 4] holds M boxes and data type is float32 or float64. Each box
+            is represented as [xmin, ymin, xmax, ymax], [xmin, ymin] is the 
+            left top coordinate of the anchor box, if the input is image feature
+            map, they are close to the origin of the coordinate system. 
+            [xmax, ymax] is the right bottom coordinate of the anchor box.       
+        prior_box_var(List|Tensor|None): prior_box_var supports three types 
+            of input. One is Tensor with shape [M, 4] which holds M group and 
+            data type is float32 or float64. The second is list consist of 
+            4 elements shared by all boxes and data type is float32 or float64. 
+            Other is None and not involved in calculation. 
+        target_box(Tensor): This input can be a 2-D LoDTensor with shape 
+            [N, 4] when code_type is 'encode_center_size'. This input also can 
+            be a 3-D Tensor with shape [N, M, 4] when code_type is 
+            'decode_center_size'. Each box is represented as 
+            [xmin, ymin, xmax, ymax]. The data type is float32 or float64. 
+        code_type(str): The code type used with the target box. It can be
+            `encode_center_size` or `decode_center_size`. `encode_center_size` 
+            by default.
+        box_normalized(bool): Whether treat the priorbox as a normalized box.
+            Set true by default.
+        axis(int): Which axis in PriorBox to broadcast for box decode, 
+            for example, if axis is 0 and TargetBox has shape [N, M, 4] and 
+            PriorBox has shape [M, 4], then PriorBox will broadcast to [N, M, 4]
+            for decoding. It is only valid when code type is 
+            `decode_center_size`. Set 0 by default. 
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        Tensor:
+        output_box(Tensor): When code_type is 'encode_center_size', the 
+        output tensor of box_coder_op with shape [N, M, 4] representing the 
+        result of N target boxes encoded with M Prior boxes and variances. 
+        When code_type is 'decode_center_size', N represents the batch size 
+        and M represents the number of decoded boxes.
+
+    Examples:
+
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+            # For encode
+            prior_box_encode = paddle.static.data(name='prior_box_encode',
+                                  shape=[512, 4],
+                                  dtype='float32')
+            target_box_encode = paddle.static.data(name='target_box_encode',
+                                   shape=[81, 4],
+                                   dtype='float32')
+            output_encode = ops.box_coder(prior_box=prior_box_encode,
+                                    prior_box_var=[0.1,0.1,0.2,0.2],
+                                    target_box=target_box_encode,
+                                    code_type="encode_center_size")
+            # For decode
+            prior_box_decode = paddle.static.data(name='prior_box_decode',
+                                  shape=[512, 4],
+                                  dtype='float32')
+            target_box_decode = paddle.static.data(name='target_box_decode',
+                                   shape=[512, 81, 4],
+                                   dtype='float32')
+            output_decode = ops.box_coder(prior_box=prior_box_decode,
+                                    prior_box_var=[0.1,0.1,0.2,0.2],
+                                    target_box=target_box_decode,
+                                    code_type="decode_center_size",
+                                    box_normalized=False,
+                                    axis=1)
+    """
+    check_variable_and_dtype(prior_box, 'prior_box', ['float32', 'float64'],
+                             'box_coder')
+    check_variable_and_dtype(target_box, 'target_box', ['float32', 'float64'],
+                             'box_coder')
+
+    if in_dygraph_mode():
+        if isinstance(prior_box_var, Variable):
+            output_box = core.ops.box_coder(
+                prior_box, prior_box_var, target_box, "code_type", code_type,
+                "box_normalized", box_normalized, "axis", axis)
+
+        elif isinstance(prior_box_var, list):
+            output_box = core.ops.box_coder(
+                prior_box, None, target_box, "code_type", code_type,
+                "box_normalized", box_normalized, "axis", axis, "variance",
+                prior_box_var)
+        else:
+            raise TypeError(
+                "Input variance of box_coder must be Variable or list")
+        return output_box
+    else:
+        helper = LayerHelper("box_coder", **locals())
+
+        output_box = helper.create_variable_for_type_inference(
+            dtype=prior_box.dtype)
+
+        inputs = {"PriorBox": prior_box, "TargetBox": target_box}
+        attrs = {
+            "code_type": code_type,
+            "box_normalized": box_normalized,
+            "axis": axis
+        }
+        if isinstance(prior_box_var, Variable):
+            inputs['PriorBoxVar'] = prior_box_var
+        elif isinstance(prior_box_var, list):
+            attrs['variance'] = prior_box_var
+        else:
+            raise TypeError(
+                "Input variance of box_coder must be Variable or list")
+        helper.append_op(
+            type="box_coder",
+            inputs=inputs,
+            attrs=attrs,
+            outputs={"OutputBox": output_box})
+        return output_box
+
+
+@paddle.jit.not_to_static
+def generate_proposals(scores,
+                       bbox_deltas,
+                       im_shape,
+                       anchors,
+                       variances,
+                       pre_nms_top_n=6000,
+                       post_nms_top_n=1000,
+                       nms_thresh=0.5,
+                       min_size=0.1,
+                       eta=1.0,
+                       pixel_offset=False,
+                       return_rois_num=False,
+                       name=None):
+    """
+    **Generate proposal Faster-RCNN**
+    This operation proposes RoIs according to each box with their
+    probability to be a foreground object and 
+    the box can be calculated by anchors. Bbox_deltais and scores
+    to be an object are the output of RPN. Final proposals
+    could be used to train detection net.
+    For generating proposals, this operation performs following steps:
+    1. Transposes and resizes scores and bbox_deltas in size of
+       (H*W*A, 1) and (H*W*A, 4)
+    2. Calculate box locations as proposals candidates. 
+    3. Clip boxes to image
+    4. Remove predicted boxes with small area. 
+    5. Apply NMS to get final proposals as output.
+    Args:
+        scores(Tensor): A 4-D Tensor with shape [N, A, H, W] represents
+            the probability for each box to be an object.
+            N is batch size, A is number of anchors, H and W are height and
+            width of the feature map. The data type must be float32.
+        bbox_deltas(Tensor): A 4-D Tensor with shape [N, 4*A, H, W]
+            represents the difference between predicted box location and
+            anchor location. The data type must be float32.
+        im_shape(Tensor): A 2-D Tensor with shape [N, 2] represents H, W, the
+            origin image size or input size. The data type can be float32 or 
+            float64.
+        anchors(Tensor):   A 4-D Tensor represents the anchors with a layout
+            of [H, W, A, 4]. H and W are height and width of the feature map,
+            num_anchors is the box count of each position. Each anchor is
+            in (xmin, ymin, xmax, ymax) format an unnormalized. The data type must be float32.
+        variances(Tensor): A 4-D Tensor. The expanded variances of anchors with a layout of
+            [H, W, num_priors, 4]. Each variance is in
+            (xcenter, ycenter, w, h) format. The data type must be float32.
+        pre_nms_top_n(float): Number of total bboxes to be kept per
+            image before NMS. The data type must be float32. `6000` by default.
+        post_nms_top_n(float): Number of total bboxes to be kept per
+            image after NMS. The data type must be float32. `1000` by default.
+        nms_thresh(float): Threshold in NMS. The data type must be float32. `0.5` by default.
+        min_size(float): Remove predicted boxes with either height or
+            width < min_size. The data type must be float32. `0.1` by default.
+        eta(float): Apply in adaptive NMS, if adaptive `threshold > 0.5`,
+            `adaptive_threshold = adaptive_threshold * eta` in each iteration.
+        return_rois_num(bool): When setting True, it will return a 1D Tensor with shape [N, ] that includes Rois's 
+            num of each image in one batch. The N is the image's num. For example, the tensor has values [4,5] that represents
+            the first image has 4 Rois, the second image has 5 Rois. It only used in rcnn model. 
+            'False' by default. 
+        name(str, optional): For detailed information, please refer 
+            to :ref:`api_guide_Name`. Usually name is no need to set and 
+            None by default. 
+
+    Returns:
+        tuple:
+        A tuple with format ``(rpn_rois, rpn_roi_probs)``.
+        - **rpn_rois**: The generated RoIs. 2-D Tensor with shape ``[N, 4]`` while ``N`` is the number of RoIs. The data type is the same as ``scores``.
+        - **rpn_roi_probs**: The scores of generated RoIs. 2-D Tensor with shape ``[N, 1]`` while ``N`` is the number of RoIs. The data type is the same as ``scores``.
+
+    Examples:
+        .. code-block:: python
+
+            import paddle
+            from ppdet.modeling import ops
+            paddle.enable_static()
+            scores = paddle.static.data(name='scores', shape=[None, 4, 5, 5], dtype='float32')
+            bbox_deltas = paddle.static.data(name='bbox_deltas', shape=[None, 16, 5, 5], dtype='float32')
+            im_shape = paddle.static.data(name='im_shape', shape=[None, 2], dtype='float32')
+            anchors = paddle.static.data(name='anchors', shape=[None, 5, 4, 4], dtype='float32')
+            variances = paddle.static.data(name='variances', shape=[None, 5, 10, 4], dtype='float32')
+            rois, roi_probs = ops.generate_proposals(scores, bbox_deltas,
+                         im_shape, anchors, variances)
+    """
+    if in_dygraph_mode():
+        assert return_rois_num, "return_rois_num should be True in dygraph mode."
+        attrs = ('pre_nms_topN', pre_nms_top_n, 'post_nms_topN', post_nms_top_n,
+                 'nms_thresh', nms_thresh, 'min_size', min_size, 'eta', eta,
+                 'pixel_offset', pixel_offset)
+        rpn_rois, rpn_roi_probs, rpn_rois_num = core.ops.generate_proposals_v2(
+            scores, bbox_deltas, im_shape, anchors, variances, *attrs)
+        return rpn_rois, rpn_roi_probs, rpn_rois_num
+
+    else:
+        helper = LayerHelper('generate_proposals_v2', **locals())
+
+        check_variable_and_dtype(scores, 'scores', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(bbox_deltas, 'bbox_deltas', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(im_shape, 'im_shape', ['float32', 'float64'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(anchors, 'anchors', ['float32'],
+                                 'generate_proposals_v2')
+        check_variable_and_dtype(variances, 'variances', ['float32'],
+                                 'generate_proposals_v2')
+
+        rpn_rois = helper.create_variable_for_type_inference(
+            dtype=bbox_deltas.dtype)
+        rpn_roi_probs = helper.create_variable_for_type_inference(
+            dtype=scores.dtype)
+        outputs = {
+            'RpnRois': rpn_rois,
+            'RpnRoiProbs': rpn_roi_probs,
+        }
+        if return_rois_num:
+            rpn_rois_num = helper.create_variable_for_type_inference(
+                dtype='int32')
+            rpn_rois_num.stop_gradient = True
+            outputs['RpnRoisNum'] = rpn_rois_num
+
+        helper.append_op(
+            type="generate_proposals_v2",
+            inputs={
+                'Scores': scores,
+                'BboxDeltas': bbox_deltas,
+                'ImShape': im_shape,
+                'Anchors': anchors,
+                'Variances': variances
+            },
+            attrs={
+                'pre_nms_topN': pre_nms_top_n,
+                'post_nms_topN': post_nms_top_n,
+                'nms_thresh': nms_thresh,
+                'min_size': min_size,
+                'eta': eta,
+                'pixel_offset': pixel_offset
+            },
+            outputs=outputs)
+        rpn_rois.stop_gradient = True
+        rpn_roi_probs.stop_gradient = True
+
+        return rpn_rois, rpn_roi_probs, rpn_rois_num
+
+
+def sigmoid_cross_entropy_with_logits(input,
+                                      label,
+                                      ignore_index=-100,
+                                      normalize=False):
+    output = F.binary_cross_entropy_with_logits(input, label, reduction='none')
+    mask_tensor = paddle.cast(label != ignore_index, 'float32')
+    output = paddle.multiply(output, mask_tensor)
+    if normalize:
+        sum_valid_mask = paddle.sum(mask_tensor)
+        output = output / sum_valid_mask
     return output
 
 
-@register
-@serializable
-class AnchorGenerator(object):
-    __op__ = fluid.layers.anchor_generator
-    __append_doc__ = True
-
-    def __init__(self,
-                 stride=[16.0, 16.0],
-                 anchor_sizes=[32, 64, 128, 256, 512],
-                 aspect_ratios=[0.5, 1., 2.],
-                 variance=[1., 1., 1., 1.]):
-        super(AnchorGenerator, self).__init__()
-        self.anchor_sizes = anchor_sizes
-        self.aspect_ratios = aspect_ratios
-        self.variance = variance
-        self.stride = stride
-
-
-@register
-@serializable
-class RPNTargetAssign(object):
-    __op__ = fluid.layers.rpn_target_assign
-    __append_doc__ = True
-
-    def __init__(self,
-                 rpn_batch_size_per_im=256,
-                 rpn_straddle_thresh=0.,
-                 rpn_fg_fraction=0.5,
-                 rpn_positive_overlap=0.7,
-                 rpn_negative_overlap=0.3,
-                 use_random=True):
-        super(RPNTargetAssign, self).__init__()
-        self.rpn_batch_size_per_im = rpn_batch_size_per_im
-        self.rpn_straddle_thresh = rpn_straddle_thresh
-        self.rpn_fg_fraction = rpn_fg_fraction
-        self.rpn_positive_overlap = rpn_positive_overlap
-        self.rpn_negative_overlap = rpn_negative_overlap
-        self.use_random = use_random
-
-
-@register
-@serializable
-class GenerateProposals(object):
-    __op__ = fluid.layers.generate_proposals
-    __append_doc__ = True
-
-    def __init__(self,
-                 pre_nms_top_n=6000,
-                 post_nms_top_n=1000,
-                 nms_thresh=.5,
-                 min_size=.1,
-                 eta=1.):
-        super(GenerateProposals, self).__init__()
-        self.pre_nms_top_n = pre_nms_top_n
-        self.post_nms_top_n = post_nms_top_n
-        self.nms_thresh = nms_thresh
-        self.min_size = min_size
-        self.eta = eta
-
-
-@register
-class MaskAssigner(object):
-    __op__ = fluid.layers.generate_mask_labels
-    __append_doc__ = True
-    __shared__ = ['num_classes']
-
-    def __init__(self, num_classes=81, resolution=14):
-        super(MaskAssigner, self).__init__()
-        self.num_classes = num_classes
-        self.resolution = resolution
-
-
-@register
-@serializable
-class MultiClassNMS(object):
-    __op__ = fluid.layers.multiclass_nms
-    __append_doc__ = True
-
-    def __init__(self,
-                 score_threshold=.05,
-                 nms_top_k=-1,
-                 keep_top_k=100,
-                 nms_threshold=.5,
-                 normalized=False,
-                 nms_eta=1.0,
-                 background_label=0):
-        super(MultiClassNMS, self).__init__()
-        self.score_threshold = score_threshold
-        self.nms_top_k = nms_top_k
-        self.keep_top_k = keep_top_k
-        self.nms_threshold = nms_threshold
-        self.normalized = normalized
-        self.nms_eta = nms_eta
-        self.background_label = background_label
-
-
-@register
-@serializable
-class MultiClassSoftNMS(object):
-    def __init__(
-            self,
-            score_threshold=0.01,
-            keep_top_k=300,
-            softnms_sigma=0.5,
-            normalized=False,
-            background_label=0, ):
-        super(MultiClassSoftNMS, self).__init__()
-        self.score_threshold = score_threshold
-        self.keep_top_k = keep_top_k
-        self.softnms_sigma = softnms_sigma
-        self.normalized = normalized
-        self.background_label = background_label
-
-    def __call__(self, bboxes, scores):
-        def create_tmp_var(program, name, dtype, shape, lod_level):
-            return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
-
-        def _soft_nms_for_cls(dets, sigma, thres):
-            """soft_nms_for_cls"""
-            dets_final = []
-            while len(dets) > 0:
-                maxpos = np.argmax(dets[:, 0])
-                dets_final.append(dets[maxpos].copy())
-                ts, tx1, ty1, tx2, ty2 = dets[maxpos]
-                scores = dets[:, 0]
-                # force remove bbox at maxpos
-                scores[maxpos] = -1
-                x1 = dets[:, 1]
-                y1 = dets[:, 2]
-                x2 = dets[:, 3]
-                y2 = dets[:, 4]
-                eta = 0 if self.normalized else 1
-                areas = (x2 - x1 + eta) * (y2 - y1 + eta)
-                xx1 = np.maximum(tx1, x1)
-                yy1 = np.maximum(ty1, y1)
-                xx2 = np.minimum(tx2, x2)
-                yy2 = np.minimum(ty2, y2)
-                w = np.maximum(0.0, xx2 - xx1 + eta)
-                h = np.maximum(0.0, yy2 - yy1 + eta)
-                inter = w * h
-                ovr = inter / (areas + areas[maxpos] - inter)
-                weight = np.exp(-(ovr * ovr) / sigma)
-                scores = scores * weight
-                idx_keep = np.where(scores >= thres)
-                dets[:, 0] = scores
-                dets = dets[idx_keep]
-            dets_final = np.array(dets_final).reshape(-1, 5)
-            return dets_final
-
-        def _soft_nms(bboxes, scores):
-            bboxes = np.array(bboxes)
-            scores = np.array(scores)
-            class_nums = scores.shape[-1]
-
-            softnms_thres = self.score_threshold
-            softnms_sigma = self.softnms_sigma
-            keep_top_k = self.keep_top_k
-
-            cls_boxes = [[] for _ in range(class_nums)]
-            cls_ids = [[] for _ in range(class_nums)]
-
-            start_idx = 1 if self.background_label == 0 else 0
-            for j in range(start_idx, class_nums):
-                inds = np.where(scores[:, j] >= softnms_thres)[0]
-                scores_j = scores[inds, j]
-                rois_j = bboxes[inds, j, :]
-                dets_j = np.hstack((scores_j[:, np.newaxis], rois_j)).astype(
-                    np.float32, copy=False)
-                cls_rank = np.argsort(-dets_j[:, 0])
-                dets_j = dets_j[cls_rank]
-
-                cls_boxes[j] = _soft_nms_for_cls(
-                    dets_j, sigma=softnms_sigma, thres=softnms_thres)
-                cls_ids[j] = np.array([j] * cls_boxes[j].shape[0]).reshape(-1,
-                                                                           1)
-
-            cls_boxes = np.vstack(cls_boxes[start_idx:])
-            cls_ids = np.vstack(cls_ids[start_idx:])
-            pred_result = np.hstack([cls_ids, cls_boxes])
-
-            # Limit to max_per_image detections **over all classes**
-            image_scores = cls_boxes[:, 0]
-            if len(image_scores) > keep_top_k:
-                image_thresh = np.sort(image_scores)[-keep_top_k]
-                keep = np.where(cls_boxes[:, 0] >= image_thresh)[0]
-                pred_result = pred_result[keep, :]
-
-            res = fluid.LoDTensor()
-            res.set_lod([[0, pred_result.shape[0]]])
-            if pred_result.shape[0] == 0:
-                pred_result = np.array([[1]], dtype=np.float32)
-            res.set(pred_result, fluid.CPUPlace())
-
-            return res
-
-        pred_result = create_tmp_var(
-            fluid.default_main_program(),
-            name='softnms_pred_result',
-            dtype='float32',
-            shape=[6],
-            lod_level=1)
-        fluid.layers.py_func(
-            func=_soft_nms, x=[bboxes, scores], out=pred_result)
-        return pred_result
-
-
-@register
-@serializable
-class MultiClassDiouNMS(object):
-    def __init__(
-            self,
-            score_threshold=0.05,
-            keep_top_k=100,
-            nms_threshold=0.5,
-            normalized=False,
-            background_label=0, ):
-        super(MultiClassDiouNMS, self).__init__()
-        self.score_threshold = score_threshold
-        self.nms_threshold = nms_threshold
-        self.keep_top_k = keep_top_k
-        self.normalized = normalized
-        self.background_label = background_label
-
-    def __call__(self, bboxes, scores):
-        def create_tmp_var(program, name, dtype, shape, lod_level):
-            return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
-
-        def _calc_diou_term(dets1, dets2):
-            eps = 1.e-10
-            eta = 0 if self.normalized else 1
-
-            x1, y1, x2, y2 = dets1[0], dets1[1], dets1[2], dets1[3]
-            x1g, y1g, x2g, y2g = dets2[0], dets2[1], dets2[2], dets2[3]
-
-            cx = (x1 + x2) / 2
-            cy = (y1 + y2) / 2
-            w = x2 - x1 + eta
-            h = y2 - y1 + eta
-
-            cxg = (x1g + x2g) / 2
-            cyg = (y1g + y2g) / 2
-            wg = x2g - x1g + eta
-            hg = y2g - y1g + eta
-
-            x2 = np.maximum(x1, x2)
-            y2 = np.maximum(y1, y2)
-
-            # A or B
-            xc1 = np.minimum(x1, x1g)
-            yc1 = np.minimum(y1, y1g)
-            xc2 = np.maximum(x2, x2g)
-            yc2 = np.maximum(y2, y2g)
-
-            # DIOU term
-            dist_intersection = (cx - cxg)**2 + (cy - cyg)**2
-            dist_union = (xc2 - xc1)**2 + (yc2 - yc1)**2
-            diou_term = (dist_intersection + eps) / (dist_union + eps)
-            return diou_term
-
-        def _diou_nms_for_cls(dets, thres):
-            """_diou_nms_for_cls"""
-            scores = dets[:, 0]
-            x1 = dets[:, 1]
-            y1 = dets[:, 2]
-            x2 = dets[:, 3]
-            y2 = dets[:, 4]
-            eta = 0 if self.normalized else 1
-            areas = (x2 - x1 + eta) * (y2 - y1 + eta)
-            dt_num = dets.shape[0]
-            order = np.array(range(dt_num))
-
-            keep = []
-            while order.size > 0:
-                i = order[0]
-                keep.append(i)
-                xx1 = np.maximum(x1[i], x1[order[1:]])
-                yy1 = np.maximum(y1[i], y1[order[1:]])
-                xx2 = np.minimum(x2[i], x2[order[1:]])
-                yy2 = np.minimum(y2[i], y2[order[1:]])
-
-                w = np.maximum(0.0, xx2 - xx1 + eta)
-                h = np.maximum(0.0, yy2 - yy1 + eta)
-                inter = w * h
-                ovr = inter / (areas[i] + areas[order[1:]] - inter)
-
-                diou_term = _calc_diou_term([x1[i], y1[i], x2[i], y2[i]], [
-                    x1[order[1:]], y1[order[1:]], x2[order[1:]], y2[order[1:]]
-                ])
-
-                inds = np.where(ovr - diou_term <= thres)[0]
-
-                order = order[inds + 1]
-
-            dets_final = dets[keep]
-            return dets_final
-
-        def _diou_nms(bboxes, scores):
-            bboxes = np.array(bboxes)
-            scores = np.array(scores)
-            class_nums = scores.shape[-1]
-
-            score_threshold = self.score_threshold
-            nms_threshold = self.nms_threshold
-            keep_top_k = self.keep_top_k
-
-            cls_boxes = [[] for _ in range(class_nums)]
-            cls_ids = [[] for _ in range(class_nums)]
-
-            start_idx = 1 if self.background_label == 0 else 0
-            for j in range(start_idx, class_nums):
-                inds = np.where(scores[:, j] >= score_threshold)[0]
-                scores_j = scores[inds, j]
-                rois_j = bboxes[inds, j, :]
-                dets_j = np.hstack((scores_j[:, np.newaxis], rois_j)).astype(
-                    np.float32, copy=False)
-                cls_rank = np.argsort(-dets_j[:, 0])
-                dets_j = dets_j[cls_rank]
-
-                cls_boxes[j] = _diou_nms_for_cls(dets_j, thres=nms_threshold)
-                cls_ids[j] = np.array([j] * cls_boxes[j].shape[0]).reshape(-1,
-                                                                           1)
-
-            cls_boxes = np.vstack(cls_boxes[start_idx:])
-            cls_ids = np.vstack(cls_ids[start_idx:])
-            pred_result = np.hstack([cls_ids, cls_boxes])
-
-            # Limit to max_per_image detections **over all classes**
-            image_scores = cls_boxes[:, 0]
-            if len(image_scores) > keep_top_k:
-                image_thresh = np.sort(image_scores)[-keep_top_k]
-                keep = np.where(cls_boxes[:, 0] >= image_thresh)[0]
-                pred_result = pred_result[keep, :]
-
-            res = fluid.LoDTensor()
-            res.set_lod([[0, pred_result.shape[0]]])
-            if pred_result.shape[0] == 0:
-                pred_result = np.array([[1]], dtype=np.float32)
-            res.set(pred_result, fluid.CPUPlace())
-
-            return res
-
-        pred_result = create_tmp_var(
-            fluid.default_main_program(),
-            name='diou_nms_pred_result',
-            dtype='float32',
-            shape=[6],
-            lod_level=1)
-        fluid.layers.py_func(
-            func=_diou_nms, x=[bboxes, scores], out=pred_result)
-        return pred_result
-
-
-@register
-class BBoxAssigner(object):
-    __op__ = fluid.layers.generate_proposal_labels
-    __append_doc__ = True
-    __shared__ = ['num_classes']
-
-    def __init__(self,
-                 batch_size_per_im=512,
-                 fg_fraction=.25,
-                 fg_thresh=.5,
-                 bg_thresh_hi=.5,
-                 bg_thresh_lo=0.,
-                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
-                 num_classes=81,
-                 shuffle_before_sample=True):
-        super(BBoxAssigner, self).__init__()
-        self.batch_size_per_im = batch_size_per_im
-        self.fg_fraction = fg_fraction
-        self.fg_thresh = fg_thresh
-        self.bg_thresh_hi = bg_thresh_hi
-        self.bg_thresh_lo = bg_thresh_lo
-        self.bbox_reg_weights = bbox_reg_weights
-        self.class_nums = num_classes
-        self.use_random = shuffle_before_sample
-
-
-@register
-class LibraBBoxAssigner(object):
-    def __init__(self,
-                 batch_size_per_im=512,
-                 fg_fraction=.25,
-                 fg_thresh=.5,
-                 bg_thresh_hi=.5,
-                 bg_thresh_lo=0.,
-                 bbox_reg_weights=[0.1, 0.1, 0.2, 0.2],
-                 num_classes=81,
-                 shuffle_before_sample=True,
-                 is_cls_agnostic=False,
-                 num_bins=3):
-        super(LibraBBoxAssigner, self).__init__()
-        self.batch_size_per_im = batch_size_per_im
-        self.fg_fraction = fg_fraction
-        self.fg_thresh = fg_thresh
-        self.bg_thresh_hi = bg_thresh_hi
-        self.bg_thresh_lo = bg_thresh_lo
-        self.bbox_reg_weights = bbox_reg_weights
-        self.class_nums = num_classes
-        self.use_random = shuffle_before_sample
-        self.is_cls_agnostic = is_cls_agnostic
-        self.num_bins = num_bins
-
-    def __call__(
-            self,
-            rpn_rois,
-            gt_classes,
-            is_crowd,
-            gt_boxes,
-            im_info, ):
-        return self.generate_proposal_label_libra(
-            rpn_rois=rpn_rois,
-            gt_classes=gt_classes,
-            is_crowd=is_crowd,
-            gt_boxes=gt_boxes,
-            im_info=im_info,
-            batch_size_per_im=self.batch_size_per_im,
-            fg_fraction=self.fg_fraction,
-            fg_thresh=self.fg_thresh,
-            bg_thresh_hi=self.bg_thresh_hi,
-            bg_thresh_lo=self.bg_thresh_lo,
-            bbox_reg_weights=self.bbox_reg_weights,
-            class_nums=self.class_nums,
-            use_random=self.use_random,
-            is_cls_agnostic=self.is_cls_agnostic,
-            is_cascade_rcnn=False)
-
-    def generate_proposal_label_libra(
-            self, rpn_rois, gt_classes, is_crowd, gt_boxes, im_info,
-            batch_size_per_im, fg_fraction, fg_thresh, bg_thresh_hi,
-            bg_thresh_lo, bbox_reg_weights, class_nums, use_random,
-            is_cls_agnostic, is_cascade_rcnn):
-        num_bins = self.num_bins
-
-        def create_tmp_var(program, name, dtype, shape, lod_level=None):
-            return program.current_block().create_var(
-                name=name, dtype=dtype, shape=shape, lod_level=lod_level)
-
-        def _sample_pos(max_overlaps, max_classes, pos_inds, num_expected):
-            if len(pos_inds) <= num_expected:
-                return pos_inds
-            else:
-                unique_gt_inds = np.unique(max_classes[pos_inds])
-                num_gts = len(unique_gt_inds)
-                num_per_gt = int(round(num_expected / float(num_gts)) + 1)
-
-                sampled_inds = []
-                for i in unique_gt_inds:
-                    inds = np.nonzero(max_classes == i)[0]
-                    before_len = len(inds)
-                    inds = list(set(inds) & set(pos_inds))
-                    after_len = len(inds)
-                    if len(inds) > num_per_gt:
-                        inds = np.random.choice(
-                            inds, size=num_per_gt, replace=False)
-                    sampled_inds.extend(list(inds))  # combine as a new sampler
-                if len(sampled_inds) < num_expected:
-                    num_extra = num_expected - len(sampled_inds)
-                    extra_inds = np.array(
-                        list(set(pos_inds) - set(sampled_inds)))
-                    assert len(sampled_inds)+len(extra_inds) == len(pos_inds), \
-                        "sum of sampled_inds({}) and extra_inds({}) length must be equal with pos_inds({})!".format(
-                            len(sampled_inds), len(extra_inds), len(pos_inds))
-                    if len(extra_inds) > num_extra:
-                        extra_inds = np.random.choice(
-                            extra_inds, size=num_extra, replace=False)
-                    sampled_inds.extend(extra_inds.tolist())
-                elif len(sampled_inds) > num_expected:
-                    sampled_inds = np.random.choice(
-                        sampled_inds, size=num_expected, replace=False)
-                return sampled_inds
-
-        def sample_via_interval(max_overlaps, full_set, num_expected, floor_thr,
-                                num_bins, bg_thresh_hi):
-            max_iou = max_overlaps.max()
-            iou_interval = (max_iou - floor_thr) / num_bins
-            per_num_expected = int(num_expected / num_bins)
-
-            sampled_inds = []
-            for i in range(num_bins):
-                start_iou = floor_thr + i * iou_interval
-                end_iou = floor_thr + (i + 1) * iou_interval
-
-                tmp_set = set(
-                    np.where(
-                        np.logical_and(max_overlaps >= start_iou, max_overlaps <
-                                       end_iou))[0])
-                tmp_inds = list(tmp_set & full_set)
-
-                if len(tmp_inds) > per_num_expected:
-                    tmp_sampled_set = np.random.choice(
-                        tmp_inds, size=per_num_expected, replace=False)
-                else:
-                    tmp_sampled_set = np.array(tmp_inds, dtype=np.int)
-                sampled_inds.append(tmp_sampled_set)
-
-            sampled_inds = np.concatenate(sampled_inds)
-            if len(sampled_inds) < num_expected:
-                num_extra = num_expected - len(sampled_inds)
-                extra_inds = np.array(list(full_set - set(sampled_inds)))
-                assert len(sampled_inds)+len(extra_inds) == len(full_set), \
-                    "sum of sampled_inds({}) and extra_inds({}) length must be equal with full_set({})!".format(
-                            len(sampled_inds), len(extra_inds), len(full_set))
-
-                if len(extra_inds) > num_extra:
-                    extra_inds = np.random.choice(
-                        extra_inds, num_extra, replace=False)
-                sampled_inds = np.concatenate([sampled_inds, extra_inds])
-
-            return sampled_inds
-
-        def _sample_neg(max_overlaps,
-                        max_classes,
-                        neg_inds,
-                        num_expected,
-                        floor_thr=-1,
-                        floor_fraction=0,
-                        num_bins=3,
-                        bg_thresh_hi=0.5):
-            if len(neg_inds) <= num_expected:
-                return neg_inds
-            else:
-                # balance sampling for negative samples
-                neg_set = set(neg_inds)
-                if floor_thr > 0:
-                    floor_set = set(
-                        np.where(
-                            np.logical_and(max_overlaps >= 0, max_overlaps <
-                                           floor_thr))[0])
-                    iou_sampling_set = set(
-                        np.where(max_overlaps >= floor_thr)[0])
-                elif floor_thr == 0:
-                    floor_set = set(np.where(max_overlaps == 0)[0])
-                    iou_sampling_set = set(
-                        np.where(max_overlaps > floor_thr)[0])
-                else:
-                    floor_set = set()
-                    iou_sampling_set = set(
-                        np.where(max_overlaps > floor_thr)[0])
-                    floor_thr = 0
-
-                floor_neg_inds = list(floor_set & neg_set)
-                iou_sampling_neg_inds = list(iou_sampling_set & neg_set)
-
-                num_expected_iou_sampling = int(num_expected *
-                                                (1 - floor_fraction))
-                if len(iou_sampling_neg_inds) > num_expected_iou_sampling:
-                    if num_bins >= 2:
-                        iou_sampled_inds = sample_via_interval(
-                            max_overlaps,
-                            set(iou_sampling_neg_inds),
-                            num_expected_iou_sampling, floor_thr, num_bins,
-                            bg_thresh_hi)
-                    else:
-                        iou_sampled_inds = np.random.choice(
-                            iou_sampling_neg_inds,
-                            size=num_expected_iou_sampling,
-                            replace=False)
-                else:
-                    iou_sampled_inds = np.array(
-                        iou_sampling_neg_inds, dtype=np.int)
-                num_expected_floor = num_expected - len(iou_sampled_inds)
-                if len(floor_neg_inds) > num_expected_floor:
-                    sampled_floor_inds = np.random.choice(
-                        floor_neg_inds, size=num_expected_floor, replace=False)
-                else:
-                    sampled_floor_inds = np.array(floor_neg_inds, dtype=np.int)
-                sampled_inds = np.concatenate(
-                    (sampled_floor_inds, iou_sampled_inds))
-                if len(sampled_inds) < num_expected:
-                    num_extra = num_expected - len(sampled_inds)
-                    extra_inds = np.array(list(neg_set - set(sampled_inds)))
-                    if len(extra_inds) > num_extra:
-                        extra_inds = np.random.choice(
-                            extra_inds, size=num_extra, replace=False)
-                    sampled_inds = np.concatenate((sampled_inds, extra_inds))
-                return sampled_inds
-
-        def _sample_rois(rpn_rois, gt_classes, is_crowd, gt_boxes, im_info,
-                         batch_size_per_im, fg_fraction, fg_thresh,
-                         bg_thresh_hi, bg_thresh_lo, bbox_reg_weights,
-                         class_nums, use_random, is_cls_agnostic,
-                         is_cascade_rcnn):
-            rois_per_image = int(batch_size_per_im)
-            fg_rois_per_im = int(np.round(fg_fraction * rois_per_image))
-
-            # Roidb
-            im_scale = im_info[2]
-            inv_im_scale = 1. / im_scale
-            rpn_rois = rpn_rois * inv_im_scale
-            if is_cascade_rcnn:
-                rpn_rois = rpn_rois[gt_boxes.shape[0]:, :]
-            boxes = np.vstack([gt_boxes, rpn_rois])
-            gt_overlaps = np.zeros((boxes.shape[0], class_nums))
-            box_to_gt_ind_map = np.zeros((boxes.shape[0]), dtype=np.int32)
-            if len(gt_boxes) > 0:
-                proposal_to_gt_overlaps = bbox_overlaps(boxes, gt_boxes)
-
-                overlaps_argmax = proposal_to_gt_overlaps.argmax(axis=1)
-                overlaps_max = proposal_to_gt_overlaps.max(axis=1)
-                # Boxes which with non-zero overlap with gt boxes
-                overlapped_boxes_ind = np.where(overlaps_max > 0)[0]
-
-                overlapped_boxes_gt_classes = gt_classes[overlaps_argmax[
-                    overlapped_boxes_ind]]
-
-                for idx in range(len(overlapped_boxes_ind)):
-                    gt_overlaps[overlapped_boxes_ind[
-                        idx], overlapped_boxes_gt_classes[idx]] = overlaps_max[
-                            overlapped_boxes_ind[idx]]
-                    box_to_gt_ind_map[overlapped_boxes_ind[
-                        idx]] = overlaps_argmax[overlapped_boxes_ind[idx]]
-
-            crowd_ind = np.where(is_crowd)[0]
-            gt_overlaps[crowd_ind] = -1
-
-            max_overlaps = gt_overlaps.max(axis=1)
-            max_classes = gt_overlaps.argmax(axis=1)
-
-            # Cascade RCNN Decode Filter
-            if is_cascade_rcnn:
-                ws = boxes[:, 2] - boxes[:, 0] + 1
-                hs = boxes[:, 3] - boxes[:, 1] + 1
-                keep = np.where((ws > 0) & (hs > 0))[0]
-                boxes = boxes[keep]
-                fg_inds = np.where(max_overlaps >= fg_thresh)[0]
-                bg_inds = np.where((max_overlaps < bg_thresh_hi) & (
-                    max_overlaps >= bg_thresh_lo))[0]
-                fg_rois_per_this_image = fg_inds.shape[0]
-                bg_rois_per_this_image = bg_inds.shape[0]
-            else:
-                # Foreground
-                fg_inds = np.where(max_overlaps >= fg_thresh)[0]
-                fg_rois_per_this_image = np.minimum(fg_rois_per_im,
-                                                    fg_inds.shape[0])
-                # Sample foreground if there are too many
-                if fg_inds.shape[0] > fg_rois_per_this_image:
-                    if use_random:
-                        fg_inds = _sample_pos(max_overlaps, max_classes,
-                                              fg_inds, fg_rois_per_this_image)
-                fg_inds = fg_inds[:fg_rois_per_this_image]
-
-                # Background
-                bg_inds = np.where((max_overlaps < bg_thresh_hi) & (
-                    max_overlaps >= bg_thresh_lo))[0]
-                bg_rois_per_this_image = rois_per_image - fg_rois_per_this_image
-                bg_rois_per_this_image = np.minimum(bg_rois_per_this_image,
-                                                    bg_inds.shape[0])
-                assert bg_rois_per_this_image >= 0, "bg_rois_per_this_image must be >= 0 but got {}".format(
-                    bg_rois_per_this_image)
-
-                # Sample background if there are too many
-                if bg_inds.shape[0] > bg_rois_per_this_image:
-                    if use_random:
-                        # libra neg sample
-                        bg_inds = _sample_neg(
-                            max_overlaps,
-                            max_classes,
-                            bg_inds,
-                            bg_rois_per_this_image,
-                            num_bins=num_bins,
-                            bg_thresh_hi=bg_thresh_hi)
-                bg_inds = bg_inds[:bg_rois_per_this_image]
-
-            keep_inds = np.append(fg_inds, bg_inds)
-            sampled_labels = max_classes[keep_inds]  # N x 1
-            sampled_labels[fg_rois_per_this_image:] = 0
-            sampled_boxes = boxes[keep_inds]  # N x 324
-            sampled_gts = gt_boxes[box_to_gt_ind_map[keep_inds]]
-            sampled_gts[fg_rois_per_this_image:, :] = gt_boxes[0]
-            bbox_label_targets = _compute_targets(
-                sampled_boxes, sampled_gts, sampled_labels, bbox_reg_weights)
-            bbox_targets, bbox_inside_weights = _expand_bbox_targets(
-                bbox_label_targets, class_nums, is_cls_agnostic)
-            bbox_outside_weights = np.array(
-                bbox_inside_weights > 0, dtype=bbox_inside_weights.dtype)
-            # Scale rois
-            sampled_rois = sampled_boxes * im_scale
-
-            # Faster RCNN blobs
-            frcn_blobs = dict(
-                rois=sampled_rois,
-                labels_int32=sampled_labels,
-                bbox_targets=bbox_targets,
-                bbox_inside_weights=bbox_inside_weights,
-                bbox_outside_weights=bbox_outside_weights)
-            return frcn_blobs
-
-        def _compute_targets(roi_boxes, gt_boxes, labels, bbox_reg_weights):
-            assert roi_boxes.shape[0] == gt_boxes.shape[0]
-            assert roi_boxes.shape[1] == 4
-            assert gt_boxes.shape[1] == 4
-
-            targets = np.zeros(roi_boxes.shape)
-            bbox_reg_weights = np.asarray(bbox_reg_weights)
-            targets = box_to_delta(
-                ex_boxes=roi_boxes, gt_boxes=gt_boxes, weights=bbox_reg_weights)
-
-            return np.hstack([labels[:, np.newaxis], targets]).astype(
-                np.float32, copy=False)
-
-        def _expand_bbox_targets(bbox_targets_input, class_nums,
-                                 is_cls_agnostic):
-            class_labels = bbox_targets_input[:, 0]
-            fg_inds = np.where(class_labels > 0)[0]
-            bbox_targets = np.zeros((class_labels.shape[0], 4 * class_nums
-                                     if not is_cls_agnostic else 4 * 2))
-            bbox_inside_weights = np.zeros(bbox_targets.shape)
-            for ind in fg_inds:
-                class_label = int(class_labels[
-                    ind]) if not is_cls_agnostic else 1
-                start_ind = class_label * 4
-                end_ind = class_label * 4 + 4
-                bbox_targets[ind, start_ind:end_ind] = bbox_targets_input[ind,
-                                                                          1:]
-                bbox_inside_weights[ind, start_ind:end_ind] = (1.0, 1.0, 1.0,
-                                                               1.0)
-            return bbox_targets, bbox_inside_weights
-
-        def generate_func(
-                rpn_rois,
-                gt_classes,
-                is_crowd,
-                gt_boxes,
-                im_info, ):
-            rpn_rois_lod = rpn_rois.lod()[0]
-            gt_classes_lod = gt_classes.lod()[0]
-
-            # convert
-            rpn_rois = np.array(rpn_rois)
-            gt_classes = np.array(gt_classes)
-            is_crowd = np.array(is_crowd)
-            gt_boxes = np.array(gt_boxes)
-            im_info = np.array(im_info)
-
-            rois = []
-            labels_int32 = []
-            bbox_targets = []
-            bbox_inside_weights = []
-            bbox_outside_weights = []
-            lod = [0]
-
-            for idx in range(len(rpn_rois_lod) - 1):
-                rois_si = rpn_rois_lod[idx]
-                rois_ei = rpn_rois_lod[idx + 1]
-
-                gt_si = gt_classes_lod[idx]
-                gt_ei = gt_classes_lod[idx + 1]
-                frcn_blobs = _sample_rois(
-                    rpn_rois[rois_si:rois_ei], gt_classes[gt_si:gt_ei],
-                    is_crowd[gt_si:gt_ei], gt_boxes[gt_si:gt_ei], im_info[idx],
-                    batch_size_per_im, fg_fraction, fg_thresh, bg_thresh_hi,
-                    bg_thresh_lo, bbox_reg_weights, class_nums, use_random,
-                    is_cls_agnostic, is_cascade_rcnn)
-                lod.append(frcn_blobs['rois'].shape[0] + lod[-1])
-                rois.append(frcn_blobs['rois'])
-                labels_int32.append(frcn_blobs['labels_int32'].reshape(-1, 1))
-                bbox_targets.append(frcn_blobs['bbox_targets'])
-                bbox_inside_weights.append(frcn_blobs['bbox_inside_weights'])
-                bbox_outside_weights.append(frcn_blobs['bbox_outside_weights'])
-
-            rois = np.vstack(rois)
-            labels_int32 = np.vstack(labels_int32)
-            bbox_targets = np.vstack(bbox_targets)
-            bbox_inside_weights = np.vstack(bbox_inside_weights)
-            bbox_outside_weights = np.vstack(bbox_outside_weights)
-
-            # create lod-tensor for return
-            # notice that the func create_lod_tensor does not work well here
-            ret_rois = fluid.LoDTensor()
-            ret_rois.set_lod([lod])
-            ret_rois.set(rois.astype("float32"), fluid.CPUPlace())
-
-            ret_labels_int32 = fluid.LoDTensor()
-            ret_labels_int32.set_lod([lod])
-            ret_labels_int32.set(labels_int32.astype("int32"), fluid.CPUPlace())
-
-            ret_bbox_targets = fluid.LoDTensor()
-            ret_bbox_targets.set_lod([lod])
-            ret_bbox_targets.set(
-                bbox_targets.astype("float32"), fluid.CPUPlace())
-
-            ret_bbox_inside_weights = fluid.LoDTensor()
-            ret_bbox_inside_weights.set_lod([lod])
-            ret_bbox_inside_weights.set(
-                bbox_inside_weights.astype("float32"), fluid.CPUPlace())
-
-            ret_bbox_outside_weights = fluid.LoDTensor()
-            ret_bbox_outside_weights.set_lod([lod])
-            ret_bbox_outside_weights.set(
-                bbox_outside_weights.astype("float32"), fluid.CPUPlace())
-
-            return ret_rois, ret_labels_int32, ret_bbox_targets, ret_bbox_inside_weights, ret_bbox_outside_weights
-
-        rois = create_tmp_var(
-            fluid.default_main_program(),
-            name=None,  #'rois', 
-            dtype='float32',
-            shape=[-1, 4], )
-        bbox_inside_weights = create_tmp_var(
-            fluid.default_main_program(),
-            name=None,  #'bbox_inside_weights', 
-            dtype='float32',
-            shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
-        bbox_outside_weights = create_tmp_var(
-            fluid.default_main_program(),
-            name=None,  #'bbox_outside_weights', 
-            dtype='float32',
-            shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
-        bbox_targets = create_tmp_var(
-            fluid.default_main_program(),
-            name=None,  #'bbox_targets', 
-            dtype='float32',
-            shape=[-1, 8 if self.is_cls_agnostic else self.class_nums * 4], )
-        labels_int32 = create_tmp_var(
-            fluid.default_main_program(),
-            name=None,  #'labels_int32', 
-            dtype='int32',
-            shape=[-1, 1], )
-
-        outs = [
-            rois, labels_int32, bbox_targets, bbox_inside_weights,
-            bbox_outside_weights
-        ]
-
-        fluid.layers.py_func(
-            func=generate_func,
-            x=[rpn_rois, gt_classes, is_crowd, gt_boxes, im_info],
-            out=outs)
-        return outs
-
-
-@register
-class RoIAlign(object):
-    __op__ = fluid.layers.roi_align
-    __append_doc__ = True
-
-    def __init__(self, resolution=7, spatial_scale=1. / 16, sampling_ratio=0):
-        super(RoIAlign, self).__init__()
-        if isinstance(resolution, Integral):
-            resolution = [resolution, resolution]
-        self.pooled_height = resolution[0]
-        self.pooled_width = resolution[1]
-        self.spatial_scale = spatial_scale
-        self.sampling_ratio = sampling_ratio
-
-
-@register
-class RoIPool(object):
-    __op__ = fluid.layers.roi_pool
-    __append_doc__ = True
-
-    def __init__(self, resolution=7, spatial_scale=1. / 16):
-        super(RoIPool, self).__init__()
-        if isinstance(resolution, Integral):
-            resolution = [resolution, resolution]
-        self.pooled_height = resolution[0]
-        self.pooled_width = resolution[1]
-        self.spatial_scale = spatial_scale
-
-
-@register
-class MultiBoxHead(object):
-    __op__ = fluid.layers.multi_box_head
-    __append_doc__ = True
-
-    def __init__(self,
-                 min_ratio=20,
-                 max_ratio=90,
-                 base_size=300,
-                 min_sizes=[60.0, 105.0, 150.0, 195.0, 240.0, 285.0],
-                 max_sizes=[[], 150.0, 195.0, 240.0, 285.0, 300.0],
-                 aspect_ratios=[[2.], [2., 3.], [2., 3.], [2., 3.], [2., 3.],
-                                [2., 3.]],
-                 steps=None,
-                 offset=0.5,
-                 flip=True,
-                 min_max_aspect_ratios_order=False,
-                 kernel_size=1,
-                 pad=0):
-        super(MultiBoxHead, self).__init__()
-        self.min_ratio = min_ratio
-        self.max_ratio = max_ratio
-        self.base_size = base_size
-        self.min_sizes = min_sizes
-        self.max_sizes = max_sizes
-        self.aspect_ratios = aspect_ratios
-        self.steps = steps
-        self.offset = offset
-        self.flip = flip
-        self.min_max_aspect_ratios_order = min_max_aspect_ratios_order
-        self.kernel_size = kernel_size
-        self.pad = pad
-
-
-@register
-@serializable
-class SSDOutputDecoder(object):
-    __op__ = fluid.layers.detection_output
-    __append_doc__ = True
-
-    def __init__(self,
-                 nms_threshold=0.45,
-                 nms_top_k=400,
-                 keep_top_k=200,
-                 score_threshold=0.01,
-                 nms_eta=1.0,
-                 background_label=0):
-        super(SSDOutputDecoder, self).__init__()
-        self.nms_threshold = nms_threshold
-        self.background_label = background_label
-        self.nms_top_k = nms_top_k
-        self.keep_top_k = keep_top_k
-        self.score_threshold = score_threshold
-        self.nms_eta = nms_eta
-
-
-@register
-@serializable
-class RetinaTargetAssign(object):
-    __op__ = fluid.layers.retinanet_target_assign
-    __append_doc__ = True
-
-    def __init__(self, positive_overlap=0.5, negative_overlap=0.4):
-        super(RetinaTargetAssign, self).__init__()
-        self.positive_overlap = positive_overlap
-        self.negative_overlap = negative_overlap
-
-
-@register
-@serializable
-class RetinaOutputDecoder(object):
-    __op__ = fluid.layers.retinanet_detection_output
-    __append_doc__ = True
-
-    def __init__(self,
-                 score_thresh=0.05,
-                 nms_thresh=0.3,
-                 pre_nms_top_n=1000,
-                 detections_per_im=100,
-                 nms_eta=1.0):
-        super(RetinaOutputDecoder, self).__init__()
-        self.score_threshold = score_thresh
-        self.nms_threshold = nms_thresh
-        self.nms_top_k = pre_nms_top_n
-        self.keep_top_k = detections_per_im
-        self.nms_eta = nms_eta
+def smooth_l1(input, label, inside_weight=None, outside_weight=None,
+              sigma=None):
+    input_new = paddle.multiply(input, inside_weight)
+    label_new = paddle.multiply(label, inside_weight)
+    delta = 1 / (sigma * sigma)
+    out = F.smooth_l1_loss(input_new, label_new, reduction='none', delta=delta)
+    out = paddle.multiply(out, outside_weight)
+    out = out / delta
+    out = paddle.reshape(out, shape=[out.shape[0], -1])
+    out = paddle.sum(out, axis=1)
+    return out

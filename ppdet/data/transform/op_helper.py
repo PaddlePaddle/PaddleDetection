@@ -61,10 +61,13 @@ def is_overlap(object_bbox, sample_bbox):
         return True
 
 
-def filter_and_process(sample_bbox, bboxes, labels, scores=None):
+def filter_and_process(sample_bbox, bboxes, labels, scores=None,
+                       keypoints=None):
     new_bboxes = []
     new_labels = []
     new_scores = []
+    new_keypoints = []
+    new_kp_ignore = []
     for i in range(len(bboxes)):
         new_bbox = [0, 0, 0, 0]
         obj_bbox = [bboxes[i][0], bboxes[i][1], bboxes[i][2], bboxes[i][3]]
@@ -84,9 +87,24 @@ def filter_and_process(sample_bbox, bboxes, labels, scores=None):
             new_labels.append([labels[i][0]])
             if scores is not None:
                 new_scores.append([scores[i][0]])
+            if keypoints is not None:
+                sample_keypoint = keypoints[0][i]
+                for j in range(len(sample_keypoint)):
+                    kp_len = sample_height if j % 2 else sample_width
+                    sample_coord = sample_bbox[1] if j % 2 else sample_bbox[0]
+                    sample_keypoint[j] = (
+                        sample_keypoint[j] - sample_coord) / kp_len
+                    sample_keypoint[j] = max(min(sample_keypoint[j], 1.0), 0.0)
+                new_keypoints.append(sample_keypoint)
+                new_kp_ignore.append(keypoints[1][i])
+
     bboxes = np.array(new_bboxes)
     labels = np.array(new_labels)
     scores = np.array(new_scores)
+    if keypoints is not None:
+        keypoints = np.array(new_keypoints)
+        new_kp_ignore = np.array(new_kp_ignore)
+        return bboxes, labels, scores, (keypoints, new_kp_ignore)
     return bboxes, labels, scores
 
 
@@ -387,3 +405,119 @@ def crop_image_sampling(img, sample_bbox, image_width, image_height,
         sample_img, (target_size, target_size), interpolation=cv2.INTER_AREA)
 
     return sample_img
+
+
+def is_poly(segm):
+    assert isinstance(segm, (list, dict)), \
+        "Invalid segm type: {}".format(type(segm))
+    return isinstance(segm, list)
+
+
+def gaussian_radius(bbox_size, min_overlap):
+    height, width = bbox_size
+
+    a1 = 1
+    b1 = (height + width)
+    c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+    sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+    radius1 = (b1 - sq1) / (2 * a1)
+
+    a2 = 4
+    b2 = 2 * (height + width)
+    c2 = (1 - min_overlap) * width * height
+    sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+    radius2 = (b2 - sq2) / (2 * a2)
+
+    a3 = 4 * min_overlap
+    b3 = -2 * min_overlap * (height + width)
+    c3 = (min_overlap - 1) * width * height
+    sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+    radius3 = (b3 + sq3) / (2 * a3)
+    return min(radius1, radius2, radius3)
+
+
+def draw_gaussian(heatmap, center, radius, k=1, delte=6):
+    diameter = 2 * radius + 1
+    sigma = diameter / delte
+    gaussian = gaussian2D((diameter, diameter), sigma_x=sigma, sigma_y=sigma)
+
+    x, y = center
+
+    height, width = heatmap.shape[0:2]
+
+    left, right = min(x, radius), min(width - x, radius + 1)
+    top, bottom = min(y, radius), min(height - y, radius + 1)
+
+    masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:
+                               radius + right]
+    np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
+
+
+def gaussian2D(shape, sigma_x=1, sigma_y=1):
+    m, n = [(ss - 1.) / 2. for ss in shape]
+    y, x = np.ogrid[-m:m + 1, -n:n + 1]
+
+    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
+                                                            sigma_y)))
+    h[h < np.finfo(h.dtype).eps * h.max()] = 0
+    return h
+
+
+def transform_bbox(sample,
+                   M,
+                   w,
+                   h,
+                   area_thr=0.25,
+                   wh_thr=2,
+                   ar_thr=20,
+                   perspective=False):
+    """
+    transfrom bbox according to tranformation matrix M,
+    refer to https://github.com/ultralytics/yolov5/blob/develop/utils/datasets.py
+    """
+    bbox = sample['gt_bbox']
+    label = sample['gt_class']
+    # rotate bbox
+    n = len(bbox)
+    xy = np.ones((n * 4, 3), dtype=np.float32)
+    xy[:, :2] = bbox[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(n * 4, 2)
+    # xy = xy @ M.T
+    xy = np.matmul(xy, M.T)
+    if perspective:
+        xy = (xy[:, :2] / xy[:, 2:3]).reshape(n, 8)
+    else:
+        xy = xy[:, :2].reshape(n, 8)
+    # get new bboxes
+    x = xy[:, [0, 2, 4, 6]]
+    y = xy[:, [1, 3, 5, 7]]
+    bbox = np.concatenate(
+        (x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+    # clip boxes
+    mask = filter_bbox(bbox, w, h, area_thr)
+    sample['gt_bbox'] = bbox[mask]
+    sample['gt_class'] = sample['gt_class'][mask]
+    if 'is_crowd' in sample:
+        sample['is_crowd'] = sample['is_crowd'][mask]
+    if 'difficult' in sample:
+        sample['difficult'] = sample['difficult'][mask]
+    return sample
+
+
+def filter_bbox(bbox, w, h, area_thr=0.25, wh_thr=2, ar_thr=20):
+    """
+    filter bbox, refer to https://github.com/ultralytics/yolov5/blob/develop/utils/datasets.py
+    """
+    # clip boxes
+    area1 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
+    bbox[:, [0, 2]] = bbox[:, [0, 2]].clip(0, w)
+    bbox[:, [1, 3]] = bbox[:, [1, 3]].clip(0, h)
+    # compute
+    area2 = (bbox[:, 2:4] - bbox[:, 0:2]).prod(1)
+    area_ratio = area2 / (area1 + 1e-16)
+    wh = bbox[:, 2:4] - bbox[:, 0:2]
+    ar_ratio = np.maximum(wh[:, 1] / (wh[:, 0] + 1e-16),
+                          wh[:, 0] / (wh[:, 1] + 1e-16))
+    mask = (area_ratio > area_thr) & (
+        (wh > wh_thr).all(1)) & (ar_ratio < ar_thr)
+    return mask

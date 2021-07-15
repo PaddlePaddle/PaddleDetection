@@ -1,0 +1,17 @@
+_BASE_:
+  [
+    "../datasets/roadsign_voc.yml",
+    "../runtime.yml",
+    '_base_/optimizer_40e.yml',
+    "_base_/yolov5m_CSPdarknet.yml",
+    "_base_/yolov5_reader.yml",
+  ]
+pretrain_weights: output.pdparams
+norm_type: bn
+weights: output/yolov5m_CSPdarknet_roadsign/model_final
+metric: VOC
+map_type: integral
+
+YOLOv3Loss:
+  ignore_thresh: 0.7
+  label_smooth: true

@@ -1,0 +1,50 @@
+metric: MOT
+num_classes: 1
+
+MOTDataZoo: {
+  'MOT15_train': ['ADL-Rundle-6', 'ADL-Rundle-8', 'ETH-Bahnhof', 'ETH-Pedcross2', 'ETH-Sunnyday', 'KITTI-13', 'KITTI-17', 'PETS09-S2L1', 'TUD-Campus', 'TUD-Stadtmitte', 'Venice-2'],
+  'MOT15_test': ['ADL-Rundle-1', 'ADL-Rundle-3', 'AVG-TownCentre', 'ETH-Crossing', 'ETH-Jelmoli', 'ETH-Linthescher', 'KITTI-16', 'KITTI-19', 'PETS09-S2L2', 'TUD-Crossing', 'Venice-1'],
+  'MOT16_train': ['MOT16-02', 'MOT16-04', 'MOT16-05', 'MOT16-09', 'MOT16-10', 'MOT16-11', 'MOT16-13'],
+  'MOT16_test': ['MOT16-01', 'MOT16-03', 'MOT16-06', 'MOT16-07', 'MOT16-08', 'MOT16-12', 'MOT16-14'],
+  'MOT17_train': ['MOT17-02-SDP', 'MOT17-04-SDP', 'MOT17-05-SDP', 'MOT17-09-SDP', 'MOT17-10-SDP', 'MOT17-11-SDP', 'MOT17-13-SDP'],
+  'MOT17_test': ['MOT17-01-SDP', 'MOT17-03-SDP', 'MOT17-06-SDP', 'MOT17-07-SDP', 'MOT17-08-SDP', 'MOT17-12-SDP', 'MOT17-14-SDP'],
+  'MOT20_train': ['MOT20-01', 'MOT20-02', 'MOT20-03', 'MOT20-05'],
+  'MOT20_test': ['MOT20-04', 'MOT20-06', 'MOT20-07', 'MOT20-08'],
+  'demo': ['MOT16-02'],
+}
+
+# for MOT training
+TrainDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['mot17.train', 'caltech.all', 'cuhksysu.train', 'prw.train', 'citypersons.train', 'eth.train']
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'task' and 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    task: MOT16_train
+    dataset_dir: dataset/mot
+    data_root: MOT16/images/train
+    keep_ori_im: False # set True if save visualization images or video
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTVideoDataset
+    dataset_dir: dataset/mot
+    keep_ori_im: True # set True if save visualization images or video
+
+
+# for detection or reid evaluation, following the JDE paper, but no use in MOT evaluation
+EvalDataset:
+  !MOTDataSet
+    dataset_dir: dataset/mot
+    image_lists: ['citypersons.val', 'caltech.val'] # for detection evaluation
+    # image_lists: ['caltech.10k.val', 'cuhksysu.val', 'prw.val'] # for reid evaluation
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
+
+# for detection inference, no use in MOT inference
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot
