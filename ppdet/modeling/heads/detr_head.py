@@ -16,13 +16,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import math
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 import pycocotools.mask as mask_util
-from ..initializer import *
+from ..initializer import linear_init_
 
 __all__ = ['DETRHead']
 
