@@ -23,8 +23,8 @@ import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention, _convert_attention_mask
 from .position_encoding import PositionEmbedding
-from .utils import *
-from ..initializer import *
+from .utils import _get_clones
+from ..initializer import linear_init_, conv_init_, xavier_uniform_, normal_
 
 __all__ = ['DETRTransformer']
 
