@@ -54,5 +54,4 @@ def sigmoid_focal_loss(logit, label, normalizer=1.0, alpha=0.25, gamma=2.0):
     if alpha >= 0:
         alpha_t = alpha * label + (1 - alpha) * (1 - label)
         loss = alpha_t * loss
-    return loss.mean(1).sum() / normalizer if normalizer > 1. else loss.mean(
-        1).sum()
+    return loss.mean(1).sum() / normalizer
