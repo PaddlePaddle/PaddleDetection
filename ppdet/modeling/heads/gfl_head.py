@@ -420,9 +420,9 @@ class GFLHead(nn.Layer):
             if scores.shape[0] > self.nms_pre:
                 max_scores = scores.max(axis=1)
                 _, topk_inds = max_scores.topk(self.nms_pre)
-                center_points = center_points[topk_inds]
-                bbox_pred = bbox_pred[topk_inds]
-                scores = scores[topk_inds]
+                center_points = center_points.gather(topk_inds)
+                bbox_pred = bbox_pred.gather(topk_inds)
+                scores = scores.gather(topk_inds)
 
             bboxes = distance2bbox(
                 center_points, bbox_pred, max_shape=img_shape)
@@ -434,9 +434,10 @@ class GFLHead(nn.Layer):
             im_scale = paddle.concat([scale_factor[::-1], scale_factor[::-1]])
             mlvl_bboxes /= im_scale
         mlvl_scores = paddle.concat(mlvl_scores)
-        # add a dummy background class at the end of all labels
-        padding = paddle.zeros([mlvl_scores.shape[0], 1])
-        mlvl_scores = paddle.concat([mlvl_scores, padding], axis=1)
+        if self.use_sigmoid:
+            # add a dummy background class to the backend when use_sigmoid
+            padding = paddle.zeros([mlvl_scores.shape[0], 1])
+            mlvl_scores = paddle.concat([mlvl_scores, padding], axis=1)
         mlvl_scores = mlvl_scores.transpose([1, 0])
         return mlvl_bboxes, mlvl_scores
 

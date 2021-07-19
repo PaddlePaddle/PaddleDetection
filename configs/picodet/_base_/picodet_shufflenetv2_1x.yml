@@ -30,14 +30,9 @@ PicoHead:
   prior_prob: 0.01
   reg_max: 7
   cell_offset: 0.5
-  dgqp_module:
-    name: DGQP
-    reg_topk: 4
-    reg_channels: 64
-    add_mean: True
   loss_qfl:
     name: QualityFocalLoss
-    use_sigmoid: False
+    use_sigmoid: True
     beta: 2.0
     loss_weight: 1.0
   loss_dfl:

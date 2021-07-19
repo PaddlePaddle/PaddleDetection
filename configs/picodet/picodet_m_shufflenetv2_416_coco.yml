@@ -33,3 +33,6 @@ PicoHead:
     norm_type: bn
     share_cls_reg: True
   feat_in_chan: 128
+
+TrainReader:
+  batch_size: 88

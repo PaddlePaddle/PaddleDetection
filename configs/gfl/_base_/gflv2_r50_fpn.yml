@@ -20,7 +20,6 @@ FPN:
   extra_stage: 2
   has_extra_convs: true
   use_c5: false
-  #relu_before_extra_convs: False    # paddle is True , torch is False
 
 GFLHead:
   conv_feat:
