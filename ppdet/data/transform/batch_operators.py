@@ -27,6 +27,7 @@ import numpy as np
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D
 from .atss_assigner import ATSSAssigner
+from .max_iou_assigner import MaxIoUAssigner
 from scipy import ndimage
 
 from ppdet.modeling import bbox_utils
@@ -35,7 +36,8 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
-    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'Gt2GFLTarget'
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseRCNNTarget', 'PadMaskBatch',
+    'Gt2GFLTarget'
 ]
 
 
@@ -482,7 +484,7 @@ class Gt2GFLTarget(BaseOperator):
         self.grid_cell_scale = grid_cell_scale
         self.cell_offset = cell_offset
 
-        self.assigner = ATSSAssigner(topk=9)
+        self.assigner = ATSSAssigner()
 
     def get_grid_cells(self, featmap_size, scale, stride, offset=0):
         """
@@ -556,9 +558,9 @@ class Gt2GFLTarget(BaseOperator):
             if gt_labels.size == 1:
                 gt_labels = np.array([gt_labels]).astype(np.int32)
             gt_bboxes_ignore = None
-            assign_gt_inds, _, _ = self.assigner(grid_cells, num_level_cells,
-                                                 gt_bboxes, gt_bboxes_ignore,
-                                                 gt_labels)
+            assign_gt_inds, _ = self.assigner(grid_cells, num_level_cells,
+                                              gt_bboxes, gt_bboxes_ignore,
+                                              gt_labels)
             pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds = self.get_sample(
                 assign_gt_inds, gt_bboxes)
 
@@ -573,8 +575,6 @@ class Gt2GFLTarget(BaseOperator):
                 bbox_targets[pos_inds, :] = pos_bbox_targets
                 bbox_weights[pos_inds, :] = 1.0
                 if not np.any(gt_labels):
-                    # Only rpn gives gt_labels as None
-                    # Foreground is the first class
                     labels[pos_inds] = 0
                 else:
                     labels[pos_inds] = gt_labels[pos_assigned_gt_inds]
@@ -900,5 +900,72 @@ class Gt2SparseRCNNTarget(BaseOperator):
             else:
                 sample["scale_factor_wh"] = np.array(
                     [1.0, 1.0], dtype=np.float32)
+
+        return samples
+
+
+@register_op
+class PadMaskBatch(BaseOperator):
+    """
+    Pad a batch of samples so they can be divisible by a stride.
+    The layout of each image should be 'CHW'.
+    Args:
+        pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
+            height and width is divisible by `pad_to_stride`.
+        return_pad_mask (bool): If `return_pad_mask = True`, return
+            `pad_mask` for transformer.
+    """
+
+    def __init__(self, pad_to_stride=0, return_pad_mask=False):
+        super(PadMaskBatch, self).__init__()
+        self.pad_to_stride = pad_to_stride
+        self.return_pad_mask = return_pad_mask
+
+    def __call__(self, samples, context=None):
+        """
+        Args:
+            samples (list): a batch of sample, each is dict.
+        """
+        coarsest_stride = self.pad_to_stride
+
+        max_shape = np.array([data['image'].shape for data in samples]).max(
+            axis=0)
+        if coarsest_stride > 0:
+            max_shape[1] = int(
+                np.ceil(max_shape[1] / coarsest_stride) * coarsest_stride)
+            max_shape[2] = int(
+                np.ceil(max_shape[2] / coarsest_stride) * coarsest_stride)
+
+        for data in samples:
+            im = data['image']
+            im_c, im_h, im_w = im.shape[:]
+            padding_im = np.zeros(
+                (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
+            padding_im[:, :im_h, :im_w] = im
+            data['image'] = padding_im
+            if 'semantic' in data and data['semantic'] is not None:
+                semantic = data['semantic']
+                padding_sem = np.zeros(
+                    (1, max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_sem[:, :im_h, :im_w] = semantic
+                data['semantic'] = padding_sem
+            if 'gt_segm' in data and data['gt_segm'] is not None:
+                gt_segm = data['gt_segm']
+                padding_segm = np.zeros(
+                    (gt_segm.shape[0], max_shape[1], max_shape[2]),
+                    dtype=np.uint8)
+                padding_segm[:, :im_h, :im_w] = gt_segm
+                data['gt_segm'] = padding_segm
+            if self.return_pad_mask:
+                padding_mask = np.zeros(
+                    (max_shape[1], max_shape[2]), dtype=np.float32)
+                padding_mask[:im_h, :im_w] = 1.
+                data['pad_mask'] = padding_mask
+
+            if 'gt_rbox2poly' in data and data['gt_rbox2poly'] is not None:
+                # ploy to rbox
+                polys = data['gt_rbox2poly']
+                rbox = bbox_utils.poly2rbox(polys)
+                data['gt_rbox'] = rbox
 
         return samples

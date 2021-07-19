@@ -1,7 +1,7 @@
-architecture: GFL
+architecture: PicoDet
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/MobileNetV3_large_x0_5_pretrained.pdparams
 
-GFL:
+PicoDet:
   backbone: MobileNetV3
   neck: PAN
   head: PicoHead

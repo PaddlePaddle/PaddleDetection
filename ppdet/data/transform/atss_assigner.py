@@ -147,7 +147,7 @@ class ATSSAssigner(object):
         topk (float): number of bbox selected in each level
     """
 
-    def __init__(self, topk):
+    def __init__(self, topk=9):
         self.topk = topk
 
     def __call__(self,
@@ -263,12 +263,4 @@ class ATSSAssigner(object):
         assigned_gt_inds[max_overlaps !=
                          -np.inf] = argmax_overlaps[max_overlaps != -np.inf] + 1
 
-        if np.any(gt_labels):
-            assigned_labels = -np.ones((num_bboxes))
-            pos_inds = np.nonzero(assigned_gt_inds > 0)[0].squeeze()
-            # if pos_inds.shape[0] > 0:
-            #     assigned_labels[pos_inds] = gt_labels[
-            #         assigned_gt_inds[pos_inds] - 1]
-        else:
-            assigned_labels = None
-        return assigned_gt_inds, max_overlaps, assigned_labels
+        return assigned_gt_inds, max_overlaps

@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import paddle
 import paddle.nn as nn
-from paddle import ParamAttr, reshape, transpose, concat, split
+from paddle import ParamAttr
 from paddle.nn import Conv2D, MaxPool2D, AdaptiveAvgPool2D, BatchNorm, Linear
 from paddle.nn.initializer import KaimingNormal
 
@@ -34,14 +34,14 @@ def channel_shuffle(x, groups):
     channels_per_group = num_channels // groups
 
     # reshape
-    x = reshape(
+    x = paddle.reshape(
         x=x, shape=[batch_size, groups, channels_per_group, height, width])
 
     # transpose
-    x = transpose(x=x, perm=[0, 2, 1, 3, 4])
+    x = paddle.transpose(x=x, perm=[0, 2, 1, 3, 4])
 
     # flatten
-    x = reshape(x=x, shape=[batch_size, num_channels, height, width])
+    x = paddle.reshape(x=x, shape=[batch_size, num_channels, height, width])
     return x
 
 
@@ -115,14 +115,14 @@ class InvertedResidual(nn.Layer):
             name='stage_' + name + '_conv3')
 
     def forward(self, inputs):
-        x1, x2 = split(
+        x1, x2 = paddle.split(
             inputs,
             num_or_sections=[inputs.shape[1] // 2, inputs.shape[1] // 2],
             axis=1)
         x2 = self._conv_pw(x2)
         x2 = self._conv_dw(x2)
         x2 = self._conv_linear(x2)
-        out = concat([x1, x2], axis=1)
+        out = paddle.concat([x1, x2], axis=1)
         return channel_shuffle(out, 2)
 
 
@@ -185,7 +185,7 @@ class InvertedResidualDS(nn.Layer):
         x2 = self._conv_pw_2(inputs)
         x2 = self._conv_dw_2(x2)
         x2 = self._conv_linear_2(x2)
-        out = concat([x1, x2], axis=1)
+        out = paddle.concat([x1, x2], axis=1)
 
         return channel_shuffle(out, 2)
 

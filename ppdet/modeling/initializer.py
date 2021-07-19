@@ -50,9 +50,7 @@ def _no_grad_normal_(tensor, mean=0., std=1.):
 
 def _no_grad_fill_(tensor, value=0.):
     with paddle.no_grad():
-        v = paddle.rand(shape=tensor.shape, dtype=tensor.dtype)
-        v[...] = value
-        tensor.set_value(v)
+        tensor.set_value(paddle.full_like(tensor, value, dtype=tensor.dtype))
     return tensor
 
 

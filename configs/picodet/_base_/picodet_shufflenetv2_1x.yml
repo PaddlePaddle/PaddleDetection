@@ -1,7 +1,7 @@
-architecture: GFL
+architecture: PicoDet
 pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ShuffleNetV2_x1_0_pretrained.pdparams
 
-GFL:
+PicoDet:
   backbone: ShuffleNetV2
   neck: PAN
   head: PicoHead

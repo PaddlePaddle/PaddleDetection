@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from .iou_loss import GIoULoss
-from ..transformers import bbox_cxcywh_to_xyxy, bbox_overlaps, sigmoid_focal_loss
+from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss
 
 __all__ = ['DETRLoss']
 
@@ -211,7 +211,7 @@ class DETRLoss(nn.Layer):
             num_gts = paddle.clip(
                 num_gts / paddle.distributed.get_world_size(), min=1).item()
         except:
-            num_gts = max(num_gts, 1)
+            num_gts = max(num_gts.item(), 1)
         total_loss = dict()
         total_loss.update(
             self._get_loss_class(logits[-1], gt_class, match_indices,
