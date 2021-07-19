@@ -21,9 +21,10 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 import pycocotools.mask as mask_util
-from ..initializer import linear_init_
+from ..initializer import linear_init_, constant_
+from ..transformers.utils import inverse_sigmoid
 
-__all__ = ['DETRHead']
+__all__ = ['DETRHead', 'DeformableDETRHead']
 
 
 class MLP(nn.Layer):
@@ -275,3 +276,77 @@ class DETRHead(nn.Layer):
                 gt_mask=gt_mask)
         else:
             return (outputs_bbox[-1], outputs_logit[-1], outputs_seg)
+
+
+@register
+class DeformableDETRHead(nn.Layer):
+    __shared__ = ['num_classes', 'hidden_dim']
+    __inject__ = ['loss']
+
+    def __init__(self,
+                 num_classes=80,
+                 hidden_dim=512,
+                 nhead=8,
+                 num_mlp_layers=3,
+                 loss='DETRLoss'):
+        super(DeformableDETRHead, self).__init__()
+        self.num_classes = num_classes
+        self.hidden_dim = hidden_dim
+        self.nhead = nhead
+        self.loss = loss
+
+        self.score_head = nn.Linear(hidden_dim, self.num_classes)
+        self.bbox_head = MLP(hidden_dim,
+                             hidden_dim,
+                             output_dim=4,
+                             num_layers=num_mlp_layers)
+
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        linear_init_(self.score_head)
+        constant_(self.score_head.bias, -4.595)
+        constant_(self.bbox_head.layers[-1].weight)
+        bias = paddle.zeros_like(self.bbox_head.layers[-1].bias)
+        bias[2:] = -2.0
+        self.bbox_head.layers[-1].bias.set_value(bias)
+
+    @classmethod
+    def from_config(cls, cfg, hidden_dim, nhead, input_shape):
+        return {'hidden_dim': hidden_dim, 'nhead': nhead}
+
+    def forward(self, out_transformer, body_feats, inputs=None):
+        r"""
+        Args:
+            out_transformer (Tuple): (feats: [num_levels, batch_size,
+                                                num_queries, hidden_dim],
+                            memory: [batch_size,
+                                \sum_{l=0}^{L-1} H_l \cdot W_l, hidden_dim],
+                            reference_points: [batch_size, num_queries, 2])
+            body_feats (List(Tensor)): list[[B, C, H, W]]
+            inputs (dict): dict(inputs)
+        """
+        feats, memory, reference_points = out_transformer
+        reference_points = inverse_sigmoid(reference_points.unsqueeze(0))
+        outputs_bbox = self.bbox_head(feats)
+
+        # It's equivalent to "outputs_bbox[:, :, :, :2] += reference_points",
+        # but the gradient is wrong in paddle.
+        outputs_bbox = paddle.concat(
+            [
+                outputs_bbox[:, :, :, :2] + reference_points,
+                outputs_bbox[:, :, :, 2:]
+            ],
+            axis=-1)
+
+        outputs_bbox = F.sigmoid(outputs_bbox)
+        outputs_logit = self.score_head(feats)
+
+        if self.training:
+            assert inputs is not None
+            assert 'gt_bbox' in inputs and 'gt_class' in inputs
+
+            return self.loss(outputs_bbox, outputs_logit, inputs['gt_bbox'],
+                             inputs['gt_class'])
+        else:
+            return (outputs_bbox[-1], outputs_logit[-1], None)
