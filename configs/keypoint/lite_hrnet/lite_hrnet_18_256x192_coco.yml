@@ -2,7 +2,7 @@ use_gpu: true
 log_iter: 5
 save_dir: output
 snapshot_epoch: 10
-weights: output/lite_hrnet_18_256x192/model_final
+weights: output/lite_hrnet_18_256x192_coco/model_final
 epoch: 210
 num_joints: &num_joints 17
 pixel_std: &pixel_std 200
@@ -25,6 +25,7 @@ TopDownHRNet:
   num_joints: *num_joints
   width: &width 40
   loss: KeyPointMSELoss
+  use_dark: false
 
 LiteHRNet:
   network_type: lite_18
@@ -34,7 +35,7 @@ LiteHRNet:
 
 KeyPointMSELoss:
   use_target_weight: true
-
+  loss_scale: 1.0
 
 #####optimizer
 LearningRate:
@@ -72,7 +73,6 @@ EvalDataset:
     image_dir: val2017
     anno_path: annotations/person_keypoints_val2017.json
     dataset_dir: dataset/coco
-    bbox_file: bbox.json
     num_joints: *num_joints
     trainsize: *trainsize
     pixel_std: *pixel_std
@@ -90,8 +90,8 @@ global_std: &global_std [0.229, 0.224, 0.225]
 TrainReader:
   sample_transforms:
     - RandomFlipHalfBodyTransform:
-        scale: 0.5
-        rot: 40
+        scale: 0.25
+        rot: 30
         num_joints_half_body: 8
         prob_half_body: 0.3
         pixel_std: *pixel_std

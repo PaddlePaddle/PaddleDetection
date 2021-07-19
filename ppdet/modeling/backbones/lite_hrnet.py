@@ -99,6 +99,46 @@ class ConvNormLayer(nn.Layer):
         return out
 
 
+class DepthWiseSeparableConvNormLayer(nn.Layer):
+    def __init__(self,
+                 ch_in,
+                 ch_out,
+                 filter_size,
+                 stride=1,
+                 dw_norm_type=None,
+                 pw_norm_type=None,
+                 norm_decay=0.,
+                 freeze_norm=False,
+                 dw_act=None,
+                 pw_act=None,
+                 name=""):
+        super(DepthWiseSeparableConvNormLayer, self).__init__()
+        self.depthwise_conv = ConvNormLayer(
+            ch_in=ch_in,
+            ch_out=ch_in,
+            filter_size=filter_size,
+            stride=stride,
+            groups=ch_in,
+            norm_type=dw_norm_type,
+            act=dw_act,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm, )
+        self.pointwise_conv = ConvNormLayer(
+            ch_in=ch_in,
+            ch_out=ch_out,
+            filter_size=1,
+            stride=1,
+            norm_type=pw_norm_type,
+            act=pw_act,
+            norm_decay=norm_decay,
+            freeze_norm=freeze_norm, )
+
+    def forward(self, x):
+        x = self.depthwise_conv(x)
+        x = self.pointwise_conv(x)
+        return x
+
+
 class CrossResolutionWeightingModule(nn.Layer):
     def __init__(self,
                  channels,
@@ -109,7 +149,7 @@ class CrossResolutionWeightingModule(nn.Layer):
         super(CrossResolutionWeightingModule, self).__init__()
         self.channels = channels
         total_channel = sum(channels)
-        self.conv_relu = ConvNormLayer(
+        self.conv1 = ConvNormLayer(
             ch_in=total_channel,
             ch_out=total_channel // ratio,
             filter_size=1,
@@ -118,7 +158,7 @@ class CrossResolutionWeightingModule(nn.Layer):
             act='relu',
             freeze_norm=freeze_norm,
             norm_decay=norm_decay)
-        self.conv_sigmoid = ConvNormLayer(
+        self.conv2 = ConvNormLayer(
             ch_in=total_channel // ratio,
             ch_out=total_channel,
             filter_size=1,
@@ -132,8 +172,8 @@ class CrossResolutionWeightingModule(nn.Layer):
         mini_size = x[-1].shape[-2:]
         out = [F.adaptive_avg_pool2d(s, mini_size) for s in x[:-1]] + [x[-1]]
         out = paddle.concat(out, 1)
-        out = self.conv_relu(out)
-        out = self.conv_sigmoid(out)
+        out = self.conv1(out)
+        out = self.conv2(out)
         out = paddle.split(out, self.channels, 1)
         out = [
             s * F.interpolate(
@@ -146,7 +186,7 @@ class SpatialWeightingModule(nn.Layer):
     def __init__(self, in_channel, ratio=16, freeze_norm=False, norm_decay=0.):
         super(SpatialWeightingModule, self).__init__()
         self.global_avgpooling = nn.AdaptiveAvgPool2D(1)
-        self.conv_relu = ConvNormLayer(
+        self.conv1 = ConvNormLayer(
             ch_in=in_channel,
             ch_out=in_channel // ratio,
             filter_size=1,
@@ -154,7 +194,7 @@ class SpatialWeightingModule(nn.Layer):
             act='relu',
             freeze_norm=freeze_norm,
             norm_decay=norm_decay)
-        self.conv_sigmoid = ConvNormLayer(
+        self.conv2 = ConvNormLayer(
             ch_in=in_channel // ratio,
             ch_out=in_channel,
             filter_size=1,
@@ -165,8 +205,8 @@ class SpatialWeightingModule(nn.Layer):
 
     def forward(self, x):
         out = self.global_avgpooling(x)
-        out = self.conv_relu(out)
-        out = self.conv_sigmoid(out)
+        out = self.conv1(out)
+        out = self.conv2(out)
         return x * out
 
 
@@ -200,7 +240,7 @@ class ConditionalChannelWeightingBlock(nn.Layer):
                 norm_decay=norm_decay) for channel in branch_channels
         ])
 
-        self.spatial_weightings = nn.LayerList([
+        self.spatial_weighting = nn.LayerList([
             SpatialWeightingModule(
                 channel,
                 ratio=4,
@@ -215,11 +255,10 @@ class ConditionalChannelWeightingBlock(nn.Layer):
 
         x2 = self.cross_resolution_weighting(x2)
         x2 = [dw(s) for s, dw in zip(x2, self.depthwise_convs)]
-        x2 = [sw(s) for s, sw in zip(x2, self.spatial_weightings)]
+        x2 = [sw(s) for s, sw in zip(x2, self.spatial_weighting)]
 
         out = [paddle.concat([s1, s2], axis=1) for s1, s2 in zip(x1, x2)]
         out = [channel_shuffle(s, groups=2) for s in out]
-
         return out
 
 
@@ -314,47 +353,30 @@ class IterativeHead(nn.Layer):
         for i in range(num_branches):
             if i != num_branches - 1:
                 projects.append(
-                    nn.Sequential(
-                        ConvNormLayer(
-                            ch_in=self.in_channels[i],
-                            ch_out=self.in_channels[i],
-                            filter_size=3,
-                            stride=1,
-                            groups=self.in_channels[i],
-                            norm_type=norm_type,
-                            act='relu',
-                            freeze_norm=freeze_norm,
-                            norm_decay=norm_decay, ),
-                        ConvNormLayer(
-                            ch_in=self.in_channels[i],
-                            ch_out=self.in_channels[i + 1],
-                            filter_size=1,
-                            stride=1,
-                            norm_type=norm_type,
-                            freeze_norm=freeze_norm,
-                            norm_decay=norm_decay, )))
+                    DepthWiseSeparableConvNormLayer(
+                        ch_in=self.in_channels[i],
+                        ch_out=self.in_channels[i + 1],
+                        filter_size=3,
+                        stride=1,
+                        dw_act=None,
+                        pw_act='relu',
+                        dw_norm_type=norm_type,
+                        pw_norm_type=norm_type,
+                        freeze_norm=freeze_norm,
+                        norm_decay=norm_decay))
             else:
                 projects.append(
-                    nn.Sequential(
-                        ConvNormLayer(
-                            ch_in=self.in_channels[i],
-                            ch_out=self.in_channels[i],
-                            filter_size=3,
-                            stride=1,
-                            groups=self.in_channels[i],
-                            norm_type=norm_type,
-                            act='relu',
-                            freeze_norm=freeze_norm,
-                            norm_decay=norm_decay, ),
-                        ConvNormLayer(
-                            ch_in=self.in_channels[i],
-                            ch_out=self.in_channels[i],
-                            filter_size=1,
-                            stride=1,
-                            norm_type=norm_type,
-                            freeze_norm=freeze_norm,
-                            norm_decay=norm_decay, )))
-
+                    DepthWiseSeparableConvNormLayer(
+                        ch_in=self.in_channels[i],
+                        ch_out=self.in_channels[i],
+                        filter_size=3,
+                        stride=1,
+                        dw_act=None,
+                        pw_act='relu',
+                        dw_norm_type=norm_type,
+                        pw_norm_type=norm_type,
+                        freeze_norm=freeze_norm,
+                        norm_decay=norm_decay))
         self.projects = nn.LayerList(projects)
 
     def forward(self, x):
@@ -554,14 +576,14 @@ class LiteHRNetModule(nn.Layer):
                 if j > i:
                     fuse_layer.append(
                         nn.Sequential(
-                            ConvNormLayer(
-                                ch_in=self.in_channels[j],
-                                ch_out=self.in_channels[i],
-                                filter_size=1,
+                            nn.Conv2D(
+                                self.in_channels[j],
+                                self.in_channels[i],
+                                kernel_size=1,
                                 stride=1,
-                                norm_type=self.norm_type,
-                                freeze_norm=freeze_norm,
-                                norm_decay=norm_decay, ),
+                                padding=0,
+                                bias_attr=False, ),
+                            nn.BatchNorm(self.in_channels[i]),
                             nn.Upsample(
                                 scale_factor=2**(j - i), mode='nearest')))
                 elif j == i:
@@ -572,44 +594,45 @@ class LiteHRNetModule(nn.Layer):
                         if k == i - j - 1:
                             conv_downsamples.append(
                                 nn.Sequential(
-                                    ConvNormLayer(
-                                        ch_in=self.in_channels[j],
-                                        ch_out=self.in_channels[j],
-                                        filter_size=3,
+                                    nn.Conv2D(
+                                        self.in_channels[j],
+                                        self.in_channels[j],
+                                        kernel_size=3,
                                         stride=2,
+                                        padding=1,
                                         groups=self.in_channels[j],
-                                        norm_type=self.norm_type,
-                                        freeze_norm=freeze_norm,
-                                        norm_decay=norm_decay, ),
-                                    ConvNormLayer(
-                                        ch_in=self.in_channels[j],
-                                        ch_out=self.in_channels[i],
-                                        filter_size=1,
+                                        bias_attr=False, ),
+                                    nn.BatchNorm(self.in_channels[j]),
+                                    nn.Conv2D(
+                                        self.in_channels[j],
+                                        self.in_channels[i],
+                                        kernel_size=1,
                                         stride=1,
-                                        norm_type=self.norm_type,
-                                        freeze_norm=freeze_norm,
-                                        norm_decay=norm_decay, )))
+                                        padding=0,
+                                        bias_attr=False, ),
+                                    nn.BatchNorm(self.in_channels[i])))
                         else:
                             conv_downsamples.append(
                                 nn.Sequential(
-                                    ConvNormLayer(
-                                        ch_in=self.in_channels[j],
-                                        ch_out=self.in_channels[j],
-                                        filter_size=3,
+                                    nn.Conv2D(
+                                        self.in_channels[j],
+                                        self.in_channels[j],
+                                        kernel_size=3,
                                         stride=2,
+                                        padding=1,
                                         groups=self.in_channels[j],
-                                        norm_type=self.norm_type,
-                                        freeze_norm=freeze_norm,
-                                        norm_decay=norm_decay, ),
-                                    ConvNormLayer(
-                                        ch_in=self.in_channels[j],
-                                        ch_out=self.in_channels[j],
-                                        filter_size=1,
+                                        bias_attr=False, ),
+                                    nn.BatchNorm(self.in_channels[j]),
+                                    nn.Conv2D(
+                                        self.in_channels[j],
+                                        self.in_channels[j],
+                                        kernel_size=1,
                                         stride=1,
-                                        norm_type=self.norm_type,
-                                        act='relu',
-                                        freeze_norm=freeze_norm,
-                                        norm_decay=norm_decay, )))
+                                        padding=0,
+                                        bias_attr=False, ),
+                                    nn.BatchNorm(self.in_channels[j]),
+                                    nn.ReLU()))
+
                     fuse_layer.append(nn.Sequential(*conv_downsamples))
             fuse_layers.append(nn.LayerList(fuse_layer))
 
@@ -624,7 +647,6 @@ class LiteHRNetModule(nn.Layer):
             for i in range(self.num_branches):
                 x[i] = self.layers(x[i])
             out = x
-
         if self.with_fuse:
             out_fuse = []
             for i in range(len(self.fuse_layers)):
@@ -634,9 +656,11 @@ class LiteHRNetModule(nn.Layer):
                         y += out[j]
                     else:
                         y += self.fuse_layers[i][j](out[j])
+                    if i == 0:
+                        out[i] = y
                 out_fuse.append(self.relu(y))
             out = out_fuse
-        else:
+        elif not self.multiscale_output:
             out = [out[0]]
         return out
 
@@ -718,14 +742,14 @@ class LiteHRNet(nn.Layer):
         num_channels_pre_layer = [32]
         for stage_idx in range(3):
             num_channels = self.stages_config["num_channels"][stage_idx]
-            setattr(self, 'transition_{}'.format(stage_idx),
+            setattr(self, 'transition{}'.format(stage_idx),
                     self._make_transition_layer(num_channels_pre_layer,
                                                 num_channels, self.freeze_norm,
                                                 self.norm_decay))
             stage, num_channels_pre_layer = self._make_stage(
                 self.stages_config, stage_idx, num_channels, True,
                 self.freeze_norm, self.norm_decay)
-            setattr(self, 'stage_{}'.format(stage_idx), stage)
+            setattr(self, 'stage{}'.format(stage_idx), stage)
         self.head_layer = IterativeHead(num_channels_pre_layer, 'bn',
                                         self.freeze_norm, self.norm_decay)
 
@@ -742,24 +766,24 @@ class LiteHRNet(nn.Layer):
                 if num_channels_cur_layer[i] != num_channels_pre_layer[i]:
                     transition_layers.append(
                         nn.Sequential(
-                            ConvNormLayer(
-                                ch_in=num_channels_pre_layer[i],
-                                ch_out=num_channels_pre_layer[i],
-                                filter_size=3,
+                            nn.Conv2D(
+                                num_channels_pre_layer[i],
+                                num_channels_pre_layer[i],
+                                kernel_size=3,
                                 stride=1,
+                                padding=1,
                                 groups=num_channels_pre_layer[i],
-                                norm_type=self.norm_type,
-                                freeze_norm=freeze_norm,
-                                norm_decay=norm_decay, ),
-                            ConvNormLayer(
-                                ch_in=num_channels_pre_layer[i],
-                                ch_out=num_channels_cur_layer[i],
-                                filter_size=1,
+                                bias_attr=False),
+                            nn.BatchNorm(num_channels_pre_layer[i]),
+                            nn.Conv2D(
+                                num_channels_pre_layer[i],
+                                num_channels_cur_layer[i],
+                                kernel_size=1,
                                 stride=1,
-                                norm_type=self.norm_type,
-                                act='relu',
-                                freeze_norm=freeze_norm,
-                                norm_decay=norm_decay, )))
+                                padding=0,
+                                bias_attr=False, ),
+                            nn.BatchNorm(num_channels_cur_layer[i]),
+                            nn.ReLU()))
                 else:
                     transition_layers.append(None)
             else:
@@ -767,26 +791,28 @@ class LiteHRNet(nn.Layer):
                 for j in range(i + 1 - num_branches_pre):
                     conv_downsamples.append(
                         nn.Sequential(
-                            ConvNormLayer(
-                                ch_in=num_channels_pre_layer[-1],
-                                ch_out=num_channels_pre_layer[-1],
-                                filter_size=3,
-                                stride=2,
+                            nn.Conv2D(
+                                num_channels_pre_layer[-1],
+                                num_channels_pre_layer[-1],
                                 groups=num_channels_pre_layer[-1],
-                                norm_type=self.norm_type,
-                                freeze_norm=freeze_norm,
-                                norm_decay=norm_decay, ),
-                            ConvNormLayer(
-                                ch_in=num_channels_pre_layer[-1],
-                                ch_out=num_channels_cur_layer[i]
+                                kernel_size=3,
+                                stride=2,
+                                padding=1,
+                                bias_attr=False, ),
+                            nn.BatchNorm(num_channels_pre_layer[-1]),
+                            nn.Conv2D(
+                                num_channels_pre_layer[-1],
+                                num_channels_cur_layer[i]
                                 if j == i - num_branches_pre else
-                                num_channels_cur_layer[-1],
-                                filter_size=1,
+                                num_channels_pre_layer[-1],
+                                kernel_size=1,
                                 stride=1,
-                                norm_type=self.norm_type,
-                                act='relu',
-                                freeze_norm=freeze_norm,
-                                norm_decay=norm_decay, )))
+                                padding=0,
+                                bias_attr=False, ),
+                            nn.BatchNorm(num_channels_cur_layer[i]
+                                         if j == i - num_branches_pre else
+                                         num_channels_pre_layer[-1]),
+                            nn.ReLU()))
                 transition_layers.append(nn.Sequential(*conv_downsamples))
         return nn.LayerList(transition_layers)
 
@@ -826,11 +852,10 @@ class LiteHRNet(nn.Layer):
     def forward(self, inputs):
         x = inputs['image']
         x = self.stem(x)
-
         y_list = [x]
         for stage_idx in range(3):
             x_list = []
-            transition = getattr(self, 'transition_{}'.format(stage_idx))
+            transition = getattr(self, 'transition{}'.format(stage_idx))
             for j in range(self.stages_config["num_branches"][stage_idx]):
                 if transition[j] is not None:
                     if j >= len(y_list):
@@ -839,16 +864,14 @@ class LiteHRNet(nn.Layer):
                         x_list.append(transition[j](y_list[j]))
                 else:
                     x_list.append(y_list[j])
-            y_list = getattr(self, 'stage_{}'.format(stage_idx))(x_list)
+            y_list = getattr(self, 'stage{}'.format(stage_idx))(x_list)
         x = self.head_layer(y_list)
-
         res = []
         for i, layer in enumerate(x):
             if i == self.freeze_at:
                 layer.stop_gradient = True
             if i in self.return_idx:
                 res.append(layer)
-
         return res
 
     @property

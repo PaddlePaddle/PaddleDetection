@@ -41,7 +41,8 @@ class TopDownHRNet(BaseArch):
                  post_process='HRNetPostProcess',
                  flip_perm=None,
                  flip=True,
-                 shift_heatmap=True):
+                 shift_heatmap=True,
+                 use_dark=True):
         """
         HRNet network, see https://arxiv.org/abs/1902.09212
 
@@ -52,7 +53,7 @@ class TopDownHRNet(BaseArch):
         """
         super(TopDownHRNet, self).__init__()
         self.backbone = backbone
-        self.post_process = HRNetPostProcess()
+        self.post_process = HRNetPostProcess(use_dark)
         self.loss = loss
         self.flip_perm = flip_perm
         self.flip = flip
@@ -218,7 +219,6 @@ class HRNetPostProcess(object):
             preds: numpy.ndarray([batch_size, num_joints, 2]), keypoints coords
             maxvals: numpy.ndarray([batch_size, num_joints, 1]), the maximum confidence of the keypoints
         """
-
         coords, maxvals = self.get_max_preds(heatmaps)
 
         heatmap_height = heatmaps.shape[2]
