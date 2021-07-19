@@ -1,0 +1,44 @@
+architecture: SparseRCNN
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+SparseRCNN:
+  backbone: ResNet
+  neck: FPN
+  head: SparseRCNNHead
+  postprocess: SparsePostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0,1,2,3]
+  num_stages: 4
+
+FPN:
+  out_channel: 256
+
+SparseRCNNHead:
+  head_hidden_dim: 256
+  head_dim_feedforward: 2048
+  nhead: 8
+  head_dropout: 0.0
+  head_cls: 1
+  head_reg: 3
+  head_dim_dynamic: 64
+  head_num_dynamic: 2
+  head_num_heads: 6
+  deep_supervision: true
+  num_proposals: 100
+  loss_func: SparseRCNNLoss
+
+SparseRCNNLoss:
+  losses: ["labels", "boxes"]
+  focal_loss_alpha: 0.25
+  focal_loss_gamma: 2.0
+  class_weight: 2.0
+  l1_weight: 5.0
+  giou_weight: 2.0
+
+SparsePostProcess:
+  num_proposals: 100
