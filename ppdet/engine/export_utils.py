@@ -58,9 +58,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     label_list = [str(cat) for cat in catid2name.values()]
 
     sample_transforms = reader_cfg['sample_transforms']
-    if arch != 'mot_arch':
-        sample_transforms = sample_transforms[1:]
-    for st in sample_transforms:
+    for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
             if key == 'Resize':
@@ -82,11 +80,13 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     return preprocess_list, label_list
 
+
 def _parse_tracker(tracker_cfg):
     tracker_params = {}
     for k, v in tracker_cfg.items():
         tracker_params.update({k: v})
     return tracker_params
+
 
 def _dump_infer_config(config, path, image_shape, model):
     arch_state = False
