@@ -224,11 +224,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_dla34_30e_1088x608.yml -o weights=output/fairmot_dla34_30e_1088x608/model_final.pdparams
 ```
 **Notes:**
- The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`：
+ The default evaluation dataset is MOT-16 Train Set. If you want to change the evaluation dataset, please refer to the following code and modify `configs/datasets/mot.yml`, modify `data_root`：
 ```
 EvalMOTDataset:
   !MOTImageFolder
-    task: MOT17_train
     dataset_dir: dataset/mot
     data_root: MOT17/images/train
     keep_ori_im: False # set True if save visualization images or video

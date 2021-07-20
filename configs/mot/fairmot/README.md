@@ -59,7 +59,6 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval_mot.py -c configs/mot/fairmot/fairmot_d
 ```
 EvalMOTDataset:
   !MOTImageFolder
-    task: MOT17_train
     dataset_dir: dataset/mot
     data_root: MOT17/images/train
     keep_ori_im: False # set True if save visualization images or video

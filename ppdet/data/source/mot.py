@@ -233,7 +233,6 @@ class MOTImageFolder(DetDataset):
     """
     Load MOT dataset with MOT format from image folder or video .
     Args:
-        task (str): MOT task name, like 'MOT16_train','MOT16_test'.
         video_file (str): path of the video file, default ''.
         dataset_dir (str): root directory for dataset.
         keep_ori_im (bool): whether to keep original image, default False. 
@@ -242,7 +241,6 @@ class MOTImageFolder(DetDataset):
     """
 
     def __init__(self,
-                 task='MOT16_train',
                  video_file=None,
                  dataset_dir=None,
                  data_root=None,
@@ -252,7 +250,6 @@ class MOTImageFolder(DetDataset):
                  **kwargs):
         super(MOTImageFolder, self).__init__(
             dataset_dir, image_dir, sample_num=sample_num)
-        self.task = task
         self.video_file = video_file
         self.data_root = data_root
         self.keep_ori_im = keep_ori_im

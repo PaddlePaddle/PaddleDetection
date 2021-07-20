@@ -282,18 +282,25 @@ class Tracker(object):
         n_frame = 0
         timer_avgs, timer_calls = [], []
         for seq in seqs:
+            if not os.path.isdir(os.path.join(data_root, seq)):
+                continue
+            infer_dir = os.path.join(data_root, seq, 'img1')
+            seqinfo = os.path.join(data_root, seq, 'seqinfo.ini')
+            if not os.path.exists(seqinfo) or not os.path.exists(
+                    infer_dir) or not os.path.isdir(infer_dir):
+                continue
+
             save_dir = os.path.join(output_dir, 'mot_outputs',
                                     seq) if save_images or save_videos else None
             logger.info('start seq: {}'.format(seq))
 
-            infer_dir = os.path.join(data_root, seq, 'img1')
             images = self.get_infer_images(infer_dir)
             self.dataset.set_images(images)
 
             dataloader = create('EvalMOTReader')(self.dataset, 0)
 
             result_filename = os.path.join(result_root, '{}.txt'.format(seq))
-            meta_info = open(os.path.join(data_root, seq, 'seqinfo.ini')).read()
+            meta_info = open(seqinfo).read()
             frame_rate = int(meta_info[meta_info.find('frameRate') + 10:
                                        meta_info.find('\nseqLength')])
             with paddle.no_grad():
