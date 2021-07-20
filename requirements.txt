@@ -15,4 +15,3 @@ sklearn
 motmetrics
 openpyxl
 cython_bbox
-decord

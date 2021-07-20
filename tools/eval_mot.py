@@ -73,11 +73,11 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
-    task = cfg['EvalMOTDataset'].task
     dataset_dir = cfg['EvalMOTDataset'].dataset_dir
     data_root = cfg['EvalMOTDataset'].data_root
     data_root = '{}/{}'.format(dataset_dir, data_root)
-    seqs = cfg['MOTDataZoo'][task]
+    seqs = os.listdir(data_root)
+    seqs.sort()
 
     # build Tracker
     tracker = Tracker(cfg, mode='eval')
