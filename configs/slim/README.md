@@ -20,7 +20,7 @@
 **PaddleDetection、 PaddlePaddle与PaddleSlim 版本关系:**
 |  PaddleDetection版本  | PaddlePaddle版本  | PaddleSlim版本 |  备注    |
 | :------------------: | :---------------: | :-------: |:---------------: |
-| release/2.1       |       >= 2.1.0       | 2.1      |  量化模型导出依赖最新Paddle release/2.2分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装  |
+| release/2.1       |       >= 2.1.0       | 2.1      |  量化模型导出依赖最新Paddle develop分支，可在[PaddlePaddle每日版本](https://www.paddlepaddle.org.cn/documentation/docs/zh/install/Tables.html#whl-dev)中下载安装  |
 | release/2.0       |       >= 2.0.1       | 2.0      | 量化依赖Paddle 2.1及PaddleSlim 2.1 |
 
 
