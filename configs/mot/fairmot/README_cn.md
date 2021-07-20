@@ -97,4 +97,10 @@ python deploy/python/mot_jde_infer.py --model_dir=output_inference/fairmot_dla34
   journal={arXiv preprint arXiv:2004.01888},
   year={2020}
 }
+@article{zhang2020fair,
+  title={FairMOT: On the Fairness of Detection and Re-Identification in Multiple Object Tracking},
+  author={Zhang, Yifu and Wang, Chunyu and Wang, Xinggang and Zeng, Wenjun and Liu, Wenyu},
+  journal={arXiv preprint arXiv:2004.01888},
+  year={2020}
+}
 ```
