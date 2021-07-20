@@ -48,3 +48,4 @@ python deploy/python/infer.py --model_dir=./inference/yolov3_mobilenet_v1_roadsi
 - 参数优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
 - run_mode：fluid代表使用AnalysisPredictor，精度float32来推理，其他参数指用AnalysisPredictor，TensorRT不同精度来推理。
 - 如果安装的PaddlePaddle不支持基于TensorRT进行预测，需要自行编译，详细可参考[预测库编译教程](https://paddleinference.paddlepaddle.org.cn/user_guides/source_compile.html)。
+- --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
