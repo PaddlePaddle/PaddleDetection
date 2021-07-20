@@ -6,7 +6,7 @@ _BASE_: [
 # for MOT training
 TrainDataset:
   !MOTDataSet
-    dataset_dir: /dataset/HT21
+    dataset_dir: /dataset/mot
     image_lists: ['ht21.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
