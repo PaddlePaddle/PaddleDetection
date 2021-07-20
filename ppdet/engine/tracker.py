@@ -372,7 +372,7 @@ class Tracker(object):
 
     def mot_predict(self,
                     video_file,
-                    infer_dir,
+                    image_dir,
                     output_dir,
                     data_type='mot',
                     model_type='JDE',
@@ -381,6 +381,13 @@ class Tracker(object):
                     show_image=False,
                     det_results_dir='',
                     draw_threshold=0.5):
+        assert video_file is not None or image_dir is not None, \
+            "--video_file or --image_dir should be set."
+        assert video_file is None or os.path.isfile(video_file), \
+                "{} is not a file".format(video_file)
+        assert image_dir is None or os.path.isdir(image_dir), \
+                "{} is not a directory".format(image_dir)
+
         if not os.path.exists(output_dir): os.makedirs(output_dir)
         result_root = os.path.join(output_dir, 'mot_results')
         if not os.path.exists(result_root): os.makedirs(result_root)
@@ -389,20 +396,22 @@ class Tracker(object):
         assert model_type in ['JDE', 'DeepSORT', 'FairMOT'], \
             "model_type should be 'JDE', 'DeepSORT' or 'FairMOT'"
 
-        # run tracking
-        if infer_dir:
-            seq = infer_dir.split('/')[-1].split('.')[0]
+        # run tracking        
+        if video_file:
+            seq = video_file.split('/')[-1].split('.')[0]
+            self.dataset.set_video(video_file)
+            logger.info('Starting tracking video {}'.format(video_file))
+        elif image_dir:
+            seq = image_dir.split('/')[-1].split('.')[0]
             images = [
-                '{}/{}'.format(infer_dir, x) for x in os.listdir(infer_dir)
+                '{}/{}'.format(image_dir, x) for x in os.listdir(image_dir)
             ]
             images.sort()
             self.dataset.set_images(images)
             logger.info('Starting tracking folder {}, found {} images'.format(
-                infer_dir, len(images)))
+                image_dir, len(images)))
         else:
-            seq = video_file.split('/')[-1].split('.')[0]
-            self.dataset.set_video(video_file)
-            logger.info('Starting tracking video {}'.format(video_file))
+            raise ValueError('--video_file or --image_dir should be set.')
 
         save_dir = os.path.join(output_dir, 'mot_outputs',
                                 seq) if save_images or save_videos else None
