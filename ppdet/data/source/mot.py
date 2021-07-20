@@ -243,7 +243,7 @@ class MOTImageFolder(DetDataset):
 
     def __init__(self,
                  task='MOT16_train',
-                 video_file='',
+                 video_file=None,
                  dataset_dir=None,
                  data_root=None,
                  image_dir=None,
@@ -265,7 +265,7 @@ class MOTImageFolder(DetDataset):
 
     def parse_dataset(self, ):
         if not self.roidbs:
-            if self.video_file == '':
+            if self.video_file is None:
                 self.roidbs = self._load_images()
             else:
                 self.roidbs = self._load_video_images()
@@ -369,8 +369,12 @@ def video2frames(video_path, outpath, **kargs):
     cmd = ffmpeg + [' -i ', video_path, ' -start_number ', ' 0 ', outformat]
     cmd = ''.join(cmd) + _dict2str(kargs)
 
-    if os.system(cmd) != 0:
+    try:
+        os.system(cmd)
+    except:
         raise RuntimeError('ffmpeg process video: {} error'.format(vid_name))
+        sys.stdout.flush()
+        sys.exit(-1)
 
     sys.stdout.flush()
     return out_full_path

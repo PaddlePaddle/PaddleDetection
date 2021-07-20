@@ -178,7 +178,9 @@ def mot_keypoint_unite_predict_video(mot_model,
             keypoint_results,
             visual_thread=FLAGS.keypoint_threshold,
             returnimg=True,
-            ids=online_ids)
+            ids=online_ids
+            if KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' else
+            None)
 
         online_im = mot_vis.plot_tracking(
             im,
