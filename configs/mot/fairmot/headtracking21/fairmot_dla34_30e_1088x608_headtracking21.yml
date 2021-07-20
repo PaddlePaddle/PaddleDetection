@@ -14,12 +14,12 @@ TrainDataset:
 # If you want to change the MOT evaluation dataset, please modify 'task' and 'data_root'
 EvalMOTDataset:
   !MOTImageFolder
-    dataset_dir: /dataset/HT21
-    data_root: images/test
+    dataset_dir: /dataset/mot
+    data_root: HT21/images/test
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference
 TestMOTDataset:
   !MOTVideoDataset
-    dataset_dir: /dataset/HT21
+    dataset_dir: /dataset/mot
     keep_ori_im: True # set True if save visualization images or video
