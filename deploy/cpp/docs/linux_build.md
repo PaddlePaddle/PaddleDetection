@@ -110,8 +110,9 @@ make
 | --use_mkldnn | CPU预测中是否开启MKLDNN加速 |
 | --cpu_threads | 设置cpu线程数，默认为1 |
 
-**注意**: 优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
-
+**注意**:
+- 优先级顺序：`camera_id` > `video_file` > `image_dir` > `image_file`。
+- --run_benchmark如果设置为True，则需要安装依赖`pip install pynvml psutil GPUtil`。
 
 `样例一`：
 ```shell
