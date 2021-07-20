@@ -7,7 +7,6 @@ _BASE_: [
 
 EvalMOTDataset:
   !MOTImageFolder
-    task: MOT16_train
     dataset_dir: dataset/mot
     data_root: MOT16/images/train
     keep_ori_im: True # set as True in DeepSORT

@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import os
+import sys
+import cv2
+import glob
 import numpy as np
-import decord as de
 from collections import OrderedDict
 try:
     from collections.abc import Sequence
@@ -228,8 +230,18 @@ def mot_label():
 @register
 @serializable
 class MOTImageFolder(DetDataset):
+    """
+    Load MOT dataset with MOT format from image folder or video .
+    Args:
+        video_file (str): path of the video file, default ''.
+        dataset_dir (str): root directory for dataset.
+        keep_ori_im (bool): whether to keep original image, default False. 
+            Set True when used during MOT model inference while saving
+            images or video, or used in DeepSORT.
+    """
+
     def __init__(self,
-                 task,
+                 video_file=None,
                  dataset_dir=None,
                  data_root=None,
                  image_dir=None,
@@ -238,20 +250,53 @@ class MOTImageFolder(DetDataset):
                  **kwargs):
         super(MOTImageFolder, self).__init__(
             dataset_dir, image_dir, sample_num=sample_num)
-        self.task = task
+        self.video_file = video_file
         self.data_root = data_root
         self.keep_ori_im = keep_ori_im
         self._imid2path = {}
         self.roidbs = None
+        self.frame_rate = 30
 
     def check_or_download_dataset(self):
         return
 
     def parse_dataset(self, ):
         if not self.roidbs:
-            self.roidbs = self._load_images()
+            if self.video_file is None:
+                self.roidbs = self._load_images()
+            else:
+                self.roidbs = self._load_video_images()
 
-    def _parse(self):
+    def _load_video_images(self):
+        cap = cv2.VideoCapture(self.video_file)
+        self.frame_rate = int(cap.get(cv2.CAP_PROP_FPS))
+
+        extension = self.video_file.split('.')[-1]
+        output_path = self.video_file.replace('.{}'.format(extension), '')
+        frames_path = video2frames(self.video_file, output_path)
+        self.video_frames = sorted(
+            glob.glob(os.path.join(frames_path, '*.png')))
+
+        self.video_length = len(self.video_frames)
+        logger.info('Length of the video: {:d} frames.'.format(
+            self.video_length))
+        ct = 0
+        records = []
+        for image in self.video_frames:
+            assert image != '' and os.path.isfile(image), \
+                    "Image {} not found".format(image)
+            if self.sample_num > 0 and ct >= self.sample_num:
+                break
+            rec = {'im_id': np.array([ct]), 'im_file': image}
+            if self.keep_ori_im:
+                rec.update({'keep_ori_im': 1})
+            self._imid2path[ct] = image
+            ct += 1
+            records.append(rec)
+        assert len(records) > 0, "No image file found"
+        return records
+
+    def _find_images(self):
         image_dir = self.image_dir
         if not isinstance(image_dir, Sequence):
             image_dir = [image_dir]
@@ -265,7 +310,7 @@ class MOTImageFolder(DetDataset):
         return images
 
     def _load_images(self):
-        images = self._parse()
+        images = self._find_images()
         ct = 0
         records = []
         for image in images:
@@ -289,67 +334,44 @@ class MOTImageFolder(DetDataset):
         self.image_dir = images
         self.roidbs = self._load_images()
 
-
-def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
-    return f.lower().endswith(extensions)
-
-
-@register
-@serializable
-class MOTVideoDataset(DetDataset):
-    """
-    Load MOT dataset with MOT format from video for inference.
-    Args:
-        video_file (str): path of the video file
-        dataset_dir (str): root directory for dataset.
-        keep_ori_im (bool): whether to keep original image, default False. 
-            Set True when used during MOT model inference while saving
-            images or video, or used in DeepSORT.
-    """
-
-    def __init__(self,
-                 video_file='',
-                 dataset_dir=None,
-                 keep_ori_im=False,
-                 **kwargs):
-        super(MOTVideoDataset, self).__init__(dataset_dir=dataset_dir)
-        self.video_file = video_file
-        self.dataset_dir = dataset_dir
-        self.keep_ori_im = keep_ori_im
-        self.roidbs = None
-        self.frame_rate = 25
-
-    def parse_dataset(self, ):
-        if not self.roidbs:
-            self.roidbs = self._load_video_images()
-
-    def _load_video_images(self):
-        self.video_frames = de.VideoReader(self.video_file)
-        self.video_length = len(self.video_frames)
-        logger.info('Length of the video: {:d} frames.'.format(
-            self.video_length))
-        records = []
-        for idx in range(self.video_length):
-            image = self.video_frames.get_batch([idx]).asnumpy()[0]
-            im_shape = image.shape
-            rec = {
-                'im_id': np.array([idx]),
-                'image': image,
-                'h': im_shape[0],
-                'w': im_shape[1],
-                'im_shape': np.array(
-                    im_shape[:2], dtype=np.float32),
-                'scale_factor': np.array(
-                    [1., 1.], dtype=np.float32),
-            }
-            if self.keep_ori_im:
-                rec.update({'ori_image': image})
-            records.append(rec)
-        assert len(records) > 0, "No image file found."
-        return records
-
     def set_video(self, video_file):
         self.video_file = video_file
         assert os.path.isfile(self.video_file) and _is_valid_video(self.video_file), \
                 "wrong or unsupported file format: {}".format(self.video_file)
         self.roidbs = self._load_video_images()
+
+
+def _is_valid_video(f, extensions=('.mp4', '.avi', '.mov', '.rmvb', 'flv')):
+    return f.lower().endswith(extensions)
+
+
+def video2frames(video_path, outpath, **kargs):
+    def _dict2str(kargs):
+        cmd_str = ''
+        for k, v in kargs.items():
+            cmd_str += (' ' + str(k) + ' ' + str(v))
+        return cmd_str
+
+    ffmpeg = ['ffmpeg ', ' -y -loglevel ', ' error ']
+    vid_name = os.path.basename(video_path).split('.')[0]
+    out_full_path = os.path.join(outpath, vid_name)
+
+    if not os.path.exists(out_full_path):
+        os.makedirs(out_full_path)
+
+    # video file name
+    outformat = os.path.join(out_full_path, '%08d.png')
+
+    cmd = ffmpeg
+    cmd = ffmpeg + [' -i ', video_path, ' -start_number ', ' 0 ', outformat]
+    cmd = ''.join(cmd) + _dict2str(kargs)
+
+    try:
+        os.system(cmd)
+    except:
+        raise RuntimeError('ffmpeg process video: {} error'.format(vid_name))
+        sys.stdout.flush()
+        sys.exit(-1)
+
+    sys.stdout.flush()
+    return out_full_path
