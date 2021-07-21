@@ -21,6 +21,6 @@ EvalMOTDataset:
 
 # for MOT video inference
 TestMOTDataset:
-  !MOTVideoDataset
+  !MOTImageFolder
     dataset_dir: dataset/mot
     keep_ori_im: True # set True if save visualization images or video
