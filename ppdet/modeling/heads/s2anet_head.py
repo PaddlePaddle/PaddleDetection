@@ -88,7 +88,6 @@ class S2ANetAnchorGenerator_pd(nn.Layer):
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
 
         all_anchors = self.base_anchors[:, :] + shifts[:, :]
-        print('all_anchors', all_anchors.shape, feat_h, feat_w)
         all_anchors = all_anchors.reshape([feat_h * feat_w, 4])
         return all_anchors
 
@@ -416,7 +415,6 @@ class S2ANetHead(nn.Layer):
 
         for feat_idx in range(len(feats)):
             feat = feats[feat_idx]
-            print('feat', feat.shape)
             fam_cls_feat = self.fam_cls_convs(feat)
 
             fam_cls = self.fam_cls(fam_cls_feat)
