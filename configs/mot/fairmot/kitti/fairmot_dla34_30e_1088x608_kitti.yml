@@ -2,13 +2,14 @@ _BASE_: [
   '../fairmot_dla34_30e_1088x608.yml'
 ]
 
-weights: output/fairmot_dla34_30e_1088x608_headtracking21/model_final
+metric: KITTI
+weights: output/fairmot_dla34_30e_1088x608_kitti/model_final
 
 # for MOT training
 TrainDataset:
   !MOTDataSet
     dataset_dir: dataset/mot
-    image_lists: ['ht21.train']
+    image_lists: ['kitticars.train']
     data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_ide']
 
 # for MOT evaluation
@@ -16,7 +17,7 @@ TrainDataset:
 EvalMOTDataset:
   !MOTImageFolder
     dataset_dir: dataset/mot
-    data_root: HT21/images/test
+    data_root: kitticars/images/test
     keep_ori_im: False # set True if save visualization images or video, or used in DeepSORT
 
 # for MOT video inference
