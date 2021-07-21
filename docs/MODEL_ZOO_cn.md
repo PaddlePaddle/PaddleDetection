@@ -29,59 +29,59 @@ Paddle提供基于ImageNet的骨架网络预训练模型。所有预训练模型
 
 ### Faster R-CNN
 
-请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/faster_rcnn/)
+请参考[Faster R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/faster_rcnn/)
 
 ### Mask R-CNN
 
-请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/mask_rcnn/)
+请参考[Mask R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/mask_rcnn/)
 
 ### Cascade R-CNN
 
-请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/cascade_rcnn)
+请参考[Cascade R-CNN](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/cascade_rcnn)
 
 ### YOLOv3
 
-请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/yolov3/)
+请参考[YOLOv3](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/yolov3/)
 
 ### SSD
 
-请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ssd/)
+请参考[SSD](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/ssd/)
 
 ### FCOS
 
-请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/fcos/)
+请参考[FCOS](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/fcos/)
 
 ### SOLOv2
 
-请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/solov2/)
+请参考[SOLOv2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/solov2/)
 
 ### PP-YOLO
 
-请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ppyolo/)
+请参考[PP-YOLO](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/ppyolo/)
 
 ### TTFNet
 
-请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/ttfnet/)
+请参考[TTFNet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/ttfnet/)
 
 ### Group Normalization
 
-请参考[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/gn/)
+请参考[Group Normalization](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/gn/)
 
 ### Deformable ConvNets v2
 
-请参考[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dcn/)
+请参考[Deformable ConvNets v2](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/dcn/)
 
 ### HRNets
 
-请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/hrnet/)
+请参考[HRNets](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/hrnet/)
 
 ### Res2Net
 
-请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/res2net/)
+请参考[Res2Net](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/res2net/)
 
 
 ## 旋转框检测
 
 ### S2ANet
 
-请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/dota/)
+请参考[S2ANet](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.2/configs/dota/)
