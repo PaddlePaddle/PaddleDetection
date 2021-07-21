@@ -88,6 +88,7 @@ class S2ANetAnchorGenerator_pd(nn.Layer):
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
 
         all_anchors = self.base_anchors[:, :] + shifts[:, :]
+        print('all_anchors', all_anchors.shape, feat_h, feat_w)
         all_anchors = all_anchors.reshape([feat_h * feat_w, 4])
         return all_anchors
 
@@ -179,10 +180,9 @@ class AlignConv(nn.Layer):
         offset_x = x_anchor - x_conv
         offset_y = y_anchor - y_conv
         offset = paddle.stack([offset_y, offset_x], axis=-1)
-        offset = paddle.reshape(offset, [-1, self.kernel_size * self.kernel_size * 2])
+        offset = paddle.reshape(offset, [feat_h * feat_w, self.kernel_size * self.kernel_size * 2])                    
         offset = paddle.transpose(offset, [1, 0])
-        # [NA, ks*ks*2] --> [1, ks*ks*2, H, W]
-        offset = paddle.reshape(offset, [1, self.kernel_size * self.kernel_size * 2, feat_h, feat_w])
+        offset = paddle.reshape(offset, [1, self.kernel_size * self.kernel_size * 2, feat_h, feat_w]) 
         return offset
 
     def forward(self, x, refine_anchors, featmap_size, stride):
@@ -416,6 +416,7 @@ class S2ANetHead(nn.Layer):
 
         for feat_idx in range(len(feats)):
             feat = feats[feat_idx]
+            print('feat', feat.shape)
             fam_cls_feat = self.fam_cls_convs(feat)
 
             fam_cls = self.fam_cls(fam_cls_feat)
@@ -440,14 +441,16 @@ class S2ANetHead(nn.Layer):
                 featmap_size, self.anchor_strides[feat_idx])
 
             init_anchors = paddle.to_tensor(init_anchors, dtype='float32')
+            NA = featmap_size[0] * featmap_size[1]
             init_anchors = paddle.reshape(
-                init_anchors, [featmap_size[0] * featmap_size[1], 4])
+                init_anchors, [NA, 4])
             init_anchors = self.rect2rbox(init_anchors)
             self.base_anchors_list.append(init_anchors)
 
-            #fam_reg1 = fam_reg
-            #fam_reg1.stop_gradient = True
-            refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
+            fam_reg1 = fam_reg
+            fam_reg1.stop_gradient = True
+            refine_anchor = self.bbox_decode(fam_reg1, init_anchors)
+            #refine_anchor = self.bbox_decode(fam_reg.detach(), init_anchors)
 
             self.refine_anchor_list.append(refine_anchor)
 
@@ -483,7 +486,8 @@ class S2ANetHead(nn.Layer):
             # [N, 5, H, W] --> [N, H, W, 5]
             odm_bbox_pred = odm_bbox_pred.transpose([0, 2, 3, 1])
             odm_bbox_pred_reshape = paddle.reshape(
-                odm_bbox_pred, [odm_bbox_pred.shape[0], featmap_size[0] * featmap_size[1], 5])
+                odm_bbox_pred, [-1, 5])
+            odm_bbox_pred_reshape = paddle.unsqueeze(odm_bbox_pred_reshape, axis=0)
             odm_reg_branch_list.append(odm_bbox_pred_reshape)
 
         self.s2anet_head_out = (fam_cls_branch_list, fam_reg_branch_list,
@@ -492,14 +496,17 @@ class S2ANetHead(nn.Layer):
 
     def get_prediction(self, nms_pre=2000):
         refine_anchors = self.refine_anchor_list
-        fam_cls_branch_list, fam_reg_branch_list, odm_cls_branch_list, odm_reg_branch_list = self.s2anet_head_out
+        fam_cls_branch_list = self.s2anet_head_out[0]
+        fam_reg_branch_list = self.s2anet_head_out[1]
+        odm_cls_branch_list = self.s2anet_head_out[2]
+        odm_reg_branch_list = self.s2anet_head_out[3]
         pred_scores, pred_bboxes = self.get_bboxes(
             odm_cls_branch_list,
             odm_reg_branch_list,
             refine_anchors,
             nms_pre,
-            cls_out_channels=self.cls_out_channels,
-            use_sigmoid_cls=self.use_sigmoid_cls)
+            self.cls_out_channels,
+            self.use_sigmoid_cls)
         return pred_scores, pred_bboxes
 
     def smooth_l1_loss(self, pred, label, delta=1.0 / 9.0):
