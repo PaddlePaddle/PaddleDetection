@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and   
 # limitations under the License.
 
-
 import sys
 
-__all__     = ['Munkres', 'make_cost_matrix']
+__all__ = ['Munkres', 'make_cost_matrix']
+
 
 class Munkres:
     """
@@ -116,12 +116,14 @@ class Munkres:
         done = False
         step = 1
 
-        steps = { 1 : self.__step1,
-                  2 : self.__step2,
-                  3 : self.__step3,
-                  4 : self.__step4,
-                  5 : self.__step5,
-                  6 : self.__step6 }
+        steps = {
+            1: self.__step1,
+            2: self.__step2,
+            3: self.__step3,
+            4: self.__step4,
+            5: self.__step5,
+            6: self.__step6
+        }
 
         while not done:
             try:
@@ -200,7 +202,7 @@ class Munkres:
                     count += 1
 
         if count >= n:
-            step = 7 # done
+            step = 7  # done
         else:
             step = 4
 
@@ -260,14 +262,14 @@ class Munkres:
             if row >= 0:
                 count += 1
                 path[count][0] = row
-                path[count][1] = path[count-1][1]
+                path[count][1] = path[count - 1][1]
             else:
                 done = True
 
             if not done:
                 col = self.__find_prime_in_row(path[count][0])
                 count += 1
-                path[count][0] = path[count-1][0]
+                path[count][0] = path[count - 1][0]
                 path[count][1] = col
 
         self.__convert_path(path, count)
@@ -293,7 +295,7 @@ class Munkres:
 
     def __find_smallest(self):
         """Find the smallest uncovered value in the matrix."""
-        minval = 2e9 # sys.maxint
+        minval = 2e9  # sys.maxint
         for i in range(self.n):
             for j in range(self.n):
                 if (not self.row_covered[i]) and (not self.col_covered[j]):
@@ -367,7 +369,7 @@ class Munkres:
         return col
 
     def __convert_path(self, path, count):
-        for i in range(count+1):
+        for i in range(count + 1):
             if self.marked[path[i][0]][path[i][1]] == 1:
                 self.marked[path[i][0]][path[i][1]] = 0
             else:
@@ -385,7 +387,6 @@ class Munkres:
             for j in range(self.n):
                 if self.marked[i][j] == 2:
                     self.marked[i][j] = 0
-
 
 
 def make_cost_matrix(profit_matrix, inversion_function):
@@ -422,36 +423,3 @@ def make_cost_matrix(profit_matrix, inversion_function):
     for row in profit_matrix:
         cost_matrix.append([inversion_function(value) for value in row])
     return cost_matrix
-
-def print_matrix(matrix, msg=None):
-    """
-    Convenience function: Displays the contents of a matrix of integers.
-
-    :Parameters:
-        matrix : list of lists
-            Matrix to print
-
-        msg : str
-            Optional message to print before displaying the matrix
-    """
-    import math
-
-    if msg is not None:
-        print(msg)
-
-    # Calculate the appropriate format width.
-    width = 0
-    for row in matrix:
-        for val in row:
-            width = max(width, int(math.log10(val)) + 1)
-
-    # Make the format string
-    format = '%%%dd' % width
-
-    # Print the matrix
-    for row in matrix:
-        sep = '['
-        for val in row:
-            sys.stdout.write(sep + format % val)
-            sep = ', '
-        sys.stdout.write(']\n')
