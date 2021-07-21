@@ -14,12 +14,37 @@ class BaseArch(nn.Layer):
     def __init__(self, data_format='NCHW'):
         super(BaseArch, self).__init__()
         self.data_format = data_format
+        self.inputs = {}
+        self.fuse_norm = False
+
+    def load_meanstd(self, cfg_transform):
+        self.scale = 1.
+        self.mean = paddle.to_tensor([0.485, 0.456, 0.406]).reshape(
+            (1, 3, 1, 1))
+        self.std = paddle.to_tensor([0.229, 0.224, 0.225]).reshape((1, 3, 1, 1))
+        for item in cfg_transform:
+            if 'NormalizeImage' in item:
+                self.mean = paddle.to_tensor(item['NormalizeImage'][
+                    'mean']).reshape((1, 3, 1, 1))
+                self.std = paddle.to_tensor(item['NormalizeImage'][
+                    'std']).reshape((1, 3, 1, 1))
+                if item['NormalizeImage']['is_scale']:
+                    self.scale = 1. / 255.
+                break
 
     def forward(self, inputs):
         if self.data_format == 'NHWC':
             image = inputs['image']
             inputs['image'] = paddle.transpose(image, [0, 2, 3, 1])
-        self.inputs = inputs
+
+        if self.fuse_norm:
+            image = inputs['image']
+            self.inputs['image'] = (image / 255. - self.mean) / self.std
+            self.inputs['im_shape'] = inputs['im_shape']
+            self.inputs['scale_factor'] = inputs['scale_factor']
+        else:
+            self.inputs = inputs
+
         self.model_arch()
 
         if self.training:

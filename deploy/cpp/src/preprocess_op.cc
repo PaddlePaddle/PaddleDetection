@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <string>
+#include <thread>
 
 #include "include/preprocess_op.h"
 
@@ -50,6 +51,7 @@ void NormalizeImage::Run(cv::Mat* im, ImageBlob* data) {
 }
 
 void Permute::Run(cv::Mat* im, ImageBlob* data) {
+  (*im).convertTo(*im, CV_32FC3);
   int rh = im->rows;
   int rw = im->cols;
   int rc = im->channels();
@@ -131,10 +133,19 @@ void PadStride::Run(cv::Mat* im, ImageBlob* data) {
   };
 }
 
+void TopDownEvalAffine::Run(cv::Mat* im, ImageBlob* data) {
+  cv::resize(
+      *im, *im, cv::Size(trainsize_[0],trainsize_[1]), 0, 0, interp_);
+  // todo: Simd::ResizeBilinear();
+  data->in_net_shape_ = {
+    static_cast<float>(trainsize_[1]),
+    static_cast<float>(trainsize_[0]),
+  };
+}
 
 // Preprocessor op running order
 const std::vector<std::string> Preprocessor::RUN_ORDER = {
-  "InitInfo", "Resize", "NormalizeImage", "PadStride", "Permute"
+  "InitInfo", "TopDownEvalAffine", "Resize", "NormalizeImage", "PadStride", "Permute"
 };
 
 void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
@@ -143,6 +154,34 @@ void Preprocessor::Run(cv::Mat* im, ImageBlob* data) {
       ops_[name]->Run(im, data);
     }
   }
+}
+
+void CropImg(cv::Mat &img, cv::Mat &crop_img, std::vector<int> &area, std::vector<float> &center, std::vector<float> &scale, float expandratio) {
+    int crop_x1 = std::max(0, area[0]);
+    int crop_y1 = std::max(0, area[1]);
+    int crop_x2 = std::min(img.cols -1, area[2]);
+    int crop_y2 = std::min(img.rows - 1, area[3]);
+    int center_x = (crop_x1 + crop_x2)/2.;
+    int center_y = (crop_y1 + crop_y2)/2.;
+    int half_h = (crop_y2 - crop_y1)/2.;
+    int half_w = (crop_x2 - crop_x1)/2.;
+    if (half_h*3 > half_w*4){
+      half_w = static_cast<int>(half_h*0.75);
+    }
+    else{
+      half_h = static_cast<int>(half_w*4/3);
+    }
+    crop_x1 = std::max(0, center_x - static_cast<int>(half_w*(1+expandratio)));
+    crop_y1 = std::max(0, center_y - static_cast<int>(half_h*(1+expandratio)));
+    crop_x2 = std::min(img.cols -1, static_cast<int>(center_x + half_w*(1+expandratio)));
+    crop_y2 = std::min(img.rows - 1, static_cast<int>(center_y + half_h*(1+expandratio)));
+    crop_img = img(cv::Range(crop_y1, crop_y2+1), cv::Range(crop_x1, crop_x2 + 1));
+    center.clear();
+    center.emplace_back((crop_x1+crop_x2)/2);
+    center.emplace_back((crop_y1+crop_y2)/2);
+    scale.clear();
+    scale.emplace_back((crop_x2-crop_x1));
+    scale.emplace_back((crop_y2-crop_y1));
 }
 
 }  // namespace PaddleDetection

@@ -37,7 +37,7 @@ endif()
 if (NOT DEFINED PADDLE_DIR OR ${PADDLE_DIR} STREQUAL "")
     message(FATAL_ERROR "please set PADDLE_DIR with -DPADDLE_DIR=/path/paddle_influence_dir")
 endif()
-message("PADDLE_DIR IS:"${PADDLE_DIR})
+message("PADDLE_DIR IS:" ${PADDLE_DIR})
 
 if (NOT DEFINED OPENCV_DIR OR ${OPENCV_DIR} STREQUAL "")
     message(FATAL_ERROR "please set OPENCV_DIR with -DOPENCV_DIR=/path/opencv")
@@ -217,13 +217,13 @@ if (NOT WIN32)
 endif()
 
 set(DEPS ${DEPS} ${OpenCV_LIBS})
-add_executable(main src/main.cc src/preprocess_op.cc src/object_detector.cc)
-ADD_DEPENDENCIES(main ext-yaml-cpp)
+add_executable(main_keypoint src/main_keypoint.cc src/preprocess_op.cc src/object_detector.cc src/keypoint_detector.cc src/keypoint_postprocess.cc)
+ADD_DEPENDENCIES(main_keypoint ext-yaml-cpp)
 message("DEPS:" $DEPS)
-target_link_libraries(main ${DEPS})
+target_link_libraries(main_keypoint ${DEPS})
 
 if (WIN32 AND WITH_MKL)
-    add_custom_command(TARGET main POST_BUILD
+    add_custom_command(TARGET main_keypoint POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/mklml.dll ./mklml.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mklml/lib/libiomp5md.dll ./libiomp5md.dll
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/third_party/install/mkldnn/lib/mkldnn.dll ./mkldnn.dll
@@ -235,7 +235,7 @@ if (WIN32 AND WITH_MKL)
 endif()
 
 if (WIN32)
-    add_custom_command(TARGET main POST_BUILD
+    add_custom_command(TARGET main_keypoint POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${PADDLE_DIR}/paddle/lib/${PADDLE_LIB_NAME}.dll ./release/${PADDLE_LIB_NAME}.dll
     )
 endif()

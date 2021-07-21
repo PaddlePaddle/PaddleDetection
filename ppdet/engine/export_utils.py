@@ -59,6 +59,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     label_list = [str(cat) for cat in catid2name.values()]
 
+    fuse_normalize = reader_cfg.get('fuse_normalize', False)
     sample_transforms = reader_cfg['sample_transforms']
     for st in sample_transforms[1:]:
         for key, value in st.items():
@@ -66,6 +67,8 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
             if key == 'Resize':
                 if int(image_shape[1]) != -1:
                     value['target_size'] = image_shape[1:]
+            if fuse_normalize and key == 'NormalizeImage':
+                continue
             p.update(value)
             preprocess_list.append(p)
     batch_transforms = reader_cfg.get('batch_transforms', None)
