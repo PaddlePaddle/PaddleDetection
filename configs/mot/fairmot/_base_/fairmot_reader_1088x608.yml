@@ -19,7 +19,7 @@ TrainReader:
   batch_size: 6
   shuffle: True
   drop_last: True
-
+  use_shared_memory: True
 
 EvalMOTReader:
   sample_transforms:
