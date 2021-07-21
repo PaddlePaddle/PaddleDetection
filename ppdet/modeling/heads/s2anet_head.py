@@ -23,13 +23,13 @@ from ppdet.modeling.proposal_generator.target_layer import RBoxAssigner
 import numpy as np
 
 
-class S2ANetAnchorGenerator_pd(nn.Layer):
+class S2ANetAnchorGenerator(nn.Layer):
     """
     AnchorGenerator by paddle
     """
 
     def __init__(self, base_size, scales, ratios, scale_major=True, ctr=None):
-        super(S2ANetAnchorGenerator_pd, self).__init__()
+        super(S2ANetAnchorGenerator, self).__init__()
         self.base_size = base_size
         self.scales = paddle.to_tensor(scales)
         self.ratios = paddle.to_tensor(ratios)
@@ -261,7 +261,7 @@ class S2ANetHead(nn.Layer):
         self.anchor_generators = []
         for anchor_base in self.anchor_base_sizes:
                 self.anchor_generators.append(
-                    S2ANetAnchorGenerator_pd(anchor_base, anchor_scales,
+                    S2ANetAnchorGenerator(anchor_base, anchor_scales,
                                           anchor_ratios))
 
         self.anchor_generators = nn.LayerList(self.anchor_generators)
